@@ -154,6 +154,67 @@ export type CockpitMission = {
 }
 
 /**
+ * Snapshot of the mission estimates panel values at the time the mission was saved.
+ * All values are pre-formatted strings (matching the Mission Estimates UI).
+ */
+export type MissionEstimatesSnapshot = {
+  /**
+   * Total path length.
+   */
+  pathLength: string
+  /**
+   * Estimated time to complete the mission.
+   */
+  duration: string
+  /**
+   * Estimated energy consumption.
+   */
+  energy: string
+  /**
+   * Total area covered by surveys.
+   */
+  totalSurveyCoverage: string
+  /**
+   * Approximate area enclosed by the mission path when closed.
+   */
+  missionCoverageArea: string
+}
+
+/**
+ * A mission saved into the local Mission Library.
+ */
+export type SavedMission = CockpitMission & {
+  /**
+   * Stable identifier for the saved mission entry.
+   */
+  id: string
+  /**
+   * User-facing mission name.
+   */
+  name: string
+  /**
+   * Optional user description for the mission.
+   */
+  description: string
+  /**
+   * Vehicle type the mission was planned for.
+   */
+  vehicleType?: MavType
+  /**
+   * Epoch milliseconds when the mission was first saved to the library.
+   */
+  createdAt: number
+  /**
+   * Epoch milliseconds when the mission was last updated in the library.
+   */
+  updatedAt: number
+  /**
+   * Mission estimates captured when the mission was saved.
+   */
+  estimates?: MissionEstimatesSnapshot
+}
+
+/**
  * Survey object that contains the information about the survey to be performed.
  */
 export interface Survey {

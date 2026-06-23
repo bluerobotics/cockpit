@@ -105,6 +105,114 @@
         @regenerate-survey-waypoints="regenerateSurveyWaypoints"
       />
     </div>
+    <template v-if="isPlacingMission">
+      <v-tooltip location="top" text="Place mission here">
+        <template #activator="{ props }">
+          <div
+            v-bind="props"
+            :style="placementConfirmButtonStyle"
+            class="absolute text-[22px] -ml-[10px] -mt-[10px] bg-transparent rounded-full cursor-pointer elevation-4 z-[650]"
+            variant="text"
+            @click="confirmFreePlacement"
+          >
+            <v-icon color="green" class="border-2 rounded-full bg-white">mdi-check-circle</v-icon>
+          </div>
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top" text="Width scale (%) — drag corners to resize, hold Shift for uniform">
+        <template #activator="{ props }">
+          <div
+            v-bind="props"
+            :style="placementConfirmButtonStyle"
+            class="absolute mt-[46px] ml-[10px] rounded-lg elevation-4 z-[650] flex items-center bg-[#333333EE] pr-1"
+          >
+            <v-icon color="white" size="14" class="ml-1">mdi-arrow-expand-horizontal</v-icon>
+            <input
+              v-model.number="placementScaleXPercent"
+              class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
+              type="number"
+              aria-label="Width scale percent"
+              :min="PLACEMENT.scaleMinPercent"
+              :max="PLACEMENT.scaleMaxPercent"
+              step="5"
+              @blur="clampPlacementScaleX"
+              @change="clampPlacementScaleX"
+            />
+          </div>
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top" text="Height scale (%) — drag corners to resize, hold Shift for uniform">
+        <template #activator="{ props }">
+          <div
+            v-bind="props"
+            :style="placementConfirmButtonStyle"
+            class="absolute mt-[76px] ml-[10px] rounded-lg elevation-4 z-[650] flex items-center bg-[#333333EE] pr-1"
+          >
+            <v-icon color="white" size="14" class="ml-1">mdi-arrow-expand-vertical</v-icon>
+            <input
+              v-model.number="placementScaleYPercent"
+              class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
+              type="number"
+              aria-label="Height scale percent"
+              :min="PLACEMENT.scaleMinPercent"
+              :max="PLACEMENT.scaleMaxPercent"
+              step="5"
+              @blur="clampPlacementScaleY"
+              @change="clampPlacementScaleY"
+            />
+          </div>
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top" text="Rotation (°)">
+        <template #activator="{ props }">
+          <div
+            v-bind="props"
+            :style="placementConfirmButtonStyle"
+            class="absolute mt-[106px] ml-[10px] rounded-lg elevation-4 z-[650] flex items-center bg-[#333333EE] pr-1"
+          >
+            <v-icon color="white" size="14" class="ml-1">mdi-rotate-right</v-icon>
+            <input
+              v-model.number="placementRotationDeg"
+              class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
+              type="number"
+              aria-label="Rotation degrees"
+              :min="PLACEMENT.rotationMinDeg"
+              :max="PLACEMENT.rotationMaxDeg"
+              step="5"
+              @blur="clampPlacementRotation"
+              @change="clampPlacementRotation"
+            />
+          </div>
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top" text="Reset scale & rotation">
+        <template #activator="{ props }">
+          <div
+            v-bind="props"
+            :style="placementConfirmButtonStyle"
+            class="absolute mt-[140px] -ml-[2px] rounded-full cursor-pointer elevation-4 z-[650] bg-[#333333EE] p-1"
+            @click="resetPlacementTransform"
+          >
+            <v-icon color="white" size="16">mdi-restore</v-icon>
+          </div>
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top" text="Cancel placement">
+        <template #activator="{ props }">
+          <div
+            v-bind="props"
+            :style="placementConfirmButtonStyle"
+            class="absolute text-[14px] mt-[180px] -ml-[7px] bg-transparent rounded-full cursor-pointer elevation-4 z-[650]"
+            variant="text"
+            @click="cancelFreePlacement()"
+          >
+            <div color="white" class="border-2 rounded-full bg-red text-[18px] pa-1">
+              <v-icon size="16" color="white">mdi-delete</v-icon>
+            </div>
+          </div>
+        </template>
+      </v-tooltip>
+    </template>
     <div
       v-show="!interfaceStore.isMainMenuVisible"
       class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
@@ -127,6 +235,33 @@
         >
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
+        <div
+          v-if="!isCreatingSurvey && !isCreatingSimplePath && !vehicleStore.isVehicleOnline"
+          class="flex flex-col mx-4 my-2 gap-y-1"
+        >
+          <div class="flex flex-row justify-between items-center">
+            <p class="text-sm">Planning for</p>
+            <v-tooltip
+              location="top"
+              text="No vehicle connected. Pick the vehicle type so vehicle-specific planning features show up."
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-icon v-bind="tooltipProps" size="14" class="opacity-70">mdi-information-outline</v-icon>
+              </template>
+            </v-tooltip>
+          </div>
+          <v-select
+            v-model="missionStore.plannedVehicleType"
+            :items="plannedVehicleTypeItems"
+            item-title="label"
+            item-value="value"
+            hide-details
+            density="compact"
+            theme="dark"
+            variant="outlined"
+            class="text-sm"
+          />
+        </div>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
@@ -353,29 +488,15 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Save mission to file">
+            <v-tooltip location="top" text="Mission library">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
-                  icon="mdi-content-save"
-                  variant="text"
-                  :disabled="missionStore.currentPlanningWaypoints.length === 0"
-                  size="24"
-                  class="text-[12px]"
-                  @click="saveMissionToFile"
-                />
-              </template>
-            </v-tooltip>
-            <v-divider vertical />
-            <v-tooltip location="top" text="Load mission from file">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="mdi-upload"
+                  icon="mdi-bookshelf"
                   variant="text"
                   size="24"
                   class="text-[12px]"
-                  @click="loadMissionFromFile"
+                  @click="openMissionLibrary"
                 />
               </template>
             </v-tooltip>
@@ -571,12 +692,13 @@
     :enable-undo="enableUndoForCurrentSurvey"
     :selected-waypoint="selectedWaypoint"
     :menu-type="contextMenuType"
+    :can-save-current="canSaveCurrentMissionToLibrary"
     @set-home-position="setHomePosition"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
     @swap-survey-entry-exit="swapSurveyEntryExit"
-    @toggle-survey="toggleSurvey"
-    @toggle-simple-path="toggleSimplePath"
+    @toggle-survey="addSurveyFromContextMenu"
+    @toggle-simple-path="addSimplePathFromContextMenu"
     @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
     @survey-lines-angle="onSurveyLinesAngleChange"
@@ -584,6 +706,8 @@
     @place-point-of-interest="openPoiDialog"
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
+    @add-mission-from-library="addMissionFromLibraryContextMenu"
+    @save-mission-to-library="openMissionLibraryWithSaveDialog"
   />
   <Teleport to="#planningMap">
     <RadialMenu
@@ -659,6 +783,14 @@
     </p>
   </div>
   <MissionEstimatesPanel v-if="!speedDialOpen" v-model="missionStore.showMissionEstimates" />
+  <MissionLibraryModal
+    v-if="interfaceStore.isMissionLibraryVisible"
+    :current-mission-snapshot="currentMissionSnapshot"
+    :current-mission-estimates="currentMissionEstimatesSnapshot"
+    :effective-vehicle-type="missionStore.effectiveVehicleType"
+    :open-save-on-mount="missionLibraryOpenSaveOnMount"
+    @load-mission="handleLoadMissionFromLibrary"
+  />
 </template>
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
@@ -666,8 +798,6 @@ import 'leaflet-edgebuffer'
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
-import { format } from 'date-fns'
-import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { tileLayerOffline } from 'leaflet.offline'
 import { v4 as uuid } from 'uuid'
@@ -682,6 +812,7 @@ import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimate
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
+import MissionLibraryModal from '@/components/MissionLibraryModal.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
@@ -696,8 +827,7 @@ import {
   useMissionEstimates,
 } from '@/composables/useMissionEstimates'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
-import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
@@ -709,6 +839,7 @@ import {
 } from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
+import { computeMissionLocation, PLANNABLE_VEHICLE_TYPES } from '@/libs/mission/library'
 import { degrees } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -718,6 +849,8 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { Point2D } from '@/types/general'
 import {
   type CockpitMission,
+  type MissionEstimatesSnapshot,
+  type SavedMission,
   type Waypoint,
   type WaypointCoordinates,
   AltitudeReferenceType,
@@ -935,6 +1068,7 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   name: value,
   value,
 }))
+const plannedVehicleTypeItems = PLANNABLE_VEHICLE_TYPES
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
@@ -1038,8 +1172,12 @@ const clearLiveMeasure = (): void => {
 const currentMeasureAnchor = (): L.LatLng | null => {
   if (!planningMap.value) return null
   if (isCreatingSimplePath.value && missionStore.currentPlanningWaypoints.length > 0) {
-    const last = missionStore.currentPlanningWaypoints[missionStore.currentPlanningWaypoints.length - 1]
-    return L.latLng(last.coordinates[0], last.coordinates[1])
+    // Anchor at index 0 when the session was started near the start endpoint, so subsequent
+    // inserts extend the path outward from whichever waypoint sits at the start of the array.
+    const wps = missionStore.currentPlanningWaypoints
+    const anchor = pendingSimplePathInsertIndex.value !== null ? wps[0] : wps[wps.length - 1]
+    if (!anchor) return null
+    return L.latLng(anchor.coordinates[0], anchor.coordinates[1])
   }
   if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length > 0) {
     const last = surveyPolygonVertexesPositions.value[surveyPolygonVertexesPositions.value.length - 1]
@@ -1106,7 +1244,10 @@ const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
   return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
 }
 
-const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
+// `evt` is optional so callers triggered without a mousemove (e.g. right after a context-menu
+// action) can still draw the line; hover hit-testing (against survey handles or the last
+// waypoint) is skipped in that case.
+const renderMeasureOverlay = (cursorLatLng: L.LatLng, evt: L.LeafletMouseEvent | null): void => {
   if (!planningMap.value) return
 
   const anchor = currentMeasureAnchor()
@@ -1119,13 +1260,12 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   const map = planningMap.value
   ensureMeasureOverlay(map)
 
-  // NEW: hide/show the live pill when hovering survey nodes/add/delete UI
   if (measureTextEl) {
-    measureTextEl.style.display = isOverSurveyHandle(e) ? 'none' : 'block'
+    measureTextEl.style.display = evt && isOverSurveyHandle(evt) ? 'none' : 'block'
   }
 
   const a = map.latLngToContainerPoint(anchor!)
-  const b = map.latLngToContainerPoint(e.latlng)
+  const b = map.latLngToContainerPoint(cursorLatLng)
 
   if (measureLineEl) {
     measureLineEl.setAttribute('x1', String(a.x))
@@ -1136,9 +1276,9 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
   const midX = (a.x + b.x) / 2
   const midY = (a.y + b.y) / 2
-  const dist = anchor!.distanceTo(e.latlng)
+  const dist = anchor!.distanceTo(cursorLatLng)
 
-  const hidePill = isOverSurveyHandle(e) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
+  const hidePill = (evt && (isOverSurveyHandle(evt) || isOverLastWaypointMarker(evt))) || dist < 1 // hide if closer than 1 meter to last wp on the array
 
   const text = missionEstimates.formatMetersShort(dist)
   if (measureTextEl) {
@@ -1147,6 +1287,10 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
     measureTextEl.style.top = `${midY}px`
     measureTextEl.style.display = hidePill ? 'none' : 'block'
   }
+}
+
+const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
+  renderMeasureOverlay(e.latlng, e)
 }
 
 const saveEsri = (): void => {
@@ -1217,8 +1361,14 @@ const segmentRadialMenuPosition = ref({ x: 0, y: 0 })
 const segmentRadialMenuItems: RadialMenuItem[] = [
   { icon: 'mdi-vector-polyline', tooltip: 'Add waypoint' },
   { icon: 'mdi-transit-connection-variant', tooltip: 'Insert survey here' },
+  { icon: 'mdi-bookshelf', tooltip: 'Insert mission from library here' },
 ]
 const segmentSurveyInsertIndex = ref<number | null>(null)
+const pendingSegmentInsertIndex = ref<number | null>(null)
+// Non-null when simple-path mode was started from the context menu near the start endpoint.
+// While set, every click inserts at this index (typically `0`) so the path extends outward from
+// the start. Reset to null when leaving simple-path mode.
+const pendingSimplePathInsertIndex = ref<number | null>(null)
 
 const isCtrlDown = ref(false)
 const isShiftDown = ref(false)
@@ -1685,6 +1835,14 @@ const onSegmentRadialMenuSelect = (index: number): void => {
     dismissSegmentRadialMenu()
     toggleSurvey()
     return
+  } else if (index === 2) {
+    if (radialMenuSegmentIndex !== null) {
+      const segmentIndex = radialMenuSegmentIndex
+      openMissionLibrary()
+      pendingSegmentInsertIndex.value = segmentIndex
+    }
+    dismissSegmentRadialMenu()
+    return
   }
   dismissSegmentRadialMenu()
 }
@@ -1782,10 +1940,77 @@ const addWaypointFromClick = (latlng: L.LatLng): void => {
   updateWaypointMarkers()
 }
 
+// Returns `0` when the cursor is closer to the first waypoint (so the new item is inserted at
+// the start of the planning), or `null` to fall back to append-to-end behaviour.
+const getEndpointSplicePositionForLatLng = (latlng: L.LatLng): number | null => {
+  const wps = missionStore.currentPlanningWaypoints
+  if (wps.length < 2) return null
+  const first = L.latLng(wps[0].coordinates[0], wps[0].coordinates[1])
+  const last = L.latLng(wps[wps.length - 1].coordinates[0], wps[wps.length - 1].coordinates[1])
+  return latlng.distanceTo(first) < latlng.distanceTo(last) ? 0 : null
+}
+
+const getEndpointInsertIndexForLatLng = (latlng: L.LatLng): number | undefined => {
+  return getEndpointSplicePositionForLatLng(latlng) ?? undefined
+}
+
 const addWaypointFromContextMenu = (): void => {
   if (!currentCursorGeoCoordinates.value) return
   const ll = L.latLng(currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1])
-  addWaypointFromClick(ll)
+
+  // Honor segment-proximity insertion (split the path) when the cursor is on/near it.
+  if (missionStore.currentPlanningWaypoints.length >= 2) {
+    const latlngs = missionStore.currentPlanningWaypoints.map((w) => L.latLng(w.coordinates[0], w.coordinates[1]))
+    const { segmentIndex, distanceInPixels } = getClosestMissionPathSegmentInfo(latlngs, ll)
+    if (segmentIndex >= 0 && distanceInPixels <= nearMissionPathTolerance) {
+      insertWaypointAtSegmentMidpoint(segmentIndex)
+      return
+    }
+  }
+
+  const insertIndex = getEndpointInsertIndexForLatLng(ll)
+  addWaypoint(
+    [ll.lat, ll.lng],
+    currentWaypointAltitude.value,
+    currentWaypointAltitudeRefType.value,
+    undefined,
+    insertIndex
+  )
+  updateWaypointMarkers()
+}
+
+const getContextMenuEndpointSplicePosition = (): number | null => {
+  if (!currentCursorGeoCoordinates.value) return null
+  const ll = L.latLng(currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1])
+  return getEndpointSplicePositionForLatLng(ll)
+}
+
+const addSimplePathFromContextMenu = (): void => {
+  const insertIndex = getContextMenuEndpointSplicePosition()
+  if (insertIndex !== null) pendingSimplePathInsertIndex.value = insertIndex
+  toggleSimplePath()
+  // Draw the live measure line right away using the live cursor position (not the menu-open
+  // coords), so it has visible length even when the menu was opened next to the anchor waypoint.
+  if (isCreatingSimplePath.value && planningMap.value) {
+    const map = planningMap.value
+    const rect = map.getContainer().getBoundingClientRect()
+    const containerPt = L.point(cursorLivePositionX.value - rect.left, cursorLivePositionY.value - rect.top)
+    const ll = map.containerPointToLatLng(containerPt)
+    nextTick(() => renderMeasureOverlay(ll, null))
+  }
+}
+
+const addSurveyFromContextMenu = (): void => {
+  const insertIndex = getContextMenuEndpointSplicePosition()
+  if (insertIndex !== null) segmentSurveyInsertIndex.value = insertIndex
+  toggleSurvey()
+}
+
+const addMissionFromLibraryContextMenu = (): void => {
+  // `openMissionLibrary` clears any prior intent, so set the segment-insert sentinel afterwards.
+  openMissionLibrary()
+  const insertIndex = getContextMenuEndpointSplicePosition()
+  if (insertIndex === 0) pendingSegmentInsertIndex.value = -1
 }
 
 const makeAreaMarker = (at: L.LatLng, text: string): L.Marker => {
@@ -1981,6 +2206,7 @@ const setHomePosition = async (): Promise<void> => {
 const toggleSimplePath = (): void => {
   if (isCreatingSimplePath.value) {
     isCreatingSimplePath.value = false
+    pendingSimplePathInsertIndex.value = null
     return
   }
   isCreatingSimplePath.value = true
@@ -1989,6 +2215,7 @@ const toggleSimplePath = (): void => {
 const toggleSurvey = (): void => {
   if (isCreatingSimplePath.value) {
     isCreatingSimplePath.value = false
+    pendingSimplePathInsertIndex.value = null
   }
   if (isCreatingSurvey.value) {
     isCreatingSurvey.value = false
@@ -2315,6 +2542,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
     }
     if (isCreatingSimplePath.value) {
       isCreatingSimplePath.value = false
+      pendingSimplePathInsertIndex.value = null
     }
   }
   if (event.key === 'Enter' && isCreatingSurvey.value) {
@@ -2535,7 +2763,8 @@ const addWaypoint = (
   coordinates: WaypointCoordinates,
   altitude: number,
   altitudeReferenceType: AltitudeReferenceType,
-  commands?: MissionCommand[]
+  commands?: MissionCommand[],
+  insertIndex?: number
 ): void => {
   if (planningMap.value === undefined) throw new Error('Map not yet defined')
 
@@ -2550,7 +2779,11 @@ const addWaypoint = (
     commands: cloneCommands(commands),
   }
 
-  missionStore.currentPlanningWaypoints.push(waypoint)
+  if (insertIndex !== undefined) {
+    missionStore.currentPlanningWaypoints.splice(insertIndex, 0, waypoint)
+  } else {
+    missionStore.currentPlanningWaypoints.push(waypoint)
+  }
 
   const newMarker = L.marker(coordinates, { draggable: true })
 
@@ -2578,7 +2811,7 @@ const addWaypoint = (
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const iconDimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, isEndpointWaypoint(waypointId)),
     className: 'waypoint-marker-icon',
     iconSize: iconDimensions.iconSize,
     iconAnchor: iconDimensions.iconAnchor,
@@ -2641,29 +2874,6 @@ const handleShouldUpdateWaypoints = (): void => {
   updateWaypointMarkers()
 }
 
-const saveMissionToFile = async (): Promise<void> => {
-  // Commit the local cruise speed back to the store so the chosen value persists across sessions.
-  missionStore.defaultCruiseSpeed = localCruiseSpeed.value
-
-  const cockpitMissionFile: CockpitMission = {
-    version: 0,
-    settings: {
-      mapCenter: mapCenter.value,
-      zoom: zoom.value,
-      currentWaypointAltitude: currentWaypointAltitude.value,
-      currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
-      defaultCruiseSpeed: localCruiseSpeed.value,
-    },
-    waypoints: missionStore.currentPlanningWaypoints,
-    surveys: [...missionStore.currentPlanningSurveys],
-  }
-  const blob = new Blob([JSON.stringify(cockpitMissionFile, null, 2)], {
-    type: 'application/json',
-  })
-  const date = format(new Date(), 'LLL_dd_yyyy_HH_mm_ss')
-  saveAs(blob, `cockpit_mission_plan_${date}.cmp`)
-}
-
 const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
   waypoints
     .map((wp) => ({
@@ -2679,42 +2889,894 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
   updateWaypointMarkers()
 }
 
-const loadMissionFromFile = (): void => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.cmp,application/json'
-  input.onchange = (event: Event): void => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (e: ProgressEvent<FileReader>): void => {
-      try {
-        const contents = e.target?.result
-        if (typeof contents !== 'string') {
-          showDialog({ variant: 'error', message: 'File does not appear to be in the correct format.', timer: 3000 })
-          return
-        }
-        const maybeMission = JSON.parse(contents)
-        if (!instanceOfCockpitMission(maybeMission)) {
-          showDialog({ variant: 'error', message: 'Invalid mission file.', timer: 3000 })
-          return
-        }
-        mapCenter.value = maybeMission['settings']['mapCenter']
-        zoom.value = maybeMission['settings']['zoom']
-        currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
-        currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
-        missionStore.defaultCruiseSpeed = maybeMission['settings']['defaultCruiseSpeed']
-        drawMissionOnTheMap(maybeMission['waypoints'])
-        if (maybeMission['surveys']?.length) {
-          missionStore.currentPlanningSurveys.push(...maybeMission['surveys'])
-        }
-      } catch (error) {
-        showDialog({ variant: 'error', message: `Failed to load mission file: ${error}`, timer: 5000 })
-      }
-    }
-    reader.readAsText(file)
+const currentMissionSnapshot = computed<CockpitMission>(() => ({
+  version: 0,
+  settings: {
+    mapCenter: mapCenter.value,
+    zoom: zoom.value,
+    currentWaypointAltitude: currentWaypointAltitude.value,
+    currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
+    // Use the local (in-input) cruise speed so library saves capture pending changes the user
+    // typed but hasn't committed back to the store yet (e.g. by uploading the mission).
+    defaultCruiseSpeed: localCruiseSpeed.value,
+  },
+  waypoints: JSON.parse(JSON.stringify(missionStore.currentPlanningWaypoints)),
+  surveys: JSON.parse(JSON.stringify(missionStore.currentPlanningSurveys)),
+}))
+
+const currentMissionEstimatesSnapshot = computed<MissionEstimatesSnapshot>(() => ({
+  pathLength: missionEstimates.totalMissionLength.value,
+  duration: missionEstimates.totalMissionDuration.value,
+  energy: missionEstimates.totalMissionEnergy.value,
+  totalSurveyCoverage: missionEstimates.totalSurveyCoverage.value,
+  missionCoverageArea: missionEstimates.missionCoverageAreaSquareMeters.value,
+}))
+
+// When true, the next mount of `MissionLibraryModal` opens its "Save current mission" dialog.
+const missionLibraryOpenSaveOnMount = ref(false)
+
+const canSaveCurrentMissionToLibrary = computed(
+  () => missionStore.currentPlanningWaypoints.length > 0 || missionStore.currentPlanningSurveys.length > 0
+)
+
+const openMissionLibrary = (): void => {
+  // Clear any pending intent so a toolbar-triggered open always uses the standard placement flow.
+  pendingSegmentInsertIndex.value = null
+  missionLibraryOpenSaveOnMount.value = false
+  interfaceStore.missionLibraryVisibility = true
+}
+
+const openMissionLibraryWithSaveDialog = (): void => {
+  if (!canSaveCurrentMissionToLibrary.value) return
+  pendingSegmentInsertIndex.value = null
+  missionLibraryOpenSaveOnMount.value = true
+  interfaceStore.missionLibraryVisibility = true
+}
+
+// Carries the segment-insert intent through the placement dialog so that either outcome
+// ("Keep original" or "Reposition") still splices the mission into the requested segment.
+const placementInsertSegmentIndex = ref<number | null>(null)
+
+const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
+  if (mission.vehicleType && !vehicleStore.isVehicleOnline) {
+    missionStore.plannedVehicleType = mission.vehicleType
   }
-  input.click()
+
+  // Move the pending intent into a placement-scoped tracker so it survives the dialog/flow.
+  placementInsertSegmentIndex.value = pendingSegmentInsertIndex.value
+  pendingSegmentInsertIndex.value = null
+  const isInserting = placementInsertSegmentIndex.value !== null
+
+  showDialog({
+    variant: 'info',
+    title: isInserting ? 'Insert mission' : 'Load mission',
+    message: `Where should "${mission.name}" be placed?`,
+    persistent: false,
+    maxWidth: 620,
+    actions: [
+      {
+        text: 'Cancel',
+        color: 'white',
+        action: () => {
+          placementInsertSegmentIndex.value = null
+          closeDialog()
+        },
+      },
+      {
+        text: 'Reposition on map',
+        color: 'white',
+        action: () => {
+          closeDialog()
+          startFreePlacement(mission)
+        },
+      },
+      {
+        text: 'Keep original location',
+        color: 'white',
+        action: () => {
+          closeDialog()
+          finalizeMissionPlacement(mission)
+        },
+      },
+    ],
+  })
+}
+
+// Routes a placed library mission to the right outcome: segment insert when triggered from a
+// segment radial menu, append when the planner already has content, or fresh load when empty.
+const finalizeMissionPlacement = (mission: CockpitMission): void => {
+  const insertIndex = placementInsertSegmentIndex.value
+  placementInsertSegmentIndex.value = null
+  if (insertIndex !== null) {
+    insertMissionIntoSegment(mission, insertIndex)
+    return
+  }
+
+  const hasExistingPlanning =
+    missionStore.currentPlanningWaypoints.length > 0 || missionStore.currentPlanningSurveys.length > 0
+  if (hasExistingPlanning) {
+    appendMissionToPlanning(mission)
+  } else {
+    loadDraftMission(mission).catch((err) => {
+      openSnackbar({ variant: 'error', message: `Failed to load mission: ${err}`, duration: 3500 })
+    })
+  }
+}
+
+// Reuses the same fresh id for matching per-survey waypoint copies — survey edit mode relies
+// on those ids matching the top-level waypoints, otherwise an orphan survey path is rendered.
+// (A plain record is used because `Map` is shadowed by Leaflet's `L.Map` import.)
+const cloneMissionForPlanning = (
+  mission: CockpitMission
+): {
+  /**
+   * Top-level waypoints with fresh ids.
+   */
+  newWaypoints: Waypoint[]
+  /**
+   * Surveys with fresh ids; their internal waypoints reuse the top-level fresh ids.
+   */
+  newSurveys: Survey[]
+} => {
+  const oldToNewWaypointId: Record<string, string> = {}
+  const newWaypoints: Waypoint[] = (mission.waypoints ?? []).map((wp) => {
+    const newId = uuid()
+    oldToNewWaypointId[wp.id] = newId
+    return {
+      id: newId,
+      coordinates: [wp.coordinates[0], wp.coordinates[1]],
+      altitude: wp.altitude,
+      altitudeReferenceType: wp.altitudeReferenceType,
+      commands: cloneCommands(wp.commands),
+    }
+  })
+  const newSurveys: Survey[] = (mission.surveys ?? []).map((survey) => ({
+    ...survey,
+    id: uuid(),
+    polygonCoordinates: survey.polygonCoordinates.map((c) => [c[0], c[1]] as WaypointCoordinates),
+    waypoints: survey.waypoints.map((wp) => ({
+      ...wp,
+      id: oldToNewWaypointId[wp.id] ?? uuid(),
+      coordinates: [wp.coordinates[0], wp.coordinates[1]],
+      commands: cloneCommands(wp.commands),
+    })),
+  }))
+  return { newWaypoints, newSurveys }
+}
+
+const appendMissionToPlanning = (mission: CockpitMission): void => {
+  if (!mission.waypoints?.length && !mission.surveys?.length) {
+    openSnackbar({ variant: 'error', message: 'Mission has nothing to add.', duration: 2500 })
+    return
+  }
+
+  missionStore.pushUndoSnapshot()
+
+  const { newWaypoints, newSurveys } = cloneMissionForPlanning(mission)
+
+  if (newWaypoints.length) {
+    missionStore.currentPlanningWaypoints.push(...newWaypoints)
+    newWaypoints.forEach((wp) => addWaypointMarker(wp))
+    updateWaypointMarkers()
+  }
+  newSurveys.forEach((survey) => missionStore.currentPlanningSurveys.push(survey))
+
+  openSnackbar({ variant: 'success', message: 'Mission added to current planning.', duration: 2000 })
+}
+
+// Splices the mission at `segmentIndex + 1` so it sits between waypoint `segmentIndex` and
+// waypoint `segmentIndex + 1`. Use `-1` to insert at the very start of the planning.
+// Appending after the last waypoint uses appendMissionToPlanning, so the upper bound is exclusive.
+const insertMissionIntoSegment = (mission: CockpitMission, segmentIndex: number): void => {
+  const planning = missionStore.currentPlanningWaypoints
+  if (segmentIndex < -1 || segmentIndex >= planning.length - 1) {
+    openSnackbar({ variant: 'error', message: 'Cannot insert mission: invalid segment.', duration: 2500 })
+    return
+  }
+  if (!mission.waypoints?.length) {
+    openSnackbar({ variant: 'error', message: 'Mission has no waypoints to insert.', duration: 2500 })
+    return
+  }
+
+  missionStore.pushUndoSnapshot()
+
+  const { newWaypoints, newSurveys } = cloneMissionForPlanning(mission)
+
+  const spliceIndex = segmentIndex + 1
+  missionStore.currentPlanningWaypoints.splice(spliceIndex, 0, ...newWaypoints)
+  newWaypoints.forEach((wp) => addWaypointMarker(wp))
+  updateWaypointMarkers()
+
+  newSurveys.forEach((survey) => missionStore.currentPlanningSurveys.push(survey))
+
+  const message =
+    segmentIndex === -1
+      ? 'Mission inserted at the start of the planning.'
+      : `Mission inserted between waypoints ${segmentIndex + 1} and ${segmentIndex + 2}.`
+  openSnackbar({ variant: 'success', message, duration: 2500 })
+}
+
+// --- Mission free placement (drag/scale/rotate before committing) ---
+// Footprint (in px) of the vertical placement-controls strip; used to position it near the
+// mission preview without overlapping it.
+const PLACEMENT = {
+  scaleMinPercent: 10,
+  scaleMaxPercent: 2000,
+  rotationMinDeg: -180,
+  rotationMaxDeg: 180,
+  rotationHandleOffsetPx: 36,
+  boundsPaddingRatio: 0.08,
+  toolbarAnchorLeftPx: 100,
+  toolbarAnchorRightPx: 60,
+  toolbarAnchorTopPx: 10,
+  toolbarAnchorBottomPx: 215,
+  toolbarGapPx: 20,
+  toolbarMarginPx: 8,
+} as const
+const METERS_PER_DEGREE_LAT = 111320
+
+type LocalMetersBounds = {
+  /**
+   * Minimum east offset (meters).
+   */
+  minE: number
+  /**
+   * Maximum east offset (meters).
+   */
+  maxE: number
+  /**
+   * Minimum north offset (meters).
+   */
+  minN: number
+  /**
+   * Maximum north offset (meters).
+   */
+  maxN: number
+}
+
+type LocalMetersPoint = {
+  /**
+   * East offset in meters from the local-frame origin.
+   */
+  east: number
+  /**
+   * North offset in meters from the local-frame origin.
+   */
+  north: number
+}
+
+const isPlacingMission = ref(false)
+const placementMission = ref<CockpitMission | null>(null)
+const placementAnchorOriginal = ref<L.LatLng>(L.latLng(0, 0))
+const placementAnchorCurrent = ref<L.LatLng>(L.latLng(0, 0))
+const placementScaleXPercent = ref(100)
+const placementScaleYPercent = ref(100)
+const placementRotationDeg = ref(0)
+// Captured once at the start of placement so the preview box rotates and scales with the
+// mission instead of staying axis-aligned (in meters around `placementAnchorOriginal`).
+const placementOriginalLocalBounds = ref<LocalMetersBounds | null>(null)
+const placementPreviewLayers = shallowRef<L.Layer[]>([])
+const placementDragPolygon = shallowRef<L.Polygon | null>(null)
+const placementConfirmButtonStyle = ref<Record<string, string>>({ display: 'none' })
+let placementDragStartLatLng: L.LatLng | null = null
+
+const safeScalePercent = (raw: number): number => (Number.isFinite(raw) && raw > 0 ? raw / 100 : 1)
+const safeRotationRad = (raw: number): number => ((Number.isFinite(raw) ? raw : 0) * Math.PI) / 180
+
+const clampPlacementScaleX = (): void => {
+  const raw = Number(placementScaleXPercent.value)
+  const clamped = Number.isFinite(raw)
+    ? Math.max(PLACEMENT.scaleMinPercent, Math.min(PLACEMENT.scaleMaxPercent, raw))
+    : 100
+  placementScaleXPercent.value = clamped
+}
+const clampPlacementScaleY = (): void => {
+  const raw = Number(placementScaleYPercent.value)
+  const clamped = Number.isFinite(raw)
+    ? Math.max(PLACEMENT.scaleMinPercent, Math.min(PLACEMENT.scaleMaxPercent, raw))
+    : 100
+  placementScaleYPercent.value = clamped
+}
+const clampPlacementRotation = (): void => {
+  const raw = Number(placementRotationDeg.value)
+  const clamped = Number.isFinite(raw) ? Math.max(PLACEMENT.rotationMinDeg, Math.min(PLACEMENT.rotationMaxDeg, raw)) : 0
+  placementRotationDeg.value = clamped
+}
+
+const transformLocalMeters = (east: number, north: number): WaypointCoordinates => {
+  const target = placementAnchorCurrent.value
+  const metersPerDegLngTarget = METERS_PER_DEGREE_LAT * Math.cos((target.lat * Math.PI) / 180)
+
+  const scaleX = safeScalePercent(placementScaleXPercent.value)
+  const scaleY = safeScalePercent(placementScaleYPercent.value)
+  const theta = safeRotationRad(placementRotationDeg.value)
+  const cos = Math.cos(theta)
+  const sin = Math.sin(theta)
+
+  const sx = east * scaleX
+  const sy = north * scaleY
+  // Clockwise rotation on screen (north = +y on map).
+  const rotatedEast = sx * cos + sy * sin
+  const rotatedNorth = -sx * sin + sy * cos
+
+  return [target.lat + rotatedNorth / METERS_PER_DEGREE_LAT, target.lng + rotatedEast / metersPerDegLngTarget]
+}
+
+const projectCoordToOriginalLocal = (coord: WaypointCoordinates): LocalMetersPoint => {
+  const origin = placementAnchorOriginal.value
+  const metersPerDegLngOrigin = METERS_PER_DEGREE_LAT * Math.cos((origin.lat * Math.PI) / 180)
+  return {
+    east: (coord[1] - origin.lng) * metersPerDegLngOrigin,
+    north: (coord[0] - origin.lat) * METERS_PER_DEGREE_LAT,
+  }
+}
+
+const transformPlacementCoord = (coord: WaypointCoordinates): WaypointCoordinates => {
+  const local = projectCoordToOriginalLocal(coord)
+  return transformLocalMeters(local.east, local.north)
+}
+
+const computePlacementOriginalLocalBounds = (): LocalMetersBounds | null => {
+  if (!placementMission.value) return null
+  const waypointCoords = placementMission.value.waypoints.map((w) => w.coordinates)
+  const surveyCoords = (placementMission.value.surveys ?? []).flatMap((s) => s.polygonCoordinates)
+  if (waypointCoords.length === 0 && surveyCoords.length === 0) return null
+  let minE = Infinity
+  let maxE = -Infinity
+  let minN = Infinity
+  let maxN = -Infinity
+  const accumulate = (c: WaypointCoordinates): void => {
+    const { east, north } = projectCoordToOriginalLocal(c)
+    if (east < minE) minE = east
+    if (east > maxE) maxE = east
+    if (north < minN) minN = north
+    if (north > maxN) maxN = north
+  }
+  for (const c of waypointCoords) accumulate(c)
+  for (const c of surveyCoords) accumulate(c)
+  return { minE, maxE, minN, maxN }
+}
+
+// Reuses the bounding polygon's lat/lng bounds (already kept in sync with the transform) to
+// avoid re-projecting every coordinate on each map move/zoom.
+const placementMissionBounds = (): L.LatLngBounds | null => {
+  const polygonBounds = placementDragPolygon.value?.getBounds()
+  if (polygonBounds) return polygonBounds
+  if (!placementMission.value) return null
+  const wpCoords = placementMission.value.waypoints.map((w) => transformPlacementCoord(w.coordinates))
+  const surveyCoords =
+    placementMission.value.surveys?.flatMap((s) => s.polygonCoordinates.map(transformPlacementCoord)) ?? []
+  const allCoords = [...wpCoords, ...surveyCoords]
+  if (allCoords.length === 0) return null
+  return L.latLngBounds(allCoords.map((c) => L.latLng(c[0], c[1])))
+}
+
+const updatePlacementConfirmButtonPosition = (): void => {
+  if (!planningMap.value || !isPlacingMission.value) {
+    placementConfirmButtonStyle.value = { display: 'none' }
+    return
+  }
+  const bounds = placementMissionBounds()
+  if (!bounds) {
+    placementConfirmButtonStyle.value = { display: 'none' }
+    return
+  }
+  const map = planningMap.value
+  const container = map.getContainer()
+  const cw = container.clientWidth
+  const ch = container.clientHeight
+
+  const ne = map.latLngToContainerPoint(bounds.getNorthEast())
+  const sw = map.latLngToContainerPoint(bounds.getSouthWest())
+  const ptsBounds = screenBounds([
+    { x: ne.x, y: ne.y },
+    { x: sw.x, y: sw.y },
+  ])
+
+  const visualW = PLACEMENT.toolbarAnchorLeftPx + PLACEMENT.toolbarAnchorRightPx
+  const visualH = PLACEMENT.toolbarAnchorTopPx + PLACEMENT.toolbarAnchorBottomPx
+
+  const cx = (ptsBounds.minX + ptsBounds.maxX) / 2
+  const cy = (ptsBounds.minY + ptsBounds.maxY) / 2
+
+  const pos = pickBestPosition(
+    [
+      { x: ptsBounds.maxX + PLACEMENT.toolbarGapPx, y: cy - visualH / 2 },
+      { x: ptsBounds.minX - PLACEMENT.toolbarGapPx - visualW, y: cy - visualH / 2 },
+      { x: cx - visualW / 2, y: ptsBounds.maxY + PLACEMENT.toolbarGapPx },
+      { x: cx - visualW / 2, y: ptsBounds.minY - PLACEMENT.toolbarGapPx - visualH },
+    ],
+    visualW,
+    visualH,
+    ptsBounds,
+    cw,
+    ch,
+    PLACEMENT.toolbarMarginPx
+  )
+
+  placementConfirmButtonStyle.value = {
+    left: `${pos.x + PLACEMENT.toolbarAnchorLeftPx}px`,
+    top: `${pos.y + PLACEMENT.toolbarAnchorTopPx}px`,
+  }
+}
+
+const onPlacementMouseDown = (event: L.LeafletMouseEvent): void => {
+  if (!isPlacingMission.value) return
+  placementDragStartLatLng = event.latlng
+  planningMap.value?.dragging.disable()
+  planningMap.value?.on('mousemove', onPlacementMouseMove)
+  planningMap.value?.on('mouseup', onPlacementMouseUp)
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const onPlacementMouseMove = (event: L.LeafletMouseEvent): void => {
+  if (!placementDragStartLatLng) return
+  const dLat = event.latlng.lat - placementDragStartLatLng.lat
+  const dLng = event.latlng.lng - placementDragStartLatLng.lng
+  placementAnchorCurrent.value = L.latLng(
+    placementAnchorCurrent.value.lat + dLat,
+    placementAnchorCurrent.value.lng + dLng
+  )
+  placementDragStartLatLng = event.latlng
+  schedulePlacementPreviewRebuild()
+  L.DomEvent.stopPropagation(event.originalEvent)
+}
+
+const onPlacementMouseUp = (event: L.LeafletMouseEvent): void => {
+  placementDragStartLatLng = null
+  planningMap.value?.dragging.enable()
+  planningMap.value?.off('mousemove', onPlacementMouseMove)
+  planningMap.value?.off('mouseup', onPlacementMouseUp)
+  ignoreNextClick = true
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+type CancelFreePlacementOptions = {
+  /**
+   * Preserve the pending segment-insert intent across the cancel.
+   */
+  keepInsertIntent?: boolean
+}
+
+type ScaleDragInitial = {
+  /**
+   * Corner the user grabbed, in the original mission local frame (east/north meters).
+   */
+  cornerLocal: LocalMetersPoint
+  /**
+   * Scale-X percentage at the moment the drag started.
+   */
+  initialScaleX: number
+  /**
+   * Scale-Y percentage at the moment the drag started.
+   */
+  initialScaleY: number
+}
+let scaleDragInitial: ScaleDragInitial | null = null
+
+type RotationDragInitial = {
+  /**
+   * Rotation (degrees) at the moment the drag started.
+   */
+  initialRotation: number
+  /**
+   * Mouse angle (radians, clockwise from screen-north) at the moment the drag started.
+   */
+  initialAngleRad: number
+}
+let rotationDragInitial: RotationDragInitial | null = null
+
+// Takes a vector in the rotated (current) frame back into the original local frame, where the
+// captured corner positions live.
+const unrotateToOriginalLocal = (eastRot: number, northRot: number): LocalMetersPoint => {
+  const theta = safeRotationRad(placementRotationDeg.value)
+  const cos = Math.cos(theta)
+  const sin = Math.sin(theta)
+  return { east: eastRot * cos - northRot * sin, north: eastRot * sin + northRot * cos }
+}
+
+const onScaleHandleMouseDown = (event: L.LeafletMouseEvent, cornerLocal: LocalMetersPoint): void => {
+  if (!isPlacingMission.value || !planningMap.value) return
+  scaleDragInitial = {
+    cornerLocal: { ...cornerLocal },
+    initialScaleX: placementScaleXPercent.value || 100,
+    initialScaleY: placementScaleYPercent.value || 100,
+  }
+  planningMap.value.dragging.disable()
+  planningMap.value.on('mousemove', onScaleHandleMouseMove)
+  planningMap.value.on('mouseup', onScaleHandleMouseUp)
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const onScaleHandleMouseMove = (event: L.LeafletMouseEvent): void => {
+  if (!scaleDragInitial || !planningMap.value) return
+  const target = placementAnchorCurrent.value
+  const metersPerDegLngTarget = METERS_PER_DEGREE_LAT * Math.cos((target.lat * Math.PI) / 180)
+
+  // Mouse position in the rotated current frame (meters relative to the current anchor).
+  const mouseEastRot = (event.latlng.lng - target.lng) * metersPerDegLngTarget
+  const mouseNorthRot = (event.latlng.lat - target.lat) * METERS_PER_DEGREE_LAT
+
+  // Express the mouse in the original mission local frame so it lines up with the captured corner.
+  const mouseLocal = unrotateToOriginalLocal(mouseEastRot, mouseNorthRot)
+  const { cornerLocal, initialScaleX, initialScaleY } = scaleDragInitial
+  const isShift = (event.originalEvent as MouseEvent).shiftKey
+
+  if (isShift) {
+    // Proportional: project the mouse onto the line from the centroid through the captured corner;
+    // the projection length divided by the corner length gives the uniform scale factor.
+    const cornerLenSq = cornerLocal.east * cornerLocal.east + cornerLocal.north * cornerLocal.north
+    if (cornerLenSq < 1e-9) return
+    const projection = (mouseLocal.east * cornerLocal.east + mouseLocal.north * cornerLocal.north) / cornerLenSq
+    const newScale = Math.max(
+      PLACEMENT.scaleMinPercent,
+      Math.min(PLACEMENT.scaleMaxPercent, Math.round(projection * 100))
+    )
+    placementScaleXPercent.value = newScale
+    placementScaleYPercent.value = newScale
+  } else {
+    if (Math.abs(cornerLocal.east) > 1e-6) {
+      const newScaleX = (mouseLocal.east / cornerLocal.east) * 100
+      placementScaleXPercent.value = Math.max(
+        PLACEMENT.scaleMinPercent,
+        Math.min(PLACEMENT.scaleMaxPercent, Math.round(newScaleX))
+      )
+    } else {
+      placementScaleXPercent.value = initialScaleX
+    }
+    if (Math.abs(cornerLocal.north) > 1e-6) {
+      const newScaleY = (mouseLocal.north / cornerLocal.north) * 100
+      placementScaleYPercent.value = Math.max(
+        PLACEMENT.scaleMinPercent,
+        Math.min(PLACEMENT.scaleMaxPercent, Math.round(newScaleY))
+      )
+    } else {
+      placementScaleYPercent.value = initialScaleY
+    }
+  }
+  L.DomEvent.stopPropagation(event.originalEvent)
+}
+
+const onScaleHandleMouseUp = (event: L.LeafletMouseEvent): void => {
+  scaleDragInitial = null
+  planningMap.value?.dragging.enable()
+  planningMap.value?.off('mousemove', onScaleHandleMouseMove)
+  planningMap.value?.off('mouseup', onScaleHandleMouseUp)
+  ignoreNextClick = true
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const onRotationHandleMouseDown = (event: L.LeafletMouseEvent): void => {
+  if (!isPlacingMission.value || !planningMap.value) return
+  const map = planningMap.value
+  const anchorPt = map.latLngToContainerPoint(placementAnchorCurrent.value)
+  const mousePt = map.latLngToContainerPoint(event.latlng)
+  const dx = mousePt.x - anchorPt.x
+  const dy = mousePt.y - anchorPt.y
+  // Angle clockwise from screen-north (negative y direction).
+  const initialAngleRad = Math.atan2(dx, -dy)
+  rotationDragInitial = { initialRotation: placementRotationDeg.value || 0, initialAngleRad }
+  map.dragging.disable()
+  map.on('mousemove', onRotationHandleMouseMove)
+  map.on('mouseup', onRotationHandleMouseUp)
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const onRotationHandleMouseMove = (event: L.LeafletMouseEvent): void => {
+  if (!rotationDragInitial || !planningMap.value) return
+  const map = planningMap.value
+  const anchorPt = map.latLngToContainerPoint(placementAnchorCurrent.value)
+  const mousePt = map.latLngToContainerPoint(event.latlng)
+  const dx = mousePt.x - anchorPt.x
+  const dy = mousePt.y - anchorPt.y
+  const currentAngleRad = Math.atan2(dx, -dy)
+  const deltaDeg = ((currentAngleRad - rotationDragInitial.initialAngleRad) * 180) / Math.PI
+  let newRotation = rotationDragInitial.initialRotation + deltaDeg
+  while (newRotation > 180) newRotation -= 360
+  while (newRotation <= -180) newRotation += 360
+  placementRotationDeg.value = Math.round(newRotation)
+  L.DomEvent.stopPropagation(event.originalEvent)
+}
+
+const onRotationHandleMouseUp = (event: L.LeafletMouseEvent): void => {
+  rotationDragInitial = null
+  planningMap.value?.dragging.enable()
+  planningMap.value?.off('mousemove', onRotationHandleMouseMove)
+  planningMap.value?.off('mouseup', onRotationHandleMouseUp)
+  ignoreNextClick = true
+  L.DomEvent.stopPropagation(event.originalEvent)
+  L.DomEvent.preventDefault(event.originalEvent)
+}
+
+const clearPlacementLayers = (): void => {
+  placementPreviewLayers.value.forEach((l) => planningMap.value?.removeLayer(l))
+  placementPreviewLayers.value = []
+  if (placementDragPolygon.value) {
+    placementDragPolygon.value.off('mousedown', onPlacementMouseDown)
+    planningMap.value?.removeLayer(placementDragPolygon.value)
+    placementDragPolygon.value = null
+  }
+}
+
+// Coalesces rapid placement updates so the preview rebuilds at most once per animation frame.
+let placementRebuildRafHandle: number | null = null
+const schedulePlacementPreviewRebuild = (): void => {
+  if (placementRebuildRafHandle !== null) return
+  placementRebuildRafHandle = requestAnimationFrame(() => {
+    placementRebuildRafHandle = null
+    rebuildPlacementPreview()
+  })
+}
+
+const rebuildPlacementPreview = (): void => {
+  if (!planningMap.value || !placementMission.value) return
+  clearPlacementLayers()
+
+  const map = planningMap.value
+  const wpCoords = placementMission.value.waypoints.map((w) => transformPlacementCoord(w.coordinates))
+
+  placementMission.value.surveys?.forEach((survey) => {
+    if (!survey.polygonCoordinates?.length) return
+    const polygon = L.polygon(survey.polygonCoordinates.map(transformPlacementCoord), {
+      color: '#FFD54F',
+      fillColor: '#FFD54F',
+      fillOpacity: 0.18,
+      weight: 2,
+      dashArray: '6 4',
+      interactive: false,
+    }).addTo(map)
+    placementPreviewLayers.value.push(polygon)
+
+    survey.waypoints.forEach((wp) => {
+      const surveyWpCoord = transformPlacementCoord(wp.coordinates)
+      const marker = L.circleMarker(surveyWpCoord, {
+        radius: 3,
+        color: '#000000',
+        weight: 1,
+        fillColor: '#FFFFFF',
+        fillOpacity: 0.85,
+        interactive: false,
+      }).addTo(map)
+      placementPreviewLayers.value.push(marker)
+    })
+  })
+
+  if (wpCoords.length > 1) {
+    const polyline = L.polyline(wpCoords, {
+      color: '#FFD54F',
+      weight: 3,
+      opacity: 0.9,
+      dashArray: '8 6',
+      interactive: false,
+    }).addTo(map)
+    placementPreviewLayers.value.push(polyline)
+  }
+
+  wpCoords.forEach((coord, index) => {
+    const isFirst = index === 0
+    const isLast = index === wpCoords.length - 1
+    const fillColor = isFirst ? '#4CAF50' : isLast ? '#F44336' : '#FFFFFF'
+    const marker = L.circleMarker(coord, {
+      radius: 6,
+      color: '#000000',
+      weight: 1,
+      fillColor,
+      fillOpacity: 0.95,
+      interactive: false,
+    }).addTo(map)
+    placementPreviewLayers.value.push(marker)
+  })
+
+  const localBounds = placementOriginalLocalBounds.value
+  if (localBounds) {
+    const padE = (localBounds.maxE - localBounds.minE) * PLACEMENT.boundsPaddingRatio || 1
+    const padN = (localBounds.maxN - localBounds.minN) * PLACEMENT.boundsPaddingRatio || 1
+    const minE = localBounds.minE - padE
+    const maxE = localBounds.maxE + padE
+    const minN = localBounds.minN - padN
+    const maxN = localBounds.maxN + padN
+
+    // Corners in original local frame, ordered NW, NE, SE, SW.
+    const cornersLocal: (LocalMetersPoint & {
+      /**
+       * CSS cursor to apply to the scale handle drawn at this corner.
+       */
+      cursor: string
+    })[] = [
+      { east: minE, north: maxN, cursor: 'nwse-resize' },
+      { east: maxE, north: maxN, cursor: 'nesw-resize' },
+      { east: maxE, north: minN, cursor: 'nwse-resize' },
+      { east: minE, north: minN, cursor: 'nesw-resize' },
+    ]
+    const cornerLatLngs = cornersLocal.map((c) => L.latLng(transformLocalMeters(c.east, c.north)))
+
+    const polygon = L.polygon(cornerLatLngs, {
+      color: '#FFFFFF',
+      weight: 1,
+      opacity: 0.6,
+      fillOpacity: 0.04,
+      dashArray: '4 4',
+      interactive: true,
+      bubblingMouseEvents: false,
+    }).addTo(map)
+    polygon.on('mousedown', onPlacementMouseDown)
+    placementDragPolygon.value = polygon
+    placementPreviewLayers.value.push(polygon)
+    const polyEl = polygon.getElement() as SVGElement | null
+    if (polyEl) polyEl.style.cursor = 'grab'
+
+    cornersLocal.forEach((corner, idx) => {
+      const handle = L.marker(cornerLatLngs[idx], {
+        icon: L.divIcon({
+          html:
+            `<div style="width: 12px; height: 12px; background: transparent; border: 2px solid #ffffff; ` +
+            `box-shadow: 0 0 4px rgba(0,0,0,0.7); cursor: ${corner.cursor};"></div>`,
+          className: '',
+          iconSize: [12, 12],
+          iconAnchor: [6, 6],
+        }),
+        interactive: true,
+        bubblingMouseEvents: false,
+        keyboard: false,
+      }).addTo(map)
+      handle.on('mousedown', (event: L.LeafletMouseEvent) =>
+        onScaleHandleMouseDown(event, { east: corner.east, north: corner.north })
+      )
+      placementPreviewLayers.value.push(handle)
+    })
+
+    // Rotation handle: offset from the rotated top-edge centre along the mission's current "up"
+    // so it always sits perpendicular to the top edge.
+    const topCenterE = (minE + maxE) / 2
+    const topCenterLatLng = L.latLng(transformLocalMeters(topCenterE, maxN))
+    const topCenterPt = map.latLngToContainerPoint(topCenterLatLng)
+    const theta = safeRotationRad(placementRotationDeg.value)
+    // Local "north" (0, +1) becomes (sin θ, -cos θ) in screen space.
+    const dirX = Math.sin(theta)
+    const dirY = -Math.cos(theta)
+    const rotHandlePt = L.point(
+      topCenterPt.x + PLACEMENT.rotationHandleOffsetPx * dirX,
+      topCenterPt.y + PLACEMENT.rotationHandleOffsetPx * dirY
+    )
+    const rotHandleLatLng = map.containerPointToLatLng(rotHandlePt)
+
+    const stem = L.polyline([rotHandleLatLng, topCenterLatLng], {
+      color: '#FFFFFF',
+      weight: 2,
+      opacity: 0.7,
+      dashArray: '2 4',
+      interactive: false,
+    }).addTo(map)
+    placementPreviewLayers.value.push(stem)
+
+    const rotationHandle = L.marker(rotHandleLatLng, {
+      icon: L.divIcon({
+        html:
+          `<div style="width: 16px; height: 16px; background: transparent; border: 2px solid #ffffff; ` +
+          `border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.7); cursor: grab;"></div>`,
+        className: '',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      }),
+      interactive: true,
+      bubblingMouseEvents: false,
+      keyboard: false,
+    }).addTo(map)
+    rotationHandle.on('mousedown', onRotationHandleMouseDown)
+    placementPreviewLayers.value.push(rotationHandle)
+  }
+
+  updatePlacementConfirmButtonPosition()
+}
+
+const startFreePlacement = (mission: CockpitMission): void => {
+  if (!planningMap.value) return
+  cancelFreePlacement({ keepInsertIntent: true })
+  placementMission.value = JSON.parse(JSON.stringify(mission)) as CockpitMission
+
+  // Anchor the centroid to the current map center so the preview lands inside the viewport.
+  const centroid = computeMissionLocation(placementMission.value)
+  placementAnchorOriginal.value = L.latLng(centroid[0], centroid[1])
+  placementAnchorCurrent.value = planningMap.value.getCenter()
+  placementScaleXPercent.value = 100
+  placementScaleYPercent.value = 100
+  placementRotationDeg.value = 0
+  placementOriginalLocalBounds.value = computePlacementOriginalLocalBounds()
+
+  isPlacingMission.value = true
+  rebuildPlacementPreview()
+  openSnackbar({
+    variant: 'info',
+    message: 'Drag to reposition. Drag corners to scale (Shift = uniform), drag the top circle to rotate.',
+    duration: 4500,
+  })
+}
+
+const cancelFreePlacement = (options: CancelFreePlacementOptions = {}): void => {
+  clearPlacementLayers()
+  isPlacingMission.value = false
+  placementMission.value = null
+  placementAnchorOriginal.value = L.latLng(0, 0)
+  placementAnchorCurrent.value = L.latLng(0, 0)
+  placementScaleXPercent.value = 100
+  placementScaleYPercent.value = 100
+  placementRotationDeg.value = 0
+  placementOriginalLocalBounds.value = null
+  placementDragStartLatLng = null
+  scaleDragInitial = null
+  rotationDragInitial = null
+  if (placementRebuildRafHandle !== null) {
+    cancelAnimationFrame(placementRebuildRafHandle)
+    placementRebuildRafHandle = null
+  }
+  placementConfirmButtonStyle.value = { display: 'none' }
+  if (!options.keepInsertIntent) placementInsertSegmentIndex.value = null
+  planningMap.value?.dragging.enable()
+  planningMap.value?.off('mousemove', onPlacementMouseMove)
+  planningMap.value?.off('mouseup', onPlacementMouseUp)
+  planningMap.value?.off('mousemove', onScaleHandleMouseMove)
+  planningMap.value?.off('mouseup', onScaleHandleMouseUp)
+  planningMap.value?.off('mousemove', onRotationHandleMouseMove)
+  planningMap.value?.off('mouseup', onRotationHandleMouseUp)
+}
+
+watch([placementScaleXPercent, placementScaleYPercent, placementRotationDeg], () => {
+  if (isPlacingMission.value) schedulePlacementPreviewRebuild()
+})
+
+// Drop any pending segment-insert intent if the library is dismissed without loading anything,
+// so the next toolbar-triggered open uses the default placement flow.
+watch(
+  () => interfaceStore.isMissionLibraryVisible,
+  (visible, wasVisible) => {
+    if (wasVisible && !visible) {
+      nextTick(() => {
+        pendingSegmentInsertIndex.value = null
+      })
+    }
+  }
+)
+
+const resetPlacementTransform = (): void => {
+  placementScaleXPercent.value = 100
+  placementScaleYPercent.value = 100
+  placementRotationDeg.value = 0
+}
+
+const confirmFreePlacement = (): void => {
+  if (!placementMission.value) return
+  const scaleX = safeScalePercent(placementScaleXPercent.value)
+  const scaleY = safeScalePercent(placementScaleYPercent.value)
+  // Surveys store a single scan-line spacing/turnaround in meters; the geometric mean keeps
+  // the density close to the preview when the user picks non-uniform scale factors.
+  const surveyScalarFactor = Math.sqrt(scaleX * scaleY)
+  const rotRaw = placementRotationDeg.value
+  const rotationDeg = Number.isFinite(rotRaw) ? rotRaw : 0
+  const placedMission: CockpitMission = {
+    ...placementMission.value,
+    waypoints: placementMission.value.waypoints.map((wp) => ({
+      ...wp,
+      coordinates: transformPlacementCoord(wp.coordinates),
+    })),
+    surveys: placementMission.value.surveys?.map((survey) => ({
+      ...survey,
+      polygonCoordinates: survey.polygonCoordinates.map(transformPlacementCoord),
+      waypoints: survey.waypoints.map((wp) => ({
+        ...wp,
+        coordinates: transformPlacementCoord(wp.coordinates),
+      })),
+      distanceBetweenLines: survey.distanceBetweenLines * surveyScalarFactor,
+      turnaroundDistance: survey.turnaroundDistance * surveyScalarFactor,
+      surveyLinesAngle: (((survey.surveyLinesAngle + rotationDeg) % 360) + 360) % 360,
+    })),
+  }
+  cancelFreePlacement({ keepInsertIntent: true })
+  finalizeMissionPlacement(placedMission)
 }
 
 const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
@@ -3161,8 +4223,9 @@ const generateWaypointsFromSurvey = (): void => {
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
-const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
+const createWaypointMarkerHtml = (commandCount: number, isSelected = false, isEndpoint = false): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
+  const endpointClass = isEndpoint ? ' endpoint-marker' : ''
   const size = getMarkerSizeFromZoom(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
   const showSmallCommandCount = size !== 'md' && commandCount > 1
@@ -3170,11 +4233,17 @@ const createWaypointMarkerHtml = (commandCount: number, isSelected = false): str
 
   return `
     <div class="${markerSizeClass}">
-      <div class="${baseClass} waypoint-main-marker"></div>
+      <div class="${baseClass} waypoint-main-marker${endpointClass}"></div>
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
     </div>
   `
+}
+
+const isEndpointWaypoint = (waypointId: string): boolean => {
+  const wps = missionStore.currentPlanningWaypoints
+  if (wps.length === 0) return false
+  return waypointId === wps[0].id || waypointId === wps[wps.length - 1].id
 }
 
 const updateWaypointMarkers = (): void => {
@@ -3184,16 +4253,18 @@ const updateWaypointMarkers = (): void => {
   const currentZoom = zoom.value
   const markerSize = getMarkerSizeFromZoom(currentZoom)
 
-  missionStore.currentPlanningWaypoints.forEach((wp) => {
+  const wps = missionStore.currentPlanningWaypoints
+  wps.forEach((wp, idx) => {
     const marker = waypointMarkers.value[wp.id]
     if (marker) {
       // Update marker icon to show command count
       const isSelected = selectedWaypoint.value?.id === wp.id
+      const isEndpoint = idx === 0 || idx === wps.length - 1
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
       marker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(wp.commands.length, isSelected),
+          html: createWaypointMarkerHtml(wp.commands.length, isSelected, isEndpoint),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3488,7 +4559,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, isEndpointWaypoint(waypoint.id)),
     className: 'waypoint-marker-icon',
     iconSize: dimensions.iconSize,
     iconAnchor: dimensions.iconAnchor,
@@ -3536,7 +4607,7 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false),
+          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false, isEndpointWaypoint(oldWaypointId)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3552,7 +4623,7 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       newMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true),
+          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true, isEndpointWaypoint(newWaypointId)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3613,6 +4684,8 @@ onMounted(() => {
 })
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
+  // Swallow map clicks during placement; confirm/cancel happen via the dedicated overlay buttons.
+  if (isPlacingMission.value) return
   hideContextMenu()
 
   // The dedicated home-setting handler owns this click; bail so we don't also drop a survey vertex or waypoint here.
@@ -3626,7 +4699,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false, isEndpointWaypoint(oldWaypoint.id)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3701,7 +4774,17 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       !interfaceStore.configPanelVisible &&
       isCreatingSimplePath.value
     ) {
-      addWaypoint([e.latlng.lat, e.latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
+      const insertIndex = pendingSimplePathInsertIndex.value
+      addWaypoint(
+        [e.latlng.lat, e.latlng.lng],
+        currentWaypointAltitude.value,
+        currentWaypointAltitudeRefType.value,
+        undefined,
+        insertIndex ?? undefined
+      )
+      // Refresh so the previous start waypoint loses its endpoint visual and the live measure
+      // line anchors to the just-added waypoint (now at index 0).
+      updateWaypointMarkers()
     }
     clearLiveMeasure()
   }
@@ -3881,6 +4964,10 @@ onMounted(async () => {
   })
 
   planningMap.value.on('drag', updateConfirmButtonPosition)
+  planningMap.value.on('drag zoom move', updatePlacementConfirmButtonPosition)
+  planningMap.value.on('zoomend', () => {
+    if (isPlacingMission.value) rebuildPlacementPreview()
+  })
   planningMap.value.on('mousemove', handleMapMouseMove)
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
@@ -3947,6 +5034,8 @@ onUnmounted(() => {
     window.removeEventListener('mousemove', onWindowMouseMove)
   }
   planningMap.value?.off('mousemove', handleMapMouseMove)
+  planningMap.value?.off('drag zoom move', updatePlacementConfirmButtonPosition)
+  cancelFreePlacement()
   clearLiveMeasure()
 
   detachTileFallbacks.forEach((detach) => detach())
@@ -4189,6 +5278,7 @@ watch(
   (step) => {
     if (step > 1) {
       isCreatingSimplePath.value = false
+      pendingSimplePathInsertIndex.value = null
       isCreatingSurvey.value = false
       return
     }
@@ -4509,6 +5599,12 @@ watch(
   border-radius: 50%;
   border: 2px solid #ffffff99;
   background-color: #034103;
+}
+
+.endpoint-marker {
+  background-color: #ff9800 !important;
+  transform: scale(1.25);
+  transform-origin: center;
 }
 
 .command-count-indicator {
