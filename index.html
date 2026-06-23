@@ -57,7 +57,7 @@
             to { transform: rotate(360deg); }
         }
     </style>
-  <script type="module" crossorigin src="./assets/index-D67HuDtb.js"></script>
+  <script type="module" crossorigin src="./assets/index-CjSsoV5K.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-C_cKp31Q.css">
 <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
@@ -106,7 +106,7 @@
 
     <script>
         // Start console capture
-        const __indexUtils = import('./assets/index-utils-B-_zn4O6.js');
+        const __indexUtils = import('./assets/index-utils-DfdQswX2.js');
 
         let __appLoaded = false;
         const __fallbackTimeout = setTimeout(function() {
@@ -139,20 +139,19 @@
                 nonAppMain.appendChild(fallbackContent);
 
                 document.getElementById('backup-settings-btn').addEventListener('click', function() {
-                    utils.backupSettings().then(function(r) { if (!r.success) alert(r.message); });
+                    utils.backupSettings().then(function(r) { if (!r.success) utils.showFallbackAlert(r.message); });
                 });
                 document.getElementById('import-settings-btn').addEventListener('click', function() {
                     utils.importSettings().then(function(r) {
-                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
-                        location.reload();
+                        if (!r.success && !r.message.includes('cancelled')) utils.showFallbackAlert(r.message);
                     });
                 });
                 document.getElementById('download-logs-btn').addEventListener('click', function() {
-                    utils.downloadLogs().then(function(r) { alert(r.message); });
+                    utils.downloadLogs().then(function(r) { utils.showFallbackAlert(r.message); });
                 });
                 document.getElementById('clear-settings-btn').addEventListener('click', function() {
                     utils.resetSettings().then(function(r) {
-                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
+                        if (!r.success && !r.message.includes('cancelled')) utils.showFallbackAlert(r.message);
                     });
                 });
             });
