@@ -171,6 +171,11 @@ When a widget or mini-widget needs a vehicle telemetry value:
 - Prefer logging in the handler/method where the action is owned (the single funnel) rather than in the template, so every entry point that reaches it is covered once. For settings bound with `v-model`, log via an `@update:model-value` handler (not a `watch`) so BlueOS settings-sync writes are not logged as user actions.
 - Do not log on high-frequency, non-interaction paths (telemetry, render loops); this rule is about discrete user actions only.
 
+## Long strings with inline expressions
+
+- When a string literal exceeds the line-length limit and wraps onto a new line because of inline variable formatting or expressions, move those operations to their own lines before the string and reference the resulting variable directly inside the string.
+- Only do this when extracting the operation actually keeps the string on a single line, or when the inline operation is complex enough to hurt readability. Do not extract trivial interpolations that already fit.
+
 ## User feedback (snackbars and dialogs)
 
 - `openSnackbar` (`src/composables/snackbar.ts`) already writes to the logger. Do not pair it with a `console.log`/`warn`/`error` of the same message.
