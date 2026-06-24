@@ -76,6 +76,7 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 ### 5. UI / UX
 - Vue component structure, accessibility (a11y), keyboard navigation, responsive behavior, color contrast/theme compliance, loading/error states, i18n if applicable, consistency with existing widgets and UI patterns.
 - Dialog spam: flag code that can open the same dialog repeatedly from a timed loop, retry routine, or watcher without first checking whether one is already open (e.g. timed-snapshot failures opening a new dialog every tick).
+- Interaction logging: flag new user-interaction features (menus, buttons, tab switches, dialog open/close, etc.) whose interactions are not logged via the global `logUserAction` helper (`src/libs/cosmos.ts`, captured by `system-logging.ts`). Each discrete user action should produce a `logUserAction(...)` entry describing what the user did; flag direct `console.*` logging or ad-hoc tracking used in its place, and `watch`-based logging of `v-model` settings that would also fire on BlueOS settings-sync. Do not require logging on high-frequency non-interaction paths.
 
 ### 6. Code Quality & Style
 - Adherence to `.eslintrc.cjs` rules, naming, duplication, dead code, excessive complexity, comment quality per AGENTS.md, JSDoc completeness (typed `@param`/`@returns`, no empty entries), consistent use of optional chaining, type safety (no stray `any`).

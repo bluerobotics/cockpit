@@ -163,6 +163,14 @@ When a widget or mini-widget needs a vehicle telemetry value:
 - To expose a new MAVLink field, extend the flattener (`src/libs/vehicle/common/data-flattener.ts`) rather than special-casing the widget.
 - Vehicle stores are for app-level state (connection, vehicle identity, mode, etc.), not for per-telemetry-message values.
 
+## Logging user interactions
+
+- Any new feature with user interaction must log every interaction (e.g. user opened a menu, clicked button X, switched to tab Y, closed a dialog). Use the global `logUserAction(message)` helper (defined in `src/libs/cosmos.ts`), which prepends a `[UserAction]` tag and writes through the console logger captured by `src/libs/system-logging.ts`. Do not call `console.*` directly or use ad-hoc tracking.
+- `logUserAction` is assigned to the global scope at bootstrap (alongside `assert`/`unimplemented`), so call it without importing. ESLint knows it via the `globals` entry in `.eslintrc.cjs`.
+- The message describes what was done to which target; the `[UserAction]` tag already implies the actor, so do not start it with "User". The helper adds the tag, so do not include `[UserAction]` in the message yourself (e.g. `logUserAction('Opened the video settings menu')`, `logUserAction('Switched to the "Telemetry" tab')`).
+- Prefer logging in the handler/method where the action is owned (the single funnel) rather than in the template, so every entry point that reaches it is covered once. For settings bound with `v-model`, log via an `@update:model-value` handler (not a `watch`) so BlueOS settings-sync writes are not logged as user actions.
+- Do not log on high-frequency, non-interaction paths (telemetry, render loops); this rule is about discrete user actions only.
+
 ## User feedback (snackbars and dialogs)
 
 - `openSnackbar` (`src/composables/snackbar.ts`) already writes to the logger. Do not pair it with a `console.log`/`warn`/`error` of the same message.
