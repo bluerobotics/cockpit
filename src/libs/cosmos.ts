@@ -1,5 +1,6 @@
 import { isBrowser } from 'browser-or-node'
 
+import type { NearbyOpenCellIdCell, OpenCellIdBboxRequest } from '@/types/baseStation'
 import { type ElectronLog } from '@/types/electron-general'
 import { ElectronStorageDB } from '@/types/general'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
@@ -206,6 +207,14 @@ declare global {
        * @returns Promise containing subnet information
        */
       getInfoOnSubnets: () => Promise<NetworkInfo[]>
+      // The IPC handler does not currently accept an `AbortSignal`, so the renderer cannot
+      // cancel an in-flight call — wait for it to settle and discard the result if needed.
+      /**
+       * Fetch nearby OpenCellID cells from the main process, bypassing browser CORS limits.
+       * @param {OpenCellIdBboxRequest} bbox Geographic bounding box plus an optional API key.
+       * @returns {Promise<NearbyOpenCellIdCell[]>} Cells inside `bbox`, possibly empty.
+       */
+      fetchNearbyOpenCellIdCells: (bbox: OpenCellIdBboxRequest) => Promise<NearbyOpenCellIdCell[]>
       /**
        * Fast TCP port probe used as a pre-filter during vehicle discovery
        * @param host IPv4 address to probe

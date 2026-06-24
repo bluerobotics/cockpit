@@ -56,6 +56,7 @@ export const useMissionStore = defineStore('mission', () => {
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
   const showMissionEstimates = useBlueOsStorage('cockpit-show-mission-estimates', true)
+  const showMissionPathSignalStrength = useBlueOsStorage('cockpit-show-mission-path-signal-strength', false)
   const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
   const cruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
   const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
@@ -663,6 +664,7 @@ export const useMissionStore = defineStore('mission', () => {
     showChecklistBeforeArm,
     showGridOnMissionPlanning,
     showMissionEstimates,
+    showMissionPathSignalStrength,
     addCommandToWaypoint,
     removeCommandFromWaypoint,
     updateWaypointCommand,

@@ -135,8 +135,11 @@
         :show-poi-arrows="widget.options.showPoiArrows"
         :show-home-arrow="widget.options.showHomeArrow"
         :show-vehicle-arrow="widget.options.showVehicleArrow"
+        :show-base-station-arrow="widget.options.showBaseStationArrow"
         :vehicle-position="vehiclePosition"
         :home="home"
+        :base-station="baseStationStore.config.enabled ? baseStationStore.config.position ?? undefined : undefined"
+        :base-station-color="baseStationStore.config.coverageColor"
         :map-center="mapCenter"
         :zoom="zoom"
         :widget="widget"
@@ -207,6 +210,15 @@
                   hide-details
                 />
               </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showBaseStationArrow"
+                  class="my-1"
+                  label="Base station arrow"
+                  :color="widget.options.showBaseStationArrow ? 'white' : undefined"
+                  hide-details
+                />
+              </v-col>
             </v-row>
           </template>
         </ExpansiblePanel>
@@ -232,6 +244,8 @@
   </p>
 
   <PoiManager ref="poiManagerMapWidgetRef" />
+  <BaseStationConfigPanel />
+  <BaseStationContextPopup />
   <MissionChecklist
     :model-value="isMissionChecklistOpen"
     @confirmed="executeMissionOnVehicle"
@@ -284,12 +298,16 @@ import copterMarkerImage from '@/assets/arducopter-top-view.avif'
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
+import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
+import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { openSnackbar } from '@/composables/snackbar'
@@ -342,6 +360,7 @@ const {
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const widgetStore = useWidgetManagerStore()
+const baseStationStore = useBaseStation()
 const router = useRouter()
 
 const mapContext = provideMapContext()
@@ -555,6 +574,9 @@ onBeforeMount(() => {
   }
   if (widget.value.options.showVehicleArrow === undefined) {
     widget.value.options.showVehicleArrow = true
+  }
+  if (widget.value.options.showBaseStationArrow === undefined) {
+    widget.value.options.showBaseStationArrow = true
   }
   targetFollower.enableAutoUpdate()
 })
@@ -1182,6 +1204,11 @@ const targetFollower = new TargetFollower(
 )
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
 targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
+targetFollower.setTrackableTarget(WhoToFollow.BASE_STATION, () =>
+  baseStationStore.config.enabled ? baseStationStore.config.position ?? undefined : undefined
+)
+
+useBaseStationOverlay(map, mapReady)
 
 // Calculate live vehicle position
 const vehiclePosition = computed(() =>
@@ -1464,6 +1491,20 @@ const globalOriginLatitude = ref(0)
 const globalOriginLongitude = ref(0)
 const globalOriginMarker = shallowRef<L.Marker>()
 
+/**
+ * Discriminator used to find base-station-owned context-menu entries when rebuilding them,
+ * without relying on label/icon string matching.
+ */
+// eslint-disable-next-line jsdoc/require-jsdoc -- Single-field discriminator; doc above the type covers it.
+type BaseStationMenuTag = { baseStationTag?: 'place' | 'context' }
+
+const baseStationMenuItem = computed(() => ({
+  item: baseStationStore.config.enabled ? 'Move base station here' : 'Set base station here',
+  action: () => onMenuOptionSelect('place-base-station'),
+  icon: 'mdi-radio-tower',
+  baseStationTag: 'place' as const,
+}))
+
 const menuItems = reactive([
   {
     item: 'Set home waypoint',
@@ -1480,6 +1521,7 @@ const menuItems = reactive([
     action: () => onMenuOptionSelect('place-poi'),
     icon: 'mdi-map-marker-plus',
   },
+  baseStationMenuItem.value,
   { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
   {
     item: 'Set default map position',
@@ -1492,6 +1534,50 @@ const menuItems = reactive([
     icon: 'mdi-gesture',
   },
 ])
+
+// The base-station entry's label depends on whether one already exists; rebind on store changes.
+watch(baseStationMenuItem, (newItem) => {
+  const idx = menuItems.findIndex((i) => (i as BaseStationMenuTag).baseStationTag === 'place')
+  if (idx >= 0) menuItems[idx] = newItem
+})
+
+const baseStationContextItems = computed(() =>
+  baseStationStore.config.enabled
+    ? [
+        {
+          item: 'Remove base station',
+          action: () => onMenuOptionSelect('remove-base-station'),
+          icon: 'mdi-delete',
+          baseStationTag: 'context' as const,
+        },
+        {
+          item: baseStationStore.config.showSignalOnMap ? 'Hide signal on map' : 'Show signal on map',
+          action: () => onMenuOptionSelect('toggle-base-station-signal-visibility'),
+          icon: baseStationStore.config.showSignalOnMap ? 'mdi-eye' : 'mdi-eye-off',
+          baseStationTag: 'context' as const,
+        },
+        {
+          item: 'Configure base station',
+          action: () => onMenuOptionSelect('configure-base-station'),
+          icon: 'mdi-cog',
+          baseStationTag: 'context' as const,
+        },
+      ]
+    : []
+)
+
+watch(
+  baseStationContextItems,
+  (newItems) => {
+    for (let i = menuItems.length - 1; i >= 0; i--) {
+      if ((menuItems[i] as BaseStationMenuTag).baseStationTag === 'context') {
+        menuItems.splice(i, 1)
+      }
+    }
+    newItems.forEach((i) => menuItems.push(i))
+  },
+  { immediate: true }
+)
 
 const updateSkipToWpMenu = (): void => {
   const want = contextMenuSelectedWpIndex.value !== null
@@ -1679,6 +1765,25 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
     case 'clear-vehicle-path-history':
       missionStore.clearVehicleHistory()
       openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+      break
+
+    case 'place-base-station':
+      if (clickedLocation.value) {
+        baseStationStore.setPosition(clickedLocation.value)
+        baseStationStore.configPanelOpen = true
+      }
+      break
+
+    case 'configure-base-station':
+      baseStationStore.configPanelOpen = true
+      break
+
+    case 'remove-base-station':
+      confirmRemoveBaseStation(showDialog, closeDialog)
+      break
+
+    case 'toggle-base-station-signal-visibility':
+      baseStationStore.toggleSignalVisibility()
       break
 
     default:

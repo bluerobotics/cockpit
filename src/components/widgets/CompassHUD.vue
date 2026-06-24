@@ -146,6 +146,7 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
@@ -165,6 +166,7 @@ import type { Widget } from '@/types/widgets'
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
+const baseStationStore = useBaseStation()
 
 datalogger.registerUsage(DatalogVariable.heading)
 const store = useMainVehicleStore()
@@ -288,21 +290,18 @@ const calculateBearing = (vehicleLat: number, vehicleLng: number, poiLat: number
   return bearing
 }
 
+const formatHudDistanceText = (distance: number, isReached: boolean): string =>
+  isReached ? 'Reached' : distance >= 2000 ? `${(distance / 1000).toFixed(1)}km` : `${Math.round(distance)}m`
+
 // Get POI data with bearing and distance relative to vehicle
 const poiData = computed(() => {
   if (!store.coordinates.latitude || !store.coordinates.longitude) return []
 
-  return missionStore.pointsOfInterest.map((poi) => {
-    const distance = calculateHaversineDistance(
-      [store.coordinates.latitude!, store.coordinates.longitude!],
-      poi.coordinates
-    )
-    const bearing = calculateBearing(
-      store.coordinates.latitude!,
-      store.coordinates.longitude!,
-      poi.coordinates[0],
-      poi.coordinates[1]
-    )
+  const vehicleLat = store.coordinates.latitude!
+  const vehicleLng = store.coordinates.longitude!
+  const hudTargets = missionStore.pointsOfInterest.map((poi) => {
+    const distance = calculateHaversineDistance([vehicleLat, vehicleLng], poi.coordinates)
+    const bearing = calculateBearing(vehicleLat, vehicleLng, poi.coordinates[0], poi.coordinates[1])
 
     return {
       poi,
@@ -310,6 +309,31 @@ const poiData = computed(() => {
       bearing,
     }
   })
+
+  if (baseStationStore.config.enabled && baseStationStore.config.position) {
+    const distance = calculateHaversineDistance([vehicleLat, vehicleLng], baseStationStore.config.position)
+    const bearing = calculateBearing(
+      vehicleLat,
+      vehicleLng,
+      baseStationStore.config.position[0],
+      baseStationStore.config.position[1]
+    )
+    hudTargets.push({
+      poi: {
+        id: 'base-station',
+        name: baseStationStore.config.name.trim() || 'Base station',
+        description: '',
+        coordinates: baseStationStore.config.position,
+        icon: 'mdi-radio-tower',
+        color: baseStationStore.config.coverageColor,
+        timestamp: 0,
+      },
+      distance,
+      bearing,
+    })
+  }
+
+  return hudTargets
 })
 
 const homeCoordinates = computed(() => missionStore.homeMarkerPosition)
@@ -539,7 +563,8 @@ const updatePoiMarkers = (): void => {
     }
 
     const x = halfWidth + ((2 * halfWidth) / Math.PI) * Math.sin(radians(relativeBearing))
-    const isReachedNow = distance <= 1
+    const supportsReachedBlink = poi.id !== 'base-station'
+    const isReachedNow = supportsReachedBlink && distance <= 1
     // How long the POI will stay marked as reached (blinking animation)
     if (isReachedNow) {
       reachedMarkers.value.set(poi.id, {
@@ -550,13 +575,10 @@ const updatePoiMarkers = (): void => {
     }
 
     const reachedData = reachedMarkers.value.get(poi.id)
-    const isReached = isReachedNow || (reachedData !== undefined && now < reachedData.expiresAt)
+    const isReached =
+      supportsReachedBlink && (isReachedNow || (reachedData !== undefined && now < reachedData.expiresAt))
     // How far from a POI to mark as reached (2 meters)
-    const distanceText = isReached
-      ? 'Reached'
-      : distance >= 2000
-      ? `${(distance / 1000).toFixed(1)}km`
-      : `${Math.round(distance)}m`
+    const distanceText = formatHudDistanceText(distance, isReached)
 
     const mode = widget.value.options.poi?.showDistances
     const isHighlighted = highlightedMarkers.value.has(poi.id)
