@@ -106,7 +106,7 @@
       />
     </div>
     <div
-      v-show="!interfaceStore.isMainMenuVisible"
+      v-show="!interfaceStore.isMainMenuVisible && !interfaceStore.isConfigPanelVisible"
       class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
       :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '320px' }]"
     >
@@ -585,6 +585,9 @@
     @place-point-of-interest="openPoiDialog"
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
+    @place-base-station="placeBaseStationFromContextMenu"
+    @configure-base-station="baseStationStore.configPanelOpen = true"
+    @remove-base-station="confirmRemoveBaseStation(showDialog, closeDialog)"
   />
   <Teleport to="#planningMap">
     <RadialMenu
@@ -617,6 +620,8 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
+  <BaseStationConfigPanel />
+  <BaseStationContextPopup />
   <PoiMapArrows
     :map-ready="mapReady"
     :force-full-screen="true"
@@ -677,6 +682,8 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
+import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
@@ -688,6 +695,8 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
+import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useSnackbar } from '@/composables/snackbar'
@@ -741,6 +750,7 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
+const baseStationStore = useBaseStation()
 const missionEstimates = useMissionEstimates()
 const { height: windowHeight } = useWindowSize()
 
@@ -927,6 +937,8 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 const planningMap = shallowRef<Map | undefined>()
 const mapContext = provideMapContext()
 const { mapReady } = mapContext
+
+useBaseStationOverlay(planningMap, mapReady)
 
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
@@ -1960,6 +1972,12 @@ const hideContextMenu = (): void => {
 const clearVehiclePathHistory = (): void => {
   missionStore.clearVehicleHistory()
   openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+}
+
+const placeBaseStationFromContextMenu = (): void => {
+  if (!currentCursorGeoCoordinates.value) return
+  baseStationStore.setPosition(currentCursorGeoCoordinates.value)
+  baseStationStore.configPanelOpen = true
 }
 
 const setHomePosition = async (): Promise<void> => {
