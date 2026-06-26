@@ -114,12 +114,12 @@
                           @click="editCompoundVariable(item.id)"
                         />
                         <v-btn
-                          v-if="isUserDefinedVariable(item.id)"
+                          v-if="isUserDefinedVariable(item.id) || isUserEditableVariable(item.id)"
                           variant="outlined"
                           class="rounded-full"
                           icon="mdi-pencil"
                           size="x-small"
-                          @click="editUserDefinedVariable(item.id)"
+                          @click="editVariable(item.id)"
                         />
                         <v-btn
                           v-if="isCompoundVariable(item.id) || isUserDefinedVariable(item.id)"
@@ -201,6 +201,7 @@ import {
 } from '@/libs/actions/data-lake-transformations'
 import { dataLakeLogger } from '@/libs/data-lake-logging'
 import { copyToClipboard } from '@/libs/utils'
+import { isUserDefinedDataLakeVariable } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
@@ -379,15 +380,15 @@ const openNewVariableDialog = (): void => {
 }
 
 /**
- * Opens the dialog to edit an existing variable
+ * Opens the dialog to edit a user-defined or user-editable variable
  * @param {string} variableId The ID of the variable to edit
  */
-const editUserDefinedVariable = (variableId: string): void => {
+const editVariable = (variableId: string): void => {
   const variable = availableDataLakeVariables.value.find((v) => v.id === variableId)
-  if (variable && isUserDefinedVariable(variableId)) {
+  if (variable && (isUserDefinedVariable(variableId) || isUserEditableVariable(variableId))) {
     idVariableBeingEdited = variableId
     showVariableDialog.value = true
-  } else if (variable && !isUserDefinedVariable(variableId)) {
+  } else if (variable) {
     openSnackbar({ message: `Variable with ID ${variableId} is not editable`, variant: 'error' })
   } else {
     openSnackbar({ message: `Variable with ID ${variableId} not found`, variant: 'error' })
@@ -427,7 +428,11 @@ const isCompoundVariable = (id: string): boolean => {
 }
 
 const isUserDefinedVariable = (id: string): boolean => {
-  return availableDataLakeVariables.value.find((v) => v.id === id)?.persistent != null
+  return isUserDefinedDataLakeVariable(id)
+}
+
+const isUserEditableVariable = (id: string): boolean => {
+  return availableDataLakeVariables.value.find((v) => v.id === id)?.allowUserToChangeValue === true
 }
 
 const editCompoundVariable = (id: string): void => {
