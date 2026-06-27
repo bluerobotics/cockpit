@@ -195,6 +195,7 @@ const resetParams = (): void => {
 const addCommand = (): void => {
   if (!selectedCommandType.value || !selectedMavCommand.value) return
 
+  logUserAction(`Added '${selectedMavCommand.value}' command to waypoint`)
   const command: MissionCommand =
     selectedCommandType.value === MissionCommandType.MAVLINK_NAV_COMMAND
       ? {
