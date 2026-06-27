@@ -309,6 +309,7 @@ const editCommand = (index: number): void => {
 }
 
 const removeCommand = (index: number): void => {
+  logUserAction('Removed command from waypoint')
   missionStore.removeCommandFromWaypoint(props.selectedWaypoint.id, index)
 }
 </script>
