@@ -23,6 +23,7 @@ watch(currentMode, (newVal) => {
     console.log('New mode is the same as the current one. No mode-change commands will be issued.')
     return
   }
+  logUserAction(`Changed flight mode to '${newVal}'`)
   vehicleStore.setFlightMode(currentMode.value)
 })
 
