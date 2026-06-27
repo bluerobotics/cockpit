@@ -577,6 +577,7 @@ const validateURL = (url: string): true | string => {
 }
 
 const updateURL = (): void => {
+  logUserAction('Applied iframe widget URL')
   const urlValidationResult = validateURL(composedURL(inputURL.value, widget.value.options.useVehicleAddressAsBase))
   if (urlValidationResult !== true) {
     openSnackbar({ message: `${urlValidationResult} Please enter a valid URL.`, variant: 'error' })
@@ -587,6 +588,7 @@ const updateURL = (): void => {
 }
 
 const handleBaseUrlToggle = (useBaseUrl: boolean): void => {
+  logUserAction(`${useBaseUrl ? 'Enabled' : 'Disabled'} using vehicle address as iframe base URL`)
   // Store the current URL in the history and use the previous one for each case
   if (useBaseUrl) {
     lastUsedURL.value.notUsingVehicleAddressAsBase = inputURL.value

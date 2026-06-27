@@ -300,6 +300,7 @@ const selectedViewToShareWidget = ref<string>('')
 const handleCopyWidgetToView = (): void => {
   if (selectedViewToShareWidget.value) {
     try {
+      logUserAction(`Cloned custom widget '${currentWidget.value.name}' to another view`)
       widgetStore.copyWidgetToView(currentWidget.value, selectedViewToShareWidget.value)
       openSnackbar({
         variant: 'success',
@@ -363,6 +364,7 @@ const loadWidget = (event: Event): void => {
     openSnackbar({ variant: 'error', message: 'No file selected.', duration: 3000 })
     return
   }
+  logUserAction('Loaded custom widget from file')
 
   const reader = new FileReader()
   reader.onload = (e) => {
@@ -407,6 +409,7 @@ const handleOptionClick = (option: string): void => {
 }
 
 const downloadWidget = (): void => {
+  logUserAction(`Downloaded custom widget '${widget.value.name}' to file`)
   const blob = new Blob([JSON.stringify(widget.value)], { type: 'application/json;charset=utf-8' })
   const fileName = `${widget.value.name}.widget`
   saveAs(blob, fileName)

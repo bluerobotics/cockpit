@@ -36,7 +36,7 @@
                     variant="text"
                     class="text-[20px]"
                     :disabled="!missionStore.canSkipToPrevWp || !vehicleStore.isVehicleOnline"
-                    @click.stop="missionStore.skipToWaypoint(-1)"
+                    @click.stop="skipToPreviousWaypoint"
                   />
                 </template>
               </v-tooltip>
@@ -66,7 +66,7 @@
                     variant="text"
                     class="text-[20px]"
                     :disabled="!missionStore.canSkipToNextWp || !vehicleStore.isVehicleOnline"
-                    @click.stop="missionStore.skipToWaypoint(1)"
+                    @click.stop="skipToNextWaypoint"
                   />
                 </template>
               </v-tooltip>
@@ -230,11 +230,23 @@ const widgetSize = {
   height: 0.09641222207770606,
 }
 
+const skipToPreviousWaypoint = (): void => {
+  logUserAction('Skipped to previous mission waypoint')
+  missionStore.skipToWaypoint(-1)
+}
+
+const skipToNextWaypoint = (): void => {
+  logUserAction('Skipped to next mission waypoint')
+  missionStore.skipToWaypoint(1)
+}
+
 const handleDownloadMissionOnMap = async (): Promise<void> => {
+  logUserAction('Requested mission download from vehicle to map')
   missionStore.requestMapMissionDownload()
 }
 
 const handleClearMissionOnMap = (): void => {
+  logUserAction('Cleared mission drawn on map')
   missionStore.requestMapClear()
 }
 
@@ -258,6 +270,7 @@ const handleReturnHome = (): void => {
         text: 'Confirm',
         size: 'small',
         action: () => {
+          logUserAction('Confirmed return to home from mission control panel')
           closeDialog()
           vehicleStore.returnHome().catch((err) => {
             openSnackbar({
@@ -274,8 +287,10 @@ const handleReturnHome = (): void => {
 const handlePlayAndPause = async (): Promise<void> => {
   try {
     if (!missionStore.isMissionRunning) {
+      logUserAction('Started/resumed mission from mission control panel')
       missionStore.executeMissionOnVehicle()
     } else {
+      logUserAction('Paused mission from mission control panel')
       await vehicleStore.pauseMission()
     }
   } catch (err) {
