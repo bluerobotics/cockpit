@@ -25,7 +25,7 @@
                     </template>
                   </v-tooltip>
                 </span>
-                <span class="text-sm text-gray-300 cursor-pointer" @click.stop="showSettingsDialog = true">
+                <span class="text-sm text-gray-300 cursor-pointer" @click.stop="openExportSettingsDialog">
                   <v-tooltip text="Data export settings">
                     <template #activator="{ props }">
                       <v-icon v-bind="props" size="20">mdi-cog</v-icon>
@@ -260,7 +260,13 @@ const formatDuration = (seconds: number): string => {
   return `${hours}h ${remainingMinutes}m`
 }
 
+const openExportSettingsDialog = (): void => {
+  logUserAction('Opened data export settings')
+  showSettingsDialog.value = true
+}
+
 const refreshSessions = async (): Promise<void> => {
+  logUserAction('Refreshed data sessions list')
   isLoading.value = true
   try {
     sessions.value = await DataLakeLogger.getDataSessions()
@@ -295,6 +301,7 @@ onBeforeUnmount(() => {
 
 const downloadSession = async (session: DataLakeSessionInfo, formatType: 'json' | 'csv'): Promise<void> => {
   if (isDownloading.value) return
+  logUserAction(`Downloaded data session as ${formatType.toUpperCase()}`)
 
   isDownloading.value = session.id
   try {
@@ -339,6 +346,7 @@ const deleteSession = async (session: DataLakeSessionInfo): Promise<void> => {
     openSnackbar({ message: 'Cannot delete the current active session', variant: 'warning' })
     return
   }
+  logUserAction('Deleted a data session')
   if (isDeleting(session)) return
 
   deletingSessionIds.value = [...deletingSessionIds.value, session.id]
@@ -354,6 +362,7 @@ const deleteSession = async (session: DataLakeSessionInfo): Promise<void> => {
 }
 
 const deleteOldSessions = async (): Promise<void> => {
+  logUserAction('Deleted data sessions older than 24 hours')
   try {
     const deletedCount = await DataLakeLogger.deleteOldDataSessions(1)
     if (deletedCount > 0) {
