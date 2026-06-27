@@ -389,6 +389,7 @@ const closeUrlParamDialog = (): void => {
 }
 
 const addUrlParameter = (): void => {
+  logUserAction('Added URL parameter to HTTP request action')
   const parsedValue = `{{ ${urlParamDialog.value.valueType} }}`
   const value = urlParamDialog.value.valueType === 'fixed' ? urlParamDialog.value.fixedValue : parsedValue
   newActionConfig.value.urlParams[urlParamDialog.value.key] = value
@@ -410,12 +411,14 @@ const closeJsonDialog = (): void => {
 
 const saveJsonBody = (): void => {
   if (bodyDialog.value.isValid) {
+    logUserAction('Saved JSON body for HTTP request action')
     newActionConfig.value.body = bodyDialog.value.bodyText
     closeJsonDialog()
   }
 }
 
 const removeUrlParam = (key: string): void => {
+  logUserAction('Removed URL parameter from HTTP request action')
   delete newActionConfig.value.urlParams[key]
 }
 
@@ -436,6 +439,7 @@ const closeHeaderDialog = (): void => {
 const addHeader = (): void => {
   const { isValid, error } = isValidHeaders({ [headerDialog.value.key]: headerDialog.value.value })
   if (isValid) {
+    logUserAction('Added header to HTTP request action')
     newActionConfig.value.headers[headerDialog.value.key] = headerDialog.value.value
     closeHeaderDialog()
   } else {
@@ -444,6 +448,7 @@ const addHeader = (): void => {
 }
 
 const removeHeader = (key: string): void => {
+  logUserAction('Removed header from HTTP request action')
   delete newActionConfig.value.headers[key]
 }
 
@@ -457,6 +462,7 @@ const createActionConfig = (): void => {
 }
 
 const saveActionConfig = (): void => {
+  logUserAction(`${editMode.value ? 'Updated' : 'Created'} HTTP request action '${newActionConfig.value.name}'`)
   createActionConfig()
   closeActionDialog()
 }
@@ -473,6 +479,7 @@ const exportAction = (id: string): void => {
     console.error('Action not found')
     return
   }
+  logUserAction(`Exported HTTP request action '${action.name}'`)
   const json = JSON.stringify(action, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
   const url = window.URL.createObjectURL(blob)
@@ -487,6 +494,8 @@ const exportAction = (id: string): void => {
 }
 
 const deleteAction = (id: string): void => {
+  const action = getHttpRequestActionConfig(id)
+  logUserAction(`Deleted HTTP request action '${action?.name ?? id}'`)
   deleteHttpRequestActionConfig(id)
   emit('action-deleted')
 }
@@ -503,6 +512,7 @@ const closeActionDialog = (): void => {
 const openEditDialog = (id: string): void => {
   const action = getHttpRequestActionConfig(id)
   if (action) {
+    logUserAction(`Opened edit dialog for HTTP request action '${action.name}'`)
     editMode.value = true
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
     actionDialog.value.show = true
@@ -510,6 +520,7 @@ const openEditDialog = (id: string): void => {
 }
 
 const openNewDialog = (): void => {
+  logUserAction('Opened new HTTP request action dialog')
   resetNewAction()
   actionDialog.value.show = true
 }

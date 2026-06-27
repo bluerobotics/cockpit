@@ -14,7 +14,13 @@
           </template>
           <template #content>
             <div class="flex justify-between">
-              <v-switch v-model="alertStore.enableVoiceAlerts" label="Enable voice alerts" color="white" class="ml-3" />
+              <v-switch
+                :model-value="alertStore.enableVoiceAlerts"
+                label="Enable voice alerts"
+                color="white"
+                class="ml-3"
+                @update:model-value="setVoiceAlertsEnabled"
+              />
               <v-slider
                 v-model="alertStore.alertVolume"
                 min="0"
@@ -35,20 +41,22 @@
                 class="mx-2 min-w-[100px]"
               >
                 <v-checkbox
-                  v-model="enabledLevel.enabled"
+                  :model-value="enabledLevel.enabled"
                   :label="capitalize(enabledLevel.level)"
                   hide-details
                   color="white"
+                  @update:model-value="(value) => setAlertLevelEnabled(enabledLevel.level, value)"
                 />
               </div>
             </div>
             <span class="text-sm font-medium mt-4">Alert voice:</span>
             <Dropdown
-              v-model="alertStore.selectedAlertSpeechVoiceName"
+              :model-value="alertStore.selectedAlertSpeechVoiceName"
               :options="alertStore.availableAlertSpeechVoiceNames"
               name-key="name"
               value-key="value"
               class="max-w-[350px] mt-2 mb-4 ml-2"
+              @update:model-value="setAlertVoice"
             />
           </template>
         </ExpansiblePanel>
@@ -59,7 +67,7 @@
           color="white"
           class="mt-3 mb-2 ml-3"
           hide-details
-          @update:model-value="alertStore.neverShowArmedMenuWarning = !$event"
+          @update:model-value="setShowArmedMenuWarning"
         />
       </div>
     </template>
@@ -78,4 +86,29 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
 const alertStore = useAlertStore()
+
+const setVoiceAlertsEnabled = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} voice alerts`)
+  alertStore.enableVoiceAlerts = enabled
+}
+
+const setAlertLevelEnabled = (level: string, value: boolean | null): void => {
+  const enabledLevel = alertStore.enabledAlertLevels.find((item) => item.level === level)
+  if (!enabledLevel) return
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} '${level}' alert level`)
+  enabledLevel.enabled = enabled
+}
+
+const setAlertVoice = (value: unknown): void => {
+  logUserAction(`Set alert voice to '${value}'`)
+  alertStore.selectedAlertSpeechVoiceName = value as string
+}
+
+const setShowArmedMenuWarning = (value: boolean | null): void => {
+  const show = value ?? false
+  logUserAction(`${show ? 'Enabled' : 'Disabled'} armed-vehicle menu warning`)
+  alertStore.neverShowArmedMenuWarning = !show
+}
 </script>
