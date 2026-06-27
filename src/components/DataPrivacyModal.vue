@@ -26,14 +26,14 @@
             tabindex="0"
             :aria-checked="shareHardwareDetails"
             class="rounded-md bg-white/[0.04] border border-white/10 px-3 py-3 cursor-pointer hover:bg-white/[0.06] transition-colors duration-150"
-            @click="shareHardwareDetails = !shareHardwareDetails"
-            @keydown.enter.prevent="shareHardwareDetails = !shareHardwareDetails"
-            @keydown.space.prevent="shareHardwareDetails = !shareHardwareDetails"
+            @click="setShareHardwareDetails(!shareHardwareDetails)"
+            @keydown.enter.prevent="setShareHardwareDetails(!shareHardwareDetails)"
+            @keydown.space.prevent="setShareHardwareDetails(!shareHardwareDetails)"
           >
             <div class="flex items-center gap-3">
               <span class="text-[14px] font-semibold text-white">Detailed hardware specifications</span>
               <v-switch
-                v-model="shareHardwareDetails"
+                :model-value="shareHardwareDetails"
                 hide-details
                 density="compact"
                 color="#4fa483"
@@ -41,6 +41,7 @@
                 inset
                 aria-label="Share detailed hardware specifications"
                 @click.stop
+                @update:model-value="setShareHardwareDetails"
               />
             </div>
             <p class="text-[12px] text-white/70 leading-snug mt-1">
@@ -71,6 +72,7 @@
             :href="telemetryDataPrivacyDocsUrl"
             target="_blank"
             rel="noopener"
+            @click="openDataPrivacyDocs"
           >
             View documentation
           </v-btn>
@@ -101,11 +103,21 @@ const isVisible = computed({
 
 const shareHardwareDetails = toRef(developmentStore, 'shareHardwareDetails')
 
+const setShareHardwareDetails = (value: boolean | null): void => {
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} sharing of detailed hardware specifications`)
+  shareHardwareDetails.value = Boolean(value)
+}
+
+const openDataPrivacyDocs = (): void => {
+  logUserAction('Opened data privacy documentation link')
+}
+
 /**
  * Hide the modal.
  * @returns {void}
  */
 const close = (): void => {
+  logUserAction('Closed Data Privacy dialog')
   isVisible.value = false
 }
 </script>

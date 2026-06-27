@@ -11,7 +11,7 @@
                 :key="button.name"
                 :disabled="button.disabled"
                 class="flex flex-col justify-center align-center"
-                @click="currentTab = button.name.toLowerCase()"
+                @click="selectTab(button.name.toLowerCase())"
               >
                 <v-tooltip v-if="button.tooltip !== ''" open-delay="600" activator="parent" location="top">
                   {{ button.tooltip }}
@@ -461,7 +461,7 @@
                               variant="outlined"
                               size="small"
                               :disabled="isProcessingChunks"
-                              @click="processChunkGroup(group)"
+                              @click="onProcessChunkGroup(group)"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
                                 Process video chunks
@@ -473,7 +473,7 @@
                               variant="outlined"
                               size="small"
                               :disabled="isProcessingChunks"
-                              @click="downloadChunkGroup(group)"
+                              @click="onDownloadChunkGroup(group)"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
                                 {{ isElectron() ? 'Download chunk group as ZIP' : 'Download chunk group' }}
@@ -485,7 +485,7 @@
                               variant="outlined"
                               size="small"
                               :disabled="isProcessingChunks"
-                              @click="deleteChunkGroup(group)"
+                              @click="onDeleteChunkGroup(group)"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
                                 Delete chunk group
@@ -524,13 +524,13 @@
                     <!-- Footer -->
                     <div class="shrink-0 h-14 flex justify-end items-center gap-4 px-4 border-t border-white/10">
                       <span class="text-sm text-white/70">Total: {{ formatBytes(totalChunkSize) }}</span>
-                      <v-btn icon variant="text" class="mb-1" :disabled="isProcessingChunks" @click="deleteAllChunks">
+                      <v-btn icon variant="text" class="mb-1" :disabled="isProcessingChunks" @click="onDeleteAllChunks">
                         <v-tooltip open-delay="500" activator="parent" location="bottom">
                           Delete all raw chunks
                         </v-tooltip>
                         <v-icon>mdi-delete</v-icon>
                       </v-btn>
-                      <v-btn v-if="isElectron()" icon variant="text" class="mb-1" @click="openVideoChunksFolder">
+                      <v-btn v-if="isElectron()" icon variant="text" class="mb-1" @click="onOpenVideoChunksFolder">
                         <v-tooltip open-delay="500" activator="parent" location="bottom">
                           Open raw chunks folder
                         </v-tooltip>
@@ -585,7 +585,7 @@
                           tab.
                         </div>
                         <div class="mt-4 flex gap-2">
-                          <v-btn variant="outlined" size="small" @click="processAnotherZip">
+                          <v-btn variant="outlined" size="small" @click="onProcessAnotherZip">
                             <v-icon class="mr-2">mdi-plus</v-icon>
                             Process More ZIP Files
                           </v-btn>
@@ -862,10 +862,17 @@ const openElectronFolder = (opener: () => void): void => {
   }
 }
 
-const openVideoFolder = (): void => openElectronFolder(() => window.electronAPI?.openVideoFolder())
-const openSnapshotFolder = (): void => openElectronFolder(() => window.electronAPI?.openSnapshotFolder())
+const openVideoFolder = (): void => {
+  logUserAction('Opened video folder')
+  openElectronFolder(() => window.electronAPI?.openVideoFolder())
+}
+const openSnapshotFolder = (): void => {
+  logUserAction('Opened snapshot folder')
+  openElectronFolder(() => window.electronAPI?.openSnapshotFolder())
+}
 
 const playVideoInDefaultPlayer = (fileName: string): void => {
+  logUserAction(`Played video '${fileName}' in default player`)
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openVideoFile(fileName)
   } else {
@@ -874,12 +881,14 @@ const playVideoInDefaultPlayer = (fileName: string): void => {
 }
 
 const openPicInFullScreen = async (picture: SnapshotLibraryFile): Promise<void> => {
+  logUserAction(`Opened picture '${picture.filename}' in fullscreen`)
   await loadAndSetFullScreenPicture(picture)
   showFullScreenPictureModal.value = true
 }
 
 const deletePictures = async (pictureFileName?: string): Promise<void> => {
   try {
+    logUserAction(`Deleted ${pictureFileName ? `picture '${pictureFileName}'` : 'selected pictures'}`)
     deleteButtonLoading.value = true
     await snapshotStore.deleteSnapshotFiles(pictureFileName ? [pictureFileName] : selectedPictures.value)
     openSnackbar({
@@ -955,6 +964,7 @@ const handleDeleteVideos = (videos: VideoLibraryFile[]): void => {
 
 const downloadPictures = async (pictureFileName?: string): Promise<void> => {
   try {
+    logUserAction(`Downloaded ${pictureFileName ? `picture '${pictureFileName}'` : 'selected pictures'}`)
     await snapshotStore.downloadFilesFromSnapshotDB(pictureFileName ? [pictureFileName] : selectedPictures.value)
     openSnackbar({
       message: 'Pictures downloaded successfully.',
@@ -975,6 +985,7 @@ const downloadPictures = async (pictureFileName?: string): Promise<void> => {
 }
 
 const closeModal = (): void => {
+  logUserAction('Closed Video Library')
   isVisible.value = false
   currentTab.value = 'videos'
   deselectAllVideos()
@@ -1001,8 +1012,14 @@ const isRecordingOngoing = (): boolean => {
 }
 
 // Switches between single and multiple file selection modes
+const selectTab = (tabName: string): void => {
+  logUserAction(`Switched Video Library to '${tabName}' tab`)
+  currentTab.value = tabName
+}
+
 const toggleSelectionMode = (): void => {
   isMultipleSelectionMode.value = !isMultipleSelectionMode.value
+  logUserAction(`${isMultipleSelectionMode.value ? 'Enabled' : 'Disabled'} multiple selection mode`)
   if (!isMultipleSelectionMode.value) {
     deselectAllVideos()
   }
@@ -1027,6 +1044,7 @@ const onPictureClick = (filename: string): void => {
 }
 
 const selectAllVideos = (): void => {
+  logUserAction('Selected all videos')
   selectedVideos.value = [...availableVideos.value]
   isMultipleSelectionMode.value = true
 }
@@ -1052,6 +1070,7 @@ const addLogDataToFileList = (fileNames: string[]): string[] => {
 }
 
 const discardVideosAndUpdateDB = async (videos?: VideoLibraryFile[]): Promise<void> => {
+  logUserAction(`Deleted ${(videos || selectedVideos.value).length} video(s) from the library`)
   deleteButtonLoading.value = true
   const videosToDiscard = videos || selectedVideos.value
   let selectedVideoArraySize = videosToDiscard.length
@@ -1209,6 +1228,7 @@ const previousPicture = async (): Promise<void> => {
 }
 
 const selectAllPictures = (): void => {
+  logUserAction('Selected all pictures')
   setSelectedPics(availablePictures.value.map((p) => p.filename))
   isMultipleSelectionMode.value = true
 }
@@ -1222,7 +1242,38 @@ const deselectAllPictures = (): void => {
  * Handle ZIP processing with callback to refresh videos
  */
 const handleProcessVideoChunksZip = async (): Promise<void> => {
+  logUserAction('Started processing a video chunks ZIP')
   await processVideoChunksZip(fetchVideosAndLogData)
+}
+
+const onProcessChunkGroup = (group: Parameters<typeof processChunkGroup>[0]): void => {
+  logUserAction('Processed a video chunk group')
+  void processChunkGroup(group)
+}
+
+const onDownloadChunkGroup = (group: Parameters<typeof downloadChunkGroup>[0]): void => {
+  logUserAction('Downloaded a video chunk group')
+  void downloadChunkGroup(group)
+}
+
+const onDeleteChunkGroup = (group: Parameters<typeof deleteChunkGroup>[0]): void => {
+  logUserAction('Deleted a video chunk group')
+  void deleteChunkGroup(group)
+}
+
+const onDeleteAllChunks = (): void => {
+  logUserAction('Deleted all video chunks')
+  void deleteAllChunks()
+}
+
+const onOpenVideoChunksFolder = (): void => {
+  logUserAction('Opened video chunks folder')
+  void openVideoChunksFolder()
+}
+
+const onProcessAnotherZip = (): void => {
+  logUserAction('Reset video chunks ZIP processing')
+  void processAnotherZip()
 }
 
 watch(isVisible, (newValue) => {

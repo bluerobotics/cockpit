@@ -28,7 +28,12 @@
             <div class="w-[45%] flex flex-col justify-end text-end">
               <p class="mb-1">
                 Version
-                <a :href="app_version.link" target="_blank" class="text-primary hover:underline">
+                <a
+                  :href="app_version.link"
+                  target="_blank"
+                  class="text-primary hover:underline"
+                  @click="openExternalLink('Version changelog')"
+                >
                   {{ app_version.version }}
                 </a>
                 <br />
@@ -46,6 +51,7 @@
               size="xs"
               target="_blank"
               href="https://github.com/bluerobotics/cockpit"
+              @click="openExternalLink('GitHub')"
             />
             <v-btn
               class="mx-3"
@@ -54,6 +60,7 @@
               size="xs"
               target="_blank"
               href="https://bluerobotics.com"
+              @click="openExternalLink('Blue Robotics website')"
             />
             <v-btn
               class="mx-3"
@@ -62,6 +69,7 @@
               size="xs"
               target="_blank"
               href="https://blueos.cloud/cockpit/docs"
+              @click="openExternalLink('Documentation')"
             />
           </div>
         </div>
@@ -85,7 +93,12 @@ import { isElectron } from '@/libs/utils'
 const showDialog = ref(true)
 const emit = defineEmits(['update:showAboutDialog'])
 
+const openExternalLink = (label: string): void => {
+  logUserAction(`Opened '${label}' link from About dialog`)
+}
+
 const closeDialog = (): void => {
+  logUserAction('Closed About dialog')
   showDialog.value = false
   emit('update:showAboutDialog', false)
 }

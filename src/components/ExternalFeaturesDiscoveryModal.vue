@@ -1307,6 +1307,7 @@ const acceptAllGroupSuggestions = (extensionName: string, group: JoystickMapSugg
  */
 const applyAllSuggestions = (): void => {
   if (!acceptAllExtensionName.value || !acceptAllGroup.value) return
+  logUserAction('Applied all discovered joystick mapping suggestions')
 
   const availableActions = allAvailableButtons()
   let appliedCount = 0
@@ -1378,6 +1379,7 @@ const openJoystickSuggestionDialog = (suggestion: JoystickMapSuggestion, extensi
  */
 const applyJoystickSuggestion = (): void => {
   if (!selectedSuggestion.value) return
+  logUserAction('Applied a discovered joystick mapping suggestion')
 
   const availableActions = allAvailableButtons()
   const matchingAction = availableActions.find(
@@ -1413,6 +1415,7 @@ const applyJoystickSuggestion = (): void => {
  * @param {ActionConfig} action - The action to add
  */
 const addAction = (action: ActionConfig): void => {
+  logUserAction(`Added discovered action '${action.name}'`)
   try {
     switch (action.type) {
       case customActionTypes.httpRequest:
@@ -1475,6 +1478,7 @@ const moveAppliedToIgnored = (action: ActionWithExtensionName): void => {
  * @param {ActionConfig} action - The action to ignore
  */
 const ignoreAction = (action: ActionConfig): void => {
+  logUserAction(`Ignored discovered action '${action.name}'`)
   handledActions.value.ignored.push(action.id)
   openSnackbar({
     message: `Action "${action.name}" has been ignored.`,
@@ -1487,6 +1491,7 @@ const ignoreAction = (action: ActionConfig): void => {
  * @param {ActionWithExtensionName} action - The action to restore
  */
 const restoreIgnoredAction = (action: ActionWithExtensionName): void => {
+  logUserAction(`Restored ignored action '${action.name}'`)
   handledActions.value.ignored = handledActions.value.ignored.filter((id) => id !== action.id)
   openSnackbar({
     message: `Action "${action.name}" restored.`,
@@ -1500,6 +1505,7 @@ const restoreIgnoredAction = (action: ActionWithExtensionName): void => {
 const restoreAllIgnoredActions = (): void => {
   const count = ignoredActions.value.length
   if (count === 0) return
+  logUserAction('Restored all ignored discovered actions')
 
   const idsToRestore = ignoredActions.value.map((a) => a.id)
   handledActions.value.ignored = handledActions.value.ignored.filter((id) => !idsToRestore.includes(id))
