@@ -12,27 +12,28 @@
         >
           <div class="flex flex-row flex-wrap justify-start gap-x-[20px]">
             <v-switch
-              v-model="devStore.enableBlueOsSettingsSync"
+              :model-value="devStore.enableBlueOsSettingsSync"
               label="BlueOS settings sync"
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpitAndWarnUser()"
+              @update:model-value="onToggleBlueOsSettingsSync"
             />
             <v-switch
-              v-model="devStore.enableSystemLogging"
+              :model-value="devStore.enableSystemLogging"
               label="Enable system logging"
               color="white"
               hide-details
               class="min-w-[155px]"
-              @update:model-value="reloadCockpitAndWarnUser()"
+              @update:model-value="onToggleSystemLogging"
             />
             <v-switch
-              v-model="devStore.showSplashScreenOnStartup"
+              :model-value="devStore.showSplashScreenOnStartup"
               label="Show splashscreen on startup"
               color="white"
               hide-details
               class="min-w-[155px]"
+              @update:model-value="onToggleSplashScreen"
             />
           </div>
         </div>
@@ -46,7 +47,7 @@
                   color="white"
                   size="small"
                   prepend-icon="mdi-console-line"
-                  @click.stop="devStore.showConsole = true"
+                  @click.stop="openConsole"
                 >
                   Open console
                 </v-btn>
@@ -119,6 +120,28 @@ import { useDevelopmentStore } from '@/stores/development'
 import BaseConfigurationView from './BaseConfigurationView.vue'
 const devStore = useDevelopmentStore()
 const interfaceStore = useAppInterfaceStore()
+
+const onToggleBlueOsSettingsSync = (value: boolean | null): void => {
+  devStore.enableBlueOsSettingsSync = Boolean(value)
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} BlueOS settings sync`)
+  reloadCockpitAndWarnUser()
+}
+
+const onToggleSystemLogging = (value: boolean | null): void => {
+  devStore.enableSystemLogging = Boolean(value)
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} system logging`)
+  reloadCockpitAndWarnUser()
+}
+
+const onToggleSplashScreen = (value: boolean | null): void => {
+  devStore.showSplashScreenOnStartup = Boolean(value)
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} splash screen on startup`)
+}
+
+const openConsole = (): void => {
+  logUserAction('Opened system console')
+  devStore.showConsole = true
+}
 
 /* eslint-disable jsdoc/require-jsdoc */
 interface SystemLogsData {
@@ -255,6 +278,7 @@ const getSortedLogs = (logs: SystemLogsData[]): SystemLogsData[] => {
 }
 
 const downloadLog = async (logName: string): Promise<void> => {
+  logUserAction(`Downloaded system log '${logName}'`)
   try {
     if (isRunningInElectron) {
       await downloadLogFromElectron(logName)
@@ -289,6 +313,7 @@ const downloadLogFromDB = async (logName: string): Promise<void> => {
 }
 
 const deleteLog = async (logName: string): Promise<void> => {
+  logUserAction(`Deleted system log '${logName}'`)
   try {
     if (isRunningInElectron) {
       // Delete from electron-log
@@ -305,6 +330,7 @@ const deleteLog = async (logName: string): Promise<void> => {
 }
 
 const deleteOldLogs = async (): Promise<void> => {
+  logUserAction('Deleted old system logs')
   try {
     if (isRunningInElectron) {
       // Delete old logs from electron-log

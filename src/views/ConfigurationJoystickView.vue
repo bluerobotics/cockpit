@@ -65,9 +65,10 @@
 
                   <div v-if="availableModifierKeys" class="flex flex-row items-center mt-2 mb-3">
                     <v-switch
-                      v-model="controllerStore.holdLastInputWhenWindowHidden"
+                      :model-value="controllerStore.holdLastInputWhenWindowHidden"
                       label="Hold last joystick input when window is hidden (tab changed or window minimized)"
                       class="scale-[85%] -mb-4"
+                      @update:model-value="setHoldLastInputWhenWindowHidden"
                     />
                   </div>
                   <div class="flex w-full justify-center mb-2">
@@ -78,9 +79,10 @@
                 </div>
                 <div class="flex w-full h-[47px]">
                   <v-tabs
-                    v-model="currentTabVIew"
+                    :model-value="currentTabVIew"
                     class="w-full h-full my-3 rounded-lg elevation-2 bg-[#FFFFFF23]"
                     theme="dark"
+                    @update:model-value="setTabView"
                   >
                     <v-tab value="svg">Visual</v-tab>
                     <v-tab value="table">Table</v-tab>
@@ -121,7 +123,7 @@
                               variant="text"
                               size="24"
                               class="text-[12px] mx-3 mt-[2px] mb-[1px]"
-                              @click="controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)"
+                              @click="handleExportFunctionsMapping"
                           /></template>
                         </v-tooltip>
                         <v-divider vertical />
@@ -132,7 +134,7 @@
                                 type="file"
                                 accept="application/json"
                                 hidden
-                                @change="(e) => controllerStore.importFunctionsMapping(e)"
+                                @change="handleImportFunctionsMapping"
                               />
                               <v-icon class="text-[16px] cursor-pointer mx-3 mt-[1px]">mdi-tray-arrow-up</v-icon>
                             </label>
@@ -809,6 +811,12 @@ watch(
   }
 )
 
+const setTabView = (view: unknown): void => {
+  const newView = String(view)
+  logUserAction(`Switched joystick configuration to '${newView === 'svg' ? 'Visual' : 'Table'}' view`)
+  currentTabVIew.value = newView
+}
+
 const warnIfJoystickDoesNotSupportExtendedManualControl = async (): Promise<void> => {
   try {
     const m2rVersion = await getMavlink2RestVersion(globalAddress)
@@ -932,6 +940,9 @@ const setCurrentInputFromTable = (joystick: Joystick | null, input: JoystickInpu
 }
 
 const setCurrentInputs = (joystick: Joystick | null, inputs: JoystickInput[]): void => {
+  const inputsDescription = inputs.map((i) => `${i.type === InputType.Button ? 'button' : 'axis'} ${i.id}`).join(', ')
+  logUserAction(`Opened input mapping dialog for ${inputsDescription}`)
+
   // Keep the previously-set currentJoystick (if any) when called without one, so the live joystick
   // reference is preserved across mapping-editor interactions that don't carry a joystick context.
   if (joystick) currentJoystick.value = joystick
@@ -960,6 +971,13 @@ const unbindCurrentInput = (input: JoystickButtonInput): void => {
 }
 
 const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction): void => {
+  const modifierContext = currentModifierKey.value.id === 'regular' ? '' : ` (modifier: ${currentModifierKey.value.id})`
+  if (action.id === 'no_function') {
+    logUserAction(`Unmapped button ${input.id}${modifierContext}`)
+  } else {
+    logUserAction(`Mapped button ${input.id} to function '${action.name}'${modifierContext}`)
+  }
+
   selectedProfileButtonsCorrespondencies.value[currentModifierKey.value.id as CockpitModifierKeyOption][
     input.id
   ].action = action
@@ -989,6 +1007,9 @@ const changeModifierKeyTab = (modKeyOption: CockpitModifierKeyOption): void => {
   if (new Date().getTime() - lastModTabChange < 200) return
   lastModTabChange = new Date().getTime()
 
+  if (currentModifierKey.value.id !== modKeyOption) {
+    logUserAction(`Switched to '${modKeyOption}' modifier key tab`)
+  }
   currentModifierKey.value = modifierKeyActions[modKeyOption]
 }
 
@@ -1019,6 +1040,7 @@ const selectedProfileAxesCorrespondencies = computed(() => controllerStore.proto
 const selectedProfileButtonsCorrespondencies = computed(() => controllerStore.protocolMapping.buttonsCorrespondencies)
 
 const closeInputMappingDialog = (): void => {
+  logUserAction('Closed input mapping dialog')
   inputClickedDialog.value = false
 }
 
@@ -1030,10 +1052,29 @@ const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
 }
 
 const openVehicleDefaultsImportModal = (): void => {
+  logUserAction('Opened vehicle defaults joystick import modal')
   interfaceStore.openVehicleDefaultsJoystickImport()
 }
 
+const handleExportFunctionsMapping = (): void => {
+  logUserAction('Downloaded joystick mappings')
+  controllerStore.exportFunctionsMapping(controllerStore.protocolMapping)
+}
+
+const handleImportFunctionsMapping = (e: Event): void => {
+  logUserAction('Uploaded joystick mappings file')
+  controllerStore.importFunctionsMapping(e)
+}
+
+const setHoldLastInputWhenWindowHidden = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} holding last joystick input when window is hidden`)
+  controllerStore.holdLastInputWhenWindowHidden = enabled
+}
+
 const toggleJoystickEnabling = (joystickModel: string): void => {
+  const willDisable = !controllerStore.disabledJoysticks.includes(joystickModel)
+  logUserAction(`${willDisable ? 'Disabled' : 'Enabled'} joystick '${joystickModel}'`)
   if (controllerStore.disabledJoysticks.includes(joystickModel)) {
     controllerStore.disabledJoysticks = controllerStore.disabledJoysticks.filter((model) => model !== joystickModel)
   } else {

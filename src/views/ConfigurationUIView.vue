@@ -104,7 +104,12 @@
                 <div class="flex flex-row justify-start items-center w-full mb-[35px]">
                   <div class="flex w-[33%]">Main menu trigger position</div>
                   <div class="flex w-[66%]">
-                    <v-radio-group v-model="interfaceStore.mainMenuStyleTrigger" inline hide-details>
+                    <v-radio-group
+                      :model-value="interfaceStore.mainMenuStyleTrigger"
+                      inline
+                      hide-details
+                      @update:model-value="setMainMenuTrigger"
+                    >
                       <v-radio label="Center-left tab" value="center-left" />
                       <v-radio label="Top bar button" value="burger" class="ml-6" />
                     </v-radio-group>
@@ -122,7 +127,12 @@
                 <div class="flex flex-row justify-start items-center w-full mb-[35px]">
                   <div class="flex w-[33%]">Distance</div>
                   <div class="flex w-[66%]">
-                    <v-radio-group v-model="interfaceStore.displayUnitPreferences.distance" inline hide-details>
+                    <v-radio-group
+                      :model-value="interfaceStore.displayUnitPreferences.distance"
+                      inline
+                      hide-details
+                      @update:model-value="setDistanceUnit"
+                    >
                       <v-radio
                         :label="unitPrettyName[DistanceDisplayUnit.Meters]"
                         :value="DistanceDisplayUnit.Meters"
@@ -155,10 +165,22 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const interfaceStore = useAppInterfaceStore()
 
 const updateOpacity = (value: number): void => {
+  logUserAction(`Set glass effect opacity to ${value}`)
   interfaceStore.setBgOpacity(value)
 }
 
 const resetColorsToDefault = (): void => {
+  logUserAction('Reset UI glass colors to default')
   interfaceStore.UIGlassEffect = defaultUIGlassColor
+}
+
+const setMainMenuTrigger = (value: unknown): void => {
+  logUserAction(`Set main menu trigger position to '${value}'`)
+  interfaceStore.mainMenuStyleTrigger = value as typeof interfaceStore.mainMenuStyleTrigger
+}
+
+const setDistanceUnit = (value: unknown): void => {
+  logUserAction(`Set distance display unit to '${value}'`)
+  interfaceStore.displayUnitPreferences.distance = value as DistanceDisplayUnit
 }
 </script>

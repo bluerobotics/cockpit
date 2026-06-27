@@ -658,6 +658,7 @@ const getClassForConfig = computed(() => {
 })
 
 const openHelpDialog = (): void => {
+  logUserAction('Opened telemetry overlay help dialog')
   showDialog({
     title: 'Video Configuration Help',
     message: [
@@ -684,6 +685,7 @@ function handleDragOver(event: DragEvent): void {
 const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
   const index = telemetryDisplayData[quadrantKey].indexOf(chip)
   if (index !== -1) {
+    logUserAction(`Removed '${chip}' from telemetry overlay`)
     telemetryDisplayData[quadrantKey].splice(index, 1)
 
     if (originalLoggedVariables.value.includes(chip)) {
@@ -702,16 +704,19 @@ const addCustomMessageElement = (): void => {
   if (!messageEditor) return
   const value = messageEditor.getValue().trim()
   if (value !== '') {
+    logUserAction(`Added custom telemetry message '${value}'`)
     customMessageElements.value.push(value)
     messageEditor.setValue('')
   }
 }
 
 const removeCustomMessageElement = (index: number): void => {
+  logUserAction('Removed a custom telemetry message')
   customMessageElements.value.splice(index, 1)
 }
 
 const resetAllChips = (): void => {
+  logUserAction('Reset telemetry overlay layout')
   loggedVariables.value = []
   otherLoggingElements.value = []
 

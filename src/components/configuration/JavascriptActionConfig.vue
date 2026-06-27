@@ -139,6 +139,7 @@ const createActionConfig = (): void => {
 }
 
 const saveActionConfig = (): void => {
+  logUserAction(`${editMode.value ? 'Updated' : 'Created'} JavaScript action '${newActionConfig.value.name}'`)
   createActionConfig()
   closeActionDialog()
 }
@@ -156,6 +157,7 @@ const resetNewAction = (): void => {
 }
 
 const testAction = (): void => {
+  logUserAction(`Tested JavaScript action '${newActionConfig.value.name}'`)
   executeActionCode(newActionConfig.value.code)
 }
 
@@ -165,6 +167,7 @@ const exportAction = (id: string): void => {
     console.error('Action not found')
     return
   }
+  logUserAction(`Exported JavaScript action '${action.name}'`)
   const json = JSON.stringify(action, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
   const url = window.URL.createObjectURL(blob)
@@ -179,6 +182,8 @@ const exportAction = (id: string): void => {
 }
 
 const deleteAction = (id: string): void => {
+  const action = getJavascriptActionConfig(id)
+  logUserAction(`Deleted JavaScript action '${action?.name ?? id}'`)
   deleteJavascriptActionConfig(id)
   emit('action-deleted')
 }
@@ -191,6 +196,7 @@ const closeActionDialog = (): void => {
 const openEditDialog = (id: string): void => {
   const action = getJavascriptActionConfig(id)
   if (action) {
+    logUserAction(`Opened edit dialog for JavaScript action '${action.name}'`)
     editMode.value = true
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
     actionDialog.value.show = true
@@ -198,6 +204,7 @@ const openEditDialog = (id: string): void => {
 }
 
 const openNewDialog = (): void => {
+  logUserAction('Opened new JavaScript action dialog')
   resetNewAction()
   actionDialog.value.show = true
 }
