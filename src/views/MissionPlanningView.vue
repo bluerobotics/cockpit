@@ -80,7 +80,7 @@
           :style="confirmButtonStyle"
           class="absolute mt-[72px] -ml-[150px] bg-transparent cursor-pointer elevation-4"
           variant="text"
-          @click="surveyCrosshatch = !surveyCrosshatch"
+          @click="setSurveyCrosshatch(!surveyCrosshatch)"
         >
           <div
             class="flex items-center justify-center w-8 h-8 border-2 rounded-full"
@@ -270,12 +270,13 @@
             type="number"
           />
           <v-checkbox
-            v-model="surveyCrosshatch"
+            :model-value="surveyCrosshatch"
             label="Re-fly at 90° (crosshatch)"
             theme="dark"
             density="compact"
             hide-details
             class="mx-4"
+            @update:model-value="setSurveyCrosshatch"
           />
           <p class="mx-5 mb-2 text-[11px] opacity-70 text-slate-200">
             Flies the area again at 90° for better photogrammetry coverage (≈doubles flight time).
@@ -314,7 +315,7 @@
               :disabled="surveyPolygonVertexesMarkers.length < 1"
               variant="text"
               class="h-auto my-1 font-medium text-xs rounded-md transition-colors duration-200"
-              @click="clearSurveyPath"
+              @click="clearSurveyPathByUser"
             >
               Clear Path
             </v-btn>
@@ -485,7 +486,7 @@
           :style="interfaceStore.globalGlassMenuStyles"
           hide-details
           size="small"
-          @click.stop="router.push('/')"
+          @click.stop="goToFlightView"
         />
       </template>
     </v-tooltip>
@@ -605,7 +606,7 @@
     :enable-undo="enableUndoForCurrentSurvey"
     :selected-waypoint="selectedWaypoint"
     :menu-type="contextMenuType"
-    @set-home-position="setHomePosition"
+    @set-home-position="setHomePositionFromContextMenu"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
     @swap-survey-entry-exit="swapSurveyEntryExit"
@@ -805,6 +806,7 @@ const {
 } = useOfflineTiles({ showDialog, closeDialog, openSnackbar })
 
 const clearMissionOnVehicle = (): void => {
+  logUserAction('Cleared mission on vehicle')
   vehicleStore.clearMissions()
 }
 
@@ -843,6 +845,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     return
   }
 
+  logUserAction('Uploaded mission to vehicle')
   uploadingMission.value = true
   missionUploadProgress.value = 0
   const missionItemsToUpload: Waypoint[] = JSON.parse(JSON.stringify(missionStore.currentPlanningWaypoints))
@@ -940,6 +943,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 
 // Allow fetching missions
 const downloadMissionFromVehicle = async (): Promise<void> => {
+  logUserAction('Downloaded mission from vehicle')
   missionStore.pushUndoSnapshot()
   clearCurrentMission()
   loading.value = true
@@ -1264,10 +1268,12 @@ const refreshLiveMeasureOnMapMove = (): void => {
 }
 
 const saveEsri = (): void => {
+  logUserAction('Saved visible Esri map tiles')
   esriSaveBtn?.click()
   downloadMenuOpen.value = false
 }
 const saveOSM = (): void => {
+  logUserAction('Saved visible OSM map tiles')
   osmSaveBtn?.click()
   downloadMenuOpen.value = false
 }
@@ -1360,6 +1366,7 @@ watch(showMissionCreationTips, (newVal) => {
 })
 
 const handleDoNotShowTipsAgain = (): void => {
+  logUserAction('Dismissed mission creation tips permanently')
   countdownToHideTips.value = undefined
   missionStore.showMissionCreationTips = false
   openSnackbar({
@@ -1371,6 +1378,7 @@ const handleDoNotShowTipsAgain = (): void => {
 
 const handleAddHomeWaypointByClick = (): void => {
   if (home.value !== undefined) return
+  logUserAction('Started setting mission home waypoint')
   isSettingHomeWaypoint.value = true
   openSnackbar({
     variant: 'info',
@@ -1379,7 +1387,13 @@ const handleAddHomeWaypointByClick = (): void => {
   })
 }
 
+const goToFlightView = (): void => {
+  logUserAction('Navigated to Flight view')
+  router.push('/')
+}
+
 const handleOpenMissionSettings = (): void => {
+  logUserAction('Opened mission settings')
   interfaceStore.isMainMenuVisible = true
   interfaceStore.mainMenuCurrentStep = 2
   interfaceStore.currentSubMenuName = SubMenuName.settings
@@ -1414,6 +1428,7 @@ const clearCurrentMission = (): void => {
 }
 
 const openCLearMissionDialog = (): void => {
+  logUserAction('Opened clear-mission dialog')
   showDialog({
     message: 'Clear current mission?',
     maxWidth: '400px',
@@ -1429,6 +1444,7 @@ const openCLearMissionDialog = (): void => {
       {
         text: 'Clear',
         action: () => {
+          logUserAction('Cleared current mission')
           clearCurrentMission()
           closeDialog()
           openSnackbar({
@@ -1774,6 +1790,7 @@ let radialMenuSegmentIndex: number | null = null
 
 const showSegmentRadialMenu = (): void => {
   if (!mapActionsKnobEl) return
+  logUserAction('Opened mission segment radial menu')
   radialMenuSegmentIndex = mapActionsKnobSegmentIndex
   segmentRadialMenuPosition.value = {
     x: parseInt(mapActionsKnobEl.style.left),
@@ -1790,6 +1807,7 @@ const dismissSegmentRadialMenu = (): void => {
 }
 
 const onSegmentRadialMenuSelect = (index: number): void => {
+  logUserAction(`Selected mission segment radial menu option ${index}`)
   if (index === 0) {
     if (radialMenuSegmentIndex !== null) insertWaypointAtSegmentMidpoint(radialMenuSegmentIndex)
   } else if (index === 1) {
@@ -2096,8 +2114,14 @@ const hideContextMenu = (): void => {
 }
 
 const clearVehiclePathHistory = (): void => {
+  logUserAction('Cleared vehicle path history')
   missionStore.clearVehicleHistory()
   openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+}
+
+const setHomePositionFromContextMenu = async (): Promise<void> => {
+  logUserAction('Set mission home position from context menu')
+  await setHomePosition()
 }
 
 const setHomePosition = async (): Promise<void> => {
@@ -2120,9 +2144,11 @@ const setHomePosition = async (): Promise<void> => {
 
 const toggleSimplePath = (): void => {
   if (isCreatingSimplePath.value) {
+    logUserAction('Disabled mission simple-path tool')
     isCreatingSimplePath.value = false
     return
   }
+  logUserAction('Enabled mission simple-path tool')
   isCreatingSimplePath.value = true
 }
 
@@ -2131,11 +2157,13 @@ const toggleSurvey = (): void => {
     isCreatingSimplePath.value = false
   }
   if (isCreatingSurvey.value) {
+    logUserAction('Disabled mission survey tool')
     isCreatingSurvey.value = false
     isDrawingSurveyPolygon.value = false
     segmentSurveyInsertIndex.value = null
     return
   }
+  logUserAction('Enabled mission survey tool')
   isCreatingSurvey.value = true
   isDrawingSurveyPolygon.value = true
   interfaceStore.configPanelVisible = true
@@ -2282,6 +2310,7 @@ const rebuildSurveyPolygonFromPositions = (): void => {
 const performSurveyPolygonUndo = (): boolean => {
   if (!isCreatingSurvey.value) return false
 
+  logUserAction('Undid survey polygon edit')
   const snapshot = surveyPolygonUndoStack.pop()
   if (!snapshot) {
     clearSurveyCreation()
@@ -2306,6 +2335,7 @@ const performSurveyPolygonUndo = (): boolean => {
 const performSurveyPolygonRedo = (): boolean => {
   if (!isCreatingSurvey.value) return false
 
+  logUserAction('Redid survey polygon edit')
   const snapshot = surveyPolygonRedoStack.pop()
   if (!snapshot) return false
 
@@ -2318,6 +2348,7 @@ const performSurveyPolygonRedo = (): boolean => {
 }
 
 const performUndo = (): void => {
+  logUserAction('Triggered mission edit undo')
   const snapshot = missionStore.popUndoSnapshot()
   if (!snapshot) {
     if (!undoLimitShown) {
@@ -2407,6 +2438,7 @@ const performUndo = (): void => {
 }
 
 const performRedo = (): void => {
+  logUserAction('Triggered mission edit redo')
   const snapshot = missionStore.popRedoSnapshot()
   if (!snapshot) {
     if (!redoLimitShown) {
@@ -2490,6 +2522,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
 }
 
 const clearSurveyCreation = (): void => {
+  logUserAction('Cancelled survey creation')
   clearSurveyPath()
   isCreatingSurvey.value = false
   isDrawingSurveyPolygon.value = false
@@ -2511,6 +2544,7 @@ const deleteSelectedSurvey = (): void => {
     return
   }
 
+  logUserAction('Deleted selected survey')
   missionStore.pushUndoSnapshot()
 
   const polygonLayer = surveyPolygonLayers.value[surveyId]
@@ -2562,6 +2596,7 @@ const swapSurveyEntryExit = (): void => {
   const survey = surveys.value.find((s) => s.id === surveyId)
   if (!survey || survey.waypoints.length < 2) return
 
+  logUserAction('Swapped survey entry/exit points')
   missionStore.pushUndoSnapshot()
 
   const firstWpId = survey.waypoints[0].id
@@ -2691,6 +2726,7 @@ const addWaypoint = (
     commands: cloneCommands(commands),
   }
 
+  logUserAction(`Added mission waypoint at ${coordinates[0].toFixed(6)}, ${coordinates[1].toFixed(6)}`)
   missionStore.currentPlanningWaypoints.push(waypoint)
 
   const newMarker = L.marker(coordinates, { draggable: true })
@@ -2746,6 +2782,7 @@ const removeSelectedWaypoint = (): void => {
   const waypoint = selectedWaypoint.value
   if (!waypoint) return
 
+  logUserAction(`Removed mission waypoint ${waypoint.id}`)
   missionStore.pushUndoSnapshot()
 
   const index = missionStore.currentPlanningWaypoints.findIndex((wp) => wp.id === waypoint.id)
@@ -2785,6 +2822,7 @@ const handleShouldUpdateWaypoints = (): void => {
 }
 
 const saveMissionToFile = async (): Promise<void> => {
+  logUserAction('Saved mission to file')
   // Commit the local cruise speed back to the store so the chosen value persists across sessions.
   missionStore.defaultCruiseSpeed = localCruiseSpeed.value
 
@@ -2823,6 +2861,7 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
 }
 
 const loadMissionFromFile = (): void => {
+  logUserAction('Loaded mission from file')
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.cmp,application/json'
@@ -2908,6 +2947,11 @@ const removeSurveyCrosshatchPathLayer = (): void => {
     planningMap.value?.removeLayer(surveyCrosshatchPathLayer.value as unknown as L.Layer)
     surveyCrosshatchPathLayer.value = null
   }
+}
+
+const clearSurveyPathByUser = (): void => {
+  logUserAction('Cleared survey path')
+  clearSurveyPath()
 }
 
 const clearSurveyPath = (): void => {
@@ -3150,6 +3194,7 @@ const onUpdateSurveyVertex = (index: number, latlng: L.LatLng): void => {
 const onRemoveSurveyVertex = (index: number): void => {
   const marker = surveyPolygonVertexesMarkers.value[index]
   if (marker) {
+    logUserAction('Removed survey polygon vertex')
     pushSurveyPolygonSnapshot()
     surveyPolygonVertexesPositions.value.splice(index, 1)
     surveyPolygonVertexesMarkers.value.splice(index, 1)
@@ -3164,6 +3209,7 @@ const onRemoveSurveyVertex = (index: number): void => {
 const addSurveyPoint = (latlng: L.LatLng, edgeIndex: number | undefined = undefined): void => {
   if (!isCreatingSurvey.value) return
 
+  logUserAction('Added survey polygon vertex')
   pushSurveyPolygonSnapshot()
 
   if (edgeIndex === undefined) {
@@ -3238,6 +3284,8 @@ const generateWaypointsFromSurvey = (): void => {
     showDialog({ variant: 'error', message: 'No survey path to generate waypoints from.', timer: 2000 })
     return
   }
+
+  logUserAction('Generated waypoints from survey')
 
   missionStore.pushUndoSnapshot()
 
@@ -3390,11 +3438,20 @@ const updateWaypointMarkers = (): void => {
   refreshSurveyEntryExitMarkers()
 }
 
+// Toggles the crosshatch option while drawing a new survey. Bound to the button and checkbox so the
+// programmatic resets (undo / survey load) that also set surveyCrosshatch are not logged as user actions.
+const setSurveyCrosshatch = (value: boolean | null): void => {
+  const enabled = Boolean(value)
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} 90° crosshatch re-fly for survey`)
+  surveyCrosshatch.value = enabled
+}
+
 const toggleSurveyCrosshatch = (): void => {
   if (!selectedSurvey.value) {
     openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
     return
   }
+  logUserAction(`${selectedSurvey.value.crosshatch ? 'Disabled' : 'Enabled'} 90° crosshatch on survey`)
   missionStore.pushUndoSnapshot()
   selectedSurvey.value.crosshatch = !selectedSurvey.value.crosshatch
   regenerateSurveyWaypoints()
@@ -3405,6 +3462,8 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
     return
   }
+
+  logUserAction('Regenerated survey waypoints')
 
   if (selectedSurvey.value) {
     selectedSurvey.value?.waypoints.forEach((waypoint) => {
@@ -3540,6 +3599,7 @@ const createSurveyVertexMarker = (
 
 const undoGenerateWaypoints = (): void => {
   if (undoIsInProgress.value) return
+  logUserAction('Undid generated survey waypoints')
   contextMenuVisible.value = false
   undoIsInProgress.value = true
 
@@ -4407,12 +4467,14 @@ const centerActivatorTooltipText = computed(() => {
 
 const centerOnMission = (): void => {
   if (!planningMap.value || !hasMissionWaypoints.value) return
+  logUserAction('Centered map on mission')
   targetFollower.unFollow()
   fitMapToWaypoints(planningMap.value, missionFitCoordinates.value)
 }
 
 const openPoiDialog = (): void => {
   if (cursorCoordinates.value && poiManagerRef.value) {
+    logUserAction('Opened point of interest dialog')
     poiManagerRef.value.openDialog(cursorCoordinates.value)
   } else if (!cursorCoordinates.value) {
     showDialog({ variant: 'error', title: 'Error', message: 'Cannot place Point of Interest without map coordinates.' })
