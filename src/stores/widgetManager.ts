@@ -648,6 +648,44 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
 
   watch(editingMode, () => resetWidgetsEditingState())
 
+  // Centralized logging for opening/closing of widget and mini-widget configuration menus. Their open state is
+  // owned here (configMenuOpen on the manager vars), so the log lives here instead of in each individual widget.
+  // The computeds only read configMenuOpen, so they don't recompute on unrelated manager-var changes (e.g. dragging).
+  const widgetNameByHash = (hash: string): string =>
+    currentProfile.value.views.flatMap((view) => view.widgets).find((widget) => widget.hash === hash)?.name ?? hash
+
+  const widgetsWithOpenConfigMenu = computed(() =>
+    Object.entries(_widgetManagerVars.value)
+      .filter(([, vars]) => vars.configMenuOpen)
+      .map(([hash]) => hash)
+  )
+  watch(widgetsWithOpenConfigMenu, (newHashes, oldHashes) => {
+    newHashes
+      .filter((hash) => !oldHashes.includes(hash))
+      .forEach((hash) => logUserAction(`Opened configuration of widget '${widgetNameByHash(hash)}'`))
+    oldHashes
+      .filter((hash) => !newHashes.includes(hash))
+      .forEach((hash) => logUserAction(`Closed configuration of widget '${widgetNameByHash(hash)}'`))
+  })
+
+  const miniWidgetsWithOpenConfigMenu = computed(() =>
+    Object.entries(_miniWidgetManagerVars.value)
+      .filter(([, vars]) => vars.configMenuOpen)
+      .map(([hash]) => hash)
+  )
+  watch(miniWidgetsWithOpenConfigMenu, (newHashes, oldHashes) => {
+    newHashes
+      .filter((hash) => !oldHashes.includes(hash))
+      .forEach((hash) =>
+        logUserAction(`Opened configuration of mini-widget '${getElementByHash(hash)?.component ?? hash}'`)
+      )
+    oldHashes
+      .filter((hash) => !newHashes.includes(hash))
+      .forEach((hash) =>
+        logUserAction(`Closed configuration of mini-widget '${getElementByHash(hash)?.component ?? hash}'`)
+      )
+  })
+
   // Closes the side config panel on view change and edit mode exit
   watch([editingMode, currentViewIndex], ([isInEditMode, newViewIdx], [, oldViewIdx]) => {
     if (!isInEditMode || newViewIdx !== oldViewIdx) {
