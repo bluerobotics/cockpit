@@ -140,6 +140,7 @@ const saveGlobalOrigin = (): void => {
   if (!isValid.value || isSaving.value) {
     return
   }
+  logUserAction('Set vehicle global origin')
 
   if (
     props.vehicle === undefined ||

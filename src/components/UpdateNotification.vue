@@ -104,7 +104,7 @@ onBeforeMount(() => {
       {
         text: 'Ignore This Version',
         action: () => {
-          console.log(`User chose to ignore version ${updateInfo.value.version}`)
+          logUserAction(`Ignored app update version ${updateInfo.value.version}`)
           ignoredUpdateVersions.value.push(updateInfo.value.version)
           window.electronAPI!.cancelUpdate()
           showUpdateDialog.value = false
@@ -113,13 +113,14 @@ onBeforeMount(() => {
       {
         text: 'Download',
         action: () => {
+          logUserAction('Started downloading app update')
           window.electronAPI!.downloadUpdate()
           showProgress.value = true
           dialogActions.value = [
             {
               text: 'Cancel',
               action: () => {
-                console.log('User chose to cancel the update for the Electron app.')
+                logUserAction('Cancelled app update download')
                 window.electronAPI!.cancelUpdate()
                 showUpdateDialog.value = false
                 dialogMessage.value = 'Downloading update...'
@@ -131,6 +132,7 @@ onBeforeMount(() => {
       {
         text: 'Not Now',
         action: () => {
+          logUserAction('Dismissed app update prompt')
           window.electronAPI!.cancelUpdate()
           showUpdateDialog.value = false
         },
@@ -162,7 +164,7 @@ onBeforeMount(() => {
       {
         text: 'Install Now',
         action: () => {
-          console.log('User chose to install the update for the Electron app now.')
+          logUserAction('Installed app update now')
           window.electronAPI!.installUpdate()
           showUpdateDialog.value = false
         },
@@ -170,7 +172,7 @@ onBeforeMount(() => {
       {
         text: 'Later',
         action: () => {
-          console.log('User chose to install the update for the Electron app later.')
+          logUserAction('Postponed app update installation')
           showUpdateDialog.value = false
         },
       },
