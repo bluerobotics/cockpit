@@ -120,6 +120,7 @@ export const useVehicleDefaultsAutoImportWizard = () => {
   }
 
   const confirmIgnoreAll = (): void => {
+    logUserAction('Ignored all vehicle default import offers')
     ignoreConfirmationVisible.value = false
     finishAutoWizard()
   }
@@ -134,7 +135,10 @@ export const useVehicleDefaultsAutoImportWizard = () => {
         autoWizardStep.value = 'joystick'
         break
       case 'joystick':
-        if (joystickImport.hasImportOffer.value) joystickImport.applyImport()
+        if (joystickImport.hasImportOffer.value) {
+          logUserAction('Applied vehicle default joystick mapping (auto-import wizard)')
+          joystickImport.applyImport()
+        }
         autoWizardStep.value = 'views'
         break
       case 'views':
@@ -146,6 +150,7 @@ export const useVehicleDefaultsAutoImportWizard = () => {
           viewsImport.onClickImport()
           break
         }
+        logUserAction('Applied vehicle default views (auto-import wizard)')
         if (viewsImport.applyImport()) autoWizardStep.value = 'done'
         break
       case 'done':
