@@ -262,7 +262,7 @@
                     variant="elevated"
                     class="bg-[#3B78A8] mr-[13px] w-[60px]"
                     size="x-small"
-                    @click="openNewDataLakeVariableForm = true"
+                    @click="openVariableCreationForm"
                     >create</v-btn
                   >
                   <v-btn
@@ -270,7 +270,7 @@
                     variant="elevated"
                     class="bg-[#FFFFFF22] mr-[13px] my-1"
                     size="x-small"
-                    @click="openDataLakeVariableSelector = true"
+                    @click="openVariableSelector"
                     >select</v-btn
                   >
                 </div>
@@ -446,6 +446,7 @@ const getMarginsFromBarsHeight = computed(() => {
 })
 
 const handleResetVariable = (): void => {
+  logUserAction('Reset data-lake variable on custom element')
   currentElement.value!.options.dataLakeVariable = undefined
   futureDataLakeVariable.value = defaultDataLakeVariable
   openNewDataLakeVariableForm.value = false
@@ -476,6 +477,16 @@ const CloseConfigPanel = (): void => {
   widgetStore.miniWidgetManagerVars(currentElement.value!.hash).configMenuOpen = false
 }
 
+const openVariableCreationForm = (): void => {
+  logUserAction('Opened new data-lake variable form for custom element')
+  openNewDataLakeVariableForm.value = true
+}
+
+const openVariableSelector = (): void => {
+  logUserAction('Opened data-lake variable selector for custom element')
+  openDataLakeVariableSelector.value = true
+}
+
 const showActionExistsError = (): void => {
   openSnackbar({
     message: 'Variable name already exists',
@@ -490,6 +501,7 @@ const showActionExistsError = (): void => {
 const deleteParameterFromDataLake = async (): Promise<void> => {
   if (currentElement.value?.options.dataLakeVariable?.name) {
     try {
+      logUserAction(`Deleted data-lake variable '${currentElement.value.options.dataLakeVariable.name}'`)
       await deleteDataLakeVariable(currentElement.value.options.dataLakeVariable)
       openSnackbar({
         message: 'Action variable deleted',
@@ -529,12 +541,14 @@ const saveOrUpdateParameter = (): void => {
       showActionExistsError()
       return
     }
+    logUserAction(`Created data-lake variable '${newDataLakeVariable.name}' for custom element`)
     createDataLakeVariable(newDataLakeVariable)
     currentElement.value.options.dataLakeVariable = newDataLakeVariable
     return
   }
   if (futureDataLakeVariable.value && currentElement.value?.options.dataLakeVariable?.name) {
     newDataLakeVariable.id = currentElement.value.options.dataLakeVariable.id
+    logUserAction(`Updated data-lake variable '${newDataLakeVariable.name}' for custom element`)
     updateDataLakeVariableInfo(newDataLakeVariable)
     currentElement.value.options.dataLakeVariable = newDataLakeVariable
   }
@@ -585,6 +599,7 @@ const isColorPicker = (key: string): boolean => {
 
 const addSelectorOption = (key: string): void => {
   if (currentElement.value) {
+    logUserAction('Added selector option to custom element')
     if (!currentElement.value.options.layout[key]) {
       currentElement.value.options.layout[key] = [{ name: '', value: '' }]
     } else {
@@ -596,12 +611,14 @@ const addSelectorOption = (key: string): void => {
 
 const removeSelectorOption = (key: string, index: number): void => {
   if (currentElement.value && currentElement.value.options.layout[key]) {
+    logUserAction('Removed selector option from custom element')
     currentElement.value.options.layout[key].splice(index, 1)
   }
 }
 
 const deleteElement = (): void => {
   if (currentElement.value) {
+    logUserAction(`Deleted custom widget element '${currentElement.value.component}'`)
     try {
       widgetStore.removeElementFromCustomWidget(currentElement.value.hash)
       widgetStore.elementToShowOnDrawer = undefined
