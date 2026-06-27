@@ -21,6 +21,7 @@ const vehicleStore = useMainVehicleStore()
 const { openSnackbar } = useSnackbar()
 
 const changeAlt = async (): Promise<void> => {
+  logUserAction('Requested altitude change via mini-widget')
   showAltitudeSlider.value = true
 
   try {

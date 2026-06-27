@@ -261,6 +261,7 @@ watch(isExpandedAlertsBarHovered, (isHovering, wasHovering) => {
 })
 
 const toggleExpandedAlertLock = (): void => {
+  logUserAction(`${!miniWidget.value.options.lockExpansion ? 'Locked' : 'Unlocked'} expanded alerts`)
   miniWidget.value.options.lockExpansion = !miniWidget.value.options.lockExpansion
 
   if (miniWidget.value.options.lockExpansion) {

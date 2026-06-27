@@ -41,7 +41,7 @@
               v-model="store.missionName"
               append-inner-icon="mdi-restore"
               class="mt-1"
-              @click:append-inner="store.missionName = store.lastMissionName"
+              @click:append-inner="resetMissionName"
             />
           </div>
         </v-card-text>
@@ -75,4 +75,9 @@ const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 
 const randomMissionName = coolMissionNames.random()
+
+const resetMissionName = (): void => {
+  logUserAction('Reset mission name to last used')
+  store.missionName = store.lastMissionName
+}
 </script>

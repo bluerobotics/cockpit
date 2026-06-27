@@ -29,11 +29,12 @@
         <div class="flex items-center justify-center mb-4 flex-col">
           <span class="mr-2"></span>
           <v-switch
-            v-model="controllerStore.enableForwarding"
+            :model-value="controllerStore.enableForwarding"
             hide-details
             :label="switchLabel"
             color="white"
             :disabled="!joystickConnected"
+            @update:model-value="setJoystickForwarding"
           />
         </div>
       </template>
@@ -88,4 +89,9 @@ const switchLabel = computed(() => {
   if (controllerStore.enableForwarding) return 'Joystick commands enabled'
   return 'Joystick commands paused'
 })
+
+const setJoystickForwarding = (value: boolean | null): void => {
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} joystick command forwarding`)
+  controllerStore.enableForwarding = Boolean(value)
+}
 </script>

@@ -5,15 +5,21 @@
       :model-value="widgetStore.currentView"
       :options="widgetStore.currentProfile.views.filter((v) => v.visible)"
       class="min-w-[128px]"
-      @update:model-value="widgetStore.selectView"
+      @update:model-value="onSelectView"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { View } from '@/types/widgets'
 
 import Dropdown from '../Dropdown.vue'
 
 const widgetStore = useWidgetManagerStore()
+
+const onSelectView = (view: View): void => {
+  logUserAction(`Selected view '${view.name}'`)
+  widgetStore.selectView(view)
+}
 </script>

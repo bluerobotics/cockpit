@@ -21,6 +21,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 const widgetStore = useWidgetManagerStore()
 
 const toggleEditMode = (): void => {
+  logUserAction(`${!widgetStore.editingMode ? 'Entered' : 'Exited'} interface edit mode`)
   widgetStore.editingMode = !widgetStore.editingMode
 }
 </script>

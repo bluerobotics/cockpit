@@ -257,6 +257,7 @@ miniWidget.value.options.batteryThresholds ??= Object.assign({}, defaultBatteryL
 const batteryThresholds = computed<BatteryLevelThresholds>(() => miniWidget.value.options.batteryThresholds)
 
 const resetToDefaults = (): void => {
+  logUserAction('Reset battery indicator colors and thresholds to defaults')
   miniWidget.value.options.voltageToColorScheme = Object.assign({}, defaultBatteryLevelColorScheme)
   miniWidget.value.options.batteryThresholds = Object.assign({}, defaultBatteryLevelThresholds)
 }

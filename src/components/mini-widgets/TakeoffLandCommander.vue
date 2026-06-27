@@ -18,6 +18,7 @@ const vehicleStore = useMainVehicleStore()
 const { openSnackbar } = useSnackbar()
 
 const takeoff = async (): Promise<void> => {
+  logUserAction('Requested vehicle takeoff via mini-widget')
   try {
     await slideToConfirm({ command: 'Takeoff' }, canByPassCategory(EventCategory.TAKEOFF))
     await vehicleStore.takeoff()
@@ -27,6 +28,7 @@ const takeoff = async (): Promise<void> => {
 }
 
 const land = async (): Promise<void> => {
+  logUserAction('Requested vehicle land via mini-widget')
   try {
     await slideToConfirm({ command: 'Land' }, canByPassCategory(EventCategory.LAND))
     await vehicleStore.land()
