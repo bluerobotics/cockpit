@@ -16,7 +16,7 @@
             variant="text"
             class="text-[16px]"
             :disabled="!missionStore.canSkipToPrevWp"
-            @click.stop="missionStore.skipToWaypoint(-1)"
+            @click.stop="skipToPreviousWaypoint"
           />
         </template>
       </v-tooltip>
@@ -46,7 +46,7 @@
             variant="text"
             class="text-[16px]"
             :disabled="!missionStore.canSkipToNextWp || !vehicleStore.isVehicleOnline"
-            @click.stop="missionStore.skipToWaypoint(1)"
+            @click.stop="skipToNextWaypoint"
           />
         </template>
       </v-tooltip>
@@ -140,6 +140,16 @@ const handleCruiseSpeedInput = (value: number): void => {
   }, 300)
 }
 
+const skipToPreviousWaypoint = (): void => {
+  logUserAction('Skipped to previous mission waypoint')
+  missionStore.skipToWaypoint(-1)
+}
+
+const skipToNextWaypoint = (): void => {
+  logUserAction('Skipped to next mission waypoint')
+  missionStore.skipToWaypoint(1)
+}
+
 const handleReturnHome = (): void => {
   showDialog({
     title: 'Return to home',
@@ -155,6 +165,7 @@ const handleReturnHome = (): void => {
         text: 'Confirm',
         size: 'small',
         action: () => {
+          logUserAction('Confirmed return to home')
           closeDialog()
           vehicleStore.returnHome().catch((err) => {
             openSnackbar({
@@ -171,8 +182,10 @@ const handleReturnHome = (): void => {
 const handlePlayAndPause = async (): Promise<void> => {
   try {
     if (!missionStore.isMissionRunning) {
+      logUserAction('Started/resumed mission')
       missionStore.executeMissionOnVehicle()
     } else {
+      logUserAction('Paused mission')
       await vehicleStore.pauseMission()
     }
   } catch (err) {

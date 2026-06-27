@@ -342,17 +342,20 @@ const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => 
 const handleTakeSnapshot = async (): Promise<void> => {
   isSnapshotMenuOpen.value = false
   if (snapshotTriggerType.value === 'timed') return
+  logUserAction('Captured snapshot')
   const result = await captureSnapshot()
   handleSnapshotResult(result)
 }
 
 const handleOpenSnapshotLibrary = (): void => {
+  logUserAction('Opened snapshot library')
   isSnapshotMenuOpen.value = false
   interfaceStore.videoLibraryMode = 'snapshots'
   interfaceStore.videoLibraryVisibility = true
 }
 
 const handleSelectSnapshotTriggerType = (type: 'single' | 'timed'): void => {
+  logUserAction(`Set snapshot trigger type to '${type}'`)
   snapshotTriggerType.value = type
   snapshotTypeIcon.value = type === 'timed' ? 'mdi-timer-outline' : 'mdi-video-image'
   miniWidget.value.options.snapshotTriggerType = type
@@ -377,6 +380,7 @@ const normalizeTimedSnapshotInterval = (): void => {
 
 const toggleTimedSnapshot = (): void => {
   if (isTakingTimedSnapshot.value) {
+    logUserAction('Stopped timed snapshot capture')
     isTakingTimedSnapshot.value = false
     return
   }
@@ -388,6 +392,7 @@ const toggleTimedSnapshot = (): void => {
     })
     return
   }
+  logUserAction('Started timed snapshot capture')
   isTakingTimedSnapshot.value = true
 }
 
