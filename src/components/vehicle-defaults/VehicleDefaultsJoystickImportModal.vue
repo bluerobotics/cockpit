@@ -59,6 +59,7 @@ const close = (): void => {
 }
 
 const onImportClick = (): void => {
+  logUserAction('Imported vehicle default joystick mapping')
   if (applyImport()) close()
 }
 
