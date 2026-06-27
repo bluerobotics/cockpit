@@ -62,13 +62,17 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
   const createLayerControl = (): Control.Layers => L.control.layers(baseMaps, overlays)
 
   const registerLayerSync = (map: LeafletMap): void => {
+    // These layers-control events only fire from user clicks on the control, so logging here reflects a real
+    // interaction (programmatic base/overlay changes go through map.addLayer/removeLayer, not the control).
     map.on('baselayerchange', (event: LayersControlEvent) => {
       const name = event.name
       if (!name.includes(name as MapTileProvider)) return
+      logUserAction(`Switched map base layer to '${event.name}'`)
       missionStore.userLastMapTileProvider = event.name as MapTileProvider
     })
 
     const persistOverlay = (name: string, enabled: boolean): void => {
+      logUserAction(`${enabled ? 'Enabled' : 'Disabled'} map overlay '${name}'`)
       const flag = overlayPersistenceFlags[name]
       if (flag) missionStore[flag] = enabled
     }

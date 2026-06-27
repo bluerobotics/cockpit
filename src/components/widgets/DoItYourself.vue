@@ -245,6 +245,7 @@ const handleDialogClosing = async (): Promise<void> => {
 
 const applyChanges = (): void => {
   if (!htmlEditor || !cssEditor || !jsEditor) return
+  logUserAction('Applied changes to Do-It-Yourself widget')
   widget.value.options.html = htmlEditor.getValue()
   widget.value.options.css = cssEditor.getValue()
   widget.value.options.js = jsEditor.getValue()
@@ -268,6 +269,7 @@ const executeUserScript = (): void => {
 
 const resetChanges = (): void => {
   if (!htmlEditor || !cssEditor || !jsEditor) return
+  logUserAction('Reset Do-It-Yourself widget editors')
   htmlEditor.setValue(widget.value.options.html || defaultOptions.html)
   cssEditor.setValue(widget.value.options.css || defaultOptions.css)
   jsEditor.setValue(widget.value.options.js || defaultOptions.js)
@@ -297,6 +299,7 @@ const closeDialog = (): void => {
 // Function to export configuration as a JSON file
 const exportConfig = (): void => {
   if (!htmlEditor || !cssEditor || !jsEditor) return
+  logUserAction('Exported Do-It-Yourself widget configuration')
 
   // Create configuration object
   const config = {
@@ -329,6 +332,7 @@ const exportConfig = (): void => {
 
 // Function to import configuration from a JSON file
 const importConfig = (): void => {
+  logUserAction('Imported Do-It-Yourself widget configuration')
   // Create a temporary file input element
   const input = document.createElement('input')
   input.type = 'file'
