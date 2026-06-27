@@ -102,6 +102,7 @@ const refreshMavlinkDumperElapsed = (): void => {
 }
 
 const toggleMavlinkDumperRecording = (): void => {
+  logUserAction(isMavlinkDumperRecording.value ? 'Stopped MAVLink dump recording' : 'Started MAVLink dump recording')
   if (isMavlinkDumperRecording.value) {
     stopMavlinkDumperRecording()
     refreshMavlinkDumperElapsed()
@@ -120,6 +121,7 @@ const toggleMavlinkDumperRecording = (): void => {
 const downloadMavlinkDump = (): void => {
   const dump = getMavlinkDumperDump()
   if (!dump) return
+  logUserAction('Downloaded MAVLink dump')
   const blob = new Blob([dump], { type: 'application/x-ndjson' })
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   saveAs(blob, `cockpit-mavlink-dump-${timestamp}.jsonl`)
@@ -137,12 +139,14 @@ const openInMemoryDumpViewer = (): void => {
     loadedDumpContent.value = getMavlinkDumperDump()
   }
   if (isMavlinkDumperRecording.value || loadedDumpContent.value) {
+    logUserAction('Opened in-memory MAVLink dump viewer')
     loadedDumpFileName.value = isMavlinkDumperRecording.value ? 'In-memory buffer (live)' : 'In-memory buffer'
     dumpViewerOpen.value = true
   }
 }
 
 const onClearMavlinkDumperDump = (): void => {
+  logUserAction('Cleared MAVLink dump')
   clearMavlinkDumperDump()
   loadedDumpContent.value = ''
 }
@@ -160,6 +164,7 @@ const onDumpFileSelected = async (event: Event): Promise<void> => {
   try {
     loadedDumpContent.value = await file.text()
     loadedDumpFileName.value = file.name
+    logUserAction(`Loaded MAVLink dump file '${file.name}'`)
     dumpViewerOpen.value = true
   } catch (error) {
     console.error('Error loading MAVLink dump file:', error)

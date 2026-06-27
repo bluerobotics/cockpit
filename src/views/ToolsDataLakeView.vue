@@ -239,12 +239,14 @@ const tableHeaders = [
 const recordedVariableIds = ref<string[]>([...dataLakeLogger.recordedVariableIds])
 
 const handleRecordToggle = (variableId: string, recorded: boolean | null): void => {
+  logUserAction(`${recorded ? 'Enabled' : 'Disabled'} recording of data-lake variable '${variableId}'`)
   dataLakeLogger.setVariableRecorded(variableId, recorded ?? false)
   recordedVariableIds.value = [...dataLakeLogger.recordedVariableIds]
 }
 
 const copiedId = ref<string | null>(null)
 const handleCopy = async (id: string): Promise<void> => {
+  logUserAction(`Copied data-lake variable ID '${id}'`)
   await copyToClipboard(id)
   copiedId.value = id
   setTimeout(() => {
@@ -374,6 +376,7 @@ let idVariableBeingEdited: string | undefined
  * Opens the dialog to create a new variable
  */
 const openNewVariableDialog = (): void => {
+  logUserAction('Opened new data-lake variable dialog')
   idVariableBeingEdited = undefined
   showVariableDialog.value = true
 }
@@ -385,6 +388,7 @@ const openNewVariableDialog = (): void => {
 const editUserDefinedVariable = (variableId: string): void => {
   const variable = availableDataLakeVariables.value.find((v) => v.id === variableId)
   if (variable && isUserDefinedVariable(variableId)) {
+    logUserAction(`Opened edit dialog for data-lake variable '${variableId}'`)
     idVariableBeingEdited = variableId
     showVariableDialog.value = true
   } else if (variable && !isUserDefinedVariable(variableId)) {
@@ -398,6 +402,7 @@ const editUserDefinedVariable = (variableId: string): void => {
  * Handles variable save event
  */
 const handleVariableSaved = (): void => {
+  logUserAction('Saved data-lake variable')
   showVariableDialog.value = false
 }
 
@@ -409,9 +414,11 @@ const deleteVariable = (id: string): void => {
   if (isCompoundVariable(id)) {
     const func = getAllTransformingFunctions().find((f) => f.id === id)
     if (func) {
+      logUserAction(`Deleted compound variable '${id}'`)
       deleteTransformingFunction(func)
     }
   } else if (isUserDefinedVariable(id)) {
+    logUserAction(`Deleted data-lake variable '${id}'`)
     deleteDataLakeVariable(id)
   } else {
     openSnackbar({ message: `Variable with ID ${id} cannot be deleted`, variant: 'error' })
@@ -433,17 +440,20 @@ const isUserDefinedVariable = (id: string): boolean => {
 const editCompoundVariable = (id: string): void => {
   const func = getAllTransformingFunctions().find((f) => f.id === id)
   if (func) {
+    logUserAction(`Opened edit dialog for compound variable '${id}'`)
     functionBeingEdited.value = func
     showNewFunctionDialog.value = true
   }
 }
 
 const openNewFunctionDialog = (): void => {
+  logUserAction('Opened new compound variable dialog')
   functionBeingEdited.value = undefined
   showNewFunctionDialog.value = true
 }
 
 const handleFunctionSaved = (): void => {
+  logUserAction('Saved compound variable')
   showNewFunctionDialog.value = false
 }
 
