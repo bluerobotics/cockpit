@@ -692,6 +692,7 @@ const restartLivePlotAfterBufferReset = (): void => {
 }
 
 const applyMaxPointsPerSeries = (): void => {
+  logUserAction('Applied max points per series on MAVLink dump plot')
   const clamped = clampMaxPointsPerSeries(Number(draftMaxPointsPerSeries.value))
   mavlinkDumpViewerMaxPoints.value = clamped
   draftMaxPointsPerSeries.value = String(clamped)
@@ -773,10 +774,12 @@ watch(selectedSeriesIds, (ids, previousIds) => {
 })
 
 const removeSeries = (id: string): void => {
+  logUserAction('Removed a series from MAVLink dump plot')
   selectedSeriesIds.value = selectedSeriesIds.value.filter((sid) => sid !== id)
 }
 
 const resetZoom = (): void => {
+  logUserAction('Reset MAVLink dump plot zoom')
   isLivePlotFollowingEnd.value = true
   viewStartMs.value = 0
   viewEndMs.value = durationMs.value

@@ -47,20 +47,24 @@ const { openSnackbar } = useSnackbar()
 const show = ref(true)
 
 const cancelOpeningMainMenu = (): void => {
+  logUserAction('Dismissed armed-vehicle menu warning')
   show.value = false
 }
 
 const continueAnyway = (): void => {
+  logUserAction('Opened main menu while vehicle armed (continued past warning)')
   interfaceStore.isMainMenuVisible = true
   show.value = false
 }
 
 const doNotAskAgainInThisSession = (): void => {
+  logUserAction('Disabled armed-menu warning for this session')
   alertStore.skipArmedMenuWarningThisSession = true
   continueAnyway()
 }
 
 const neverAskAgain = (): void => {
+  logUserAction('Disabled armed-menu warning permanently')
   alertStore.neverShowArmedMenuWarning = true
   continueAnyway()
 
@@ -73,6 +77,7 @@ const neverAskAgain = (): void => {
 }
 
 const disarmVehicle = (): void => {
+  logUserAction('Chose to disarm vehicle from armed-menu warning')
   vehicleStore.disarm()
   interfaceStore.isMainMenuVisible = true
   show.value = false

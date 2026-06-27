@@ -263,6 +263,7 @@ const closeDialog = (): void => {
  */
 const saveVariable = (): void => {
   if (!isValid.value) return
+  logUserAction('Saved data-lake variable')
 
   let parsedValue: string | number | boolean | undefined
 

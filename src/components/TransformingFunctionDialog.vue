@@ -207,6 +207,7 @@ const saveTransformingFunction = (): void => {
     openSnackbar({ message: 'Please fill in all fields', variant: 'error' })
     return
   }
+  logUserAction('Saved data-lake transforming function')
 
   if (editingExistingFunction.value && props.editFunction) {
     const { ...otherProps } = newFunction.value
