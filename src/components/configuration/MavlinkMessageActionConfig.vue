@@ -156,6 +156,7 @@ const createActionConfig = (): void => {
 }
 
 const saveActionConfig = (): void => {
+  logUserAction(`${editMode.value ? 'Updated' : 'Created'} MAVLink message action '${newActionConfig.value.name}'`)
   createActionConfig()
   closeActionDialog()
 }
@@ -166,6 +167,7 @@ const exportAction = (id: string): void => {
     console.error('Action not found')
     return
   }
+  logUserAction(`Exported MAVLink message action '${action.name}'`)
   const json = JSON.stringify(action, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
   const url = window.URL.createObjectURL(blob)
@@ -180,6 +182,8 @@ const exportAction = (id: string): void => {
 }
 
 const deleteAction = (id: string): void => {
+  const action = getMavlinkMessageActionConfig(id)
+  logUserAction(`Deleted MAVLink message action '${action?.name ?? id}'`)
   deleteMavlinkMessageActionConfig(id)
   emit('action-deleted')
 }
@@ -192,6 +196,7 @@ const closeActionDialog = (): void => {
 const openEditDialog = (id: string): void => {
   const action = getMavlinkMessageActionConfig(id)
   if (action) {
+    logUserAction(`Opened edit dialog for MAVLink message action '${action.name}'`)
     editMode.value = true
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
     actionDialog.value.show = true
@@ -199,6 +204,7 @@ const openEditDialog = (id: string): void => {
 }
 
 const openNewDialog = (): void => {
+  logUserAction('Opened new MAVLink message action dialog')
   resetNewAction()
   actionDialog.value.show = true
 }

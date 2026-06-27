@@ -98,7 +98,7 @@
                 <template #bottom>
                   <tr class="w-full">
                     <td colspan="3" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
-                      <v-btn variant="outlined" class="rounded-lg" @click="actionTypeDialog.show = true">
+                      <v-btn variant="outlined" class="rounded-lg" @click="openNewActionTypeDialog">
                         <v-icon start>mdi-plus</v-icon>
                         New action
                       </v-btn>
@@ -274,6 +274,7 @@ const handleActionDeleted = (): void => {
 }
 
 const editAction = (item: ActionConfig): void => {
+  logUserAction(`Opened edit dialog for action '${item.name}'`)
   switch (item.type) {
     case customActionTypes.httpRequest:
       httpRequestConfig.value?.openEditDialog(item.id)
@@ -288,10 +289,12 @@ const editAction = (item: ActionConfig): void => {
 }
 
 const runAction = (item: ActionConfig): void => {
+  logUserAction(`Ran action '${item.name}'`)
   executeActionCallback(item.id)
 }
 
 const exportAction = (item: ActionConfig): void => {
+  logUserAction(`Exported action '${item.name}'`)
   switch (item.type) {
     case customActionTypes.httpRequest:
       httpRequestConfig.value?.exportAction(item.id)
@@ -306,6 +309,7 @@ const exportAction = (item: ActionConfig): void => {
 }
 
 const deleteAction = (item: ActionConfig): void => {
+  logUserAction(`Deleted action '${item.name}'`)
   switch (item.type) {
     case customActionTypes.httpRequest:
       httpRequestConfig.value?.deleteAction(item.id)
@@ -356,7 +360,13 @@ const actionTypes = [
   },
 ]
 
+const openNewActionTypeDialog = (): void => {
+  logUserAction('Opened new-action type selection dialog')
+  actionTypeDialog.value.show = true
+}
+
 const selectActionType = (type: customActionTypes): void => {
+  logUserAction(`Selected new action type '${type}'`)
   actionTypeDialog.value.show = false
   openNewActionDialog(type)
 }
@@ -372,6 +382,7 @@ const importAction = (): void => {
       reader.onload = (e) => {
         try {
           const json = JSON.parse(e.target?.result as string)
+          logUserAction(`Imported action '${json.name ?? 'unknown'}' from file`)
 
           // Determine the action type based on the content and register it
           if ('messageType' in json) {
@@ -407,6 +418,7 @@ const importAction = (): void => {
 }
 
 const openLinkDialog = (item: ActionConfig): void => {
+  logUserAction(`Opened action-link dialog for action '${item.name}'`)
   linkConfig.value?.openDialog(item)
 }
 

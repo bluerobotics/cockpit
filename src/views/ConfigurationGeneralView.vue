@@ -23,7 +23,7 @@
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
                   <span class="mr-2">Current user:</span>
-                  <span class="font-semibold text-2xl cursor-pointer" @click="missionStore.changeUsername">{{
+                  <span class="font-semibold text-2xl cursor-pointer" @click="manageUsers">{{
                     missionStore.username
                   }}</span>
                 </div>
@@ -34,7 +34,7 @@
                     append-icon="mdi-account"
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
-                    @click="missionStore.changeUsername"
+                    @click="manageUsers"
                     >Manage users</v-btn
                   >
                 </div>
@@ -44,20 +44,10 @@
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
                   Show tutorial
                 </v-btn>
-                <v-btn
-                  size="x-small"
-                  class="bg-[#FFFFFF22] shadow-1"
-                  variant="flat"
-                  @click="showCockpitSettingsDialog = true"
-                >
+                <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openCockpitSettingsDialog">
                   Manage Cockpit settings
                 </v-btn>
-                <v-btn
-                  size="x-small"
-                  class="bg-[#FFFFFF22] shadow-1"
-                  variant="flat"
-                  @click="interfaceStore.pirateMode = !interfaceStore.pirateMode"
-                >
+                <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="togglePirateMode">
                   {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openExternalFeaturesModal">
@@ -68,7 +58,7 @@
                   class="bg-[#FFFFFF22] shadow-1"
                   variant="flat"
                   prepend-icon="mdi-shield-lock-outline"
-                  @click="interfaceStore.isDataPrivacyModalVisible = true"
+                  @click="openDataPrivacyModal"
                 >
                   Shared Data
                 </v-btn>
@@ -132,7 +122,7 @@
               size="x-small"
               class="bg-[#FFFFFF22] mt-3 mb-2 shadow-2"
               variant="flat"
-              @click="showDiscoveryDialog = true"
+              @click="openVehicleDiscoveryDialog"
             >
               Search for vehicles
             </v-btn>
@@ -588,6 +578,7 @@ const applyFolderPath = async (path: string): Promise<void> => {
 
 const browseCockpitFolder = async (): Promise<void> => {
   if (!window.electronAPI) return
+  logUserAction('Browsed for a custom Cockpit folder')
   const selected = await window.electronAPI.selectCockpitFolder()
   if (!selected) return
 
@@ -630,6 +621,7 @@ const browseCockpitFolder = async (): Promise<void> => {
 
 const resetCockpitFolderPath = async (): Promise<void> => {
   if (!window.electronAPI) return
+  logUserAction('Reset Cockpit folder path to default')
   await window.electronAPI.setCockpitFolderPath(defaultCockpitFolderPath.value)
   cockpitFolderPath.value = defaultCockpitFolderPath.value
 }
@@ -643,6 +635,7 @@ const setGlobalAddress = async (): Promise<void> => {
     return
   }
 
+  logUserAction(`Set vehicle global address to '${newGlobalAddress.value}'`)
   mainVehicleStore.globalAddress = newGlobalAddress.value
 
   // Temporary solution to actually set the address and connect the vehicle, since this is non-reactive today.
@@ -657,6 +650,9 @@ const resetGlobalAddress = async (): Promise<void> => {
 }
 
 const handleCustomRtcConfiguration = (): void => {
+  logUserAction(
+    `${mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled'} custom WebRTC configuration`
+  )
   if (mainVehicleStore.customWebRTCConfiguration.enabled) {
     updateWebRtcConfiguration()
   }
@@ -708,6 +704,7 @@ const setMainVehicleConnectionURI = async (): Promise<void> => {
     return
   }
 
+  logUserAction(`Set custom main vehicle connection URI to '${mavlink2RestWebsocketURI.value.toString()}'`)
   mainVehicleStore.customMAVLink2RestWebsocketURI = {
     data: mavlink2RestWebsocketURI.value.toString(),
     enabled: true,
@@ -717,6 +714,7 @@ const setMainVehicleConnectionURI = async (): Promise<void> => {
 }
 
 const resetMainVehicleConnectionURI = async (): Promise<void> => {
+  logUserAction('Reset main vehicle connection URI to default')
   mainVehicleStore.customMAVLink2RestWebsocketURI = {
     enabled: false,
     data: mainVehicleStore.defaultMAVLink2RestWebsocketURI.toString(),
@@ -760,6 +758,7 @@ const setWebRTCSignallingURI = async (): Promise<void> => {
     return
   }
 
+  logUserAction(`Set custom WebRTC signalling URI to '${webRTCSignallingURI.value.toString()}'`)
   mainVehicleStore.customWebRTCSignallingURI = {
     data: webRTCSignallingURI.value.toString(),
     enabled: true,
@@ -769,6 +768,7 @@ const setWebRTCSignallingURI = async (): Promise<void> => {
 }
 
 const resetWebRTCSignallingURI = (): void => {
+  logUserAction('Reset WebRTC signalling URI to default')
   mainVehicleStore.customWebRTCSignallingURI = {
     enabled: false,
     data: mainVehicleStore.defaultWebRTCSignallingURI.toString(),
@@ -802,10 +802,12 @@ const setConnectionTimeout = async (): Promise<void> => {
   const validation = await connectionTimeoutForm.value.validate()
   if (!validation.valid) return
 
+  logUserAction(`Set vehicle connection timeout to ${newVehicleConnectionTimeoutSeconds.value}s`)
   mainVehicleStore.vehicleConnectionTimeoutMs = Math.round(newVehicleConnectionTimeoutSeconds.value * 1000)
 }
 
 const resetConnectionTimeout = (): void => {
+  logUserAction('Reset vehicle connection timeout to default')
   newVehicleConnectionTimeoutSeconds.value = defaultVehicleConnectionTimeoutSeconds
   mainVehicleStore.vehicleConnectionTimeoutMs = defaultVehicleConnectionTimeoutSeconds * 1000
 }
@@ -837,12 +839,14 @@ const setWatchdogTimeout = async (): Promise<void> => {
   const validation = await watchdogTimeoutForm.value.validate()
   if (!validation.valid) return
 
+  logUserAction(`Set reconnection watchdog timeout to ${newVehicleConnectionWatchdogTimeoutSeconds.value}s`)
   mainVehicleStore.vehicleConnectionWatchdogTimeoutMs = Math.round(
     newVehicleConnectionWatchdogTimeoutSeconds.value * 1000
   )
 }
 
 const resetWatchdogTimeout = (): void => {
+  logUserAction('Reset reconnection watchdog timeout to default')
   newVehicleConnectionWatchdogTimeoutSeconds.value = defaultVehicleConnectionWatchdogTimeoutSeconds
   mainVehicleStore.vehicleConnectionWatchdogTimeoutMs = defaultVehicleConnectionWatchdogTimeoutSeconds * 1000
 }
@@ -892,6 +896,7 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
 const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.customWebRTCConfiguration.data, null, 4))
 const updateWebRtcConfiguration = (): void => {
   try {
+    logUserAction('Updated custom WebRTC configuration')
     const newConfig = JSON.parse(customRtcConfiguration.value)
     mainVehicleStore.customWebRTCConfiguration.data = newConfig
     reloadCockpitAndWarnUser()
@@ -914,11 +919,38 @@ const tryToPrettifyRtcConfig = (): void => {
 }
 
 const openTutorial = (): void => {
+  logUserAction('Opened Tutorial')
   interfaceStore.isMainMenuVisible = false
   interfaceStore.isTutorialVisible = true
 }
 
+const openDataPrivacyModal = (): void => {
+  logUserAction('Opened Data Privacy dialog')
+  interfaceStore.isDataPrivacyModalVisible = true
+}
+
+const manageUsers = (): void => {
+  logUserAction('Opened user management')
+  missionStore.changeUsername()
+}
+
+const openCockpitSettingsDialog = (): void => {
+  logUserAction('Opened Cockpit settings management dialog')
+  showCockpitSettingsDialog.value = true
+}
+
+const openVehicleDiscoveryDialog = (): void => {
+  logUserAction('Opened Vehicle Discovery dialog')
+  showDiscoveryDialog.value = true
+}
+
+const togglePirateMode = (): void => {
+  logUserAction(`${!interfaceStore.pirateMode ? 'Enabled' : 'Disabled'} pirate mode`)
+  interfaceStore.pirateMode = !interfaceStore.pirateMode
+}
+
 const openExternalFeaturesModal = (): void => {
+  logUserAction('Opened External Features dialog')
   interfaceStore.isMainMenuVisible = false
   interfaceStore.mainMenuCurrentStep = 1
   interfaceStore.currentSubMenuName = null
@@ -954,15 +986,18 @@ const addGenericWebSocket = (): void => {
   const url = newGenericWebSocketUrl.value.trim()
   if (!url) return
 
+  logUserAction(`Added generic WebSocket connection '${url}'`)
   addGenericWebSocketConnection(url)
   newGenericWebSocketUrl.value = ''
 }
 
 const removeGenericWebSocket = (url: string): void => {
+  logUserAction(`Removed generic WebSocket connection '${url}'`)
   removeGenericWebSocketConnection(url)
 }
 
 const openCockpitFolder = (): void => {
+  logUserAction('Opened Cockpit folder')
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openCockpitFolder()
   } else {
