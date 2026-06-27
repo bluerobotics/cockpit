@@ -2,7 +2,7 @@
   <div
     v-if="editMode"
     class="flex fixed top-[5vh] 2xl:left-[22.5vw] xl:left-[21.5vw] left-[20.7vw] bg-[#334a5755] border-[1px] border-[#ffffff25] text-[#FFFFFF] backdrop-blur-lg elevation-5 pr-4 rounded-full cursor-pointer hover:brightness-125 2xl:scale-90 xl:scale-75 scale-[60%]"
-    @click="() => emit('update:editMode', false)"
+    @click="exitEditMode"
   >
     <v-btn icon="mdi-close" size="54" class="bg-[#334a5755] text-[#FFFFFFCC] text-[28px] rounded-full elevation-5" />
     <div class="ml-2 mt-[7px] text-[26px]">Exit</div>
@@ -32,16 +32,11 @@
               <v-list-item class="hover:bg-white/[0.04]">
                 <label class="flex w-full h-full cursor-pointer justify-between">
                   <v-list-item-title>Import views</v-list-item-title>
-                  <input
-                    type="file"
-                    accept="application/json"
-                    hidden
-                    @change="(e: Event) => store.importViewsGroup(e)"
-                  />
+                  <input type="file" accept="application/json" hidden @change="(e: Event) => importViewsGroup(e)" />
                   <v-icon size="20">mdi-upload</v-icon>
                 </label>
               </v-list-item>
-              <v-list-item @click="store.exportViewsGroup(store.currentProfile)">
+              <v-list-item @click="exportViewsGroup">
                 <div class="flex w-full justify-between">
                   <v-list-item-title>Export views</v-list-item-title>
                   <v-icon size="20">mdi-download</v-icon>
@@ -53,7 +48,7 @@
                   <v-icon size="20">mdi-import</v-icon>
                 </div>
               </v-list-item>
-              <v-list-item @click="store.snapToGrid = !store.snapToGrid">
+              <v-list-item @click="toggleSnapToGrid">
                 <div class="flex w-full justify-between mt-[6px]">
                   <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
                   <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
@@ -74,7 +69,7 @@
             :key="view.hash"
             class="flex items-center justify-center border-[1px] border-[#FFFFFF24] rounded-md mx-2 my-[6px] 2xl:p-1 pl-1 pr-[2px] py-[2px] cursor-pointer"
             :class="view === store.currentView ? 'bg-[#CBCBCB64]' : 'bg-[#CBCBCB2A]'"
-            @click="store.selectView(view)"
+            @click="selectView(view)"
           >
             <v-icon
               icon="mdi-drag"
@@ -88,17 +83,17 @@
               :class="{ 'mdi-eye-closed': !view.visible }"
               @click.stop="toggleViewVisibility(view)"
             />
-            <div class="icon-btn mdi mdi-download" @click.stop="store.exportView(view)" />
-            <div class="icon-btn mdi mdi-content-copy" @click.stop="store.duplicateView(view)" />
+            <div class="icon-btn mdi mdi-download" @click.stop="exportView(view)" />
+            <div class="icon-btn mdi mdi-content-copy" @click.stop="duplicateView(view)" />
             <div class="icon-btn mdi mdi-cog" @click.stop="renameView(view)" />
-            <div class="icon-btn mdi mdi-trash-can" @click.stop="store.deleteView(view)" />
+            <div class="icon-btn mdi mdi-trash-can" @click.stop="deleteView(view)" />
           </div>
         </VueDraggable>
         <div ref="managementContainer" class="flex items-end justify-end w-full gap-x-2 mt-2 mb-2 -ml-3 opacity-80">
           <v-icon size="18" icon="mdi-plus-circle" @click="addNewView" />
           <div>
             <label class="flex items-center justify-center w-full h-full cursor-pointer">
-              <input type="file" accept="application/json" hidden @change="(e: Event) => store.importView(e)" />
+              <input type="file" accept="application/json" hidden @change="(e: Event) => importView(e)" />
               <v-icon size="18" icon="mdi-upload" class />
             </label>
           </div>
@@ -169,14 +164,14 @@
                   <div
                     class="icon-btn mdi mdi-fullscreen"
                     :class="{ 'mdi-fullscreen-exit': store.isFullScreen(widget) }"
-                    @click="store.toggleFullScreen(widget)"
+                    @click="toggleWidgetFullScreen(widget)"
                   />
                   <div
                     class="icon-btn mdi mdi-cog"
                     :class="{ 'opacity-20 cursor-not-allowed': !isWidgetConfigurable[widget.component as WidgetType] }"
                     @click="store.widgetManagerVars(widget.hash).configMenuOpen = true"
                   />
-                  <div class="icon-btn mdi mdi-trash-can" @click="store.deleteWidget(widget)" />
+                  <div class="icon-btn mdi mdi-trash-can" @click="deleteWidget(widget)" />
                 </div>
               </div>
             </TransitionGroup>
@@ -241,9 +236,9 @@
                     <div
                       class="icon-btn mdi mdi-cog"
                       :class="{ 'opacity-20 cursor-not-allowed': !isCogIconEnabled(widget) }"
-                      @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
+                      @click="openMiniWidgetConfig(widget)"
                     />
-                    <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
+                    <div class="icon-btn mdi mdi-trash-can" @click="deleteMiniWidget(widget)" />
                   </div>
                 </TransitionGroup>
               </div>
@@ -311,9 +306,9 @@
                     <div
                       class="icon-btn mdi mdi-cog"
                       :class="{ 'opacity-20 cursor-not-allowed': !isCogIconEnabled(widget) }"
-                      @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
+                      @click="openMiniWidgetConfig(widget)"
                     />
-                    <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
+                    <div class="icon-btn mdi mdi-trash-can" @click="deleteMiniWidget(widget)" />
                   </div>
                 </TransitionGroup>
               </div>
@@ -369,9 +364,9 @@
                   <div
                     class="icon-btn mdi mdi-cog"
                     :class="{ 'opacity-20 cursor-not-allowed': !isCogIconEnabled(widget) }"
-                    @click="store.miniWidgetManagerVars(widget.hash).configMenuOpen = true"
+                    @click="openMiniWidgetConfig(widget)"
                   />
-                  <div class="icon-btn mdi mdi-trash-can" @click="store.deleteMiniWidget(widget)" />
+                  <div class="icon-btn mdi mdi-trash-can" @click="deleteMiniWidget(widget)" />
                 </div>
               </TransitionGroup>
             </div>
@@ -395,7 +390,7 @@
           :items="['Regular', 'Mini', 'Input']"
           class="bg-[#27384255] 2xl:scale-100 scale-[80%]"
           hide-details
-          @change="widgetMode = $event"
+          @update:model-value="onWidgetPaletteModeChange"
         />
       </div>
       <div class="flex flex-col items-center justify-start w-full pl-2">
@@ -408,12 +403,7 @@
         </div>
         <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
         <div v-show="widgetMode === 'Input'">
-          <v-btn
-            type="flat"
-            class="bg-[#FFFFFF33] text-white w-[95%]"
-            @click="store.addWidget(makeNewWidget(WidgetType.CollapsibleContainer), store.currentView)"
-            >Add new container
-          </v-btn>
+          <v-btn type="flat" class="bg-[#FFFFFF33] text-white w-[95%]" @click="addContainer">Add new container </v-btn>
         </div>
       </div>
     </div>
@@ -606,6 +596,7 @@ const store = useWidgetManagerStore()
 const mainVehicleStore = useMainVehicleStore()
 
 const openVehicleDefaultsImportModal = (): void => {
+  logUserAction('Opened vehicle defaults import dialog')
   interfaceStore.openVehicleDefaultsViewsImport()
 }
 
@@ -797,19 +788,99 @@ const newViewName = ref('')
 const viewRenameDialogRevealed = ref(false)
 const viewRenameDialog = useConfirmDialog(viewRenameDialogRevealed)
 viewRenameDialog.onConfirm(() => {
+  logUserAction(`Renamed view '${viewBeingRenamed.value.name}' to '${newViewName.value}'`)
   store.renameView(viewBeingRenamed.value, newViewName.value)
+  newViewName.value = ''
+})
+viewRenameDialog.onCancel(() => {
+  logUserAction(`Cancelled rename of view '${viewBeingRenamed.value.name}'`)
   newViewName.value = ''
 })
 
 const addNewView = (): void => {
   if (!viewRenameDialogRevealed.value) {
+    logUserAction('Added new view')
     store.addView()
     forceUpdate.value++
     renameView(store.currentView)
   }
 }
 
+const selectView = (view: View): void => {
+  logUserAction(`Selected view '${view.name}'`)
+  store.selectView(view)
+}
+
+const deleteView = (view: View): void => {
+  logUserAction(`Deleted view '${view.name}'`)
+  store.deleteView(view)
+}
+
+const duplicateView = (view: View): void => {
+  logUserAction(`Duplicated view '${view.name}'`)
+  store.duplicateView(view)
+}
+
+const exportView = (view: View): void => {
+  logUserAction(`Exported view '${view.name}'`)
+  store.exportView(view)
+}
+
+const importView = (e: Event): void => {
+  logUserAction('Imported view from file')
+  store.importView(e)
+}
+
+const exportViewsGroup = (): void => {
+  logUserAction('Exported views group')
+  store.exportViewsGroup(store.currentProfile)
+}
+
+const importViewsGroup = (e: Event): void => {
+  logUserAction('Imported views group from file')
+  store.importViewsGroup(e)
+}
+
+const toggleSnapToGrid = (): void => {
+  logUserAction(`${store.snapToGrid ? 'Disabled' : 'Enabled'} snap-to-grid`)
+  store.snapToGrid = !store.snapToGrid
+}
+
+const toggleWidgetFullScreen = (widget: Widget): void => {
+  logUserAction(`${store.isFullScreen(widget) ? 'Restored' : 'Maximized'} widget '${widget.name}'`)
+  store.toggleFullScreen(widget)
+}
+
+const deleteWidget = (widget: Widget): void => {
+  logUserAction(`Deleted widget '${widget.name}'`)
+  store.deleteWidget(widget)
+}
+
+const deleteMiniWidget = (miniWidget: MiniWidget): void => {
+  logUserAction(`Deleted mini-widget '${miniWidget.component}'`)
+  store.deleteMiniWidget(miniWidget)
+}
+
+const addContainer = (): void => {
+  logUserAction('Added new container widget')
+  store.addWidget(makeNewWidget(WidgetType.CollapsibleContainer), store.currentView)
+}
+
+const exitEditMode = (): void => {
+  logUserAction('Exited interface edit mode')
+  emit('update:editMode', false)
+}
+
+const openMiniWidgetConfig = (widget: MiniWidget): void => {
+  store.miniWidgetManagerVars(widget.hash).configMenuOpen = true
+}
+
+const onWidgetPaletteModeChange = (mode: string): void => {
+  logUserAction(`Switched widget palette to '${mode}' mode`)
+}
+
 const renameView = (view: View): void => {
+  logUserAction(`Opened rename dialog for view '${view.name}'`)
   viewBeingRenamed.value = view
   newViewName.value = view.name
   viewRenameDialogRevealed.value = true
@@ -825,6 +896,7 @@ const toggleViewVisibility = (view: View): void => {
     return
   }
   view.visible = !view.visible
+  logUserAction(`Set view '${view.name}' visibility to ${view.visible}`)
 }
 
 const resetViewsGroup = (): void => {
@@ -840,6 +912,7 @@ const resetViewsGroup = (): void => {
       {
         text: 'reset',
         action: () => {
+          logUserAction('Reset views group to defaults')
           store.resetViewsGroup()
           closeDialog()
         },
@@ -1106,6 +1179,7 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
         y: Math.max(0, Math.min(1 - widgetSize.height, dropY - widgetSize.height / 2)),
       }
     }
+    logUserAction(`Added widget '${widget.name}' (${widget.component}) to view '${store.currentView.name}'`)
     store.addWidget(makeWidgetUnique(widget), store.currentView, dropPosition)
   }
 
