@@ -225,11 +225,8 @@ import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import {
-  getDataLakeVariableData,
-  listenDataLakeVariable,
-  listenToDataLakeVariablesInfoChanges,
-} from '@/libs/actions/data-lake'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { listenToDataLakeVariablesInfoChanges } from '@/libs/actions/data-lake'
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { round } from '@/libs/utils'
@@ -280,7 +277,8 @@ onBeforeMount(() => {
 
 const widgetStore = useWidgetManagerStore()
 
-const currentState = ref<unknown>(0)
+// Reactively reads the selected data lake variable, auto-resubscribing when the variable changes.
+const { value: currentState } = useDataLakeVariable(() => miniWidget.value.options.variableName)
 
 const finalValue = computed(() => Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value))
 
@@ -346,9 +344,6 @@ const closeVgiDialog = async (): Promise<void> => {
   managerVars.configMenuOpen = false
 }
 
-const updateVariableState = (): void => {
-  currentState.value = getDataLakeVariableData(miniWidget.value.options.variableName)
-}
 const updateWidgetName = (): void => {
   miniWidget.value.name = miniWidget.value.options.displayName || miniWidget.value.options.variableName
 }
@@ -397,18 +392,9 @@ watch(
   { immediate: true }
 )
 
-// Watch for changes in the data lake variable
-watch(
-  () => miniWidget.value.options.variableName,
-  (newVariableName) => {
-    if (!newVariableName) return
-    updateVariableState()
-  }
-)
 watch(
   miniWidget,
   () => {
-    updateVariableState()
     updateWidgetName()
     updateGenericVariablesNames()
   },
@@ -421,7 +407,6 @@ onMounted(() => {
     miniWidget.value.options.variableName = miniWidget.value.options.variableName.replaceAll('.', '/')
   }
 
-  updateVariableState()
   updateWidgetName()
   updateGenericVariablesNames()
 
@@ -431,8 +416,6 @@ onMounted(() => {
 
   // Update list of available variables when the data-lake has new stuff
   listenToDataLakeVariablesInfoChanges(updateGenericVariablesNames)
-
-  chooseVariable(miniWidget.value.options.variableName)
 
   lastWidgetName.value = miniWidget.value.options.displayName
 })
@@ -485,8 +468,6 @@ const chooseVariable = (variable: string): void => {
   miniWidget.value.options.variableName = variable
   variableNameSearchString.value = ''
   showVariableChooseModal.value = false
-
-  listenDataLakeVariable(variable, updateVariableState)
 }
 
 const chooseIcon = (iconName: string): void => {

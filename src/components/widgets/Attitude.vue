@@ -69,9 +69,9 @@
 
 <script setup lang="ts">
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
-import gsap from 'gsap'
-import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import { createQuickTween } from '@/libs/animation'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { constrain, degrees, radians, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -124,15 +124,29 @@ const cameraTiltDeg = ref(undefined as number | undefined)
 // Pitch angles for which horizontal indication lines are rendered.
 const pitchAngles = [-90, -70, -45, -30, -10, 0, 10, 30, 45, 70, 90]
 
-// Rendering variables. Store current rendering state.
-const renderVars = reactive<RenderVariables>({
+// Plain (non-reactive) render state. GSAP tweens this every frame; keeping it out of Vue's reactivity
+// avoids a set/trigger/traverse storm on each animation step. The canvas redraw is driven directly
+// from GSAP's onUpdate via scheduleRender instead.
+const renderVars: RenderVariables = {
   rollDegrees: 0,
   pitchLinesHeights: {},
   cameraTiltDeg: 0,
   pitchDegrees: 0,
-})
+}
 
-// Instantiate the pitch heights synchronously, before the attitude watchers can fire. Otherwise gsap.to() would
+// Coalesce redraws to at most one per animation frame, regardless of how many tweens updated.
+let renderScheduled = false
+const scheduleRender = (): void => {
+  if (renderScheduled) return
+  renderScheduled = true
+  requestAnimationFrame(() => {
+    renderScheduled = false
+    if (!widgetStore.isWidgetVisible(widget.value)) return
+    renderCanvas()
+  })
+}
+
+// Instantiate the pitch heights synchronously, before the attitude watchers can fire. Otherwise the tween would
 // target properties that don't exist yet on the object, emitting "Invalid property ... Missing plugin?" warnings.
 pitchAngles.forEach((a: number) => (renderVars.pitchLinesHeights[a] = 5 * a))
 
@@ -328,32 +342,38 @@ const renderCanvas = (): void => {
 }
 
 // Update the height of each pitch line when the vehicle pitch is updated
+// Reused GSAP setters - one tween per property, retargeted on each update (no per-update allocation).
+const lineTween = createQuickTween(renderVars.pitchLinesHeights, { onUpdate: scheduleRender })
+const varTween = createQuickTween(renderVars, { onUpdate: scheduleRender })
+
 watch(pitchAngleDeg, () => {
   pitchAngles.forEach((angle: number) => {
     const y = -round(angleY(angle + renderVars.cameraTiltDeg - degrees(store.attitude.pitch)), 2)
-    gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
+    lineTween.set(angle, y)
   })
-  gsap.to(renderVars, 0.1, { pitchDegrees: pitchAngleDeg.value })
+  varTween.set('pitchDegrees', pitchAngleDeg.value)
 })
 
 // Update the HUD roll angle when the vehicle roll is updated
 watch(rollAngleDeg, () => {
-  gsap.to(renderVars, 0.1, { rollDegrees: -round(rollAngleDeg.value, 2) })
+  varTween.set('rollDegrees', -round(rollAngleDeg.value, 2))
 })
 
 watch(cameraTiltDeg, () => {
-  gsap.to(renderVars, 0.1, { cameraTiltDeg: cameraTiltDeg.value })
+  if (cameraTiltDeg.value !== undefined) varTween.set('cameraTiltDeg', cameraTiltDeg.value)
   pitchAngles.forEach((angle: number) => {
     const y = -round(angleY(angle + renderVars.cameraTiltDeg - degrees(store.attitude.pitch)), 2)
-    gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
+    lineTween.set(angle, y)
   })
 })
 
-// Update canvas whenever reference variables changes
-watch([renderVars, canvasSize, widget.value.options], () => {
-  if (!widgetStore.isWidgetVisible(widget.value)) return
-  nextTick(() => renderCanvas())
+onUnmounted(() => {
+  lineTween.kill()
+  varTween.kill()
 })
+
+// Redraw on size/option changes (animation-driven redraws come from GSAP's onUpdate above).
+watch([canvasSize, widget.value.options], () => scheduleRender(), { deep: true })
 </script>
 
 <style scoped>

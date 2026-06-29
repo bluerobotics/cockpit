@@ -34,8 +34,94 @@
               hide-details
               class="min-w-[155px]"
             />
+            <v-switch
+              v-model="devStore.enablePerformanceProfiling"
+              label="Performance profiling"
+              color="white"
+              hide-details
+              class="min-w-[155px]"
+            />
           </div>
         </div>
+        <ExpansiblePanel :is-expanded="false" no-bottom-divider>
+          <template #title>
+            <div class="flex justify-between">
+              <span>Performance monitoring</span>
+              <span class="text-sm text-gray-300 cursor-pointer" @click.stop="refreshPerformanceData">
+                <v-tooltip text="Refresh">
+                  <template #activator="{ props }">
+                    <v-icon left class="mr-2" v-bind="props">mdi-refresh</v-icon>
+                  </template>
+                </v-tooltip>
+              </span>
+            </div>
+          </template>
+          <template #content>
+            <div class="flex flex-col gap-3 px-1 pb-2">
+              <p class="text-sm text-gray-300">
+                Main-thread stalls are detected continuously and summarized in the system logs. Enable "Performance
+                profiling" above for the more detailed (and slightly more intrusive) instrumentation below.
+              </p>
+
+              <div>
+                <p class="text-sm font-semibold mb-1">Framerate &amp; leak trend (newest first)</p>
+                <v-data-table
+                  :items="recentTrends"
+                  density="compact"
+                  theme="dark"
+                  :headers="trendHeaders"
+                  :items-per-page="10"
+                  class="bg-[#FFFFFF11] rounded-lg"
+                />
+              </div>
+              <div class="flex flex-row items-center gap-3">
+                <v-btn
+                  size="small"
+                  variant="outlined"
+                  :loading="isCapturingProfile"
+                  :disabled="!selfProfilingAvailable"
+                  @click="onCaptureProfile"
+                >
+                  Capture 10s profile
+                </v-btn>
+                <span v-if="!selfProfilingAvailable" class="text-xs text-gray-400">
+                  JS self-profiling is unavailable in this runtime.
+                </span>
+              </div>
+
+              <div>
+                <p class="text-sm font-semibold mb-1">Recent long tasks (last {{ recentLongTasks.length }})</p>
+                <v-data-table
+                  :items="recentLongTasks"
+                  density="compact"
+                  theme="dark"
+                  :headers="longTaskHeaders"
+                  :items-per-page="10"
+                  class="bg-[#FFFFFF11] rounded-lg"
+                >
+                  <template #item.startTime="{ item }">{{ Math.round(item.startTime) }}</template>
+                  <template #item.duration="{ item }">{{ Math.round(item.duration) }}</template>
+                </v-data-table>
+              </div>
+
+              <div>
+                <p class="text-sm font-semibold mb-1">Instrumented sections</p>
+                <v-data-table
+                  :items="instrumentationRows"
+                  density="compact"
+                  theme="dark"
+                  :headers="instrumentationHeaders"
+                  :items-per-page="10"
+                  class="bg-[#FFFFFF11] rounded-lg"
+                >
+                  <template #item.totalMs="{ item }">{{ Math.round(item.totalMs) }}</template>
+                  <template #item.maxMs="{ item }">{{ item.maxMs.toFixed(1) }}</template>
+                  <template #item.avgMs="{ item }">{{ item.avgMs.toFixed(2) }}</template>
+                </v-data-table>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
             <div class="flex justify-between items-center">
@@ -98,12 +184,21 @@
 // @ts-nocheck
 // TODO:  As of now Vuetify does not export the necessary types for VDataTable, so we can't fix the type error.
 
-import { parse } from 'date-fns'
+import { format, parse } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { onBeforeMount, onBeforeUnmount } from 'vue'
 import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import {
+  type LongTaskRecord,
+  type TrendSnapshot,
+  captureSelfProfile,
+  getInstrumentationStats,
+  getRecentLongTasks,
+  getRecentTrends,
+  isSelfProfilingAvailable,
+} from '@/libs/performance-monitoring'
 import {
   type SystemLog,
   cockpitSytemLogsDB,
@@ -197,6 +292,8 @@ onBeforeMount(async () => {
 
   // Start updating the current session log size every second
   updateInterval = setInterval(updateCurrentSessionLogSize, 1000)
+
+  refreshPerformanceData()
 })
 
 onBeforeUnmount(() => {
@@ -252,6 +349,77 @@ const loadIndexedDBLogs = async (): Promise<void> => {
 
 const getSortedLogs = (logs: SystemLogsData[]): SystemLogsData[] => {
   return logs.sort((a, b) => b.dateTimeMs - a.dateTimeMs)
+}
+
+/* eslint-disable jsdoc/require-jsdoc */
+interface InstrumentationRow {
+  name: string
+  count: number
+  totalMs: number
+  maxMs: number
+  avgMs: number
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
+const recentLongTasks = ref<LongTaskRecord[]>([])
+const recentTrends = ref<TrendSnapshot[]>([])
+const instrumentationRows = ref<InstrumentationRow[]>([])
+const isCapturingProfile = ref(false)
+const selfProfilingAvailable = isSelfProfilingAvailable()
+
+const trendHeaders = [
+  { title: 'Uptime (min)', key: 'uptimeMin', sortable: true },
+  { title: 'Avg FPS', key: 'avgFps', sortable: true },
+  { title: 'Frame σ (ms)', key: 'frameMsStdDev', sortable: true },
+  { title: 'p95 (ms)', key: 'p95FrameMs', sortable: true },
+  { title: 'Max (ms)', key: 'maxFrameMs', sortable: true },
+  { title: 'Long tasks', key: 'longTasks', sortable: true },
+  { title: 'Mem (MB)', key: 'memoryMB', sortable: true },
+  { title: 'DL listeners', key: 'dataLakeListeners', sortable: true },
+  { title: 'DOM nodes', key: 'domNodes', sortable: true },
+]
+
+const longTaskHeaders = [
+  { title: 'Start (ms)', key: 'startTime', sortable: true },
+  { title: 'Duration (ms)', key: 'duration', sortable: true },
+  { title: 'Attribution', key: 'attribution', sortable: false },
+]
+
+const instrumentationHeaders = [
+  { title: 'Section', key: 'name', sortable: false },
+  { title: 'Count', key: 'count', sortable: true },
+  { title: 'Total (ms)', key: 'totalMs', sortable: true },
+  { title: 'Max (ms)', key: 'maxMs', sortable: true },
+  { title: 'Avg (ms)', key: 'avgMs', sortable: true },
+]
+
+const refreshPerformanceData = (): void => {
+  recentLongTasks.value = getRecentLongTasks().slice().reverse()
+  recentTrends.value = getRecentTrends().slice().reverse()
+  const stats = getInstrumentationStats()
+  instrumentationRows.value = Object.entries(stats).map(([name, stat]) => ({
+    name,
+    count: stat.count,
+    totalMs: stat.totalMs,
+    maxMs: stat.maxMs,
+    avgMs: stat.count > 0 ? stat.totalMs / stat.count : 0,
+  }))
+}
+
+const onCaptureProfile = async (): Promise<void> => {
+  isCapturingProfile.value = true
+  try {
+    const trace = await captureSelfProfile()
+    if (trace) {
+      const blob = new Blob([JSON.stringify(trace)], { type: 'application/json' })
+      saveAs(blob, `Cockpit self-profile (${format(new Date(), systemLogDateTimeFormat)}).json`)
+    }
+  } catch (error) {
+    console.error('Error capturing self-profile:', error)
+  } finally {
+    isCapturingProfile.value = false
+    refreshPerformanceData()
+  }
 }
 
 const downloadLog = async (logName: string): Promise<void> => {

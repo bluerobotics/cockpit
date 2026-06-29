@@ -11,9 +11,9 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import gsap from 'gsap'
-import { computed, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
+import { createQuickTween } from '@/libs/animation'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -239,33 +239,49 @@ watch(store.attitude, (attitude) => {
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 type RenderVariables = { rollAngleDegrees: number; pitchAngleDegrees: number }
-// Object used to store current render state
-const renderVariables = reactive<RenderVariables>({
+// Plain (non-reactive) render state. GSAP tweens this every frame; keeping it out of Vue's reactivity
+// avoids a set/trigger/traverse storm on each animation step. The canvas redraw is driven directly
+// from GSAP's onUpdate via scheduleRender instead.
+const renderVariables: RenderVariables = {
   pitchAngleDegrees: 0,
   rollAngleDegrees: 0,
-})
+}
+
+// Coalesce redraws to at most one per animation frame, regardless of how many tweens updated.
+let renderScheduled = false
+const scheduleRender = (): void => {
+  if (renderScheduled) return
+  renderScheduled = true
+  requestAnimationFrame(() => {
+    renderScheduled = false
+    if (!widgetStore.isWidgetVisible(widget.value)) return
+    renderCanvas()
+  })
+}
+
+// Reused GSAP setters - one tween per property, retargeted on each update (no per-update allocation).
+const tween = createQuickTween(renderVariables, { onUpdate: scheduleRender })
 
 watch(pitchAngleDeg, () => {
-  gsap.to(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
+  tween.set('pitchAngleDegrees', pitchAngleDeg.value)
 })
 
 watch(rollAngleDeg, () => {
-  gsap.to(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
+  tween.set('rollAngleDegrees', -1 * rollAngleDeg.value)
 })
 
-// Update canvas whenever reference variables changes
-watch([renderVariables, width, height], () => {
-  if (!widgetStore.isWidgetVisible(widget.value)) return
-  nextTick(() => renderCanvas())
-})
+// Redraw on size changes (animation-driven redraws come from GSAP's onUpdate above).
+watch([width, height], () => scheduleRender())
 
 onMounted(() => {
   // Set initial values, since 0 or 360 degrees does not render
-  gsap.to(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
-  gsap.to(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
+  tween.set('pitchAngleDegrees', pitchAngleDeg.value)
+  tween.set('rollAngleDegrees', -1 * rollAngleDeg.value)
 
   renderCanvas()
 })
+
+onUnmounted(() => tween.kill())
 </script>
 
 <style scoped>

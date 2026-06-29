@@ -6,10 +6,12 @@ import { watch } from 'vue'
 import {
   createDataLakeVariable,
   DataLakeVariable,
+  getDataLakeVariableData,
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
+import { setPerformanceContextProvider, startPerformanceMonitoring } from '@/libs/performance-monitoring'
 import { isElectron } from '@/libs/utils'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
@@ -177,6 +179,18 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     })
   }
   fpsMeter()
+
+  // Tier-1 (always-on) main-thread monitoring. Attaches cheap context already collected elsewhere to
+  // each stall-episode summary, so logs are diagnostic without adding any hot-path cost.
+  setPerformanceContextProvider(() => ({
+    fps: getDataLakeVariableData(cockpitAppFrameRateVariable.id),
+    memoryMB: getDataLakeVariableData(cockpitMemoryUsageVariable.id),
+    cpuPercent: cockpitCpuUsageVariable ? getDataLakeVariableData(cockpitCpuUsageVariable.id) : undefined,
+    activeStreams: Object.keys(videoStore.activeStreams).length,
+    vehicleOnline: mainVehicleStore.isVehicleOnline,
+    vehicleType: mainVehicleStore.isVehicleOnline ? mainVehicleStore.vehicleType ?? null : null,
+  }))
+  startPerformanceMonitoring()
 
   // Routine to log the WebRTC statistics
   const webrtcStreamStats: Record<string, ReturnType<typeof WebRTCStats>> = {}

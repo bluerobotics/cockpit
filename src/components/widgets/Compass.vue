@@ -20,11 +20,11 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import gsap from 'gsap'
-import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
+import { createQuickTween } from '@/libs/animation'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -210,8 +210,25 @@ watch(store.attitude, (attitude) => {
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 type RenderVariables = { yawAngleDegrees: number }
-// Object used to store current render state
-const renderVariables = reactive<RenderVariables>({ yawAngleDegrees: 0 })
+// Plain (non-reactive) render state. GSAP tweens this every frame; keeping it out of Vue's reactivity
+// avoids a set/trigger/traverse storm on each animation step. The canvas redraw is driven directly
+// from GSAP's onUpdate via scheduleRender instead.
+const renderVariables: RenderVariables = { yawAngleDegrees: 0 }
+
+// Coalesce redraws to at most one per animation frame, regardless of how many tweens updated.
+let renderScheduled = false
+const scheduleRender = (): void => {
+  if (renderScheduled) return
+  renderScheduled = true
+  requestAnimationFrame(() => {
+    renderScheduled = false
+    if (!widgetStore.isWidgetVisible(widget.value)) return
+    renderCanvas()
+  })
+}
+
+// Reused GSAP setter - one tween for the yaw, retargeted on each update (no per-update allocation).
+const yawTween = createQuickTween(renderVariables, { onUpdate: scheduleRender })
 
 // Update the X position of each line in the render variables with GSAP to smooth the transition
 const adjustLinesX = (): void => {
@@ -221,26 +238,23 @@ const adjustLinesX = (): void => {
 
   const fromWestToEast = renderVariables.yawAngleDegrees > 270 && fullRangeAngleDegrees < 90
   const fromEastToWest = renderVariables.yawAngleDegrees < 90 && fullRangeAngleDegrees > 270
-  // If cruzing 0 degrees, use a chained animation, so the pointer does not turn 360 degrees to the other side (visual artifact)
+  // When crossing 0 degrees, snap across the boundary first so the pointer takes the short way round
+  // instead of spinning 360 degrees the other side (the reused tween animates from the snapped value).
   if (fromWestToEast) {
-    gsap.to(renderVariables, 0.05, { yawAngleDegrees: 0 })
-    gsap.fromTo(renderVariables, 0.05, { yawAngleDegrees: 0 }, { yawAngleDegrees: fullRangeAngleDegrees })
+    yawTween.snap('yawAngleDegrees', 0)
   } else if (fromEastToWest) {
-    gsap.to(renderVariables, 0.05, { yawAngleDegrees: 360 })
-    gsap.fromTo(renderVariables, 0.05, { yawAngleDegrees: 360 }, { yawAngleDegrees: fullRangeAngleDegrees })
-  } else {
-    gsap.to(renderVariables, 0.1, { yawAngleDegrees: fullRangeAngleDegrees })
+    yawTween.snap('yawAngleDegrees', 360)
   }
+  yawTween.set('yawAngleDegrees', fullRangeAngleDegrees)
 }
 
 // When the yaw changes, adjust the lines X position
 watch(yaw, () => adjustLinesX())
 
-// Update canvas whenever reference variables changes
-watch([renderVariables, width, height], () => {
-  if (!widgetStore.isWidgetVisible(widget.value)) return
-  nextTick(() => renderCanvas())
-})
+// Redraw on size changes (animation-driven redraws come from GSAP's onUpdate above).
+watch([width, height], () => scheduleRender())
+
+onUnmounted(() => yawTween.kill())
 </script>
 
 <style scoped>

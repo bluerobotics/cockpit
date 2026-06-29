@@ -18,6 +18,7 @@ import {
 import { allAvailableAxes, allAvailableButtons, performJoystickMappingMigrations } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
+import { instrument } from '@/libs/performance-monitoring'
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
 import { isMappingBlank } from '@/migration/default-profile-importer'
@@ -148,7 +149,7 @@ export const useControllerStore = defineStore('controller', () => {
   watch(
     () => protocolMapping.value,
     (newMapping) => {
-      initializeProtocolMapping(newMapping)
+      instrument('controller-protocolmapping-init', () => initializeProtocolMapping(newMapping))
     },
     { immediate: true, deep: true }
   )
@@ -292,6 +293,10 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
+  // Modifier actions are uniquely identified by their id, so comparing ids avoids re-serializing the
+  // (constant) modifier set with JSON.stringify on every button on every joystick poll (~60Hz hot path).
+  const modifierKeyActionIds = new Set(Object.values(modifierKeyActions).map((a) => a.id))
+
   const activeButtonActions = (
     joystickState: JoystickState,
     mapping: JoystickProtocolActionsMapping
@@ -300,9 +305,7 @@ export const useControllerStore = defineStore('controller', () => {
 
     Object.entries(mapping.buttonsCorrespondencies.regular).forEach(([key, value]) => {
       const buttonActive = joystickState.buttons[Number(key)] ?? 0 > 0.5
-      const isModifier = Object.values(modifierKeyActions)
-        .map((a) => JSON.stringify(a))
-        .includes(JSON.stringify(value.action))
+      const isModifier = modifierKeyActionIds.has(value.action.id)
       if (buttonActive && isModifier) {
         modifierKeyId = value.action.id
       }
@@ -330,27 +333,30 @@ export const useControllerStore = defineStore('controller', () => {
   watch(
     protocolMapping,
     () => {
-      // Check if there's any duplicated axis actions. If so, unmap (set to no_function) the axes that use to have the same action
-      const oldMapping = structuredClone(toRaw(lastValidProtocolMapping))
-      const newMapping = protocolMapping.value
-      const mappedAxisActions = Object.values(newMapping.axesCorrespondencies).map((v) => v.action.id)
-      const duplicateAxisActions = mappedAxisActions
-        .filter((item, index) => mappedAxisActions.indexOf(item) !== index)
-        .filter((v) => v !== otherAvailableActions.no_function.id)
-      if (!duplicateAxisActions.isEmpty()) {
-        Object.entries(newMapping.axesCorrespondencies).forEach(([axis, mapping]) => {
-          const isDuplicated = duplicateAxisActions.includes(mapping.action.id)
-          const oldMappingId = oldMapping.axesCorrespondencies[axis as unknown as JoystickAxis]?.action?.id
-          const wasMapped = oldMappingId === mapping.action.id
-          if (isDuplicated && wasMapped) {
-            const warningText = `Unmapping '${mapping.action.name}' from input ${axis} layout.
-              Cannot use same action on multiple axes.`
-            showDialog({ message: warningText, variant: 'warning' })
-            newMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action = otherAvailableActions.no_function
-          }
-        })
-      }
-      lastValidProtocolMapping = structuredClone(toRaw(protocolMapping.value))
+      instrument('controller-protocolmapping-dedup', () => {
+        // Check if there's any duplicated axis actions. If so, unmap (set to no_function) the axes that use to have the same action
+        const oldMapping = structuredClone(toRaw(lastValidProtocolMapping))
+        const newMapping = protocolMapping.value
+        const mappedAxisActions = Object.values(newMapping.axesCorrespondencies).map((v) => v.action.id)
+        const duplicateAxisActions = mappedAxisActions
+          .filter((item, index) => mappedAxisActions.indexOf(item) !== index)
+          .filter((v) => v !== otherAvailableActions.no_function.id)
+        if (!duplicateAxisActions.isEmpty()) {
+          Object.entries(newMapping.axesCorrespondencies).forEach(([axis, mapping]) => {
+            const isDuplicated = duplicateAxisActions.includes(mapping.action.id)
+            const oldMappingId = oldMapping.axesCorrespondencies[axis as unknown as JoystickAxis]?.action?.id
+            const wasMapped = oldMappingId === mapping.action.id
+            if (isDuplicated && wasMapped) {
+              const warningText = `Unmapping '${mapping.action.name}' from input ${axis} layout.
+                Cannot use same action on multiple axes.`
+              showDialog({ message: warningText, variant: 'warning' })
+              newMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action =
+                otherAvailableActions.no_function
+            }
+          })
+        }
+        lastValidProtocolMapping = structuredClone(toRaw(protocolMapping.value))
+      })
     },
     { deep: true }
   )

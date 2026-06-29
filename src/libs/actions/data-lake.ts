@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid'
 
+import { instrument } from '@/libs/performance-monitoring'
 import {
   type DataLakeVariable,
   type DataLakeVariableListener,
@@ -66,6 +67,16 @@ const savePersistentValues = (): void => {
 
 export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> => {
   return dataLakeVariableInfo
+}
+
+/**
+ * Total number of value listeners registered across all data lake variables. Intended as a cheap
+ * leak indicator: unremoved listeners make every value update fan out to more callbacks over time,
+ * which is a prime cause of gradually degrading framerate.
+ * @returns {number} Sum of listeners across all variables.
+ */
+export const getDataLakeListenerCount = (): number => {
+  return Object.values(dataLakeVariableListeners).reduce((count, listeners) => count + Object.keys(listeners).length, 0)
 }
 
 export const getDataLakeVariableInfo = (id: string): DataLakeVariable | undefined => {
@@ -187,17 +198,21 @@ export const unlistenDataLakeVariable = (variableId: string, listenerId: string)
 }
 
 const notifyDataLakeVariableListeners = (id: string): void => {
-  if (dataLakeVariableListeners[id]) {
-    const value = dataLakeVariableData[id]
-    if (value === undefined) return
-    Object.entries(dataLakeVariableListeners[id]).forEach(([listenerId, listener]) => {
+  const listeners = dataLakeVariableListeners[id]
+  if (!listeners) return
+  const value = dataLakeVariableData[id]
+  if (value === undefined) return
+  // Instrumented per-variable so opt-in profiling reveals which variables drive the synchronous
+  // fan-out cost under high-rate telemetry. No-op (direct call) when profiling is disabled.
+  instrument(`datalake-fanout:${id}`, () => {
+    Object.entries(listeners).forEach(([listenerId, listener]) => {
       try {
         listener.callback(value)
       } catch (error) {
         console.error(`[DataLake] Error in listener "${listenerId}" for variable "${id}":`, error)
       }
     })
-  }
+  })
 }
 
 const notifyDataLakeVariableTimestampListeners = (id: string): void => {

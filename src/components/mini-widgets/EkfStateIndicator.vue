@@ -81,14 +81,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
-import { listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const interfaceStore = useAppInterfaceStore()
 const menu = ref(false)
-const listeners = ref<Map<string, string>>(new Map())
 const dataStatus = ref<'loading' | 'connected' | 'error'>('loading')
 
 // EKF bar data
@@ -183,61 +182,49 @@ const buttonBackgroundColor = computed(() => {
   return worstStatusBackgroundColor.value
 })
 
-const startListeningDataLakeVariables = (): void => {
-  // Listen to EKF flags
-  const flagsListenerId = listenDataLakeVariable('EKF_STATUS_REPORT/flags', (value) => {
-    if (typeof value === 'number') {
-      ekfFlags.attitude = !!(value & 1)
-      ekfFlags.velocity_horiz = !!(value & 2)
-      ekfFlags.velocity_vert = !!(value & 4)
-      ekfFlags.pos_horiz_rel = !!(value & 8)
-      ekfFlags.pos_horiz_abs = !!(value & 16)
-      ekfFlags.pos_vert_abs = !!(value & 32)
-      ekfFlags.pos_vert_agl = !!(value & 64)
-      ekfFlags.const_pos_mode = !!(value & 128)
-      ekfFlags.pred_pos_horiz_rel = !!(value & 256)
-      ekfFlags.pred_pos_horiz_abs = !!(value & 512)
-      ekfFlags.uninitialized = !!(value & 1024)
-      ekfFlags.gps_glitching = !!(value & 32768)
+// EKF flags (bitmask) - decoded into individual flags whenever the value changes.
+const { value: ekfFlagsValue } = useDataLakeVariable('EKF_STATUS_REPORT/flags')
+watch(
+  ekfFlagsValue,
+  (value) => {
+    if (typeof value !== 'number') return
+    ekfFlags.attitude = !!(value & 1)
+    ekfFlags.velocity_horiz = !!(value & 2)
+    ekfFlags.velocity_vert = !!(value & 4)
+    ekfFlags.pos_horiz_rel = !!(value & 8)
+    ekfFlags.pos_horiz_abs = !!(value & 16)
+    ekfFlags.pos_vert_abs = !!(value & 32)
+    ekfFlags.pos_vert_agl = !!(value & 64)
+    ekfFlags.const_pos_mode = !!(value & 128)
+    ekfFlags.pred_pos_horiz_rel = !!(value & 256)
+    ekfFlags.pred_pos_horiz_abs = !!(value & 512)
+    ekfFlags.uninitialized = !!(value & 1024)
+    ekfFlags.gps_glitching = !!(value & 32768)
+    dataStatus.value = 'connected'
+  },
+  { immediate: true }
+)
 
-      dataStatus.value = 'connected'
-    }
-  })
-  if (flagsListenerId) listeners.value.set('EKF_STATUS_REPORT/flags', flagsListenerId)
-
-  // Listen to EKF variance values
-  const varianceFields = [
-    'velocity_variance',
-    'pos_horiz_variance',
-    'pos_vert_variance',
-    'compass_variance',
-    'terrain_alt_variance',
-  ]
-
-  varianceFields.forEach((field, index) => {
-    const listenerId = listenDataLakeVariable(`EKF_STATUS_REPORT/${field}`, (value) => {
-      if (typeof value === 'number' && ekfBars[index]) {
-        ekfBars[index].value = Math.sqrt(value)
+// EKF variance values - each maps to one bar (stored as standard deviation).
+const varianceFields = [
+  'velocity_variance',
+  'pos_horiz_variance',
+  'pos_vert_variance',
+  'compass_variance',
+  'terrain_alt_variance',
+]
+varianceFields.forEach((field, index) => {
+  const { value } = useDataLakeVariable(`EKF_STATUS_REPORT/${field}`)
+  watch(
+    value,
+    (raw) => {
+      if (typeof raw === 'number' && ekfBars[index]) {
+        ekfBars[index].value = Math.sqrt(raw)
         dataStatus.value = 'connected'
       }
-    })
-    if (listenerId) listeners.value.set(`EKF_STATUS_REPORT/${field}`, listenerId)
-  })
-}
-
-onMounted(() => {
-  startListeningDataLakeVariables()
-})
-
-onUnmounted(() => {
-  listeners.value.forEach((id, variableName) => {
-    try {
-      unlistenDataLakeVariable(variableName, id)
-    } catch (error) {
-      console.warn(`Failed to unregister listener for ${variableName}:`, error)
-    }
-  })
-  listeners.value.clear()
+    },
+    { immediate: true }
+  )
 })
 </script>
 

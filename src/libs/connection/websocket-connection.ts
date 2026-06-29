@@ -1,3 +1,4 @@
+import { instrument } from '@/libs/performance-monitoring'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 
 import * as Connection from './connection'
@@ -174,7 +175,9 @@ export class WebSocketConnection extends Connection.Abstract {
   private _onMessage(event: MessageEvent): void {
     this._lastMessageAt = Date.now()
     try {
-      this.onRead.emit_value(this._textEncoder.encode(event.data))
+      // The whole synchronous MAVLink parse + dispatch fan-out runs inside this emit. Instrumented so
+      // that, with opt-in profiling on, telemetry-reception cost shows up labelled in self-profiles.
+      instrument('mavlink-ws-message', () => this.onRead.emit_value(this._textEncoder.encode(event.data)))
     } catch (error) {
       // Render the error inline as a string: many native errors thrown from downstream parsers
       // have no enumerable own properties, which made earlier syslogs show a useless `{}` here.

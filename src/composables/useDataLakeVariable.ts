@@ -6,7 +6,11 @@ type DataLakeValue = string | number | boolean
 
 /**
  * Subscribe to a data lake variable reactively.
- * Automatically resubscribes when the variable ID changes and cleans up on unmount.
+ *
+ * Updates are coalesced to at most one per animation frame (latest value wins), so a variable that
+ * changes faster than the display refresh - or many variables changing in the same tick - can't drive
+ * more than one render per frame. The initial value is applied synchronously so the binding is never
+ * blank on mount. Automatically resubscribes when the variable ID changes and cleans up on unmount.
  * @param {MaybeRefOrGetter<string | undefined>} variableId - The data lake variable ID (string, ref, or getter)
  * @returns {{ value: Ref<DataLakeValue | undefined> }} Reactive ref with the latest value
  * @example
@@ -24,11 +28,33 @@ export function useDataLakeVariable(variableId: MaybeRefOrGetter<string | undefi
   let currentListenerId: string | undefined
   let currentVariableId: string | undefined
 
+  // Coalesce incoming updates to one ref write per animation frame, keeping only the latest value.
+  let pendingValue: DataLakeValue | undefined
+  let hasPending = false
+  let rafId: number | undefined
+
+  const flush = (): void => {
+    rafId = undefined
+    if (!hasPending) return
+    hasPending = false
+    value.value = pendingValue
+  }
+
+  const cancelPending = (): void => {
+    if (rafId !== undefined) {
+      cancelAnimationFrame(rafId)
+      rafId = undefined
+    }
+    hasPending = false
+  }
+
   const subscribe = (id: string | undefined): void => {
     if (currentListenerId && currentVariableId) {
       unlistenDataLakeVariable(currentVariableId, currentListenerId)
       currentListenerId = undefined
     }
+    // Drop any frame pending for the previous variable so it can't overwrite the new one.
+    cancelPending()
 
     currentVariableId = id
     if (!id) {
@@ -36,13 +62,16 @@ export function useDataLakeVariable(variableId: MaybeRefOrGetter<string | undefi
       return
     }
 
+    // Apply the current value synchronously so the binding isn't blank for a frame on (re)subscribe.
     const initialValue = getDataLakeVariableData(id)
     if (initialValue !== undefined) {
       value.value = initialValue
     }
 
     currentListenerId = listenDataLakeVariable(id, (raw) => {
-      value.value = raw
+      pendingValue = raw
+      hasPending = true
+      if (rafId === undefined) rafId = requestAnimationFrame(flush)
     })
   }
 
@@ -53,6 +82,7 @@ export function useDataLakeVariable(variableId: MaybeRefOrGetter<string | undefi
   )
 
   onUnmounted(() => {
+    cancelPending()
     if (currentListenerId && currentVariableId) {
       unlistenDataLakeVariable(currentVariableId, currentListenerId)
     }
