@@ -20,6 +20,13 @@ import { setupWorkspaceService } from './services/workspace'
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
 setupElectronLogService()
 
+// On Linux, Chromium gates its Web Speech API backend (used by the voice-alerts feature) behind
+// the `--enable-speech-dispatcher` switch. It must be set before `app.whenReady()` to take effect.
+// Harmless when speech-dispatcher / libspeechd is not available on the host.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-speech-dispatcher')
+}
+
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
 }
