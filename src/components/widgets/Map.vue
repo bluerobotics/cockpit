@@ -292,6 +292,7 @@ import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
+import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
@@ -312,14 +313,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type {
-  IconDimensions,
-  MapTileProvider,
-  MarkerSizes,
-  PointOfInterest,
-  Waypoint,
-  WaypointCoordinates,
-} from '@/types/mission'
+import type { IconDimensions, MapTileProvider, MarkerSizes, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -528,7 +522,11 @@ const refreshReachedWaypointMarkerStyles = (): void => {
 }
 
 const poiManagerMapWidgetRef = ref<typeof PoiManager | null>(null)
-const mapWidgetPoiMarkers = shallowRef<{ [id: string]: L.Marker }>({})
+const poiMarkers = useMapPoiMarkers(map, {
+  iconClassName: 'poi-marker-icon-widget',
+  tooltipClassName: 'poi-tooltip-widget',
+  onClick: (poi) => poiManagerMapWidgetRef.value?.openDialog(undefined, poi),
+})
 
 // Register the usage of the coordinate variables for logging
 datalogger.registerUsage(DatalogVariable.latitude)
@@ -930,11 +928,11 @@ const handleContextMenu = {
 }
 
 const clearMapDrawing = (): void => {
-  const poiMarkers = new Set(Object.values(mapWidgetPoiMarkers.value))
+  const poiMarkerSet = new Set(Object.values(poiMarkers.markers.value))
 
   map.value?.eachLayer((l) => {
     if (l instanceof L.Marker || (l instanceof L.Polyline && l.options.color === '#358AC3')) {
-      if (poiMarkers.has(l as L.Marker)) return
+      if (poiMarkerSet.has(l as L.Marker)) return
       map.value!.removeLayer(l)
     }
   })
@@ -1086,9 +1084,6 @@ onBeforeUnmount(() => {
 
   if (map.value) {
     map.value.off('contextmenu')
-    // Clean up POI markers
-    Object.values(mapWidgetPoiMarkers.value).forEach((marker) => marker.remove())
-    mapWidgetPoiMarkers.value = {}
   }
 
   mapBase.value?.removeEventListener('touchstart', onTouchStart)
@@ -1842,140 +1837,6 @@ const centerOnMission = (): void => {
   targetFollower.unFollow()
   fitMapToWaypoints(map.value, missionFitCoordinates.value)
 }
-
-// POI Marker Management Functions for Map Widget
-const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
-  const poiIconHtml = `
-    <div class="poi-marker-container">
-      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
-      <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
-    </div>
-  `
-
-  return {
-    html: poiIconHtml,
-    className: 'poi-marker-icon-widget',
-    iconSize: [32, 32], // Match the actual container size
-    iconAnchor: [16, 32], // Center horizontally, bottom vertically (like a pin)
-  }
-}
-
-const addPoiMarkerToMapWidget = (poi: PointOfInterest): void => {
-  if (!map.value || !map.value.getContainer()) return
-
-  const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
-
-  const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(map.value)
-
-  const tooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip-widget' }
-  marker.bindTooltip(tooltipContent, tooltipConfig)
-
-  marker.on('drag', (event) => {
-    const newCoords = event.target.getLatLng()
-    const updatedTooltipContent = `
-      <strong>${poi.name}</strong><br>
-      ${poi.description ? poi.description + '<br>' : ''}
-      Lat: ${newCoords.lat.toFixed(8)}, Lng: ${newCoords.lng.toFixed(8)}
-    `
-    marker.getTooltip()?.setContent(updatedTooltipContent)
-  })
-
-  marker.on('dragend', (event) => {
-    const newCoords = event.target.getLatLng()
-    missionStore.movePointOfInterest(poi.id, [newCoords.lat, newCoords.lng])
-  })
-
-  marker.on('click', (event) => {
-    L.DomEvent.stopPropagation(event)
-    if (poiManagerMapWidgetRef.value) {
-      // Get fresh POI data from store instead of using potentially stale poi object
-      const freshPoi = missionStore.pointsOfInterest.find((p) => p.id === poi.id)
-      if (freshPoi) {
-        poiManagerMapWidgetRef.value.openDialog(undefined, freshPoi)
-      } else {
-        console.warn('POI not found in store:', poi.id)
-      }
-    }
-  })
-
-  mapWidgetPoiMarkers.value[poi.id] = marker
-}
-
-const updatePoiMarkerOnMapWidget = (poi: PointOfInterest): void => {
-  if (!map.value || !map.value.getContainer() || !mapWidgetPoiMarkers.value[poi.id]) return
-
-  const marker = mapWidgetPoiMarkers.value[poi.id]
-  marker.setLatLng(poi.coordinates as LatLngTuple)
-
-  marker.setIcon(L.divIcon(poiIconConfig(poi)))
-
-  const updatedTooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  marker.getTooltip()?.setContent(updatedTooltipContent)
-}
-
-const removePoiMarkerFromMapWidget = (poiId: string): void => {
-  if (!map.value || !mapWidgetPoiMarkers.value[poiId]) return
-
-  mapWidgetPoiMarkers.value[poiId].remove()
-  delete mapWidgetPoiMarkers.value[poiId]
-}
-
-// Watch for changes in POIs from the store and update markers on this map widget
-watch(
-  () => missionStore.pointsOfInterest,
-  async (newPois) => {
-    if (!map.value || !map.value.getContainer()) {
-      await nextTick() // Wait for map to potentially become available
-      if (!map.value || !map.value.getContainer()) {
-        console.warn('Map.vue: POI watcher - map not ready after nextTick.')
-        return
-      }
-    }
-
-    const newPoiIds = new Set(newPois.map((p) => p.id))
-
-    Object.keys(mapWidgetPoiMarkers.value).forEach((poiId) => {
-      if (!newPoiIds.has(poiId)) {
-        removePoiMarkerFromMapWidget(poiId)
-      }
-    })
-
-    newPois.forEach((poi) => {
-      if (mapWidgetPoiMarkers.value[poi.id]) {
-        updatePoiMarkerOnMapWidget(poi)
-      } else {
-        addPoiMarkerToMapWidget(poi)
-      }
-    })
-  },
-  { deep: true, immediate: true }
-)
-
-// Ensure POIs are drawn when the map instance becomes available
-watch(
-  map,
-  (currentMapInstance) => {
-    if (currentMapInstance && currentMapInstance.getContainer()) {
-      missionStore.pointsOfInterest.forEach((poi) => {
-        if (!mapWidgetPoiMarkers.value[poi.id]) {
-          addPoiMarkerToMapWidget(poi)
-        } else {
-          updatePoiMarkerOnMapWidget(poi) // Update if already exists, in case details changed
-        }
-      })
-    }
-  },
-  { immediate: true }
-)
 </script>
 
 <style scoped>
