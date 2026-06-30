@@ -154,6 +154,8 @@
   >
   </ContextMenu>
 
+  <PoiActionPopup ref="poiPopupRef" @edit="onPoiEdit" @delete="onPoiDelete" />
+
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Map widget settings</v-card-title>
@@ -287,6 +289,7 @@ import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
+import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -314,7 +317,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { IconDimensions, MarkerSizes, Waypoint, WaypointCoordinates } from '@/types/mission'
+import type { IconDimensions, MarkerSizes, PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -413,6 +416,7 @@ const onTouchStart = (e: TouchEvent): void => {
   if (e.touches.length > 1) {
     isPinching.value = true
     if (contextMenuVisible.value) hideContextMenuAndMarker()
+    poiPopupRef.value?.close()
     clearTimeout(pinchTimeout)
   }
 }
@@ -526,11 +530,28 @@ const refreshReachedWaypointMarkerStyles = (): void => {
 }
 
 const poiManagerMapWidgetRef = ref<typeof PoiManager | null>(null)
+const poiPopupRef = ref<InstanceType<typeof PoiActionPopup> | null>(null)
+
 const poiMarkers = useMapPoiMarkers(map, {
   iconClassName: 'poi-marker-icon-widget',
   tooltipClassName: 'poi-tooltip-widget',
-  onClick: (poi) => poiManagerMapWidgetRef.value?.openDialog(undefined, poi),
+  onContextMenu: (poi, event) => {
+    if (contextMenuVisible.value) hideContextMenuAndMarker()
+    poiPopupRef.value?.open(poi, event)
+  },
 })
+
+const onPoiEdit = (poi: PointOfInterest): void => {
+  if (!poiManagerMapWidgetRef.value) {
+    openSnackbar({ message: 'POI Manager (map widget) is not available.', variant: 'error' })
+    return
+  }
+  poiManagerMapWidgetRef.value.openDialog(undefined, poi)
+}
+
+const onPoiDelete = (poi: PointOfInterest): void => {
+  missionStore.removePointOfInterest(poi.id)
+}
 
 // Register the usage of the coordinate variables for logging
 datalogger.registerUsage(DatalogVariable.latitude)
@@ -729,6 +750,7 @@ onMounted(async () => {
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
+    poiPopupRef.value?.close()
   })
 
   // Update center value after panning
@@ -893,6 +915,8 @@ const handleContextMenu = {
     if (!map.value || isPinching.value || isDragging.value) return
     event.preventDefault()
     event.stopPropagation()
+
+    poiPopupRef.value?.close()
 
     const pt = map.value.mouseEventToContainerPoint(event)
     const ll = map.value.containerPointToLatLng(pt)
@@ -1693,6 +1717,7 @@ const onGlobalOriginSet = (latitude: number, longitude: number): void => {
 const onKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
     hideContextMenuAndMarker()
+    poiPopupRef.value?.close()
     return
   }
 }
