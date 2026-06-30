@@ -26,6 +26,15 @@ export const singleStepZoomMapOptions: Pick<
 }
 
 /**
+ * Great-circle distance between two coordinates.
+ * @param {WaypointCoordinates} from - The first coordinate pair ([latitude, longitude]).
+ * @param {WaypointCoordinates} to - The second coordinate pair ([latitude, longitude]).
+ * @returns {number} The distance between the two coordinates, in meters.
+ */
+export const distanceInMeters = (from: WaypointCoordinates, to: WaypointCoordinates): number =>
+  L.latLng(from[0], from[1]).distanceTo(L.latLng(to[0], to[1]))
+
+/**
  * Enum for the different types of targets that can be followed.
  * @enum {string}
  */

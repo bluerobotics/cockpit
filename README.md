@@ -184,7 +184,7 @@ ArduCopter support has been physically tested, but the primary development team 
 ### 🗺️ **Mission Planning**
 - **Interactive map interface** with drag-and-drop waypoints
 - **Survey generation** for automated area coverage
-- **Points of interest** management
+- **Points of interest** management, with right-click **GoTo** navigation that sends the vehicle to a PoI and keeps following it if the marker is moved
 - **Mission import/export** for easy backup and reuse
 - **Real-time mission monitoring** and execution
 
