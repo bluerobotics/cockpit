@@ -24,6 +24,10 @@ export interface UseMapPoiMarkersOptions {
    * Called when a marker is left-clicked, with the up-to-date PoI from the store and the originating event.
    */
   onClick?: (poi: PointOfInterest, event: MouseEvent) => void
+  /**
+   * Called when a marker is right-clicked, with the up-to-date PoI from the store and the originating event.
+   */
+  onContextMenu?: (poi: PointOfInterest, event: MouseEvent) => void
 }
 
 /**
@@ -116,6 +120,18 @@ export const useMapPoiMarkers = (
         return
       }
       options.onClick?.(freshPoi, event.originalEvent)
+    })
+
+    marker.on('contextmenu', (event: LeafletMouseEvent) => {
+      L.DomEvent.stopPropagation(event)
+      event.originalEvent.stopPropagation()
+      event.originalEvent.preventDefault()
+      const freshPoi = missionStore.pointsOfInterest.find((p) => p.id === poi.id)
+      if (!freshPoi) {
+        console.warn('POI not found in store:', poi.id)
+        return
+      }
+      options.onContextMenu?.(freshPoi, event.originalEvent)
     })
 
     markers.value[poi.id] = marker
