@@ -387,6 +387,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * @param {number} latitude Latitude in degrees.
    * @param {number} longitude Longitude in degrees.
    * @param {number} alt Altitude in meters.
+   * @param {boolean} skipConfirmation Skip the slide-to-confirm prompt (the arm and GUIDED-mode setup
+   * still run), used when retargeting an already-active GoTo so the user isn't re-prompted on every
+   * update (e.g. following a moving target).
    * @returns {Promise<void>}
    */
   async function goTo(
@@ -396,7 +399,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     yaw: number,
     latitude: number,
     longitude: number,
-    alt: number
+    alt: number,
+    skipConfirmation = false
   ): Promise<void> {
     if (!mainVehicle.value) {
       throw new Error('No vehicle available to execute go to command.')
@@ -409,7 +413,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     const askArmConfirm = !mainVehicle.value.isArmed() && !canByPassCategory(EventCategory.ARM)
     const askGoToConfirm = !canByPassCategory(EventCategory.GOTO)
 
-    if (askArmConfirm || askGoToConfirm) {
+    if (!skipConfirmation && (askArmConfirm || askGoToConfirm)) {
       const command = askArmConfirm && askGoToConfirm ? 'Arm and GoTo' : askArmConfirm ? 'Arm' : 'GoTo'
       try {
         await slideToConfirm({ command })
