@@ -176,6 +176,11 @@ const saveConfig = (): void => {
     return
   }
 
+  logUserAction(
+    `Saved action link for action '${dialog.value.action.name}' ` +
+      `(${dialog.value.selectedVariables.length} variable(s), auto-run: ${dialog.value.autoRunType})`
+  )
+
   // Always remove the existing link first
   removeActionLink(dialog.value.action.id)
 

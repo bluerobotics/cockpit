@@ -339,6 +339,7 @@ watch(mediaStream, () => {
 })
 
 const rotateVideo = (angle: number): void => {
+  logUserAction(`Rotated video player by ${angle} degrees`)
   widget.value.options.rotationAngle += angle
 }
 

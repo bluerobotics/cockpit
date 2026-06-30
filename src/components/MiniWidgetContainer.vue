@@ -7,8 +7,8 @@
       group="generalGroup"
       class="flex items-center w-full h-full gap-2 px-2"
       :class="[wrap ? 'flex-wrap' : '', widgetsAlignment]"
-      @start="showWidgetTrashArea = true"
-      @end="showWidgetTrashArea = false"
+      @start="onDragStart"
+      @end="onDragEnd"
       @add="(e) => widgetAdded(e)"
       @choose="(event) => emit('chooseMiniWidget', event)"
       @unchoose="(event) => emit('unchooseMiniWidget', event)"
@@ -130,6 +130,7 @@ const widgetAdded = (e: SortableEvent.SortableEvent): void => {
 
   if (newWidget && e.pullMode === 'clone') {
     newWidget.hash = uuid()
+    logUserAction(`Added mini-widget '${newWidget.component}' to '${container.value.name}'`)
     widgetStore.miniWidgetManagerVars(newWidget.hash).configMenuOpen = true
   }
 
@@ -138,11 +139,20 @@ const widgetAdded = (e: SortableEvent.SortableEvent): void => {
 
 const showWidgetTrashArea = ref(false)
 
+const onDragStart = (): void => {
+  showWidgetTrashArea.value = true
+}
+
+const onDragEnd = (): void => {
+  showWidgetTrashArea.value = false
+}
+
 const trashList = ref<MiniWidget[]>([])
 
 const handleDeleteWidget = (event: DraggableEvent): void => {
   const widgetData = container.value.widgets.find((w) => w.hash === event.item.dataset.widgetHash)
   if (widgetData) {
+    logUserAction(`Deleted mini-widget '${widgetData.component}' via trash`)
     // Remove miniWidget variableName from Logged variables list
     CurrentlyLoggedVariables.removeVariable(widgetData.options.displayName)
   }

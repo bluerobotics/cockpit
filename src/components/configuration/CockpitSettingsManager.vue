@@ -583,6 +583,10 @@ const localStorageValueToString = (value: any): string => {
   return JSON.stringify(value)
 }
 
+// Suppresses per-setting change logs while a whole config file is being applied, so an import emits one
+// summary line instead of one line per changed key.
+let isApplyingImportedConfig = false
+
 const commitChanges = async (item: SettingsRow): Promise<void> => {
   if (saving[item.originalKey]) return
   const editedValue = editedValues[item.originalKey]
@@ -606,6 +610,7 @@ const commitChanges = async (item: SettingsRow): Promise<void> => {
     }
     editing[item.originalKey] = false
     userSettings.value[item.originalKey] = editedValue
+    if (!isApplyingImportedConfig) logUserAction(`Changed setting '${displaySettingName(item)}'`)
   } catch (error: any) {
     editedValues[item.originalKey] = previousValue
     openSnackbar({
@@ -646,6 +651,7 @@ const cancelJsonEditing = (): void => {
 }
 
 const downloadConfigFile = (): void => {
+  logUserAction('Exported Cockpit settings to file')
   const exportedData: Settings = {}
   settingsArray.value.forEach((row) => {
     exportedData[row.setting] = editedValues[row.originalKey]
@@ -684,11 +690,17 @@ const uploadConfigFile = (): void => {
           })
           return
         }
-        for (const row of settingsArray.value) {
-          if (!(row.setting in json)) continue
-          editedValues[row.originalKey] = json[row.setting]
-          await commitChanges(row)
+        isApplyingImportedConfig = true
+        try {
+          for (const row of settingsArray.value) {
+            if (!(row.setting in json)) continue
+            editedValues[row.originalKey] = json[row.setting]
+            await commitChanges(row)
+          }
+        } finally {
+          isApplyingImportedConfig = false
         }
+        logUserAction('Imported Cockpit settings from file')
         openSnackbar({ message: 'Configuration file applied successfully.', variant: 'success', duration: 5000 })
       } catch (error: any) {
         console.error('Error parsing configuration file: ' + error.message)
@@ -720,6 +732,7 @@ const resetAllCockpitSettings = (): void => {
       {
         text: 'Reset settings',
         action: () => {
+          logUserAction('Reset all Cockpit settings to defaults')
           localStorage.clear()
           openSnackbar({ message: 'All settings have been reset to default values.', variant: 'success' })
           closeDialog()

@@ -157,6 +157,7 @@ const deleteUser = async (username: string): Promise<void> => {
       {
         text: 'Delete',
         action: async () => {
+          logUserAction(`Deleted user '${username}'`)
           try {
             const vehicleAddress = await mainVehicleStore.getVehicleAddress()
             await deleteUsernameOnBlueOS(vehicleAddress, username)
@@ -191,6 +192,7 @@ const deleteUser = async (username: string): Promise<void> => {
 }
 
 const setNewUsername = (username: string): void => {
+  logUserAction(`Selected user '${username}'`)
   newUsername.value = username
   emit('confirmed', username)
 }
@@ -310,6 +312,7 @@ const saveUserName = (): void => {
     return
   }
   newUsername.value = slugifiedUsername
+  logUserAction(`Created and selected new user '${slugifiedUsername}'`)
   closeDialog()
   emit('confirmed', newUsername.value)
 }

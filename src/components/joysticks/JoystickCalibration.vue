@@ -4,11 +4,23 @@
       <div class="flex items-center justify-between w-full">
         <div class="flex items-center justify-between gap-8">
           <div class="flex items-center gap-1">
-            <v-checkbox v-model="currentCalibration.deadband.enabled" density="compact" hide-details class="mt-0" />
+            <v-checkbox
+              :model-value="currentCalibration.deadband.enabled"
+              density="compact"
+              hide-details
+              class="mt-0"
+              @update:model-value="setDeadbandEnabled"
+            />
             <span>Deadband/Deadzone</span>
           </div>
           <div class="flex items-center gap-1">
-            <v-checkbox v-model="currentCalibration.exponential.enabled" density="compact" hide-details class="mt-0" />
+            <v-checkbox
+              :model-value="currentCalibration.exponential.enabled"
+              density="compact"
+              hide-details
+              class="mt-0"
+              @update:model-value="setExponentialEnabled"
+            />
             <span>Exponential Scaling</span>
           </div>
         </div>
@@ -22,7 +34,7 @@
       <template #title>
         <div class="flex justify-center w-full font-bold mt-1 relative">
           Joystick Calibration
-          <v-icon class="absolute right-2 top-1 cursor-pointer" size="24" @click="showInstructions = !showInstructions">
+          <v-icon class="absolute right-2 top-1 cursor-pointer" size="24" @click="toggleInstructions">
             mdi-information-outline
           </v-icon>
         </div>
@@ -64,11 +76,21 @@
           <!-- Enable/disable checkboxes inside dialog -->
           <div class="flex items-center gap-6">
             <div class="flex items-center gap-2">
-              <v-checkbox v-model="currentCalibration.deadband.enabled" density="compact" hide-details />
+              <v-checkbox
+                :model-value="currentCalibration.deadband.enabled"
+                density="compact"
+                hide-details
+                @update:model-value="setDeadbandEnabled"
+              />
               <span>Deadband/Deadzone</span>
             </div>
             <div class="flex items-center gap-2">
-              <v-checkbox v-model="currentCalibration.exponential.enabled" density="compact" hide-details />
+              <v-checkbox
+                :model-value="currentCalibration.exponential.enabled"
+                density="compact"
+                hide-details
+                @update:model-value="setExponentialEnabled"
+              />
               <span>Exponential Scaling</span>
             </div>
           </div>
@@ -201,7 +223,7 @@
                     variant="text"
                     class="text-gray-400"
                     :disabled="deadzoneThresholds[index] === 0"
-                    @click="deadzoneThresholds[index] = 0"
+                    @click="resetDeadband(index)"
                   >
                     RESET
                   </v-btn>
@@ -227,7 +249,7 @@
                   variant="text"
                   class="text-gray-400"
                   :disabled="exponentialFactors[index] === 1.0 || !currentCalibration.exponential.enabled"
-                  @click="exponentialFactors[index] = 1.0"
+                  @click="resetExponential(index)"
                 >
                   RESET
                 </v-btn>
@@ -287,6 +309,7 @@ const currentCalibration = computed<JoystickCalibration>({
 })
 
 const openCalibrationModal = (): void => {
+  logUserAction('Opened joystick calibration dialog')
   showCalibrationModal.value = true
   const numAxes = controllerStore.currentMainJoystick?.state.axes.length ?? 0
   exponentialFactors.value =
@@ -303,6 +326,7 @@ const openCalibrationModal = (): void => {
 }
 
 const startCalibration = (axisIndex?: number): void => {
+  logUserAction(`Started deadband auto-calibration (${axisIndex === undefined ? 'all axes' : `axis ${axisIndex}`})`)
   isCalibrating.value = true
   calibrationStartTime.value = Date.now()
   calibratingAxis.value = axisIndex ?? null
@@ -314,13 +338,37 @@ const startCalibration = (axisIndex?: number): void => {
 }
 
 const cancelCalibration = (): void => {
+  logUserAction('Cancelled joystick calibration')
   showCalibrationModal.value = false
 }
 
 const saveCalibration = (): void => {
+  logUserAction('Saved joystick calibration')
   currentCalibration.value.deadband.thresholds.axes = [...deadzoneThresholds.value]
   currentCalibration.value.exponential.factors.axes = [...exponentialFactors.value]
   showCalibrationModal.value = false
+}
+
+const setDeadbandEnabled = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} deadband calibration`)
+  currentCalibration.value.deadband.enabled = enabled
+}
+
+const setExponentialEnabled = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} exponential scaling calibration`)
+  currentCalibration.value.exponential.enabled = enabled
+}
+
+const resetDeadband = (index: number): void => {
+  logUserAction(`Reset deadband for axis ${index}`)
+  deadzoneThresholds.value[index] = 0
+}
+
+const resetExponential = (index: number): void => {
+  logUserAction(`Reset exponential factor for axis ${index}`)
+  exponentialFactors.value[index] = 1.0
 }
 
 /**
@@ -411,6 +459,10 @@ function onDeadbandRegionMouseMove(event: MouseEvent): void {
  * Handle mouseup event to stop dragging the deadband region.
  */
 function onDeadbandRegionMouseUp(): void {
+  if (draggingDeadbandAxis.value !== null) {
+    const axisIndex = draggingDeadbandAxis.value
+    logUserAction(`Adjusted deadband for axis ${axisIndex} to ${deadzoneThresholds.value[axisIndex]}`)
+  }
   draggingDeadbandAxis.value = null
   document.body.style.userSelect = ''
 }
@@ -470,6 +522,11 @@ const numberToTwoDigitsSigned = (value: number): string => {
 }
 
 const showInstructions = ref(false)
+
+const toggleInstructions = (): void => {
+  logUserAction(`${showInstructions.value ? 'Hid' : 'Showed'} calibration instructions`)
+  showInstructions.value = !showInstructions.value
+}
 
 onMounted(() => {
   window.addEventListener('mousemove', onDeadbandRegionMouseMove)

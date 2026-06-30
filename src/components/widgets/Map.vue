@@ -46,7 +46,7 @@
             :style="interfaceStore.globalGlassMenuStyles"
             hide-details
             size="small"
-            @click.stop="router.push('/mission-planning')"
+            @click.stop="navigateToMissionPlanning"
           />
         </template>
       </v-tooltip>
@@ -104,8 +104,8 @@
               icon="mdi-home-search"
               size="x-small"
               :disabled="!home"
-              @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-              @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+              @click.stop="centerOnHome"
+              @dblclick.stop="followHome"
             />
           </template>
         </v-tooltip>
@@ -123,8 +123,8 @@
               icon="mdi-airplane-marker"
               size="x-small"
               :disabled="!vehiclePosition"
-              @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-              @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+              @click.stop="centerOnVehicle"
+              @dblclick.stop="followVehicle"
             />
           </template>
         </v-tooltip>
@@ -387,14 +387,17 @@ const glassMenuCssVars = computed(() => ({
 }))
 
 const saveEsri = (): void => {
+  logUserAction('Saved visible Esri map tiles for offline use')
   esriSaveBtn?.click()
   downloadMenuOpen.value = false
 }
 const saveOSM = (): void => {
+  logUserAction('Saved visible OSM map tiles for offline use')
   osmSaveBtn?.click()
   downloadMenuOpen.value = false
 }
 const saveSeamarks = (): void => {
+  logUserAction('Saved visible Seamarks map tiles for offline use')
   seamarksSaveBtn?.click()
   downloadMenuOpen.value = false
 }
@@ -1601,6 +1604,7 @@ const executeGoToOption = async (): Promise<void> => {
 }
 
 const onMenuOptionSelect = async (option: string): Promise<void> => {
+  logUserAction(`Selected map context-menu action '${option}'`)
   switch (option) {
     case 'goto': {
       executeGoToOption()
@@ -1677,6 +1681,7 @@ const hideContextMenuAndMarker = (): void => {
 
 const onGlobalOriginSet = (latitude: number, longitude: number): void => {
   if (!map.value) return
+  logUserAction('Set vehicle global origin from map')
 
   // Remove existing marker if present
   if (globalOriginMarker.value) {
@@ -1776,6 +1781,7 @@ const setHomePosition = async (homePosition: [number, number]): Promise<void> =>
 
 // Allow executing missions
 const executeMissionOnVehicle = async (): Promise<void> => {
+  logUserAction('Started mission from map')
   try {
     await vehicleStore.startMission()
   } catch (error) {
@@ -1837,8 +1843,34 @@ const centerActivatorTooltipText = computed(() => {
   return 'Center map on home, vehicle or mission.'
 })
 
+const navigateToMissionPlanning = (): void => {
+  logUserAction('Navigated to Mission Planning from map widget')
+  router.push('/mission-planning')
+}
+
+const centerOnHome = (): void => {
+  logUserAction('Centered map on home')
+  targetFollower.goToTarget(WhoToFollow.HOME, true)
+}
+
+const followHome = (): void => {
+  logUserAction('Started following home on map')
+  targetFollower.follow(WhoToFollow.HOME)
+}
+
+const centerOnVehicle = (): void => {
+  logUserAction('Centered map on vehicle')
+  targetFollower.goToTarget(WhoToFollow.VEHICLE, true)
+}
+
+const followVehicle = (): void => {
+  logUserAction('Started following vehicle on map')
+  targetFollower.follow(WhoToFollow.VEHICLE)
+}
+
 const centerOnMission = (): void => {
   if (!map.value || !hasMissionWaypoints.value) return
+  logUserAction('Centered map on mission')
   targetFollower.unFollow()
   fitMapToWaypoints(map.value, missionFitCoordinates.value)
 }

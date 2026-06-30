@@ -36,7 +36,7 @@
             v-for="type in trackedMessageTypes"
             :key="type"
             :type="type"
-            @remove="removeMessageTracking"
+            @remove="onRemoveTrackedMessage"
           />
         </div>
       </div>
@@ -68,13 +68,16 @@ const trackedMessageTypes = ref<Set<MAVLinkType>>(new Set())
 
 const toggleMessageTracking = (type: MAVLinkType): void => {
   if (trackedMessageTypes.value.has(type)) {
+    logUserAction(`Stopped tracking MAVLink message '${type}'`)
     removeMessageTracking(type)
   } else {
+    logUserAction(`Started tracking MAVLink message '${type}'`)
     addMessageTracking(type)
   }
 }
 
 const resetTrackedMessageTypes = (): void => {
+  logUserAction('Reset tracked MAVLink messages')
   trackedMessageTypes.value.clear()
 }
 
@@ -84,6 +87,11 @@ const addMessageTracking = (type: MAVLinkType): void => {
 
 const removeMessageTracking = (type: MAVLinkType): void => {
   trackedMessageTypes.value.delete(type)
+}
+
+const onRemoveTrackedMessage = (type: MAVLinkType): void => {
+  logUserAction(`Stopped tracking MAVLink message '${type}'`)
+  removeMessageTracking(type)
 }
 
 const messageTooltip = (messageName: string): string => {

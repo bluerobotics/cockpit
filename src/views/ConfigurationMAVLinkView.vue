@@ -24,16 +24,18 @@
           <template #content>
             <div class="flex flex-col w-full px-2 mb-3 gap-1">
               <v-switch
-                v-model="mainVehicleStore.enableDatalakeVariablesFromOtherSystems"
+                :model-value="mainVehicleStore.enableDatalakeVariablesFromOtherSystems"
                 color="white"
                 label="Enable DataLake variables from other systems"
                 hide-details
+                @update:model-value="setEnableDatalakeFromOtherSystems"
               />
               <v-switch
-                v-model="mainVehicleStore.enableLegacyDataLakeVariableNames"
+                :model-value="mainVehicleStore.enableLegacyDataLakeVariableNames"
                 color="white"
                 label="Enable legacy variable names (e.g., 'ATTITUDE/roll')"
                 hide-details
+                @update:model-value="setEnableLegacyDataLakeNames"
               />
             </div>
           </template>
@@ -241,6 +243,18 @@ const interfaceStore = useAppInterfaceStore()
 const mainVehicleStore = useMainVehicleStore()
 const searchTerm = ref('')
 
+const setEnableDatalakeFromOtherSystems = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} DataLake variables from other systems`)
+  mainVehicleStore.enableDatalakeVariablesFromOtherSystems = enabled
+}
+
+const setEnableLegacyDataLakeNames = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} legacy DataLake variable names`)
+  mainVehicleStore.enableLegacyDataLakeVariableNames = enabled
+}
+
 // New message interval variables
 const newMessageType = ref<MAVLinkType | null>(null)
 const newIntervalType = ref<'default' | 'disabled' | 'custom' | 'dontTouch'>('default')
@@ -289,6 +303,7 @@ const filteredMessages = computed(() => {
  * @param {string} intervalType - The new interval type
  */
 const updateMessageIntervalType = async (messageType: string, intervalType: string): Promise<void> => {
+  logUserAction(`Set message interval type for '${messageType}' to '${intervalType}'`)
   const options: MessageIntervalOptions = {
     intervalType: intervalType as 'default' | 'disabled' | 'custom' | 'dontTouch',
   }
@@ -308,6 +323,7 @@ const updateMessageIntervalType = async (messageType: string, intervalType: stri
  * @param {number} frequency - The new frequency in Hz
  */
 const updateMessageFrequency = async (messageType: string, frequency: number): Promise<void> => {
+  logUserAction(`Set '${messageType}' message frequency to ${Math.max(1, frequency)} Hz`)
   const options: MessageIntervalOptions = {
     intervalType: 'custom',
     frequencyHz: Math.max(1, frequency), // Ensure minimum frequency of 1 Hz
@@ -320,6 +336,7 @@ const updateMessageFrequency = async (messageType: string, frequency: number): P
  * Resets all message intervals to their default values
  */
 const resetToCockpitDefault = async (): Promise<void> => {
+  logUserAction('Reset MAVLink message intervals to Cockpit defaults')
   await mainVehicleStore.resetMessageIntervalsToCockpitDefault()
 }
 
@@ -365,6 +382,8 @@ const updateNewFrequency = (frequency: string | number): void => {
 
 const addNewMessageInterval = async (): Promise<void> => {
   if (!newMessageType.value) return
+
+  logUserAction(`Added message interval for '${newMessageType.value}' (type: ${newIntervalType.value})`)
 
   let options: MessageIntervalOptions
 

@@ -88,7 +88,7 @@
                 v-for="(variable, i) in variableNamesToShow"
                 :key="i"
                 class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
-                @click="chooseVariable(variable)"
+                @click="onChooseVariable(variable)"
               >
                 {{ variable }}
               </span>
@@ -489,7 +489,13 @@ const chooseVariable = (variable: string): void => {
   listenDataLakeVariable(variable, updateVariableState)
 }
 
+const onChooseVariable = (variable: string): void => {
+  logUserAction(`Selected indicator variable '${variable}'`)
+  chooseVariable(variable)
+}
+
 const chooseIcon = (iconName: string): void => {
+  logUserAction(`Selected indicator icon '${iconName}'`)
   miniWidget.value.options.iconName = iconName
   iconSearchString.value = ''
   showIconChooseModal.value = false
@@ -510,6 +516,7 @@ watch(showVariableChooseModal, async (newValue) => {
 const currentTab = ref(widgetIsConfigured.value ? 'custom' : 'presets')
 
 const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void => {
+  logUserAction(`Applied indicator preset '${template.displayName}'`)
   miniWidget.value.options.displayName = template.displayName
   miniWidget.value.options.variableName = template.variableName
   miniWidget.value.options.iconName = template.iconName

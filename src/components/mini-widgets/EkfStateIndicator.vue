@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center">
-    <v-menu v-model="menu" :close-on-content-click="false" location="end">
+    <v-menu :model-value="menu" :close-on-content-click="false" location="end" @update:model-value="onEkfMenuToggle">
       <template #activator="{ props }">
         <v-btn
           v-bind="props"
@@ -88,6 +88,11 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const interfaceStore = useAppInterfaceStore()
 const menu = ref(false)
+
+const onEkfMenuToggle = (value: boolean | null): void => {
+  if (value) logUserAction('Opened EKF status details')
+  menu.value = Boolean(value)
+}
 const listeners = ref<Map<string, string>>(new Map())
 const dataStatus = ref<'loading' | 'connected' | 'error'>('loading')
 

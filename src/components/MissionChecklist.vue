@@ -219,11 +219,13 @@ const removeItem = (id: number): void => {
 }
 
 const onCancel = (): void => {
+  logUserAction('Cancelled pre-arm mission checklist')
   emit('dismissed')
   emit('update:modelValue', false)
 }
 
 const onConfirm = (): void => {
+  logUserAction('Confirmed pre-arm mission checklist')
   emit('confirmed', true)
   emit('update:modelValue', false)
 }

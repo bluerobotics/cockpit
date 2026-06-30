@@ -303,6 +303,7 @@ const markDismissed = (): void => {
 }
 
 const replaceStreams = (): void => {
+  logUserAction('Replaced orphaned camera streams in widgets')
   for (const orphan of orphanedWidgetStreams.value) {
     const newInternalName = replacementMap.value[orphan.internalName]
     if (!newInternalName) continue

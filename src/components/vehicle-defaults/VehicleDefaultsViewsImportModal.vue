@@ -85,6 +85,7 @@ const close = (): void => {
 }
 
 const onImportClick = (): void => {
+  logUserAction(`Imported vehicle default views (mode: ${viewsMode.value})`)
   if (viewsMode.value === 'replace' && !isCurrentViewsGroupBlank.value) {
     onClickImport()
     return
@@ -93,6 +94,7 @@ const onImportClick = (): void => {
 }
 
 const onConfirmReplace = (): void => {
+  logUserAction('Confirmed replacing current views with vehicle defaults')
   if (confirmReplace()) close()
 }
 

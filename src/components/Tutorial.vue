@@ -64,11 +64,7 @@
       <v-btn
         variant="text"
         :class="{ 'mr-11 opacity-[50%]': currentTutorialStep > 1 }"
-        @click="
-          () => {
-            interfaceStore.userHasSeenTutorial ? alwaysShowTutorialOnStartup() : dontShowTutorialAgain()
-          }
-        "
+        @click="toggleShowTutorialOnStartup"
         >{{ interfaceStore.userHasSeenTutorial ? 'Show on startup' : `Don't show again` }}</v-btn
       >
       <v-btn
@@ -314,6 +310,7 @@ const handleStepChange = (newStep: number): void => {
 }
 
 const dontShowTutorialAgain = (): void => {
+  logUserAction('Disabled tutorial on startup')
   interfaceStore.userHasSeenTutorial = true
   showTutorial.value = false
   currentTutorialStep.value = 1
@@ -326,8 +323,13 @@ const dontShowTutorialAgain = (): void => {
 }
 
 const alwaysShowTutorialOnStartup = (): void => {
+  logUserAction('Enabled tutorial on startup')
   interfaceStore.userHasSeenTutorial = false
   showTutorial.value = true
+}
+
+const toggleShowTutorialOnStartup = (): void => {
+  interfaceStore.userHasSeenTutorial ? alwaysShowTutorialOnStartup() : dontShowTutorialAgain()
 }
 
 const nextTutorialStep = (): void => {
@@ -337,15 +339,18 @@ const nextTutorialStep = (): void => {
     return
   }
   currentTutorialStep.value++
+  logUserAction(`Advanced to tutorial step ${currentTutorialStep.value}`)
   handleStepChange(currentTutorialStep.value)
 }
 
 const backTutorialStep = (): void => {
   currentTutorialStep.value--
+  logUserAction(`Returned to tutorial step ${currentTutorialStep.value}`)
   handleStepChange(currentTutorialStep.value)
 }
 
 const closeTutorial = (): void => {
+  logUserAction('Closed Tutorial')
   showTutorial.value = false
   interfaceStore.componentToHighlight = 'none'
   interfaceStore.userHasSeenTutorial = true
