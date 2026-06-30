@@ -15,6 +15,31 @@
         <p class="text-[14px] truncate mr-2">{{ selectedPoi.name }}</p>
         <div class="flex shrink-0 items-center gap-x-3">
           <v-icon
+            v-if="!isGotoTarget"
+            v-tooltip="{ text: 'GoTo Point of Interest', zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
+            variant="text"
+            icon="mdi-crosshairs-gps"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[17px] cursor-pointer mt-1"
+            @click="onGotoClick"
+          ></v-icon>
+          <v-icon
+            v-else
+            v-tooltip="{
+              text: 'Cancel GoTo command (vehicle will hold at current position)',
+              zIndex: POI_POPUP_TOOLTIP_Z_INDEX,
+            }"
+            variant="text"
+            icon="mdi-close-circle-multiple-outline"
+            rounded="full"
+            size="x-small"
+            color="white"
+            class="text-[17px] cursor-pointer mt-1"
+            @click="onCancelGotoClick"
+          ></v-icon>
+          <v-icon
             v-tooltip="{ text: 'Delete Point of Interest', zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-trash-can"
@@ -85,7 +110,26 @@ import { useMissionStore } from '@/stores/mission'
 import { type DialogActions } from '@/types/general'
 import type { PointOfInterest } from '@/types/mission'
 
+const props = withDefaults(
+  defineProps<{
+    /**
+     * Id of the PoI currently flagged as the active GoTo target, or null/undefined when none. Used to
+     * decide whether this popup shows the "GoTo" or the "Cancel GoTo" action for the selected PoI.
+     */
+    gotoTargetId?: string | null
+  }>(),
+  { gotoTargetId: null }
+)
+
 const emit = defineEmits<{
+  /**
+   * Emitted when the user requests a GoTo to the selected PoI.
+   */
+  (event: 'goto', poi: PointOfInterest): void
+  /**
+   * Emitted when the user cancels the active GoTo for the selected PoI.
+   */
+  (event: 'cancelGoto', poi: PointOfInterest): void
   /**
    * Emitted when the user requests to edit the selected PoI.
    */
@@ -111,6 +155,7 @@ const selectedId = ref<string | null>(null)
 const selectedPoi = computed(() =>
   selectedId.value === null ? null : missionStore.pointsOfInterest.find((p) => p.id === selectedId.value) ?? null
 )
+const isGotoTarget = computed(() => selectedId.value !== null && selectedId.value === props.gotoTargetId)
 
 const open = (poi: PointOfInterest, event: MouseEvent): void => {
   const margin = 8
@@ -130,6 +175,22 @@ const open = (poi: PointOfInterest, event: MouseEvent): void => {
 const close = (): void => {
   visible.value = false
   selectedId.value = null
+}
+
+const onGotoClick = (): void => {
+  const poi = selectedPoi.value
+  if (!poi) return
+  close()
+  logUserAction(`Requested GoTo to PoI "${poi.name}"`)
+  emit('goto', poi)
+}
+
+const onCancelGotoClick = (): void => {
+  const poi = selectedPoi.value
+  if (!poi) return
+  close()
+  logUserAction(`Cancelled GoTo to PoI "${poi.name}"`)
+  emit('cancelGoto', poi)
 }
 
 const onEditClick = (): void => {

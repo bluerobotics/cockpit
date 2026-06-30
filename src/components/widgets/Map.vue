@@ -154,7 +154,14 @@
   >
   </ContextMenu>
 
-  <PoiActionPopup ref="poiPopupRef" @edit="onPoiEdit" @delete="onPoiDelete" />
+  <PoiActionPopup
+    ref="poiPopupRef"
+    :goto-target-id="poiGotoTargetId"
+    @goto="poiGoTo.onPoiGoTo"
+    @cancel-goto="poiGoTo.onPoiCancelGoTo"
+    @edit="onPoiEdit"
+    @delete="onPoiDelete"
+  />
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
@@ -295,6 +302,7 @@ import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
+import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
@@ -540,6 +548,25 @@ const poiMarkers = useMapPoiMarkers(map, {
     poiPopupRef.value?.open(poi, event)
   },
 })
+const poiGotoTargetId = poiMarkers.gotoTargetId
+
+// Sends the GoTo MAVLink command to the vehicle. Shared between the regular map-click GoTo flow and
+// PoI GoTo, which only issue the command and never both place a goto marker AND target a PoI at once.
+const issueGoto = async (coordinates: WaypointCoordinates): Promise<void> => {
+  const hold = 0
+  const acceptanceRadius = 0
+  const passRadius = 0
+  const yaw = 0
+  const altitude = vehicleStore.coordinates.altitude ?? 0
+
+  try {
+    await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, coordinates[0], coordinates[1], altitude)
+  } catch (error) {
+    openSnackbar({ message: `GoTo request failed: ${(error as Error).message}`, variant: 'error' })
+  }
+}
+
+const poiGoTo = useMapPoiGoTo(poiMarkers, { issueGoto })
 
 const onPoiEdit = (poi: PointOfInterest): void => {
   if (!poiManagerMapWidgetRef.value) {
@@ -549,7 +576,10 @@ const onPoiEdit = (poi: PointOfInterest): void => {
   poiManagerMapWidgetRef.value.openDialog(undefined, poi)
 }
 
-const onPoiDelete = (poi: PointOfInterest): void => {
+const onPoiDelete = async (poi: PointOfInterest): Promise<void> => {
+  if (poiMarkers.gotoTargetId.value === poi.id) {
+    await poiGoTo.onPoiCancelGoTo()
+  }
   missionStore.removePointOfInterest(poi.id)
 }
 
@@ -1556,15 +1586,20 @@ const setDefaultMapPosition = async (): Promise<void> => {
   }
 }
 
-const executeGoToOption = async (): Promise<void> => {
-  if (!clickedLocation.value || !map.value) return
+const clearGotoMarker = (): void => {
+  if (!map.value || !gotoMarker.value) return
+  map.value.removeLayer(gotoMarker.value)
+  gotoMarker.value = undefined
+}
 
-  if (gotoMarker.value) {
-    map.value.removeLayer(gotoMarker.value)
-    gotoMarker.value = undefined
-  }
+// Places the regular GoTo marker on the map. Not used for PoI GoTo targets, which show the active state
+// via a pulsating border on the PoI marker itself (see useMapPoiMarkers and .poi-marker-goto-target styles).
+const placeGotoMarker = (coordinates: WaypointCoordinates): void => {
+  if (!map.value) return
 
-  gotoMarker.value = L.marker(clickedLocation.value as LatLngTuple, {
+  clearGotoMarker()
+
+  gotoMarker.value = L.marker(coordinates as LatLngTuple, {
     icon: L.divIcon({
       className: 'marker-icon',
       iconSize: [24, 24],
@@ -1580,31 +1615,16 @@ const executeGoToOption = async (): Promise<void> => {
     opacity: 1,
   })
   gotoMarker.value.bindTooltip(gotoTooltip)
-
-  if (clickedLocation.value) {
-    // Define default values
-    const hold = 0
-    const acceptanceRadius = 0
-    const passRadius = 0
-    const yaw = 0
-    const altitude = vehicleStore.coordinates.altitude ?? 0
-
-    const latitude = clickedLocation.value[0]
-    const longitude = clickedLocation.value[1]
-
-    try {
-      await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
-    } catch (error) {
-      openSnackbar({ message: `GoTo request failed: ${(error as Error).message}`, variant: 'error' })
-    }
-  }
 }
 
 const onMenuOptionSelect = async (option: string): Promise<void> => {
   logUserAction(`Selected map context-menu action '${option}'`)
   switch (option) {
     case 'goto': {
-      executeGoToOption()
+      if (!clickedLocation.value) break
+      poiGoTo.clearTarget()
+      placeGotoMarker(clickedLocation.value)
+      await issueGoto(clickedLocation.value)
       break
     }
 
@@ -2163,6 +2183,26 @@ const centerOnMission = (): void => {
 </style>
 
 <style>
+/* Unscoped because Leaflet creates the marker DOM imperatively (no scope attribute applied).
+   Uses box-shadow with a positive spread for the active border so the effect is drawn outside
+   the bg circle (revealing the map when transparent) and follows the circular border-radius.
+   The static 1px border is hidden during the active state so only the pulsating ring remains. */
+.poi-marker-background.poi-marker-goto-target {
+  border-color: transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 1);
+  animation: poi-marker-goto-target-pulse 1s ease-in-out infinite;
+}
+
+@keyframes poi-marker-goto-target-pulse {
+  0%,
+  100% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 1);
+  }
+  50% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 0);
+  }
+}
+
 .speed-dial-glow {
   isolation: isolate;
 }
