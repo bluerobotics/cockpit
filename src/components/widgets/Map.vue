@@ -550,9 +550,13 @@ const poiMarkers = useMapPoiMarkers(map, {
 })
 const poiGotoTargetId = poiMarkers.gotoTargetId
 
-// Sends the GoTo MAVLink command to the vehicle. Shared between the regular map-click GoTo flow and
-// PoI GoTo, which only issue the command and never both place a goto marker AND target a PoI at once.
-const issueGoto = async (coordinates: WaypointCoordinates): Promise<void> => {
+// Sends a GoTo-family MAVLink command to the vehicle for the given coordinates, reporting failures via
+// the given message. Shared by the regular map-click GoTo flow, PoI GoTo, and PoI-follow target updates.
+const sendGoToCommand = async (
+  coordinates: WaypointCoordinates,
+  failureMessage: string,
+  skipConfirmation = false
+): Promise<void> => {
   const hold = 0
   const acceptanceRadius = 0
   const passRadius = 0
@@ -560,13 +564,29 @@ const issueGoto = async (coordinates: WaypointCoordinates): Promise<void> => {
   const altitude = vehicleStore.coordinates.altitude ?? 0
 
   try {
-    await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, coordinates[0], coordinates[1], altitude)
+    await vehicleStore.goTo(
+      hold,
+      acceptanceRadius,
+      passRadius,
+      yaw,
+      coordinates[0],
+      coordinates[1],
+      altitude,
+      skipConfirmation
+    )
   } catch (error) {
-    openSnackbar({ message: `GoTo request failed: ${(error as Error).message}`, variant: 'error' })
+    openSnackbar({ message: `${failureMessage}: ${(error as Error).message}`, variant: 'error' })
+    throw error
   }
 }
 
-const poiGoTo = useMapPoiGoTo(poiMarkers, { issueGoto })
+const issueGoto = (coordinates: WaypointCoordinates): Promise<void> =>
+  sendGoToCommand(coordinates, 'GoTo request failed')
+
+const updateGotoTarget = (coordinates: WaypointCoordinates): Promise<void> =>
+  sendGoToCommand(coordinates, 'Failed to update GoTo target', true)
+
+const poiGoTo = useMapPoiGoTo(poiMarkers, { issueGoto, updateGotoTarget })
 
 const onPoiEdit = (poi: PointOfInterest): void => {
   if (!poiManagerMapWidgetRef.value) {
