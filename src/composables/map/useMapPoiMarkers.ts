@@ -1,5 +1,5 @@
 import L, { type LatLngTuple, type LeafletEvent, type LeafletMouseEvent, type Map, type Marker } from 'leaflet'
-import { type ShallowRef, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue'
+import { type Ref, type ShallowRef, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 
 import { useMissionStore } from '@/stores/mission'
 import type { PointOfInterest } from '@/types/mission'
@@ -38,15 +38,25 @@ export interface UseMapPoiMarkersReturn {
    * Markers currently on the map, keyed by PoI id.
    */
   markers: ShallowRef<Record<string, Marker>>
+  /**
+   * Id of the PoI currently flagged as the active GoTo target, or null when none.
+   */
+  gotoTargetId: Ref<string | null>
+  /**
+   * Flags a PoI as the active GoTo target (or clears it with null), updating the pulsating marker style.
+   * @param {string | null} poiId - The PoI to highlight, or null to clear the current target.
+   * @returns {void}
+   */
+  setGotoTarget: (poiId: string | null) => void
 }
 
 /**
  * Mirrors the mission store's points of interest as draggable Leaflet markers on the given map, keeping them
- * in sync as PoIs are added, edited, moved or removed. Markers are torn down automatically when the owning
- * component unmounts.
+ * in sync as PoIs are added, edited, moved or removed, and exposing GoTo-target highlighting. Markers are torn
+ * down automatically when the owning component unmounts.
  * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; markers (re)draw once it becomes available.
  * @param {UseMapPoiMarkersOptions} options - Rendering classes and interaction callbacks.
- * @returns {UseMapPoiMarkersReturn} The reactive marker registry.
+ * @returns {UseMapPoiMarkersReturn} The reactive marker registry and GoTo-target controls.
  */
 export const useMapPoiMarkers = (
   map: ShallowRef<Map | undefined>,
@@ -54,6 +64,7 @@ export const useMapPoiMarkers = (
 ): UseMapPoiMarkersReturn => {
   const missionStore = useMissionStore()
   const markers = shallowRef<Record<string, Marker>>({})
+  const gotoTargetId = ref<string | null>(null)
   const draggable = options.draggable ?? true
 
   // Snapshot of the fields each marker was last rendered with, keyed by PoI id. Lets syncMarkers skip
@@ -86,6 +97,20 @@ export const useMapPoiMarkers = (
     ${poi.description ? poi.description + '<br>' : ''}
     Lat: ${coordinates[0].toFixed(8)}, Lng: ${coordinates[1].toFixed(8)}
   `
+
+  const applyGotoTargetStyle = (poiId: string, active: boolean): void => {
+    const bg = markers.value[poiId]?.getElement()?.querySelector('.poi-marker-background') as HTMLElement | null
+    bg?.classList.toggle('poi-marker-goto-target', active)
+  }
+
+  const setGotoTarget = (poiId: string | null): void => {
+    gotoTargetId.value = poiId
+  }
+
+  watch(gotoTargetId, (newId, oldId) => {
+    if (oldId && oldId !== newId) applyGotoTargetStyle(oldId, false)
+    if (newId) applyGotoTargetStyle(newId, true)
+  })
 
   const addMarker = (poi: PointOfInterest): void => {
     if (!isMapReady(map.value)) return
@@ -136,6 +161,8 @@ export const useMapPoiMarkers = (
 
     markers.value[poi.id] = marker
     lastRenderedSignatures[poi.id] = poiSignature(poi)
+
+    if (gotoTargetId.value === poi.id) applyGotoTargetStyle(poi.id, true)
   }
 
   const updateMarker = (poi: PointOfInterest): void => {
@@ -150,6 +177,10 @@ export const useMapPoiMarkers = (
 
     marker.setLatLng(poi.coordinates as LatLngTuple)
     marker.setIcon(L.divIcon(poiIconConfig(poi)))
+
+    // setIcon replaces the marker's DOM element, so the goto-target class needs to be re-applied.
+    if (gotoTargetId.value === poi.id) applyGotoTargetStyle(poi.id, true)
+
     marker.getTooltip()?.setContent(tooltipContent(poi, poi.coordinates as LatLngTuple))
   }
 
@@ -158,6 +189,7 @@ export const useMapPoiMarkers = (
     markers.value[poiId].remove()
     delete markers.value[poiId]
     delete lastRenderedSignatures[poiId]
+    if (gotoTargetId.value === poiId) gotoTargetId.value = null
   }
 
   const syncMarkers = (pois: PointOfInterest[]): void => {
@@ -195,5 +227,5 @@ export const useMapPoiMarkers = (
     Object.keys(lastRenderedSignatures).forEach((id) => delete lastRenderedSignatures[id])
   })
 
-  return { markers }
+  return { markers, gotoTargetId, setGotoTarget }
 }
