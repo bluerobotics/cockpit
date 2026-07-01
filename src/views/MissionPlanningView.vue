@@ -4531,6 +4531,14 @@ const openPoiDialog = (): void => {
   }
   hideContextMenu()
 }
+// React to "center on coordinates" requests (e.g. from the Map tools menu).
+watch(
+  () => missionStore.mapCenterOnRequest,
+  (request) => {
+    if (!request || !planningMap.value) return
+    planningMap.value.setView(request.coordinates as LatLngTuple, planningMap.value.getZoom(), { animate: true })
+  }
+)
 </script>
 
 <style>
