@@ -1,6 +1,10 @@
 <template>
-  <div class="mission-planning" :style="glassMenuCssVars">
-    <div id="planningMap" ref="planningMap" class="relative" />
+  <div
+    class="mission-planning"
+    :class="{ 'mission-planning--fence-mode': planningMode === 'geofence' }"
+    :style="glassMenuCssVars"
+  >
+    <div id="planningMap" class="relative" />
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
         <div
@@ -105,42 +109,71 @@
         @regenerate-survey-waypoints="regenerateSurveyWaypoints"
       />
     </div>
-    <div
-      v-show="!interfaceStore.isMainMenuVisible"
-      class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
-      :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '320px' }]"
+    <GeoFenceDrawingActionButtons
+      :polygon-vertexes="fencePolygonVertexesPositions"
+      @finish="onFinishFencePolygonDrawing"
+    />
+    <MissionPlanningSidebar
+      v-model:planning-mode="planningMode"
+      :map-center="mapCenter"
+      :calculated-height="calculatedHeight"
+      @mission-loaded="updateWaypointMarkers"
     >
-      <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
-        <button
-          v-if="!isCreatingSimplePath && !isCreatingSurvey"
-          :class="{ ' elevation-4': isCreatingSurvey }"
-          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          @click="toggleSurvey"
-        >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
-        </button>
-        <button
-          v-if="!isCreatingSurvey && !isCreatingSimplePath"
-          :class="{ ' elevation-4': isCreatingSimplePath }"
-          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          @click="toggleSimplePath"
-        >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
-        </button>
+      <template #mission>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
-          class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
+          class="flex flex-row items-center justify-between m-2 gap-x-2"
         >
-          <p class="text-sm">Cruise speed</p>
-          <input
-            v-model.number="localCruiseSpeed"
-            class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
-            type="number"
-            min="0"
-            step="0.5"
-            @change="cruiseSpeedTouched = true"
-          />
-          <p class="text-sm">m/s</p>
+          <div class="flex flex-row items-center gap-x-1 w-[130px] -ml-1">
+            <p class="text-xs">Cruise speed</p>
+            <input
+              v-model.number="localCruiseSpeed"
+              class="w-[55px] px-1 py-0 rounded-sm bg-[#FFFFFF22] text-sm"
+              type="number"
+              min="0"
+              step="0.5"
+              @change="cruiseSpeedTouched = true"
+            />
+            <p class="text-xs">m/s</p>
+          </div>
+          <v-divider vertical class="opacity-30 mx-1 h-5 self-center" />
+          <div class="flex flex-row items-center gap-x-2">
+            <span class="text-sm font-medium mr-1">
+              {{ missionStore.currentPlanningWaypoints.length > 0 ? 'Add:' : 'New:' }}
+            </span>
+            <v-tooltip
+              location="top"
+              :text="missionStore.currentPlanningWaypoints.length > 0 ? 'Add survey area' : 'Create survey area'"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  icon="mdi-grid"
+                  variant="elevated"
+                  color="#3B78A8"
+                  size="x-small"
+                  class="rounded-md"
+                  @click="toggleSurvey"
+                />
+              </template>
+            </v-tooltip>
+            <v-tooltip
+              location="top"
+              :text="missionStore.currentPlanningWaypoints.length > 0 ? 'Add simple path' : 'Create simple path'"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  icon="mdi-vector-polyline"
+                  variant="elevated"
+                  color="#3B78A8"
+                  size="x-small"
+                  class="rounded-md"
+                  @click="toggleSimplePath"
+                />
+              </template>
+            </v-tooltip>
+          </div>
         </div>
         <div
           v-if="showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
@@ -439,109 +472,114 @@
           <v-progress-circular v-if="loading" size="20" class="py-4" />
           <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
         </button>
-      </div>
-    </div>
-    <v-tooltip location="top" text="Switch to Flight mode">
-      <template #activator="{ props: tooltipProps }">
-        <v-btn
-          v-bind="tooltipProps"
-          class="absolute right-[135px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
-          elevation="8"
-          text="Flight mode"
-          append-icon="mdi-send"
-          :style="interfaceStore.globalGlassMenuStyles"
-          hide-details
-          size="small"
-          @click.stop="router.push('/')"
-        />
       </template>
-    </v-tooltip>
-    <v-tooltip location="top center" text="Download map tiles">
-      <template #activator="{ props: tooltipProps }">
-        <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
-          <template #activator="{ props: menuProps }">
-            <v-btn
-              v-bind="{ ...menuProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[88px] text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              size="x-small"
-              icon="mdi-download-multiple"
-            />
-          </template>
+    </MissionPlanningSidebar>
+    <div
+      class="planning-bottom-buttons absolute right-[52px] mb-3 bottom-12 flex flex-row items-center"
+      style="z-index: 1002; gap: 10px"
+    >
+      <v-tooltip location="top" text="Switch to Flight mode">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            class="w-[140px] bg-slate-50 text-[12px] font-bold"
+            elevation="8"
+            text="Flight mode"
+            append-icon="mdi-send"
+            :style="interfaceStore.globalGlassMenuStyles"
+            hide-details
+            size="small"
+            @click.stop="router.push('/')"
+          />
+        </template>
+      </v-tooltip>
+      <v-tooltip location="top center" text="Download map tiles">
+        <template #activator="{ props: tooltipProps }">
+          <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
+            <template #activator="{ props: menuProps }">
+              <v-btn
+                v-bind="{ ...menuProps, ...tooltipProps }"
+                class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+                :style="interfaceStore.globalGlassMenuStyles"
+                size="x-small"
+                icon="mdi-download-multiple"
+              />
+            </template>
 
-          <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
-            <v-divider />
-            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
-          </v-list>
-        </v-menu>
-      </template>
-    </v-tooltip>
-    <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
-      <template #activator="{ props: activatorProps }">
-        <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+            <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
+              <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+              <v-divider />
+              <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+            </v-list>
+          </v-menu>
+        </template>
+      </v-tooltip>
+      <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
+        <template #activator="{ props: activatorProps }">
+          <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="{ ...activatorProps, ...tooltipProps }"
+                class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+                :style="interfaceStore.globalGlassMenuStyles"
+                :color="followerTarget !== undefined ? 'red' : ''"
+                icon="mdi-crosshairs-gps"
+                size="x-small"
+              />
+            </template>
+          </v-tooltip>
+        </template>
+        <v-tooltip location="left" :text="centerMissionButtonTooltipText">
           <template #activator="{ props: tooltipProps }">
             <v-btn
-              v-bind="{ ...activatorProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 right-[44px] bg-slate-50 text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              :color="followerTarget !== undefined ? 'red' : ''"
-              icon="mdi-crosshairs-gps"
+              key="mission"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
+              :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
+              icon="mdi-map-marker-path"
               size="x-small"
+              :disabled="!hasMissionWaypoints"
+              @click.stop="centerOnMission"
             />
           </template>
         </v-tooltip>
-      </template>
-      <v-tooltip location="left" :text="centerMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="mission"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
-            :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
-            icon="mdi-map-marker-path"
-            size="x-small"
-            :disabled="!hasMissionWaypoints"
-            @click.stop="centerOnMission"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerHomeButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="home"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
-            :class="[!home ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-            icon="mdi-home-search"
-            size="x-small"
-            :disabled="!home"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="vehicle"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
-            :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-            icon="mdi-airplane-marker"
-            size="x-small"
-            :disabled="!vehiclePosition"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-          />
-        </template>
-      </v-tooltip>
-    </v-speed-dial>
+        <v-tooltip location="left" :text="centerHomeButtonTooltipText">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              key="home"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
+              :class="[!home ? 'active-events-on-disabled' : '']"
+              :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
+              icon="mdi-home-search"
+              size="x-small"
+              :disabled="!home"
+              @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
+              @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
+            />
+          </template>
+        </v-tooltip>
+        <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              key="vehicle"
+              v-bind="tooltipProps"
+              class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
+              :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
+              :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
+              :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
+              icon="mdi-airplane-marker"
+              size="x-small"
+              :disabled="!vehiclePosition"
+              @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
+              @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
+            />
+          </template>
+        </v-tooltip>
+      </v-speed-dial>
+    </div>
     <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
       v-if="uploadingMission"
@@ -631,6 +669,7 @@
     :zoom="zoom"
     :target-follower="targetFollower"
   />
+  <GeoFenceMapLayer :readonly="planningMode !== 'geofence'" />
 
   <v-progress-linear
     v-if="fetchingMission"
@@ -678,11 +717,14 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import GeoFenceDrawingActionButtons from '@/components/geofence/GeoFenceDrawingActionButtons.vue'
+import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
+import MissionPlanningSidebar from '@/components/mission-planning/MissionPlanningSidebar.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
@@ -691,9 +733,11 @@ import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
+import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceMapInteraction'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -714,14 +758,15 @@ import {
   WhoToFollow,
 } from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
+import { pickBestPosition, screenBounds } from '@/libs/mission/confirm-button-placement'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
 import { degrees } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
+import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { Point2D } from '@/types/general'
 import {
   type CockpitMission,
   type Waypoint,
@@ -739,12 +784,12 @@ import {
   Survey,
   SurveyPath,
 } from '@/types/mission'
-import { ScreenBounds } from '@/types/user-interface'
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
+const fenceStore = useGeoFenceStore()
 const missionEstimates = useMissionEstimates()
 const { height: windowHeight } = useWindowSize()
 
@@ -793,11 +838,61 @@ const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
   return makeDefaultNavCommands()
 }
 
+/**
+ * Inspects the mission waypoints against the active geofence (the editor
+ * draft when present, falling back to the plan currently uploaded to the
+ * vehicle). When at least one waypoint breaches the fence, prompts the user
+ * with a "Back to mission planning" / "Upload to vehicle anyway" choice and
+ * resolves to whether the upload should continue. No-op (returns true) when
+ * there's no fence to check against or no breach is detected.
+ * @returns { Promise<boolean> } True when the upload should proceed.
+ */
+const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
+  const report = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
+  if (!report.hasBreaches) return true
+
+  let confirmed = false
+  await new Promise<void>((resolve) => {
+    showDialog({
+      variant: 'text-only',
+      title: 'Mission breaches geofence',
+      message:
+        `${report.breachedIndices.length} of ${report.totalChecked} waypoints fall outside an inclusion fence ` +
+        'or inside an exclusion fence. Uploading anyway may trigger an in-flight fence breach action ' +
+        '(RTL / Land / Brake, depending on the autopilot configuration).',
+      persistent: false,
+      maxWidth: '720px',
+      actions: [
+        {
+          text: 'Back to mission planning',
+          color: 'white',
+          action: () => {
+            closeDialog()
+            resolve()
+          },
+        },
+        {
+          text: 'Upload to vehicle anyway',
+          color: 'white',
+          action: () => {
+            confirmed = true
+            closeDialog()
+            resolve()
+          },
+        },
+      ],
+    })
+  })
+  return confirmed
+}
+
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
     showHomePositionNotSetDialog.value = true
     return
   }
+
+  if (!(await confirmMissionFenceBreachIfNeeded())) return
 
   uploadingMission.value = true
   missionUploadProgress.value = 0
@@ -953,6 +1048,38 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   value,
 }))
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
+const planningMode = ref<'mission' | 'geofence'>('mission')
+
+watch(planningMode, (mode) => {
+  if (mode !== 'geofence' && fenceStore.isDrawingPolygon) {
+    fenceStore.cancelDrawingPolygon()
+  }
+  if (mode !== 'geofence' && fenceStore.isDrawingCircle) {
+    fenceStore.cancelDrawingCircle()
+  }
+})
+
+watch(
+  () => fenceStore.isDrawingPolygon,
+  (drawing) => {
+    if (!drawing) {
+      clearFencePolygonDrawingArtifacts()
+      clearLiveMeasure()
+    }
+    setMapCursor()
+  }
+)
+
+watch(
+  () => fenceStore.isDrawingCircle,
+  (drawing) => {
+    if (!drawing) {
+      clearPendingFenceCircleArtifacts()
+      clearLiveMeasure()
+    }
+    setMapCursor()
+  }
+)
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
@@ -975,6 +1102,32 @@ const surveyPolygonUndoStack: L.LatLng[][] = []
 const surveyPolygonRedoStack: L.LatLng[][] = []
 let undoLimitShown = false
 let redoLimitShown = false
+
+// Fence drawing helpers live in the dedicated composable. The exposed
+// `fencePolygonVertexesPositions` ref is what the template guards and the
+// confirm-button repositioning watch react to; the rest of the API drives
+// the click handlers, the confirm button and the cleanup paths below.
+const {
+  polygonVertexesPositions: fencePolygonVertexesPositions,
+  addPolygonPoint: addFencePolygonPoint,
+  finishPolygonDrawing: onFinishFencePolygonDrawing,
+  clearPolygonDrawingArtifacts: clearFencePolygonDrawingArtifacts,
+  setPendingCircleCenter: setPendingFenceCircleCenter,
+  updatePendingCircleLayer: updatePendingFenceCircleLayer,
+  clearPendingCircleArtifacts: clearPendingFenceCircleArtifacts,
+} = useFenceDrawing({
+  map: planningMap,
+  formatArea: (m2) => missionEstimates.formatArea(m2),
+  makeAreaMarker: (at, text) => makeAreaMarker(at, text),
+  addAreaToMeasureLayer: (m) => addAreaToMeasureLayer(m),
+})
+
+const { handleFenceKeyDown, onFenceMapClick } = useFenceMapInteraction({
+  planningMode,
+  addFencePolygonPoint,
+  setPendingFenceCircleCenter,
+  clearLiveMeasure: () => clearLiveMeasure(),
+})
 
 const pushSurveyPolygonSnapshot = (): void => {
   surveyPolygonUndoStack.push(surveyPolygonVertexesPositions.value.map((ll) => ll.clone()))
@@ -1062,6 +1215,13 @@ const currentMeasureAnchor = (): L.LatLng | null => {
     const last = surveyPolygonVertexesPositions.value[surveyPolygonVertexesPositions.value.length - 1]
     return L.latLng(last.lat, last.lng)
   }
+  if (fenceStore.isDrawingPolygon && fencePolygonVertexesPositions.value.length > 0) {
+    const last = fencePolygonVertexesPositions.value[fencePolygonVertexesPositions.value.length - 1]
+    return L.latLng(last.lat, last.lng)
+  }
+  if (fenceStore.isDrawingCircle && fenceStore.pendingCircleCenter) {
+    return L.latLng(fenceStore.pendingCircleCenter[0], fenceStore.pendingCircleCenter[1])
+  }
 
   return null
 }
@@ -1120,14 +1280,21 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
 const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
   const el = evt.originalEvent?.target as HTMLElement | null
   if (!el) return false
-  return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
+  return !!el.closest(
+    '.custom-div-icon, .edge-marker, .delete-popup, .delete-button, .fence-vertex-div-icon, .fence-edge-marker'
+  )
 }
 
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   if (!planningMap.value) return
 
   const anchor = currentMeasureAnchor()
-  const measuring = !!anchor && (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
+  const measuring =
+    !!anchor &&
+    (isCreatingSimplePath.value ||
+      (isCreatingSurvey.value && isDrawingSurveyPolygon.value) ||
+      fenceStore.isDrawingPolygon ||
+      (fenceStore.isDrawingCircle && !!fenceStore.pendingCircleCenter))
   if (!measuring) {
     destroyMeasureOverlay(planningMap.value)
     return
@@ -1163,6 +1330,11 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
     measureTextEl.style.left = `${midX}px`
     measureTextEl.style.top = `${midY}px`
     measureTextEl.style.display = hidePill ? 'none' : 'block'
+  }
+
+  if (fenceStore.isDrawingCircle && fenceStore.pendingCircleCenter) {
+    fenceStore.setPendingCircleRadius(dist)
+    updatePendingFenceCircleLayer()
   }
 }
 
@@ -1363,77 +1535,6 @@ const updateSurvey = (id: string, updatedSurvey: Partial<Survey>): void => {
   }
 }
 
-/**
- * Computes screen-space axis-aligned bounding box from an array of 2D points.
- * @param {Point2D[]} pts - Screen-space points
- * @returns {ScreenBounds} The bounding box
- */
-const screenBounds = (pts: Point2D[]): ScreenBounds => {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  for (const p of pts) {
-    if (p.x < minX) minX = p.x
-    if (p.y < minY) minY = p.y
-    if (p.x > maxX) maxX = p.x
-    if (p.y > maxY) maxY = p.y
-  }
-  return { minX, minY, maxX, maxY }
-}
-
-/**
- * Picks the best candidate position by maximising viewport visibility and minimising
- * overlap with a polygon bounding box, then clamps the result inside the viewport.
- * @param {Point2D[]} candidates - Top-left positions to evaluate
- * @param {number} elW - Element width in pixels
- * @param {number} elH - Element height in pixels
- * @param {ScreenBounds} polyBounds - Polygon screen bounds
- * @param {number} vpW - Viewport width
- * @param {number} vpH - Viewport height
- * @param {number} margin - Minimum distance from viewport edge
- * @returns {Point2D} Clamped top-left position
- */
-const pickBestPosition = (
-  candidates: Point2D[],
-  elW: number,
-  elH: number,
-  polyBounds: ScreenBounds,
-  vpW: number,
-  vpH: number,
-  margin: number
-): Point2D => {
-  const area = elW * elH
-  let best = candidates[0]
-  let bestScore = -Infinity
-
-  for (const c of candidates) {
-    const l = c.x
-    const r = c.x + elW
-    const t = c.y
-    const b = c.y + elH
-
-    const visW = Math.max(0, Math.min(r, vpW - margin) - Math.max(l, margin))
-    const visH = Math.max(0, Math.min(b, vpH - margin) - Math.max(t, margin))
-    const visibility = (visW * visH) / area
-
-    const oW = Math.max(0, Math.min(r, polyBounds.maxX) - Math.max(l, polyBounds.minX))
-    const oH = Math.max(0, Math.min(b, polyBounds.maxY) - Math.max(t, polyBounds.minY))
-    const overlapPenalty = (oW * oH) / area
-
-    const score = visibility - overlapPenalty * 0.5
-    if (score > bestScore) {
-      bestScore = score
-      best = c
-    }
-  }
-
-  return {
-    x: Math.max(margin, Math.min(best.x, vpW - elW - margin)),
-    y: Math.max(margin, Math.min(best.y, vpH - elH - margin)),
-  }
-}
-
 const updateConfirmButtonPosition = (): void => {
   if (!planningMap.value) return
 
@@ -1494,7 +1595,12 @@ const setMapCursor = (): void => {
     el.style.cursor = 'pointer'
     return
   }
-  if (isCreatingSurvey.value || isCreatingSimplePath.value) {
+  if (
+    isCreatingSurvey.value ||
+    isCreatingSimplePath.value ||
+    fenceStore.isDrawingPolygon ||
+    fenceStore.isDrawingCircle
+  ) {
     el.style.cursor = 'crosshair'
   } else {
     el.style.cursor = ''
@@ -2334,6 +2440,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
       isCreatingSimplePath.value = false
     }
   }
+  handleFenceKeyDown(event)
   if (event.key === 'Enter' && isCreatingSurvey.value) {
     generateWaypointsFromSurvey()
   }
@@ -3635,6 +3742,8 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   // The dedicated home-setting handler owns this click; bail so we don't also drop a survey vertex or waypoint here.
   if (isSettingHomeWaypoint.value) return
 
+  if (onFenceMapClick(e)) return
+
   const oldWaypoint = selectedWaypoint.value
   if (oldWaypoint) {
     const oldMarker = waypointMarkers.value[oldWaypoint.id]
@@ -4041,12 +4150,6 @@ watch(home, () => {
     planningMap.value.addLayer(homeMarker.value)
   } else {
     homeMarker.value.setLatLng(position as LatLngTuple)
-  }
-})
-
-watch(planningMap, (newMap, oldMap) => {
-  if (planningMap.value !== undefined && newMap?.options === undefined) {
-    planningMap.value = oldMap
   }
 })
 
@@ -4710,6 +4813,17 @@ watch(
 </style>
 
 <style scoped>
+.mission-planning--fence-mode :deep(.leaflet-marker-pane > *:not(.fence-breach-return-icon)),
+.mission-planning--fence-mode
+  :deep(
+    .leaflet-overlay-pane
+      > svg
+      path:not(.leaflet-interactive[stroke='#FF8800']):not(.leaflet-interactive[stroke='#3B78A8'])
+  ) {
+  opacity: 0.45;
+  filter: saturate(0.5);
+}
+
 .speed-dial-group {
   display: flex;
   align-items: center;
@@ -4752,7 +4866,10 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 293px; /* Position to the left of the buttons */
+  /* Sits 10px to the left of the bottom-right buttons flex row.
+     Container right offset = 44px; flex inner width ≈ 224px (140px Flight-mode
+     button + two 32px icon buttons + 2×10px gaps); + 10px gap = 278px. */
+  right: 278px;
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
