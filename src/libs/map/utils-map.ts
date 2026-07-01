@@ -2,6 +2,7 @@ import * as turf from '@turf/turf'
 import type { Feature, Polygon } from 'geojson'
 import * as L from 'leaflet'
 
+import { bearingBetween, calculateHaversineDistance, deltaBearing } from '@/libs/mission/general-estimates'
 import type { SurveyPath, WaypointCoordinates } from '@/types/mission'
 
 /**
@@ -550,4 +551,56 @@ export const createGridOverlay = (map: L.Map, gridLayer?: L.LayerGroup): L.Layer
 
   newGridLayer.addTo(map)
   return newGridLayer
+}
+
+/**
+ * Interior angle at a path vertex plus the geometry used to render it.
+ */
+interface VertexAngle {
+  /** Interior angle between the two segments meeting at the vertex, in degrees. */
+  angleDeg: number
+  /** Lat/lng points making up the arc that visualizes the angle. */
+  arc: WaypointCoordinates[]
+  /** Arc midpoint used to anchor the degree label, or null when the arc has no points. */
+  labelAt: WaypointCoordinates | null
+}
+
+/**
+ * Interior angle at `curr` between segments `prev`→`curr` and `curr`→`next`, plus a small arc that visualizes it.
+ * @param {WaypointCoordinates} prev - Vertex before the angle vertex.
+ * @param {WaypointCoordinates} curr - Vertex where the angle is measured.
+ * @param {WaypointCoordinates} next - Vertex after the angle vertex.
+ * @param {number} mapZoom - Current map zoom, used to scale the arc radius.
+ * @returns {VertexAngle} The angle in degrees, the arc points, and the arc midpoint to anchor a label.
+ */
+export const computeVertexAngle = (
+  prev: WaypointCoordinates,
+  curr: WaypointCoordinates,
+  next: WaypointCoordinates,
+  mapZoom: number
+): VertexAngle => {
+  const incomingBearing = bearingBetween(prev, curr)
+  const outgoingBearing = bearingBetween(curr, next)
+  const reverseIncomingBearing = (incomingBearing + 180) % 360
+  const angleDeg = deltaBearing(reverseIncomingBearing, outgoingBearing)
+
+  const radiusMeters = Math.max(15, Math.min(50, 1000 / mapZoom))
+  const longerSegment = Math.max(calculateHaversineDistance(prev, curr), calculateHaversineDistance(curr, next))
+  const arcRadius = Math.min(radiusMeters, longerSegment * 0.3) * 0.5
+
+  const normalizedDiff = ((outgoingBearing - reverseIncomingBearing + 540) % 360) - 180
+  const startBearing = normalizedDiff >= 0 ? reverseIncomingBearing : reverseIncomingBearing - angleDeg
+  const endBearing = normalizedDiff >= 0 ? reverseIncomingBearing + angleDeg : reverseIncomingBearing
+
+  const arc: WaypointCoordinates[] = []
+  const steps = Math.max(8, Math.floor(angleDeg / 2))
+  for (let i = 0; i <= steps; i++) {
+    const bearing = (((startBearing + ((endBearing - startBearing) * i) / steps) % 360) + 360) % 360
+    const rad = (bearing * Math.PI) / 180
+    const latOffset = (arcRadius / 111320) * Math.cos(rad)
+    const lngOffset = (arcRadius / (111320 * Math.cos((curr[0] * Math.PI) / 180))) * Math.sin(rad)
+    arc.push([curr[0] + latOffset, curr[1] + lngOffset])
+  }
+
+  return { angleDeg, arc, labelAt: arc[Math.floor(arc.length / 2)] ?? null }
 }
