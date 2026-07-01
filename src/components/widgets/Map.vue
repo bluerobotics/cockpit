@@ -1084,9 +1084,9 @@ watch(props.widget, () => {
 })
 
 // Allow following a given target
-const followerTarget = ref<WhoToFollow | undefined>(undefined)
+const followerTarget = ref<string | undefined>(undefined)
 const targetFollower = new TargetFollower(
-  (newTarget: WhoToFollow | undefined) => (followerTarget.value = newTarget),
+  (newTarget: string | undefined) => (followerTarget.value = newTarget),
   (newCenter: WaypointCoordinates) => (mapCenter.value = newCenter)
 )
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
