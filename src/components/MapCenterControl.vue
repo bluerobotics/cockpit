@@ -275,23 +275,3 @@ const centerPoiButtonTooltipText = computed(() => {
   color: #ffffff;
 }
 </style>
-
-<!-- Unscoped: the speed-dial content is teleported to <body>, so a scoped selector would not reach it. -->
-<style>
-.speed-dial-glow {
-  isolation: isolate;
-}
-
-.speed-dial-glow::before {
-  content: '';
-  position: absolute;
-  inset: -8px -10px -7px -10px;
-  border-radius: 4px;
-  background: rgba(30, 30, 30, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  pointer-events: none;
-  z-index: -1;
-}
-</style>
