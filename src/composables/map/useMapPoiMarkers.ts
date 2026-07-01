@@ -1,8 +1,9 @@
 import L, { type LatLngTuple, type LeafletEvent, type LeafletMouseEvent, type Map, type Marker } from 'leaflet'
 import { type Ref, type ShallowRef, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 
-import { useMissionStore } from '@/stores/mission'
-import type { PointOfInterest } from '@/types/mission'
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { getPoiIconSignature, getPoiMarkerColor, getPoiMarkerOpacity, getPoiTooltipHtml } from '@/libs/utils-poi'
+import type { ResolvedPointOfInterest } from '@/types/mission'
 
 /**
  * Rendering classes and interaction callbacks for the PoI markers of a single map.
@@ -17,17 +18,18 @@ export interface UseMapPoiMarkersOptions {
    */
   tooltipClassName: string
   /**
-   * Whether markers can be dragged to move the underlying PoI. Defaults to true.
+   * Whether markers can be dragged to move the underlying PoI. Defaults to true. Live-tracked PoIs are
+   * never draggable regardless of this flag, since their position is owned by the data lake.
    */
   draggable?: boolean
   /**
-   * Called when a marker is left-clicked, with the up-to-date PoI from the store and the originating event.
+   * Called when a marker is left-clicked, with the up-to-date PoI and the originating event.
    */
-  onClick?: (poi: PointOfInterest, event: MouseEvent) => void
+  onClick?: (poi: ResolvedPointOfInterest, event: MouseEvent) => void
   /**
-   * Called when a marker is right-clicked, with the up-to-date PoI from the store and the originating event.
+   * Called when a marker is right-clicked, with the up-to-date PoI and the originating event.
    */
-  onContextMenu?: (poi: PointOfInterest, event: MouseEvent) => void
+  onContextMenu?: (poi: ResolvedPointOfInterest, event: MouseEvent) => void
 }
 
 /**
@@ -51,9 +53,10 @@ export interface UseMapPoiMarkersReturn {
 }
 
 /**
- * Mirrors the mission store's points of interest as draggable Leaflet markers on the given map, keeping them
- * in sync as PoIs are added, edited, moved or removed, and exposing GoTo-target highlighting. Markers are torn
- * down automatically when the owning component unmounts.
+ * Mirrors the resolved points of interest as Leaflet markers on the given map, keeping them in sync as PoIs
+ * are added, edited, moved or removed, and exposing GoTo-target highlighting. Coordinates come from the data
+ * lake (see {@link usePointsOfInterest}), so live-tracked PoIs follow their source and are not draggable.
+ * Markers are torn down automatically when the owning component unmounts.
  * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; markers (re)draw once it becomes available.
  * @param {UseMapPoiMarkersOptions} options - Rendering classes and interaction callbacks.
  * @returns {UseMapPoiMarkersReturn} The reactive marker registry and GoTo-target controls.
@@ -62,41 +65,48 @@ export const useMapPoiMarkers = (
   map: ShallowRef<Map | undefined>,
   options: UseMapPoiMarkersOptions
 ): UseMapPoiMarkersReturn => {
-  const missionStore = useMissionStore()
+  const { resolvedPointsOfInterest, movePointOfInterest } = usePointsOfInterest()
   const markers = shallowRef<Record<string, Marker>>({})
   const gotoTargetId = ref<string | null>(null)
   const draggable = options.draggable ?? true
 
-  // Snapshot of the fields each marker was last rendered with, keyed by PoI id. Lets syncMarkers skip
+  // Snapshot of the rendering inputs each marker was last drawn with, keyed by PoI id. Lets syncMarkers skip
   // markers whose data hasn't changed, instead of rebuilding every marker's icon (and Leaflet Draggable
-  // instance) whenever any single PoI in the store is edited or dragged. A plain record (rather than an
-  // ES Map) to avoid shadowing the Leaflet `Map` type already imported in this file.
+  // instance) whenever any single PoI in the list is edited or moved. A plain record (rather than an ES Map)
+  // to avoid shadowing the Leaflet `Map` type already imported in this file.
   const lastRenderedSignatures: Record<string, string> = {}
-  const poiSignature = (poi: PointOfInterest): string =>
-    JSON.stringify([poi.coordinates, poi.icon, poi.color, poi.name, poi.description])
+  // Icon-only signature per PoI, so a live-tracked PoI merely moving doesn't rebuild its icon (and DOM
+  // element), which would cancel in-progress clicks on frequently-updated markers.
+  const iconSignatures: Record<string, string> = {}
+  const poiSignature = (poi: ResolvedPointOfInterest): string =>
+    JSON.stringify([
+      poi.coordinates,
+      getPoiMarkerColor(poi),
+      getPoiMarkerOpacity(poi),
+      poi.icon,
+      poi.name,
+      poi.description,
+      poi.isLiveTracked,
+    ])
 
   // The map ref can momentarily hold a template-ref DOM element before the Leaflet instance is
   // assigned (consumers reuse the same ref name for the container and the map), so guard on the API.
   const isMapReady = (instance: Map | undefined): instance is Map =>
     !!instance && typeof instance.getContainer === 'function' && !!instance.getContainer()
 
-  const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => ({
+  const poiIconConfig = (poi: ResolvedPointOfInterest): L.DivIconOptions => ({
     html: `
     <div class="poi-marker-container">
-      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
-      <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
+      <div class="poi-marker-background" style="background-color: ${getPoiMarkerColor(poi)}80;"></div>
+      <i class="v-icon notranslate mdi ${
+        poi.icon
+      }" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
     </div>
   `,
     className: options.iconClassName,
     iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconAnchor: [16, 16],
   })
-
-  const tooltipContent = (poi: PointOfInterest, coordinates: LatLngTuple): string => `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${coordinates[0].toFixed(8)}, Lng: ${coordinates[1].toFixed(8)}
-  `
 
   const applyGotoTargetStyle = (poiId: string, active: boolean): void => {
     const bg = markers.value[poiId]?.getElement()?.querySelector('.poi-marker-background') as HTMLElement | null
@@ -112,36 +122,37 @@ export const useMapPoiMarkers = (
     if (newId) applyGotoTargetStyle(newId, true)
   })
 
-  const addMarker = (poi: PointOfInterest): void => {
+  const addMarker = (poi: ResolvedPointOfInterest): void => {
     if (!isMapReady(map.value)) return
 
     const marker = L.marker(poi.coordinates as LatLngTuple, {
       icon: L.divIcon(poiIconConfig(poi)),
-      draggable,
+      draggable: draggable && !poi.isLiveTracked,
+      opacity: getPoiMarkerOpacity(poi),
     }).addTo(map.value)
 
-    marker.bindTooltip(tooltipContent(poi, poi.coordinates as LatLngTuple), {
+    marker.bindTooltip(getPoiTooltipHtml(poi, poi.coordinates), {
       permanent: false,
       direction: 'top',
-      offset: [0, -40],
+      offset: [0, -20],
       className: options.tooltipClassName,
     })
 
     marker.on('drag', (event: LeafletEvent) => {
       const coords = event.target.getLatLng()
-      marker.getTooltip()?.setContent(tooltipContent(poi, [coords.lat, coords.lng]))
+      marker.getTooltip()?.setContent(getPoiTooltipHtml(poi, [coords.lat, coords.lng]))
     })
 
     marker.on('dragend', (event: LeafletEvent) => {
       const coords = event.target.getLatLng()
-      missionStore.movePointOfInterest(poi.id, [coords.lat, coords.lng])
+      movePointOfInterest(poi.id, [coords.lat, coords.lng])
     })
 
     marker.on('click', (event: LeafletMouseEvent) => {
       L.DomEvent.stopPropagation(event)
-      const freshPoi = missionStore.pointsOfInterest.find((p) => p.id === poi.id)
+      const freshPoi = resolvedPointsOfInterest.value.find((p) => p.id === poi.id)
       if (!freshPoi) {
-        console.warn('POI not found in store:', poi.id)
+        console.warn('POI not found:', poi.id)
         return
       }
       options.onClick?.(freshPoi, event.originalEvent)
@@ -151,9 +162,9 @@ export const useMapPoiMarkers = (
       L.DomEvent.stopPropagation(event)
       event.originalEvent.stopPropagation()
       event.originalEvent.preventDefault()
-      const freshPoi = missionStore.pointsOfInterest.find((p) => p.id === poi.id)
+      const freshPoi = resolvedPointsOfInterest.value.find((p) => p.id === poi.id)
       if (!freshPoi) {
-        console.warn('POI not found in store:', poi.id)
+        console.warn('POI not found:', poi.id)
         return
       }
       options.onContextMenu?.(freshPoi, event.originalEvent)
@@ -161,27 +172,40 @@ export const useMapPoiMarkers = (
 
     markers.value[poi.id] = marker
     lastRenderedSignatures[poi.id] = poiSignature(poi)
+    iconSignatures[poi.id] = getPoiIconSignature(poi)
 
     if (gotoTargetId.value === poi.id) applyGotoTargetStyle(poi.id, true)
   }
 
-  const updateMarker = (poi: PointOfInterest): void => {
+  const updateMarker = (poi: ResolvedPointOfInterest): void => {
     const marker = markers.value[poi.id]
     if (!isMapReady(map.value) || !marker) return
 
-    // Skip markers whose data hasn't changed since last render, so editing or dragging one PoI doesn't
+    // Skip markers whose data hasn't changed since last render, so editing or moving one PoI doesn't
     // rebuild every other marker's icon and tear down its Leaflet Draggable instance mid-interaction.
     const signature = poiSignature(poi)
     if (lastRenderedSignatures[poi.id] === signature) return
     lastRenderedSignatures[poi.id] = signature
 
     marker.setLatLng(poi.coordinates as LatLngTuple)
-    marker.setIcon(L.divIcon(poiIconConfig(poi)))
 
-    // setIcon replaces the marker's DOM element, so the goto-target class needs to be re-applied.
-    if (gotoTargetId.value === poi.id) applyGotoTargetStyle(poi.id, true)
+    // Keep draggability in sync: a PoI edited into a live expression must stop being draggable (and
+    // vice-versa), since dragging would overwrite its coordinates with a static position.
+    if (draggable && !poi.isLiveTracked) marker.dragging?.enable()
+    else marker.dragging?.disable()
 
-    marker.getTooltip()?.setContent(tooltipContent(poi, poi.coordinates as LatLngTuple))
+    marker.setOpacity(getPoiMarkerOpacity(poi))
+
+    // Only rebuild the icon when its appearance changes. setIcon replaces the marker's DOM element,
+    // so both the goto-target class and any in-progress click would otherwise be lost.
+    const iconSignature = getPoiIconSignature(poi)
+    if (iconSignatures[poi.id] !== iconSignature) {
+      marker.setIcon(L.divIcon(poiIconConfig(poi)))
+      iconSignatures[poi.id] = iconSignature
+      if (gotoTargetId.value === poi.id) applyGotoTargetStyle(poi.id, true)
+    }
+
+    marker.getTooltip()?.setContent(getPoiTooltipHtml(poi, poi.coordinates))
   }
 
   const removeMarker = (poiId: string): void => {
@@ -189,10 +213,11 @@ export const useMapPoiMarkers = (
     markers.value[poiId].remove()
     delete markers.value[poiId]
     delete lastRenderedSignatures[poiId]
+    delete iconSignatures[poiId]
     if (gotoTargetId.value === poiId) gotoTargetId.value = null
   }
 
-  const syncMarkers = (pois: PointOfInterest[]): void => {
+  const syncMarkers = (pois: ResolvedPointOfInterest[]): void => {
     const liveIds = new Set(pois.map((p) => p.id))
     Object.keys(markers.value).forEach((id) => {
       if (!liveIds.has(id)) removeMarker(id)
@@ -201,7 +226,7 @@ export const useMapPoiMarkers = (
   }
 
   watch(
-    () => missionStore.pointsOfInterest,
+    resolvedPointsOfInterest,
     async (pois) => {
       if (!isMapReady(map.value)) {
         await nextTick()
@@ -216,7 +241,7 @@ export const useMapPoiMarkers = (
   watch(
     map,
     (instance) => {
-      if (isMapReady(instance)) syncMarkers(missionStore.pointsOfInterest)
+      if (isMapReady(instance)) syncMarkers(resolvedPointsOfInterest.value)
     },
     { immediate: true }
   )
@@ -225,6 +250,7 @@ export const useMapPoiMarkers = (
     Object.values(markers.value).forEach((marker) => marker.remove())
     markers.value = {}
     Object.keys(lastRenderedSignatures).forEach((id) => delete lastRenderedSignatures[id])
+    Object.keys(iconSignatures).forEach((id) => delete iconSignatures[id])
   })
 
   return { markers, gotoTargetId, setGotoTarget }

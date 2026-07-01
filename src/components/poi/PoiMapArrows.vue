@@ -63,9 +63,9 @@ import L, { type LatLngTuple } from 'leaflet'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
-import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Edge, EdgeIntersection, PoiEdgeArrow, TargetEdgeArrow, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
@@ -123,7 +123,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const missionStore = useMissionStore()
+const { resolvedPointsOfInterest } = usePointsOfInterest()
 const widgetStore = useWidgetManagerStore()
 
 // Get map instance from composable
@@ -410,7 +410,7 @@ const calculatePoiEdgeArrows = (): void => {
   const cornerThreshold = 40
   const arrows: PoiEdgeArrow[] = []
 
-  missionStore.pointsOfInterest.forEach((poi) => {
+  resolvedPointsOfInterest.value.forEach((poi) => {
     const poiLatLng = L.latLng(poi.coordinates[0], poi.coordinates[1])
     if (!map.value) return
 
@@ -517,7 +517,7 @@ const throttledUpdateVehicleAndHomeArrows = useThrottleFn(calculateVehicleAndHom
 const centerMapOnPoi = (poiId: string): void => {
   if (!map.value) return
 
-  const poi = missionStore.pointsOfInterest.find((p) => p.id === poiId)
+  const poi = resolvedPointsOfInterest.value.find((p) => p.id === poiId)
   if (!poi) return
 
   map.value.setView(poi.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
@@ -542,9 +542,9 @@ watch(
   { immediate: true }
 )
 
-// Watch for map changes and POI changes
+// Watch for map view changes (debounced to avoid spamming during pan/zoom)
 watch(
-  [() => props.mapCenter, () => props.zoom, () => missionStore.pointsOfInterest],
+  [() => props.mapCenter, () => props.zoom],
   () => {
     if (props.mapReady && map.value && map.value instanceof L.Map) {
       debouncedUpdateArrows()
@@ -552,6 +552,17 @@ watch(
     }
   },
   { immediate: true }
+)
+
+// Watch for POI changes. Throttled (not debounced) so continuously-moving live-tracked POIs keep
+// their edge arrows updated, instead of perpetually resetting the debounce timer.
+watch(
+  () => resolvedPointsOfInterest.value,
+  () => {
+    if (props.mapReady && map.value && map.value instanceof L.Map) {
+      throttledUpdateArrows()
+    }
+  }
 )
 
 watch(

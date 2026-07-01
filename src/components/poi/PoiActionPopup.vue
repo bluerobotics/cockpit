@@ -104,11 +104,11 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { copyToClipboard } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useMissionStore } from '@/stores/mission'
 import { type DialogActions } from '@/types/general'
-import type { PointOfInterest } from '@/types/mission'
+import type { ResolvedPointOfInterest } from '@/types/mission'
 
 const props = withDefaults(
   defineProps<{
@@ -125,23 +125,23 @@ const emit = defineEmits<{
   /**
    * Emitted when the user requests a GoTo to the selected PoI.
    */
-  (event: 'goto', poi: PointOfInterest): void
+  (event: 'goto', poi: ResolvedPointOfInterest): void
   /**
    * Emitted when the user cancels the active GoTo for the selected PoI.
    */
-  (event: 'cancelGoto', poi: PointOfInterest): void
+  (event: 'cancelGoto', poi: ResolvedPointOfInterest): void
   /**
    * Emitted when the user requests to edit the selected PoI.
    */
-  (event: 'edit', poi: PointOfInterest): void
+  (event: 'edit', poi: ResolvedPointOfInterest): void
   /**
    * Emitted after the user confirms deletion of the selected PoI.
    */
-  (event: 'delete', poi: PointOfInterest): void
+  (event: 'delete', poi: ResolvedPointOfInterest): void
 }>()
 
 const interfaceStore = useAppInterfaceStore()
-const missionStore = useMissionStore()
+const { resolvedPointsOfInterest } = usePointsOfInterest()
 const { showDialog, closeDialog } = useInteractionDialog()
 
 const POI_POPUP_WIDTH = 221
@@ -153,11 +153,11 @@ const visible = ref(false)
 const position = ref({ x: 0, y: 0 })
 const selectedId = ref<string | null>(null)
 const selectedPoi = computed(() =>
-  selectedId.value === null ? null : missionStore.pointsOfInterest.find((p) => p.id === selectedId.value) ?? null
+  selectedId.value === null ? null : resolvedPointsOfInterest.value.find((p) => p.id === selectedId.value) ?? null
 )
 const isGotoTarget = computed(() => selectedId.value !== null && selectedId.value === props.gotoTargetId)
 
-const open = (poi: PointOfInterest, event: MouseEvent): void => {
+const open = (poi: ResolvedPointOfInterest, event: MouseEvent): void => {
   const margin = 8
   let x = event.clientX
   let y = event.clientY
