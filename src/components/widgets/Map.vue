@@ -28,6 +28,7 @@
             />
           </template>
         </v-tooltip>
+        <GeoFenceEnforcementControl />
         <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
           <template #activator="{ props: menuProps }">
             <v-tooltip location="top" text="Download tiles for offline use">
@@ -144,6 +145,11 @@
         :zoom="zoom"
         :widget="widget"
         :target-follower="targetFollower"
+      />
+      <GeoFenceMapLayer
+        v-if="fenceStore.lastUploadedPlan && fenceStore.fenceEnabled"
+        readonly
+        :plan="fenceStore.lastUploadedPlan"
       />
     </div>
   </div>
@@ -286,6 +292,8 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import GeoFenceEnforcementControl from '@/components/geofence/GeoFenceEnforcementControl.vue'
+import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
@@ -312,6 +320,7 @@ import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -346,6 +355,7 @@ const {
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const widgetStore = useWidgetManagerStore()
+const fenceStore = useGeoFenceStore()
 const router = useRouter()
 
 const mapContext = provideMapContext()
@@ -2180,7 +2190,11 @@ watch(
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 293px; /* Position to the left of the buttons */
+  /* Sits flush against the bottom-right buttons row (Edit mission +
+     Fence + Download tiles + Center-on-target speed dial). Container
+     right offset = 52px; flex inner width ≈ 266px (140px Edit-mission
+     button + three 32px icon buttons + 3×10px gaps); + 1px gap = 319px. */
+  right: 319px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
