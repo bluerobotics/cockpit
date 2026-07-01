@@ -67,6 +67,8 @@ export const useMissionStore = defineStore('mission', () => {
     'cockpit-default-map-tile-provider',
     'Use last selected'
   )
+  const userLastMapShowSeamarks = useBlueOsStorage<boolean>('cockpit-user-last-map-show-seamarks', true)
+  const userLastMapShowMarineProfile = useBlueOsStorage<boolean>('cockpit-user-last-map-show-marine-profile', false)
   const mapFallbackBaseColor = useBlueOsStorage<string>('cockpit-map-fallback-base-color', defaultMapFallbackBaseColor)
   const mapFallbackNoiseIntensity = useBlueOsStorage<number>(
     'cockpit-map-fallback-noise-intensity',
@@ -709,6 +711,8 @@ export const useMissionStore = defineStore('mission', () => {
     applyCruiseSpeed,
     userLastMapTileProvider,
     defaultMapTileProvider,
+    userLastMapShowSeamarks,
+    userLastMapShowMarineProfile,
     mapFallbackBaseColor,
     mapFallbackNoiseIntensity,
     mapFallbackSeed,
