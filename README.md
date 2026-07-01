@@ -106,6 +106,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
+| **External Serial GNSS** | ❌ Not available (browsers can't access serial devices outside a secure context) | ✅ Read one or more USB/serial NMEA GNSS receivers into the data-lake |
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
 | **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |
