@@ -208,6 +208,7 @@ import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
 import ConfigurationMAVLinkView from '@/views/ConfigurationMAVLinkView.vue'
 import ConfigurationMissionView from '@/views/ConfigurationMissionView.vue'
+import ConfigurationSourcesView from '@/views/ConfigurationSourcesView.vue'
 import ConfigurationUIView from '@/views/ConfigurationUIView.vue'
 import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
 import ToolsDataLakeView from '@/views/ToolsDataLakeView.vue'
@@ -384,6 +385,12 @@ const configMenu = computed(() => {
       title: 'Actions',
       componentName: SubMenuComponentName.SettingsActions,
       component: markRaw(ConfigurationActionsView) as SubMenuComponent,
+    },
+    {
+      icon: 'mdi-import',
+      title: 'Sources',
+      componentName: SubMenuComponentName.SettingsSources,
+      component: markRaw(ConfigurationSourcesView) as SubMenuComponent,
     },
   ]
 
