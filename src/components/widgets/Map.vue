@@ -263,7 +263,7 @@
 <script setup lang="ts">
 import { useDebounceFn, useElementHover } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
-import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map } from 'leaflet'
+import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
 import {
   computed,
   nextTick,
@@ -293,6 +293,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
+import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -312,14 +313,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type {
-  IconDimensions,
-  MapTileProvider,
-  MarkerSizes,
-  PointOfInterest,
-  Waypoint,
-  WaypointCoordinates,
-} from '@/types/mission'
+import type { IconDimensions, MarkerSizes, PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -561,9 +555,12 @@ onBeforeMount(() => {
 })
 
 // Build the shared base maps and overlays (tile-provider definitions live in useMapTileLayers)
-const { osm, esri, baseMaps, overlays } = useMapTileLayers({ seamarks: true, marineProfile: true })
+const tileLayers = useMapTileLayers({ seamarks: true, marineProfile: true })
+const { osm, esri, overlays } = tileLayers
 const seamarks = overlays['Seamarks']
-const marineProfile = overlays['Marine Profile']
+
+// Restore and persist the user's base-map and overlay selection
+const { getInitialLayers, createLayerControl, registerLayerSync } = useMapTileLayerSelection(tileLayers)
 
 // Syncs user-loaded GeoTIFF overlays (sonar/bathymetry surveys) onto this map
 const mapOverlays = useMapOverlays()
@@ -596,7 +593,7 @@ const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
-const layerControl = L.control.layers(baseMaps, overlays)
+const layerControl = createLayerControl()
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 
 watch(showButtons, () => {
@@ -706,15 +703,9 @@ onMounted(async () => {
 
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
-  const preferredProvider =
-    missionStore.defaultMapTileProvider === 'Use last selected'
-      ? missionStore.userLastMapTileProvider
-      : missionStore.defaultMapTileProvider
-  const initialBaseLayer = baseMaps[preferredProvider] || esri
-
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
-    layers: [initialBaseLayer, seamarks, marineProfile],
+    layers: getInitialLayers(),
     attributionControl: false,
     ...singleStepZoomMapOptions,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
@@ -723,32 +714,7 @@ onMounted(async () => {
   mapContext.map.value = map.value
   mapContext.mapReady.value = true
 
-  // Listen for base layer changes to save user preference
-  map.value.on('baselayerchange', (event: LayersControlEvent) => {
-    const name = event.name
-    if (!name.includes(name as MapTileProvider)) {
-      return
-    }
-    missionStore.userLastMapTileProvider = event.name as MapTileProvider
-  })
-
-  // React to changes on the default tile provider preference
-  watch(
-    () => missionStore.defaultMapTileProvider,
-    (newPref) => {
-      if (!map.value || newPref === 'Use last selected') return
-      const targetLayer = baseMaps[newPref]
-      if (!targetLayer) return
-      Object.values(baseMaps).forEach((layer) => {
-        if (layer !== targetLayer && map.value?.hasLayer(layer)) {
-          map.value.removeLayer(layer)
-        }
-      })
-      if (!map.value.hasLayer(targetLayer)) {
-        map.value.addLayer(targetLayer)
-      }
-    }
-  )
+  registerLayerSync(map.value)
 
   // Remove default zoom control
   map.value.removeControl(map.value.zoomControl)

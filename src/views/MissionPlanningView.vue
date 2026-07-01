@@ -671,7 +671,7 @@ import { useDebounceFn, useWindowSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
+import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
 
@@ -694,6 +694,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
+import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -731,7 +732,6 @@ import {
   ContextMenuTypes,
   IconDimensions,
   instanceOfCockpitMission,
-  MapTileProvider,
   MarkerSizes,
   MissionCommand,
   MissionCommandType,
@@ -3730,17 +3730,15 @@ let stopUnFollowOnUserDrag: (() => void) | undefined
 let fallbackLayers: L.TileLayer[] = []
 
 onMounted(async () => {
-  // Build the shared base maps and extra OSM overlay (tile-provider definitions live in useMapTileLayers)
-  const { osm, esri, extraOsm, baseMaps } = useMapTileLayers({ extraOsm: true })
+  // Build the shared base maps, overlays and extra OSM overlay (tile-provider definitions live in useMapTileLayers)
+  const tileLayers = useMapTileLayers({ extraOsm: true, seamarks: true, marineProfile: true })
+  const { osm, esri, extraOsm } = tileLayers
 
-  const preferredProvider =
-    missionStore.defaultMapTileProvider === 'Use last selected'
-      ? missionStore.userLastMapTileProvider
-      : missionStore.defaultMapTileProvider
-  const initialBaseLayer = baseMaps[preferredProvider] || esri
+  // Restore and persist the user's base-map and overlay selection
+  const { getInitialLayers, createLayerControl, registerLayerSync } = useMapTileLayerSelection(tileLayers)
 
   planningMap.value = L.map('planningMap', {
-    layers: [initialBaseLayer],
+    layers: getInitialLayers(),
     ...singleStepZoomMapOptions,
   }).setView(mapCenter.value as LatLngTuple, zoom.value)
 
@@ -3773,32 +3771,7 @@ onMounted(async () => {
   pane.style.pointerEvents = 'none'
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
-  // Listen for base layer changes to save user preference
-  planningMap.value.on('baselayerchange', (event: LayersControlEvent) => {
-    const name = event.name
-    if (!name.includes(name as MapTileProvider)) {
-      return
-    }
-    missionStore.userLastMapTileProvider = event.name as MapTileProvider
-  })
-
-  // React to changes on the default tile provider preference
-  watch(
-    () => missionStore.defaultMapTileProvider,
-    (newPref) => {
-      if (!planningMap.value || newPref === 'Use last selected') return
-      const targetLayer = baseMaps[newPref]
-      if (!targetLayer) return
-      Object.values(baseMaps).forEach((layer) => {
-        if (layer !== targetLayer && planningMap.value?.hasLayer(layer)) {
-          planningMap.value.removeLayer(layer)
-        }
-      })
-      if (!planningMap.value.hasLayer(targetLayer)) {
-        planningMap.value.addLayer(targetLayer)
-      }
-    }
-  )
+  registerLayerSync(planningMap.value)
 
   planningMap.value.on('moveend', () => {
     if (planningMap.value === undefined) return
@@ -3865,7 +3838,7 @@ onMounted(async () => {
     onMapClick(e)
   })
 
-  const layerControl = L.control.layers(baseMaps)
+  const layerControl = createLayerControl()
   planningMap.value.addControl(layerControl)
 
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
