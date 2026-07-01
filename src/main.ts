@@ -27,6 +27,7 @@ import eventTracker, {
 } from '@/libs/external-telemetry/event-tracking'
 import { setupPredefinedLakeAndActionResources } from '@/libs/joystick/protocols/predefined-resources'
 import { setupPostPiniaConnections } from '@/libs/post-pinia-connections'
+import { initGnss } from '@/libs/sensors/gnss'
 import { datalogger } from '@/libs/sensors-logging'
 import { runMigrations } from '@/utils/migrations'
 
@@ -96,6 +97,9 @@ setupPredefinedLakeAndActionResources()
 
 // Initialize auto-run for actions
 initializeActionAutoRun()
+
+// Boot the GNSS reading pipeline so configured devices post to the data lake independently of the UI
+initGnss()
 
 // Start logging as soon as the app is loaded to always have telemetry for videos
 datalogger.startLogging('cockpit-telemetry-logging')
