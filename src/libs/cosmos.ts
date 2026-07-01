@@ -6,7 +6,7 @@ import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joysti
 import { NetworkInfo } from '@/types/network'
 import type { TelemetrySystemHardwareInfo } from '@/types/platform'
 import { SDLStatus } from '@/types/sdl'
-import type { SerialData } from '@/types/serial'
+import type { SerialData, SerialPortInfo } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 import type { Go2RTCStreamInfo } from '@/types/video'
 
@@ -356,6 +356,11 @@ declare global {
        * Capture the workspace area of the application
        */
       captureWorkspace(rect?: Electron.Rectangle): Promise<Uint8Array>
+      /**
+       * List the serial ports available on the system
+       * @returns The list of available serial ports
+       */
+      serialListPorts: () => Promise<SerialPortInfo[]>
       /**
        * Open a link connection
        */
