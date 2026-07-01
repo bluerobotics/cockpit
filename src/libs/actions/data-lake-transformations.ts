@@ -33,8 +33,14 @@ const saveTransformingFunctions = (): void => {
   updateTransformingFunctionListeners()
 }
 
-const getExpressionValue = (func: TransformingFunction): string | number | boolean => {
-  const expressionWithValues = replaceDataLakeInputsInString(func.expression)
+/**
+ * Evaluates a data-lake expression, replacing `{{ variable }}` inputs with their current values and
+ * running the result as a JavaScript expression (so arithmetic like "{{ x }} * 10" works).
+ * @param {string} expression - The expression to evaluate
+ * @returns {string | number | boolean} The evaluated value
+ */
+export const evaluateDataLakeExpression = (expression: string): string | number | boolean => {
+  const expressionWithValues = replaceDataLakeInputsInString(expression)
 
   // Inputs whose variables have no value yet are left as literal '{{ ... }}' placeholders by the replacement.
   // Bail out with a clear error instead of letting eval fail with a cryptic "Unexpected token '{'" SyntaxError.
@@ -44,7 +50,7 @@ const getExpressionValue = (func: TransformingFunction): string | number | boole
   }
 
   // If the expression contains a return statement, we can just evaluate it directly
-  if (func.expression.includes('return')) {
+  if (expression.includes('return')) {
     return eval(`(function() { ${expressionWithValues} })()`)
   }
 
@@ -74,6 +80,10 @@ const getExpressionValue = (func: TransformingFunction): string | number | boole
   }
 
   throw new Error('Function has no return statement and has comments on all lines.')
+}
+
+const getExpressionValue = (func: TransformingFunction): string | number | boolean => {
+  return evaluateDataLakeExpression(func.expression)
 }
 
 const variablesListeners: Record<string, Record<string, string[]>> = {}
