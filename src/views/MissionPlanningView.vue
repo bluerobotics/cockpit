@@ -477,71 +477,17 @@
         </v-menu>
       </template>
     </v-tooltip>
-    <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
-      <template #activator="{ props: activatorProps }">
-        <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              v-bind="{ ...activatorProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 right-[44px] bg-slate-50 text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              :color="followerTarget !== undefined ? 'red' : ''"
-              icon="mdi-crosshairs-gps"
-              size="x-small"
-            />
-          </template>
-        </v-tooltip>
-      </template>
-      <v-tooltip location="left" :text="centerMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="mission"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
-            :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
-            icon="mdi-map-marker-path"
-            size="x-small"
-            :disabled="!hasMissionWaypoints"
-            @click.stop="centerOnMission"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerHomeButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="home"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
-            :class="[!home ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-            icon="mdi-home-search"
-            size="x-small"
-            :disabled="!home"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="vehicle"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
-            :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-            icon="mdi-airplane-marker"
-            size="x-small"
-            :disabled="!vehiclePosition"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-          />
-        </template>
-      </v-tooltip>
-    </v-speed-dial>
+    <MapCenterControl
+      v-model:open="speedDialOpen"
+      :target-follower="targetFollower"
+      :follower-target="followerTarget"
+      :home="home"
+      :vehicle-position="vehiclePosition"
+      :is-vehicle-online="vehicleStore.isVehicleOnline"
+      :has-mission-waypoints="hasMissionWaypoints"
+      :activator-style="{ bottom: '3rem' }"
+      @center-on-mission="centerOnMission"
+    />
     <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
       v-if="uploadingMission"
@@ -680,6 +626,7 @@ import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
+import MapCenterControl from '@/components/MapCenterControl.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
@@ -4211,29 +4158,6 @@ watch(
   }
 )
 
-const centerHomeButtonTooltipText = computed(() => {
-  if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
-  }
-  return 'Click once to center on home or twice to track it.'
-})
-
-const centerVehicleButtonTooltipText = computed(() => {
-  if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
-  }
-  if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
-  }
-  return 'Click once to center on vehicle or twice to track it.'
-})
-
 const missionFitCoordinates = computed<WaypointCoordinates[]>(() => {
   const waypointCoords = missionStore.currentPlanningWaypoints.map((wp) => wp.coordinates)
   const surveyCoords = missionStore.currentPlanningSurveys.flatMap((survey) => [
@@ -4244,19 +4168,6 @@ const missionFitCoordinates = computed<WaypointCoordinates[]>(() => {
 })
 
 const hasMissionWaypoints = computed(() => missionFitCoordinates.value.length > 0)
-
-const centerMissionButtonTooltipText = computed(() => {
-  if (!hasMissionWaypoints.value) {
-    return 'Cannot center map on mission (no waypoints defined).'
-  }
-  return 'Click to center the map on the current mission.'
-})
-
-const centerActivatorTooltipText = computed(() => {
-  if (followerTarget.value === WhoToFollow.HOME) return 'Tracking home position. Open to change target.'
-  if (followerTarget.value === WhoToFollow.VEHICLE) return 'Tracking vehicle position. Open to change target.'
-  return 'Center map on home, vehicle or mission.'
-})
 
 const centerOnMission = (): void => {
   if (!planningMap.value || !hasMissionWaypoints.value) return
