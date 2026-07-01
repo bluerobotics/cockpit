@@ -32,6 +32,11 @@ import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
 import {
+  convertGeoFencePlanToMavlink,
+  convertMavlinkToGeoFencePlan,
+  emptyGeoFencePlan,
+} from '@/libs/vehicle/mavlink/geofence-conversion'
+import {
   type MAVLinkParameterSetData,
   type MessageIntervalOptions,
   alertLevelFromMavSeverity,
@@ -52,6 +57,7 @@ import {
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
+import type { GeoFencePlan } from '@/types/geofence'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import { flattenData } from '../common/data-flattener'
@@ -86,10 +92,12 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   _vehicleSpecificErrors = [0, 0, 0, 0]
   _messages: MAVLinkMessageDictionary = new Map()
   _currentMissionSeq: number | undefined = undefined
+  _capabilities: number | undefined = undefined
 
   onIncomingMAVLinkMessage = new SignalTyped()
   onOutgoingMAVLinkMessage = new SignalTyped()
   onMissionItemReached = new Signal<number>()
+  onCapabilities = new Signal<number>()
   _flying = false
 
   shouldCreateDatalakeVariablesFromOtherSystems = false
@@ -115,6 +123,13 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       console.error('Failed to request default messages from the vehicle.')
       console.error(error)
     }
+
+    // Request the autopilot capabilities so we know which optional MAVLink
+    // services (geofence, rally points, etc.) the vehicle supports.
+    this.requestAutopilotCapabilities().catch((error) => {
+      console.warn('Failed to request autopilot capabilities. Capability gating will fall back to optimistic mode.')
+      console.warn(error)
+    })
 
     // Create data-lake variables for the vehicle
     this.createPredefinedDataLakeVariables()
@@ -487,6 +502,14 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         break
       }
 
+      case MAVLinkType.AUTOPILOT_VERSION: {
+        const msg = mavlink_message.message as Message.AutopilotVersion
+        const bits = Number(msg.capabilities?.bits ?? 0)
+        this._capabilities = bits
+        this.onCapabilities.emit_value(bits)
+        break
+      }
+
       default:
         break
     }
@@ -854,6 +877,91 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Request a single onboard parameter from the vehicle by name. The vehicle
+   * will reply with a `PARAM_VALUE` message that bubbles up via `onParameter`.
+   * @param { string } paramName Onboard parameter id (max 16 chars).
+   */
+  requestParameter(paramName: string): void {
+    const param_id: string[] = [...paramName]
+    while (param_id.length < 16) {
+      param_id.push('\0')
+    }
+    const paramRequestReadMessage: Message.ParamRequestRead = {
+      type: MAVLinkType.PARAM_REQUEST_READ,
+      target_system: this.currentSystemId,
+      target_component: 0,
+      param_index: -1,
+      // @ts-ignore: The correct type is indeed a char array
+      param_id,
+    }
+    sendMavlinkMessage(paramRequestReadMessage)
+  }
+
+  /**
+   * Request a single onboard parameter and resolve with its value when the
+   * matching `PARAM_VALUE` reply arrives. Resolves with `undefined` if no
+   * matching reply is received within `timeoutMs`.
+   * @param { string } paramName Onboard parameter id (max 16 chars).
+   * @param { number } timeoutMs Timeout in milliseconds before giving up.
+   * @returns { Promise<number | undefined> } The parameter value, or undefined on timeout.
+   */
+  async requestParameterValue(paramName: string, timeoutMs = 1500): Promise<number | undefined> {
+    return new Promise<number | undefined>((resolve) => {
+      let resolved = false
+      // Slot lifetime is bounded by the timeout: either the matching PARAM_VALUE
+      // arrives and the slot removes itself, or `setTimeout` fires after
+      // `timeoutMs` and removes it. The promise always settles, so the slot is
+      // never left registered on `onParameter`.
+      const slot = ([param]: [Parameter, number | undefined]): void => {
+        if (resolved || param?.name !== paramName) return
+        resolved = true
+        this.onParameter.remove(slot)
+        clearTimeout(timeoutHandle)
+        resolve(param.value)
+      }
+      this.onParameter.add(slot)
+      this.requestParameter(paramName)
+      const timeoutHandle = setTimeout(() => {
+        if (resolved) return
+        resolved = true
+        this.onParameter.remove(slot)
+        resolve(undefined)
+      }, timeoutMs)
+    })
+  }
+
+  /**
+   * Request the vehicle to publish its `AUTOPILOT_VERSION` message so the
+   * GCS can read the autopilot capability bitmask.
+   * @returns { Promise<void> } Resolves when the request command is acknowledged.
+   */
+  async requestAutopilotCapabilities(): Promise<void> {
+    await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES, 1)
+  }
+
+  /**
+   * Get the cached autopilot capability bitmask from the last received
+   * `AUTOPILOT_VERSION` message.
+   * @returns { number | undefined } The capability bits, or `undefined` if not yet received.
+   */
+  capabilities(): number | undefined {
+    return this._capabilities
+  }
+
+  /**
+   * Check whether a specific capability bit is advertised by the vehicle.
+   * Returns `false` when no `AUTOPILOT_VERSION` has been received yet.
+   * @param { number } bit The capability bit to test, taken from the
+   *   `MAV_PROTOCOL_CAPABILITY_*` enum (e.g. `MISSION_FENCE = 1 << 14`).
+   *   See https://mavlink.io/en/messages/common.html#MAV_PROTOCOL_CAPABILITY.
+   * @returns { boolean } True if the bit is set in the cached capability bitmask.
+   */
+  hasCapability(bit: number): boolean {
+    if (this._capabilities === undefined) return false
+    return (this._capabilities & bit) !== 0
+  }
+
+  /**
    * Request parameters list from vehicle
    * @param { MAVLinkParameterSetData } settings Data used to set a parameter
    */
@@ -1088,9 +1196,35 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     loadingCallback: MissionLoadingCallback = defaultLoadingCallback,
     timeoutBetweenItems = 10000
   ): Promise<Waypoint[]> {
-    // Only deal with regular mission items for now
-    const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
+    const missionItems = await this._fetchMissionItems(
+      MavMissionType.MAV_MISSION_TYPE_MISSION,
+      loadingCallback,
+      timeoutBetweenItems
+    )
+    this._currentMavlinkMissionItemsOnVehicle = missionItems
+    return convertMavlinkWaypointsToCockpit(missionItems)
+  }
 
+  /**
+   * Generic mission download. Implements the MAVLink mission micro-service
+   * download handshake (`MISSION_REQUEST_LIST` → `MISSION_COUNT` →
+   * `MISSION_REQUEST_INT` loop → `MISSION_ACK`) for any `MAV_MISSION_TYPE`
+   * (regular mission, geofence, rally points), returning the raw items.
+   *
+   * Reads `MISSION_COUNT` and `MISSION_ITEM_INT` from the shared `_messages`
+   * cache, which is not partitioned by `mission_type`. Concurrent downloads
+   * across mission types would consume each other's replies, so callers must
+   * serialize fetches against uploads/clears within a vehicle session.
+   * @param { MavMissionType } missionType Which mission micro-service to talk to.
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress.
+   * @param { number } timeoutBetweenItems Timeout between mission items in milliseconds.
+   * @returns { Promise<Message.MissionItemInt[]> } Raw mission items downloaded from the vehicle.
+   */
+  protected async _fetchMissionItems(
+    missionType: MavMissionType,
+    loadingCallback: MissionLoadingCallback = defaultLoadingCallback,
+    timeoutBetweenItems = 10000
+  ): Promise<Message.MissionItemInt[]> {
     // Get number of mission items to be downloaded
     const initTimeCount = new Date().getTime()
     let timeoutEpoch = new Date().getTime()
@@ -1190,8 +1324,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
 
     console.debug('[Mission download] Sending mission acknowledgment to vehicle...')
     this.sendMissionAck(allItemsDownloaded, missionType)
-    this._currentMavlinkMissionItemsOnVehicle = missionItems
-    return convertMavlinkWaypointsToCockpit(missionItems)
+    return missionItems
   }
 
   /**
@@ -1267,6 +1400,92 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       mission_type: { type: MavMissionType.MAV_MISSION_TYPE_MISSION },
     }
     sendMavlinkMessage(message)
+  }
+
+  /**
+   * Upload a geofence plan to the vehicle using the MAVLink mission
+   * micro-service with `mission_type = MAV_MISSION_TYPE_FENCE`.
+   *
+   * Polygon vertices are emitted sequentially per polygon, each with the
+   * same `param1 = vertex_count`. Circles are emitted with `param1 = radius`.
+   * The optional breach return point is emitted last using
+   * `MAV_FRAME_GLOBAL_RELATIVE_ALT`. See `convertGeoFencePlanToMavlink`.
+   * @param { GeoFencePlan } plan The fence plan to upload.
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the upload progress.
+   */
+  async uploadFence(
+    plan: GeoFencePlan,
+    loadingCallback: MissionLoadingCallback = defaultLoadingCallback
+  ): Promise<void> {
+    const items = convertGeoFencePlanToMavlink(plan, this.currentSystemId)
+    await this._uploadMissionItems(MavMissionType.MAV_MISSION_TYPE_FENCE, items, loadingCallback)
+    await this._ensureArduPilotPolygonFenceTypeBit(plan)
+  }
+
+  /**
+   * On ArduPilot, makes sure the `Polygon` bit (4) of the `FENCE_TYPE` bitmask
+   * is enabled whenever the uploaded plan contains polygon or circle items —
+   * the autopilot won't enforce uploaded fences otherwise. Other bits of
+   * `FENCE_TYPE` (AltMax, Circle radius, AltMin) are preserved untouched so
+   * users can still drive them from the parameters panel.
+   * @param { GeoFencePlan } plan The plan that was just uploaded.
+   */
+  private async _ensureArduPilotPolygonFenceTypeBit(plan: GeoFencePlan): Promise<void> {
+    if (this.firmware() !== Vehicle.Firmware.ArduPilot) return
+    if (plan.polygons.length === 0 && plan.circles.length === 0) return
+    const POLYGON_BIT = 4
+    const current = await this.requestParameterValue('FENCE_TYPE')
+    const currentMask = current === undefined ? 0 : Math.round(current)
+    const desired = currentMask | POLYGON_BIT
+    if (desired === currentMask) return
+    this.setParameter({
+      id: 'FENCE_TYPE',
+      value: desired,
+      // @ts-ignore: The correct type is indeed a Type<MavParamType>
+      type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 },
+    })
+  }
+
+  /**
+   * Download the geofence plan currently stored on the vehicle. Returns an
+   * empty plan when the vehicle reports zero items.
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the download progress.
+   * @returns { Promise<GeoFencePlan> } The decoded fence plan from the vehicle.
+   */
+  async fetchFence(loadingCallback: MissionLoadingCallback = defaultLoadingCallback): Promise<GeoFencePlan> {
+    const items = await this._fetchMissionItems(MavMissionType.MAV_MISSION_TYPE_FENCE, loadingCallback)
+    if (items.length === 0) return emptyGeoFencePlan()
+    return convertMavlinkToGeoFencePlan(items)
+  }
+
+  /**
+   * Clear the geofence currently stored on the vehicle and await the
+   * `MISSION_ACK` reply, mirroring the symmetric handshake of
+   * `uploadFence`/`fetchFence`. Throws if no acknowledgment arrives within
+   * `timeoutMs` or if the autopilot rejects the clear.
+   * @param { number } timeoutMs Timeout in milliseconds before giving up.
+   * @returns { Promise<void> } Resolves once the autopilot acknowledges the clear.
+   */
+  async clearFence(timeoutMs = 3000): Promise<void> {
+    const initTime = new Date().getTime()
+    const message: Message.MissionClearAll = {
+      type: MAVLinkType.MISSION_CLEAR_ALL,
+      target_system: this.currentSystemId,
+      target_component: 1,
+      mission_type: { type: MavMissionType.MAV_MISSION_TYPE_FENCE },
+    }
+    sendMavlinkMessage(message)
+
+    while (new Date().getTime() - initTime < timeoutMs) {
+      await sleep(50)
+      const ack = this._messages.get(MAVLinkType.MISSION_ACK)
+      if (ack === undefined || ack.epoch < initTime) continue
+      if (ack.mavtype.type !== MavMissionResult.MAV_MISSION_ACCEPTED) {
+        throw Error(`Failed clearing fence. Result received: ${ack.mavtype.type}.`)
+      }
+      return
+    }
+    throw Error('Timeout waiting for fence clear acknowledgment.')
   }
 
   /**
@@ -1381,10 +1600,32 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     const mavlinkWaypoints = convertCockpitWaypointsToMavlink(items, this.currentSystemId)
 
     console.debug(`[Mission upload] Cockpit waypoints: ${JSON.stringify(items, null, 2)}`)
-    console.debug(`[Mission upload] MAVLink waypoints: ${JSON.stringify(mavlinkWaypoints, null, 2)}`)
 
-    // Only deal with regular mission items for now
-    const missionType = MavMissionType.MAV_MISSION_TYPE_MISSION
+    await this._uploadMissionItems(
+      MavMissionType.MAV_MISSION_TYPE_MISSION,
+      mavlinkWaypoints,
+      loadingCallback,
+      timeoutBetweenItems
+    )
+  }
+
+  /**
+   * Generic mission upload. Implements the MAVLink mission micro-service
+   * upload handshake (`MISSION_COUNT` → `MISSION_REQUEST_INT` loop →
+   * `MISSION_ACK`) for any `MAV_MISSION_TYPE`. The provided items must
+   * already have their `mission_type` field set to `missionType`.
+   * @param { MavMissionType } missionType Which mission micro-service to talk to.
+   * @param { Message.MissionItemInt[] } mavlinkWaypoints Mission items that will be sent.
+   * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the loading progress.
+   * @param { number } timeoutBetweenItems Timeout between mission items in milliseconds.
+   */
+  protected async _uploadMissionItems(
+    missionType: MavMissionType,
+    mavlinkWaypoints: Message.MissionItemInt[],
+    loadingCallback: MissionLoadingCallback = defaultLoadingCallback,
+    timeoutBetweenItems = 3000
+  ): Promise<void> {
+    console.debug(`[Mission upload] MAVLink waypoints: ${JSON.stringify(mavlinkWaypoints, null, 2)}`)
 
     // Say to the vehicle how many mission items we are going to send
     this.sendMissionCount(mavlinkWaypoints.length, missionType)
