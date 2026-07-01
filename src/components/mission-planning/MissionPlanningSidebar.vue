@@ -1,10 +1,12 @@
 <template>
   <div
     v-show="!interfaceStore.isMainMenuVisible"
+    ref="rootEl"
     class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-hidden z-[200]"
     :style="[
       interfaceStore.globalGlassMenuStyles,
       { height: 'auto', maxHeight: calculatedHeight, width: '320px', borderBottom: 'none' },
+      pinnedTop !== null ? { top: `${pinnedTop}px` } : {},
     ]"
   >
     <div class="flex flex-row w-full elevation-2 z-10">
@@ -34,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineModel } from 'vue'
+import { defineModel, ref } from 'vue'
 
 import GeoFenceEditor from '@/components/geofence/GeoFenceEditor.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -53,9 +55,18 @@ defineProps<{
    * the planning view to fit the viewport under the top bar.
    */
   calculatedHeight: string | number
+  /**
+   * Top offset in pixels the shell is pinned to while an expanding panel
+   * inside it should grow downward. Null lets it re-center at rest.
+   */
+  pinnedTop: number | null
 }>()
 
 const interfaceStore = useAppInterfaceStore()
+
+// The planning view measures the shell to decide how far it has to be pinned up.
+const rootEl = ref<HTMLElement | null>(null)
+defineExpose({ rootEl })
 
 const onSelectPlanningMode = (mode: 'mission' | 'geofence'): void => {
   if (planningMode.value === mode) return
