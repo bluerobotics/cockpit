@@ -35,6 +35,7 @@ export enum SubMenuComponentName {
   ToolsMAVLink = 'tools-mavlink',
   ToolsDataLake = 'tools-datalake',
   ToolsLogs = 'tools-logs',
+  ToolsMap = 'tools-map',
 }
 
 export const useAppInterfaceStore = defineStore('responsive', {

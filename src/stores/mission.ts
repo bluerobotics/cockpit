@@ -93,6 +93,13 @@ export const useMissionStore = defineStore('mission', () => {
   const mapClearRequestRevision = ref(0)
   const mapDownloadRequestRevision = ref(0)
   const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
+  // Request for any active map to center on given coordinates. Replaced (new object) on each request.
+  const mapCenterOnRequest = ref<{
+    /** Coordinates the map should center on */
+    coordinates: WaypointCoordinates
+    /** Incremented on each request so repeated centerings on the same coordinates still trigger */
+    revision: number
+  } | null>(null)
 
   // Fallback vehicle type used by vehicle-specific planning features when no vehicle is connected.
   const plannedVehicleType = useBlueOsStorage<MavType | undefined>('cockpit-planned-vehicle-type', undefined)
@@ -578,6 +585,10 @@ export const useMissionStore = defineStore('mission', () => {
     mapClearRequestRevision.value += 1
   }
 
+  const requestMapCenterOn = (coordinates: WaypointCoordinates): void => {
+    mapCenterOnRequest.value = { coordinates, revision: (mapCenterOnRequest.value?.revision ?? 0) + 1 }
+  }
+
   const requestMapMissionDownload = (): void => {
     mapDownloadRequestRevision.value += 1
   }
@@ -789,6 +800,8 @@ export const useMissionStore = defineStore('mission', () => {
     canSkipToNextWp,
     currentWaypointOnMission,
     mapClearRequestRevision,
+    mapCenterOnRequest,
+    requestMapCenterOn,
     mapDownloadRequestRevision,
     requestMapClear,
     requestMapMissionDownload,
