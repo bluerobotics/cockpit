@@ -13,18 +13,101 @@
         </v-btn>
       </div>
       <div class="p-3">
-        <v-text-field v-model="newPoiName" label="Name" variant="outlined"></v-text-field>
+        <v-text-field v-model="newPoiName" label="Name" variant="outlined" class="mb-2"></v-text-field>
+        <div class="flex items-start mb-2">
+          <v-text-field
+            v-model="newPoiId"
+            label="ID"
+            variant="outlined"
+            :disabled="!!editingPoiId || !isManualIdEnabled"
+            :error-messages="idError"
+            class="flex-1"
+          />
+          <v-tooltip location="top" :text="editingPoiId ? `A POI's ID can't be changed after creation` : 'Edit ID'">
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                class="mt-2"
+                variant="text"
+                icon="mdi-pencil"
+                :color="isManualIdEnabled ? 'white' : 'grey'"
+                :disabled="!!editingPoiId"
+                @click="toggleManualIdEditing"
+              />
+            </template>
+          </v-tooltip>
+        </div>
         <v-text-field v-model="newPoiDescription" label="Description" variant="outlined"></v-text-field>
 
-        <div class="grid grid-cols-2 gap-x-4">
-          <v-text-field v-model.number="newPoiLat" label="Latitude" variant="outlined" type="number" step="0.0000001" />
-          <v-text-field
-            v-model.number="newPoiLng"
-            label="Longitude"
-            variant="outlined"
-            type="number"
-            step="0.0000001"
-          />
+        <div class="flex flex-col mb-2">
+          <fieldset class="poi-field mb-5">
+            <legend class="poi-field-legend">
+              <span>Latitude</span>
+              <v-tooltip location="top">
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" size="14" color="grey">mdi-help-circle-outline</v-icon>
+                </template>
+                <div class="max-w-xs">
+                  <p class="text-sm mb-2">
+                    Enter a fixed coordinate, or an expression that follows live data and updates on the map.
+                  </p>
+                  <p class="text-sm">
+                    Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
+                    &#123;&#123; mavlink/buoy/latitude &#125;&#125; + 0.0001.
+                  </p>
+                </div>
+              </v-tooltip>
+            </legend>
+            <div class="poi-expression-wrapper">
+              <div ref="latEditorContainer" class="poi-expression-editor" />
+              <div v-if="activeField === 'lat'" class="poi-var-dropdown">
+                <div
+                  v-for="item in filteredVariables"
+                  :key="item.id"
+                  class="poi-var-option"
+                  @mousedown.prevent="insertVariable('lat', item.id)"
+                >
+                  <span class="poi-var-name">{{ item.name }}</span>
+                  <span class="poi-var-id">{{ item.id }}</span>
+                </div>
+                <div v-if="filteredVariables.length === 0" class="poi-var-empty">No matching variables</div>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="poi-field mb-4">
+            <legend class="poi-field-legend">
+              <span>Longitude</span>
+              <v-tooltip location="top">
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" size="14" color="grey">mdi-help-circle-outline</v-icon>
+                </template>
+                <div class="max-w-xs">
+                  <p class="text-sm mb-2">
+                    Enter a fixed coordinate, or an expression that follows live data and updates on the map.
+                  </p>
+                  <p class="text-sm">
+                    Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
+                    &#123;&#123; mavlink/buoy/longitude &#125;&#125; + 0.0001.
+                  </p>
+                </div>
+              </v-tooltip>
+            </legend>
+            <div class="poi-expression-wrapper">
+              <div ref="lngEditorContainer" class="poi-expression-editor" />
+              <div v-if="activeField === 'lng'" class="poi-var-dropdown">
+                <div
+                  v-for="item in filteredVariables"
+                  :key="item.id"
+                  class="poi-var-option"
+                  @mousedown.prevent="insertVariable('lng', item.id)"
+                >
+                  <span class="poi-var-name">{{ item.name }}</span>
+                  <span class="poi-var-id">{{ item.id }}</span>
+                </div>
+                <div v-if="filteredVariables.length === 0" class="poi-var-empty">No matching variables</div>
+              </div>
+            </div>
+          </fieldset>
         </div>
 
         <div class="mb-4">
@@ -90,16 +173,227 @@
 </template>
 
 <script setup lang="ts">
-import { v4 as uuid } from 'uuid'
-import { defineExpose, ref, watch } from 'vue'
+import { computed, defineExpose, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { useMissionStore } from '@/stores/mission'
-import type { PointOfInterest, PointOfInterestCoordinates } from '@/types/mission'
+import { generatePointOfInterestId, usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import {
+  getAllDataLakeVariablesInfo,
+  listenToDataLakeVariablesInfoChanges,
+  unlistenToDataLakeVariablesInfoChanges,
+} from '@/libs/actions/data-lake'
+import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
+import { machinizeString } from '@/libs/utils'
+import type { PoiCoordinateSource, PointOfInterest, PointOfInterestCoordinates } from '@/types/mission'
 
-const missionStore = useMissionStore()
+const { pointsOfInterest, addPointOfInterest, updatePointOfInterest, removePointOfInterest } = usePointsOfInterest()
 const { showDialog } = useInteractionDialog()
+
+// Number-typed data-lake variables offered in the coordinate dropdowns. POIs' own backing
+// variables are excluded to avoid clutter and self-reference.
+const availableVariables = ref<
+  {
+    /** Data-lake variable id */
+    id: string
+    /** Human-readable variable name */
+    name: string
+  }[]
+>([])
+
+const refreshAvailableVariables = (): void => {
+  availableVariables.value = Object.values(getAllDataLakeVariablesInfo())
+    .filter((variable) => variable.type === 'number' && !variable.id.startsWith('cockpit/pois/'))
+    .map((variable) => ({ id: variable.id, name: variable.name || variable.id }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+let variablesInfoListenerId: string | undefined
+onMounted(() => {
+  refreshAvailableVariables()
+  variablesInfoListenerId = listenToDataLakeVariablesInfoChanges(refreshAvailableVariables)
+})
+
+// Latitude/longitude expressions are edited in compact Monaco editors. Clicking an editor opens a
+// dropdown of every available variable; typing in the editor filters it (by the token under the
+// cursor) and picking one inserts a `{{ variable }}` reference at the cursor.
+const latEditorContainer = ref<HTMLElement | null>(null)
+const lngEditorContainer = ref<HTMLElement | null>(null)
+let latEditor: monaco.editor.IStandaloneCodeEditor | null = null
+let lngEditor: monaco.editor.IStandaloneCodeEditor | null = null
+
+type CoordinateField = 'lat' | 'lng'
+
+// Which editor's variable dropdown is open, and the term used to filter it.
+const activeField = ref<CoordinateField | null>(null)
+const variableFilter = ref('')
+
+// Set right after inserting a variable, so the programmatic re-focus does not immediately reopen the dropdown.
+let suppressReopen = false
+
+// Whether each field still shows its initial value (dialog just opened, not yet edited). While
+// pristine, clicking the field shows the full variable list instead of filtering by the pre-filled
+// number (which would otherwise match nothing).
+const pristine: Record<CoordinateField, boolean> = { lat: true, lng: true }
+
+const filteredVariables = computed(() => {
+  const term = variableFilter.value.toLowerCase()
+  if (!term) return availableVariables.value
+  return availableVariables.value.filter(
+    (variable) => variable.id.toLowerCase().includes(term) || variable.name.toLowerCase().includes(term)
+  )
+})
+
+const editorForField = (field: CoordinateField): monaco.editor.IStandaloneCodeEditor | null =>
+  field === 'lat' ? latEditor : lngEditor
+
+const textUntilCursor = (editor: monaco.editor.IStandaloneCodeEditor): string => {
+  const model = editor.getModel()
+  const position = editor.getPosition()
+  if (!model || !position) return ''
+  return model.getValueInRange({
+    startLineNumber: position.lineNumber,
+    startColumn: 1,
+    endLineNumber: position.lineNumber,
+    endColumn: position.column,
+  })
+}
+
+// The text the dropdown filters by: the partial name inside an open `{{ ... ` or, failing that, the
+// variable-like token immediately before the cursor.
+const filterTermAtCursor = (editor: monaco.editor.IStandaloneCodeEditor): string => {
+  const text = textUntilCursor(editor)
+  const lastOpen = text.lastIndexOf('{{')
+  if (lastOpen !== -1 && !text.includes('}}', lastOpen)) return text.slice(lastOpen + 2).trim()
+  return text.match(/[\w/.-]*$/)?.[0] ?? ''
+}
+
+const isPlainNumber = (value: string): boolean => value.trim() !== '' && Number.isFinite(Number(value))
+
+// The dropdown shows the full list while the field is pristine or holds a plain number (filtering by
+// a number matches nothing); otherwise it filters by the token under the cursor.
+const dropdownFilterTerm = (editor: monaco.editor.IStandaloneCodeEditor, field: CoordinateField): string => {
+  if (pristine[field] || isPlainNumber(editor.getValue())) return ''
+  return filterTermAtCursor(editor)
+}
+
+const insertVariable = (field: CoordinateField, variableId: string): void => {
+  const editor = editorForField(field)
+  const position = editor?.getPosition()
+  if (!editor || !position) return
+
+  const text = textUntilCursor(editor)
+  const lastOpen = text.lastIndexOf('{{')
+
+  // Replace an open `{{ ...` (or the trailing token) so picking from the dropdown never nests braces.
+  const startColumn =
+    lastOpen !== -1 && !text.includes('}}', lastOpen)
+      ? lastOpen + 1
+      : position.column - (text.match(/[\w/.-]*$/)?.[0].length ?? 0)
+
+  const range = new monaco.Range(position.lineNumber, startColumn, position.lineNumber, position.column)
+  editor.executeEdits('insert-data-lake-variable', [{ range, text: `{{ ${variableId} }}`, forceMoveMarkers: true }])
+  activeField.value = null
+  suppressReopen = true
+  editor.focus()
+}
+
+const createCoordinateEditor = (
+  field: CoordinateField,
+  container: HTMLElement,
+  value: string,
+  onChange: (value: string) => void
+): monaco.editor.IStandaloneCodeEditor => {
+  const editor = createMonacoEditor(container, {
+    language: 'plaintext',
+    value,
+    editorOverrides: {
+      lineNumbers: 'off',
+      glyphMargin: false,
+      folding: false,
+      lineDecorationsWidth: 8,
+      lineNumbersMinChars: 0,
+      fontSize: 13,
+      padding: { top: 8, bottom: 8 },
+      renderLineHighlight: 'none',
+      overviewRulerLanes: 0,
+      minimap: { enabled: false },
+      wordWrap: 'on',
+      scrollBeyondLastLine: false,
+      scrollbar: { vertical: 'hidden', horizontal: 'hidden' },
+      quickSuggestions: false,
+      wordBasedSuggestions: 'off',
+      suggestOnTriggerCharacters: false,
+      autoClosingBrackets: 'never',
+    },
+  })
+
+  // Grow the editor to fit its content so a wrapped long expression spans multiple lines instead of
+  // being clipped at a fixed height.
+  const applyAutoHeight = (): void => {
+    const contentHeight = editor.getContentHeight()
+    container.style.height = `${contentHeight}px`
+    editor.layout({ width: container.clientWidth, height: contentHeight })
+  }
+  editor.onDidContentSizeChange(applyAutoHeight)
+  applyAutoHeight()
+
+  pristine[field] = true
+
+  const openDropdown = (): void => {
+    activeField.value = field
+    variableFilter.value = dropdownFilterTerm(editor, field)
+  }
+
+  editor.onDidChangeModelContent(() => {
+    pristine[field] = false
+    onChange(editor.getValue().trim())
+    if (activeField.value === field) variableFilter.value = dropdownFilterTerm(editor, field)
+  })
+  editor.onMouseDown(openDropdown)
+  editor.onDidFocusEditorText(() => {
+    if (suppressReopen) {
+      suppressReopen = false
+      return
+    }
+    openDropdown()
+  })
+  editor.onDidChangeCursorPosition(() => {
+    if (activeField.value === field) variableFilter.value = dropdownFilterTerm(editor, field)
+  })
+  // Delay so a dropdown item's mousedown can run before blur closes the dropdown.
+  editor.onDidBlurEditorText(() =>
+    setTimeout(() => {
+      if (activeField.value === field) activeField.value = null
+    }, 150)
+  )
+  editor.onKeyDown((event) => {
+    if (event.keyCode === monaco.KeyCode.Escape) activeField.value = null
+  })
+
+  return editor
+}
+
+const initCoordinateEditors = (): void => {
+  if (latEditorContainer.value && !latEditor) {
+    latEditor = createCoordinateEditor('lat', latEditorContainer.value, newPoiLatExpression.value, (value) => {
+      newPoiLatExpression.value = value
+    })
+  }
+  if (lngEditorContainer.value && !lngEditor) {
+    lngEditor = createCoordinateEditor('lng', lngEditorContainer.value, newPoiLngExpression.value, (value) => {
+      newPoiLngExpression.value = value
+    })
+  }
+}
+
+const disposeCoordinateEditors = (): void => {
+  latEditor?.dispose()
+  lngEditor?.dispose()
+  latEditor = null
+  lngEditor = null
+  activeField.value = null
+}
 
 const poiDialogVisible = ref(false)
 const newPoiName = ref('')
@@ -107,30 +401,62 @@ const newPoiDescription = ref('')
 const newPoiIcon = ref('mdi-map-marker')
 const newPoiColor = ref('#FF0000')
 const editingPoiId = ref<string | null>(null)
-const newPoiLat = ref<number | null>(null)
-const newPoiLng = ref<number | null>(null)
+const newPoiId = ref('')
+const isManualIdEnabled = ref(false)
+const newPoiLatExpression = ref('')
+const newPoiLngExpression = ref('')
 const isIconPickerOpen = ref(false)
 const iconSearchQuery = ref('')
 const isColorPickerOpen = ref(false)
 
-// Store original values for reverting changes if user cancels
-const originalPoiValues = ref<{
-  /** Original POI name */
-  name: string
-  /** Original POI description */
-  description: string
-  /** Original POI latitude */
-  lat: number
-  /** Original POI longitude */
-  lng: number
-  /** Original POI icon */
-  icon: string
-  /** Original POI color */
-  color: string
-} | null>(null)
+// Spin the expression editors up while the dialog is open, and tear them down on close so Monaco
+// instances are not leaked across opens.
+watch(poiDialogVisible, (visible) => {
+  if (visible) {
+    nextTick(initCoordinateEditors)
+  } else {
+    disposeCoordinateEditors()
+  }
+})
+
+onUnmounted(() => {
+  disposeCoordinateEditors()
+  if (variablesInfoListenerId) unlistenToDataLakeVariablesInfoChanges(variablesInfoListenerId)
+})
+
+// Snapshot of the POI as it was when the dialog opened, used to revert unsaved live-preview edits.
+const originalPoi = ref<PointOfInterest | null>(null)
 
 // Flag to prevent watcher from firing during dialog initialization
 const isInitializingDialog = ref(false)
+
+// Ids of all other POIs, used to keep the edited POI's id unique.
+const otherPoiIds = (): string[] =>
+  pointsOfInterest.value.filter((poi) => poi.id !== editingPoiId.value).map((poi) => poi.id)
+
+// Validation message for the id field (only editable while creating a POI).
+const idError = computed(() => {
+  if (editingPoiId.value) return ''
+  const id = newPoiId.value.trim()
+  if (!id) return 'ID is required'
+  if (machinizeString(id) !== id) return 'Only lowercase letters, numbers and dashes are allowed'
+  if (otherPoiIds().includes(id)) return 'This ID is already in use'
+  return ''
+})
+
+const toggleManualIdEditing = (): void => {
+  if (editingPoiId.value) return
+  isManualIdEnabled.value = !isManualIdEnabled.value
+  logUserAction(
+    isManualIdEnabled.value ? 'Enabled manual editing of the POI ID' : 'Disabled manual editing of the POI ID'
+  )
+}
+
+// Auto-derive the id from the name while creating a POI, unless the user is editing it manually.
+watch(newPoiName, (name) => {
+  if (isManualIdEnabled.value || editingPoiId.value) return
+  newPoiId.value = name.trim() ? generatePointOfInterestId(name, otherPoiIds()) : ''
+})
 
 // This ref will store the coordinates passed when opening the dialog for a NEW POI.
 // It's needed because props.initialCoordinates might change if the user clicks elsewhere on the map
@@ -227,40 +553,54 @@ const searchIcons = (): void => {
   )
 }
 
-// Live preview functionality - update POI in store when form values change
+// A coordinate field holding a plain number is stored as a number; anything else is kept as a
+// data-lake expression string. Both are backed by a transforming function in the data lake.
+const toCoordinateSource = (raw: string): PoiCoordinateSource => {
+  const numeric = Number(raw)
+  return Number.isFinite(numeric) ? numeric : raw
+}
+
+/**
+ * Builds the coordinate fields of a POI from the current form state. The fallback location is the
+ * literal coordinates when both fields are numbers, otherwise the POI's map placement point.
+ * @returns {Pick<PointOfInterest, 'latitude' | 'longitude' | 'fallbackCoordinates'> | null} The
+ * coordinate fields, or null when the form does not hold valid coordinates.
+ */
+const buildCoordinateFields = (): Pick<PointOfInterest, 'latitude' | 'longitude' | 'fallbackCoordinates'> | null => {
+  // Coerce defensively before trimming, as the bound value may be empty or unset.
+  const latRaw = (newPoiLatExpression.value ?? '').toString().trim()
+  const lngRaw = (newPoiLngExpression.value ?? '').toString().trim()
+  if (latRaw === '' || lngRaw === '') return null
+
+  const latitude = toCoordinateSource(latRaw)
+  const longitude = toCoordinateSource(lngRaw)
+
+  const existingFallback = pointsOfInterest.value.find((poi) => poi.id === editingPoiId.value)?.fallbackCoordinates
+  const fallbackCoordinates: PointOfInterestCoordinates =
+    typeof latitude === 'number' && typeof longitude === 'number'
+      ? [latitude, longitude]
+      : dialogInitialCoordinates.value ?? existingFallback ?? [0, 0]
+
+  return { latitude, longitude, fallbackCoordinates }
+}
+
+// Live preview - reflect form edits on the map while editing an existing POI.
 watch(
-  [newPoiName, newPoiDescription, newPoiLat, newPoiLng, newPoiIcon, newPoiColor],
-  (newValues, oldValues) => {
-    // Only apply live preview for existing POIs being edited and not during initialization
+  [newPoiName, newPoiDescription, newPoiLatExpression, newPoiLngExpression, newPoiIcon, newPoiColor],
+  () => {
     if (!editingPoiId.value || isInitializingDialog.value) return
 
-    // Get the current POI from store to preserve unchanged values
-    const currentPoi = missionStore.pointsOfInterest.find((poi) => poi.id === editingPoiId.value)
-    if (!currentPoi) return
-
-    const [newName, newDesc, newLat, newLng, newIcon, newColor] = newValues
-    const [oldName, oldDesc, oldLat, oldLng, oldIcon, oldColor] = oldValues || []
-
-    // Build update object with only changed fields
-    const updatedPoi: Partial<PointOfInterest> = {
-      timestamp: Date.now(),
+    const update: Partial<PointOfInterest> = {
+      name: newPoiName.value,
+      description: newPoiDescription.value,
+      icon: newPoiIcon.value,
+      color: newPoiColor.value,
     }
 
-    // Only update coordinates if they actually changed in the form
-    if (newLat !== oldLat || newLng !== oldLng) {
-      updatedPoi.coordinates = [newLat ?? 0, newLng ?? 0] as PointOfInterestCoordinates
-    }
+    const coordinateFields = buildCoordinateFields()
+    if (coordinateFields) Object.assign(update, coordinateFields)
 
-    // Update other fields if they changed
-    if (newName !== oldName) updatedPoi.name = newName
-    if (newDesc !== oldDesc) updatedPoi.description = newDesc
-    if (newIcon !== oldIcon) updatedPoi.icon = newIcon
-    if (newColor !== oldColor) updatedPoi.color = newColor
-
-    // Only update if there are actual changes (besides timestamp)
-    if (Object.keys(updatedPoi).length > 1) {
-      missionStore.updatePointOfInterest(editingPoiId.value, updatedPoi)
-    }
+    updatePointOfInterest(editingPoiId.value, update)
   },
   { deep: true }
 )
@@ -279,94 +619,93 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
   isColorPickerOpen.value = false
   iconSearchQuery.value = ''
   filteredIcons.value = availableIcons.value
+  isManualIdEnabled.value = false
+  newPoiId.value = ''
 
   if (poiToEdit) {
-    // Get fresh POI data from store instead of using potentially stale passed data
-    const freshPoi = missionStore.pointsOfInterest.find((poi) => poi.id === poiToEdit.id)
+    // Get fresh POI data from the store instead of using potentially stale passed data
+    const freshPoi = pointsOfInterest.value.find((poi) => poi.id === poiToEdit.id)
     if (!freshPoi) {
       showDialog({
         variant: 'error',
         title: 'Error',
-        message: 'POI not found in store.',
+        message: 'POI not found.',
       })
-      console.error('POI not found in store:', poiToEdit.id)
       isInitializingDialog.value = false
       return
     }
 
     editingPoiId.value = freshPoi.id
 
-    // Store original values for potential reversion (use current store values, not form values)
-    originalPoiValues.value = {
-      name: freshPoi.name,
-      description: freshPoi.description,
-      lat: Number(freshPoi.coordinates[0].toFixed(7)),
-      lng: Number(freshPoi.coordinates[1].toFixed(7)),
-      icon: freshPoi.icon,
-      color: freshPoi.color,
-    }
+    // Snapshot the original POI so unsaved live-preview edits can be reverted on cancel
+    originalPoi.value = { ...freshPoi }
 
-    // Set form values using fresh data from store
     newPoiName.value = freshPoi.name
     newPoiDescription.value = freshPoi.description
-    newPoiLat.value = Number(freshPoi.coordinates[0].toFixed(7))
-    newPoiLng.value = Number(freshPoi.coordinates[1].toFixed(7))
+    newPoiLatExpression.value = freshPoi.latitude.toString()
+    newPoiLngExpression.value = freshPoi.longitude.toString()
     newPoiIcon.value = freshPoi.icon
     newPoiColor.value = freshPoi.color
-    dialogInitialCoordinates.value = null // Not needed for editing, and clear it
+    newPoiId.value = freshPoi.id
+    dialogInitialCoordinates.value = null
   } else if (coordinates) {
+    // Creating a new POI at the specified coordinates
     editingPoiId.value = null
-    originalPoiValues.value = null // Clear for new POIs
+    originalPoi.value = null
+
     newPoiName.value = ''
     newPoiDescription.value = ''
     newPoiIcon.value = getRandomIcon()
     newPoiColor.value = getRandomColor()
-    newPoiLat.value = coordinates[0] // Still useful to pre-fill for potential direct edit
-    newPoiLng.value = coordinates[1] // Still useful to pre-fill for potential direct edit
-    dialogInitialCoordinates.value = [...coordinates] // Store for saving a new POI
+    newPoiLatExpression.value = coordinates[0].toString()
+    newPoiLngExpression.value = coordinates[1].toString()
+    dialogInitialCoordinates.value = [...coordinates]
   } else {
-    showDialog({
-      variant: 'error',
-      title: 'Error',
-      message: 'Cannot open POI dialog without coordinates for a new POI or POI data for editing.',
-    })
-    console.error('POI Dialog: Insufficient data to open.')
-    isInitializingDialog.value = false
-    return
+    // Creating a new POI without coordinates (shouldn't happen in normal flow)
+    editingPoiId.value = null
+    originalPoi.value = null
+
+    newPoiName.value = ''
+    newPoiDescription.value = ''
+    newPoiLatExpression.value = ''
+    newPoiLngExpression.value = ''
+    newPoiIcon.value = getRandomIcon()
+    newPoiColor.value = getRandomColor()
+    dialogInitialCoordinates.value = null
   }
 
-  poiDialogVisible.value = true
-
-  // Clear initialization flag after a short delay to allow form to settle
+  // Clear initialization flag after a short delay to allow Vue to process the changes
   setTimeout(() => {
     isInitializingDialog.value = false
-  }, 50)
+  }, 100)
+
+  logUserAction(
+    editingPoiId.value
+      ? `Opened the "${newPoiName.value}" point of interest for editing`
+      : 'Opened the dialog to add a new point of interest'
+  )
+  poiDialogVisible.value = true
 }
 
 const closeDialog = (): void => {
+  logUserAction('Closed the point-of-interest dialog')
   // Revert changes if user was editing an existing POI and cancels without saving
-  if (editingPoiId.value && originalPoiValues.value) {
-    const revertedPoi: Partial<PointOfInterest> = {
-      name: originalPoiValues.value.name,
-      description: originalPoiValues.value.description,
-      coordinates: [originalPoiValues.value.lat, originalPoiValues.value.lng] as PointOfInterestCoordinates,
-      icon: originalPoiValues.value.icon,
-      color: originalPoiValues.value.color,
-      timestamp: Date.now(),
-    }
-    missionStore.updatePointOfInterest(editingPoiId.value, revertedPoi)
+  if (editingPoiId.value && originalPoi.value) {
+    updatePointOfInterest(editingPoiId.value, originalPoi.value)
   }
 
   poiDialogVisible.value = false
   editingPoiId.value = null
-  originalPoiValues.value = null
+  originalPoi.value = null
   dialogInitialCoordinates.value = null
   isInitializingDialog.value = false
   // Reset form fields to ensure clean state next time
+  newPoiId.value = ''
+  isManualIdEnabled.value = false
   newPoiName.value = ''
   newPoiDescription.value = ''
-  newPoiLat.value = null
-  newPoiLng.value = null
+  newPoiLatExpression.value = ''
+  newPoiLngExpression.value = ''
   newPoiIcon.value = getRandomIcon()
   newPoiColor.value = getRandomColor()
   isIconPickerOpen.value = false
@@ -379,78 +718,54 @@ const savePoi = (): void => {
     return
   }
 
-  if (newPoiLat.value === null || newPoiLng.value === null || isNaN(newPoiLat.value) || isNaN(newPoiLng.value)) {
+  const coordinateFields = buildCoordinateFields()
+  if (!coordinateFields) {
     showDialog({
       title: 'Invalid Coordinates',
-      message: 'Latitude and Longitude must be valid numbers.',
+      message: 'Latitude and Longitude must be provided.',
       variant: 'error',
     })
     return
   }
 
-  if (editingPoiId.value) {
-    // Get the current POI from store to preserve current coordinates
-    const currentPoi = missionStore.pointsOfInterest.find((poi) => poi.id === editingPoiId.value)
-    if (!currentPoi) {
-      showDialog({ variant: 'error', title: 'Error', message: 'POI not found in store.' })
-      return
-    }
-
-    // Check if coordinates were actually changed in the form by comparing with original values
-    const coordinatesChanged = originalPoiValues.value
-      ? newPoiLat.value !== originalPoiValues.value.lat || newPoiLng.value !== originalPoiValues.value.lng
-      : false
-
-    // Clear original values since we're saving the changes
-    originalPoiValues.value = null
-
-    const poiUpdate: Partial<PointOfInterest> = {
-      name: newPoiName.value,
-      description: newPoiDescription.value,
-      // Use current store coordinates unless user specifically changed them in the form
-      coordinates: coordinatesChanged
-        ? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
-        : currentPoi.coordinates,
-      icon: newPoiIcon.value,
-      color: newPoiColor.value,
-      timestamp: Date.now(),
-    }
-    missionStore.updatePointOfInterest(editingPoiId.value, poiUpdate)
-  } else {
-    // For new POIs, prioritize dialogInitialCoordinates if they exist (meaning they were passed on openDialog)
-    // Otherwise, use the (potentially user-modified) coordinates from the form.
-    const coordinatesToSave =
-      dialogInitialCoordinates.value ?? ([newPoiLat.value, newPoiLng.value] as PointOfInterestCoordinates)
-
-    if (!coordinatesToSave) {
-      // This case should ideally not be reached if openDialog is called correctly with coordinates for new POIs.
-      showDialog({ variant: 'error', title: 'Error', message: 'Cannot save Point of Interest without coordinates.' })
-      console.error(
-        'Cannot save new POI: coordinatesToSave is null. dialogInitialCoordinates:',
-        dialogInitialCoordinates.value,
-        'currentFormCoordinates:',
-        [newPoiLat.value, newPoiLng.value]
-      )
-      return
-    }
-
-    const newPoi: PointOfInterest = {
-      id: uuid(),
-      name: newPoiName.value,
-      description: newPoiDescription.value,
-      coordinates: coordinatesToSave,
-      icon: newPoiIcon.value,
-      color: newPoiColor.value,
-      timestamp: Date.now(),
-    }
-    missionStore.addPointOfInterest(newPoi)
+  if (!editingPoiId.value && idError.value) {
+    showDialog({ title: 'Invalid ID', message: idError.value, variant: 'error' })
+    return
   }
+
+  if (editingPoiId.value) {
+    // Editing existing POI - prevent revert on close since we're committing the changes
+    originalPoi.value = null
+
+    logUserAction(`Saved changes to the "${newPoiName.value}" point of interest`)
+    updatePointOfInterest(editingPoiId.value, {
+      name: newPoiName.value,
+      description: newPoiDescription.value,
+      icon: newPoiIcon.value,
+      color: newPoiColor.value,
+      ...coordinateFields,
+    })
+  } else {
+    const newPoi: PointOfInterest = {
+      id: newPoiId.value.trim(),
+      name: newPoiName.value,
+      description: newPoiDescription.value,
+      icon: newPoiIcon.value,
+      color: newPoiColor.value,
+      timestamp: Date.now(),
+      ...coordinateFields,
+    }
+    logUserAction(`Added the "${newPoiName.value}" point of interest`)
+    addPointOfInterest(newPoi)
+  }
+
   closeDialog()
 }
 
 const deletePoi = (): void => {
   if (editingPoiId.value) {
-    missionStore.removePointOfInterest(editingPoiId.value)
+    logUserAction(`Deleted the "${newPoiName.value}" point of interest`)
+    removePointOfInterest(editingPoiId.value)
     closeDialog()
   } else {
     // This case should ideally not be reached if the delete button is only visible when editingPoiId is set.
@@ -459,7 +774,6 @@ const deletePoi = (): void => {
       title: 'Error',
       message: 'No Point of Interest selected for deletion.',
     })
-    console.error('Delete POI: editingPoiId is null.')
   }
 }
 
@@ -482,6 +796,95 @@ defineExpose({
 .poi-dialog-text-fields .v-select .v-field__input {
   padding-top: 4px;
   padding-bottom: 4px;
+}
+
+/* Outlined field with a notched label (the legend cuts the top border, like a v-text-field). */
+.poi-field {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 2px 8px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 4px;
+}
+
+.poi-field-legend {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1;
+  color: #ffffffb3;
+}
+
+.poi-expression-wrapper {
+  position: relative;
+}
+
+.poi-expression-editor {
+  min-height: 36px;
+  width: 100%;
+  overflow: visible;
+}
+
+.poi-expression-editor .monaco-editor,
+.poi-expression-editor .monaco-editor .margin,
+.poi-expression-editor .monaco-editor-background {
+  background-color: transparent !important;
+}
+
+.poi-expression-editor .monaco-editor,
+.poi-expression-editor .monaco-editor.focused,
+.poi-expression-editor .monaco-editor .inputarea {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.poi-expression-editor .monaco-editor .overflow-guard {
+  border-radius: 4px;
+}
+
+.poi-var-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 220px;
+  overflow-y: auto;
+  background-color: #1e1e1e;
+  border: 1px solid #ffffff33;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.poi-var-option {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.poi-var-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.poi-var-name {
+  font-size: 13px;
+  color: #ffffffde;
+}
+
+.poi-var-id {
+  font-size: 11px;
+  color: #ffffff80;
+}
+
+.poi-var-empty {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #ffffff80;
 }
 
 .poi-color-picker {
