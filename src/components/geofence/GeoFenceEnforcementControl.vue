@@ -1,10 +1,11 @@
 <template>
   <v-speed-dial
     v-if="fenceStore.isArduPilot"
-    v-model="fenceSpeedDialOpen"
+    :model-value="fenceSpeedDialOpen"
     location="top center"
     transition="slide-y-reverse-transition"
     content-class="speed-dial-glow"
+    @update:model-value="onFenceSpeedDialToggle"
   >
     <template #activator="{ props: activatorProps }">
       <v-tooltip location="top" :text="fenceMainButtonTooltip" :disabled="fenceSpeedDialOpen">
@@ -13,12 +14,13 @@
             v-bind="{ ...activatorProps, ...tooltipProps }"
             :class="[
               enforcementActive ? 'text-white' : 'bg-slate-50',
-              'text-[14px]',
+              'absolute right-[338px] m-3 text-[14px]',
               { 'opacity-60': !hasVehicleFence },
             ]"
             :style="[
               interfaceStore.globalGlassMenuStyles,
               enforcementActive ? { backgroundColor: '#FF8800', color: '#FFFFFF' } : {},
+              activatorStyle ?? {},
             ]"
             elevation="2"
             size="x-small"
@@ -67,12 +69,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { type StyleValue, computed, defineModel } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+
+// eslint-disable-next-line jsdoc/require-jsdoc
+withDefaults(
+  defineProps<{
+    /** Inline style positioning the activator button (e.g. its bottom offset) */
+    activatorStyle?: StyleValue
+  }>(),
+  { activatorStyle: undefined }
+)
 
 const fenceStore = useGeoFenceStore()
 const vehicleStore = useMainVehicleStore()
@@ -88,10 +99,14 @@ const hasVehicleFence = computed<boolean>(() => Boolean(fenceStore.lastUploadedP
 // enforce; without one the button stays grey and dimmed to read as disabled.
 const enforcementActive = computed<boolean>(() => hasVehicleFence.value && Boolean(fenceStore.fenceEnabled))
 
-// Speed-dial container state kept locally: the main button toggles
-// enforcement on double-click, so the dial only opens when the user
-// wants the toggle / reload items.
-const fenceSpeedDialOpen = ref(false)
+// Two-way bound open state: the dial's items are teleported out of the parent
+// widget, so the parent needs this to keep the control mounted while it is up.
+const fenceSpeedDialOpen = defineModel<boolean>('open', { default: false })
+
+const onFenceSpeedDialToggle = (open: boolean): void => {
+  fenceSpeedDialOpen.value = open
+  logUserAction(open ? 'Opened the geofence enforcement menu' : 'Closed the geofence enforcement menu')
+}
 
 const fenceMainButtonTooltip = computed<string>(() => {
   if (!hasVehicleFence.value) return 'No geofence on the vehicle'

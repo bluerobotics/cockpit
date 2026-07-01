@@ -73,9 +73,14 @@
           />
         </template>
       </v-tooltip>
+      <GeoFenceEnforcementControl
+        v-if="showButtons"
+        v-model:open="fenceDialOpen"
+        :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+      />
       <MapCenterControl
         v-if="showButtons"
-        v-model:open="speedDialOpen"
+        v-model:open="centerDialOpen"
         :target-follower="targetFollower"
         :follower-target="followerTarget"
         :home="home"
@@ -101,6 +106,7 @@
         :widget="widget"
         :target-follower="targetFollower"
       />
+      <GeoFenceMapLayer v-if="fenceStore.lastUploadedPlan" readonly :plan="fenceStore.lastUploadedPlan" />
     </div>
   </div>
   <ContextMenu
@@ -260,6 +266,8 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import GeoFenceEnforcementControl from '@/components/geofence/GeoFenceEnforcementControl.vue'
+import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
@@ -307,6 +315,7 @@ import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { copyToClipboard, degrees, messageFromError } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -341,6 +350,7 @@ const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const widgetStore = useWidgetManagerStore()
 const baseStationStore = useBaseStation()
+const fenceStore = useGeoFenceStore()
 const router = useRouter()
 
 const { removePointOfInterest } = usePointsOfInterest()
@@ -353,9 +363,17 @@ const map = shallowRef<Map | undefined>()
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const mapId = computed(() => `map-${widget.value.hash}`)
-const speedDialOpen = ref(false)
+// One flag per dial: their items are teleported out of the widget, so an open
+// dial has to keep the buttons mounted without also opening its neighbour.
+const centerDialOpen = ref(false)
+const fenceDialOpen = ref(false)
 const showButtons = computed(
-  () => isMouseOver.value || downloadMenuOpen.value || speedDialOpen.value || widgetStore.isFullScreen(widget.value)
+  () =>
+    isMouseOver.value ||
+    downloadMenuOpen.value ||
+    centerDialOpen.value ||
+    fenceDialOpen.value ||
+    widgetStore.isFullScreen(widget.value)
 )
 const mapReady = ref(false)
 const mapWaypoints = ref<Waypoint[]>([])
@@ -1917,6 +1935,9 @@ const bottomButtonsDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
 })
 
+// The fence control only mounts on ArduPilot, so the scale control clears its slot only when it is there.
+const scaleControlRightDisplacement = computed(() => (fenceStore.isArduPilot ? '383px' : '338px'))
+
 const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
 })
@@ -2152,7 +2173,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 338px; /* Position to the left of the buttons */
+  right: v-bind('scaleControlRightDisplacement'); /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
