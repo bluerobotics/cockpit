@@ -148,6 +148,13 @@ const setupTransformingFunctionsListeners = (): void => {
 }
 
 const deleteAllTransformingFunctionsListeners = (): void => {
+  // Cancel any pending initial evaluations. Without this, a rebuild leaves stale timeouts that hold
+  // an outdated function reference and later write an old value back (e.g. reverting one coordinate
+  // of a just-dragged POI, since updating a function replaces its object and triggers a rebuild).
+  Object.keys(initialEvaluationTimeouts).forEach((funcId) => {
+    clearTimeout(initialEvaluationTimeouts[funcId])
+    delete initialEvaluationTimeouts[funcId]
+  })
   Object.keys(nextDelayToEvaluateFaillingTransformingFunction).forEach((funcId) => {
     delete nextDelayToEvaluateFaillingTransformingFunction[funcId]
     delete lastTimeTriedToEvaluateFaillingTransformingFunction[funcId]
