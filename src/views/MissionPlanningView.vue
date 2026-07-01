@@ -1,6 +1,6 @@
 <template>
   <div class="mission-planning" :style="glassMenuCssVars">
-    <div id="planningMap" ref="planningMap" class="relative" />
+    <div id="planningMap" class="relative" />
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
         <div
@@ -4254,12 +4254,6 @@ watch(home, () => {
     planningMap.value.addLayer(homeMarker.value)
   } else {
     homeMarker.value.setLatLng(position as LatLngTuple)
-  }
-})
-
-watch(planningMap, (newMap, oldMap) => {
-  if (planningMap.value !== undefined && newMap?.options === undefined) {
-    planningMap.value = oldMap
   }
 })
 
