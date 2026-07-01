@@ -15,8 +15,6 @@ import {
   MapTileProvider,
   MapTileProviderPreference,
   MissionCommand,
-  PointOfInterest,
-  PointOfInterestCoordinates,
   Survey,
   Waypoint,
   WaypointCoordinates,
@@ -87,12 +85,17 @@ export const useMissionStore = defineStore('mission', () => {
   const mapClearRequestRevision = ref(0)
   const mapDownloadRequestRevision = ref(0)
   const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
+  // Request for any active map to center on given coordinates. Replaced (new object) on each request.
+  const mapCenterOnRequest = ref<{
+    /** Coordinates the map should center on */
+    coordinates: WaypointCoordinates
+    /** Incremented on each request so repeated centerings on the same coordinates still trigger */
+    revision: number
+  } | null>(null)
 
   const { showDialog } = useInteractionDialog()
 
   const mainVehicleStore = useMainVehicleStore()
-
-  const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
 
   // Metadata for user-loaded GeoTIFF overlays. The raster bytes live in the overlay storage
   // (IndexedDB), keyed by each entry's `id`.
@@ -266,32 +269,6 @@ export const useMissionStore = defineStore('mission', () => {
       currentPlanningWaypoints,
       currentPlanningWaypoints.map((w) => (w.id === id ? { ...w, ...newWaypoint } : w))
     )
-  }
-
-  const addPointOfInterest = (poi: PointOfInterest): void => {
-    pointsOfInterest.value.push(poi)
-  }
-
-  const updatePointOfInterest = (id: string, poiUpdate: Partial<PointOfInterest>): void => {
-    const index = pointsOfInterest.value.findIndex((p) => p.id === id)
-    if (index !== -1) {
-      pointsOfInterest.value[index] = { ...pointsOfInterest.value[index], ...poiUpdate, timestamp: Date.now() }
-    }
-  }
-
-  const removePointOfInterest = (id: string): void => {
-    const index = pointsOfInterest.value.findIndex((p) => p.id === id)
-    if (index !== -1) {
-      pointsOfInterest.value.splice(index, 1)
-    }
-  }
-
-  const movePointOfInterest = (id: string, newCoordinates: PointOfInterestCoordinates): void => {
-    const poi = pointsOfInterest.value.find((p) => p.id === id)
-    if (poi === undefined) {
-      throw Error(`Could not move Point of Interest. No POI with id ${id} was found.`)
-    }
-    updatePointOfInterest(id, { coordinates: newCoordinates })
   }
 
   const clearMission = (): void => {
@@ -593,6 +570,10 @@ export const useMissionStore = defineStore('mission', () => {
     mapClearRequestRevision.value += 1
   }
 
+  const requestMapCenterOn = (coordinates: WaypointCoordinates): void => {
+    mapCenterOnRequest.value = { coordinates, revision: (mapCenterOnRequest.value?.revision ?? 0) + 1 }
+  }
+
   const requestMapMissionDownload = (): void => {
     mapDownloadRequestRevision.value += 1
   }
@@ -680,11 +661,6 @@ export const useMissionStore = defineStore('mission', () => {
     saveLastMapPosition,
     setDefaultMapPosition,
     getWaypointNumber,
-    pointsOfInterest,
-    addPointOfInterest,
-    updatePointOfInterest,
-    removePointOfInterest,
-    movePointOfInterest,
     mapOverlays,
     addMapOverlay,
     removeMapOverlay,
@@ -723,6 +699,8 @@ export const useMissionStore = defineStore('mission', () => {
     canSkipToNextWp,
     currentWaypointOnMission,
     mapClearRequestRevision,
+    mapCenterOnRequest,
+    requestMapCenterOn,
     mapDownloadRequestRevision,
     requestMapClear,
     requestMapMissionDownload,

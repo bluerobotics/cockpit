@@ -57,6 +57,13 @@ declare global {
   function unused<T>(variable: T): void
 
   /**
+   * Log a user-initiated interaction to the system log with a standard prefix
+   * @param {string} message - Description of the action the user performed
+   * @returns {void}
+   */
+  function logUserAction(message: string): void
+
+  /**
    * Expand Array interface for internal usage
    */
   interface Array<T> {
@@ -609,6 +616,12 @@ global!.unimplemented = function (message?: string) {
 global!.unused = function <T>(variable: T) { } // eslint-disable-line
 
 /* c8 ignore stop */
+
+// Standardized logging for user-initiated interactions. Centralizing the prefix here lets call sites just
+// describe the action (e.g. logUserAction('Opened joystick calibration dialog')) without importing anything.
+global!.logUserAction = function (message: string) {
+  console.info(`[UserAction] ${message}`)
+}
 
 // Extend types
 Array.prototype.first = function <T>(this: T[]): T | undefined {

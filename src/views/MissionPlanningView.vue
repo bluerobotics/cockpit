@@ -477,71 +477,17 @@
         </v-menu>
       </template>
     </v-tooltip>
-    <v-speed-dial v-model="speedDialOpen" location="top center" transition="slide-y-reverse-transition">
-      <template #activator="{ props: activatorProps }">
-        <v-tooltip location="top center" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              v-bind="{ ...activatorProps, ...tooltipProps }"
-              class="absolute m-3 rounded-sm shadow-sm bottom-12 right-[44px] bg-slate-50 text-[14px]"
-              :style="interfaceStore.globalGlassMenuStyles"
-              :color="followerTarget !== undefined ? 'red' : ''"
-              icon="mdi-crosshairs-gps"
-              size="x-small"
-            />
-          </template>
-        </v-tooltip>
-      </template>
-      <v-tooltip location="left" :text="centerMissionButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="mission"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF44' } : {}]"
-            :class="[!hasMissionWaypoints ? 'active-events-on-disabled' : '']"
-            icon="mdi-map-marker-path"
-            size="x-small"
-            :disabled="!hasMissionWaypoints"
-            @click.stop="centerOnMission"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerHomeButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="home"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF44' } : {}]"
-            :class="[!home ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-            icon="mdi-home-search"
-            size="x-small"
-            :disabled="!home"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.HOME, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.HOME)"
-          />
-        </template>
-      </v-tooltip>
-      <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            key="vehicle"
-            v-bind="tooltipProps"
-            class="rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF44' } : {}]"
-            :class="[!vehiclePosition ? 'active-events-on-disabled' : '']"
-            :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-            icon="mdi-airplane-marker"
-            size="x-small"
-            :disabled="!vehiclePosition"
-            @click.stop="targetFollower.goToTarget(WhoToFollow.VEHICLE, true)"
-            @dblclick.stop="targetFollower.follow(WhoToFollow.VEHICLE)"
-          />
-        </template>
-      </v-tooltip>
-    </v-speed-dial>
+    <MapCenterControl
+      v-model:open="speedDialOpen"
+      :target-follower="targetFollower"
+      :follower-target="followerTarget"
+      :home="home"
+      :vehicle-position="vehiclePosition"
+      :is-vehicle-online="vehicleStore.isVehicleOnline"
+      :has-mission-waypoints="hasMissionWaypoints"
+      :activator-style="{ bottom: '3rem' }"
+      @center-on-mission="centerOnMission"
+    />
     <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
       v-if="uploadingMission"
@@ -680,6 +626,7 @@ import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
+import MapCenterControl from '@/components/MapCenterControl.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
@@ -702,6 +649,7 @@ import {
   useMissionEstimates,
 } from '@/composables/useMissionEstimates'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
@@ -716,6 +664,7 @@ import {
 import { generateSurveyPath } from '@/libs/map/utils-map'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
 import { degrees } from '@/libs/utils'
+import { getPoiIconSignature, getPoiMarkerColor, getPoiMarkerOpacity, getPoiTooltipHtml } from '@/libs/utils-poi'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -735,7 +684,7 @@ import {
   MarkerSizes,
   MissionCommand,
   MissionCommandType,
-  PointOfInterest,
+  ResolvedPointOfInterest,
   Survey,
   SurveyPath,
 } from '@/types/mission'
@@ -746,6 +695,8 @@ const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const missionEstimates = useMissionEstimates()
+
+const { resolvedPointsOfInterest, movePointOfInterest } = usePointsOfInterest()
 const { height: windowHeight } = useWindowSize()
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -945,7 +896,7 @@ watch(
 
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
-const followerTarget = ref<WhoToFollow | undefined>(undefined)
+const followerTarget = ref<string | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const availableFrames = Object.values(AltitudeReferenceType).map((value: AltitudeReferenceType) => ({
@@ -1291,6 +1242,8 @@ const handleOpenMissionSettings = (): void => {
 
 const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)
 const planningPoiMarkers = shallowRef<{ [id: string]: L.Marker }>({})
+// Last rendered icon signature per POI, to avoid rebuilding the icon (and its DOM) on every update.
+const planningPoiIconSignatures: Record<string, string> = {}
 
 const clearCurrentMission = (): void => {
   missionStore.clearMission()
@@ -2020,7 +1973,7 @@ const toggleSurvey = (): void => {
 }
 
 const targetFollower = new TargetFollower(
-  (newTarget: WhoToFollow | undefined) => (followerTarget.value = newTarget),
+  (newTarget: string | undefined) => (followerTarget.value = newTarget),
   (newCenter: WaypointCoordinates) => (mapCenter.value = newCenter)
 )
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
@@ -4205,29 +4158,6 @@ watch(
   }
 )
 
-const centerHomeButtonTooltipText = computed(() => {
-  if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
-  }
-  return 'Click once to center on home or twice to track it.'
-})
-
-const centerVehicleButtonTooltipText = computed(() => {
-  if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
-  }
-  if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
-  }
-  return 'Click once to center on vehicle or twice to track it.'
-})
-
 const missionFitCoordinates = computed<WaypointCoordinates[]>(() => {
   const waypointCoords = missionStore.currentPlanningWaypoints.map((wp) => wp.coordinates)
   const surveyCoords = missionStore.currentPlanningSurveys.flatMap((survey) => [
@@ -4238,19 +4168,6 @@ const missionFitCoordinates = computed<WaypointCoordinates[]>(() => {
 })
 
 const hasMissionWaypoints = computed(() => missionFitCoordinates.value.length > 0)
-
-const centerMissionButtonTooltipText = computed(() => {
-  if (!hasMissionWaypoints.value) {
-    return 'Cannot center map on mission (no waypoints defined).'
-  }
-  return 'Click to center the map on the current mission.'
-})
-
-const centerActivatorTooltipText = computed(() => {
-  if (followerTarget.value === WhoToFollow.HOME) return 'Tracking home position. Open to change target.'
-  if (followerTarget.value === WhoToFollow.VEHICLE) return 'Tracking vehicle position. Open to change target.'
-  return 'Center map on home, vehicle or mission.'
-})
 
 const centerOnMission = (): void => {
   if (!planningMap.value || !hasMissionWaypoints.value) return
@@ -4272,10 +4189,12 @@ const openPoiDialog = (): void => {
 }
 
 // POI Marker Management Functions for MissionPlanningView
-const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
+const poiIconConfig = (poi: ResolvedPointOfInterest): L.DivIconOptions => {
+  const markerColor = getPoiMarkerColor(poi)
+
   const poiIconHtml = `
     <div class="poi-marker-container">
-      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
+      <div class="poi-marker-background" style="background-color: ${markerColor}80;"></div>
       <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
     </div>
   `
@@ -4284,41 +4203,37 @@ const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
     html: poiIconHtml,
     className: 'poi-marker-icon',
     iconSize: [32, 32], // Match the actual container size
-    iconAnchor: [16, 32], // Center horizontally, bottom vertically (like a pin)
+    iconAnchor: [16, 16], // Center the circular marker on the coordinate
   }
 }
 
-// POI Marker Management Functions for MissionPlanningView
-const addPoiMarkerToPlanningMap = (poi: PointOfInterest): void => {
+const addPoiMarkerToPlanningMap = (poi: ResolvedPointOfInterest): void => {
   if (!planningMap.value || !planningMap.value.getContainer()) return
 
   const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
 
-  const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(
-    planningMap.value
-  )
+  // Live-tracked POIs are positioned by the data lake, so they are not draggable.
+  const marker = L.marker(poi.coordinates as LatLngTuple, {
+    icon: poiMarkerIcon,
+    draggable: !poi.isLiveTracked,
+    opacity: getPoiMarkerOpacity(poi),
+  }).addTo(planningMap.value)
 
-  const tooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip' }
-  marker.bindTooltip(tooltipContent, tooltipConfig)
+  marker.bindTooltip(getPoiTooltipHtml(poi, poi.coordinates), {
+    permanent: false,
+    direction: 'top',
+    offset: [0, -20],
+    className: 'poi-tooltip',
+  })
 
   marker.on('drag', (event) => {
     const newCoords = event.target.getLatLng()
-    const updatedTooltipContent = `
-      <strong>${poi.name}</strong><br>
-      ${poi.description ? poi.description + '<br>' : ''}
-      Lat: ${newCoords.lat.toFixed(8)}, Lng: ${newCoords.lng.toFixed(8)}
-    `
-    marker.getTooltip()?.setContent(updatedTooltipContent)
+    marker.getTooltip()?.setContent(getPoiTooltipHtml(poi, [newCoords.lat, newCoords.lng]))
   })
 
   marker.on('dragend', (event) => {
     const newCoords = event.target.getLatLng()
-    missionStore.movePointOfInterest(poi.id, [newCoords.lat, newCoords.lng])
+    movePointOfInterest(poi.id, [newCoords.lat, newCoords.lng])
   })
 
   marker.on('click', (event) => {
@@ -4329,22 +4244,30 @@ const addPoiMarkerToPlanningMap = (poi: PointOfInterest): void => {
   })
 
   planningPoiMarkers.value[poi.id] = marker
+  planningPoiIconSignatures[poi.id] = getPoiIconSignature(poi)
 }
 
-const updatePoiMarkerOnPlanningMap = (poi: PointOfInterest): void => {
+const updatePoiMarkerOnPlanningMap = (poi: ResolvedPointOfInterest): void => {
   if (!planningMap.value || !planningMap.value.getContainer() || !planningPoiMarkers.value[poi.id]) return
 
   const marker = planningPoiMarkers.value[poi.id]
   marker.setLatLng(poi.coordinates as LatLngTuple)
 
-  marker.setIcon(L.divIcon(poiIconConfig(poi)))
+  // Keep draggability in sync: a POI edited into a live expression must stop being draggable (and
+  // vice-versa), since dragging would overwrite its coordinates with a static position.
+  if (poi.isLiveTracked) marker.dragging?.disable()
+  else marker.dragging?.enable()
 
-  const updatedTooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  marker.getTooltip()?.setContent(updatedTooltipContent)
+  // Only rebuild the icon when its appearance changes. Rebuilding recreates the marker's DOM
+  // element, which would cancel in-progress clicks on frequently-updated live-tracked POIs.
+  const iconSignature = getPoiIconSignature(poi)
+  if (planningPoiIconSignatures[poi.id] !== iconSignature) {
+    marker.setIcon(L.divIcon(poiIconConfig(poi)))
+    planningPoiIconSignatures[poi.id] = iconSignature
+  }
+
+  marker.setOpacity(getPoiMarkerOpacity(poi))
+  marker.getTooltip()?.setContent(getPoiTooltipHtml(poi, poi.coordinates))
 }
 
 const removePoiMarkerFromPlanningMap = (poiId: string): void => {
@@ -4352,62 +4275,57 @@ const removePoiMarkerFromPlanningMap = (poiId: string): void => {
 
   planningPoiMarkers.value[poiId].remove()
   delete planningPoiMarkers.value[poiId]
+  delete planningPoiIconSignatures[poiId]
 }
 
-// Watch for changes in POIs from the store and update markers
-watch(
-  () => missionStore.pointsOfInterest,
-  async (newPois) => {
-    if (!planningMap.value || !planningMap.value.getContainer()) {
-      // Defer if map not ready, try again on next tick or when map becomes available
-      await nextTick()
-      if (!planningMap.value || !planningMap.value.getContainer()) {
-        console.warn('MissionPlanningView: POI watcher - planningMap not ready after nextTick.')
-        return
-      }
+const syncPoiMarkersOnPlanningMap = (pois: ResolvedPointOfInterest[]): void => {
+  if (!planningMap.value || !planningMap.value.getContainer()) return
+
+  const poiIds = new Set(pois.map((p) => p.id))
+  Object.keys(planningPoiMarkers.value).forEach((poiId) => {
+    if (!poiIds.has(poiId)) removePoiMarkerFromPlanningMap(poiId)
+  })
+
+  pois.forEach((poi) => {
+    if (planningPoiMarkers.value[poi.id]) {
+      updatePoiMarkerOnPlanningMap(poi)
+    } else {
+      addPoiMarkerToPlanningMap(poi)
     }
+  })
+}
 
-    const newPoiIds = new Set(newPois.map((p) => p.id))
-
-    // Remove markers for POIs that no longer exist
-    Object.keys(planningPoiMarkers.value).forEach((poiId) => {
-      if (!newPoiIds.has(poiId)) {
-        removePoiMarkerFromPlanningMap(poiId)
-      }
-    })
-
-    // Add or update markers
-    newPois.forEach((poi) => {
-      if (planningPoiMarkers.value[poi.id]) {
-        updatePoiMarkerOnPlanningMap(poi)
-      } else {
-        addPoiMarkerToPlanningMap(poi)
-      }
-    })
+// Keep the planning map's POI markers in sync as POIs change. When the map isn't ready yet we simply
+// skip; the readiness watcher below redraws them once it is. This avoids a first-load race where
+// markers were dropped because the map wasn't ready at the moment POIs first resolved.
+watch(
+  resolvedPointsOfInterest,
+  (newPois) => {
+    if (!planningMap.value || !planningMap.value.getContainer()) return
+    syncPoiMarkersOnPlanningMap(newPois)
   },
   { deep: true, immediate: true }
 )
 
-// Ensure POIs are drawn when the map becomes available, if not already handled by immediate watcher
+// (Re)draw all POI markers whenever the map instance is created or becomes ready.
 watch(
-  planningMap,
-  (currentMap) => {
-    if (currentMap && currentMap.getContainer()) {
-      // Map is ready, ensure all POIs from the store are drawn
-      // This helps if POIs loaded from store before mapInstance was fully initialized
-      // or if the immediate watcher for pointsOfInterest ran too early.
-      missionStore.pointsOfInterest.forEach((poi) => {
-        if (!planningPoiMarkers.value[poi.id]) {
-          addPoiMarkerToPlanningMap(poi)
-        } else {
-          // Potentially update if details changed while map was not ready
-          updatePoiMarkerOnPlanningMap(poi)
-        }
-      })
+  [planningMap, mapReady],
+  () => {
+    if (mapReady.value && planningMap.value?.getContainer()) {
+      syncPoiMarkersOnPlanningMap(resolvedPointsOfInterest.value)
     }
   },
   { immediate: true }
-) // Immediate to catch initial map state
+)
+
+// React to "center on coordinates" requests (e.g. from the Map tools menu).
+watch(
+  () => missionStore.mapCenterOnRequest,
+  (request) => {
+    if (!request || !planningMap.value) return
+    planningMap.value.setView(request.coordinates as LatLngTuple, planningMap.value.getZoom(), { animate: true })
+  }
+)
 </script>
 
 <style>

@@ -146,6 +146,7 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
@@ -157,14 +158,15 @@ import type {
   HighlightedPoiMarker,
   HighlightedPoiMarkerDisplay,
   PoiMarker,
-  PointOfInterest,
   ReachedPoiMarker,
+  ResolvedPointOfInterest,
 } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
+const { resolvedPointsOfInterest } = usePointsOfInterest()
 
 datalogger.registerUsage(DatalogVariable.heading)
 const store = useMainVehicleStore()
@@ -292,7 +294,7 @@ const calculateBearing = (vehicleLat: number, vehicleLng: number, poiLat: number
 const poiData = computed(() => {
   if (!store.coordinates.latitude || !store.coordinates.longitude) return []
 
-  return missionStore.pointsOfInterest.map((poi) => {
+  return resolvedPointsOfInterest.value.map((poi) => {
     const distance = calculateHaversineDistance(
       [store.coordinates.latitude!, store.coordinates.longitude!],
       poi.coordinates
@@ -319,7 +321,7 @@ type HudMarkerEntry = {
   /**
    * Point of interest data
    */
-  poi: PointOfInterest
+  poi: ResolvedPointOfInterest
   /**
    * Distance to the POI
    */
@@ -348,11 +350,20 @@ const hudMarkerData = computed((): HudMarkerEntry[] => {
   if (widget.value.options.showHomeOnHUD && homeCoordinates.value) {
     const coords = homeCoordinates.value
     entries.push({
+      // Home is a static pseudo-POI, not a real data-lake-backed one, so it has no backing
+      // variables; the empty `latitudeVariableId`/`longitudeVariableId` are never read for it.
       poi: {
         id: homeMarkerId,
         name: 'Home',
         description: '',
+        latitude: coords[0],
+        longitude: coords[1],
+        fallbackCoordinates: coords,
         coordinates: coords,
+        isLiveTracked: false,
+        hasValidPosition: true,
+        latitudeVariableId: '',
+        longitudeVariableId: '',
         icon: 'mdi-home',
         color: '#1E88E5',
         timestamp: 0,

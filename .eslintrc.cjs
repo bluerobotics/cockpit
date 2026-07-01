@@ -15,6 +15,10 @@ module.exports = {
     'es2022': true,
     'vue/setup-compiler-macros': true,
   },
+  globals: {
+    // Global helper defined in src/libs/cosmos.ts and assigned at bootstrap, so it is callable without importing.
+    logUserAction: 'readonly',
+  },
   plugins: ['jsdoc', 'simple-import-sort'],
   ignorePatterns: ['**/src/libs/connection/m2r/**'],
   rules: {
