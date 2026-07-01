@@ -691,9 +691,11 @@ import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
+import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -714,7 +716,13 @@ import {
   WhoToFollow,
 } from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
-import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
+import {
+  bearingBetween,
+  centroidLatLng,
+  formatBearing,
+  formatMetersShort,
+  polygonAreaSquareMeters,
+} from '@/libs/mission/general-estimates'
 import { degrees } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -746,6 +754,8 @@ const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const missionEstimates = useMissionEstimates()
+const angleOverlay = useVertexAngleOverlay()
+const dragMeasureOverlay = useDragMeasureOverlay(angleOverlay)
 const { height: windowHeight } = useWindowSize()
 
 const { showDialog, closeDialog } = useInteractionDialog()
@@ -1030,6 +1040,9 @@ let measureOverlayEl: HTMLDivElement | null = null
 let measureSvgEl: SVGSVGElement | null = null
 let measureLineEl: SVGLineElement | null = null
 let measureTextEl: HTMLDivElement | null = null
+// Last cursor event kept so the live measure can be re-rendered while the map pans (no mousemove fires then)
+let lastMeasureCursor: L.LeafletMouseEvent | null = null
+let measureRefreshRafId: number | null = null
 const surveyAreaMarkers = shallowRef<Record<string, L.Marker>>({})
 const liveSurveyAreaMarker = shallowRef<L.Marker | null>(null)
 
@@ -1050,6 +1063,8 @@ const glassMenuCssVars = computed(() => ({
 
 const clearLiveMeasure = (): void => {
   destroyMeasureOverlay(planningMap.value || undefined)
+  angleOverlay.clearVertexAngles()
+  lastMeasureCursor = null
 }
 
 const currentMeasureAnchor = (): L.LatLng | null => {
@@ -1061,6 +1076,21 @@ const currentMeasureAnchor = (): L.LatLng | null => {
   if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length > 0) {
     const last = surveyPolygonVertexesPositions.value[surveyPolygonVertexesPositions.value.length - 1]
     return L.latLng(last.lat, last.lng)
+  }
+
+  return null
+}
+
+// Point before the measure anchor, used to measure the angle the segment being drawn makes with the previous one.
+const currentMeasurePrevAnchor = (): L.LatLng | null => {
+  if (!planningMap.value) return null
+  if (isCreatingSimplePath.value && missionStore.currentPlanningWaypoints.length > 1) {
+    const wp = missionStore.currentPlanningWaypoints[missionStore.currentPlanningWaypoints.length - 2]
+    return L.latLng(wp.coordinates[0], wp.coordinates[1])
+  }
+  if (isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length > 1) {
+    const vertex = surveyPolygonVertexesPositions.value[surveyPolygonVertexesPositions.value.length - 2]
+    return L.latLng(vertex.lat, vertex.lng)
   }
 
   return null
@@ -1126,10 +1156,17 @@ const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   if (!planningMap.value) return
 
+  lastMeasureCursor = e
+
   const anchor = currentMeasureAnchor()
-  const measuring = !!anchor && (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
+  const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value
+  const measuring =
+    !!anchor &&
+    !draggingExistingNode &&
+    (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
   if (!measuring) {
     destroyMeasureOverlay(planningMap.value)
+    angleOverlay.clearVertexAngles()
     return
   }
 
@@ -1157,13 +1194,39 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
   const hidePill = isOverSurveyHandle(e) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
 
-  const text = missionEstimates.formatMetersShort(dist)
+  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [e.latlng.lat, e.latlng.lng])
+  const text = `${formatMetersShort(dist)} · ${formatBearing(bearing)}`
   if (measureTextEl) {
     measureTextEl.textContent = text
     measureTextEl.style.left = `${midX}px`
     measureTextEl.style.top = `${midY}px`
     measureTextEl.style.display = hidePill ? 'none' : 'block'
   }
+
+  const prevAnchor = currentMeasurePrevAnchor()
+  if (prevAnchor && !hidePill) {
+    angleOverlay.renderVertexAngle(
+      [prevAnchor.lat, prevAnchor.lng],
+      [anchor!.lat, anchor!.lng],
+      [e.latlng.lat, e.latlng.lng]
+    )
+  } else {
+    angleOverlay.clearVertexAngles()
+  }
+}
+
+// Keep the live measure pinned to the cursor while the map pans under it.
+const refreshLiveMeasureOnMapMove = (): void => {
+  if (!planningMap.value || !lastMeasureCursor || measureRefreshRafId !== null) return
+  measureRefreshRafId = requestAnimationFrame(() => {
+    measureRefreshRafId = null
+    if (!planningMap.value || !lastMeasureCursor) return
+    const map = planningMap.value
+    const rect = map.getContainer().getBoundingClientRect()
+    const containerPoint = L.point(cursorLivePositionX.value - rect.left, cursorLivePositionY.value - rect.top)
+    const latlng = map.containerPointToLatLng(containerPoint)
+    handleMapMouseMove({ ...lastMeasureCursor, latlng, containerPoint })
+  })
 }
 
 const saveEsri = (): void => {
@@ -2576,12 +2639,14 @@ const addWaypoint = (
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypointId, [latlng.lat, latlng.lng])
     isDraggingMarker.value = true
+    dragMeasureOverlay.renderDragMeasurePills(waypointId)
   })
 
   newMarker.on('dragend', () => {
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypointId, [latlng.lat, latlng.lng])
     isDraggingMarker.value = false
+    dragMeasureOverlay.destroyDragMeasureOverlay()
   })
   newMarker.on('contextmenu', (e: L.LeafletMouseEvent) => {
     const oldId = selectedWaypoint.value?.id
@@ -3461,12 +3526,14 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypoint.id, [latlng.lat, latlng.lng])
     isDraggingMarker.value = true
+    dragMeasureOverlay.renderDragMeasurePills(waypoint.id)
   })
 
   newMarker.on('dragend', () => {
     const latlng = newMarker.getLatLng()
     missionStore.moveWaypoint(waypoint.id, [latlng.lat, latlng.lng])
     isDraggingMarker.value = false
+    dragMeasureOverlay.destroyDragMeasureOverlay()
   })
 
   newMarker.on('contextmenu', (event: LeafletMouseEvent) => {
@@ -3771,6 +3838,8 @@ onMounted(async () => {
   const pane = planningMap.value!.createPane('measurePane')
   pane.style.zIndex = '640'
   pane.style.pointerEvents = 'none'
+  angleOverlay.initAngleOverlay(planningMap.value!)
+  dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
   // Listen for base layer changes to save user preference
@@ -3860,6 +3929,7 @@ onMounted(async () => {
   })
 
   planningMap.value.on('drag', updateConfirmButtonPosition)
+  planningMap.value.on('drag', refreshLiveMeasureOnMapMove)
   planningMap.value.on('mousemove', handleMapMouseMove)
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
@@ -3929,7 +3999,11 @@ onUnmounted(() => {
     window.removeEventListener('mousemove', onWindowMouseMove)
   }
   planningMap.value?.off('mousemove', handleMapMouseMove)
+  planningMap.value?.off('drag', refreshLiveMeasureOnMapMove)
+  if (measureRefreshRafId !== null) cancelAnimationFrame(measureRefreshRafId)
   clearLiveMeasure()
+  dragMeasureOverlay.destroyDragMeasureOverlay()
+  angleOverlay.destroyAngleOverlay()
 
   detachTileFallbacks.forEach((detach) => detach())
   detachTileFallbacks = []
@@ -4556,6 +4630,23 @@ watch(
 .measure-area-icon {
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+.measure-angle-tag {
+  background: transparent;
+  border: none;
+}
+.measure-angle-pill {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 3px 8px;
+  border-radius: 16px;
+  background: #00000022;
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
 }
 .measure-area-pill {
   transform: translate(-50%, -50%);
