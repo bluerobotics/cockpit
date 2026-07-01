@@ -322,7 +322,16 @@ export type PointOfInterestIcon = string
 export type PointOfInterestColor = string
 
 /**
- * Interface representing a Point of Interest (POI) on the map.
+ * Source for one of a POI's coordinates.
+ * A `number` is a fixed/static value. A `string` is a data-lake expression (e.g.
+ * "{{ mavlink/buoy/latitude }}") that is resolved live into the data lake.
+ */
+export type PoiCoordinateSource = number | string
+
+/**
+ * Interface representing a Point of Interest (POI) definition.
+ * This is the persisted shape. The actual coordinates always live in the data lake (see
+ * `poiLatitudeVariableId`/`poiLongitudeVariableId`); UI components consume `ResolvedPointOfInterest`.
  */
 export interface PointOfInterest {
   /**
@@ -338,9 +347,18 @@ export interface PointOfInterest {
    */
   description: string
   /**
-   * Geographical coordinates of the POI.
+   * Source for the POI latitude: a static number or a data-lake expression.
    */
-  coordinates: PointOfInterestCoordinates
+  latitude: PoiCoordinateSource
+  /**
+   * Source for the POI longitude: a static number or a data-lake expression.
+   */
+  longitude: PoiCoordinateSource
+  /**
+   * Location shown before the live coordinates resolve, or when live data is unavailable.
+   * For static POIs this matches the fixed coordinates.
+   */
+  fallbackCoordinates: PointOfInterestCoordinates
   /**
    * Icon representing the POI.
    */
@@ -351,6 +369,33 @@ export interface PointOfInterest {
   color: PointOfInterestColor
   /** Timestamp of creation or last update */
   timestamp: number
+}
+
+/**
+ * A POI with its coordinates resolved from the data lake. This is what UI components render.
+ */
+export interface ResolvedPointOfInterest extends PointOfInterest {
+  /**
+   * Current coordinates, read from the data lake. Falls back to `fallbackCoordinates` when the
+   * live value is not available.
+   */
+  coordinates: PointOfInterestCoordinates
+  /**
+   * Whether any coordinate is driven by a live data-lake expression.
+   */
+  isLiveTracked: boolean
+  /**
+   * Whether live coordinates are currently available (always true for static POIs).
+   */
+  hasValidPosition: boolean
+  /**
+   * Id of the data-lake variable holding the POI's latitude.
+   */
+  latitudeVariableId: string
+  /**
+   * Id of the data-lake variable holding the POI's longitude.
+   */
+  longitudeVariableId: string
 }
 
 /**
