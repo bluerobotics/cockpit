@@ -908,6 +908,15 @@ watch(
   () => clearMapDrawing()
 )
 
+// React to "center on coordinates" requests (e.g. from the Map tools menu).
+watch(
+  () => missionStore.mapCenterOnRequest,
+  (request) => {
+    if (!request || !map.value) return
+    map.value.setView(request.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
+  }
+)
+
 watch(
   () => missionStore.mapDownloadRequestRevision,
   () => {
