@@ -58,13 +58,13 @@ export class TargetFollower {
   /**
    * Sets current target to the component observing this follower.
    */
-  private onTargetChange: (newTarget: WhoToFollow | undefined) => void
+  private onTargetChange: (newTarget: string | undefined) => void
 
   /**
-   * Current target ref to follow.
-   * @type {WhoToFollow | undefined}
+   * Current target ref to follow. A well-known {@link WhoToFollow} value or any registered target id.
+   * @type {string | undefined}
    */
-  private target: WhoToFollow | undefined
+  private target: string | undefined
 
   /**
    * Targets available to be followed
@@ -83,11 +83,11 @@ export class TargetFollower {
 
   /**
    * Constructor for the TargetFollower class.
-   * @param {(newTarget: WhoToFollow | undefined) => void} onTargetChange - Sets current target to the component observing this follower.
+   * @param {(newTarget: string | undefined) => void} onTargetChange - Sets current target to the component observing this follower.
    * @param {(newCenter: WaypointCoordinates) => void} onCenterChange - Sets current center for the map coupled to this follower.
    */
   constructor(
-    onTargetChange: (newTarget: WhoToFollow | undefined) => void,
+    onTargetChange: (newTarget: string | undefined) => void,
     onCenterChange: (newCenter: WaypointCoordinates) => void
   ) {
     this.onTargetChange = onTargetChange
@@ -96,10 +96,10 @@ export class TargetFollower {
 
   /**
    * Sets coupled map center to a given target.
-   * @param {WhoToFollow} target - The target to follow.
+   * @param {string | undefined} target - The target to follow (a {@link WhoToFollow} value or a registered target id).
    * @returns {void}
    */
-  private setCenter(target: WhoToFollow | undefined): void {
+  private setCenter(target: string | undefined): void {
     if (!target) return
 
     const updateOnValid = (newCenter: WaypointCoordinates | undefined): void => {
@@ -113,12 +113,12 @@ export class TargetFollower {
 
   /**
    * Stops to follow current target and goes to a given target.
-   * @param {WhoToFollow} target - The target to follow.
+   * @param {string} target - The target to follow (a {@link WhoToFollow} value or a registered target id).
    * @param {boolean} toggleSameTarget - If should stop following current selected
    * target if the same target is selected again.
    * @returns {void}
    */
-  public goToTarget(target: WhoToFollow, toggleSameTarget = false): void {
+  public goToTarget(target: string, toggleSameTarget = false): void {
     // Saves a copy of target because unFollow will set it to undefined
     const oldTarget = this.target
     this.unFollow()
@@ -132,12 +132,12 @@ export class TargetFollower {
 
   /**
    * Sets a source of data for a given target to follow.
-   * @param {WhoToFollow} target - The target that will receive this data
+   * @param {string} target - The target that will receive this data (a {@link WhoToFollow} value or a target id)
    * @param {() => WaypointCoordinates | undefined} compute - The function to compute the target data
    * coordinates.
    * @returns {void}
    */
-  public setTrackableTarget(target: WhoToFollow, compute: () => WaypointCoordinates | undefined): void {
+  public setTrackableTarget(target: string, compute: () => WaypointCoordinates | undefined): void {
     this.trackables[target] = compute
   }
 
@@ -169,11 +169,11 @@ export class TargetFollower {
 
   /**
    * Set the current target ref to follow.
-   * @param {WhoToFollow} target - The target to follow.
+   * @param {string} target - The target to follow (a {@link WhoToFollow} value or a registered target id).
    * @param {boolean} navigateNow - If should navigate to the target now.
    * @returns {void}
    */
-  public follow(target: WhoToFollow, navigateNow = true): void {
+  public follow(target: string, navigateNow = true): void {
     this.target = target
     this.onTargetChange(this.target)
 
@@ -230,9 +230,9 @@ export class TargetFollower {
 
   /**
    * Returns the current target ref to follow.
-   * @returns {WhoToFollow | undefined} The current target ref to follow.
+   * @returns {string | undefined} The current target ref to follow.
    */
-  public getCurrentTarget(): WhoToFollow | undefined {
+  public getCurrentTarget(): string | undefined {
     return this.target
   }
 }
