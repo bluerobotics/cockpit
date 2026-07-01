@@ -22,7 +22,7 @@
       >
         <v-icon>{{ invertSearch ? 'mdi-filter-minus' : 'mdi-filter' }}</v-icon>
       </v-btn>
-      <div class="flex items-center gap-1 flex-wrap">
+      <div v-if="showLevels" class="flex items-center gap-1 flex-wrap">
         <v-chip
           v-for="lvl in availableLevels"
           :key="lvl"
@@ -68,9 +68,12 @@
       >
         <div class="flex items-center gap-2 h-[20px] leading-[20px] px-2">
           <span class="shrink-0 text-gray-500">{{ formatTime(item.epoch) }}</span>
-          <span class="shrink-0 w-[42px] font-bold uppercase" :style="{ color: levelHex(item.level) }">{{
-            item.level
-          }}</span>
+          <span
+            v-if="showLevels && item.level"
+            class="shrink-0 w-[42px] font-bold uppercase"
+            :style="{ color: levelHex(item.level) }"
+            >{{ item.level }}</span
+          >
           <span class="truncate text-gray-200" :title="item.msg">{{ item.msg }}</span>
         </div>
       </RecycleScroller>
@@ -79,8 +82,8 @@
         v-if="displayedEvents.length === 0"
         class="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-gray-500 pointer-events-none"
       >
-        <span v-if="!loggingEnabled">System logging is disabled — enable it above to capture console output.</span>
-        <span v-else>No log entries{{ isFiltering ? ' match the current filter' : ' captured yet' }}.</span>
+        <span v-if="disabled && disabledMessage">{{ disabledMessage }}</span>
+        <span v-else>{{ isFiltering ? 'No entries match the current filter.' : emptyText }}</span>
       </div>
     </div>
   </div>
@@ -89,13 +92,34 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 
-import { type SystemLogViewerEvent, getRecentSystemLogEvents, subscribeToSystemLogEvents } from '@/libs/system-logging'
+import { getRecentSystemLogEvents, subscribeToSystemLogEvents } from '@/libs/system-logging'
+import type { ConsoleViewerEvent } from '@/types/console-viewer'
 
-defineProps<{
+const props = defineProps<{
   /**
-   * Whether system logging (console capture) is currently enabled. Used only to show a helpful empty state.
+   * Returns the initial set of events to render. Defaults to the system console log buffer.
    */
-  loggingEnabled?: boolean
+  getRecentEvents?: () => ConsoleViewerEvent[]
+  /**
+   * Subscribes to new events, returning an unsubscribe function. Defaults to the system console log stream.
+   */
+  subscribe?: (listener: (event: ConsoleViewerEvent) => void) => () => void
+  /**
+   * Severity levels to offer as filter chips. Pass an empty array to hide the level UI entirely.
+   */
+  levels?: string[]
+  /**
+   * Message shown when there are no events and no active filter.
+   */
+  emptyMessage?: string
+  /**
+   * Whether the underlying source is currently disabled (used only for the empty-state message).
+   */
+  disabled?: boolean
+  /**
+   * Message shown when {@link disabled} is true and there are no events.
+   */
+  disabledMessage?: string
 }>()
 
 // Keep the rendered/working set bounded so filtering and memory stay cheap regardless of log volume.
@@ -103,17 +127,20 @@ const maxRows = 2000
 // Coalesce incoming events into a single reactive update at this cadence, instead of one render per log.
 const flushIntervalMs = 150
 
-const availableLevels = ['error', 'warn', 'info', 'debug', 'trace', 'log']
+const defaultLevels = ['error', 'warn', 'info', 'debug', 'trace', 'log']
+const availableLevels = computed(() => props.levels ?? defaultLevels)
+const showLevels = computed(() => availableLevels.value.length > 0)
+const emptyText = computed(() => props.emptyMessage ?? 'No entries captured yet.')
 
 // Master list is a plain (non-reactive) array; only the filtered result is reactive (shallow) for the scroller.
-let allEvents: SystemLogViewerEvent[] = []
-let pending: SystemLogViewerEvent[] = []
-const displayedEvents = shallowRef<SystemLogViewerEvent[]>([])
+let allEvents: ConsoleViewerEvent[] = []
+let pending: ConsoleViewerEvent[] = []
+const displayedEvents = shallowRef<ConsoleViewerEvent[]>([])
 const totalCount = ref(0)
 
 const searchText = ref('')
 const invertSearch = ref(false)
-const activeLevels = ref<string[]>([...availableLevels])
+const activeLevels = ref<string[]>([...availableLevels.value])
 const autoScroll = ref(true)
 const scrollerRef = ref<{
   /** Root scroll element of the virtual scroller */
@@ -122,13 +149,15 @@ const scrollerRef = ref<{
   scrollToBottom?: () => void
 } | null>(null)
 
-const isFiltering = computed(() => searchText.value.trim() !== '' || activeLevels.value.length < availableLevels.length)
+const isFiltering = computed(
+  () => searchText.value.trim() !== '' || activeLevels.value.length < availableLevels.value.length
+)
 
 let unsubscribe: (() => void) | undefined
 let flushTimer: ReturnType<typeof setInterval> | undefined
 
-const matchesFilter = (event: SystemLogViewerEvent): boolean => {
-  if (!activeLevels.value.includes(event.level)) return false
+const matchesFilter = (event: ConsoleViewerEvent): boolean => {
+  if (showLevels.value && event.level !== undefined && !activeLevels.value.includes(event.level)) return false
   const query = searchText.value.trim().toLowerCase()
   if (query) {
     const hit = event.msg.toLowerCase().includes(query)
@@ -192,7 +221,9 @@ const clearView = (): void => {
 }
 
 const copyVisible = (): void => {
-  const text = displayedEvents.value.map((e) => `${formatTime(e.epoch)} [${e.level}] ${e.msg}`).join('\n')
+  const text = displayedEvents.value
+    .map((e) => `${formatTime(e.epoch)}${e.level ? ` [${e.level}]` : ''} ${e.msg}`)
+    .join('\n')
   navigator.clipboard?.writeText(text)
 }
 
@@ -240,12 +271,15 @@ watch(autoScroll, (following) => {
 })
 
 onMounted(() => {
-  allEvents = getRecentSystemLogEvents()
+  const getRecent = props.getRecentEvents ?? getRecentSystemLogEvents
+  const subscribeToSource = props.subscribe ?? subscribeToSystemLogEvents
+
+  allEvents = getRecent()
   if (allEvents.length > maxRows) allEvents = allEvents.slice(allEvents.length - maxRows)
   totalCount.value = allEvents.length
   rebuildDisplayed()
 
-  unsubscribe = subscribeToSystemLogEvents((event) => pending.push(event))
+  unsubscribe = subscribeToSource((event) => pending.push(event))
   flushTimer = setInterval(flush, flushIntervalMs)
 
   nextTick(scrollToBottom)
