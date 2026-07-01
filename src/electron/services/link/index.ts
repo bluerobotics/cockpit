@@ -1,9 +1,15 @@
 import { BrowserWindow, ipcMain } from 'electron'
 
+import type { SerialPortInfo } from '../../../types/serial'
 import { Link } from './link'
 import { SerialLink } from './serial'
 import { TcpLink } from './tcp'
 import { UdpLink } from './udp'
+
+// We need to use SerialPort with require here (as done in serial.ts), because bundling the ESM import as a
+// value pulls the native @serialport/bindings-cpp binary into the bundle and breaks its runtime resolution.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const SerialPortObject = require('serialport').SerialPort
 
 /**
  * Serial service for electron
@@ -34,6 +40,17 @@ class LinkService {
    * Setup IPC handlers
    */
   private setupIpcHandlers(): void {
+    ipcMain.handle('serial-list-ports', async () => {
+      const ports = await SerialPortObject.list()
+      return ports.map((port: SerialPortInfo) => ({
+        path: port.path,
+        manufacturer: port.manufacturer,
+        serialNumber: port.serialNumber,
+        vendorId: port.vendorId,
+        productId: port.productId,
+      }))
+    })
+
     ipcMain.handle('link-open', async (_, { path }): Promise<boolean> => {
       console.log(`Attempting to open link: ${path}`)
 
