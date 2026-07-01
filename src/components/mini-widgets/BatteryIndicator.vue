@@ -1,6 +1,8 @@
 <template>
   <v-tooltip
-    :text="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue.toFixed(1) + '%'}`"
+    :text="`${$t('Battery remaining:')} ${
+      remainingDisplayValue < 0 ? $t('No Data') : remainingDisplayValue.toFixed(1) + '%'
+    }`"
   >
     <template #activator="{ props: tooltipProps }">
       <div v-bind="tooltipProps" class="flex items-center w-[95px] h-12 text-white justify-center">
@@ -72,7 +74,7 @@
   </v-tooltip>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Battery Indicator Config</v-card-title>
+      <v-card-title class="text-center">{{ $t('Battery Indicator Config') }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <div class="absolute top-2 right-2 z-10">
           <v-btn
@@ -86,11 +88,11 @@
             <i class="mdi mdi-close"></i>
           </v-btn>
         </div>
-        <v-checkbox v-model="miniWidget.options.showCurrent" label="Show Current" hide-details class="-mb-5" />
-        <v-checkbox v-model="miniWidget.options.showPower" label="Show Power" hide-details />
+        <v-checkbox v-model="miniWidget.options.showCurrent" :label="$t('Show Current')" hide-details class="-mb-5" />
+        <v-checkbox v-model="miniWidget.options.showPower" :label="$t('Show Power')" hide-details />
         <v-text-field
           v-model.number="userSetToggleInterval"
-          label="Toggle Interval (ms)"
+          :label="$t('Toggle Interval (ms)')"
           type="number"
           :min="minInterval"
           step="100"
@@ -104,15 +106,12 @@
         <div class="flex justify-between items-center -mt-1">
           <v-checkbox
             v-model="miniWidget.options.useVoltageToColor"
-            label="Change color by voltage"
+            :label="$t('Use voltage to color scheme')"
             hide-details
             class="mr-1"
           />
           <div class="flex items-center gap-x-1">
-            <v-tooltip
-              location="top"
-              text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
-            >
+            <v-tooltip location="top" :text="batteryConfigTooltip">
               <template #activator="{ props: infoProps }">
                 <v-icon
                   v-bind="infoProps"
@@ -122,7 +121,7 @@
                 />
               </template>
             </v-tooltip>
-            <v-tooltip location="top" text="Reset colors and voltage thresholds to default values">
+            <v-tooltip location="top" :text="$t('Reset colors and voltage thresholds to default values')">
               <template #activator="{ props: resetProps }">
                 <v-btn v-bind="resetProps" icon size="small" variant="text" class="text-white" @click="resetToDefaults">
                   <v-icon icon="mdi-restore" size="18" />
@@ -137,7 +136,7 @@
             <div class="h-3 shrink-0" />
             <v-text-field
               v-model.number="batteryThresholds.medium"
-              label="Medium threshold (V)"
+              :label="$t('Medium voltage (V)')"
               type="number"
               density="compact"
               variant="outlined"
@@ -145,7 +144,7 @@
             />
             <v-text-field
               v-model.number="batteryThresholds.low"
-              label="Low threshold (V)"
+              :label="$t('Low voltage (V)')"
               type="number"
               density="compact"
               variant="outlined"
@@ -153,7 +152,7 @@
             />
             <v-text-field
               v-model.number="batteryThresholds.critical"
-              label="Critical threshold (V)"
+              :label="$t('Critical voltage (V)')"
               type="number"
               density="compact"
               variant="outlined"
@@ -213,6 +212,7 @@
 <script setup lang="ts">
 import { useDebounce } from '@vueuse/core'
 import { computed, onBeforeMount, onUnmounted, ref, toRefs, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { defaultBatteryLevelColorScheme, defaultBatteryLevelThresholds } from '@/assets/defaults'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
@@ -242,6 +242,10 @@ const defaultOptions = {
 const store = useMainVehicleStore()
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
+const { t } = useI18n()
+const batteryConfigTooltip = t(
+  "configure these voltage levels according to your battery pack. defaults are based on blue Robotics' 4-s li-ion battery pack."
+)
 
 const showCurrent = ref(true)
 const toggleIntervaler = ref<ReturnType<typeof setInterval> | undefined>(undefined)

@@ -24,6 +24,7 @@ import { datalogger } from '@/libs/sensors-logging'
 import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import i18n from '@/plugins/i18n'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -357,7 +358,10 @@ export const useVideoStore = defineStore('video', () => {
       const oldStreamData = activeStreams.value[streamName]
       if (oldStreamData && oldStreamData.webRtcManager) {
         if (isRecording(streamName)) {
-          showDialog({ message: `Stream '${streamName}' has changed. Stopping recording...`, variant: 'error' })
+          showDialog({
+            message: i18n.global.t("Stream '{{streamName}}' has changed. Stopping recording...", { streamName }),
+            variant: 'error',
+          })
           stopRecording(streamName)
         }
 
@@ -392,7 +396,10 @@ export const useVideoStore = defineStore('video', () => {
 
       const rtspUrl = getRtspUrl(streamName)
       if (!rtspUrl) {
-        showDialog({ message: `RTSP URL for stream '${streamName}' is missing.`, variant: 'error' })
+        showDialog({
+          message: i18n.global.t("RTSP URL for stream '{streamName}' is missing.", { streamName }),
+          variant: 'error',
+        })
         return
       }
       if (!window.electronAPI) {
@@ -608,16 +615,19 @@ export const useVideoStore = defineStore('video', () => {
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
-      showDialog({ message: 'No streams available.', variant: 'error' })
+      showDialog({ message: i18n.global.t('No streams available.'), variant: 'error' })
       return
     }
 
     if (activeStreams.value[streamName]!.mediaStream === undefined) {
-      showDialog({ message: 'Media stream not defined.', variant: 'error' })
+      showDialog({ message: i18n.global.t('Media stream not defined.'), variant: 'error' })
       return
     }
     if (!activeStreams.value[streamName]!.mediaStream!.active) {
-      showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
+      showDialog({
+        message: i18n.global.t('Media stream not yet active. Wait a second and try again.'),
+        variant: 'error',
+      })
       return
     }
 
@@ -697,7 +707,10 @@ export const useVideoStore = defineStore('video', () => {
       recordingMonitors[streamName] = setInterval(async () => {
         // Check if the stream is still recording before proceeding with checks
         if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
+          const msg = i18n.global.t(
+            "Recording for stream '{{streamName}}' has stopped. Stopping health monitor for this stream.",
+            { streamName }
+          )
           showDialog({ message: msg, variant: 'warning' })
           clearInterval(recordingMonitors[streamName])
           delete recordingMonitors[streamName]
@@ -706,13 +719,15 @@ export const useVideoStore = defineStore('video', () => {
         const fileStats = await window.electronAPI?.getFileStats(fileName, ['videos'])
         if (!fileStats || !fileStats.exists) {
           // eslint-disable-next-line
-          const msg = 'Cannot get size of the video output file. Please check if the file exists. This can indicate a problem with the recording.'
+          const msg = i18n.global.t('Cannot get size of the video output file. Please check if the file exists. This can indicate a problem with the recording.')
           showDialog({ message: msg, variant: 'error' })
           return
         }
         const lastKnownFileSize = unprocessedVideos.value[recordingHash].lastKnownFileSize
         if (fileStats.size! <= lastKnownFileSize!) {
-          showNotGrowingDialog('The video output file is not growing. This can indicate a problem with the recording.')
+          showNotGrowingDialog(
+            i18n.global.t('The video output file is not growing. This can indicate a problem with the recording.')
+          )
           return
         }
         unprocessedVideos.value[recordingHash].lastKnownFileSize = fileStats.size
@@ -723,7 +738,10 @@ export const useVideoStore = defineStore('video', () => {
       recordingMonitors[streamName] = setInterval(async () => {
         // Check if the stream is still recording before proceeding with checks
         if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
+          const msg = i18n.global.t(
+            "Recording for stream '{{streamName}}' has stopped. Stopping health monitor for this stream.",
+            { streamName }
+          )
           showDialog({ message: msg, variant: 'warning' })
           clearInterval(recordingMonitors[streamName])
           delete recordingMonitors[streamName]
@@ -734,8 +752,8 @@ export const useVideoStore = defineStore('video', () => {
         const lastKnownNumberOfChunks = unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks
         if (numberOfChunks <= lastKnownNumberOfChunks!) {
           showNotGrowingDialog(
-            'The number of video chunks is not growing. This can indicate a problem with the recording.'
-          )
+            i18n.global.t('The number of video chunks is not growing. This can indicate a problem with the recording.')
+            )
           return
         }
         unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks = numberOfChunks
@@ -842,10 +860,16 @@ export const useVideoStore = defineStore('video', () => {
                 console.warn(`Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
                 return
               }
-              const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
+              const msg = i18n.global.t('Failed to add chunk {{chunksCount}} to live processor: {{error}}', {
+                chunksCount,
+                error: error.message,
+              })
               openSnackbar({ message: msg, variant: 'error' })
             } else if (error instanceof LiveVideoProcessorInitializationError) {
-              const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
+              const msg = i18n.global.t('Failed to initialize live processor for stream {{streamName}}: {{error}}', {
+                streamName,
+                error: error.message,
+              })
               showDialog({ message: msg, variant: 'error' })
               alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
               stopRecording(streamName)
@@ -854,7 +878,7 @@ export const useVideoStore = defineStore('video', () => {
         }
       } catch {
         if (chunksCount === 0) {
-          const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
+          const msg = i18n.global.t('Failed to initiate recording. First chunk was lost. Try again.')
           showDialog({ message: msg, variant: 'error' })
           alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
           stopRecording(streamName)
@@ -915,7 +939,7 @@ export const useVideoStore = defineStore('video', () => {
       try {
         await generateTelemetryOverlay(recordingHash)
       } catch (telemetryError) {
-        openSnackbar({ message: `Failed to generate telemetry overlay: ${telemetryError}`, variant: 'error' })
+        openSnackbar({ message: i18n.global.t('Failed to generate telemetry overlay.'), variant: 'error' })
       }
 
       if (activeStreams.value[streamName]) {
@@ -1185,9 +1209,18 @@ export const useVideoStore = defineStore('video', () => {
         console.log(`Cleaned up all resources for external stream '${externalId}'`)
       }
 
-      openSnackbar({ variant: 'success', message: `Stream '${stream.name}' deleted and added to ignored list.` })
+      const successMessage =
+        streamProtocol === 'rtsp'
+          ? i18n.global.t("RTSP stream '{{streamName}}' deleted.", { streamName: stream.name })
+          : i18n.global.t("Stream '{{streamName}}' has been deleted and added to the ignored list.", {
+              streamName: stream.name,
+            })
+      openSnackbar({ variant: 'success', message: successMessage })
     } else {
-      openSnackbar({ variant: 'warning', message: `Stream with external ID '${externalId}' not found.` })
+      openSnackbar({
+        variant: 'warning',
+        message: i18n.global.t("Stream with external id '{{externalId}}' not found.", { externalId }),
+      })
     }
   }
 
@@ -1209,12 +1242,21 @@ export const useVideoStore = defineStore('video', () => {
       } else if (namesAvailableStreams.value.includes(externalId)) {
         initializeStreamsCorrespondency()
       } else {
-        openSnackbar({ variant: 'warning', message: `Stream '${externalId}' not available anymore.` })
+        openSnackbar({
+          variant: 'warning',
+          message: i18n.global.t("Stream '{{externalId}}' is no longer available.", { externalId }),
+        })
       }
 
-      openSnackbar({ variant: 'success', message: `Stream '${externalId}' restored from ignored list.` })
+      openSnackbar({
+        variant: 'success',
+        message: i18n.global.t("Stream '{{externalId}}' has been restored from the ignored list.", { externalId }),
+      })
     } else {
-      openSnackbar({ variant: 'warning', message: `Stream with external ID '${externalId}' not on ignored list.` })
+      openSnackbar({
+        variant: 'warning',
+        message: i18n.global.t("Stream with external id '{{externalId}}' is not in the ignored list.", { externalId }),
+      })
     }
   }
 

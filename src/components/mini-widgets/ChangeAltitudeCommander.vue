@@ -7,7 +7,9 @@
     :disabled="!vehicleStore.flying"
     @click="changeAlt()"
   >
-    <span class="inline-block font-extrabold align-middle text-white"> Change Alt </span>
+    <span class="inline-block font-extrabold align-middle text-white">
+      {{ $t('Change Alt') }}
+    </span>
   </button>
 </template>
 

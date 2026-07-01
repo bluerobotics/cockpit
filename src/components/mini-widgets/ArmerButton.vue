@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <button
     class="relative flex items-center justify-center w-32 p-1 rounded-md shadow-inner h-9 bg-slate-800/60"
     :class="{ 'cursor-not-allowed': !vehicleStore.isVehicleOnline }"
-    :title="!vehicleStore.isVehicleOnline ? 'Vehicle disconnected' : undefined"
+    :title="!vehicleStore.isVehicleOnline ? t('Vehicle disconnected') : undefined"
     @click="handleClick"
   >
     <div
@@ -18,6 +18,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useSnackbar } from '@/composables/snackbar'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
@@ -27,11 +28,12 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 const vehicleStore = useMainVehicleStore()
 const widgetStore = useWidgetManagerStore()
 const { openSnackbar } = useSnackbar()
+const { t } = useI18n()
 
 const stateLabel = computed(() => {
-  if (!vehicleStore.isVehicleOnline) return 'Offline'
+  if (!vehicleStore.isVehicleOnline) return t('Offline')
   if (vehicleStore.isArmed === undefined) return '...'
-  return vehicleStore.isArmed ? 'Armed' : 'Disarmed'
+  return vehicleStore.isArmed ? t('Armed') : t('Disarmed')
 })
 
 const stateClasses = computed(() => {
@@ -44,7 +46,7 @@ const stateClasses = computed(() => {
 const handleClick = (): void => {
   if (widgetStore.editingMode) return
   if (!vehicleStore.isVehicleOnline) {
-    openSnackbar({ message: 'Vehicle is disconnected.', variant: 'error', duration: 3000 })
+    openSnackbar({ message: t('Vehicle is disconnected.'), variant: 'error', duration: 3000 })
     return
   }
   if (vehicleStore.isArmed) {
@@ -59,7 +61,11 @@ const arm = async (): Promise<void> => {
     await slideToConfirm({ command: 'Arm' }, canByPassCategory(EventCategory.ARM))
     await vehicleStore.arm()
   } catch (error) {
-    openSnackbar({ message: `Arm request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+    openSnackbar({
+      message: `${t('Arm request failed')}: ${(error as Error).message}`,
+      variant: 'error',
+      duration: 3000,
+    })
   }
 }
 
@@ -68,7 +74,11 @@ const disarm = async (): Promise<void> => {
     await slideToConfirm({ command: 'Disarm' }, canByPassCategory(EventCategory.DISARM))
     await vehicleStore.disarm()
   } catch (error) {
-    openSnackbar({ message: `Disarm request failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+    openSnackbar({
+      message: `${t('Disarm request failed')}: ${(error as Error).message}`,
+      variant: 'error',
+      duration: 3000,
+    })
   }
 }
 </script>

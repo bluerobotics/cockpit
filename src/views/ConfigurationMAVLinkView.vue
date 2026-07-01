@@ -1,23 +1,30 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>MAVLink configuration</template>
+    <template #title>{{ $t('MAVLink configuration') }}</template>
     <template #content>
       <div class="max-h-[80vh] w-[730px] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>DataLake variables creation</template>
+          <template #title>{{ $t('DataLake variables creation') }}</template>
           <template #info>
             <ul class="list-disc pl-4 space-y-2">
               <li>
-                <strong>Variables from other systems:</strong> Enable creation of DataLake variables from MAVLink
-                messages originating from systems/components other than the main vehicle (System ID
-                {{ mainVehicleStore.mainVehicle?.systemId }}, Component ID 1). When enabled, variables from all MAVLink
-                systems on the network will be available in the DataLake.
+                <strong>{{ $t('Variables from other systems') }}:</strong>
+                {{
+                  $t(
+                    'Enable the creation of DataLake variables from MAVLink messages originating from systems/components other than the main vehicle (System ID {systemId}, Component ID 1). When enabled, variables from all MAVLink systems on the network will be available in the DataLake.',
+                    {
+                      systemId: mainVehicleStore.mainVehicle?.systemId,
+                    }
+                  )
+                }}
               </li>
               <li>
-                <strong>Legacy variable names:</strong> Creates duplicate variables with the old naming format for
-                backward compatibility. Enabled by default - users with old devices may want to disable this to improve
-                performance. If disabled, you will need to manually replace the usage of legacy variables with the new
-                ones in your widgets (e.g.: VGI, Plotter) and scripts (e.g.: DataLake Transforming functions).
+                <strong>{{ $t('Legacy variable names') }}:</strong>
+                {{
+                  $t(
+                    'Create duplicate variables with the old naming format for backwards compatibility. Enabled by default - users with older setups may want to disable this for performance. If disabled, you will need to manually replace usages of the legacy variables with the new ones in mini-widgets (e.g.: VGI, Plotter) and scripts (e.g.: DataLake transformation functions).'
+                  )
+                }}
               </li>
             </ul>
           </template>
@@ -26,25 +33,27 @@
               <v-switch
                 v-model="mainVehicleStore.enableDatalakeVariablesFromOtherSystems"
                 color="white"
-                label="Enable DataLake variables from other systems"
+                :label="$t('Enable DataLake variables from other systems')"
                 hide-details
               />
               <v-switch
                 v-model="mainVehicleStore.enableLegacyDataLakeVariableNames"
                 color="white"
-                label="Enable legacy variable names (e.g., 'ATTITUDE/roll')"
+                :label="legacyVariableNamesLabel"
                 hide-details
               />
             </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Message intervals</template>
+          <template #title>{{ $t('Message intervals') }}</template>
           <template #info>
             <p>
-              Configure the frequency at which each MAVLink message is requested from the vehicle. Higher frequencies
-              provide more responsive data but increase the load on the network and in the vehicle's CPU. If the message
-              is not already configured, you can add it to the interval configuration with the forms in the bottom.
+              {{
+                $t(
+                  "Configure the frequency at which each MAVLink message is requested from the vehicle. Higher frequencies provide more responsive data but increase the load on the network and in the vehicle's CPU. If the message is not already configured, you can add it to the interval configuration with the forms in the bottom."
+                )
+              }}
             </p>
           </template>
           <template #content>
@@ -53,7 +62,7 @@
                 <div class="flex flex-row justify-between items-center w-full mb-1">
                   <v-text-field
                     v-model="searchTerm"
-                    placeholder="Search messages"
+                    :placeholder="$t('Search messages')"
                     variant="plain"
                     density="compact"
                     hide-details
@@ -72,7 +81,7 @@
                     </template>
                   </v-text-field>
                   <v-btn size="small" variant="text" class="ml-4" @click="resetToCockpitDefault">
-                    Reset intervals to Cockpit defaults
+                    {{ $t('Reset intervals to Cockpit defaults') }}
                   </v-btn>
                 </div>
                 <v-data-table
@@ -93,12 +102,7 @@
                         <div class="flex flex items-center justify-between">
                           <v-select
                             v-model="item.intervalType"
-                            :items="[
-                              { title: 'Vehicle default', value: 'default' },
-                              { title: 'Disabled', value: 'disabled' },
-                              { title: 'Custom', value: 'custom' },
-                              { title: 'Don\'t touch', value: 'dontTouch' },
-                            ]"
+                            :items="intervalTypeOptions"
                             density="compact"
                             variant="outlined"
                             hide-details
@@ -150,12 +154,12 @@
                 theme="dark"
                 :style="interfaceStore.globalGlassMenuStyles"
               >
-                <span class="text-sm text-gray-200 mb-3">Set the interval for a new message</span>
+                <span class="text-sm text-gray-200 mb-3">{{ $t('Set the interval for a new message') }}</span>
                 <div class="flex flex-row items-center justify-between mb-2">
                   <v-select
                     v-model="newMessageType"
                     :items="availableMessageTypes"
-                    label="Message Type"
+                    :label="$t('Message Type')"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -163,13 +167,8 @@
                   />
                   <v-select
                     v-model="newIntervalType"
-                    :items="[
-                      { title: 'Vehicle default', value: 'default' },
-                      { title: 'Disabled', value: 'disabled' },
-                      { title: 'Custom', value: 'custom' },
-                      { title: 'Don\'t touch', value: 'dontTouch' },
-                    ]"
-                    label="Interval Type"
+                    :items="intervalTypeOptions"
+                    :label="$t('Interval Type')"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -215,7 +214,7 @@
                   :disabled="!newMessageType || !newIntervalType"
                   @click="addNewMessageInterval"
                 >
-                  Add new message
+                  {{ $t('Add new message') }}
                 </v-btn>
               </v-card>
             </div>
@@ -228,6 +227,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -237,8 +237,16 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
+const { t: $t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 const mainVehicleStore = useMainVehicleStore()
+const legacyVariableNamesLabel = $t("enable legacy variable names (e.g., 'ATTITUDE/roll')")
+const intervalTypeOptions = computed(() => [
+  { title: $t('Vehicle default'), value: 'default' },
+  { title: $t('Disabled'), value: 'disabled' },
+  { title: $t('Custom'), value: 'custom' },
+  { title: $t("Don't touch"), value: 'dontTouch' },
+])
 const searchTerm = ref('')
 
 // New message interval variables
@@ -247,8 +255,8 @@ const newIntervalType = ref<'default' | 'disabled' | 'custom' | 'dontTouch'>('de
 const newFrequency = ref(1)
 
 const headers = [
-  { title: 'Message', key: 'name', align: 'start' },
-  { title: 'Configuration', key: 'configuration', align: 'center' },
+  { title: $t('Message'), key: 'name', align: 'start' },
+  { title: $t('Configuration'), key: 'configuration', align: 'center' },
 ]
 
 // Convert message intervals to table items

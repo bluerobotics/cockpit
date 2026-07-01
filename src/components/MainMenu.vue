@@ -22,13 +22,13 @@
             >
               <GlassButton
                 v-if="route.name === 'widgets-view'"
-                :label="simplifiedMainMenu ? '' : 'Edit Interface'"
+                :label="simplifiedMainMenu ? '' : $t('Edit Interface')"
                 :selected="widgetStore.editingMode"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 :icon="simplifiedMainMenu ? 'mdi-pencil' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
+                :tooltip="simplifiedMainMenu ? $t('Edit Mode') : undefined"
                 :width="buttonSize"
                 @click="
                   () => {
@@ -40,12 +40,12 @@
               </GlassButton>
               <GlassButton
                 v-if="route.name !== 'widgets-view'"
-                :label="simplifiedMainMenu ? '' : 'Flight'"
+                :label="simplifiedMainMenu ? '' : $t('Flight')"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 :icon="simplifiedMainMenu ? 'mdi-send' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
+                :tooltip="simplifiedMainMenu ? $t('Flight') : undefined"
                 :width="buttonSize"
                 :selected="$route.name === 'Flight'"
                 @click="
@@ -58,12 +58,12 @@
               </GlassButton>
               <GlassButton
                 v-if="route.name !== 'Mission planning'"
-                :label="simplifiedMainMenu ? '' : 'Mission Planning'"
+                :label="simplifiedMainMenu ? '' : $t('Mission Planning')"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 :icon="simplifiedMainMenu ? 'mdi-map-marker-radius-outline' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
+                :tooltip="simplifiedMainMenu ? $t('Mission Planning') : undefined"
                 :width="buttonSize"
                 :selected="$route.name === 'Mission planning'"
                 @click="
@@ -75,12 +75,12 @@
                 ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon" />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : 'Settings'"
+                :label="simplifiedMainMenu ? '' : $t('Settings')"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 :icon="simplifiedMainMenu ? 'mdi-cog' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
+                :tooltip="simplifiedMainMenu ? $t('Configuration') : undefined"
                 :width="buttonSize"
                 :selected="showSubMenu"
                 class="mb-1"
@@ -94,12 +94,12 @@
                 ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : 'Tools'"
+                :label="simplifiedMainMenu ? '' : $t('Tools')"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 :icon="simplifiedMainMenu ? 'mdi-tools' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
+                :tooltip="simplifiedMainMenu ? $t('Tools') : undefined"
                 :width="buttonSize"
                 :selected="showSubMenu"
                 class="mb-1"
@@ -107,12 +107,14 @@
                 ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+                :label="simplifiedMainMenu ? '' : isFullscreen ? $t('Exit Fullscreen') : $t('Enter Fullscreen')"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 :icon="simplifiedMainMenu ? fullScreenToggleIcon : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
+                :tooltip="
+                  simplifiedMainMenu ? (isFullscreen ? $t('Exit Fullscreen') : $t('Enter Fullscreen')) : undefined
+                "
                 :button-class="simplifiedMainMenu ? '-mb-2' : ''"
                 :width="buttonSize"
                 :selected="false"
@@ -129,12 +131,12 @@
                 />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : 'About'"
+                :label="simplifiedMainMenu ? '' : $t('About')"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 :icon="simplifiedMainMenu ? 'mdi-information-outline' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'About' : undefined"
+                :tooltip="simplifiedMainMenu ? $t('About') : undefined"
                 :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
                 :width="buttonSize"
                 :selected="showSubMenu"
@@ -152,7 +154,7 @@
             <GlassButton
               v-for="menuitem in currentSubMenu"
               :key="menuitem.title"
-              :label="simplifiedMainMenu ? undefined : menuitem.title"
+              :label="simplifiedMainMenu ? undefined : $t(menuitem.title)"
               :label-class="menuLabelSize"
               :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
               :icon="menuitem.icon"
@@ -358,54 +360,63 @@ const configMenu = computed(() => {
     {
       icon: 'mdi-view-dashboard-variant',
       title: 'General',
+      titleKey: 'general',
       componentName: SubMenuComponentName.SettingsGeneral,
       component: markRaw(ConfigurationGeneralView) as SubMenuComponent,
     },
     {
       icon: 'mdi-monitor-cellphone',
       title: 'Interface',
+      titleKey: 'interface',
       componentName: SubMenuComponentName.SettingsInterface,
       component: markRaw(ConfigurationUIView) as SubMenuComponent,
     },
     {
       icon: 'mdi-controller',
       title: 'Joystick',
+      titleKey: 'joystick',
       componentName: SubMenuComponentName.SettingsJoystick,
       component: markRaw(ConfigurationJoystickView) as SubMenuComponent,
     },
     {
       icon: 'mdi-video',
       title: 'Video',
+      titleKey: 'video',
       componentName: SubMenuComponentName.SettingsVideo,
       component: markRaw(ConfigurationVideoView) as SubMenuComponent,
     },
     {
       icon: 'mdi-subtitles-outline',
       title: 'Telemetry',
+      titleKey: 'logs',
       componentName: SubMenuComponentName.SettingsTelemetry,
       component: markRaw(ConfigurationTelemetryView) as SubMenuComponent,
     },
     {
       icon: 'mdi-alert-rhombus-outline',
       title: 'Alerts',
+      titleKey: 'alerts',
       componentName: SubMenuComponentName.SettingsAlerts,
       component: markRaw(ConfigurationAlertsView) as SubMenuComponent,
     },
     {
       icon: 'mdi-dev-to',
       title: 'Dev',
+      titleKey: 'development',
       componentName: SubMenuComponentName.SettingsDev,
       component: markRaw(ConfigurationDevelopmentView) as SubMenuComponent,
     },
     {
       icon: 'mdi-map-marker-path',
       title: 'Mission',
+      titleKey: 'mission',
       componentName: SubMenuComponentName.SettingsMission,
       component: markRaw(ConfigurationMissionView) as SubMenuComponent,
     },
     {
       icon: 'mdi-run-fast',
       title: 'Actions',
+      titleKey: 'actions',
       componentName: SubMenuComponentName.SettingsActions,
       component: markRaw(ConfigurationActionsView) as SubMenuComponent,
     },
@@ -415,6 +426,7 @@ const configMenu = computed(() => {
     menusToShow.push({
       icon: 'mdi-protocol',
       title: 'MAVLink',
+      titleKey: 'mavlink',
       componentName: SubMenuComponentName.SettingsMAVLink,
       component: markRaw(ConfigurationMAVLinkView) as SubMenuComponent,
     })
@@ -427,12 +439,14 @@ const toolsMenu = computed(() => {
     {
       icon: 'mdi-protocol',
       title: 'MAVLink',
+      titleKey: 'mavlink',
       componentName: SubMenuComponentName.ToolsMAVLink,
       component: markRaw(ToolsMAVLinkView) as SubMenuComponent,
     },
     {
       icon: 'mdi-database-outline',
       title: 'Data-lake',
+      titleKey: 'dataLake',
       componentName: SubMenuComponentName.ToolsDataLake,
       component: markRaw(ToolsDataLakeView) as SubMenuComponent,
     },

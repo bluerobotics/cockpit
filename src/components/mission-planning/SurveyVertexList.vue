@@ -13,7 +13,7 @@
       :is-expanded="true"
     >
       <template #title>
-        <p class="ml-10 text-center text-[13px] font-normal">Survey Polygon Vertices</p>
+        <p class="ml-10 text-center text-[13px] font-normal">{{ $t('Survey polygon vertices') }}</p>
       </template>
       <template #content>
         <div class="flex flex-col gap-y-1 p-2 overflow-y-auto max-h-[calc(100vh-150px)]">
@@ -23,7 +23,7 @@
             class="flex flex-col bg-[#EEEEEE11] py-1 px-2 rounded-md mb-1"
           >
             <div class="flex justify-between items-center">
-              <span class="text-[11px] font-bold opacity-80">Vertex {{ index + 1 }}</span>
+              <span class="text-[11px] font-bold opacity-80">{{ $t('Vertex {number}', { number: index + 1 }) }}</span>
               <v-btn
                 icon="mdi-delete"
                 size="x-small"
@@ -35,7 +35,7 @@
             <v-divider class="border-white opacity-10 w-full my-1" />
             <div class="flex flex-col justify-center w-full items-center text-white">
               <div class="flex w-full gap-x-4 my-[2px] justify-between text-[11px] text-center">
-                <p class="w-[50px] text-start opacity-70">Latitude:</p>
+                <p class="w-[50px] text-start opacity-70">{{ $t('Latitude:') }}</p>
                 <input
                   type="number"
                   step="0.000001"
@@ -46,7 +46,7 @@
                 <p class="w-[10px] opacity-70">°</p>
               </div>
               <div class="flex w-full gap-x-4 my-[2px] justify-between text-[11px] text-center">
-                <p class="w-[50px] text-start opacity-70">Longitude:</p>
+                <p class="w-[50px] text-start opacity-70">{{ $t('Longitude:') }}</p>
                 <input
                   type="number"
                   step="0.000001"
@@ -66,10 +66,12 @@
 
 <script setup lang="ts">
 import L from 'leaflet'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
+const { t: $t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{

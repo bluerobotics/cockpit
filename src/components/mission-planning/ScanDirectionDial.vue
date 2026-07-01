@@ -17,8 +17,8 @@
       </div>
       <div class="w-[150px] ml-auto">
         <div v-show="hovering" class="flex flex-col items-center justify-center text-white mr-[14px] mt-[10px]">
-          <p class="text-xs -mb-1">Scan</p>
-          <p class="text-xs -mb-1">Direction</p>
+          <p class="text-xs -mb-1">{{ $t('Scan') }}</p>
+          <p class="text-xs -mb-1">{{ $t('Direction') }}</p>
           <p class="font-bold text-[30px] text-center text-[#FFFF00]">
             {{ getCardinalDirection(rotationAngle || 0) }}
           </p>

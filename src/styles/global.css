@@ -73,3 +73,27 @@ select:focus {
     0% { background-color: rgba(255, 234, 43, 0.438); }
     100% { background-color: transparent; }
 }
+
+.glass-menu {
+    background: rgba(30, 30, 30, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+}
+
+.glass-menu .v-list {
+    background: transparent !important;
+}
+
+.glass-menu .v-list-item {
+    background: transparent !important;
+}
+
+.glass-menu .v-list-item:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-menu .v-list-item--active {
+    background: rgba(255, 255, 255, 0.15) !important;
+}

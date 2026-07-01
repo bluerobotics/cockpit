@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>Development configuration</template>
+    <template #title>{{ $t('Development configuration') }}</template>
     <template #content>
       <div
         class="max-h-[85vh] overflow-y-auto -mr-2 mb-2"
@@ -12,8 +12,15 @@
         >
           <div class="flex flex-row flex-wrap justify-start gap-x-[20px]">
             <v-switch
+              v-model="devStore.developmentMode"
+              :label="$t('Development mode')"
+              color="white"
+              hide-details
+              class="min-w-[155px]"
+            />
+            <v-switch
               v-model="devStore.enableBlueOsSettingsSync"
-              label="BlueOS settings sync"
+              :label="$t('BlueOS settings sync')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -21,7 +28,7 @@
             />
             <v-switch
               v-model="devStore.enableSystemLogging"
-              label="Enable system logging"
+              :label="$t('Enable system logging')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -29,7 +36,7 @@
             />
             <v-switch
               v-model="devStore.showSplashScreenOnStartup"
-              label="Show splashscreen on startup"
+              :label="$t('Show splashscreen on startup')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -39,7 +46,7 @@
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
             <div class="flex justify-between items-center">
-              <span>System logs</span>
+              <span>{{ $t('System logs') }}</span>
               <div class="flex items-center gap-2">
                 <v-btn
                   variant="outlined"
@@ -48,10 +55,10 @@
                   prepend-icon="mdi-console-line"
                   @click.stop="devStore.showConsole = true"
                 >
-                  Open console
+                  {{ $t('Open console') }}
                 </v-btn>
                 <span class="text-sm text-gray-300 cursor-pointer" @click.stop="deleteOldLogs">
-                  <v-tooltip text="Delete old logs">
+                  <v-tooltip :text="$t('Delete old logs')">
                     <template #activator="{ props }">
                       <v-icon left class="mr-2" v-bind="props">mdi-delete-sweep</v-icon>
                     </template>
@@ -102,6 +109,7 @@ import { parse } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { onBeforeMount, onBeforeUnmount } from 'vue'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import {
@@ -117,6 +125,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
+const { t } = useI18n()
 const devStore = useDevelopmentStore()
 const interfaceStore = useAppInterfaceStore()
 
@@ -144,10 +153,10 @@ interface CurrentLogInfo {
 /* eslint-enable jsdoc/require-jsdoc */
 
 const headers = [
-  { title: 'Name', key: 'name', sortable: false },
-  { title: 'Date/Time', key: 'dateTimeMs', sortable: true },
-  { title: 'Size', key: 'sizeBytes', sortable: true },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: t('Name'), key: 'name', sortable: false },
+  { title: t('Date/Time'), key: 'dateTimeMs', sortable: true },
+  { title: t('Size'), key: 'sizeBytes', sortable: true },
+  { title: t('Actions'), key: 'actions', sortable: false },
 ]
 
 const updateCurrentSessionLogSize = async (): Promise<void> => {
