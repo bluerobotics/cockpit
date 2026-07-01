@@ -102,7 +102,10 @@
   <ArchitectureWarning v-if="isElectron()" />
   <SnackbarContainer />
   <FloatingWrapper v-model="devStore.showConsole" title="Console">
-    <ConsoleViewer :logging-enabled="devStore.enableSystemLogging" />
+    <ConsoleViewer
+      :disabled="!devStore.enableSystemLogging"
+      disabled-message="System logging is disabled — enable it above to capture console output."
+    />
   </FloatingWrapper>
   <SkullAnimation
     :is-visible="interfaceStore.showSkullAnimation"
