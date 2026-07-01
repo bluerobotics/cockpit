@@ -9,6 +9,7 @@
     <div :id="mapId" ref="map" class="map">
       <div
         v-show="showButtons"
+        ref="bottomButtonsRow"
         class="map-bottom-buttons absolute right-[52px] mb-3 bottom-button flex flex-row items-center"
         style="z-index: 1002; gap: 10px"
       >
@@ -28,6 +29,7 @@
             />
           </template>
         </v-tooltip>
+        <GeoFenceEnforcementControl />
         <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
           <template #activator="{ props: menuProps }">
             <v-tooltip location="top" text="Download tiles for offline use">
@@ -144,6 +146,11 @@
         :zoom="zoom"
         :widget="widget"
         :target-follower="targetFollower"
+      />
+      <GeoFenceMapLayer
+        v-if="fenceStore.lastUploadedPlan && fenceStore.fenceEnabled"
+        readonly
+        :plan="fenceStore.lastUploadedPlan"
       />
     </div>
   </div>
@@ -264,7 +271,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementHover } from '@vueuse/core'
+import { useDebounceFn, useElementHover, useElementSize } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
 import {
@@ -286,6 +293,8 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import GeoFenceEnforcementControl from '@/components/geofence/GeoFenceEnforcementControl.vue'
+import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
@@ -313,6 +322,7 @@ import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { copyToClipboard, degrees } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -340,6 +350,7 @@ const {
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const widgetStore = useWidgetManagerStore()
+const fenceStore = useGeoFenceStore()
 const router = useRouter()
 
 const mapContext = provideMapContext()
@@ -1771,6 +1782,25 @@ const bottomButtonsDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
 })
 
+const bottomButtonsRow = ref<HTMLElement>()
+const { width: bottomButtonsRowWidth } = useElementSize(bottomButtonsRow)
+
+// The row uses v-show, so its measured width drops to 0 while hidden; keep the
+// last non-zero width so the scale-control offset below does not jump each time
+// the row appears on hover.
+const lastBottomButtonsRowWidth = ref(0)
+watch(bottomButtonsRowWidth, (width) => {
+  if (width > 0) lastBottomButtonsRowWidth.value = width
+})
+
+// Anchor the Leaflet scale control to the left of the bottom-right button row
+// (container at right: 52px) instead of a hardcoded offset: the row width
+// changes with vehicle type (the fence control only mounts on ArduPilot) and
+// any future button, so a fixed value would drift.
+const scaleControlRightDisplacement = computed(() => {
+  return `${52 + Math.ceil(lastBottomButtonsRowWidth.value) + 1}px`
+})
+
 const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
 })
@@ -2196,7 +2226,7 @@ watch(
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 293px; /* Position to the left of the buttons */
+  right: v-bind('scaleControlRightDisplacement');
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
