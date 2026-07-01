@@ -26,6 +26,29 @@ export const singleStepZoomMapOptions: Pick<
 }
 
 /**
+ * Computes the great-circle (Haversine) distance, in meters, between two `[lat, lng]` coordinate pairs.
+ * Internally converts to turf's `[lng, lat]` order.
+ * @param {WaypointCoordinates} a - Starting coordinate as `[lat, lng]`
+ * @param {WaypointCoordinates} b - Ending coordinate as `[lat, lng]`
+ * @returns {number} Distance between the two coordinates, in meters
+ */
+export const segmentLengthMeters = (a: WaypointCoordinates, b: WaypointCoordinates): number => {
+  return turf.distance(turf.point([a[1], a[0]]), turf.point([b[1], b[0]]), { units: 'meters' })
+}
+
+/**
+ * Computes the arc length, in meters, of a polyline defined by an ordered list of `[lat, lng]` coordinates.
+ * Returns 0 when fewer than two coordinates are provided.
+ * @param {WaypointCoordinates[]} coordinates - Ordered polyline points as `[lat, lng]` pairs
+ * @returns {number} Total length of the polyline, in meters
+ */
+export const polylineLengthMeters = (coordinates: WaypointCoordinates[]): number => {
+  if (coordinates.length < 2) return 0
+  const line = turf.lineString(coordinates.map(([lat, lng]) => [lng, lat]))
+  return turf.length(line, { units: 'meters' })
+}
+
+/**
  * Enum for the different types of targets that can be followed.
  * @enum {string}
  */

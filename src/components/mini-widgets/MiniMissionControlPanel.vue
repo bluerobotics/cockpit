@@ -96,10 +96,54 @@
         </template>
       </v-tooltip>
       <v-divider vertical class="h-[25px] mt-[5px]" />
-      <div class="flex flex-col justify-between w-[46px] h-[33px] text-[8px] ml-1 mt-[4px]">
-        <div class="w-full text-nowrap text-center">Current WP</div>
-        <div class="mb-1 text-[12px] font-bold">{{ currentWaypointOnMission }}</div>
-      </div>
+      <v-menu
+        :open-on-hover="true"
+        :open-on-click="true"
+        :close-on-content-click="false"
+        location="top"
+        offset="6"
+        theme="dark"
+      >
+        <template #activator="{ props: wpProps }">
+          <div
+            v-bind="wpProps"
+            class="flex flex-col justify-between w-[46px] h-[33px] text-[8px] ml-1 mt-[4px] cursor-pointer"
+          >
+            <div class="w-full text-nowrap text-center">Current WP</div>
+            <div class="mb-1 text-[12px] font-bold">{{ currentWaypointOnMission }}</div>
+          </div>
+        </template>
+        <div
+          class="flex flex-col gap-1 px-3 py-2 rounded-md text-[11px] tabular-nums select-none"
+          :style="interfaceStore.globalGlassMenuStyles"
+        >
+          <div class="flex items-center justify-between gap-3 text-[#ffb85b]">
+            <div class="flex items-center gap-1">
+              <v-icon size="14" class="opacity-80">mdi-counter</v-icon>
+              <span class="opacity-80">Total:</span>
+            </div>
+            <span class="font-bold">{{ formattedTotalDistance }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-3 text-[#ffb85b]">
+            <span class="opacity-80">Mission:</span>
+            <div class="flex items-center gap-[3px]">
+              <v-tooltip location="top" open-delay="600" text="Reset mission distance">
+                <template #activator="{ props: resetProps }">
+                  <v-icon
+                    v-bind="resetProps"
+                    size="11"
+                    class="cursor-pointer opacity-70 hover:opacity-100"
+                    @click.stop="missionStore.resetMissionDistance()"
+                  >
+                    mdi-restore
+                  </v-icon>
+                </template>
+              </v-tooltip>
+              <span class="font-bold">{{ formattedMissionDistance }}</span>
+            </div>
+          </div>
+        </div>
+      </v-menu>
     </div>
   </div>
 </template>
@@ -109,6 +153,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { useTraveledDistances } from '@/composables/useTraveledDistances'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -139,6 +184,8 @@ const handleCruiseSpeedInput = (value: number): void => {
     })
   }, 300)
 }
+
+const { formattedTotalDistance, formattedMissionDistance } = useTraveledDistances()
 
 const handleReturnHome = (): void => {
   showDialog({
