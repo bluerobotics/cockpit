@@ -1,22 +1,28 @@
 import * as turf from '@turf/turf'
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultMapFallbackBaseColor, defaultMapFallbackNoiseIntensity } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { askForUsername } from '@/composables/usernamePrompDialog'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
+import { generateMissionThumbnail } from '@/libs/mission/library'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
+  CockpitMission,
   MapOverlayMeta,
   MapTileProvider,
   MapTileProviderPreference,
   MissionCommand,
+  MissionEstimatesSnapshot,
   PointOfInterest,
   PointOfInterestCoordinates,
+  SavedMission,
   Survey,
   Waypoint,
   WaypointCoordinates,
@@ -87,6 +93,13 @@ export const useMissionStore = defineStore('mission', () => {
   const mapClearRequestRevision = ref(0)
   const mapDownloadRequestRevision = ref(0)
   const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
+
+  // Fallback vehicle type used by vehicle-specific planning features when no vehicle is connected.
+  const plannedVehicleType = useBlueOsStorage<MavType | undefined>('cockpit-planned-vehicle-type', undefined)
+  // Thumbnails are stored separately from the saved missions so that adding many entries doesn't
+  // bloat the main library payload (each thumbnail is ~1-2 KB of base64 SVG).
+  const savedMissions = useBlueOsStorage<SavedMission[]>('cockpit-mission-library', [])
+  const savedMissionThumbnails = useBlueOsStorage<Record<string, string>>('cockpit-mission-library-thumbnails', {})
 
   const { showDialog } = useInteractionDialog()
 
@@ -659,6 +672,90 @@ export const useMissionStore = defineStore('mission', () => {
 
   watch(username, () => window.dispatchEvent(new CustomEvent('user-changed', { detail: { username: username.value } })))
 
+  // Prefers the connected vehicle's type and falls back to the planned type for offline planning.
+  // The fallback is gated on `isVehicleOnline` because `mainVehicleStore.vehicleType` is set on
+  // heartbeat but never cleared on disconnect, so a plain `??` would keep returning the stale
+  // last-connected type after the user goes offline.
+  const effectiveVehicleType = computed<MavType | undefined>(() => {
+    return mainVehicleStore.isVehicleOnline
+      ? (mainVehicleStore.vehicleType as MavType | undefined)
+      : plannedVehicleType.value
+  })
+
+  // When `payload.id` matches an existing entry that entry is updated in-place; otherwise a new
+  // entry is prepended.
+  const saveMissionToLibrary = (payload: {
+    /**
+     * Display name for the mission.
+     */
+    name: string
+    /**
+     * Optional description for the mission.
+     */
+    description: string
+    /**
+     * The mission data to persist.
+     */
+    mission: CockpitMission
+    /**
+     * Vehicle type the mission was planned for.
+     */
+    vehicleType?: MavType
+    /**
+     * Mission estimates captured at save time.
+     */
+    estimates?: MissionEstimatesSnapshot
+    /**
+     * Existing entry id to update, or undefined to create a new one.
+     */
+    id?: string
+  }): SavedMission => {
+    const now = Date.now()
+    const thumbnail = generateMissionThumbnail(payload.mission)
+    const existingIndex = payload.id ? savedMissions.value.findIndex((m) => m.id === payload.id) : -1
+
+    if (existingIndex !== -1) {
+      const existing = savedMissions.value[existingIndex]
+      const updated: SavedMission = {
+        ...payload.mission,
+        id: existing.id,
+        name: payload.name,
+        description: payload.description,
+        vehicleType: payload.vehicleType,
+        createdAt: existing.createdAt,
+        updatedAt: now,
+        estimates: payload.estimates,
+      }
+      savedMissions.value.splice(existingIndex, 1, updated)
+      savedMissionThumbnails.value = { ...savedMissionThumbnails.value, [updated.id]: thumbnail }
+      return updated
+    }
+
+    const created: SavedMission = {
+      ...payload.mission,
+      id: uuid(),
+      name: payload.name,
+      description: payload.description,
+      vehicleType: payload.vehicleType,
+      createdAt: now,
+      updatedAt: now,
+      estimates: payload.estimates,
+    }
+    savedMissions.value.unshift(created)
+    savedMissionThumbnails.value = { ...savedMissionThumbnails.value, [created.id]: thumbnail }
+    return created
+  }
+
+  const deleteSavedMission = (id: string): void => {
+    const index = savedMissions.value.findIndex((m) => m.id === id)
+    if (index !== -1) savedMissions.value.splice(index, 1)
+    if (savedMissionThumbnails.value[id]) {
+      const next = { ...savedMissionThumbnails.value }
+      delete next[id]
+      savedMissionThumbnails.value = next
+    }
+  }
+
   return {
     username,
     lastConnectedUser,
@@ -738,5 +835,11 @@ export const useMissionStore = defineStore('mission', () => {
     canRedo,
     clearUndoStack,
     homeMarkerPosition,
+    plannedVehicleType,
+    effectiveVehicleType,
+    savedMissions,
+    savedMissionThumbnails,
+    saveMissionToLibrary,
+    deleteSavedMission,
   }
 })
