@@ -50,85 +50,18 @@
           />
         </template>
       </v-tooltip>
-      <v-speed-dial
-        v-model="speedDialOpen"
-        location="top center"
-        transition="slide-y-reverse-transition"
-        content-class="speed-dial-glow"
-      >
-        <template #activator="{ props: activatorProps }">
-          <v-tooltip location="top" :text="centerActivatorTooltipText" :disabled="speedDialOpen">
-            <template #activator="{ props: tooltipProps }">
-              <v-btn
-                v-if="showButtons"
-                v-bind="{ ...activatorProps, ...tooltipProps }"
-                class="absolute right-[44px] m-3 bottom-button bg-slate-50 text-[14px]"
-                :style="interfaceStore.globalGlassMenuStyles"
-                :color="followerTarget !== undefined ? 'red' : ''"
-                elevation="2"
-                style="z-index: 1002; border-radius: 0px"
-                icon="mdi-crosshairs-gps"
-                size="x-small"
-              />
-            </template>
-          </v-tooltip>
-        </template>
-        <v-tooltip location="left" :text="centerMissionButtonTooltipText">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              key="mission"
-              v-bind="tooltipProps"
-              class="bg-slate-50 text-[14px]"
-              :style="[interfaceStore.globalGlassMenuStyles, !hasMissionWaypoints ? { color: '#FFFFFF33' } : {}]"
-              :class="!hasMissionWaypoints ? 'active-events-on-disabled' : ''"
-              elevation="2"
-              style="border-radius: 0px"
-              icon="mdi-map-marker-path"
-              size="x-small"
-              :disabled="!hasMissionWaypoints"
-              @click.stop="centerOnMission"
-            />
-          </template>
-        </v-tooltip>
-        <v-tooltip location="left" :text="centerHomeButtonTooltipText">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              key="home"
-              v-bind="tooltipProps"
-              class="bg-slate-50 text-[14px]"
-              :style="[interfaceStore.globalGlassMenuStyles, !home ? { color: '#FFFFFF33' } : {}]"
-              :class="!home ? 'active-events-on-disabled' : ''"
-              :color="followerTarget == WhoToFollow.HOME ? 'red' : ''"
-              elevation="2"
-              style="border-radius: 0px"
-              icon="mdi-home-search"
-              size="x-small"
-              :disabled="!home"
-              @click.stop="centerOnHome"
-              @dblclick.stop="followHome"
-            />
-          </template>
-        </v-tooltip>
-        <v-tooltip location="left" :text="centerVehicleButtonTooltipText">
-          <template #activator="{ props: tooltipProps }">
-            <v-btn
-              key="vehicle"
-              v-bind="tooltipProps"
-              class="bg-slate-50 text-[14px]"
-              :style="[interfaceStore.globalGlassMenuStyles, !vehiclePosition ? { color: '#FFFFFF33' } : {}]"
-              :class="!vehiclePosition ? 'active-events-on-disabled' : ''"
-              :color="followerTarget == WhoToFollow.VEHICLE ? 'red' : ''"
-              elevation="2"
-              style="border-radius: 0px"
-              icon="mdi-airplane-marker"
-              size="x-small"
-              :disabled="!vehiclePosition"
-              @click.stop="centerOnVehicle"
-              @dblclick.stop="followVehicle"
-            />
-          </template>
-        </v-tooltip>
-      </v-speed-dial>
+      <MapCenterControl
+        v-if="showButtons"
+        v-model:open="speedDialOpen"
+        :target-follower="targetFollower"
+        :follower-target="followerTarget"
+        :home="home"
+        :vehicle-position="vehiclePosition"
+        :is-vehicle-online="vehicleStore.isVehicleOnline"
+        :has-mission-waypoints="hasMissionWaypoints"
+        :activator-style="{ bottom: bottomButtonsDisplacement }"
+        @center-on-mission="centerOnMission"
+      />
       <MapNorthIndicator class="north-indicator" />
       <PoiMapArrows
         :map-ready="mapReady"
@@ -295,6 +228,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
+import MapCenterControl from '@/components/MapCenterControl.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -368,6 +302,7 @@ const map = shallowRef<Map | undefined>()
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const mapId = computed(() => `map-${widget.value.hash}`)
+const speedDialOpen = ref(false)
 const showButtons = computed(
   () => isMouseOver.value || downloadMenuOpen.value || speedDialOpen.value || widgetStore.isFullScreen(widget.value)
 )
@@ -382,7 +317,6 @@ let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
 let seamarksSaveBtn: HTMLAnchorElement | undefined
 const downloadMenuOpen = ref(false)
-const speedDialOpen = ref(false)
 const missionItemsInVehicle = ref<Waypoint[]>([])
 const missionSeqToMarkerSeq = shallowRef<Record<number, number>>({})
 
@@ -1868,29 +1802,6 @@ const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
 })
 
-const centerHomeButtonTooltipText = computed(() => {
-  if (home.value === undefined) {
-    return 'Cannot center map on home (home position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.HOME) {
-    return 'Tracking home position. Click to stop tracking.'
-  }
-  return 'Click once to center on home or twice to track it.'
-})
-
-const centerVehicleButtonTooltipText = computed(() => {
-  if (!vehicleStore.isVehicleOnline) {
-    return 'Cannot center map on vehicle (vehicle offline).'
-  }
-  if (vehiclePosition.value === undefined) {
-    return 'Cannot center map on vehicle (vehicle position undefined).'
-  }
-  if (followerTarget.value === WhoToFollow.VEHICLE) {
-    return 'Tracking vehicle position. Click to stop tracking.'
-  }
-  return 'Click once to center on vehicle or twice to track it.'
-})
-
 const missionFitCoordinates = computed<WaypointCoordinates[]>(() => {
   const drawn = mapWaypoints.value.map((wp) => wp.coordinates)
   if (drawn.length > 0) return drawn
@@ -1899,42 +1810,9 @@ const missionFitCoordinates = computed<WaypointCoordinates[]>(() => {
 
 const hasMissionWaypoints = computed(() => missionFitCoordinates.value.length > 0)
 
-const centerMissionButtonTooltipText = computed(() => {
-  if (!hasMissionWaypoints.value) {
-    return 'Cannot center map on mission (no waypoints loaded).'
-  }
-  return 'Click to center the map on the current mission.'
-})
-
-const centerActivatorTooltipText = computed(() => {
-  if (followerTarget.value === WhoToFollow.HOME) return 'Tracking home position. Open to change target.'
-  if (followerTarget.value === WhoToFollow.VEHICLE) return 'Tracking vehicle position. Open to change target.'
-  return 'Center map on home, vehicle or mission.'
-})
-
 const navigateToMissionPlanning = (): void => {
   logUserAction('Navigated to Mission Planning from map widget')
   router.push('/mission-planning')
-}
-
-const centerOnHome = (): void => {
-  logUserAction('Centered map on home')
-  targetFollower.goToTarget(WhoToFollow.HOME, true)
-}
-
-const followHome = (): void => {
-  logUserAction('Started following home on map')
-  targetFollower.follow(WhoToFollow.HOME)
-}
-
-const centerOnVehicle = (): void => {
-  logUserAction('Centered map on vehicle')
-  targetFollower.goToTarget(WhoToFollow.VEHICLE, true)
-}
-
-const followVehicle = (): void => {
-  logUserAction('Started following vehicle on map')
-  targetFollower.follow(WhoToFollow.VEHICLE)
 }
 
 const centerOnMission = (): void => {
@@ -2238,33 +2116,6 @@ const centerOnMission = (): void => {
   }
   50% {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 0);
-  }
-}
-
-.speed-dial-glow {
-  isolation: isolate;
-}
-
-.speed-dial-glow::before {
-  content: '';
-  position: absolute;
-  inset: -8px -10px -7px -10px;
-  border-radius: 4px;
-  background: rgba(30, 30, 30, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  pointer-events: none;
-  z-index: -1;
-  animation: speed-dial-glow-in 180ms ease-out;
-}
-
-@keyframes speed-dial-glow-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }
 </style>
