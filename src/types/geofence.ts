@@ -94,6 +94,138 @@ export interface GeoFencePlan {
 }
 
 /**
+ * Cockpit-native fence file. Wraps a `GeoFencePlan` in a small envelope so
+ * the file can be unambiguously identified on import (cf. `.cmp` mission
+ * files).
+ */
+export interface CockpitFencePlanFile {
+  /**
+   * Cockpit fence file version. Currently `0`.
+   */
+  version: number
+  /**
+   * Discriminator used by the importer.
+   */
+  fileType: 'CockpitFencePlan'
+  /**
+   * The actual fence plan.
+   */
+  plan: GeoFencePlan
+}
+
+/**
+ * Subset of the MAVLink-ecosystem `.plan` JSON document we need to parse
+ * and emit for round-tripping with other ground stations. We only model
+ * the `geoFence` block exhaustively; the `mission` and `rallyPoints`
+ * blocks are treated as opaque so we can preserve them on round-trip.
+ */
+export interface MavlinkPlanFile {
+  /**
+   * Always `'Plan'` for a `.plan` file.
+   */
+  fileType: 'Plan'
+  /**
+   * Plan-file schema version.
+   */
+  version: number
+  /**
+   * Originating ground station name.
+   */
+  groundStation?: string
+  /**
+   * Mission section (kept opaque for round-trip).
+   */
+  mission?: unknown
+  /**
+   * Rally points section (kept opaque for round-trip).
+   */
+  rallyPoints?: unknown
+  /**
+   * Geofence section.
+   */
+  geoFence?: {
+    /**
+     * Schema version. Cockpit only reads `version === 2`.
+     */
+    version: number
+    /**
+     * Polygons array (`.plan` schema).
+     */
+    polygons?: {
+      /**
+       * Per-polygon schema version.
+       */
+      version: number
+      /**
+       * Whether the polygon is an inclusion fence.
+       */
+      inclusion: boolean
+      /**
+       * Vertex list, each `[lat, lon]`.
+       */
+      polygon: [number, number][]
+    }[]
+    /**
+     * Circles array (`.plan` schema).
+     */
+    circles?: {
+      /**
+       * Per-circle schema version.
+       */
+      version: number
+      /**
+       * Whether the circle is an inclusion fence.
+       */
+      inclusion: boolean
+      /**
+       * Center coordinates and radius.
+       */
+      circle: {
+        /**
+         * Center coordinates `[lat, lon]`.
+         */
+        center: [number, number]
+        /**
+         * Radius in meters.
+         */
+        radius: number
+      }
+    }[]
+    /**
+     * Breach return point as `[lat, lon, alt]`.
+     */
+    breachReturn?: [number, number, number]
+  }
+}
+
+/**
+ * Validates that a parsed JSON object is a `CockpitFencePlanFile`.
+ * @param { unknown } maybeFile The parsed JSON to inspect.
+ * @returns { boolean } True if the object is a valid Cockpit fence file.
+ */
+export const instanceOfCockpitFencePlanFile = (maybeFile: unknown): maybeFile is CockpitFencePlanFile => {
+  if (!maybeFile || typeof maybeFile !== 'object') return false
+  const f = maybeFile as Partial<CockpitFencePlanFile>
+  if (f.fileType !== 'CockpitFencePlan') return false
+  if (typeof f.version !== 'number') return false
+  return instanceOfGeoFencePlan(f.plan)
+}
+
+/**
+ * Lightweight envelope check for a MAVLink-ecosystem `.plan` file.
+ * Validates only the outer `fileType === 'Plan'` discriminator and that
+ * `version` is a number; the inner `mission` / `geoFence` blocks are not
+ * inspected and must be validated by the caller before use.
+ * @param { unknown } maybeFile The parsed JSON to inspect.
+ * @returns { boolean } True if the object looks like a `.plan` envelope.
+ */
+export const instanceOfMavlinkPlanFile = (maybeFile: unknown): maybeFile is MavlinkPlanFile => {
+  if (!maybeFile || typeof maybeFile !== 'object') return false
+  const f = maybeFile as Partial<MavlinkPlanFile>
+  return f.fileType === 'Plan' && typeof f.version === 'number'
+}
+
+/**
  * Validates that a parsed object conforms to the `GeoFencePlan` shape.
  * @param { unknown } maybePlan The parsed JSON to inspect.
  * @returns { boolean } True if the object is a valid `GeoFencePlan`.
