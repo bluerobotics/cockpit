@@ -307,7 +307,7 @@ import {
   WhoToFollow,
 } from '@/libs/map/utils-map'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { degrees } from '@/libs/utils'
+import { copyToClipboard, degrees } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -1415,6 +1415,11 @@ const menuItems = reactive([
     icon: 'mdi-image-plus',
     _isOverlay: true,
   },
+  {
+    item: 'Copy coordinates',
+    action: () => onMenuOptionSelect('copy-coordinates'),
+    icon: 'mdi-content-copy',
+  },
   { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
   {
     item: 'Set default map position',
@@ -1579,6 +1584,19 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
 
     case 'set-default-map-position':
       setDefaultMapPosition()
+      break
+
+    case 'copy-coordinates':
+      if (clickedLocation.value) {
+        const coordinates = `${clickedLocation.value[0].toFixed(7)}, ${clickedLocation.value[1].toFixed(7)}`
+        try {
+          await copyToClipboard(coordinates)
+          logUserAction('Copied map coordinates from the context menu')
+          openSnackbar({ message: `Coordinates copied: ${coordinates}`, variant: 'success' })
+        } catch (error) {
+          openSnackbar({ message: `Failed to copy coordinates: ${(error as Error).message}`, variant: 'error' })
+        }
+      }
       break
 
     case 'add-overlay':
