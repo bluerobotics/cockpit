@@ -308,6 +308,7 @@ import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
@@ -325,7 +326,13 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { IconDimensions, MarkerSizes, PointOfInterest, Waypoint, WaypointCoordinates } from '@/types/mission'
+import type {
+  IconDimensions,
+  MarkerSizes,
+  ResolvedPointOfInterest,
+  Waypoint,
+  WaypointCoordinates,
+} from '@/types/mission'
 import type { Widget } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
@@ -350,6 +357,8 @@ const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const widgetStore = useWidgetManagerStore()
 const router = useRouter()
+
+const { removePointOfInterest } = usePointsOfInterest()
 
 const mapContext = provideMapContext()
 
@@ -588,7 +597,7 @@ const updateGotoTarget = (coordinates: WaypointCoordinates): Promise<void> =>
 
 const poiGoTo = useMapPoiGoTo(poiMarkers, { issueGoto, updateGotoTarget })
 
-const onPoiEdit = (poi: PointOfInterest): void => {
+const onPoiEdit = (poi: ResolvedPointOfInterest): void => {
   if (!poiManagerMapWidgetRef.value) {
     openSnackbar({ message: 'POI Manager (map widget) is not available.', variant: 'error' })
     return
@@ -596,11 +605,11 @@ const onPoiEdit = (poi: PointOfInterest): void => {
   poiManagerMapWidgetRef.value.openDialog(undefined, poi)
 }
 
-const onPoiDelete = async (poi: PointOfInterest): Promise<void> => {
+const onPoiDelete = async (poi: ResolvedPointOfInterest): Promise<void> => {
   if (poiMarkers.gotoTargetId.value === poi.id) {
     await poiGoTo.onPoiCancelGoTo()
   }
-  missionStore.removePointOfInterest(poi.id)
+  removePointOfInterest(poi.id)
 }
 
 // Register the usage of the coordinate variables for logging

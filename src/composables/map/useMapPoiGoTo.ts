@@ -2,10 +2,10 @@ import { useThrottleFn } from '@vueuse/core'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { distanceInMeters } from '@/libs/map/utils-map'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { useMissionStore } from '@/stores/mission'
-import type { PointOfInterest, WaypointCoordinates } from '@/types/mission'
+import type { ResolvedPointOfInterest, WaypointCoordinates } from '@/types/mission'
 
 import type { UseMapPoiMarkersReturn } from './useMapPoiMarkers'
 
@@ -45,10 +45,10 @@ export interface UseMapPoiGoToReturn {
   /**
    * Issues a GoTo to the given PoI and flags it as the active target until it's reached, cancelled, or
    * the vehicle leaves the GoTo state on its own (disarm or flight mode change).
-   * @param {PointOfInterest} poi - The PoI to send the vehicle to.
+   * @param {ResolvedPointOfInterest} poi - The PoI to send the vehicle to.
    * @returns {Promise<void>} Resolves once the GoTo command has been issued.
    */
-  onPoiGoTo: (poi: PointOfInterest) => Promise<void>
+  onPoiGoTo: (poi: ResolvedPointOfInterest) => Promise<void>
   /**
    * Cancels the active PoI GoTo by switching the vehicle to its position-hold flight mode.
    * @returns {Promise<void>} Resolves once the cancel command has been issued (or failed and been reported).
@@ -75,7 +75,7 @@ export const useMapPoiGoTo = (
   options: UseMapPoiGoToOptions
 ): UseMapPoiGoToReturn => {
   const vehicleStore = useMainVehicleStore()
-  const missionStore = useMissionStore()
+  const { resolvedPointsOfInterest } = usePointsOfInterest()
 
   // Vehicle state an active PoI GoTo expects, used to drop the highlight when the user disarms or
   // changes flight mode outside of the GoTo flow. Mode tracking only starts once the arm + GUIDED
@@ -105,7 +105,7 @@ export const useMapPoiGoTo = (
     openSnackbar({ message, variant: 'info' })
   }
 
-  const onPoiGoTo = async (poi: PointOfInterest): Promise<void> => {
+  const onPoiGoTo = async (poi: ResolvedPointOfInterest): Promise<void> => {
     poiMarkers.setGotoTarget(poi.id)
     resetPoiGotoTracking()
     lastIssuedCoordinates = poi.coordinates
@@ -134,7 +134,7 @@ export const useMapPoiGoTo = (
   )
 
   watch(
-    () => missionStore.pointsOfInterest.find((poi) => poi.id === poiMarkers.gotoTargetId.value)?.coordinates,
+    () => resolvedPointsOfInterest.value.find((poi) => poi.id === poiMarkers.gotoTargetId.value)?.coordinates,
     (coordinates) => {
       if (!coordinates || !lastIssuedCoordinates) return
       if (distanceInMeters(lastIssuedCoordinates, coordinates) < followMinDistanceMeters) return
