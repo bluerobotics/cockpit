@@ -1,4 +1,4 @@
-import { app, BrowserWindow, powerSaveBlocker, protocol, screen } from 'electron'
+import { app, BrowserWindow, powerSaveBlocker, protocol, screen, shell } from 'electron'
 import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
@@ -52,6 +52,25 @@ function createWindow(): void {
   })
 
   linkService.setMainWindow(mainWindow)
+
+  // Route external links to the OS preferred browser instead of opening them inside Electron
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('mailto:')) {
+      shell.openExternal(url)
+      return { action: 'deny' }
+    }
+    return { action: 'allow' }
+  })
+
+  // Keep in-app navigation inside Cockpit, but hand external links off to the OS browser
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const appUrl = process.env.VITE_DEV_SERVER_URL
+    const isInternal = appUrl ? url.startsWith(appUrl) : url.startsWith('file:')
+    if (!isInternal && (url.startsWith('http:') || url.startsWith('https:'))) {
+      event.preventDefault()
+      shell.openExternal(url)
+    }
+  })
 
   mainWindow.on('move', () => {
     const windowBounds = mainWindow!.getBounds()
