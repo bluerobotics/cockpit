@@ -604,3 +604,28 @@ export const computeVertexAngle = (
 
   return { angleDeg, arc, labelAt: arc[Math.floor(arc.length / 2)] ?? null }
 }
+
+/**
+ * Vertex triples whose interior angle is reshaped by moving the waypoint at `index`: the moved vertex and each
+ * immediate neighbor that itself has two neighbors (endpoints have no interior angle).
+ * @param {{ coordinates: WaypointCoordinates }[]} waypoints - The ordered path waypoints.
+ * @param {number} index - Index of the waypoint being moved.
+ * @returns {[WaypointCoordinates, WaypointCoordinates, WaypointCoordinates][]} The affected `[prev, curr, next]` triples.
+ */
+export const affectedAngleTriples = (
+  waypoints: {
+    /**
+     * The waypoint coordinates.
+     */
+    coordinates: WaypointCoordinates
+  }[],
+  index: number
+): [WaypointCoordinates, WaypointCoordinates, WaypointCoordinates][] => {
+  const triples: [WaypointCoordinates, WaypointCoordinates, WaypointCoordinates][] = []
+  for (const j of [index - 1, index, index + 1]) {
+    if (j >= 1 && j <= waypoints.length - 2) {
+      triples.push([waypoints[j - 1].coordinates, waypoints[j].coordinates, waypoints[j + 1].coordinates])
+    }
+  }
+  return triples
+}
