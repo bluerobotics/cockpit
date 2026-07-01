@@ -6,6 +6,7 @@ import {
   calculateHaversineDistance,
   computeMissionDurationSecondsFromLegs,
   convexHullSquareMeters,
+  formatMetersShort,
 } from '@/libs/mission/general-estimates'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -45,7 +46,6 @@ export const useMissionEstimates = (): {
   totalMissionDuration: ComputedRef<string>
   totalMissionEnergy: ComputedRef<string>
   missionLegsWithSpeed: ComputedRef<MissionLeg[]>
-  formatMetersShort: (distance: number) => string
   formatArea: (area: number) => string
   formatSeconds: (s: number) => string
   formatWh: (energy: number) => string
@@ -149,12 +149,6 @@ export const useMissionEstimates = (): {
     return Object.values(surveyAreaSquareMetersById.value).reduce((a, b) => a + b, 0)
   })
 
-  const formatMetersShort = (distance: number): string => {
-    if (!isFinite(distance) || distance <= 0) return '—'
-    if (distance < 1000) return `${distance.toFixed(0)} m`
-    return `${(distance / 1000).toFixed(2)} km`
-  }
-
   const formatSeconds = (s: number): string => {
     if (!isFinite(s) || s <= 0) return '—'
     const time = Math.floor(s / 3600)
@@ -201,7 +195,6 @@ export const useMissionEstimates = (): {
     totalMissionDuration,
     totalMissionEnergy,
     missionLegsWithSpeed,
-    formatMetersShort,
     formatArea,
     formatSeconds,
     formatWh,
