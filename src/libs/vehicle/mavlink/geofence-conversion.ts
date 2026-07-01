@@ -2,7 +2,14 @@ import { v4 as uuid } from 'uuid'
 
 import { MavCmd, MavFrame, MAVLinkType, MavMissionType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
-import type { BreachReturnPoint, FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
+import type {
+  BreachReturnPoint,
+  FenceCircle,
+  FenceLatLng,
+  FencePolygon,
+  GeoFencePlan,
+  MavlinkPlanFile,
+} from '@/types/geofence'
 
 export { emptyGeoFencePlan } from '@/libs/geo-fence'
 
@@ -210,4 +217,73 @@ export const convertMavlinkToGeoFencePlan = (items: Message.MissionItemInt[]): G
   }
 
   return { version: 2, polygons, circles, breachReturn }
+}
+
+/**
+ * Serializes a `GeoFencePlan` into a MAVLink-ecosystem `.plan` file document so
+ * a Cockpit fence can round-trip with other ground stations. The `mission` and
+ * `rallyPoints` blocks are emitted as empty stubs — Cockpit only owns the
+ * `geoFence` section of the file.
+ * @param { GeoFencePlan } plan The fence plan to serialize.
+ * @param { FenceLatLng } plannedHomePosition `[lat, lon]` written as the planned home position.
+ * @returns { MavlinkPlanFile } The `.plan` file document, ready to be stringified.
+ */
+export const geoFencePlanToMavlinkPlanFile = (
+  plan: GeoFencePlan,
+  plannedHomePosition: FenceLatLng
+): MavlinkPlanFile => ({
+  fileType: 'Plan',
+  version: 1,
+  groundStation: 'Cockpit',
+  mission: { version: 2, items: [], plannedHomePosition: [plannedHomePosition[0], plannedHomePosition[1], 0] },
+  geoFence: {
+    version: 2,
+    polygons: plan.polygons.map((p) => ({
+      version: 1,
+      inclusion: p.inclusion,
+      polygon: p.vertices.map((v): [number, number] => [v[0], v[1]]),
+    })),
+    circles: plan.circles.map((c) => ({
+      version: 1,
+      inclusion: c.inclusion,
+      circle: { center: [c.center[0], c.center[1]], radius: c.radius },
+    })),
+    breachReturn: plan.breachReturn
+      ? [plan.breachReturn.coordinates[0], plan.breachReturn.coordinates[1], plan.breachReturn.altitude]
+      : undefined,
+  },
+  rallyPoints: { version: 2, points: [] },
+})
+
+/**
+ * Parses the `geoFence` section of a MAVLink-ecosystem `.plan` file into a
+ * `GeoFencePlan`. Returns `undefined` when the file carries an unsupported
+ * `geoFence` version (only version 2 is understood) so callers can surface the
+ * mismatch to the user.
+ * @param { MavlinkPlanFile } planFile The parsed `.plan` file document.
+ * @returns { GeoFencePlan | undefined } The decoded plan, or `undefined` on an unsupported version.
+ */
+export const mavlinkPlanFileToGeoFencePlan = (planFile: MavlinkPlanFile): GeoFencePlan | undefined => {
+  if (planFile.geoFence?.version !== 2) return undefined
+
+  return {
+    version: 2,
+    polygons: (planFile.geoFence.polygons ?? []).map((p) => ({
+      id: uuid(),
+      inclusion: p.inclusion,
+      vertices: p.polygon.map((v): [number, number] => [v[0], v[1]]),
+    })),
+    circles: (planFile.geoFence.circles ?? []).map((c) => ({
+      id: uuid(),
+      inclusion: c.inclusion,
+      center: [c.circle.center[0], c.circle.center[1]],
+      radius: c.circle.radius,
+    })),
+    breachReturn: planFile.geoFence.breachReturn
+      ? {
+          coordinates: [planFile.geoFence.breachReturn[0], planFile.geoFence.breachReturn[1]],
+          altitude: planFile.geoFence.breachReturn[2],
+        }
+      : undefined,
+  }
 }
