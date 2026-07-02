@@ -7,6 +7,7 @@ import { defaultJoystickCalibration } from '@/assets/defaults'
 import { blankMapping } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { closeSnackbar, openSnackbar } from '@/composables/snackbar'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
 import {
   joystickCalibrationOptionsKey,
@@ -279,6 +280,31 @@ export const useControllerStore = defineStore('controller', () => {
     logUserAction('Dismissed the multiple-joysticks selection dialog without selecting')
     multipleJoysticksDialogOpen.value = false
   }
+
+  // Warn the user when the single connected joystick is disabled, since its input is silently dropped and the
+  // situation is easy to miss (the setting persists and syncs through the vehicle).
+  const singleConnectedJoystickIsDisabled = computed(() => {
+    const connectedJoysticks = Array.from(joysticks.value.values())
+    return connectedJoysticks.length === 1 && disabledJoysticks.value.includes(connectedJoysticks[0].model)
+  })
+
+  let disabledJoystickSnackbarId: number | null = null
+  watch(
+    singleConnectedJoystickIsDisabled,
+    (isDisabled) => {
+      if (isDisabled && disabledJoystickSnackbarId === null) {
+        disabledJoystickSnackbarId = openSnackbar({
+          message: 'A joystick is connected but disabled. Go to the joystick configuration page to enable it back.',
+          variant: 'warning',
+          persistent: true,
+        })
+      } else if (!isDisabled && disabledJoystickSnackbarId !== null) {
+        closeSnackbar(disabledJoystickSnackbarId)
+        disabledJoystickSnackbarId = null
+      }
+    },
+    { immediate: true }
+  )
 
   // Disable joystick forwarding if the window/tab is not visible (except on Electron)
   const windowVisibility = useDocumentVisibility()
