@@ -418,11 +418,15 @@ export const checkForOtherManualControlSources = async (vehicleAddress: string):
     // Try both available manual control / joystick protocols
     const messageNames = ['MANUAL_CONTROL', 'RC_CHANNELS_OVERRIDE']
 
+    // Bound each request so a slow or unresponsive BlueOS doesn't keep the joystick disabled indefinitely. On
+    // timeout the request throws and is handled like any other failure, falling through to "no other source found".
+    const requestTimeout = 2000
+
     for (const componentId of componentIds) {
       for (const messageName of messageNames) {
         try {
           const endpoint = `${protocol}//${vehicleAddress}:6040/v1/mavlink/vehicles/255/components/${componentId}/messages/${messageName}`
-          const response = await fetch(endpoint)
+          const response = await fetch(endpoint, { signal: AbortSignal.timeout(requestTimeout) })
 
           if (!response.ok) continue
 
