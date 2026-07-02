@@ -8,11 +8,28 @@ import { deserialize, isEqual } from '@/libs/utils'
 import type { CockpitSetting } from '@/types/settings-management'
 
 // Idle time a value must stay stable before it is persisted to the settings manager / BlueOS.
-const settingsSyncDebounceMs = 3000
+const defaultSettingsSyncDebounceMs = 3000
 
 // Upper bound on how long a continuously-changing value can keep deferring its write, so
 // high-frequency writers still get checkpointed instead of the debounce resetting forever.
-const settingsSyncMaxWaitMs = 30000
+const defaultSettingsSyncMaxWaitMs = 30000
+
+/**
+ * Per-key overrides for the settings-sync write timing.
+ */
+type BlueOsStorageOptions = {
+  /**
+   * Idle time in milliseconds the value must stay stable before it is written. Defaults to
+   * `defaultSettingsSyncDebounceMs`.
+   */
+  debounceMs?: number
+  /**
+   * Maximum time in milliseconds a continuously-changing value can defer its write before being
+   * forced out, so high-frequency writers still get checkpointed. Defaults to
+   * `defaultSettingsSyncMaxWaitMs`.
+   */
+  maxWaitMs?: number
+}
 
 /**
  * This composable will keep a setting in sync between the browser's local storage and BlueOS.
@@ -29,9 +46,16 @@ const settingsSyncMaxWaitMs = 30000
  *  is the local value.
  * @param { string } key
  * @param { T } defaultValue
+ * @param { BlueOsStorageOptions } [options] - Per-key overrides for the write debounce and max-wait
  * @returns { RemovableRef<T> }
  */
-export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): RemovableRef<T> {
+export function useBlueOsStorage<T>(
+  key: string,
+  defaultValue: MaybeRef<T>,
+  options: BlueOsStorageOptions = {}
+): RemovableRef<T> {
+  const debounceMs = options.debounceMs ?? defaultSettingsSyncDebounceMs
+  const maxWaitMs = options.maxWaitMs ?? defaultSettingsSyncMaxWaitMs
   const unrefedDefaultValue = unref(defaultValue)
   const valueOnLocalStorage = settingsManager.getKeyValue(key)
   let watchUpdaterTimeout: ReturnType<typeof setTimeout> | undefined = undefined
@@ -78,9 +102,9 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
       }
 
       // Clamp the debounce so a value that keeps changing is still forced out once it has been
-      // pending for `settingsSyncMaxWaitMs`, instead of the reset-on-every-change debounce never firing.
-      const remainingMaxWait = Math.max(0, settingsSyncMaxWaitMs - (Date.now() - firstPendingChangeEpoch))
-      const writeDelay = Math.min(settingsSyncDebounceMs, remainingMaxWait)
+      // pending for `maxWaitMs`, instead of the reset-on-every-change debounce never firing.
+      const remainingMaxWait = Math.max(0, maxWaitMs - (Date.now() - firstPendingChangeEpoch))
+      const writeDelay = Math.min(debounceMs, remainingMaxWait)
 
       watchUpdaterTimeout = setTimeout(() => {
         const diffInValue = diff(oldRefedValue, newValue, {
