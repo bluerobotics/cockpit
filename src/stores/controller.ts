@@ -176,7 +176,7 @@ export const useControllerStore = defineStore('controller', () => {
 
       if (thereWereJoysticksBefore && enableForwarding.value) {
         console.warn('There are joysticks connected and forwarding already. Skipping joystick conflict check.')
-        return
+        continue
       }
 
       // Check if other GCS is sending MANUAL_CONTROL messages
