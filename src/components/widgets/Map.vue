@@ -154,6 +154,15 @@
   >
   </ContextMenu>
 
+  <PoiActionPopup
+    ref="poiPopupRef"
+    :goto-target-id="poiGotoTargetId"
+    @goto="poiGoTo.onPoiGoTo"
+    @cancel-goto="poiGoTo.onPoiCancelGoTo"
+    @edit="onPoiEdit"
+    @delete="onPoiDelete"
+  />
+
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">Map widget settings</v-card-title>
@@ -287,11 +296,14 @@ import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
+import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
+import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
+import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
@@ -415,6 +427,7 @@ const onTouchStart = (e: TouchEvent): void => {
   if (e.touches.length > 1) {
     isPinching.value = true
     if (contextMenuVisible.value) hideContextMenuAndMarker()
+    poiPopupRef.value?.close()
     clearTimeout(pinchTimeout)
   }
 }
@@ -528,7 +541,70 @@ const refreshReachedWaypointMarkerStyles = (): void => {
 }
 
 const poiManagerMapWidgetRef = ref<typeof PoiManager | null>(null)
-const mapWidgetPoiMarkers = shallowRef<{ [id: string]: L.Marker }>({})
+const poiPopupRef = ref<InstanceType<typeof PoiActionPopup> | null>(null)
+
+const poiMarkers = useMapPoiMarkers(map, {
+  iconClassName: 'poi-marker-icon-widget',
+  tooltipClassName: 'poi-tooltip-widget',
+  onContextMenu: (poi, event) => {
+    if (contextMenuVisible.value) hideContextMenuAndMarker()
+    poiPopupRef.value?.open(poi, event)
+  },
+})
+const poiGotoTargetId = poiMarkers.gotoTargetId
+
+// Sends a GoTo-family MAVLink command to the vehicle for the given coordinates, reporting failures via
+// the given message. Shared by the regular map-click GoTo flow, PoI GoTo, and PoI-follow target updates.
+const sendGoToCommand = async (
+  coordinates: WaypointCoordinates,
+  failureMessage: string,
+  skipConfirmation = false
+): Promise<void> => {
+  const hold = 0
+  const acceptanceRadius = 0
+  const passRadius = 0
+  const yaw = 0
+  const altitude = vehicleStore.coordinates.altitude ?? 0
+
+  try {
+    await vehicleStore.goTo(
+      hold,
+      acceptanceRadius,
+      passRadius,
+      yaw,
+      coordinates[0],
+      coordinates[1],
+      altitude,
+      skipConfirmation
+    )
+  } catch (error) {
+    openSnackbar({ message: `${failureMessage}: ${(error as Error).message}`, variant: 'error' })
+    throw error
+  }
+}
+
+const issueGoto = (coordinates: WaypointCoordinates): Promise<void> =>
+  sendGoToCommand(coordinates, 'GoTo request failed')
+
+const updateGotoTarget = (coordinates: WaypointCoordinates): Promise<void> =>
+  sendGoToCommand(coordinates, 'Failed to update GoTo target', true)
+
+const poiGoTo = useMapPoiGoTo(poiMarkers, { issueGoto, updateGotoTarget })
+
+const onPoiEdit = (poi: PointOfInterest): void => {
+  if (!poiManagerMapWidgetRef.value) {
+    openSnackbar({ message: 'POI Manager (map widget) is not available.', variant: 'error' })
+    return
+  }
+  poiManagerMapWidgetRef.value.openDialog(undefined, poi)
+}
+
+const onPoiDelete = async (poi: PointOfInterest): Promise<void> => {
+  if (poiMarkers.gotoTargetId.value === poi.id) {
+    await poiGoTo.onPoiCancelGoTo()
+  }
+  missionStore.removePointOfInterest(poi.id)
+}
 
 // Register the usage of the coordinate variables for logging
 datalogger.registerUsage(DatalogVariable.latitude)
@@ -755,6 +831,7 @@ onMounted(async () => {
 
   map.value.on('click', (event: LeafletMouseEvent) => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
+    poiPopupRef.value?.close()
   })
 
   // Update center value after panning
@@ -920,6 +997,8 @@ const handleContextMenu = {
     event.preventDefault()
     event.stopPropagation()
 
+    poiPopupRef.value?.close()
+
     const pt = map.value.mouseEventToContainerPoint(event)
     const ll = map.value.containerPointToLatLng(pt)
     clickedLocation.value = [ll.lat, ll.lng]
@@ -930,11 +1009,11 @@ const handleContextMenu = {
 }
 
 const clearMapDrawing = (): void => {
-  const poiMarkers = new Set(Object.values(mapWidgetPoiMarkers.value))
+  const poiMarkerSet = new Set(Object.values(poiMarkers.markers.value))
 
   map.value?.eachLayer((l) => {
     if (l instanceof L.Marker || (l instanceof L.Polyline && l.options.color === '#358AC3')) {
-      if (poiMarkers.has(l as L.Marker)) return
+      if (poiMarkerSet.has(l as L.Marker)) return
       map.value!.removeLayer(l)
     }
   })
@@ -1086,9 +1165,6 @@ onBeforeUnmount(() => {
 
   if (map.value) {
     map.value.off('contextmenu')
-    // Clean up POI markers
-    Object.values(mapWidgetPoiMarkers.value).forEach((marker) => marker.remove())
-    mapWidgetPoiMarkers.value = {}
   }
 
   mapBase.value?.removeEventListener('touchstart', onTouchStart)
@@ -1556,15 +1632,20 @@ const setDefaultMapPosition = async (): Promise<void> => {
   }
 }
 
-const executeGoToOption = async (): Promise<void> => {
-  if (!clickedLocation.value || !map.value) return
+const clearGotoMarker = (): void => {
+  if (!map.value || !gotoMarker.value) return
+  map.value.removeLayer(gotoMarker.value)
+  gotoMarker.value = undefined
+}
 
-  if (gotoMarker.value) {
-    map.value.removeLayer(gotoMarker.value)
-    gotoMarker.value = undefined
-  }
+// Places the regular GoTo marker on the map. Not used for PoI GoTo targets, which show the active state
+// via a pulsating border on the PoI marker itself (see useMapPoiMarkers and .poi-marker-goto-target styles).
+const placeGotoMarker = (coordinates: WaypointCoordinates): void => {
+  if (!map.value) return
 
-  gotoMarker.value = L.marker(clickedLocation.value as LatLngTuple, {
+  clearGotoMarker()
+
+  gotoMarker.value = L.marker(coordinates as LatLngTuple, {
     icon: L.divIcon({
       className: 'marker-icon',
       iconSize: [24, 24],
@@ -1580,30 +1661,15 @@ const executeGoToOption = async (): Promise<void> => {
     opacity: 1,
   })
   gotoMarker.value.bindTooltip(gotoTooltip)
-
-  if (clickedLocation.value) {
-    // Define default values
-    const hold = 0
-    const acceptanceRadius = 0
-    const passRadius = 0
-    const yaw = 0
-    const altitude = vehicleStore.coordinates.altitude ?? 0
-
-    const latitude = clickedLocation.value[0]
-    const longitude = clickedLocation.value[1]
-
-    try {
-      await vehicleStore.goTo(hold, acceptanceRadius, passRadius, yaw, latitude, longitude, altitude)
-    } catch (error) {
-      openSnackbar({ message: `GoTo request failed: ${(error as Error).message}`, variant: 'error' })
-    }
-  }
 }
 
 const onMenuOptionSelect = async (option: string): Promise<void> => {
   switch (option) {
     case 'goto': {
-      executeGoToOption()
+      if (!clickedLocation.value) break
+      poiGoTo.clearTarget()
+      placeGotoMarker(clickedLocation.value)
+      await issueGoto(clickedLocation.value)
       break
     }
 
@@ -1702,6 +1768,7 @@ const onGlobalOriginSet = (latitude: number, longitude: number): void => {
 const onKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
     hideContextMenuAndMarker()
+    poiPopupRef.value?.close()
     return
   }
 }
@@ -1842,140 +1909,6 @@ const centerOnMission = (): void => {
   targetFollower.unFollow()
   fitMapToWaypoints(map.value, missionFitCoordinates.value)
 }
-
-// POI Marker Management Functions for Map Widget
-const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
-  const poiIconHtml = `
-    <div class="poi-marker-container">
-      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
-      <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
-    </div>
-  `
-
-  return {
-    html: poiIconHtml,
-    className: 'poi-marker-icon-widget',
-    iconSize: [32, 32], // Match the actual container size
-    iconAnchor: [16, 32], // Center horizontally, bottom vertically (like a pin)
-  }
-}
-
-const addPoiMarkerToMapWidget = (poi: PointOfInterest): void => {
-  if (!map.value || !map.value.getContainer()) return
-
-  const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
-
-  const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(map.value)
-
-  const tooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip-widget' }
-  marker.bindTooltip(tooltipContent, tooltipConfig)
-
-  marker.on('drag', (event) => {
-    const newCoords = event.target.getLatLng()
-    const updatedTooltipContent = `
-      <strong>${poi.name}</strong><br>
-      ${poi.description ? poi.description + '<br>' : ''}
-      Lat: ${newCoords.lat.toFixed(8)}, Lng: ${newCoords.lng.toFixed(8)}
-    `
-    marker.getTooltip()?.setContent(updatedTooltipContent)
-  })
-
-  marker.on('dragend', (event) => {
-    const newCoords = event.target.getLatLng()
-    missionStore.movePointOfInterest(poi.id, [newCoords.lat, newCoords.lng])
-  })
-
-  marker.on('click', (event) => {
-    L.DomEvent.stopPropagation(event)
-    if (poiManagerMapWidgetRef.value) {
-      // Get fresh POI data from store instead of using potentially stale poi object
-      const freshPoi = missionStore.pointsOfInterest.find((p) => p.id === poi.id)
-      if (freshPoi) {
-        poiManagerMapWidgetRef.value.openDialog(undefined, freshPoi)
-      } else {
-        console.warn('POI not found in store:', poi.id)
-      }
-    }
-  })
-
-  mapWidgetPoiMarkers.value[poi.id] = marker
-}
-
-const updatePoiMarkerOnMapWidget = (poi: PointOfInterest): void => {
-  if (!map.value || !map.value.getContainer() || !mapWidgetPoiMarkers.value[poi.id]) return
-
-  const marker = mapWidgetPoiMarkers.value[poi.id]
-  marker.setLatLng(poi.coordinates as LatLngTuple)
-
-  marker.setIcon(L.divIcon(poiIconConfig(poi)))
-
-  const updatedTooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  marker.getTooltip()?.setContent(updatedTooltipContent)
-}
-
-const removePoiMarkerFromMapWidget = (poiId: string): void => {
-  if (!map.value || !mapWidgetPoiMarkers.value[poiId]) return
-
-  mapWidgetPoiMarkers.value[poiId].remove()
-  delete mapWidgetPoiMarkers.value[poiId]
-}
-
-// Watch for changes in POIs from the store and update markers on this map widget
-watch(
-  () => missionStore.pointsOfInterest,
-  async (newPois) => {
-    if (!map.value || !map.value.getContainer()) {
-      await nextTick() // Wait for map to potentially become available
-      if (!map.value || !map.value.getContainer()) {
-        console.warn('Map.vue: POI watcher - map not ready after nextTick.')
-        return
-      }
-    }
-
-    const newPoiIds = new Set(newPois.map((p) => p.id))
-
-    Object.keys(mapWidgetPoiMarkers.value).forEach((poiId) => {
-      if (!newPoiIds.has(poiId)) {
-        removePoiMarkerFromMapWidget(poiId)
-      }
-    })
-
-    newPois.forEach((poi) => {
-      if (mapWidgetPoiMarkers.value[poi.id]) {
-        updatePoiMarkerOnMapWidget(poi)
-      } else {
-        addPoiMarkerToMapWidget(poi)
-      }
-    })
-  },
-  { deep: true, immediate: true }
-)
-
-// Ensure POIs are drawn when the map instance becomes available
-watch(
-  map,
-  (currentMapInstance) => {
-    if (currentMapInstance && currentMapInstance.getContainer()) {
-      missionStore.pointsOfInterest.forEach((poi) => {
-        if (!mapWidgetPoiMarkers.value[poi.id]) {
-          addPoiMarkerToMapWidget(poi)
-        } else {
-          updatePoiMarkerOnMapWidget(poi) // Update if already exists, in case details changed
-        }
-      })
-    }
-  },
-  { immediate: true }
-)
 </script>
 
 <style scoped>
@@ -2254,6 +2187,26 @@ watch(
 </style>
 
 <style>
+/* Unscoped because Leaflet creates the marker DOM imperatively (no scope attribute applied).
+   Uses box-shadow with a positive spread for the active border so the effect is drawn outside
+   the bg circle (revealing the map when transparent) and follows the circular border-radius.
+   The static 1px border is hidden during the active state so only the pulsating ring remains. */
+.poi-marker-background.poi-marker-goto-target {
+  border-color: transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 1);
+  animation: poi-marker-goto-target-pulse 1s ease-in-out infinite;
+}
+
+@keyframes poi-marker-goto-target-pulse {
+  0%,
+  100% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 1);
+  }
+  50% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 0);
+  }
+}
+
 .speed-dial-glow {
   isolation: isolate;
 }

@@ -727,6 +727,7 @@ import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
+import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useSnackbar } from '@/composables/snackbar'
 import {
@@ -769,7 +770,6 @@ import {
   MarkerSizes,
   MissionCommand,
   MissionCommandType,
-  PointOfInterest,
   Survey,
   SurveyPath,
 } from '@/types/mission'
@@ -1324,7 +1324,11 @@ const handleOpenMissionSettings = (): void => {
 }
 
 const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)
-const planningPoiMarkers = shallowRef<{ [id: string]: L.Marker }>({})
+useMapPoiMarkers(planningMap, {
+  iconClassName: 'poi-marker-icon',
+  tooltipClassName: 'poi-tooltip',
+  onClick: (poi) => poiManagerRef.value?.openDialog(undefined, poi),
+})
 
 const clearCurrentMission = (): void => {
   missionStore.clearMission()
@@ -4376,144 +4380,6 @@ const openPoiDialog = (): void => {
   }
   hideContextMenu()
 }
-
-// POI Marker Management Functions for MissionPlanningView
-const poiIconConfig = (poi: PointOfInterest): L.DivIconOptions => {
-  const poiIconHtml = `
-    <div class="poi-marker-container">
-      <div class="poi-marker-background" style="background-color: ${poi.color}80;"></div>
-      <i class="v-icon notranslate mdi ${poi.icon}" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
-    </div>
-  `
-
-  return {
-    html: poiIconHtml,
-    className: 'poi-marker-icon',
-    iconSize: [32, 32], // Match the actual container size
-    iconAnchor: [16, 32], // Center horizontally, bottom vertically (like a pin)
-  }
-}
-
-// POI Marker Management Functions for MissionPlanningView
-const addPoiMarkerToPlanningMap = (poi: PointOfInterest): void => {
-  if (!planningMap.value || !planningMap.value.getContainer()) return
-
-  const poiMarkerIcon = L.divIcon(poiIconConfig(poi))
-
-  const marker = L.marker(poi.coordinates as LatLngTuple, { icon: poiMarkerIcon, draggable: true }).addTo(
-    planningMap.value
-  )
-
-  const tooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  const tooltipConfig = { permanent: false, direction: 'top', offset: [0, -40], className: 'poi-tooltip' }
-  marker.bindTooltip(tooltipContent, tooltipConfig)
-
-  marker.on('drag', (event) => {
-    const newCoords = event.target.getLatLng()
-    const updatedTooltipContent = `
-      <strong>${poi.name}</strong><br>
-      ${poi.description ? poi.description + '<br>' : ''}
-      Lat: ${newCoords.lat.toFixed(8)}, Lng: ${newCoords.lng.toFixed(8)}
-    `
-    marker.getTooltip()?.setContent(updatedTooltipContent)
-  })
-
-  marker.on('dragend', (event) => {
-    const newCoords = event.target.getLatLng()
-    missionStore.movePointOfInterest(poi.id, [newCoords.lat, newCoords.lng])
-  })
-
-  marker.on('click', (event) => {
-    L.DomEvent.stopPropagation(event)
-    if (poiManagerRef.value) {
-      poiManagerRef.value.openDialog(undefined, poi)
-    }
-  })
-
-  planningPoiMarkers.value[poi.id] = marker
-}
-
-const updatePoiMarkerOnPlanningMap = (poi: PointOfInterest): void => {
-  if (!planningMap.value || !planningMap.value.getContainer() || !planningPoiMarkers.value[poi.id]) return
-
-  const marker = planningPoiMarkers.value[poi.id]
-  marker.setLatLng(poi.coordinates as LatLngTuple)
-
-  marker.setIcon(L.divIcon(poiIconConfig(poi)))
-
-  const updatedTooltipContent = `
-    <strong>${poi.name}</strong><br>
-    ${poi.description ? poi.description + '<br>' : ''}
-    Lat: ${poi.coordinates[0].toFixed(8)}, Lng: ${poi.coordinates[1].toFixed(8)}
-  `
-  marker.getTooltip()?.setContent(updatedTooltipContent)
-}
-
-const removePoiMarkerFromPlanningMap = (poiId: string): void => {
-  if (!planningMap.value || !planningPoiMarkers.value[poiId]) return
-
-  planningPoiMarkers.value[poiId].remove()
-  delete planningPoiMarkers.value[poiId]
-}
-
-// Watch for changes in POIs from the store and update markers
-watch(
-  () => missionStore.pointsOfInterest,
-  async (newPois) => {
-    if (!planningMap.value || !planningMap.value.getContainer()) {
-      // Defer if map not ready, try again on next tick or when map becomes available
-      await nextTick()
-      if (!planningMap.value || !planningMap.value.getContainer()) {
-        console.warn('MissionPlanningView: POI watcher - planningMap not ready after nextTick.')
-        return
-      }
-    }
-
-    const newPoiIds = new Set(newPois.map((p) => p.id))
-
-    // Remove markers for POIs that no longer exist
-    Object.keys(planningPoiMarkers.value).forEach((poiId) => {
-      if (!newPoiIds.has(poiId)) {
-        removePoiMarkerFromPlanningMap(poiId)
-      }
-    })
-
-    // Add or update markers
-    newPois.forEach((poi) => {
-      if (planningPoiMarkers.value[poi.id]) {
-        updatePoiMarkerOnPlanningMap(poi)
-      } else {
-        addPoiMarkerToPlanningMap(poi)
-      }
-    })
-  },
-  { deep: true, immediate: true }
-)
-
-// Ensure POIs are drawn when the map becomes available, if not already handled by immediate watcher
-watch(
-  planningMap,
-  (currentMap) => {
-    if (currentMap && currentMap.getContainer()) {
-      // Map is ready, ensure all POIs from the store are drawn
-      // This helps if POIs loaded from store before mapInstance was fully initialized
-      // or if the immediate watcher for pointsOfInterest ran too early.
-      missionStore.pointsOfInterest.forEach((poi) => {
-        if (!planningPoiMarkers.value[poi.id]) {
-          addPoiMarkerToPlanningMap(poi)
-        } else {
-          // Potentially update if details changed while map was not ready
-          updatePoiMarkerOnPlanningMap(poi)
-        }
-      })
-    }
-  },
-  { immediate: true }
-) // Immediate to catch initial map state
 </script>
 
 <style>
