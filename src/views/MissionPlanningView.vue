@@ -150,6 +150,34 @@
           {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
         </button>
         <div
+          v-if="!isCreatingSurvey && !isCreatingSimplePath && !vehicleStore.isVehicleOnline"
+          class="flex flex-col mx-4 my-2 gap-y-1"
+        >
+          <div class="flex flex-row justify-between items-center">
+            <p class="text-sm">Planning for</p>
+            <v-tooltip
+              location="top"
+              text="No vehicle connected. Pick the vehicle type so vehicle-specific planning features show up."
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-icon v-bind="tooltipProps" size="14" class="opacity-70">mdi-information-outline</v-icon>
+              </template>
+            </v-tooltip>
+          </div>
+          <v-select
+            v-model="missionStore.plannedVehicleType"
+            :items="plannedVehicleTypeItems"
+            item-title="label"
+            item-value="value"
+            hide-details
+            density="compact"
+            theme="dark"
+            variant="outlined"
+            class="text-sm"
+            @update:model-value="onPlannedVehicleTypeChange"
+          />
+        </div>
+        <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
         >
@@ -386,29 +414,15 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Save mission to file">
+            <v-tooltip location="top" text="Mission library">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
-                  icon="mdi-content-save"
-                  variant="text"
-                  :disabled="missionStore.currentPlanningWaypoints.length === 0"
-                  size="24"
-                  class="text-[12px]"
-                  @click="saveMissionToFile"
-                />
-              </template>
-            </v-tooltip>
-            <v-divider vertical />
-            <v-tooltip location="top" text="Load mission from file">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="mdi-upload"
+                  icon="mdi-bookshelf"
                   variant="text"
                   size="24"
                   class="text-[12px]"
-                  @click="loadMissionFromFile"
+                  @click="openMissionLibrary"
                 />
               </template>
             </v-tooltip>
@@ -696,15 +710,20 @@
     </p>
   </div>
   <MissionEstimatesPanel v-if="!speedDialOpen" v-model="missionStore.showMissionEstimates" />
+  <MissionLibraryModal
+    v-if="interfaceStore.isMissionLibraryVisible"
+    :current-mission-snapshot="currentMissionSnapshot"
+    :current-mission-estimates="currentMissionEstimatesSnapshot"
+    :effective-vehicle-type="missionStore.effectiveVehicleType"
+    @load-mission="handleLoadMissionFromLibrary"
+  />
 </template>
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-edgebuffer'
 
-import { useDebounceFn, useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useWindowSize, watchDebounced } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
-import { format } from 'date-fns'
-import { saveAs } from 'file-saver'
 import L, { type LatLngTuple, LayersControlEvent, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
@@ -720,6 +739,7 @@ import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimate
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
+import MissionLibraryModal from '@/components/MissionLibraryModal.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
@@ -749,6 +769,7 @@ import {
 } from '@/libs/map/utils-map'
 import { generateSurveyPath } from '@/libs/map/utils-map'
 import { centroidLatLng, polygonAreaSquareMeters } from '@/libs/mission/general-estimates'
+import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
 import { degrees } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -758,6 +779,8 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { Point2D } from '@/types/general'
 import {
   type CockpitMission,
+  type MissionEstimatesSnapshot,
+  type SavedMission,
   type Waypoint,
   type WaypointCoordinates,
   AltitudeReferenceType,
@@ -986,6 +1009,11 @@ const availableFrames = Object.values(AltitudeReferenceType).map((value: Altitud
   name: value,
   value,
 }))
+const plannedVehicleTypeItems = PLANNABLE_VEHICLE_TYPES
+
+const onPlannedVehicleTypeChange = (value?: MavType): void => {
+  logUserAction(`Selected "${vehicleTypeLabel(value)}" as the planning vehicle type`)
+}
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
@@ -2719,29 +2747,6 @@ const handleShouldUpdateWaypoints = (): void => {
   updateWaypointMarkers()
 }
 
-const saveMissionToFile = async (): Promise<void> => {
-  // Commit the local cruise speed back to the store so the chosen value persists across sessions.
-  missionStore.defaultCruiseSpeed = localCruiseSpeed.value
-
-  const cockpitMissionFile: CockpitMission = {
-    version: 0,
-    settings: {
-      mapCenter: mapCenter.value,
-      zoom: zoom.value,
-      currentWaypointAltitude: currentWaypointAltitude.value,
-      currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
-      defaultCruiseSpeed: localCruiseSpeed.value,
-    },
-    waypoints: missionStore.currentPlanningWaypoints,
-    surveys: [...missionStore.currentPlanningSurveys],
-  }
-  const blob = new Blob([JSON.stringify(cockpitMissionFile, null, 2)], {
-    type: 'application/json',
-  })
-  const date = format(new Date(), 'LLL_dd_yyyy_HH_mm_ss')
-  saveAs(blob, `cockpit_mission_plan_${date}.cmp`)
-}
-
 const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
   waypoints
     .map((wp) => ({
@@ -2755,44 +2760,6 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
     })
 
   updateWaypointMarkers()
-}
-
-const loadMissionFromFile = (): void => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.cmp,application/json'
-  input.onchange = (event: Event): void => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (e: ProgressEvent<FileReader>): void => {
-      try {
-        const contents = e.target?.result
-        if (typeof contents !== 'string') {
-          showDialog({ variant: 'error', message: 'File does not appear to be in the correct format.', timer: 3000 })
-          return
-        }
-        const maybeMission = JSON.parse(contents)
-        if (!instanceOfCockpitMission(maybeMission)) {
-          showDialog({ variant: 'error', message: 'Invalid mission file.', timer: 3000 })
-          return
-        }
-        mapCenter.value = maybeMission['settings']['mapCenter']
-        zoom.value = maybeMission['settings']['zoom']
-        currentWaypointAltitude.value = maybeMission['settings']['currentWaypointAltitude']
-        currentWaypointAltitudeRefType.value = maybeMission['settings']['currentWaypointAltitudeRefType']
-        missionStore.defaultCruiseSpeed = maybeMission['settings']['defaultCruiseSpeed']
-        drawMissionOnTheMap(maybeMission['waypoints'])
-        if (maybeMission['surveys']?.length) {
-          missionStore.currentPlanningSurveys.push(...maybeMission['surveys'])
-        }
-      } catch (error) {
-        showDialog({ variant: 'error', message: `Failed to load mission file: ${error}`, timer: 5000 })
-      }
-    }
-    reader.readAsText(file)
-  }
-  input.click()
 }
 
 const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
@@ -3729,6 +3696,82 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
   } catch (error) {
     openSnackbar({ variant: 'error', message: `Failed to load draft mission: ${error}`, duration: 3000 })
   }
+}
+
+// Backed by a debounced watcher so the deep clone runs at most once per change burst, instead of
+// firing on every reactive read of the prop while the library modal is open.
+const buildCurrentMissionSnapshot = (): CockpitMission => ({
+  version: 0,
+  settings: {
+    mapCenter: mapCenter.value,
+    zoom: zoom.value,
+    currentWaypointAltitude: currentWaypointAltitude.value,
+    currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
+    // Use the local (in-input) cruise speed so library saves capture pending changes the user
+    // typed but hasn't committed back to the store yet (e.g. by uploading the mission).
+    defaultCruiseSpeed: localCruiseSpeed.value,
+  },
+  waypoints: structuredClone(toRaw(missionStore.currentPlanningWaypoints)),
+  surveys: structuredClone(toRaw(missionStore.currentPlanningSurveys)),
+})
+
+const currentMissionSnapshot = ref<CockpitMission>(buildCurrentMissionSnapshot())
+
+watchDebounced(
+  [
+    () => missionStore.currentPlanningWaypoints,
+    () => missionStore.currentPlanningSurveys,
+    mapCenter,
+    zoom,
+    currentWaypointAltitude,
+    currentWaypointAltitudeRefType,
+    localCruiseSpeed,
+  ],
+  () => {
+    currentMissionSnapshot.value = buildCurrentMissionSnapshot()
+  },
+  { debounce: 100, deep: true }
+)
+
+const currentMissionEstimatesSnapshot = computed<MissionEstimatesSnapshot>(() => ({
+  pathLength: missionEstimates.totalMissionLength.value,
+  duration: missionEstimates.totalMissionDuration.value,
+  energy: missionEstimates.totalMissionEnergy.value,
+  totalSurveyCoverage: missionEstimates.totalSurveyCoverage.value,
+  missionCoverageArea: missionEstimates.missionCoverageAreaSquareMeters.value,
+}))
+
+const openMissionLibrary = (): void => {
+  logUserAction('Opened the mission library')
+  interfaceStore.missionLibraryVisibility = true
+}
+
+const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
+  if (mission.vehicleType && !vehicleStore.isVehicleOnline) {
+    missionStore.plannedVehicleType = mission.vehicleType
+  }
+
+  showDialog({
+    variant: 'info',
+    title: 'Load mission',
+    message: `Where should "${mission.name}" be placed?`,
+    persistent: false,
+    maxWidth: 620,
+    actions: [
+      { text: 'Cancel', color: 'white', action: closeDialog },
+      {
+        text: 'Keep original location',
+        color: 'white',
+        action: () => {
+          closeDialog()
+          logUserAction(`Loaded mission "${mission.name}" at its original location`)
+          loadDraftMission(mission).catch((err) => {
+            openSnackbar({ variant: 'error', message: `Failed to load mission: ${err}`, duration: 3500 })
+          })
+        },
+      },
+    ],
+  })
 }
 
 onMounted(() => {
