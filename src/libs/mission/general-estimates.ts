@@ -145,6 +145,18 @@ export const deltaBearing = (bearing1: number, bearing2: number): number => {
   return angle
 }
 
+export const formatMetersShort = (distance: number): string => {
+  if (!isFinite(distance) || distance <= 0) return '—'
+  if (distance < 1000) return `${distance.toFixed(0)} m`
+  return `${(distance / 1000).toFixed(2)} km`
+}
+
+export const formatBearing = (bearing: number): string => {
+  if (!isFinite(bearing)) return '—'
+  const normalized = ((bearing % 360) + 360) % 360
+  return `${Math.round(normalized).toString().padStart(3, '0')}°`
+}
+
 // Compute path time from provided legs (speed & distance) -> Still needs turning penalty that depends on vehicle
 export const computeMissionDurationSecondsFromLegs = (legs: MissionLeg[]): number => {
   if (!Array.isArray(legs) || legs.length === 0) return NaN
