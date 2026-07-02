@@ -8,6 +8,7 @@ import {
 } from './actions/data-lake'
 import { IndexedDbStore } from './indexed-db-store'
 import { settingsManager } from './settings-management'
+import { type ZipFileEntry, createZipBlob } from './zip'
 
 export const recordedDataLakeVariablesKey = 'cockpit-data-lake-recorded-variables'
 const exportVariableKeySetting = 'cockpit-data-lake-export-variable-key'
@@ -46,6 +47,20 @@ export interface DataLakeLogPoint {
  * A sequence of recorded data lake log points
  */
 export type DataLakeLog = DataLakeLogPoint[]
+
+/**
+ * Result of building a ZIP archive from recorded data sessions
+ */
+export interface SessionsZipResult {
+  /**
+   * The generated ZIP archive
+   */
+  blob: Blob
+  /**
+   * Number of non-empty sessions written into the archive
+   */
+  includedCount: number
+}
 
 /**
  * Information about a recorded data session
@@ -567,6 +582,38 @@ export class DataLakeLogger {
   }
 
   /**
+   * Build the export file name for a session
+   * @param {DataLakeSessionInfo} session - Session being exported
+   * @param {string} extension - File extension without the leading dot
+   * @returns {string} File name for the session's export
+   */
+  static sessionExportFileName(session: DataLakeSessionInfo, extension: string): string {
+    const dateStr = format(new Date(session.startTime), 'yyyy-MM-dd_HH-mm-ss')
+    return `Cockpit_Data_Log_${dateStr}.${extension}`
+  }
+
+  /**
+   * Build a ZIP archive holding one export file per session, skipping sessions with no data points.
+   * @param {DataLakeSessionInfo[]} sessions - Sessions to include
+   * @param {'json' | 'csv'} formatType - Export format used for each session file
+   * @returns {Promise<SessionsZipResult>} ZIP blob and the number of non-empty sessions written
+   */
+  async generateSessionsZip(sessions: DataLakeSessionInfo[], formatType: 'json' | 'csv'): Promise<SessionsZipResult> {
+    const entries: ZipFileEntry[] = []
+
+    for (const session of sessions) {
+      const log = await DataLakeLogger.generateLogFromSession(session)
+      if (log.length === 0) continue
+
+      const content = formatType === 'json' ? this.toJson(log) : this.toCsv(log)
+      entries.push({ name: DataLakeLogger.sessionExportFileName(session, formatType), blob: new Blob([content]) })
+    }
+
+    const blob = await createZipBlob(entries)
+    return { blob, includedCount: entries.length }
+  }
+
+  /**
    * Remove the log points and metadata records of the given sessions, deleting each session's points
    * with a single native key-range delete.
    * @param {DataLakeSessionInfo[]} sessions - Sessions to delete
@@ -586,6 +633,14 @@ export class DataLakeLogger {
    */
   static async deleteDataSession(session: DataLakeSessionInfo): Promise<void> {
     await DataLakeLogger.removeSessions([session])
+  }
+
+  /**
+   * Delete all log points belonging to the given sessions
+   * @param {DataLakeSessionInfo[]} sessions - Sessions to delete
+   */
+  static async deleteDataSessions(sessions: DataLakeSessionInfo[]): Promise<void> {
+    await DataLakeLogger.removeSessions(sessions)
   }
 
   /**

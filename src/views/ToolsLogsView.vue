@@ -11,17 +11,68 @@
             <div class="flex justify-between items-center w-full">
               <span>Data Sessions</span>
               <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-300 cursor-pointer" @click.stop="refreshSessions">
+                <v-menu v-if="selectedSessionIds.length > 0">
+                  <template #activator="{ props }">
+                    <span
+                      v-bind="props"
+                      class="text-sm text-gray-300 cursor-pointer flex items-center gap-1"
+                      :class="{ 'opacity-50 pointer-events-none': isDownloadingZip }"
+                      @click.stop
+                    >
+                      <v-tooltip text="Download selected sessions as ZIP">
+                        <template #activator="{ props: tooltipProps }">
+                          <v-icon v-bind="tooltipProps">mdi-download-multiple</v-icon>
+                        </template>
+                      </v-tooltip>
+                      <span>({{ selectedSessionIds.length }})</span>
+                    </span>
+                  </template>
+                  <v-list density="compact" class="bg-[#333]">
+                    <v-list-item @click="downloadSelectedSessions('json')">
+                      <v-list-item-title class="flex items-center gap-2">
+                        <v-icon size="small">mdi-code-json</v-icon>
+                        Download a ZIP of JSONs
+                      </v-list-item-title>
+                    </v-list-item>
+                    <v-list-item @click="downloadSelectedSessions('csv')">
+                      <v-list-item-title class="flex items-center gap-2">
+                        <v-icon size="small">mdi-file-delimited</v-icon>
+                        Download a ZIP of CSVs
+                      </v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
+                <span
+                  v-if="selectedSessionIds.length > 0"
+                  class="text-sm text-gray-300 cursor-pointer mr-[10px]"
+                  :class="{ 'opacity-50 pointer-events-none': isDeletingBatch }"
+                  @click.stop="deleteSelectedSessions"
+                >
+                  <v-tooltip text="Delete selected sessions">
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props">mdi-delete-sweep</v-icon>
+                    </template>
+                  </v-tooltip>
+                </span>
+                <span
+                  class="text-sm text-gray-300 cursor-pointer"
+                  :class="{ 'opacity-50 pointer-events-none': hasSelection }"
+                  @click.stop="refreshSessions"
+                >
                   <v-tooltip text="Refresh sessions">
                     <template #activator="{ props }">
                       <v-icon v-bind="props" :class="{ 'animate-spin': isLoading }">mdi-refresh</v-icon>
                     </template>
                   </v-tooltip>
                 </span>
-                <span class="text-sm text-gray-300 cursor-pointer" @click.stop="deleteOldSessions">
+                <span
+                  class="text-sm text-gray-300 cursor-pointer"
+                  :class="{ 'opacity-50 pointer-events-none': hasSelection }"
+                  @click.stop="deleteOldSessions"
+                >
                   <v-tooltip text="Delete sessions older than 24 hours">
                     <template #activator="{ props }">
-                      <v-icon v-bind="props">mdi-delete-sweep</v-icon>
+                      <v-icon v-bind="props">mdi-delete-clock</v-icon>
                     </template>
                   </v-tooltip>
                 </span>
@@ -48,7 +99,10 @@
             </div>
             <v-data-table
               v-else
+              v-model="selectedSessionIds"
               :items="sessions"
+              item-value="id"
+              show-select
               density="compact"
               theme="dark"
               :headers="headers"
@@ -73,12 +127,12 @@
                 <div class="flex justify-end items-center space-x-2">
                   <v-progress-circular v-if="isDeleting(item)" indeterminate size="20" width="2" color="white" />
                   <template v-else>
-                    <v-menu>
+                    <v-menu :disabled="hasSelection">
                       <template #activator="{ props }">
                         <div
                           v-bind="props"
                           class="cursor-pointer icon-btn mdi mdi-download"
-                          :class="{ 'opacity-50': isDownloading === item.id }"
+                          :class="{ 'opacity-50 pointer-events-none': isDownloading === item.id || hasSelection }"
                         />
                       </template>
                       <v-list density="compact" class="bg-[#333]">
@@ -98,8 +152,8 @@
                     </v-menu>
                     <div
                       class="cursor-pointer icon-btn mdi mdi-delete"
-                      :class="{ 'opacity-50 pointer-events-none': item.isCurrentSession }"
-                      @click="!item.isCurrentSession && deleteSession(item)"
+                      :class="{ 'opacity-50 pointer-events-none': item.isCurrentSession || hasSelection }"
+                      @click="!item.isCurrentSession && !hasSelection && deleteSession(item)"
                     />
                   </template>
                 </div>
@@ -184,7 +238,7 @@
 
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -220,10 +274,16 @@ watch([loggingMode, intervalMs], () => {
 
 const isLoading = ref(false)
 const isDownloading = ref<string | null>(null)
+const isDownloadingZip = ref(false)
+const isDeletingBatch = ref(false)
+const selectedSessionIds = ref<string[]>([])
 const deletingSessionIds = ref<string[]>([])
 let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 const isDeleting = (session: DataLakeSessionInfo): boolean => deletingSessionIds.value.includes(session.id)
+
+// While a selection is active, only the batch actions and the config dialog stay usable.
+const hasSelection = computed(() => selectedSessionIds.value.length > 0)
 
 /**
  * Argument Vuetify's data table passes to its `row-props` callback.
@@ -329,8 +389,7 @@ const downloadSession = async (session: DataLakeSessionInfo, formatType: 'json' 
     }
 
     const blob = new Blob([content], { type: mimeType })
-    const dateStr = format(new Date(session.startTime), 'yyyy-MM-dd_HH-mm-ss')
-    const fileName = `Cockpit_Data_Log_${dateStr}.${extension}`
+    const fileName = DataLakeLogger.sessionExportFileName(session, extension)
     saveAs(blob, fileName)
 
     openSnackbar({ message: `Downloaded ${fileName}`, variant: 'success' })
@@ -338,6 +397,68 @@ const downloadSession = async (session: DataLakeSessionInfo, formatType: 'json' 
     openSnackbar({ message: 'Failed to download session', variant: 'error' })
   } finally {
     isDownloading.value = null
+  }
+}
+
+const downloadSelectedSessions = async (formatType: 'json' | 'csv'): Promise<void> => {
+  if (isDownloadingZip.value) return
+
+  const selectedSessions = sessions.value.filter((session) => selectedSessionIds.value.includes(session.id))
+  if (selectedSessions.length === 0) return
+
+  logUserAction(`Downloaded ${selectedSessions.length} data sessions as ${formatType.toUpperCase()} ZIP`)
+  isDownloadingZip.value = true
+  try {
+    openSnackbar({ message: 'Generating ZIP file...', variant: 'info', duration: 2000 })
+
+    const { blob, includedCount } = await dataLakeLogger.generateSessionsZip(selectedSessions, formatType)
+
+    if (includedCount === 0) {
+      openSnackbar({ message: 'No data points found in the selected sessions', variant: 'warning' })
+      return
+    }
+
+    const dateStr = format(new Date(), 'yyyy-MM-dd_HH-mm-ss')
+    const fileName = `Cockpit_Data_Logs_${dateStr}.zip`
+    saveAs(blob, fileName)
+
+    openSnackbar({ message: `Downloaded ${fileName}`, variant: 'success' })
+    selectedSessionIds.value = []
+  } catch (error) {
+    openSnackbar({ message: 'Failed to download selected sessions', variant: 'error' })
+  } finally {
+    isDownloadingZip.value = false
+  }
+}
+
+const deleteSelectedSessions = async (): Promise<void> => {
+  if (isDeletingBatch.value) return
+
+  const selectedSessions = sessions.value.filter(
+    (session) => selectedSessionIds.value.includes(session.id) && !session.isCurrentSession
+  )
+  if (selectedSessions.length === 0) {
+    openSnackbar({
+      message: 'No deletable sessions selected (the current session cannot be deleted)',
+      variant: 'warning',
+    })
+    return
+  }
+
+  logUserAction(`Deleted ${selectedSessions.length} data sessions`)
+  isDeletingBatch.value = true
+  const deletedIds = selectedSessions.map((session) => session.id)
+  deletingSessionIds.value = [...deletingSessionIds.value, ...deletedIds]
+  try {
+    await DataLakeLogger.deleteDataSessions(selectedSessions)
+    sessions.value = sessions.value.filter((session) => !deletedIds.includes(session.id))
+    selectedSessionIds.value = selectedSessionIds.value.filter((id) => !deletedIds.includes(id))
+    openSnackbar({ message: `Deleted ${deletedIds.length} session(s)`, variant: 'success' })
+  } catch (error) {
+    openSnackbar({ message: 'Failed to delete selected sessions', variant: 'error' })
+  } finally {
+    deletingSessionIds.value = deletingSessionIds.value.filter((id) => !deletedIds.includes(id))
+    isDeletingBatch.value = false
   }
 }
 
