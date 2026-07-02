@@ -4,6 +4,8 @@ import { MavCmd, MavFrame, MAVLinkType, MavMissionType } from '@/libs/connection
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import type { BreachReturnPoint, FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
 
+export { emptyGeoFencePlan } from '@/libs/geo-fence'
+
 const COORD_SCALE = 1e7
 
 /**
@@ -209,9 +211,3 @@ export const convertMavlinkToGeoFencePlan = (items: Message.MissionItemInt[]): G
 
   return { version: 2, polygons, circles, breachReturn }
 }
-
-/**
- * Creates an empty geofence plan.
- * @returns { GeoFencePlan } An empty plan with no polygons, circles, or breach return.
- */
-export const emptyGeoFencePlan = (): GeoFencePlan => ({ version: 2, polygons: [], circles: [] })
