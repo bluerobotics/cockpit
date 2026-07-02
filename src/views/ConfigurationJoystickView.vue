@@ -988,16 +988,27 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
   openSnackbar({ message: `Button ${input.id} remapped to function '${action.name}'.`, variant: 'success' })
 }
 
-// Automatically set the current joystick when it changes for the first time
-watch(controllerStore.joysticks, () => {
-  if (currentJoystick.value === undefined) {
-    if (controllerStore.joysticks.size <= 0) return
-    const firstEntry = controllerStore.joysticks.entries().next().value
-    if (firstEntry) {
-      currentJoystick.value = firstEntry[1]
-    }
-  }
-})
+// Picks the joystick previewed in the table/visual, preferring an enabled one so its live input is actually
+// visible (a disabled joystick has its state events dropped, so it would look frozen).
+const pickPreviewJoystick = (): Joystick | undefined => {
+  const connectedJoysticks = Array.from(controllerStore.joysticks.values())
+  if (connectedJoysticks.length === 0) return undefined
+  return connectedJoysticks.find((j) => !controllerStore.disabledJoysticks.includes(j.model)) ?? connectedJoysticks[0]
+}
+
+// Re-pick when there's no valid selection yet, or the selected joystick got disconnected or disabled.
+watch(
+  [() => controllerStore.joysticks, () => controllerStore.disabledJoysticks],
+  () => {
+    const current = currentJoystick.value
+    const currentIsUsable =
+      current !== undefined &&
+      Array.from(controllerStore.joysticks.values()).includes(current) &&
+      !controllerStore.disabledJoysticks.includes(current.model)
+    if (!currentIsUsable) currentJoystick.value = pickPreviewJoystick()
+  },
+  { immediate: true, deep: true }
+)
 
 let lastModTabChange = new Date().getTime()
 const changeModifierKeyTab = (modKeyOption: CockpitModifierKeyOption): void => {
