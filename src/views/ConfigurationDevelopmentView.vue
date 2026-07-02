@@ -102,14 +102,11 @@
               :headers="headers"
               class="bg-[#FFFFFF11] rounded-lg"
             >
-              <template #item.name="{ item }">
+              <template #item.dateTimeMs="{ item }">
                 <div class="flex items-center gap-2">
-                  <span>{{ item.name }}</span>
+                  <span>{{ item.dateTimeFormatted }}</span>
                   <div v-if="item.isCurrentSession" class="current-session-indicator" />
                 </div>
-              </template>
-              <template #item.dateTimeMs="{ item }">
-                {{ item.dateTimeFormatted }}
               </template>
               <template #item.sizeBytes="{ item }">
                 {{ item.sizeFormatted }}
@@ -216,7 +213,6 @@ interface CurrentLogInfo {
 /* eslint-enable jsdoc/require-jsdoc */
 
 const headers = [
-  { title: 'Name', key: 'name', sortable: false },
   { title: 'Date/Time', key: 'dateTimeMs', sortable: true },
   { title: 'Size', key: 'sizeBytes', sortable: true },
   { title: 'Actions', key: 'actions', sortable: false },
