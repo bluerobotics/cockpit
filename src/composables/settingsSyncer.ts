@@ -7,6 +7,13 @@ import { settingsManager } from '@/libs/settings-management'
 import { deserialize, isEqual } from '@/libs/utils'
 import type { CockpitSetting } from '@/types/settings-management'
 
+// Idle time a value must stay stable before it is persisted to the settings manager / BlueOS.
+const settingsSyncDebounceMs = 3000
+
+// Upper bound on how long a continuously-changing value can keep deferring its write, so
+// high-frequency writers still get checkpointed instead of the debounce resetting forever.
+const settingsSyncMaxWaitMs = 30000
+
 /**
  * This composable will keep a setting in sync between the browser's local storage and BlueOS.
  *
@@ -28,6 +35,7 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
   const unrefedDefaultValue = unref(defaultValue)
   const valueOnLocalStorage = settingsManager.getKeyValue(key)
   let watchUpdaterTimeout: ReturnType<typeof setTimeout> | undefined = undefined
+  let firstPendingChangeEpoch: number | undefined = undefined
   let valueToBeUsedOnStart: T | undefined = undefined
 
   if (valueOnLocalStorage === undefined) {
@@ -65,6 +73,15 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         clearTimeout(watchUpdaterTimeout)
       }
 
+      if (firstPendingChangeEpoch === undefined) {
+        firstPendingChangeEpoch = Date.now()
+      }
+
+      // Clamp the debounce so a value that keeps changing is still forced out once it has been
+      // pending for `settingsSyncMaxWaitMs`, instead of the reset-on-every-change debounce never firing.
+      const remainingMaxWait = Math.max(0, settingsSyncMaxWaitMs - (Date.now() - firstPendingChangeEpoch))
+      const writeDelay = Math.min(settingsSyncDebounceMs, remainingMaxWait)
+
       watchUpdaterTimeout = setTimeout(() => {
         const diffInValue = diff(oldRefedValue, newValue, {
           expand: false,
@@ -80,7 +97,8 @@ export function useBlueOsStorage<T>(key: string, defaultValue: MaybeRef<T>): Rem
         console.log(`[SettingsSyncer] Key ${key} changed on watch:\n${diffToPrint}.`)
         settingsManager.setKeyValue(key, newValue)
         oldRefedValue = deserialize(JSON.stringify(newValue)) as T
-      }, 3000)
+        firstPendingChangeEpoch = undefined
+      }, writeDelay)
     },
     { deep: true }
   )
