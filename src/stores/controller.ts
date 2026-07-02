@@ -109,6 +109,8 @@ export const useControllerStore = defineStore('controller', () => {
 
   const currentMainJoystick = ref<Joystick | undefined>(undefined)
 
+  const multipleJoysticksDialogOpen = ref(false)
+
   // Confirmation per joystick action required currently is only available for cockpit actions
   const actionsJoystickConfirmRequired = useBlueOsStorage(
     'cockpit-actions-joystick-confirm-required',
@@ -242,6 +244,40 @@ export const useControllerStore = defineStore('controller', () => {
         joystickCalibrationOptions.value[currentMainJoystick.value.model] = newCalibration
       }
     }
+
+    promptToSelectActiveJoystickIfNeeded()
+  }
+
+  // Cockpit can only use one joystick at a time. When more than one is connected and none has been disabled yet,
+  // ask the user which one to keep and disable the others through the regular per-model disabling mechanism.
+  const promptToSelectActiveJoystickIfNeeded = (): void => {
+    if (multipleJoysticksDialogOpen.value) return
+
+    const connectedJoysticks = Array.from(joysticks.value.values())
+    const noneDisabled = connectedJoysticks.every((j) => !disabledJoysticks.value.includes(j.model))
+    const distinctModels = [...new Set(connectedJoysticks.map((j) => j.model))]
+
+    if (connectedJoysticks.length < 2 || distinctModels.length < 2 || !noneDisabled) return
+
+    multipleJoysticksDialogOpen.value = true
+    logUserAction('Opened the multiple-joysticks selection dialog')
+  }
+
+  // Keep the chosen joystick model active and disable every other connected model, then close the dialog.
+  const selectActiveJoystick = (model: JoystickModel): void => {
+    const distinctModels = [...new Set(Array.from(joysticks.value.values()).map((j) => j.model))]
+    distinctModels
+      .filter((otherModel) => otherModel !== model)
+      .forEach((otherModel) => {
+        if (!disabledJoysticks.value.includes(otherModel)) disabledJoysticks.value.push(otherModel)
+      })
+    logUserAction(`Selected '${model}' as the active joystick and disabled the others`)
+    multipleJoysticksDialogOpen.value = false
+  }
+
+  const dismissMultipleJoysticksDialog = (): void => {
+    logUserAction('Dismissed the multiple-joysticks selection dialog without selecting')
+    multipleJoysticksDialogOpen.value = false
   }
 
   // Disable joystick forwarding if the window/tab is not visible (except on Electron)
@@ -520,6 +556,9 @@ export const useControllerStore = defineStore('controller', () => {
     joystickCalibrationOptions,
     currentMainJoystick,
     disabledJoysticks,
+    multipleJoysticksDialogOpen,
+    selectActiveJoystick,
+    dismissMultipleJoysticksDialog,
     checkForOtherManualControlSources,
   }
 })
