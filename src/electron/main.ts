@@ -1,4 +1,4 @@
-import { app, BrowserWindow, powerSaveBlocker, protocol, screen } from 'electron'
+import { app, BrowserWindow, net, powerSaveBlocker, protocol, screen } from 'electron'
 import { join } from 'path'
 
 import { setupAutoUpdater } from './services/auto-update'
@@ -19,6 +19,13 @@ import { setupWorkspaceService } from './services/workspace'
 
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
 setupElectronLogService()
+
+// Enable Chromium features required to decode/encode H.265 (HEVC) streams.
+// `PlatformHEVCDecoderSupport` enables hardware HEVC decoding for HTMLVideoElement, while
+// `WebRtcAllowH265Receive`/`WebRtcAllowH265Send` allow HEVC to be negotiated over WebRTC
+// (used by go2rtc when bridging RTSP streams into the renderer).
+// These switches must be appended before the `ready` event fires.
+app.commandLine.appendSwitch('enable-features', 'PlatformHEVCDecoderSupport,WebRtcAllowH265Receive,WebRtcAllowH265Send')
 
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
@@ -78,9 +85,12 @@ app.on('window-all-closed', () => {
 })
 
 app.on('ready', () => {
-  protocol.registerFileProtocol('file', (i, o) => {
-    o({ path: i.url.substring('file://'.length) })
-  })
+  // Replaces the legacy `protocol.registerFileProtocol`, which was deprecated in Electron 25
+  // and has limited functionality (e.g. broken Windows file-path handling) in newer versions.
+  // `bypassCustomProtocolHandlers` forwards to the built-in file handler; without it `net.fetch`
+  // would re-enter this same handler, recursing forever and leaving the renderer on a grey screen
+  // in packaged builds (which load index.html via `file://`).
+  protocol.handle('file', (request) => net.fetch(request.url, { bypassCustomProtocolHandlers: true }))
 })
 
 protocol.registerSchemesAsPrivileged([
