@@ -48,7 +48,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[280px] overflow-auto">
+              <div class="flex flex-col items-center h-[200px] overflow-auto">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -166,8 +166,8 @@
                   :key="key"
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
-                  <div class="flex items-center gap-2 -mb-8">
+                  <p class="text-md font-semibold mt-4">{{ joystick.model }} controller</p>
+                  <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
                       :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
@@ -178,7 +178,7 @@
                   </div>
                   <div
                     v-if="showJoystickLayout"
-                    class="flex flex-col items-center justify-center"
+                    class="flex flex-col items-center justify-center -mt-8"
                     :class="interfaceStore.isOnSmallScreen ? 'w-[90%]' : 'w-[80%]'"
                   >
                     <JoystickPS
@@ -284,7 +284,7 @@
                   :key="key"
                   class="w-full flex-centered flex-column"
                 >
-                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <span class="text-md font-semibold w-full text-center">{{ joystick.model }} controller</span>
                   <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
