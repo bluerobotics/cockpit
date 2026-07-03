@@ -27,6 +27,7 @@ export const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   ['054c:0ce6', JoystickModel.DualSense],
   ['054c:09cc', JoystickModel.DualShock4],
   ['045e:02ea', JoystickModel.XboxOne_Wired],
+  ['045e:02ff', JoystickModel.XboxController_XInput],
   ['045e:02e0', JoystickModel.XboxOne_Wireless],
   ['045e:02fd', JoystickModel.XboxOneS_Bluetooth],
   ['045e:0b13', JoystickModel.XboxController_Bluetooth],
