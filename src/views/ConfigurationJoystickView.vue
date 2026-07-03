@@ -162,7 +162,7 @@
                   Connect a joystick to see its visual layout and live input.
                 </div>
                 <div
-                  v-for="[key, joystick] in controllerStore.joysticks"
+                  v-for="[key, joystick] in joysticksEnabledFirst"
                   :key="key"
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
@@ -1009,6 +1009,13 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+// Enabled joysticks first, so the active one is shown at the top of the visual list.
+const joysticksEnabledFirst = computed<[number, Joystick][]>(() => {
+  const disabledScore = (joystick: Joystick): number =>
+    controllerStore.disabledJoysticks.includes(joystick.model) ? 1 : 0
+  return Array.from(controllerStore.joysticks.entries()).sort(([, a], [, b]) => disabledScore(a) - disabledScore(b))
+})
 
 let lastModTabChange = new Date().getTime()
 const changeModifierKeyTab = (modKeyOption: CockpitModifierKeyOption): void => {
