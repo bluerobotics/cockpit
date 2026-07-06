@@ -36,6 +36,71 @@ export enum AntennaType {
   Yagi = 'Yagi',
 }
 
+/**
+ * Source of the cellular coverage overlay shown when {@link BaseStationCommsType.MobileData} is selected.
+ */
+export enum MobileCoverageProvider {
+  OpenCellID = 'OpenCellID',
+  OSMOverpass = 'OSM Overpass',
+  Custom = 'Custom overlay',
+}
+
+export const MOBILE_COVERAGE_FETCH_DROP_MIME = 'application/x-cockpit-mobile-coverage-fetch'
+
+/**
+ * Visualization mode for the mobile coverage overlay.
+ */
+export enum MobileCoverageDisplayMode {
+  Heatmap = 'Heatmap',
+  CoverageRings = 'Coverage rings',
+}
+
+export type MobileCoverageConfig = {
+  /**
+   * Active coverage data provider.
+   */
+  provider: MobileCoverageProvider
+  /**
+   * OpenCellID API key. Required when {@link provider} is {@link MobileCoverageProvider.OpenCellID}.
+   */
+  openCellIdApiKey: string
+  /**
+   * Selected OpenCellID operator/network code label. Empty string keeps all returned networks.
+   */
+  openCellIdOperator: string
+  /**
+   * Leaflet `TileLayer` URL template (with `{z}/{x}/{y}` placeholders). Required when
+   * {@link provider} is {@link MobileCoverageProvider.Custom}.
+   */
+  customTileUrl: string
+  /**
+   * OSM operator name to filter by when {@link provider} is {@link MobileCoverageProvider.OSMOverpass}.
+   * Empty string keeps all operators.
+   */
+  osmOperator: string
+  /**
+   * Visualization mode for OpenCellID overlays.
+   */
+  displayMode: MobileCoverageDisplayMode
+  /**
+   * Opacity multiplier (0..1) applied to mobile coverage overlays.
+   */
+  overlayOpacity: number
+  /**
+   * Show the operator/technology labels rendered along the rim of each coverage ring.
+   */
+  showRingLabels: boolean
+  /**
+   * Heatmap intensity (0..1). Scales the heat radius so 0 keeps a tight, low-opacity blob and
+   * 1 spreads it out to roughly match the coverage rings.
+   */
+  heatmapIntensity: number
+}
+
+/* eslint-disable jsdoc/require-jsdoc -- Self-describing geo bbox in WGS84 degrees. */
+export type CoverageBbox = { south: number; west: number; north: number; east: number }
+/* eslint-enable jsdoc/require-jsdoc */
+
 /* eslint-disable jsdoc/require-jsdoc -- OpenCellID transport DTO; fields mirror the upstream API. */
 export type OpenCellIdCellBase = {
   lat: number
@@ -47,6 +112,33 @@ export type OpenCellIdCellBase = {
   cellId?: number
   samples?: number
   averageSignalStrength?: number
+}
+
+export type CachedOpenCellIdSite = OpenCellIdCellBase & {
+  rangeMeters: number
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
+/* eslint-disable jsdoc/require-jsdoc -- OSM Overpass transport DTO; fields mirror the upstream API. */
+export type CachedOverpassTower = {
+  id: number
+  lat: number
+  lon: number
+  operator: string | null
+  tags: Record<string, string>
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
+/* eslint-disable jsdoc/require-jsdoc -- Generic cache envelope; fields are self-describing. */
+export type CachedMobileCoverageEntry<T> = {
+  bbox: CoverageBbox
+  fetchedAtMs: number
+  data: T[]
+}
+
+export type MobileCoverageCache = {
+  openCellId: CachedMobileCoverageEntry<CachedOpenCellIdSite>[]
+  osmOverpass: CachedMobileCoverageEntry<CachedOverpassTower>[]
 }
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -79,6 +171,10 @@ export type BaseStationConfig = {
    * Whether the base station is placed on the map. False until the user sets a position.
    */
   enabled: boolean
+  /**
+   * Optional label shown under the marker when non-empty.
+   */
+  name: string
   /**
    * Geographical position of the base station as [latitude, longitude].
    */
@@ -117,6 +213,10 @@ export type BaseStationConfig = {
    * Tether length in meters used to draw coverage. Only used when {@link commsType} is Tethered.
    */
   tetherLengthMeters: number
+  /**
+   * Cellular coverage overlay configuration. Only used when {@link commsType} is MobileData.
+   */
+  mobileCoverage: MobileCoverageConfig
   /**
    * Transmitter power in milliwatts. Drives a Friis-based range scaling
    * (range ∝ √P_t) when the operator picks a Custom radio.
@@ -166,6 +266,7 @@ export const DEFAULT_BASE_STATION_ANTENNA_HEIGHT_METERS = 1
 
 export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   enabled: false,
+  name: '',
   position: null,
   topSideComputerType: TopSideComputerType.Fixed,
   trackByGps: false,
@@ -176,8 +277,24 @@ export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   vehicleHasBlueBoatAntennaMast: false,
   tetherLengthMeters: 150,
   txPowerMilliwatts: BLUE_ROBOTICS_TX_POWER_MW,
+  mobileCoverage: {
+    provider: MobileCoverageProvider.OpenCellID,
+    openCellIdApiKey: '',
+    openCellIdOperator: '',
+    customTileUrl: '',
+    osmOperator: '',
+    displayMode: MobileCoverageDisplayMode.Heatmap,
+    overlayOpacity: 0.3,
+    showRingLabels: true,
+    heatmapIntensity: 0.5,
+  },
   coverageColor: '#3B82F6',
   coverageOpacity: 1,
+}
+
+export const DEFAULT_MOBILE_COVERAGE_CACHE: MobileCoverageCache = {
+  openCellId: [],
+  osmOverpass: [],
 }
 
 /**
