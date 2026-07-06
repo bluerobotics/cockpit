@@ -36,6 +36,20 @@ export enum AntennaType {
   Yagi = 'Yagi',
 }
 
+/* eslint-disable jsdoc/require-jsdoc -- OpenCellID transport DTO; fields mirror the upstream API. */
+export type OpenCellIdCellBase = {
+  lat: number
+  lon: number
+  radio?: string
+  mcc?: number
+  mnc?: number
+  lac?: number
+  cellId?: number
+  samples?: number
+  averageSignalStrength?: number
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
 export type AntennaSpec = {
   /**
    * Antenna form factor.
@@ -165,3 +179,27 @@ export const DEFAULT_BASE_STATION_CONFIG: BaseStationConfig = {
   coverageColor: '#3B82F6',
   coverageOpacity: 1,
 }
+
+/**
+ * Bounding box payload accepted by the OpenCellID `getInArea` endpoint, plus the API key the
+ * caller wants to use (omitted to fall back to the anonymous public endpoint).
+ */
+/* eslint-disable jsdoc/require-jsdoc -- Field names mirror the OpenCellID HTTP contract. */
+export type OpenCellIdBboxRequest = {
+  west: number
+  south: number
+  east: number
+  north: number
+  apiKey?: string
+}
+/* eslint-enable jsdoc/require-jsdoc */
+
+/**
+ * Single OpenCellID cell record after normalization. `range` is the published reach in meters
+ * and is preserved so callers can render proportionally sized rings or weight heatmaps.
+ */
+/* eslint-disable jsdoc/require-jsdoc -- Field names mirror the OpenCellID HTTP contract. */
+export type NearbyOpenCellIdCell = OpenCellIdCellBase & {
+  range?: number
+}
+/* eslint-enable jsdoc/require-jsdoc */
