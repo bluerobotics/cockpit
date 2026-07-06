@@ -106,6 +106,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
+| **Mobile Coverage (OpenCellID)** | ❌ Blocked by browser CORS, even with a personal API key — use the OpenStreetMap provider for key-free coverage instead | ✅ Fetched through the built-in bridge (no browser CORS); a personal OpenCellID API key unlocks higher request quotas |
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
 | **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |
