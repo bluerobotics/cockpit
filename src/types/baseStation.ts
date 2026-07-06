@@ -1,11 +1,11 @@
 import type { WaypointCoordinates } from '@/types/mission'
 
 /**
- * Topside computer mount type. Mobile is typically a laptop or tablet, fixed is a stationary
- * computer at the base station.
+ * Topside computer mount type. Portable means the base station may move during deployment,
+ * while fixed stays at a stationary location.
  */
 export enum TopSideComputerType {
-  Mobile = 'Mobile',
+  Portable = 'Portable',
   Fixed = 'Fixed',
 }
 
