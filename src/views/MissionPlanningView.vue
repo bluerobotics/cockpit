@@ -128,7 +128,7 @@
       />
     </div>
     <div
-      v-show="!interfaceStore.isMainMenuVisible"
+      v-show="!interfaceStore.isMainMenuVisible && !interfaceStore.isConfigPanelVisible"
       class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
       :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '320px' }]"
     >
@@ -621,6 +621,10 @@
     @add-waypoint-at-cursor="addWaypointFromContextMenu"
     @clear-vehicle-path-history="clearVehiclePathHistory"
     @open-map-overlays="overlaysDialogOpen = true"
+    @place-base-station="placeBaseStationFromContextMenu"
+    @configure-base-station="baseStationStore.configPanelOpen = true"
+    @remove-base-station="confirmRemoveBaseStation(showDialog, closeDialog)"
+    @toggle-base-station-signal-visibility="baseStationStore.toggleSignalVisibility()"
   />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <Teleport to="#planningMap">
@@ -654,14 +658,19 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
+  <BaseStationConfigPanel is-mission-planning-context />
+  <BaseStationContextPopup />
   <PoiMapArrows
     :map-ready="mapReady"
     :force-full-screen="true"
     :show-poi-arrows="true"
     :show-home-arrow="true"
     :show-vehicle-arrow="true"
+    :show-base-station-arrow="baseStationStore.config.enabled"
     :vehicle-position="vehiclePosition"
     :home="home"
+    :base-station="baseStationStore.activePosition"
+    :base-station-color="baseStationStore.config.coverageColor"
     :map-center="mapCenter"
     :zoom="zoom"
     :target-follower="targetFollower"
@@ -713,6 +722,8 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
+import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
@@ -725,6 +736,9 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
+import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
+import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissionPathSignalOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
@@ -788,6 +802,7 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
+const baseStationStore = useBaseStation()
 const missionEstimates = useMissionEstimates()
 const angleOverlay = useVertexAngleOverlay()
 const dragMeasureOverlay = useDragMeasureOverlay(angleOverlay)
@@ -990,6 +1005,8 @@ watch(
   () => missionStore.mapOverlayFocusRequest.revision,
   () => mapOverlays.zoomToOverlay(missionStore.mapOverlayFocusRequest.id)
 )
+
+useBaseStationOverlay(planningMap, mapReady)
 
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
@@ -1414,6 +1431,7 @@ const clearCurrentMission = (): void => {
     planningMap.value?.removeLayer(missionWaypointsPolyline.value)
     missionWaypointsPolyline.value = null
   }
+  removeMissionPathSignalLayer()
   clearSurveyPath()
   selectedSurveyId.value = ''
   lastSelectedSurveyId.value = ''
@@ -2124,6 +2142,13 @@ const setHomePositionFromContextMenu = async (): Promise<void> => {
   await setHomePosition()
 }
 
+const placeBaseStationFromContextMenu = (): void => {
+  if (!currentCursorGeoCoordinates.value) return
+  baseStationStore.setPosition(currentCursorGeoCoordinates.value)
+  baseStationStore.configPanelOpen = true
+  logUserAction('Placed the base station via the mission-planning context menu')
+}
+
 const setHomePosition = async (): Promise<void> => {
   if (!currentCursorGeoCoordinates.value) return
   const newHome: [number, number] = [currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1]]
@@ -2176,6 +2201,7 @@ const targetFollower = new TargetFollower(
 )
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
 targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
+targetFollower.setTrackableTarget(WhoToFollow.BASE_STATION, () => baseStationStore.activePosition)
 
 const addSurveyPolygonToMap = (survey: Survey): void => {
   if (!planningMap.value) return
@@ -2975,6 +3001,7 @@ const clearSurveyPath = (): void => {
   surveyEdgeAddMarkers.forEach((marker) => marker.remove())
   surveyPolygonVertexesMarkers.value = []
   surveyPolygonVertexesPositions.value = []
+  renderMissionPathSignal()
 }
 
 watch([isCreatingSurvey, isCreatingSimplePath], (isCreatingNow) => {
@@ -3058,6 +3085,7 @@ const checkAndRemoveSurveyPath = (): void => {
   removeSurveyCrosshatchPathLayer()
   surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
   surveyTurnaroundLayers.value = []
+  renderMissionPathSignal()
 }
 
 const createSurveyPath = (): void => {
@@ -3123,6 +3151,8 @@ const createSurveyPath = (): void => {
         }).addTo(toRaw(planningMap.value)!)
       )
     }
+
+    renderMissionPathSignal()
   } catch (error) {
     showDialog({
       variant: 'error',
@@ -4304,6 +4334,12 @@ watch(zoom, () => {
 
 const missionWaypointsPolyline = shallowRef<L.Polyline | null>(null)
 
+const { renderMissionPathSignal, removeMissionPathSignalLayer } = useMissionPathSignalOverlay(
+  planningMap,
+  surveyPathLayer,
+  missionWaypointsPolyline
+)
+
 const getMissionPathLatLngs = (): L.LatLng[] =>
   missionStore.currentPlanningWaypoints.map((waypoint) => L.latLng(waypoint.coordinates[0], waypoint.coordinates[1]))
 
@@ -4324,6 +4360,8 @@ watch(
     } else {
       missionWaypointsPolyline.value.setLatLngs(missionPathLatLngs)
     }
+
+    renderMissionPathSignal()
   },
   { immediate: true, deep: true }
 )

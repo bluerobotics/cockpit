@@ -54,6 +54,24 @@
         </v-tooltip>
       </div>
     </template>
+    <template v-if="mapReady && showBaseStationArrow && baseStationEdgeArrow">
+      <div class="poi-edge-pin" :style="baseStationEdgeArrow.style">
+        <v-tooltip location="top" :text="baseStationEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
+          <template #activator="{ props: tooltipProps }">
+            <div v-bind="tooltipProps" class="poi-pin-container" @click.stop="handleBaseStationArrowClick">
+              <div
+                class="poi-pin-shape"
+                :style="{
+                  transform: `rotate(${baseStationEdgeArrow.angle - 135}deg)`,
+                  backgroundColor: baseStationEdgeArrow.color + '80',
+                }"
+              ></div>
+              <i class="mdi mdi-radio-tower poi-pin-icon"></i>
+            </div>
+          </template>
+        </v-tooltip>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -91,6 +109,10 @@ interface Props {
    */
   showVehicleArrow: boolean
   /**
+   * Whether to show the base-station offscreen arrow
+   */
+  showBaseStationArrow: boolean
+  /**
    * Vehicle position coordinates
    */
   vehiclePosition: WaypointCoordinates | undefined
@@ -98,6 +120,14 @@ interface Props {
    * Home position coordinates
    */
   home: WaypointCoordinates | undefined
+  /**
+   * Base station position coordinates
+   */
+  baseStation: WaypointCoordinates | undefined
+  /**
+   * Base-station arrow tint, defaults to the panel/glass color when omitted.
+   */
+  baseStationColor?: string
   /**
    * Map center coordinates
    */
@@ -133,6 +163,7 @@ const map = computed(() => mapLayer.value ?? null)
 const poiEdgeArrows = ref<PoiEdgeArrow[]>([])
 const vehicleEdgeArrow = ref<TargetEdgeArrow | null>(null)
 const homeEdgeArrow = ref<TargetEdgeArrow | null>(null)
+const baseStationEdgeArrow = ref<TargetEdgeArrow | null>(null)
 
 const calculateMapEdgesIntersections = (
   centerPoint: L.Point,
@@ -503,16 +534,19 @@ const calculatePoiEdgeArrows = (): void => {
   poiEdgeArrows.value = arrows
 }
 
-const calculateVehicleAndHomeEdgeArrows = (): void => {
+const calculateTargetArrows = (): void => {
   vehicleEdgeArrow.value = calculateTargetEdgeArrow(props.vehiclePosition, 'Vehicle', '#1e498f')
   homeEdgeArrow.value = calculateTargetEdgeArrow(props.home, 'Home', '#1e498f')
+  baseStationEdgeArrow.value = props.showBaseStationArrow
+    ? calculateTargetEdgeArrow(props.baseStation, 'Base station', props.baseStationColor ?? '#2b5779')
+    : null
 }
 
 // Prevent poi arrows calculation from overloading the UI
 const debouncedUpdateArrows = useDebounceFn(calculatePoiEdgeArrows, 150)
 const throttledUpdateArrows = useThrottleFn(calculatePoiEdgeArrows, 15) // Max 60fps
-const debouncedUpdateVehicleAndHomeArrows = useDebounceFn(calculateVehicleAndHomeEdgeArrows, 150)
-const throttledUpdateVehicleAndHomeArrows = useThrottleFn(calculateVehicleAndHomeEdgeArrows, 15)
+const debouncedUpdateTargetArrows = useDebounceFn(calculateTargetArrows, 150)
+const throttledUpdateTargetArrows = useThrottleFn(calculateTargetArrows, 15)
 
 const centerMapOnPoi = (poiId: string): void => {
   if (!map.value) return
@@ -531,12 +565,17 @@ const handleHomeArrowClick = (): void => {
   props.targetFollower.goToTarget(WhoToFollow.HOME, true)
 }
 
+const handleBaseStationArrowClick = (): void => {
+  logUserAction('Centered the map on the base station via the offscreen arrow')
+  props.targetFollower.goToTarget(WhoToFollow.BASE_STATION, true)
+}
+
 watch(
   map,
   (mapInstance) => {
     if (mapInstance && props.mapReady) {
       debouncedUpdateArrows()
-      debouncedUpdateVehicleAndHomeArrows()
+      debouncedUpdateTargetArrows()
     }
   },
   { immediate: true }
@@ -548,7 +587,7 @@ watch(
   () => {
     if (props.mapReady && map.value && map.value instanceof L.Map) {
       debouncedUpdateArrows()
-      throttledUpdateVehicleAndHomeArrows()
+      throttledUpdateTargetArrows()
     }
   },
   { immediate: true }
@@ -559,17 +598,25 @@ watch(
   (ready) => {
     if (ready && map.value && map.value instanceof L.Map) {
       debouncedUpdateArrows()
-      debouncedUpdateVehicleAndHomeArrows()
+      debouncedUpdateTargetArrows()
     }
   }
 )
 
-// Watch for vehicle and home position changes
+// Watch for vehicle, home, and base-station position changes
 watch(
-  [() => props.vehiclePosition, () => props.home, () => props.mapCenter, () => props.zoom],
+  [
+    () => props.vehiclePosition,
+    () => props.home,
+    () => props.baseStation,
+    () => props.showBaseStationArrow,
+    () => props.baseStationColor,
+    () => props.mapCenter,
+    () => props.zoom,
+  ],
   () => {
     if (props.mapReady && map.value && map.value instanceof L.Map) {
-      throttledUpdateVehicleAndHomeArrows()
+      throttledUpdateTargetArrows()
     }
   },
   { immediate: true }
@@ -589,7 +636,7 @@ watch(
     if (mapInstance && ready && mapInstance instanceof L.Map) {
       moveHandler = (): void => {
         throttledUpdateArrows()
-        throttledUpdateVehicleAndHomeArrows()
+        throttledUpdateTargetArrows()
       }
       mapInstance.on('move', moveHandler)
     }
