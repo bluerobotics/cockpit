@@ -185,7 +185,7 @@
           <template #content>
             <div class="flex justify-center flex-col w-[90%] ml-2">
               <v-combobox
-                v-model="allowedIceIps"
+                :model-value="allowedIceIps"
                 multiple
                 :items="availableIceIps"
                 label="Allowed WebRTC remote IP Addresses"
@@ -196,6 +196,7 @@
                 density="compact"
                 clearable
                 hide-details
+                @update:model-value="handleAllowedIpsUpdate"
               />
               <v-checkbox
                 v-model="videoStore.enableAutoIceIpFetch"
@@ -453,7 +454,8 @@ import { computed, onMounted, ref } from 'vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import ScrollingText from '@/components/ScrollingText.vue'
-import { isElectron } from '@/libs/utils'
+import { openSnackbar } from '@/composables/snackbar'
+import { isElectron, isValidIpv4Address, sanitizeIpv4Address } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
@@ -620,6 +622,55 @@ onMounted(async () => {
     allowedIceProtocols.value = availableICEProtocols
   }
 })
+
+/**
+ * Sanitizes the list of allowed WebRTC IPs, stripping schemes/ports/paths from prefixed entries and
+ * dropping ones with no extractable IPv4 address, notifying the user of any changes made.
+ * @param {string[] | null} newValue - The raw list of IPs coming from the combobox.
+ */
+function handleAllowedIpsUpdate(newValue: string[] | null): void {
+  if (!newValue) {
+    allowedIceIps.value = []
+    return
+  }
+
+  const cleanedIps: string[] = []
+  const cleanedNotes: string[] = []
+  const rejectedValues: string[] = []
+
+  newValue.forEach((value) => {
+    if (isValidIpv4Address(value)) {
+      cleanedIps.push(value)
+      return
+    }
+
+    const sanitized = sanitizeIpv4Address(value)
+    if (sanitized === undefined) {
+      rejectedValues.push(value)
+      return
+    }
+
+    cleanedIps.push(sanitized)
+    cleanedNotes.push(`'${value}' -> '${sanitized}'`)
+  })
+
+  allowedIceIps.value = [...new Set(cleanedIps)]
+
+  if (cleanedNotes.length > 0) {
+    openSnackbar({
+      message: `Cleaned up allowed WebRTC IP(s): ${cleanedNotes.join(', ')}.`,
+      variant: 'info',
+      persistent: true,
+    })
+  }
+  if (rejectedValues.length > 0) {
+    openSnackbar({
+      message: `Could not extract a valid IP address from: ${rejectedValues.join(', ')}. Entry not added.`,
+      variant: 'warning',
+    })
+  }
+  logUserAction(`Updated allowed WebRTC IPs to [${allowedIceIps.value.join(', ')}]`)
+}
 
 const openVideoLibrary = (): void => {
   logUserAction('Opened Video Library')
