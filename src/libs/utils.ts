@@ -60,23 +60,51 @@ export const resetCanvas = (context: CanvasRenderingContext2D): void => {
   context.globalCompositeOperation = 'source-over'
 }
 
+// Regex from https://stackoverflow.com/a/106223/3850957
+const ipv4AddressRegex = new RegExp(
+  '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$'
+)
+
 export const isValidNetworkAddress = (maybeAddress: string): boolean => {
   if (maybeAddress && maybeAddress.length >= 255) {
     return false
   }
 
-  // Regexes from https://stackoverflow.com/a/106223/3850957
-  const ipRegex = new RegExp(
-    '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$'
-  )
+  // Regex from https://stackoverflow.com/a/106223/3850957
   const hostnameRegex = new RegExp(
     '^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$'
   )
 
-  if (ipRegex.test(maybeAddress) || hostnameRegex.test(maybeAddress)) {
+  if (ipv4AddressRegex.test(maybeAddress) || hostnameRegex.test(maybeAddress)) {
     return true
   }
   return false
+}
+
+/**
+ * Checks whether a value is a bare IPv4 address, with no scheme, port, or path.
+ * @param {string} value - The value to test.
+ * @returns {boolean} Whether the value is a bare IPv4 address.
+ */
+export const isValidIpv4Address = (value: string): boolean => {
+  return ipv4AddressRegex.test(value)
+}
+
+/**
+ * Extracts a bare IPv4 address from a value that may carry a scheme, port, or path/CIDR suffix
+ * (e.g. `http://192.168.2.2:554/stream`, `192.168.2.0/24`).
+ * @param {string} rawValue - The raw, possibly prefixed or suffixed address.
+ * @returns {string | undefined} The bare IPv4 address, or `undefined` if none could be extracted.
+ */
+export const sanitizeIpv4Address = (rawValue: string): string | undefined => {
+  let candidate = rawValue.trim()
+  if (!candidate) return undefined
+
+  candidate = candidate.replace(/^\w+:\/\//, '')
+  candidate = candidate.split(/[/\\]/)[0]
+  candidate = candidate.split(':')[0]
+
+  return isValidIpv4Address(candidate) ? candidate : undefined
 }
 
 export const isValidURL = (maybeURL: string): boolean => {
