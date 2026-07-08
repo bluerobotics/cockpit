@@ -186,10 +186,23 @@ const emit = defineEmits(['update:isExpanded'])
 
 const updateContentMaxHeight = (): void => {
   if (!content.value || !contentInner.value || !isPanelExpanded.value) return
+  // While fully expanded the clip is removed (max-height: none), so there is nothing to keep in sync.
+  if (content.value.style.maxHeight === 'none') return
   const newHeight = contentInner.value.scrollHeight
   if (!newHeight) return
   contentHeight.value = newHeight
   content.value.style.maxHeight = newHeight + 'px'
+}
+
+// Once the open transition ends, drop the fixed max-height clip so a stale scrollHeight measurement
+// can never crop the tail of the content while the panel stays expanded.
+const onContentTransitionEnd = (event: TransitionEvent): void => {
+  if (event.propertyName !== 'max-height' || event.target !== content.value) return
+  if (isPanelExpanded.value && content.value && contentInner.value) {
+    // Refresh the cached height before uncapping, so the collapse fallback can't use a stale value.
+    contentHeight.value = contentInner.value.scrollHeight || contentHeight.value
+    content.value.style.maxHeight = 'none'
+  }
 }
 
 const togglePanel = (): void => {
@@ -232,14 +245,18 @@ watch(isPanelExpanded, (newValue) => {
     contentHeight.value = targetHeight
     content.value.style.maxHeight = targetHeight + 'px'
   } else {
+    // Restore a concrete pixel height before collapsing so the transition has a value to animate from,
+    // even when the panel was left uncapped (max-height: none) after expanding.
     const currentHeight = contentInner.value.scrollHeight || contentHeight.value || 0
     contentHeight.value = currentHeight
     content.value.style.maxHeight = currentHeight + 'px'
-    setTimeout(() => {
+    // Force a reflow so the browser registers the start height before transitioning to 0.
+    void content.value.offsetHeight
+    requestAnimationFrame(() => {
       if (content.value) {
         content.value.style.maxHeight = '0px'
       }
-    }, 0)
+    })
   }
 })
 
@@ -274,9 +291,11 @@ onMounted(() => {
     if (!isPanelExpanded.value) {
       content.value.style.maxHeight = '0px'
     } else {
+      // Start uncapped when mounted already expanded so the initial content is never clipped.
       contentHeight.value = contentInner.value.scrollHeight
-      content.value.style.maxHeight = contentHeight.value + 'px'
+      content.value.style.maxHeight = 'none'
     }
+    content.value.addEventListener('transitionend', onContentTransitionEnd)
     contentResizeObserver.value = new ResizeObserver(() => {
       if (isPanelExpanded.value) {
         updateContentMaxHeight()
@@ -293,6 +312,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (content.value) content.value.removeEventListener('transitionend', onContentTransitionEnd)
   if (contentResizeObserver.value) contentResizeObserver.value.disconnect()
 })
 </script>
