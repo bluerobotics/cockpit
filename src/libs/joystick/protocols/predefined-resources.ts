@@ -40,7 +40,7 @@ export const joystickInputAxes: Record<(typeof joystickAxisConfig)[number]['key'
     ])
   ) as Record<(typeof joystickAxisConfig)[number]['key'], DataLakeVariableAction>
 
-export const setupMavlinkCameraResources = (): void => {
+const setupMavlinkCameraResources = (): void => {
   const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
   // Initialize camera zoom variables
   createDataLakeVariable({ id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease', ...commonVariableConfig }, 0)
