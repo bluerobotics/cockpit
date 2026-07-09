@@ -233,6 +233,17 @@ const externalStreamId = computed(() => {
   return nameSelectedStream.value ? videoStore.externalStreamId(nameSelectedStream.value) : undefined
 })
 
+// Register/unregister this widget as a consumer of the stream, so the video store can tear down streams that no
+// widget points to anymore instead of leaking their WebRTC session.
+watch(
+  externalStreamId,
+  (newId, oldId) => {
+    if (oldId) videoStore.unregisterStreamConsumer(oldId, widget.value.hash)
+    if (newId) videoStore.registerStreamConsumer(newId, widget.value.hash)
+  },
+  { immediate: true }
+)
+
 watch(
   () => videoStore.streamsCorrespondency,
   () => {
@@ -293,6 +304,7 @@ const streamConnectionRoutine = setInterval(() => {
 onBeforeUnmount(() => {
   clearInterval(streamConnectionRoutine)
   if (successTimeoutId) clearTimeout(successTimeoutId)
+  if (externalStreamId.value) videoStore.unregisterStreamConsumer(externalStreamId.value, widget.value.hash)
 })
 
 watch(nameSelectedStream, () => {

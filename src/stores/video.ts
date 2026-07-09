@@ -58,6 +58,9 @@ export const useVideoStore = defineStore('video', () => {
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
   const jitterBufferTarget = useBlueOsStorage<number>('cockpit-jitter-buffer-target', 0)
   const activeStreams = ref<{ [key in string]: StreamData | undefined }>({})
+  // Tracks which consumers (widgets, snapshot captures, etc.) currently need each external stream active, so it
+  // can be torn down once nothing references it anymore. Intentionally not reactive/persisted, it's just bookkeeping.
+  const streamConsumers = new Map<string, Set<string>>()
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
@@ -465,6 +468,100 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Tear down all resources tied to an active stream (WebRTC/go2rtc connections, media tracks, recorder), and
+   * remove it from the active streams map.
+   * @param {string} externalId - External stream identifier
+   * @param {string} reason - Human-readable reason, forwarded to the underlying stream managers on close
+   */
+  const teardownStreamResources = (externalId: string, reason: string): void => {
+    const externalStreamData = activeStreams.value[externalId]
+    if (!externalStreamData) return
+
+    // Stop recording if it's active
+    if (externalStreamData.mediaRecorder?.state === 'recording') {
+      externalStreamData.mediaRecorder.stop()
+    }
+
+    // Stop all tracks in the media stream
+    if (externalStreamData.mediaStream) {
+      externalStreamData.mediaStream.getTracks().forEach((track) => {
+        track.stop()
+        console.log(`Stopped track: ${track.kind} for external stream '${externalId}'`)
+      })
+    }
+
+    // Close WebRTC connection
+    if (externalStreamData.webRtcManager) {
+      try {
+        const session = externalStreamData.webRtcManager.session
+        if (session?.peerConnection) {
+          session.peerConnection.close()
+        }
+        externalStreamData.webRtcManager.close(reason)
+        console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
+      } catch (error) {
+        console.warn(`Error stopping WebRTC manager for external stream '${externalId}':`, error)
+      }
+    }
+
+    if (externalStreamData.go2rtcManager) {
+      externalStreamData.go2rtcManager.close(reason)
+      if (window.electronAPI) {
+        void window.electronAPI.go2rtcRemoveStream(externalId).catch((error) => {
+          console.warn(`Error removing go2rtc stream '${externalId}':`, error)
+        })
+      }
+    }
+
+    delete activeStreams.value[externalId]
+    console.log(`Cleaned up all resources for external stream '${externalId}'`)
+  }
+
+  /**
+   * Tear down an external stream if it has no remaining consumers and no recorder attached to it (i.e. neither
+   * recording nor finalizing a just-stopped recording)
+   * @param {string} externalId - External stream identifier
+   */
+  const deactivateStreamIfUnused = (externalId: string): void => {
+    const consumers = streamConsumers.get(externalId)
+    if (consumers && consumers.size > 0) return
+
+    streamConsumers.delete(externalId)
+
+    // Never tear down a stream while a recorder is attached, even if no widget references it: mediaRecorder stays
+    // set through recording and the async stop() finalizer (telemetry/processing), and onstop clears it when done.
+    if (activeStreams.value[externalId]?.mediaRecorder !== undefined) return
+
+    teardownStreamResources(externalId, `External stream '${externalId}' is no longer used by any consumer`)
+  }
+
+  /**
+   * Register a consumer (e.g. a widget) as actively needing an external stream, activating it if needed
+   * @param {string} externalId - External stream identifier
+   * @param {string} consumerId - Unique identifier for the consumer (e.g. widget hash)
+   */
+  const registerStreamConsumer = (externalId: string, consumerId: string): void => {
+    if (!streamConsumers.has(externalId)) {
+      streamConsumers.set(externalId, new Set())
+    }
+    streamConsumers.get(externalId)!.add(consumerId)
+
+    if (activeStreams.value[externalId] === undefined) {
+      activateStream(externalId)
+    }
+  }
+
+  /**
+   * Release a consumer's reference to an external stream, tearing it down if it becomes unused
+   * @param {string} externalId - External stream identifier
+   * @param {string} consumerId - Unique identifier for the consumer (e.g. widget hash)
+   */
+  const unregisterStreamConsumer = (externalId: string, consumerId: string): void => {
+    streamConsumers.get(externalId)?.delete(consumerId)
+    deactivateStreamIfUnused(externalId)
+  }
+
+  /**
    * Get all data related to a given stream, if available
    * @param {string} streamName - Name of the stream
    * @returns {StreamData | undefined} The StreamData object, if available
@@ -754,10 +851,8 @@ export const useVideoStore = defineStore('video', () => {
 
         console.debug(`Live processing started for ${recordingHash}`)
       } catch (error) {
-        // Stop recording and reset the stream data
-        activeStreams.value[streamName]!.mediaRecorder!.stop()
-        activeStreams.value[streamName]!.mediaRecorder = undefined
-        delete activeStreams.value[streamName]
+        // Stop recording and release all resources tied to the stream (WebRTC/go2rtc, tracks, recorder)
+        teardownStreamResources(streamName, `Live processing failed to start for external stream '${streamName}'`)
 
         // Stop live processing if it's running
         if (liveProcessors.value[recordingHash]) {
@@ -1141,48 +1236,10 @@ export const useVideoStore = defineStore('video', () => {
       // Remove from correspondency list
       streamsCorrespondency.value.splice(streamIndex, 1)
 
-      // Clean up all resources for the stream
+      // Clean up all resources for the stream, and any consumer bookkeeping tied to it
+      streamConsumers.delete(externalId)
       if (activeStreams.value[externalId]) {
-        const externalStreamData = activeStreams.value[externalId]
-
-        // Stop recording if it's active
-        if (externalStreamData?.mediaRecorder && externalStreamData.mediaRecorder.state === 'recording') {
-          externalStreamData.mediaRecorder.stop()
-        }
-
-        // Stop all tracks in the media stream
-        if (externalStreamData?.mediaStream) {
-          externalStreamData.mediaStream.getTracks().forEach((track) => {
-            track.stop()
-            console.log(`Stopped track: ${track.kind} for external stream '${externalId}'`)
-          })
-        }
-
-        // Close WebRTC connection
-        if (externalStreamData?.webRtcManager) {
-          try {
-            const session = externalStreamData.webRtcManager.session
-            if (session?.peerConnection) {
-              session.peerConnection.close()
-            }
-            externalStreamData.webRtcManager.close(`External stream '${externalId}' was ignored by user`)
-            console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
-          } catch (error) {
-            console.warn(`Error stopping WebRTC manager for external stream '${externalId}':`, error)
-          }
-        }
-
-        if (externalStreamData?.go2rtcManager) {
-          externalStreamData.go2rtcManager.close(`Stream '${externalId}' deleted by user`)
-          if (window.electronAPI) {
-            void window.electronAPI.go2rtcRemoveStream(externalId).catch((error) => {
-              console.warn(`Error removing go2rtc stream '${externalId}':`, error)
-            })
-          }
-        }
-
-        delete activeStreams.value[externalId]
-        console.log(`Cleaned up all resources for external stream '${externalId}'`)
+        teardownStreamResources(externalId, `External stream '${externalId}' was ignored by user`)
       }
 
       openSnackbar({ variant: 'success', message: `Stream '${stream.name}' deleted and added to ignored list.` })
@@ -1299,6 +1356,8 @@ export const useVideoStore = defineStore('video', () => {
     discardProcessedFilesFromVideoDB,
     getMediaStream,
     getStreamData,
+    registerStreamConsumer,
+    unregisterStreamConsumer,
     getSignallerStatus,
     getStreamStatus,
     getStreamPeerConnection,

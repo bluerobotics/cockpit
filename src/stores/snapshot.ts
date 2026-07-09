@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import saveAs from 'file-saver'
 import piexif from 'piexifjs'
 import { defineStore } from 'pinia'
+import { v4 as uuid } from 'uuid'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -262,6 +263,11 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     }
 
     for (const streamName of streamNames) {
+      // Register as a transient consumer for the whole capture so an ad-hoc snapshot of a stream no widget is
+      // showing doesn't leave it (and its WebRTC session) active afterwards, while keeping it alive for both the
+      // frame grab and the track-settings read below.
+      const consumerId = uuid()
+      videoStore.registerStreamConsumer(streamName, consumerId)
       try {
         let stBlob = await captureStreamFrame(streamName)
         const thumbBlob = await createThumbnail(stBlob, 200, 113)
@@ -278,6 +284,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
       } catch (err) {
         console.error(`Failed to capture snapshot for stream '${streamName}':`, err)
         failed.push(streamName)
+      } finally {
+        videoStore.unregisterStreamConsumer(streamName, consumerId)
       }
     }
 
