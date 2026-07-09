@@ -174,6 +174,17 @@ const selectedExternalId = ref<string | undefined>()
 
 const externalStreamId = computed(() => selectedExternalId.value)
 
+// Register/unregister this widget as a consumer of the stream, so the video store can tear down streams that no
+// widget points to anymore instead of leaking their WebRTC session.
+watch(
+  externalStreamId,
+  (newId, oldId) => {
+    if (oldId) videoStore.unregisterStreamConsumer(oldId, miniWidget.value.hash)
+    if (newId) videoStore.registerStreamConsumer(newId, miniWidget.value.hash)
+  },
+  { immediate: true }
+)
+
 const openVideoLibraryModal = (): void => {
   logUserAction('Opened Video Library')
   interfaceStore.videoLibraryMode = 'videos'
@@ -429,7 +440,10 @@ if (widgetStore.isRealMiniWidget(miniWidget.value.hash)) {
     }
   }, 1000)
 }
-onBeforeUnmount(() => clearInterval(streamConnectionRoutine))
+onBeforeUnmount(() => {
+  clearInterval(streamConnectionRoutine)
+  if (externalStreamId.value) videoStore.unregisterStreamConsumer(externalStreamId.value, miniWidget.value.hash)
+})
 
 watch(
   () => isVideoLibraryDialogOpen.value,
