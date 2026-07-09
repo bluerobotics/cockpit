@@ -20,201 +20,228 @@
   </div>
   <v-dialog
     v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
-    class="w-[100vw] flex justify-center items-center"
+    max-width="620px"
     @after-leave="closeVgiDialog"
   >
-    <v-card class="config-modal p-8" :style="interfaceStore.globalGlassMenuStyles">
-      <div class="close-icon mdi mdi-close" @click.stop="closeVgiDialog"></div>
-      <v-card-title class="text-white">
-        <div class="flex items-center mb-3 mt-[-5px] justify-evenly">
-          <div
-            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-[#FFFFFF33]"
-            :class="{ 'bg-[#FFFFFF22]': currentTab === 'presets' }"
-            @click="currentTab = 'presets'"
-          >
-            Presets
-          </div>
-          <div
-            class="px-3 py-1 transition-all rounded-md cursor-pointer select-none text-slate-100 hover:bg-[#FFFFFF33]"
-            :class="{ 'bg-[#FFFFFF22]': currentTab === 'custom' }"
-            @click="currentTab = 'custom'"
-          >
-            Custom
-          </div>
-        </div>
+    <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="relative py-4 text-center text-h6 font-weight-bold">
+        Very Generic Indicator
+        <v-btn
+          icon="mdi-close"
+          variant="text"
+          size="small"
+          class="text-[16px] absolute top-3 right-3"
+          @click="closeVgiDialog"
+        />
       </v-card-title>
+      <v-tabs v-model="currentTab" color="white" fixed-tabs class="px-6 -mt-[10px]">
+        <v-tab value="presets" class="text-white">Presets</v-tab>
+        <v-tab value="custom" class="text-white">Custom</v-tab>
+      </v-tabs>
+      <v-card-text class="px-8 py-5 max-h-[65vh] overflow-y-auto">
+        <v-window v-model="currentTab">
+          <v-window-item value="custom">
+            <div class="flex flex-col gap-5 mt-[6px]">
+              <div class="flex gap-4">
+                <v-text-field
+                  v-model="miniWidget.options.displayName"
+                  label="Display name"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="w-3/4"
+                />
+                <v-text-field
+                  v-model="miniWidget.options.widgetWidth"
+                  label="Display width"
+                  type="number"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="w-[100px]"
+                />
+              </div>
 
-      <div v-if="currentTab === 'custom'" class="flex flex-col items-center justify-around">
-        <div class="flex w-full gap-x-10">
-          <div class="flex flex-col items-center justify-between w-3/4 mt-3">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Display name</span>
-            <input v-model="miniWidget.options.displayName" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
-          </div>
-          <div class="flex flex-col items-center justify-between w-1/4 mt-3">
-            <span class="w-full text-sm text-slate-100/50">Display Width</span>
-            <input
-              v-model="miniWidget.options.widgetWidth"
-              type="number"
-              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
-            />
-          </div>
-        </div>
-        <div class="flex flex-col items-center justify-between w-full mt-3">
-          <span class="w-full mb-1 text-sm text-slate-100/50">Variable</span>
-          <div class="relative w-full">
-            <button
-              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-[#FFFFFF12] hover:bg-slate-400"
-              @click="showVariableChooseModal = !showVariableChooseModal"
-            >
-              <p class="text-ellipsis overflow-x-clip">
-                {{ miniWidget.options.variableName || 'Click to choose...' }}
-              </p>
-            </button>
-            <span
-              class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi mdi-swap-horizontal-bold"
-            />
-          </div>
-        </div>
+              <div>
+                <v-text-field
+                  :model-value="miniWidget.options.variableName"
+                  label="Variable"
+                  placeholder="Click to choose..."
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  readonly
+                  append-inner-icon="mdi-swap-horizontal-bold"
+                  class="cursor-pointer"
+                  @click="showVariableChooseModal = !showVariableChooseModal"
+                />
+                <Transition>
+                  <div v-if="showVariableChooseModal" class="mt-2">
+                    <v-text-field
+                      v-model="variableNameSearchString"
+                      placeholder="Search variable..."
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                    />
+                    <div class="grid w-full h-32 grid-cols-1 mt-2 overflow-x-hidden overflow-y-auto">
+                      <span
+                        v-for="(variable, i) in variableNamesToShow"
+                        :key="i"
+                        class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
+                        @click="onChooseVariable(variable)"
+                      >
+                        {{ variable }}
+                      </span>
+                    </div>
+                  </div>
+                </Transition>
+              </div>
 
-        <Transition>
-          <div v-if="showVariableChooseModal" class="flex flex-col justify-center w-full mx-1 my-3 align-center">
-            <input
-              v-model="variableNameSearchString"
-              placeholder="Search variable..."
-              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
-            />
-            <div class="grid w-full h-32 grid-cols-1 my-2 overflow-x-hidden overflow-y-scroll">
-              <span
-                v-for="(variable, i) in variableNamesToShow"
+              <v-checkbox
+                v-model="miniWidget.options.useStringVariable"
+                label="Use string variable (don't parse as number)"
+                density="compact"
+                hide-details
+                class="-my-2"
+              />
+
+              <div class="flex gap-4">
+                <v-text-field
+                  v-model="miniWidget.options.variableUnit"
+                  label="Unit"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="flex-1"
+                />
+                <v-text-field
+                  v-model="miniWidget.options.variableMultiplier"
+                  :disabled="miniWidget.options.useStringVariable"
+                  label="Multiplier"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="flex-1"
+                />
+                <v-text-field
+                  v-model="miniWidget.options.decimalPlaces"
+                  :disabled="miniWidget.options.useStringVariable"
+                  label="Decimal places"
+                  type="number"
+                  min="0"
+                  max="5"
+                  placeholder="Auto-formatting"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="flex-1"
+                />
+              </div>
+              <v-divider class="mt-2 mb-1 opacity-10" />
+              <div>
+                <div class="flex items-center gap-3">
+                  <div
+                    class="flex items-center justify-center w-[50px] h-[50px] text-[34px] text-slate-300 transition-all rounded-md cursor-pointer shrink-0 bg-[#FFFFFF12] hover:bg-slate-400 elevation-1"
+                    @click="showIconChooseModal = !showIconChooseModal"
+                  >
+                    <span class="mdi" :class="[miniWidget.options.iconName]" />
+                  </div>
+                  <v-text-field
+                    :model-value="miniWidget.options.iconName"
+                    label="Icon"
+                    placeholder="Click to choose..."
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    readonly
+                    class="flex-1 cursor-pointer"
+                    @click="showIconChooseModal = !showIconChooseModal"
+                  />
+                </div>
+                <Transition>
+                  <div v-if="showIconChooseModal" class="flex flex-col items-center w-full mt-4">
+                    <v-text-field
+                      v-model="iconSearchString"
+                      placeholder="Search icons..."
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      class="w-full"
+                    />
+                    <RecycleScroller
+                      v-if="iconSearchString === ''"
+                      ref="iconGridRef"
+                      v-slot="{ item }"
+                      class="w-full h-40 mt-3"
+                      :style="{ fontSize: iconGridFontSize }"
+                      :items="iconsNames"
+                      :item-size="iconGridRowHeight"
+                      :item-secondary-size="iconGridSecondarySize"
+                      :grid-items="iconGridColumns"
+                    >
+                      <span
+                        :class="[
+                          `block w-full h-full text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
+                          item,
+                        ]"
+                        @click="chooseIcon(item)"
+                      />
+                    </RecycleScroller>
+                    <div
+                      v-else
+                      class="grid w-full h-40 mt-3 overflow-x-hidden overflow-y-scroll"
+                      :style="{
+                        gridTemplateColumns: `repeat(${iconGridColumns}, minmax(0, 1fr))`,
+                        gridAutoRows: `${iconGridRowHeight}px`,
+                        fontSize: iconGridFontSize,
+                      }"
+                    >
+                      <span
+                        v-for="icon in iconsToShow"
+                        :key="icon"
+                        :class="[
+                          `block text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
+                          icon,
+                        ]"
+                        @click="chooseIcon(icon)"
+                      />
+                    </div>
+                  </div>
+                </Transition>
+              </div>
+            </div>
+          </v-window-item>
+
+          <v-window-item value="presets">
+            <div class="flex flex-wrap items-center justify-around">
+              <div
+                v-for="(template, i) in veryGenericIndicatorPresets"
                 :key="i"
-                class="h-8 p-1 m-1 overflow-x-hidden text-white transition-all rounded-md cursor-pointer select-none bg-slate-700 hover:bg-slate-400/20"
-                @click="onChooseVariable(variable)"
+                class="flex items-center justify-center px-2 m-2 text-white transition-all rounded-md cursor-pointer hover:bg-slate-100/20"
+                @click="setIndicatorFromTemplate(template)"
               >
-                {{ variable }}
-              </span>
+                <span class="relative w-[2rem] mdi icon-symbol text-[34px] mx-2" :class="[template.iconName]"></span>
+                <div class="flex flex-col items-start justify-center min-w-[4rem] max-w-[6rem] select-none">
+                  <span class="text-xl font-semibold leading-6 w-fit">
+                    {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }}
+                    {{ template.variableUnit }}
+                  </span>
+                  <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">
+                    {{ template.displayName }}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </Transition>
-        <div class="flex items-center justify-start w-full mt-3">
-          <input
-            id="useStringVariable"
-            v-model="miniWidget.options.useStringVariable"
-            type="checkbox"
-            class="mr-2 w-4 h-4 rounded bg-[#FFFFFF12] border-gray-300 focus:ring-blue-500"
-          />
-          <label for="useStringVariable" class="text-sm text-slate-100/75">
-            Use string variable (don't parse as number)
-          </label>
+          </v-window-item>
+        </v-window>
+      </v-card-text>
+      <v-divider class="mx-10" />
+      <v-card-actions>
+        <div class="flex items-center justify-end w-full pa-2">
+          <v-btn color="white" @click="closeVgiDialog">Done</v-btn>
         </div>
-        <div class="flex items-center justify-between w-full mt-2">
-          <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Unit</span>
-            <input v-model="miniWidget.options.variableUnit" class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]" />
-          </div>
-          <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Multiplier</span>
-            <input
-              v-model="miniWidget.options.variableMultiplier"
-              :disabled="miniWidget.options.useStringVariable"
-              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12] disabled:cursor-not-allowed"
-              :class="{ 'opacity-50': miniWidget.options.useStringVariable }"
-            />
-          </div>
-          <div class="flex flex-col items-center justify-between w-full mx-5">
-            <span class="w-full mb-1 text-sm text-slate-100/50">Decimal Places</span>
-            <input
-              v-model="miniWidget.options.decimalPlaces"
-              :disabled="miniWidget.options.useStringVariable"
-              type="number"
-              min="0"
-              max="5"
-              placeholder="Auto-formatting"
-              class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12] disabled:cursor-not-allowed"
-              :class="{ 'opacity-50': miniWidget.options.useStringVariable }"
-            />
-          </div>
-        </div>
-        <div class="flex flex-col items-center justify-between w-full mt-3">
-          <span class="w-full mb-1 text-sm text-slate-100/50">Icon</span>
-          <div class="relative w-full">
-            <button
-              class="w-full py-1 pl-2 pr-8 text-left transition-all rounded-md bg-[#FFFFFF12] hover:bg-slate-400"
-              @click="showIconChooseModal = !showIconChooseModal"
-            >
-              <p class="text-ellipsis overflow-x-clip">{{ miniWidget.options.iconName || 'Click to choose...' }}</p>
-            </button>
-            <span
-              class="absolute right-0.5 m-1 text-2xl -translate-y-1 cursor-pointer text-slate-500 mdi"
-              :class="[miniWidget.options.iconName]"
-            />
-          </div>
-        </div>
-        <Transition>
-          <div v-if="showIconChooseModal" class="flex flex-col items-center justify-center w-full mt-2">
-            <div>
-              <input
-                v-model="iconSearchString"
-                class="w-full px-2 py-1 rounded-md bg-[#FFFFFF12]"
-                placeholder="Search icons..."
-              />
-            </div>
-            <RecycleScroller
-              v-if="iconSearchString === '' && showIconChooseModal"
-              ref="iconGridRef"
-              v-slot="{ item }"
-              class="w-full h-40 mt-3"
-              :style="{ fontSize: iconGridFontSize }"
-              :items="iconsNames"
-              :item-size="iconGridRowHeight"
-              :item-secondary-size="iconGridSecondarySize"
-              :grid-items="iconGridColumns"
-            >
-              <span
-                :class="[
-                  `block w-full h-full text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
-                  item,
-                ]"
-                @click="chooseIcon(item)"
-              />
-            </RecycleScroller>
-            <div
-              v-if="iconSearchString !== '' && showIconChooseModal"
-              class="grid w-full h-40 mt-3 overflow-x-hidden overflow-y-scroll"
-              :style="{
-                gridTemplateColumns: `repeat(${iconGridColumns}, minmax(0, 1fr))`,
-                gridAutoRows: `${iconGridRowHeight}px`,
-                fontSize: iconGridFontSize,
-              }"
-            >
-              <span
-                v-for="icon in iconsToShow"
-                :key="icon"
-                :class="[
-                  `block text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
-                  icon,
-                ]"
-                @click="chooseIcon(icon)"
-              />
-            </div>
-          </div>
-        </Transition>
-      </div>
-      <div v-if="currentTab === 'presets'" class="flex flex-wrap items-center justify-around max-w-[24rem]">
-        <div
-          v-for="(template, i) in veryGenericIndicatorPresets"
-          :key="i"
-          class="flex items-center justify-center px-2 m-2 text-white transition-all rounded-md cursor-pointer hover:bg-slate-100/20"
-          @click="setIndicatorFromTemplate(template)"
-        >
-          <span class="relative w-[2rem] mdi icon-symbol text-[34px] mx-2" :class="[template.iconName]"></span>
-          <div class="flex flex-col items-start justify-center min-w-[4rem] max-w-[6rem] select-none">
-            <span class="text-xl font-semibold leading-6 w-fit">
-              {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }} {{ template.variableUnit }}
-            </span>
-            <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ template.displayName }}</span>
-          </div>
-        </div>
-      </div>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
@@ -526,26 +553,6 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
 </script>
 
 <style scoped>
-.close-icon {
-  position: fixed;
-  top: 5px;
-  right: 10px;
-  cursor: pointer;
-  color: white;
-  font-size: 26px;
-  border-radius: 8px;
-}
-
-.config-modal {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin-right: -50%;
-  transform: translate(-50%, -50%);
-  height: fit-content;
-  border-radius: 5px;
-}
-
 .scroll-container {
   overflow: hidden;
   text-overflow: ellipsis;
