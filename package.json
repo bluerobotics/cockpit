@@ -176,6 +176,9 @@
     ],
     "appId": "org.bluerobotics.cockpit",
     "productName": "Cockpit",
+    "extraMetadata": {
+      "description": "Cockpit"
+    },
     "publish": {
       "provider": "github",
       "owner": "bluerobotics"
@@ -199,7 +202,8 @@
     },
     "linux": {
       "icon": "public/pwa-512x512.png",
-      "target": ["AppImage"]
+      "target": ["AppImage"],
+      "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types."
     },
     "flatpak": {
       "base": "org.electronjs.Electron2.BaseApp",
