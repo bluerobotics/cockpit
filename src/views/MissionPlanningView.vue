@@ -487,6 +487,14 @@
           <v-progress-circular v-if="loading" size="20" class="py-4" />
           <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
         </button>
+        <button
+          v-if="hasLastUploadedMission"
+          :disabled="loading"
+          class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+          @click="restoreLastUploadedMission"
+        >
+          RESTORE LAST UPLOADED MISSION
+        </button>
       </div>
     </div>
     <v-tooltip location="top" text="Switch to Flight mode">
@@ -760,6 +768,7 @@ import {
   setSurveyAreaSquareMeters,
   useMissionEstimates,
 } from '@/composables/useMissionEstimates'
+import { useMissionOperations } from '@/composables/useMissionOperations'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -913,12 +922,14 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
+    // Keep the uploaded mission on the planner (draft) and store a restorable snapshot so quick edits
+    // don't require re-downloading it from the vehicle.
+    missionStore.setLastUploadedMission(buildCurrentMissionSnapshot())
     const message = 'Go to Flight Mode and click the “play” button to start the mission.'
 
     if (missionStore.alwaysSwitchToFlightMode) {
       router.push('/')
       missionStore.bumpVehicleMissionRevision(missionItemsToUpload)
-      missionStore.clearDraft()
       return
     }
     showDialog({
@@ -949,7 +960,6 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     })
     hasUploadedMission.value = true
     missionStore.bumpVehicleMissionRevision(missionItemsToUpload)
-    missionStore.clearDraft()
   } catch (error) {
     showDialog({
       variant: 'error',
@@ -3874,6 +3884,13 @@ const openMissionLibrary = (): void => {
   logUserAction('Opened the mission library')
   interfaceStore.missionLibraryVisibility = true
 }
+
+const { hasLastUploadedMission, restoreLastUploadedMission } = useMissionOperations({
+  loadDraftMission,
+  showDialog,
+  closeDialog,
+  openSnackbar,
+})
 
 const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
   if (mission.vehicleType && !vehicleStore.isVehicleOnline) {
