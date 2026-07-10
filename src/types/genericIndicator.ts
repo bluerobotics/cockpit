@@ -11,7 +11,8 @@ export interface VeryGenericIndicatorPreset {
    */
   variableName: string
   /**
-   * Name of the icon to be used (only supporting MDI icons currently)
+   * Name of the icon to be used. Either an MDI class name (e.g. `mdi-thermometer`) or a custom
+   * icon reference (`custom:<id>`) pointing to the user's uploaded SVG icon library.
    */
   iconName: string
   /**

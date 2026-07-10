@@ -1,4 +1,5 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { utf8ToBase64 } from '@/libs/utils'
 import { CockpitMission, SavedMission, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 // Square so it matches the mission library card's `aspect-square` thumbnail, avoiding
@@ -44,13 +45,6 @@ export const vehicleTypeLabel = (type?: MavType): string => {
       .replace(/(^|_)([a-z])/g, (_m, _p1, c) => ` ${c.toUpperCase()}`)
       .trim()
   )
-}
-
-const utf8ToBase64 = (input: string): string => {
-  const bytes = new TextEncoder().encode(input)
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary)
 }
 
 type LatLngBounds = {
