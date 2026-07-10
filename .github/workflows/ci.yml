@@ -15,6 +15,41 @@ env:
   NODE_OPTIONS: --max-old-space-size=6144
 
 jobs:
+  check-commits:
+    name: Check commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail on pending-rebase commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Autosquash prefixes that `git commit --fixup/--squash/--fixup=amend`
+          # write and `git rebase --autosquash` consumes. Their presence means the
+          # branch still has a pending rebase to run, so it is not merge-ready.
+          failed=0
+          while IFS= read -r sha; do
+            subject=$(git log -1 --format='%s' "$sha")
+            if printf '%s' "$subject" | grep -qE '^(fixup|squash|amend)! '; then
+              echo "::error::Commit ${sha:0:8} still carries a pending-rebase marker: \"${subject}\""
+              failed=1
+            fi
+          done < <(git rev-list "$BASE_SHA".."$HEAD_SHA")
+
+          if [ "$failed" -ne 0 ]; then
+            echo "Run 'git rebase --autosquash' to fold these commits before merging."
+            exit 1
+          fi
+          echo "No pending-rebase markers found."
+
   test:
     name: Test
     runs-on: ubuntu-latest
