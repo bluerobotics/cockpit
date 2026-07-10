@@ -1015,6 +1015,9 @@ export const useVideoStore = defineStore('video', () => {
 
       if (activeStreams.value[streamName]) {
         activeStreams.value[streamName]!.mediaRecorder = undefined
+        // The recording guard may have kept this stream alive after its last consumer left (e.g. the recorder
+        // widget was unmounted mid-recording); now that recording is done, release it if nothing needs it.
+        deactivateStreamIfUnused(streamName)
       } else {
         console.warn(`Stream '${streamName}' was removed during video processing finalization.`)
       }
