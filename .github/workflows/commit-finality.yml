@@ -1,0 +1,101 @@
+name: Commit Finality Check
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: commit-finality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  commit-finality:
+    name: Commit finality check
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft }}
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      # SECURITY: pull_request_target exposes repo secrets (the Anthropic key). We
+      # check out the trusted base ref, NEVER the PR head, and feed the model only
+      # commit *messages* (fetched as data via the API), so no fork code ever runs
+      # with access to the key.
+      - name: Checkout base ref (trusted)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Fetch commit messages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json commits \
+            --jq '[.commits[] | {oid: .oid, message: (.messageHeadline + (if (.messageBody // "") == "" then "" else "\n\n" + .messageBody end))}]' \
+            > commits.json
+          echo "Commits under review:"
+          jq -r '.[] | "- \(.oid[0:8]) \(.message | split("\n")[0])"' commits.json
+
+      - name: Classify commits with Claude
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: ${{ vars.COMMIT_CHECK_MODEL || 'claude-sonnet-4-6' }}
+          max_turns: "5"
+          allowed_tools: "View,Write"
+          system_prompt: |
+            You are a strict git release-hygiene classifier running in CI. You judge
+            whether each commit on a pull request is FINAL (merge-ready) or NON-FINAL
+            (should not land on the main branch as-is).
+
+            Read `commits.json` from the working directory — a JSON array of
+            `{ oid, message }` objects (message is the full commit message).
+
+            Classify a commit as NON-FINAL when its message signals unfinished or
+            throwaway work, for example:
+            - work-in-progress: "wip", "work in progress", "checkpoint", "savepoint"
+            - temporary/throwaway: "temp", "tmp", "temporary", "hack", "quick fix to try"
+            - debugging leftovers: "debug", "debugging", "add logs", "console.log", "remove me", "revert me"
+            - explicit blockers: "do not merge", "dnm"
+            - pending-rebase markers: "fixup! ...", "squash! ...", "amend! ..."
+            - meaningless/test messages: "test", "test commit", "asdf", "stuff", "." or empty
+            - explicitly incomplete: "stub", "todo: finish", "part 1 of N", "half done", "WIP: ..."
+
+            Judge only by the message's intent, not by how large or small the change
+            is. A concise but complete message such as "fix: handle null vehicle id"
+            is FINAL. When genuinely unsure, treat the commit as FINAL to avoid false
+            positives.
+
+            Write ONLY the following JSON to a file named `verdict.json` in the
+            working directory, and nothing else (no prose, no markdown fences):
+            {"nonFinal":[{"oid":"<oid>","reason":"<short reason>"}]}
+            Use an empty array when every commit is final.
+          prompt: |
+            Read commits.json, classify each commit, and write verdict.json exactly
+            as described in the system instructions.
+
+      - name: Enforce verdict
+        run: |
+          set -euo pipefail
+          if [ ! -f verdict.json ]; then
+            echo "::error::Classifier did not produce verdict.json."
+            exit 1
+          fi
+          echo "Verdict:"
+          cat verdict.json
+          if ! jq empty verdict.json 2>/dev/null; then
+            echo "::error::verdict.json is not valid JSON."
+            exit 1
+          fi
+          count=$(jq '.nonFinal | length' verdict.json)
+          if [ "$count" -gt 0 ]; then
+            while IFS=$'\t' read -r oid reason; do
+              echo "::error::Non-final commit ${oid:0:8}: ${reason}"
+            done < <(jq -r '.nonFinal[] | [.oid, .reason] | @tsv' verdict.json)
+            echo "These commits look unfinished. Reword or rebase them before merging."
+            exit 1
+          fi
+          echo "All commits look final."
