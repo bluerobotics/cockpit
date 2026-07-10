@@ -1,5 +1,4 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { utf8ToBase64 } from '@/libs/utils'
 import { CockpitMission, SavedMission, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 // Square so it matches the mission library card's `aspect-square` thumbnail, avoiding
@@ -82,22 +81,22 @@ const computeBounds = (coordinates: WaypointCoordinates[]): LatLngBounds | null 
 }
 
 /**
- * Generates a lightweight SVG thumbnail (base64 data URL) of a mission's geometry.
+ * Generates a lightweight SVG thumbnail of a mission's geometry as raw markup.
  * @param {CockpitMission} mission - The mission to render.
- * @returns {string} A base64 `data:image/svg+xml` URL.
+ * @returns {string} The thumbnail's raw SVG markup.
  */
-export const generateMissionThumbnail = (mission: CockpitMission): string => {
+export const generateMissionThumbnailSvg = (mission: CockpitMission): string => {
   const waypointCoords: WaypointCoordinates[] = (mission.waypoints ?? []).map((w) => w.coordinates)
   const surveyCoords: WaypointCoordinates[] = (mission.surveys ?? []).flatMap((s) => s.polygonCoordinates ?? [])
   const allCoords = [...waypointCoords, ...surveyCoords]
 
   if (allCoords.length === 0) {
-    const emptySvg =
+    return (
       `<svg xmlns="http://www.w3.org/2000/svg" width="${THUMBNAIL_WIDTH}" height="${THUMBNAIL_HEIGHT}" viewBox="0 0 ${THUMBNAIL_WIDTH} ${THUMBNAIL_HEIGHT}">` +
       `<rect width="100%" height="100%" fill="#1f2a37"/>` +
       `<text x="50%" y="50%" fill="#ffffff66" font-family="sans-serif" font-size="16" text-anchor="middle" dominant-baseline="middle">No path</text>` +
       `</svg>`
-    return `data:image/svg+xml;base64,${utf8ToBase64(emptySvg)}`
+    )
   }
 
   const bounds = computeBounds(allCoords)!
@@ -146,15 +145,14 @@ export const generateMissionThumbnail = (mission: CockpitMission): string => {
     })
     .join('')
 
-  const svg =
+  return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${THUMBNAIL_WIDTH}" height="${THUMBNAIL_HEIGHT}" viewBox="0 0 ${THUMBNAIL_WIDTH} ${THUMBNAIL_HEIGHT}">` +
     `<rect width="100%" height="100%" fill="#1f2a37"/>` +
     surveyPolygons +
     pathElement +
     waypointMarkers +
     `</svg>`
-
-  return `data:image/svg+xml;base64,${utf8ToBase64(svg)}`
+  )
 }
 
 /**

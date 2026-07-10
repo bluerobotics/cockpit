@@ -399,7 +399,7 @@ const formatDate = (date: Date): string => format(date, 'LLL dd, yyyy HH:mm')
 const googleEarthUrl = (coords: WaypointCoordinates): string =>
   `https://earth.google.com/web/@${coords[0]},${coords[1]},500a,1000d`
 
-const thumbnailFor = (mission: SavedMission): string | undefined => missionStore.savedMissionThumbnails[mission.id]
+const thumbnailFor = (mission: SavedMission): string | undefined => missionStore.thumbnailUrlFor(mission.id)
 
 const openDetail = (mission: SavedMission): void => {
   logUserAction(`Opened details for saved mission "${mission.name}"`)

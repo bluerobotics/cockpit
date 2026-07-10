@@ -7,10 +7,11 @@ import { computed, reactive, ref, watch } from 'vue'
 import { defaultMapFallbackBaseColor, defaultMapFallbackNoiseIntensity } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { useMissionThumbnails } from '@/composables/useMissionThumbnails'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
-import { generateMissionThumbnail } from '@/libs/mission/library'
+import { generateMissionThumbnailSvg } from '@/libs/mission/library'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
@@ -105,10 +106,10 @@ export const useMissionStore = defineStore('mission', () => {
 
   // Fallback vehicle type used by vehicle-specific planning features when no vehicle is connected.
   const plannedVehicleType = useBlueOsStorage<MavType | undefined>('cockpit-planned-vehicle-type', undefined)
-  // Thumbnails are stored separately from the saved missions so that adding many entries doesn't
-  // bloat the main library payload (each thumbnail is ~1-2 KB of base64 SVG).
   const savedMissions = useBlueOsStorage<SavedMission[]>('cockpit-mission-library', [])
-  const savedMissionThumbnails = useBlueOsStorage<Record<string, string>>('cockpit-mission-library-thumbnails', {})
+  // Thumbnail bytes live local-first in IndexedDB and sync to the vehicle as real files, so adding many
+  // entries never bloats the settings payload the way inlined base64 SVGs would.
+  const { urlFor: thumbnailUrlFor, setThumbnail, removeThumbnail } = useMissionThumbnails()
 
   const { showDialog } = useInteractionDialog()
 
@@ -707,7 +708,7 @@ export const useMissionStore = defineStore('mission', () => {
     id?: string
   }): SavedMission => {
     const now = Date.now()
-    const thumbnail = generateMissionThumbnail(payload.mission)
+    const thumbnailSvg = generateMissionThumbnailSvg(payload.mission)
     const existingIndex = payload.id ? savedMissions.value.findIndex((m) => m.id === payload.id) : -1
 
     if (existingIndex !== -1) {
@@ -723,7 +724,7 @@ export const useMissionStore = defineStore('mission', () => {
         estimates: payload.estimates,
       }
       savedMissions.value.splice(existingIndex, 1, updated)
-      savedMissionThumbnails.value = { ...savedMissionThumbnails.value, [updated.id]: thumbnail }
+      setThumbnail(updated.id, thumbnailSvg)
       return updated
     }
 
@@ -738,18 +739,14 @@ export const useMissionStore = defineStore('mission', () => {
       estimates: payload.estimates,
     }
     savedMissions.value.unshift(created)
-    savedMissionThumbnails.value = { ...savedMissionThumbnails.value, [created.id]: thumbnail }
+    setThumbnail(created.id, thumbnailSvg)
     return created
   }
 
   const deleteSavedMission = (id: string): void => {
     const index = savedMissions.value.findIndex((m) => m.id === id)
     if (index !== -1) savedMissions.value.splice(index, 1)
-    if (savedMissionThumbnails.value[id]) {
-      const next = { ...savedMissionThumbnails.value }
-      delete next[id]
-      savedMissionThumbnails.value = next
-    }
+    removeThumbnail(id)
   }
 
   return {
@@ -833,7 +830,7 @@ export const useMissionStore = defineStore('mission', () => {
     plannedVehicleType,
     effectiveVehicleType,
     savedMissions,
-    savedMissionThumbnails,
+    thumbnailUrlFor,
     saveMissionToLibrary,
     deleteSavedMission,
   }
