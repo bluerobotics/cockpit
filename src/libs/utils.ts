@@ -36,6 +36,18 @@ export const sequentialArray = (length: number): number[] => {
 }
 
 /**
+ * Base64-encodes a UTF-8 string, preserving the multi-byte characters that `btoa` alone would mangle.
+ * @param {string} input - The UTF-8 string to encode.
+ * @returns {string} The base64-encoded representation.
+ */
+export const utf8ToBase64 = (input: string): string => {
+  const bytes = new TextEncoder().encode(input)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary)
+}
+
+/**
  * Simple scale function
  * @param {number} input Input value
  * @param {number} inputMin Input lowest point

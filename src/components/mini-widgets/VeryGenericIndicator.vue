@@ -7,7 +7,10 @@
     }"
     :style="{ width: miniWidget.options.widgetWidth + 'px' }"
   >
-    <span class="h-full left-[0.5rem] bottom-[5%] absolute mdi text-[2.25rem]" :class="[miniWidget.options.iconName]" />
+    <VgiIcon
+      class="h-full left-[0.5rem] bottom-[5%] absolute text-[2.25rem]"
+      :icon-name="miniWidget.options.iconName"
+    />
     <div class="absolute left-[3rem] h-full select-none font-semibold scroll-container w-full">
       <div class="w-full" :class="{ 'scroll-text': valueIsOverflowing }">
         <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
@@ -145,10 +148,10 @@
                     class="flex items-center justify-center w-[50px] h-[50px] text-[34px] text-slate-300 transition-all rounded-md cursor-pointer shrink-0 bg-[#FFFFFF12] hover:bg-slate-400 elevation-1"
                     @click="showIconChooseModal = !showIconChooseModal"
                   >
-                    <span class="mdi" :class="[miniWidget.options.iconName]" />
+                    <VgiIcon :icon-name="miniWidget.options.iconName" />
                   </div>
                   <v-text-field
-                    :model-value="miniWidget.options.iconName"
+                    :model-value="iconDisplayName"
                     label="Icon"
                     placeholder="Click to choose..."
                     variant="outlined"
@@ -158,55 +161,109 @@
                     class="flex-1 cursor-pointer"
                     @click="showIconChooseModal = !showIconChooseModal"
                   />
+                  <v-btn-toggle
+                    v-model="iconCategory"
+                    mandatory
+                    divided
+                    density="compact"
+                    class="shrink-0 vgi-category-toggle elevation-1"
+                    @update:model-value="onIconCategoryChange"
+                  >
+                    <v-btn value="stock" size="small" class="text-white">Basic icons</v-btn>
+                    <v-btn value="custom" size="small" class="text-white">Custom icons</v-btn>
+                  </v-btn-toggle>
                 </div>
                 <Transition>
                   <div v-if="showIconChooseModal" class="flex flex-col items-center w-full mt-4">
-                    <v-text-field
-                      v-model="iconSearchString"
-                      placeholder="Search icons..."
-                      variant="outlined"
-                      density="compact"
-                      hide-details
-                      class="w-full"
-                    />
-                    <RecycleScroller
-                      v-if="iconSearchString === ''"
-                      ref="iconGridRef"
-                      v-slot="{ item }"
-                      class="w-full h-40 mt-3"
-                      :style="{ fontSize: iconGridFontSize }"
-                      :items="iconsNames"
-                      :item-size="iconGridRowHeight"
-                      :item-secondary-size="iconGridSecondarySize"
-                      :grid-items="iconGridColumns"
-                    >
-                      <span
-                        :class="[
-                          `block w-full h-full text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
-                          item,
-                        ]"
-                        @click="chooseIcon(item)"
+                    <template v-if="iconCategory === 'stock'">
+                      <v-text-field
+                        v-model="iconSearchString"
+                        placeholder="Search icons..."
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="w-full"
                       />
-                    </RecycleScroller>
-                    <div
-                      v-else
-                      class="grid w-full h-40 mt-3 overflow-x-hidden overflow-y-scroll"
-                      :style="{
-                        gridTemplateColumns: `repeat(${iconGridColumns}, minmax(0, 1fr))`,
-                        gridAutoRows: `${iconGridRowHeight}px`,
-                        fontSize: iconGridFontSize,
-                      }"
-                    >
-                      <span
-                        v-for="icon in iconsToShow"
-                        :key="icon"
-                        :class="[
-                          `block text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
-                          icon,
-                        ]"
-                        @click="chooseIcon(icon)"
-                      />
-                    </div>
+                      <RecycleScroller
+                        v-if="iconSearchString === ''"
+                        ref="iconGridRef"
+                        v-slot="{ item }"
+                        class="w-full h-40 mt-3"
+                        :style="{ fontSize: iconGridFontSize }"
+                        :items="iconsNames"
+                        :item-size="iconGridRowHeight"
+                        :item-secondary-size="iconGridSecondarySize"
+                        :grid-items="iconGridColumns"
+                      >
+                        <span
+                          :class="[
+                            `block w-full h-full text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
+                            item,
+                          ]"
+                          @click="chooseIcon(item)"
+                        />
+                      </RecycleScroller>
+                      <div
+                        v-else
+                        class="grid w-full h-40 mt-3 overflow-x-hidden overflow-y-scroll"
+                        :style="{
+                          gridTemplateColumns: `repeat(${iconGridColumns}, minmax(0, 1fr))`,
+                          gridAutoRows: `${iconGridRowHeight}px`,
+                          fontSize: iconGridFontSize,
+                        }"
+                      >
+                        <span
+                          v-for="icon in iconsToShow"
+                          :key="icon"
+                          :class="[
+                            `block text-center text-white cursor-pointer mdi icon-symbol leading-[${iconGridRowHeight}px]`,
+                            icon,
+                          ]"
+                          @click="chooseIcon(icon)"
+                        />
+                      </div>
+                    </template>
+
+                    <template v-else>
+                      <div class="flex items-center justify-between w-full">
+                        <span class="text-xs text-slate-100/50">Your uploaded icons</span>
+                        <v-btn
+                          variant="elevated"
+                          size="small"
+                          prepend-icon="mdi-upload"
+                          class="self-center bg-[#FFFFFF12]"
+                          @click="iconUploadInput?.click()"
+                        >
+                          Upload SVG
+                        </v-btn>
+                        <input
+                          ref="iconUploadInput"
+                          type="file"
+                          accept=".svg,image/svg+xml"
+                          class="hidden"
+                          @change="onCustomIconFileSelected"
+                        />
+                      </div>
+                      <span v-if="customIconError" class="w-full mt-1 text-xs text-red-400">{{ customIconError }}</span>
+                      <div v-if="customIconsList.length > 0" class="grid w-full grid-cols-7 gap-1 mt-3">
+                        <div
+                          v-for="icon in customIconsList"
+                          :key="icon.id"
+                          class="relative flex items-center justify-center w-full h-10 text-2xl text-white rounded-md cursor-pointer group"
+                          :title="icon.name"
+                          @click="chooseIcon(customIconRefFromId(icon.id))"
+                        >
+                          <VgiIcon :icon-name="customIconRefFromId(icon.id)" />
+                          <span
+                            class="absolute top-[-10px] right-[10px] hidden text-[13px] text-white mdi mdi-close-circle group-hover:block"
+                            @click.stop="confirmRemoveCustomIcon(icon)"
+                          />
+                        </div>
+                      </div>
+                      <div v-else class="w-full py-6 text-sm text-center text-slate-100/40">
+                        No custom icons uploaded yet. Use "Upload SVG" to add one.
+                      </div>
+                    </template>
                   </div>
                 </Transition>
               </div>
@@ -221,7 +278,7 @@
                 class="flex items-center justify-center px-2 m-2 text-white transition-all rounded-md cursor-pointer hover:bg-slate-100/20"
                 @click="setIndicatorFromTemplate(template)"
               >
-                <span class="relative w-[2rem] mdi icon-symbol text-[34px] mx-2" :class="[template.iconName]"></span>
+                <VgiIcon class="relative w-[2rem] icon-symbol text-[34px] mx-2" :icon-name="template.iconName" />
                 <div class="flex flex-col items-start justify-center min-w-[4rem] max-w-[6rem] select-none">
                   <span class="text-xl font-semibold leading-6 w-fit">
                     {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }}
@@ -251,13 +308,16 @@ import { useElementSize, watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
 
+import VgiIcon from '@/components/mini-widgets/VgiIcon.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useCustomIcons } from '@/composables/useCustomIcons'
 import {
   getDataLakeVariableData,
   listenDataLakeVariable,
   listenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
+import { type CustomIcon, customIconRefFromId, idFromCustomIconRef, isCustomIconRef } from '@/libs/custom-icons'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
 import { round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -265,7 +325,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { type VeryGenericIndicatorPreset, veryGenericIndicatorPresets } from '@/types/genericIndicator'
 import type { MiniWidget } from '@/types/widgets'
 
-const { showDialog } = useInteractionDialog()
+const { showDialog, closeDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{
@@ -497,6 +557,58 @@ const variableNameSearchString = ref('')
 const allVariablesNames = ref<string[]>([])
 const showVariableChooseModal = ref(false)
 const showIconChooseModal = ref(false)
+const iconCategory = ref<'stock' | 'custom'>('stock')
+
+const {
+  icons: customIconsList,
+  addIconFromFile: addCustomIconFromFile,
+  removeIcon: removeCustomIcon,
+} = useCustomIcons()
+const customIconError = ref('')
+const iconUploadInput = ref<HTMLInputElement | null>(null)
+
+// For custom icons the stored value is an opaque `custom:<id>` ref, so show the icon's name instead
+const iconDisplayName = computed(() => {
+  const iconName = miniWidget.value.options.iconName
+  if (!isCustomIconRef(iconName)) return iconName
+  const id = idFromCustomIconRef(iconName)
+  return customIconsList.value.find((icon) => icon.id === id)?.name ?? iconName
+})
+
+const onIconCategoryChange = (category: 'stock' | 'custom'): void => {
+  logUserAction(`Switched to '${category}' indicator icon category`)
+  showIconChooseModal.value = true
+}
+
+const onCustomIconFileSelected = async (event: Event): Promise<void> => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  const { id, error } = await addCustomIconFromFile(file)
+  customIconError.value = error ?? ''
+  if (id) chooseIcon(customIconRefFromId(id))
+}
+
+const confirmRemoveCustomIcon = (icon: CustomIcon): void => {
+  logUserAction(`Opened delete confirmation for custom icon '${icon.name}'`)
+  showDialog({
+    title: 'Delete custom icon',
+    message: `Delete the custom icon "${icon.name}"? Indicators using it will show a placeholder instead.`,
+    variant: 'warning',
+    actions: [
+      { text: 'Cancel', action: () => closeDialog() },
+      {
+        text: 'Delete',
+        action: () => {
+          removeCustomIcon(icon.id)
+          closeDialog()
+        },
+      },
+    ],
+  })
+}
 
 const variableNamesToShow = computed(() => {
   if (variableNameSearchString.value === '') {
@@ -525,7 +637,7 @@ const chooseIcon = (iconName: string): void => {
   logUserAction(`Selected indicator icon '${iconName}'`)
   miniWidget.value.options.iconName = iconName
   iconSearchString.value = ''
-  showIconChooseModal.value = false
+  if (!isCustomIconRef(iconName)) showIconChooseModal.value = false
 }
 
 watch(showVariableChooseModal, async (newValue) => {
@@ -553,6 +665,20 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
 </script>
 
 <style scoped>
+.vgi-category-toggle {
+  background-color: transparent;
+  border: 1px solid #ffffff1a;
+}
+.vgi-category-toggle :deep(.v-btn) {
+  background-color: transparent;
+}
+.vgi-category-toggle :deep(.v-btn.v-btn--active) {
+  background-color: #ffffff11;
+}
+.vgi-category-toggle :deep(.v-btn__overlay) {
+  opacity: 0;
+}
+
 .scroll-container {
   overflow: hidden;
   text-overflow: ellipsis;
