@@ -1,5 +1,5 @@
 import * as turf from '@turf/turf'
-import type { Feature, Polygon } from 'geojson'
+import type { Feature, Point, Polygon, Position } from 'geojson'
 import * as L from 'leaflet'
 
 import { bearingBetween, calculateHaversineDistance, deltaBearing } from '@/libs/mission/general-estimates'
@@ -270,6 +270,10 @@ export const fitMapToWaypoints = (
  * @param {number} turnaroundDistance - Distance in meters to extend (positive) or inset (negative) from the polygon
  *   boundary before turning. Positive values make the vehicle fly past the edges; negative values keep it away.
  * @param {boolean} crosshatch - When true, appends a second pass rotated 90 degrees to form a crosshatch grid.
+ * @param {boolean} reverseSweep - When true, sweeps the survey lines from the far side inward, so the path
+ *   enters the polygon from the opposite corner. Used to pick the crosshatch pass orientation.
+ * @param {boolean} startReversed - When true, the first survey line is traversed in the opposite direction, so
+ *   the path enters from the other end of that line. Used to pick the crosshatch pass orientation.
  * @returns {SurveyPath} The generated survey path and turnaround segments.
  */
 export const generateSurveyPath = (
@@ -277,7 +281,9 @@ export const generateSurveyPath = (
   distanceBetweenLines: number,
   linesAngle: number,
   turnaroundDistance = 0,
-  crosshatch = false
+  crosshatch = false,
+  reverseSweep = false,
+  startReversed = false
 ): SurveyPath => {
   if (polygonPoints.length < 4) return { path: [], turnaroundSegments: [] }
 
@@ -301,8 +307,7 @@ export const generateSurveyPath = (
     const continuousPath: L.LatLng[] = []
     const turnaroundSegments: L.LatLng[][] = []
     let crosshatchStartIndex: number | undefined
-    let d = -diagonal
-    let isReverse = false
+    let isReverse = startReversed
 
     let prevExitBoundary: L.LatLng | null = null
     let prevExitTurnaround: L.LatLng | null = null
@@ -312,7 +317,12 @@ export const generateSurveyPath = (
       turf.point([minX + diagonal * Math.sin(angleRad), minY - diagonal * Math.cos(angleRad)])
     )
 
-    while (d <= diagonal * 2) {
+    const step = distanceBetweenLines / 111000
+    const dValues: number[] = []
+    for (let d = -diagonal; d <= diagonal * 2; d += step) dValues.push(d)
+    if (reverseSweep) dValues.reverse()
+
+    for (const d of dValues) {
       const lineStart = [
         minX + d * Math.cos(angleRad) - diagonal * Math.sin(angleRad),
         minY + d * Math.sin(angleRad) + diagonal * Math.cos(angleRad),
@@ -341,7 +351,6 @@ export const generateSurveyPath = (
           const origLast = L.latLng(coords[coords.length - 1][1], coords[coords.length - 1][0])
 
           if (turnaroundDistance < 0 && Math.abs(turnaroundDistance) * 2 >= origFirst.distanceTo(origLast)) {
-            d += distanceBetweenLines / 111000
             continue
           }
 
@@ -381,15 +390,13 @@ export const generateSurveyPath = (
 
         if (continuousPath.length > 0 && turnaroundDistance === 0) {
           const lastPoint = continuousPath[continuousPath.length - 1]
-          const edgePath = moveAlongEdge(poly, lastPoint, linePoints[0], diagonal)
+          const edgePath = moveAlongEdge(poly, lastPoint, linePoints[0])
           continuousPath.push(...edgePath)
         }
 
         continuousPath.push(...linePoints)
         isReverse = !isReverse
       }
-
-      d += distanceBetweenLines / 111000
     }
 
     if (turnaroundDistance !== 0 && prevExitBoundary && prevExitTurnaround) {
@@ -397,19 +404,33 @@ export const generateSurveyPath = (
     }
 
     if (crosshatch) {
-      const secondPass = generateSurveyPath(polygonPoints, distanceBetweenLines, linesAngle + 90, turnaroundDistance)
-      if (secondPass.path.length > 0) {
-        const passEnd = continuousPath[continuousPath.length - 1]
-        // Fly the second pass in whichever direction keeps the transit leg from the first pass short.
-        if (
-          passEnd &&
-          passEnd.distanceTo(secondPass.path[secondPass.path.length - 1]) < passEnd.distanceTo(secondPass.path[0])
-        ) {
-          secondPass.path.reverse()
+      const passEnd = continuousPath[continuousPath.length - 1]
+      // The second pass can start at any of its four boustrophedon corners: the two sweep directions crossed
+      // with the two directions of the first survey line. Enter at the corner nearest the first pass exit so
+      // the transit leg is short and does not double back, instead of always entering at a fixed path endpoint.
+      const secondAngle = linesAngle + 90
+      const sweeps = [
+        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, false, false),
+        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, false, true),
+        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, true, false),
+        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, true, true),
+      ]
+
+      let bestPass: SurveyPath | null = null
+      let bestTransit = Infinity
+      for (const sweep of sweeps) {
+        if (sweep.path.length === 0) continue
+        const transit = passEnd ? passEnd.distanceTo(sweep.path[0]) : 0
+        if (transit < bestTransit) {
+          bestTransit = transit
+          bestPass = sweep
         }
+      }
+
+      if (bestPass) {
         crosshatchStartIndex = continuousPath.length
-        continuousPath.push(...secondPass.path)
-        turnaroundSegments.push(...secondPass.turnaroundSegments)
+        continuousPath.push(...bestPass.path)
+        turnaroundSegments.push(...bestPass.turnaroundSegments)
       }
     }
 
@@ -421,50 +442,73 @@ export const generateSurveyPath = (
 }
 
 /**
- * Moves along the edge of a polygon from start to end point.
- * @param {Feature<Polygon>} polygon - The polygon to move along.
- * @param {L.LatLng} start - The starting point.
- * @param {L.LatLng} end - The ending point.
- * @param {number} maxDistance - The maximum distance to move.
- * @returns {L.LatLng[]} The path along the edge.
+ * Finds the index of the polygon ring edge (the segment from coords[i] to coords[i + 1]) that a point lies on.
+ * @param {Feature<Point>} point - The point to locate.
+ * @param {Position[]} coords - The polygon ring coordinates (closed, first equals last).
+ * @returns {number} The edge index, or -1 if the point does not lie on any edge.
  */
-export const moveAlongEdge = (
-  polygon: Feature<Polygon>,
-  start: L.LatLng,
-  end: L.LatLng,
-  maxDistance: number
-): L.LatLng[] => {
-  const coords = polygon.geometry.coordinates[0]
-  const path: L.LatLng[] = []
-  let remainingDistance = maxDistance
-  let currentPoint = turf.point([start.lng, start.lat])
-
-  for (let i = 0; i < coords.length; i++) {
-    const nextPoint = turf.point(coords[(i + 1) % coords.length])
-    const edgeLine = turf.lineString([coords[i], coords[(i + 1) % coords.length]])
-
-    if (turf.booleanPointOnLine(currentPoint, edgeLine)) {
-      while (remainingDistance > 0) {
-        const distance = turf.distance(currentPoint, nextPoint)
-        if (distance <= remainingDistance) {
-          path.push(L.latLng(nextPoint.geometry.coordinates[1], nextPoint.geometry.coordinates[0]))
-          remainingDistance -= distance
-          currentPoint = nextPoint
-          break
-        } else {
-          const move = turf.along(edgeLine, remainingDistance, { units: 'kilometers' })
-          path.push(L.latLng(move.geometry.coordinates[1], move.geometry.coordinates[0]))
-          break
-        }
-      }
-    }
-
-    if (turf.booleanPointOnLine(turf.point([end.lng, end.lat]), edgeLine)) {
-      break
+const findRingEdgeIndex = (point: Feature<Point>, coords: Position[]): number => {
+  // Pick the metrically closest edge rather than booleanPointOnLine: a degree-based epsilon there treats a
+  // point as "on" a near-axis-aligned edge even when it is tens of meters away, which sent transect
+  // connectors detouring out to a far polygon corner.
+  let closestEdge = -1
+  let closestDistance = Infinity
+  for (let i = 0; i < coords.length - 1; i++) {
+    const distance = turf.pointToLineDistance(point, turf.lineString([coords[i], coords[i + 1]]), { units: 'meters' })
+    if (distance < closestDistance) {
+      closestDistance = distance
+      closestEdge = i
     }
   }
+  return closestDistance <= 1 ? closestEdge : -1
+}
 
-  return path
+/**
+ * Total length of the path start -> vertices -> end, in kilometers.
+ * @param {L.LatLng} start - The starting point.
+ * @param {Position[]} vertices - The intermediate ring vertices.
+ * @param {L.LatLng} end - The ending point.
+ * @returns {number} The path length, in kilometers.
+ */
+const pathLengthThroughVertices = (start: L.LatLng, vertices: Position[], end: L.LatLng): number =>
+  turf.length(turf.lineString([[start.lng, start.lat], ...vertices, [end.lng, end.lat]]))
+
+/**
+ * Finds the shortest path hugging a polygon's boundary between two points that lie on that boundary, so
+ * consecutive survey transects are connected without overshooting into a far corner.
+ * @param {Feature<Polygon>} polygon - The polygon to move along.
+ * @param {L.LatLng} start - The starting point, expected to lie on the polygon boundary.
+ * @param {L.LatLng} end - The ending point, expected to lie on the polygon boundary.
+ * @returns {L.LatLng[]} The intermediate ring vertices between start and end, in the shorter direction. Empty
+ *   when both points lie on the same edge, so the caller connects them with a direct segment.
+ */
+const moveAlongEdge = (polygon: Feature<Polygon>, start: L.LatLng, end: L.LatLng): L.LatLng[] => {
+  const coords = polygon.geometry.coordinates[0]
+  const startEdge = findRingEdgeIndex(turf.point([start.lng, start.lat]), coords)
+  const endEdge = findRingEdgeIndex(turf.point([end.lng, end.lat]), coords)
+
+  if (startEdge === -1 || endEdge === -1 || startEdge === endEdge) return []
+
+  const vertexCount = coords.length - 1 // Ring is closed, so the last coordinate duplicates the first.
+
+  const forwardVertices: Position[] = []
+  for (let i = (startEdge + 1) % vertexCount; ; i = (i + 1) % vertexCount) {
+    forwardVertices.push(coords[i])
+    if (i === endEdge) break
+  }
+
+  const backwardVertices: Position[] = []
+  for (let i = startEdge; ; i = (i - 1 + vertexCount) % vertexCount) {
+    backwardVertices.push(coords[i])
+    if (i === (endEdge + 1) % vertexCount) break
+  }
+
+  const shorterVertices =
+    pathLengthThroughVertices(start, forwardVertices, end) <= pathLengthThroughVertices(start, backwardVertices, end)
+      ? forwardVertices
+      : backwardVertices
+
+  return shorterVertices.map((c) => L.latLng(c[1], c[0]))
 }
 
 /**
