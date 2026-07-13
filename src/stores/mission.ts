@@ -11,6 +11,11 @@ import { useMissionThumbnails } from '@/composables/useMissionThumbnails'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
+import {
+  AUTOMATIC_MISSION_NAME_MIN_IDLE_MS,
+  generateAutomaticMissionName,
+  shouldRenewAutomaticMissionName,
+} from '@/libs/mission/automatic-name'
 import { generateMissionThumbnailSvg } from '@/libs/mission/library'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
@@ -43,7 +48,9 @@ export const MIN_MAX_POSITION_HISTORY_SIZE = 100
 export const useMissionStore = defineStore('mission', () => {
   const username = useStorage<string>('cockpit-username', fallbackUsername)
   const lastConnectedUser = localStorage.getItem(cockpitLastConnectedUserKey) || undefined
-  const missionName = ref('')
+  const missionName = useStorage('cockpit-mission-name', '')
+  const missionNameIsAutomatic = useStorage('cockpit-mission-name-is-automatic', true)
+  const lastOpenTime = useStorage('cockpit-last-open', Date.now())
   const slideEventsEnabled = useBlueOsStorage('cockpit-slide-events-enabled', true)
   const slideEventsCategoriesRequired = useBlueOsStorage(
     'cockpit-slide-events-categories-required',
@@ -147,7 +154,57 @@ export const useMissionStore = defineStore('mission', () => {
     mapOverlayFocusRequest.value = { id, revision: mapOverlayFocusRequest.value.revision + 1 }
   }
 
-  watch(missionName, () => (lastMissionName.value = missionName.value))
+  // Only remember user-typed names so the mission-name restore button never brings back an automatic name.
+  watch(missionName, () => {
+    if (!missionNameIsAutomatic.value) lastMissionName.value = missionName.value
+  })
+
+  const applyMissionName = (
+    name: string,
+    options: {
+      /**
+       * Whether the applied name was automatically generated instead of typed by the user.
+       */
+      isAutomatic: boolean
+      /**
+       * Whether to reset the mission start time, marking the beginning of a new mission.
+       */
+      startNewMission: boolean
+    }
+  ): void => {
+    missionName.value = name
+    missionNameIsAutomatic.value = options.isAutomatic
+    if (options.startNewMission) missionStartTime.value = new Date()
+  }
+
+  const cycleAutomaticMissionName = (options: {
+    /**
+     * Whether to reset the mission start time, marking the beginning of a new mission.
+     */
+    startNewMission: boolean
+  }): void => {
+    applyMissionName(generateAutomaticMissionName(), { isAutomatic: true, startNewMission: options.startNewMission })
+  }
+
+  // Renew the automatic name only on launch, and only when a new calendar day has started after Cockpit was closed
+  // long enough to count as a separate mission. Staying open past midnight or restarting briefly keeps the mission,
+  // and custom names are left untouched. The boot value of lastOpenTime is the previous session's last-alive moment.
+  if (
+    !missionName.value ||
+    (missionNameIsAutomatic.value &&
+      shouldRenewAutomaticMissionName(new Date(lastOpenTime.value), new Date(), AUTOMATIC_MISSION_NAME_MIN_IDLE_MS))
+  ) {
+    cycleAutomaticMissionName({ startNewMission: true })
+  }
+
+  // Persist the last moment Cockpit was alive so the next launch can tell how long it was closed.
+  const updateLastOpenTime = (): void => {
+    lastOpenTime.value = Date.now()
+  }
+  const lastOpenTimeUpdateInterval = 60000
+  updateLastOpenTime()
+  setInterval(updateLastOpenTime, lastOpenTimeUpdateInterval)
+  window.addEventListener('beforeunload', updateLastOpenTime)
 
   const currentPlanningWaypoints = reactive<Waypoint[]>([])
   const currentPlanningSurveys = reactive<Survey[]>([])
@@ -292,8 +349,7 @@ export const useMissionStore = defineStore('mission', () => {
   const clearMission = (): void => {
     currentPlanningWaypoints.splice(0)
     currentPlanningSurveys.splice(0)
-    missionName.value = ''
-    missionStartTime.value = new Date()
+    cycleAutomaticMissionName({ startNewMission: true })
   }
 
   const changeUsername = async (): Promise<void> => {
@@ -754,6 +810,8 @@ export const useMissionStore = defineStore('mission', () => {
     lastConnectedUser,
     changeUsername,
     missionName,
+    missionNameIsAutomatic,
+    applyMissionName,
     lastMissionName,
     missionStartTime,
     currentPlanningWaypoints,
