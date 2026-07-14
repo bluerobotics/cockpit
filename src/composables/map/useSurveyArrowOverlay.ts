@@ -4,10 +4,11 @@ import { type WatchStopHandle, watch } from 'vue'
 import {
   type SurveyArrowAnchor,
   computeSurveyArrowAnchors,
+  computeSurveyEntryExitAnchors,
   partitionArrowsByLength,
   partitionArrowsByOrientation,
 } from '@/libs/map/survey-arrows'
-import type { Survey, WaypointCoordinates } from '@/types/mission'
+import type { Survey, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 const ARROW_PANE = 'surveyArrowPane'
 const REFLY_PANE = 'surveyReflyPane'
@@ -56,6 +57,8 @@ export interface SurveyArrowSources {
   surveys: () => Survey[]
   /** The survey preview being drawn, or null when no survey preview is on the map. */
   previewPath: () => SurveyPreview | null
+  /** Ordered mission waypoints; the legs entering and leaving each survey get an arrow. */
+  missionWaypoints: () => Waypoint[]
 }
 
 /**
@@ -94,12 +97,14 @@ interface SurveyRenderData {
 
 /**
  * Draws direction-of-travel arrows at the middle of each survey leg (the survey being drawn and the legs of every
- * generated survey), never on plain waypoint-to-waypoint segments. For generated crosshatch surveys it also
+ * generated survey) and on each survey's mission entry and exit legs, never on any other plain
+ * waypoint-to-waypoint segment. For generated crosshatch surveys it also
  * repaints the transects over the blue base line: the crosshatch re-fly pass in purple and the primary pass in
  * blue on top, so the two passes read distinctly and the blue lines win every crossing. Owns its panes, watchers,
  * and teardown so a view only wires an init/destroy pair. Renders are coalesced to one per animation frame so the
  * overlay tracks the survey lines live during dial rotation and waypoint drags without redundant work.
- * @param {SurveyArrowSources} sources - Reactive getters for the survey list and the live survey preview path.
+ * @param {SurveyArrowSources} sources - Reactive getters for the survey list, the live survey preview path, and the
+ * mission waypoints.
  * @returns {UseSurveyArrowOverlayReturn} Methods to initialize and tear down the overlay.
  */
 export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArrowOverlayReturn => {
@@ -149,6 +154,10 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
       })
       short.forEach((anchor) => anchors.push({ ...anchor, color: surveyArrowColor, opacity: faintArrowOpacity }))
     })
+
+    computeSurveyEntryExitAnchors(sources.missionWaypoints(), sources.surveys()).forEach((anchor) =>
+      anchors.push({ ...anchor, color: surveyArrowColor, opacity: 1 })
+    )
 
     return {
       anchors: anchors.filter((a) => a.lengthMeters / metersPerPixel(a.position[0], zoom) >= minArrowLegPixels),
@@ -246,9 +255,11 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
     }
 
     map.on('zoomend', scheduleRender)
-    stopWatch = watch([() => sources.previewPath(), () => sources.surveys()], () => scheduleRender(), {
-      immediate: true,
-    })
+    stopWatch = watch(
+      [() => sources.previewPath(), () => sources.surveys(), () => sources.missionWaypoints()],
+      () => scheduleRender(),
+      { immediate: true }
+    )
   }
 
   const destroyArrowOverlay = (): void => {
