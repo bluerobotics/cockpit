@@ -835,6 +835,7 @@ const dragMeasureOverlay = useDragMeasureOverlay(angleOverlay)
 const surveyArrowOverlay = useSurveyArrowOverlay({
   surveys: () => surveysWithLiveWaypoints.value,
   previewPath: () => surveyPreviewPath.value,
+  missionWaypoints: () => missionStore.currentPlanningWaypoints,
 })
 
 const { height: windowHeight } = useWindowSize()

@@ -44,6 +44,29 @@ export const computeSurveyArrowAnchors = (path: WaypointCoordinates[]): SurveyAr
   return anchors
 }
 
+/**
+ * Computes a direction arrow on the mission leg entering and the leg leaving each survey, so those connecting
+ * segments reveal whether the vehicle is heading into the survey or back out to the rest of the mission.
+ * @param {Waypoint[]} missionWaypoints - Ordered mission waypoints the surveys are embedded in.
+ * @param {Survey[]} surveys - Surveys whose entry and exit legs get an arrow.
+ * @returns {SurveyArrowAnchor[]} One anchor per existing entry/exit leg; legs at the mission ends are skipped.
+ */
+export const computeSurveyEntryExitAnchors = (missionWaypoints: Waypoint[], surveys: Survey[]): SurveyArrowAnchor[] => {
+  const indexById = new Map(missionWaypoints.map((waypoint, index) => [waypoint.id, index]))
+  const path = missionWaypoints.map((waypoint) => waypoint.coordinates)
+
+  return surveys.flatMap((survey) => {
+    const start = indexById.get(survey.waypoints[0]?.id ?? '')
+    const end = indexById.get(survey.waypoints.at(-1)?.id ?? '')
+    if (start === undefined || end === undefined) return []
+
+    const legs: WaypointCoordinates[][] = []
+    if (start > 0) legs.push([path[start - 1], path[start]])
+    if (end < path.length - 1) legs.push([path[end], path[end + 1]])
+    return legs.flatMap(computeSurveyArrowAnchors)
+  })
+}
+
 /** Arrows split by leg length relative to the longest leg in the set. */
 export interface LengthPartitionedArrows {
   /** Legs at least `minLengthRatio` of the longest leg (the transect sweeps). */
