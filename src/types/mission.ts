@@ -261,6 +261,16 @@ export interface Survey {
    */
   crosshatch?: boolean
   /**
+   * Density of the crosshatch second pass. Falls back to `distanceBetweenLines` when unset, which also
+   * covers surveys saved before this field existed.
+   */
+  crosshatchDistanceBetweenLines?: number
+  /**
+   * Which of the four survey corners the first waypoint sits on, as a value from 0 to 3. Rotating it
+   * cycles the entry corner. Falls back to 0 when unset (surveys saved before this field existed).
+   */
+  entryCorner?: number
+  /**
    * Executable mission waypoints.
    */
   waypoints: Waypoint[]

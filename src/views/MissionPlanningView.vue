@@ -69,6 +69,22 @@
         </div>
       </template>
     </v-tooltip>
+    <v-tooltip location="top" text="Rotate the survey entry point to the next corner">
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute mt-[24px] -ml-[165px] bg-transparent cursor-pointer elevation-4"
+          variant="text"
+          @click="rotateDraftSurveyEntryPoint"
+        >
+          <div class="flex items-center justify-center w-8 h-8 border-2 rounded-full bg-[#333333EE]">
+            <v-icon color="white" size="16">mdi-rotate-right</v-icon>
+          </div>
+        </div>
+      </template>
+    </v-tooltip>
     <v-tooltip
       location="top"
       :text="surveyCrosshatch ? 'Disable 90° crosshatch re-fly' : 'Enable 90° crosshatch re-fly'"
@@ -78,7 +94,7 @@
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
-          class="absolute mt-[72px] -ml-[150px] bg-transparent cursor-pointer elevation-4"
+          class="absolute mt-[72px] -ml-[165px] bg-transparent cursor-pointer elevation-4"
           variant="text"
           @click="setSurveyCrosshatch(!surveyCrosshatch)"
         >
@@ -88,6 +104,24 @@
           >
             <v-icon color="white" size="16">mdi-grid</v-icon>
           </div>
+        </div>
+      </template>
+    </v-tooltip>
+    <v-tooltip location="top" text="Crosshatch scan spacing">
+      <template #activator="{ props }">
+        <div
+          v-if="isCreatingSurvey && surveyCrosshatch && surveyPolygonVertexesPositions.length >= 3"
+          v-bind="props"
+          :style="confirmButtonStyle"
+          class="absolute mt-[120px] -ml-[160px] rounded-lg elevation-4"
+          variant="text"
+        >
+          <input
+            v-model.number="crosshatchDistanceBetweenLines"
+            class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
+            type="number"
+            min="1"
+          />
         </div>
       </template>
     </v-tooltip>
@@ -297,18 +331,49 @@
             class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
           />
-          <v-checkbox
-            :model-value="surveyCrosshatch"
-            label="Re-fly at 90° (crosshatch)"
-            theme="dark"
-            density="compact"
-            hide-details
-            class="mx-4"
-            @update:model-value="setSurveyCrosshatch"
-          />
-          <p class="mx-5 mb-2 text-[11px] opacity-70 text-slate-200">
-            Flies the area again at 90° for better photogrammetry coverage (≈doubles flight time).
-          </p>
+          <div class="flex items-center mx-4">
+            <v-checkbox
+              :model-value="surveyCrosshatch"
+              label="Re-fly at 90° (crosshatch)"
+              theme="dark"
+              density="compact"
+              hide-details
+              @update:model-value="setSurveyCrosshatch"
+            />
+            <v-tooltip
+              location="top"
+              max-width="260"
+              text="Flies the area again at 90° for better photogrammetry coverage (≈doubles flight time)."
+            >
+              <template #activator="{ props: crosshatchInfoProps }">
+                <v-icon v-bind="crosshatchInfoProps" size="18" class="ml-1 text-slate-300 cursor-help">
+                  mdi-information-outline
+                </v-icon>
+              </template>
+            </v-tooltip>
+          </div>
+          <template v-if="surveyCrosshatch">
+            <p class="m-1 overflow-visible text-sm text-slate-200">Crosshatch distance between lines (m)</p>
+            <input
+              v-model.number="crosshatchDistanceBetweenLines"
+              class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
+              type="number"
+              min="1"
+            />
+          </template>
+          <div class="flex items-center justify-between mx-5 my-2">
+            <p class="overflow-visible text-sm text-slate-200">Entry point</p>
+            <v-btn
+              size="small"
+              variant="tonal"
+              theme="dark"
+              prepend-icon="mdi-rotate-right"
+              @click="rotateDraftSurveyEntryPoint"
+            >
+              Rotate
+            </v-btn>
+          </div>
+          <v-divider class="mb-1 mt-2" />
           <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
           <input
             v-model.number="currentWaypointAltitude"
@@ -328,6 +393,7 @@
             variant="outlined"
             class="mx-5 my-1 text-sm"
           />
+          <v-divider class="mb-1 mt-2" />
           <button
             :class="{
               'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
@@ -569,7 +635,7 @@
     @set-home-position="setHomePositionFromContextMenu"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
-    @swap-survey-entry-exit="swapSurveyEntryExit"
+    @rotate-survey-entry-point="rotateSurveyEntryPoint"
     @toggle-survey="toggleSurvey"
     @toggle-simple-path="toggleSimplePath"
     @undo-generated-waypoints="undoGenerateWaypoints"
@@ -719,7 +785,12 @@ import {
   TargetFollower,
   WhoToFollow,
 } from '@/libs/map/utils-map'
-import { generateSurveyPath } from '@/libs/map/utils-map'
+import {
+  generateSurveyPath,
+  orderedSurveyPath,
+  surveyEndpointEdgeBearing,
+  surveyEntryCornerCount,
+} from '@/libs/map/utils-map'
 import {
   bearingBetween,
   centroidLatLng,
@@ -1445,6 +1516,19 @@ const selectedSurvey = computed(() => {
   return surveys.value.find((survey) => survey.id === selectedSurveyId.value)
 })
 
+// Entrance and exit waypoints of every survey, coloured green in their marker markup so the state survives
+// any icon re-render instead of being patched onto the DOM after the fact.
+const surveyEntryExitWaypointIds = computed(() => {
+  const ids = new Set<string>()
+  surveys.value.forEach((survey) => {
+    const first = survey.waypoints[0]
+    const last = survey.waypoints.at(-1)
+    if (first) ids.add(first.id)
+    if (last) ids.add(last.id)
+  })
+  return ids
+})
+
 const addSurvey = (survey: Survey): void => {
   surveys.value.push(survey)
 }
@@ -1553,7 +1637,7 @@ const updateConfirmButtonPosition = (): void => {
 
     const pos = pickBestPosition(
       [
-        { x: bounds.maxX + gap, y: cy - visualH / 2 },
+        { x: bounds.maxX + gap + 100, y: cy - visualH / 2 },
         { x: bounds.minX - gap - visualW, y: cy - visualH / 2 },
         { x: cx - visualW / 2, y: bounds.maxY + gap },
         { x: cx - visualW / 2, y: bounds.minY - gap - visualH },
@@ -2374,6 +2458,8 @@ const performUndo = (): void => {
     distanceBetweenSurveyLines.value = removedSurvey.distanceBetweenLines
     surveyLinesAngle.value = removedSurvey.surveyLinesAngle
     surveyCrosshatch.value = removedSurvey.crosshatch ?? false
+    crosshatchDistanceBetweenLines.value =
+      removedSurvey.crosshatchDistanceBetweenLines ?? removedSurvey.distanceBetweenLines
 
     clearSurveyPolygonUndoStack()
     const coords = removedSurvey.polygonCoordinates
@@ -2569,32 +2655,16 @@ const deleteSelectedSurvey = (): void => {
   updateWaypointMarkers()
 }
 
-const swapSurveyEntryExit = (): void => {
-  const surveyId = selectedSurveyId.value
-  if (!surveyId) return
-
-  const survey = surveys.value.find((s) => s.id === surveyId)
+const rotateSurveyEntryPoint = (): void => {
+  const survey = selectedSurvey.value
   if (!survey || survey.waypoints.length < 2) return
 
-  logUserAction('Swapped survey entry/exit points')
+  const nextCorner = ((survey.entryCorner ?? 0) + 1) % surveyEntryCornerCount(survey.crosshatch)
+  logUserAction(`Rotated survey entry point to corner ${nextCorner + 1}`)
   missionStore.pushUndoSnapshot()
 
-  const firstWpId = survey.waypoints[0].id
-  const insertIndex = missionStore.currentPlanningWaypoints.findIndex((wp) => wp.id === firstWpId)
-  if (insertIndex === -1) return
-
-  survey.waypoints.forEach((wp) => {
-    const idx = missionStore.currentPlanningWaypoints.findIndex((w) => w.id === wp.id)
-    if (idx !== -1) missionStore.currentPlanningWaypoints.splice(idx, 1)
-  })
-
-  survey.waypoints.reverse()
-  missionStore.currentPlanningWaypoints.splice(insertIndex, 0, ...survey.waypoints)
-  updateSurvey(surveyId, { waypoints: survey.waypoints })
-
-  updateWaypointMarkers()
-  refreshSurveyEntryExitMarkers()
-  hideContextMenu()
+  survey.entryCorner = nextCorner
+  regenerateSelectedSurveyWaypoints()
 }
 
 const homeWaypointCursor =
@@ -2737,7 +2807,7 @@ const addWaypoint = (
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const iconDimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, surveyEntryExitWaypointIds.value.has(waypoint.id)),
     className: 'waypoint-marker-icon',
     iconSize: iconDimensions.iconSize,
     iconAnchor: iconDimensions.iconAnchor,
@@ -2818,9 +2888,11 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
 
 const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
 const rawDistanceBetweenSurveyLines = ref(10)
+const rawCrosshatchDistanceBetweenLines = ref(10)
 const rawSurveyLinesAngle = ref(0)
 const rawTurnaroundDistance = ref(0)
 const surveyCrosshatch = ref(false)
+const surveyDraftEntryCorner = ref(0)
 const existingWaypoints = ref<Waypoint[]>([])
 const surveyWaypoints = ref<Waypoint[]>([])
 
@@ -2828,6 +2900,12 @@ const surveyWaypoints = ref<Waypoint[]>([])
 const distanceBetweenSurveyLines = computed({
   get: () => Math.max(1, rawDistanceBetweenSurveyLines.value),
   set: (value) => (rawDistanceBetweenSurveyLines.value = Math.max(1, value)), // Ensure the distance is at least 1
+})
+
+// Distance between lines in the crosshatch second pass
+const crosshatchDistanceBetweenLines = computed({
+  get: () => Math.max(1, rawCrosshatchDistanceBetweenLines.value),
+  set: (value) => (rawCrosshatchDistanceBetweenLines.value = Math.max(1, value)),
 })
 
 const turnaroundDistance = computed({
@@ -2858,6 +2936,36 @@ const surveyPathLayer = shallowRef<L.Polyline | null>(null)
 const surveyCrosshatchPathLayer = shallowRef<L.Polyline | null>(null)
 const surveyTurnaroundLayers = shallowRef<L.Polyline[]>([])
 const surveyPolygonLayer = shallowRef<L.Polygon | null>(null)
+const surveyEndpointMarkers = shallowRef<L.Layer[]>([])
+
+const removeSurveyEndpointMarkers = (): void => {
+  surveyEndpointMarkers.value.forEach((marker) => planningMap.value?.removeLayer(marker as unknown as L.Layer))
+  surveyEndpointMarkers.value = []
+}
+
+// Small green chevron marking a survey entrance/exit, oriented perpendicular to the polygon edge it sits on:
+// it sits just outside the boundary and points inward for the entrance, outward for the exit.
+const createSurveyEndpointChevron = (position: L.LatLng, isEntrance: boolean): L.Marker => {
+  const outwardBearing = surveyEndpointEdgeBearing(surveyPolygonVertexesPositions.value, position)
+  // The endpoint sits at the box center (12, 20); the glyph sits above it (outward side) with its nearest edge
+  // 8px out, clearing the 5px circle by 3px. The entrance points down (inward), the exit up (outward).
+  const chevronPath = isEntrance ? 'M6 7 L12 12 L18 7' : 'M6 12 L12 7 L18 12'
+  const html =
+    `<div style="transform: rotate(${outwardBearing}deg);">` +
+    '<svg width="24" height="40" viewBox="0 0 24 40" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+    `<path d="${chevronPath}" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<path d="${chevronPath}" stroke="#034103" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` +
+    '</svg></div>'
+  return L.marker(position, {
+    interactive: false,
+    icon: L.divIcon({
+      className: 'survey-endpoint-chevron',
+      html,
+      iconSize: [24, 40],
+      iconAnchor: [12, 20],
+    }),
+  })
+}
 
 const removeSurveyCrosshatchPathLayer = (): void => {
   if (surveyCrosshatchPathLayer.value) {
@@ -2877,6 +2985,7 @@ const clearSurveyPath = (): void => {
     surveyPathLayer.value = null
   }
   removeSurveyCrosshatchPathLayer()
+  removeSurveyEndpointMarkers()
   surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
   surveyTurnaroundLayers.value = []
   if (surveyPolygonLayer.value) {
@@ -2973,6 +3082,7 @@ const checkAndRemoveSurveyPath = (): void => {
   planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
   surveyPathLayer.value = null
   removeSurveyCrosshatchPathLayer()
+  removeSurveyEndpointMarkers()
   surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
   surveyTurnaroundLayers.value = []
 }
@@ -2985,12 +3095,16 @@ const createSurveyPath = (): void => {
 
   try {
     const adjustedAngle = 90 - surveyLinesAngle.value
-    const result: SurveyPath = generateSurveyPath(
-      surveyPolygonVertexesPositions.value,
-      distanceBetweenSurveyLines.value,
-      adjustedAngle,
-      turnaroundDistance.value,
-      surveyCrosshatch.value
+    const result: SurveyPath = orderedSurveyPath(
+      {
+        polygonPoints: surveyPolygonVertexesPositions.value,
+        distanceBetweenLines: distanceBetweenSurveyLines.value,
+        linesAngle: adjustedAngle,
+        turnaroundDistance: turnaroundDistance.value,
+        crosshatch: surveyCrosshatch.value,
+        crosshatchDistanceBetweenLines: crosshatchDistanceBetweenLines.value,
+      },
+      surveyDraftEntryCorner.value
     )
 
     if (result.path.length === 0) {
@@ -3006,6 +3120,7 @@ const createSurveyPath = (): void => {
       planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     }
     removeSurveyCrosshatchPathLayer()
+    removeSurveyEndpointMarkers()
 
     surveyTurnaroundLayers.value.forEach((layer) => planningMap.value?.removeLayer(layer as unknown as L.Layer))
     surveyTurnaroundLayers.value = []
@@ -3040,6 +3155,27 @@ const createSurveyPath = (): void => {
         }).addTo(toRaw(planningMap.value)!)
       )
     }
+
+    // Mark the entrance (first point) and exit (last point) of the ordered path so the operator can
+    // see where the vehicle enters and leaves the survey while still editing it.
+    const entrance = result.path[0]
+    const exit = result.path[result.path.length - 1]
+    const map = toRaw(planningMap.value)!
+    const endpointCircle = (latLng: L.LatLng): L.CircleMarker =>
+      L.circleMarker(latLng, {
+        radius: 5,
+        color: '#ffffff99',
+        weight: 2,
+        fillColor: '#034103',
+        fillOpacity: 1,
+        className: 'survey-endpoint-marker',
+      }).addTo(map)
+    surveyEndpointMarkers.value = [
+      endpointCircle(entrance),
+      endpointCircle(exit),
+      createSurveyEndpointChevron(entrance, true).addTo(map),
+      createSurveyEndpointChevron(exit, false).addTo(map),
+    ]
   } catch (error) {
     showDialog({
       variant: 'error',
@@ -3062,7 +3198,17 @@ watch(
 )
 
 // Watch for changes in distanceBetweenSurveyLines, surveyLinesAngle, and turnaroundDistance
-watch([distanceBetweenSurveyLines, surveyLinesAngle, turnaroundDistance, surveyCrosshatch], () => createSurveyPath())
+watch(
+  [
+    distanceBetweenSurveyLines,
+    surveyLinesAngle,
+    turnaroundDistance,
+    surveyCrosshatch,
+    crosshatchDistanceBetweenLines,
+    surveyDraftEntryCorner,
+  ],
+  () => createSurveyPath()
+)
 
 const surveyEdgeAddMarkers: L.Marker[] = []
 
@@ -3166,35 +3312,12 @@ watch(isCreatingSurvey, (isCreatingNow) => {
   if (isCreatingNow) {
     existingWaypoints.value = [...missionStore.currentPlanningWaypoints]
     surveyWaypoints.value = []
+    surveyDraftEntryCorner.value = 0
     interfaceStore.configPanelVisible = true
   } else {
     clearSurveyPath()
   }
 })
-
-const refreshSurveyEntryExitMarkers = (): void => {
-  Object.values(waypointMarkers.value).forEach((marker) => {
-    marker.getElement()?.querySelector('.waypoint-main-marker')?.classList.remove('green-marker')
-  })
-
-  surveys.value.forEach((survey) => {
-    const firstWp = survey.waypoints[0]
-    const lastWp = survey.waypoints.at(-1)
-
-    if (firstWp) {
-      waypointMarkers.value[firstWp.id]
-        ?.getElement()
-        ?.querySelector('.waypoint-main-marker')
-        ?.classList.add('green-marker')
-    }
-    if (lastWp && lastWp !== firstWp) {
-      waypointMarkers.value[lastWp.id]
-        ?.getElement()
-        ?.querySelector('.waypoint-main-marker')
-        ?.classList.add('green-marker')
-    }
-  })
-}
 
 const generateWaypointsFromSurvey = (): void => {
   if (!surveyPathLayer.value) {
@@ -3214,12 +3337,16 @@ const generateWaypointsFromSurvey = (): void => {
   ])
 
   const adjustedAngle = 90 - surveyLinesAngle.value
-  const { path: continuousPath } = generateSurveyPath(
-    surveyPolygonVertexesPositions.value,
-    distanceBetweenSurveyLines.value,
-    adjustedAngle,
-    turnaroundDistance.value,
-    surveyCrosshatch.value
+  const { path: continuousPath } = orderedSurveyPath(
+    {
+      polygonPoints: surveyPolygonVertexesPositions.value,
+      distanceBetweenLines: distanceBetweenSurveyLines.value,
+      linesAngle: adjustedAngle,
+      turnaroundDistance: turnaroundDistance.value,
+      crosshatch: surveyCrosshatch.value,
+      crosshatchDistanceBetweenLines: crosshatchDistanceBetweenLines.value,
+    },
+    surveyDraftEntryCorner.value
   )
 
   if (!continuousPath.length) {
@@ -3265,6 +3392,8 @@ const generateWaypointsFromSurvey = (): void => {
     surveyLinesAngle: surveyLinesAngle.value,
     turnaroundDistance: turnaroundDistance.value,
     crosshatch: surveyCrosshatch.value,
+    crosshatchDistanceBetweenLines: crosshatchDistanceBetweenLines.value,
+    entryCorner: surveyDraftEntryCorner.value,
     waypoints: newSurveyWaypoints,
   }
 
@@ -3279,34 +3408,22 @@ const generateWaypointsFromSurvey = (): void => {
   isCreatingSurvey.value = false
   isDrawingSurveyPolygon.value = false
   updateWaypointMarkers()
-  refreshSurveyEntryExitMarkers()
-
-  const firstWaypoint = newSurveyWaypoints[0]
-  const lastWaypoint = newSurveyWaypoints[newSurveyWaypoints.length - 1]
-  const firstMarker = waypointMarkers.value[firstWaypoint.id]
-  const lastMarker = waypointMarkers.value[lastWaypoint.id]
-
-  if (firstMarker) {
-    firstMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
-  }
-  if (lastMarker && lastMarker !== firstMarker) {
-    lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
-  }
 
   openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
-const createWaypointMarkerHtml = (commandCount: number, isSelected = false): string => {
+const createWaypointMarkerHtml = (commandCount: number, isSelected = false, isEntryExit = false): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
   const size = getMarkerSizeFromZoom(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
   const showSmallCommandCount = size !== 'md' && commandCount > 1
   const showCommandCount = size === 'md' && commandCount > 1
+  const entryExitClass = isEntryExit ? ' green-marker' : ''
 
   return `
     <div class="${markerSizeClass}">
-      <div class="${baseClass} waypoint-main-marker"></div>
+      <div class="${baseClass} waypoint-main-marker${entryExitClass}"></div>
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
     </div>
@@ -3329,7 +3446,7 @@ const updateWaypointMarkers = (): void => {
 
       marker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(wp.commands.length, isSelected),
+          html: createWaypointMarkerHtml(wp.commands.length, isSelected, surveyEntryExitWaypointIds.value.has(wp.id)),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3351,8 +3468,6 @@ const updateWaypointMarkers = (): void => {
       cumulativeCommandCount += wp.commands.length
     }
   })
-
-  refreshSurveyEntryExitMarkers()
 }
 
 // Toggles the crosshatch option while drawing a new survey. Bound to the button and checkbox so the
@@ -3361,6 +3476,14 @@ const setSurveyCrosshatch = (value: boolean | null): void => {
   const enabled = Boolean(value)
   logUserAction(`${enabled ? 'Enabled' : 'Disabled'} 90° crosshatch re-fly for survey`)
   surveyCrosshatch.value = enabled
+  // A crosshatch survey exposes 8 entry corners, a plain one only 4: keep the draft corner in range.
+  surveyDraftEntryCorner.value = surveyDraftEntryCorner.value % surveyEntryCornerCount(enabled)
+}
+
+const rotateDraftSurveyEntryPoint = (): void => {
+  const nextCorner = (surveyDraftEntryCorner.value + 1) % surveyEntryCornerCount(surveyCrosshatch.value)
+  logUserAction(`Rotated draft survey entry point to corner ${nextCorner + 1}`)
+  surveyDraftEntryCorner.value = nextCorner
 }
 
 const toggleSurveyCrosshatch = (): void => {
@@ -3371,6 +3494,9 @@ const toggleSurveyCrosshatch = (): void => {
   logUserAction(`${selectedSurvey.value.crosshatch ? 'Disabled' : 'Enabled'} 90° crosshatch on survey`)
   missionStore.pushUndoSnapshot()
   selectedSurvey.value.crosshatch = !selectedSurvey.value.crosshatch
+  // Keep the entry corner in range: a crosshatch survey exposes 8 corners, a plain one only 4.
+  selectedSurvey.value.entryCorner =
+    (selectedSurvey.value.entryCorner ?? 0) % surveyEntryCornerCount(selectedSurvey.value.crosshatch)
   regenerateSurveyWaypoints()
 }
 
@@ -3381,7 +3507,12 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
   }
 
   logUserAction('Regenerated survey waypoints')
+  regenerateSelectedSurveyWaypoints(angle)
+}
 
+// Rebuilds the selected survey's waypoints from its polygon and current settings. Kept separate from the
+// logged handler so entry-point rotation can reuse it without logging a spurious "regenerated" action.
+const regenerateSelectedSurveyWaypoints = (angle?: number): void => {
   if (selectedSurvey.value) {
     selectedSurvey.value?.waypoints.forEach((waypoint) => {
       const marker = waypointMarkers.value[waypoint.id]
@@ -3392,12 +3523,17 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     })
 
     const adjustedAngle = 90 - (angle || selectedSurvey.value.surveyLinesAngle)
-    const { path: continuousPath } = generateSurveyPath(
-      selectedSurvey.value.polygonCoordinates.map((coord) => L.latLng(coord[0], coord[1])),
-      selectedSurvey.value.distanceBetweenLines,
-      adjustedAngle,
-      selectedSurvey.value.turnaroundDistance,
-      selectedSurvey.value.crosshatch
+    const { path: continuousPath } = orderedSurveyPath(
+      {
+        polygonPoints: selectedSurvey.value.polygonCoordinates.map((coord) => L.latLng(coord[0], coord[1])),
+        distanceBetweenLines: selectedSurvey.value.distanceBetweenLines,
+        linesAngle: adjustedAngle,
+        turnaroundDistance: selectedSurvey.value.turnaroundDistance,
+        crosshatch: selectedSurvey.value.crosshatch,
+        crosshatchDistanceBetweenLines:
+          selectedSurvey.value.crosshatchDistanceBetweenLines ?? selectedSurvey.value.distanceBetweenLines,
+      },
+      selectedSurvey.value.entryCorner ?? 0
     )
 
     if (!continuousPath.length) {
@@ -3442,18 +3578,6 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
 
     newWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
     updateWaypointMarkers()
-    refreshSurveyEntryExitMarkers()
-
-    const firstWaypoint = newWaypoints[0]
-    const lastWaypoint = newWaypoints[newWaypoints.length - 1]
-    const firstMarker = waypointMarkers.value[firstWaypoint.id]
-    const lastMarker = waypointMarkers.value[lastWaypoint.id]
-    if (firstMarker) {
-      firstMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
-    }
-    if (lastMarker && lastMarker !== firstMarker) {
-      lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
-    }
   }
 }
 
@@ -3567,6 +3691,7 @@ const undoGenerateWaypoints = (): void => {
   distanceBetweenSurveyLines.value = survey.distanceBetweenLines
   surveyLinesAngle.value = survey.surveyLinesAngle
   surveyCrosshatch.value = survey.crosshatch ?? false
+  crosshatchDistanceBetweenLines.value = survey.crosshatchDistanceBetweenLines ?? survey.distanceBetweenLines
 
   const firstWpCoords = survey.waypoints[0]?.coordinates
   if (firstWpCoords && survey.polygonCoordinates.length >= 3) {
@@ -3576,7 +3701,8 @@ const undoGenerateWaypoints = (): void => {
       survey.distanceBetweenLines,
       adjustedAngle,
       survey.turnaroundDistance,
-      survey.crosshatch
+      survey.crosshatch,
+      survey.crosshatchDistanceBetweenLines ?? survey.distanceBetweenLines
     )
     if (defaultPath.length >= 2) {
       const first = defaultPath[0]
@@ -3655,7 +3781,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(waypoint.commands.length, false),
+    html: createWaypointMarkerHtml(waypoint.commands.length, false, surveyEntryExitWaypointIds.value.has(waypoint.id)),
     className: 'waypoint-marker-icon',
     iconSize: dimensions.iconSize,
     iconAnchor: dimensions.iconAnchor,
@@ -3703,7 +3829,11 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWp?.commands.length ?? 0, false),
+          html: createWaypointMarkerHtml(
+            oldWp?.commands.length ?? 0,
+            false,
+            surveyEntryExitWaypointIds.value.has(oldWaypointId)
+          ),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3719,7 +3849,11 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       newMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(newWp?.commands.length ?? 0, true),
+          html: createWaypointMarkerHtml(
+            newWp?.commands.length ?? 0,
+            true,
+            surveyEntryExitWaypointIds.value.has(newWaypointId)
+          ),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
@@ -3727,8 +3861,6 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
       )
     }
   }
-
-  refreshSurveyEntryExitMarkers() // keep entry/exit green after selection updates
 }
 
 let homeRetryTimer: ReturnType<typeof setInterval> | null = null
@@ -3869,7 +4001,11 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
-          html: createWaypointMarkerHtml(oldWaypoint.commands.length, false),
+          html: createWaypointMarkerHtml(
+            oldWaypoint.commands.length,
+            false,
+            surveyEntryExitWaypointIds.value.has(oldWaypoint.id)
+          ),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
           iconAnchor: dimensions.iconAnchor,
