@@ -580,6 +580,57 @@ export const surveyEndpointEdgeBearing = (polygonPoints: L.LatLng[], endpoint: L
 }
 
 /**
+ * A direction indicator placed on the leg entering or leaving a survey, pointing along the travel direction.
+ */
+export interface SurveyLegArrow {
+  /** Leg midpoint where the arrow sits, as `[latitude, longitude]`. */
+  position: WaypointCoordinates
+  /** Compass bearing (degrees clockwise from north) of travel along the leg. */
+  bearing: number
+}
+
+/**
+ * Index range a survey occupies within the ordered mission waypoint list.
+ */
+export interface SurveyWaypointRange {
+  /** Index of the survey's first waypoint. */
+  start: number
+  /** Index of the survey's last waypoint. */
+  end: number
+}
+
+/**
+ * Computes a direction arrow for the leg entering and the leg leaving each survey, so those connecting
+ * segments reveal whether the vehicle is heading into the survey or back out to the rest of the mission. Each
+ * arrow sits at the midpoint of that connecting leg.
+ * @param {WaypointCoordinates[]} path - Ordered mission waypoint coordinates.
+ * @param {SurveyWaypointRange[]} surveyRanges - Index ranges the surveys occupy within `path`.
+ * @returns {SurveyLegArrow[]} One arrow per existing entry/exit leg; legs at the mission ends are skipped.
+ */
+export const surveyLegArrows = (path: WaypointCoordinates[], surveyRanges: SurveyWaypointRange[]): SurveyLegArrow[] => {
+  // `boundary` is the entrance/exit waypoint, `outer` its neighbor outside the survey; `travelBearing` is the
+  // vehicle's heading along the leg. The arrow sits at the midpoint of the boundary->outer leg.
+  const legArrow = (
+    boundary: WaypointCoordinates,
+    outer: WaypointCoordinates,
+    travelBearing: number
+  ): SurveyLegArrow => {
+    const midpoint = turf.midpoint(turf.point([boundary[1], boundary[0]]), turf.point([outer[1], outer[0]]))
+    const [lng, lat] = midpoint.geometry.coordinates
+    return { position: [lat, lng], bearing: travelBearing }
+  }
+
+  const arrows: SurveyLegArrow[] = []
+  surveyRanges.forEach(({ start, end }) => {
+    if (start > 0) arrows.push(legArrow(path[start], path[start - 1], bearingBetween(path[start - 1], path[start])))
+    if (end >= 0 && end < path.length - 1) {
+      arrows.push(legArrow(path[end], path[end + 1], bearingBetween(path[end], path[end + 1])))
+    }
+  })
+  return arrows
+}
+
+/**
  * Finds the index of the polygon ring edge (the segment from coords[i] to coords[i + 1]) that a point lies on.
  * @param {Feature<Point>} point - The point to locate.
  * @param {Position[]} coords - The polygon ring coordinates (closed, first equals last).

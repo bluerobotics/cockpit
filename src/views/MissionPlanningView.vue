@@ -765,6 +765,7 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useSurveyLegArrows } from '@/composables/map/useSurveyLegArrows'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useSnackbar } from '@/composables/snackbar'
 import {
@@ -786,10 +787,12 @@ import {
   WhoToFollow,
 } from '@/libs/map/utils-map'
 import {
+  type SurveyWaypointRange,
   generateSurveyPath,
   orderedSurveyPath,
   surveyEndpointEdgeBearing,
   surveyEntryCornerCount,
+  surveyLegArrows,
 } from '@/libs/map/utils-map'
 import {
   bearingBetween,
@@ -831,6 +834,7 @@ const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const missionEstimates = useMissionEstimates()
 const angleOverlay = useVertexAngleOverlay()
+const legArrowOverlay = useSurveyLegArrows()
 const dragMeasureOverlay = useDragMeasureOverlay(angleOverlay)
 
 const { height: windowHeight } = useWindowSize()
@@ -4132,6 +4136,7 @@ onMounted(async () => {
   pane.style.zIndex = '640'
   pane.style.pointerEvents = 'none'
   angleOverlay.initAngleOverlay(planningMap.value!)
+  legArrowOverlay.initSurveyLegArrows(planningMap.value!)
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
@@ -4272,6 +4277,7 @@ onUnmounted(() => {
   clearLiveMeasure()
   dragMeasureOverlay.destroyDragMeasureOverlay()
   angleOverlay.destroyAngleOverlay()
+  legArrowOverlay.destroySurveyLegArrows()
 
   detachTileFallbacks.forEach((detach) => detach())
   detachTileFallbacks = []
@@ -4436,6 +4442,23 @@ const missionWaypointsPolyline = shallowRef<L.Polyline | null>(null)
 const getMissionPathLatLngs = (): L.LatLng[] =>
   missionStore.currentPlanningWaypoints.map((waypoint) => L.latLng(waypoint.coordinates[0], waypoint.coordinates[1]))
 
+// Contiguous waypoint index ranges each survey occupies within the mission, used to place the leg arrows.
+const getSurveyWaypointRanges = (): SurveyWaypointRange[] => {
+  const indexById: Record<string, number> = {}
+  missionStore.currentPlanningWaypoints.forEach((waypoint, index) => (indexById[waypoint.id] = index))
+  return surveys.value.reduce<SurveyWaypointRange[]>((ranges, survey) => {
+    const start = indexById[survey.waypoints[0]?.id ?? '']
+    const end = indexById[survey.waypoints.at(-1)?.id ?? '']
+    if (start !== undefined && end !== undefined) ranges.push({ start, end })
+    return ranges
+  }, [])
+}
+
+const refreshSurveyLegArrows = (): void => {
+  const path = missionStore.currentPlanningWaypoints.map((waypoint) => waypoint.coordinates)
+  legArrowOverlay.renderSurveyLegArrows(surveyLegArrows(path, getSurveyWaypointRanges()))
+}
+
 watch(
   () => missionStore.currentPlanningWaypoints.map((waypoint) => waypoint.coordinates.slice()),
   () => {
@@ -4453,6 +4476,8 @@ watch(
     } else {
       missionWaypointsPolyline.value.setLatLngs(missionPathLatLngs)
     }
+
+    refreshSurveyLegArrows()
   },
   { immediate: true, deep: true }
 )
