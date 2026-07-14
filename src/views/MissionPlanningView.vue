@@ -559,7 +559,7 @@
       <template #activator="{ props: tooltipProps }">
         <v-btn
           v-bind="tooltipProps"
-          class="absolute right-[135px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
+          class="absolute right-[180px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
           elevation="8"
           text="Flight mode"
           append-icon="mdi-send"
@@ -589,6 +589,26 @@
             <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
           </v-list>
         </v-menu>
+      </template>
+    </v-tooltip>
+    <v-tooltip
+      location="top center"
+      :text="
+        missionStore.alwaysShowWaypointNumbers
+          ? 'Hide waypoint numbers when zoomed out'
+          : 'Always show waypoint numbers'
+      "
+    >
+      <template #activator="{ props: tooltipProps }">
+        <v-btn
+          v-bind="tooltipProps"
+          class="absolute m-3 rounded-sm shadow-sm bottom-12 bg-slate-50 right-[132px] text-[14px]"
+          :style="interfaceStore.globalGlassMenuStyles"
+          :color="missionStore.alwaysShowWaypointNumbers ? 'primary' : ''"
+          size="x-small"
+          icon="mdi-numeric-1-circle-outline"
+          @click="missionStore.toggleAlwaysShowWaypointNumbers()"
+        />
       </template>
     </v-tooltip>
     <MapCenterControl
@@ -767,6 +787,7 @@ import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { useSurveyLegArrows } from '@/composables/map/useSurveyLegArrows'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
+import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -2808,7 +2829,7 @@ const addWaypoint = (
     showContextMenu(e)
   })
 
-  const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
+  const currentMarkerSize = getEffectiveMarkerSize(zoom.value)
   const iconDimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
     html: createWaypointMarkerHtml(waypoint.commands.length, false, surveyEntryExitWaypointIds.value.has(waypoint.id)),
@@ -3419,7 +3440,7 @@ const generateWaypointsFromSurvey = (): void => {
 // Helper function to create waypoint marker HTML with command count indicator
 const createWaypointMarkerHtml = (commandCount: number, isSelected = false, isEntryExit = false): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
-  const size = getMarkerSizeFromZoom(zoom.value)
+  const size = getEffectiveMarkerSize(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
   const showSmallCommandCount = size !== 'md' && commandCount > 1
   const showCommandCount = size === 'md' && commandCount > 1
@@ -3439,7 +3460,7 @@ const updateWaypointMarkers = (): void => {
   if (!planningMap.value) return
 
   const currentZoom = zoom.value
-  const markerSize = getMarkerSizeFromZoom(currentZoom)
+  const markerSize = getEffectiveMarkerSize(currentZoom)
 
   missionStore.currentPlanningWaypoints.forEach((wp) => {
     const marker = waypointMarkers.value[wp.id]
@@ -3460,13 +3481,9 @@ const updateWaypointMarkers = (): void => {
       // Update tooltip visibility and content based on size
       const tooltip = marker.getTooltip()
       if (tooltip) {
-        if (markerSize === 'xs' || markerSize === 'sm') {
-          tooltip.setContent('')
-          tooltip.setOpacity(0)
-        } else {
-          tooltip.setContent(`${cumulativeCommandCount}`)
-          tooltip.setOpacity(1)
-        }
+        const showNumber = markerSize === 'md'
+        tooltip.setContent(showNumber ? `${cumulativeCommandCount}` : '')
+        tooltip.setOpacity(showNumber ? 1 : 0)
       }
 
       cumulativeCommandCount += wp.commands.length
@@ -3782,7 +3799,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     interfaceStore.configPanelVisible = true
   })
 
-  const currentMarkerSize = getMarkerSizeFromZoom(zoom.value)
+  const currentMarkerSize = getEffectiveMarkerSize(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
   const markerIcon = L.divIcon({
     html: createWaypointMarkerHtml(waypoint.commands.length, false, surveyEntryExitWaypointIds.value.has(waypoint.id)),
@@ -3792,7 +3809,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   })
   newMarker.setIcon(markerIcon)
 
-  const currentMarkerSizeForTooltip = getMarkerSizeFromZoom(zoom.value)
+  const currentMarkerSizeForTooltip = getEffectiveMarkerSize(zoom.value)
   const markerTooltip = L.tooltip({
     content: '',
     permanent: true,
@@ -3806,11 +3823,9 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
   waypointMarkers.value[waypoint.id] = newMarker
 }
 
-const getMarkerSizeFromZoom = (zoomLevel: number): MarkerSizes => {
-  if (zoomLevel <= 17) return 'xs'
-  if (zoomLevel > 17 && zoomLevel <= 19) return 'sm'
-  return 'md'
-}
+const { getEffectiveMarkerSize } = useWaypointMarkerSize(() => {
+  if (planningMap.value) updateWaypointMarkers()
+})
 
 const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
   if (size === 'xs') {
@@ -3824,7 +3839,7 @@ const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
 
 // single source of truth for selected-marker visuals
 const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId?: string): void => {
-  const markerSize = getMarkerSizeFromZoom(zoom.value)
+  const markerSize = getEffectiveMarkerSize(zoom.value)
 
   if (oldWaypointId) {
     const oldMarker = waypointMarkers.value[oldWaypointId]
@@ -4001,7 +4016,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   if (oldWaypoint) {
     const oldMarker = waypointMarkers.value[oldWaypoint.id]
     if (oldMarker) {
-      const markerSize = getMarkerSizeFromZoom(zoom.value)
+      const markerSize = getEffectiveMarkerSize(zoom.value)
       const dimensions = getIconDimensionsFromMarkerSize(markerSize)
       oldMarker.setIcon(
         L.divIcon({
@@ -4972,7 +4987,7 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 293px; /* Position to the left of the buttons */
+  right: 338px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;

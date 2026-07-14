@@ -33,12 +33,35 @@
           <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
         </v-list>
       </v-menu>
+      <v-tooltip
+        location="top"
+        :text="
+          missionStore.alwaysShowWaypointNumbers
+            ? 'Hide waypoint numbers when zoomed out'
+            : 'Always show waypoint numbers'
+        "
+      >
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-show="showButtons"
+            :style="interfaceStore.globalGlassMenuStyles"
+            v-bind="tooltipProps"
+            class="absolute right-[134px] m-3 bottom-button bg-slate-50 text-[14px]"
+            elevation="2"
+            size="x-small"
+            style="z-index: 1002; border-radius: 0px"
+            :color="missionStore.alwaysShowWaypointNumbers ? 'primary' : ''"
+            icon="mdi-numeric-1-circle-outline"
+            @click="missionStore.toggleAlwaysShowWaypointNumbers()"
+          />
+        </template>
+      </v-tooltip>
       <v-tooltip location="top" text="Switch to Mission Planning mode">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-if="showButtons"
             v-bind="tooltipProps"
-            class="absolute right-[148px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
+            class="absolute right-[193px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
             text="Edit mission"
             append-icon="mdi-map-marker-radius-outline"
@@ -240,6 +263,7 @@ import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
@@ -392,11 +416,9 @@ const getReachedWaypointIndices = computed(() => {
   return waypointIndices
 })
 
-const getMarkerSizeFromZoom = (zoomLevel: number): MarkerSizes => {
-  if (zoomLevel <= 17) return 'xs'
-  if (zoomLevel > 17 && zoomLevel <= 19) return 'sm'
-  return 'md'
-}
+const { getEffectiveMarkerSize } = useWaypointMarkerSize(() => {
+  if (map.value) refreshReachedWaypointMarkerStyles()
+})
 
 const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
   if (size === 'xs') {
@@ -415,7 +437,7 @@ const createWaypointMarkerHtml = (isReached: boolean, isCurrent = false): string
   } else if (isCurrent) {
     baseClass = 'marker-icon marker-icon-active'
   }
-  const size = getMarkerSizeFromZoom(zoom.value)
+  const size = getEffectiveMarkerSize(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
 
   return `
@@ -426,7 +448,7 @@ const createWaypointMarkerHtml = (isReached: boolean, isCurrent = false): string
 }
 
 const createWaypointMarkerIcon = (isReached: boolean, isCurrent = false): L.DivIcon => {
-  const markerSize = getMarkerSizeFromZoom(zoom.value)
+  const markerSize = getEffectiveMarkerSize(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
   return L.divIcon({
@@ -443,7 +465,7 @@ const applyWaypointMarkerStyle = (seq: number): void => {
   const isReached = getReachedWaypointIndices.value.has(seq)
   const idx = seq - 1
   const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
-  const markerSize = getMarkerSizeFromZoom(zoom.value)
+  const markerSize = getEffectiveMarkerSize(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
   marker.setIcon(
@@ -458,11 +480,7 @@ const applyWaypointMarkerStyle = (seq: number): void => {
   // Updates the tooltip class for reached/current waypoints and visibility based on size
   const tooltip = marker.getTooltip()
   if (tooltip) {
-    if (markerSize === 'xs' || markerSize === 'sm') {
-      tooltip.setOpacity(0)
-    } else {
-      tooltip.setOpacity(1)
-    }
+    tooltip.setOpacity(markerSize === 'md' ? 1 : 0)
 
     const tooltipElement = tooltip.getElement()
     if (tooltipElement) {
@@ -1308,7 +1326,7 @@ watch(mapWaypoints, (newWaypoints) => {
       marker = L.marker(waypoint.coordinates, { icon: markerIcon })
       reachedWaypoints.value[seq] = marker
 
-      const markerSizeForTooltip = getMarkerSizeFromZoom(zoom.value)
+      const markerSizeForTooltip = getEffectiveMarkerSize(zoom.value)
       const markerTooltip = L.tooltip({
         content: seq.toString(),
         permanent: true,
@@ -1331,15 +1349,12 @@ watch(mapWaypoints, (newWaypoints) => {
       map.value?.addLayer(marker)
     } else {
       marker.setLatLng(waypoint.coordinates as LatLngTuple)
-      const markerSizeForUpdate = getMarkerSizeFromZoom(zoom.value)
+      const markerSizeForUpdate = getEffectiveMarkerSize(zoom.value)
       const tooltip = marker.getTooltip()
       if (tooltip) {
-        if (markerSizeForUpdate === 'xs' || markerSizeForUpdate === 'sm') {
-          tooltip.setOpacity(0)
-        } else {
-          tooltip.setContent(seq.toString())
-          tooltip.setOpacity(1)
-        }
+        const showNumber = markerSizeForUpdate === 'md'
+        if (showNumber) tooltip.setContent(seq.toString())
+        tooltip.setOpacity(showNumber ? 1 : 0)
       }
       applyWaypointMarkerStyle(seq)
     }
@@ -2033,7 +2048,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 293px; /* Position to the left of the buttons */
+  right: 338px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
