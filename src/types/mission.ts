@@ -653,6 +653,75 @@ export interface MapOverlayMeta {
   createdAt: number
 }
 
+/**
+ * Source kind of a user-defined custom map tile provider.
+ * - `url`: an XYZ tile URL template served by a remote or locally-hosted tile server.
+ * - `file`: a tile archive (ZIP/MBTiles/PMTiles) uploaded to and served from the vehicle.
+ */
+export type CustomTileProviderType = 'url' | 'file'
+
+/**
+ * Container format of an imported tile archive.
+ */
+export type CustomTileArchiveFormat = 'zip' | 'mbtiles' | 'pmtiles'
+
+/**
+ * Persisted metadata for a user-defined custom map tile provider. Small enough to sync via BlueOS storage;
+ * for `file` providers the tile bytes live on the vehicle (under `userdata/cockpit/tile-providers`, keyed by
+ * {@link CustomTileProviderMeta.id} and {@link CustomTileProviderMeta.format}) and are cached locally in
+ * IndexedDB (keyed by {@link CustomTileProviderMeta.id}) for rendering.
+ */
+export interface CustomTileProviderMeta {
+  /**
+   * Unique id, also used as the local cache key for a `file` provider's archive bytes.
+   */
+  id: string
+  /**
+   * User-facing name shown in the layer control.
+   */
+  name: string
+  /**
+   * Whether the tiles come from a URL template or an uploaded archive.
+   */
+  type: CustomTileProviderType
+  /**
+   * Creation timestamp (epoch milliseconds).
+   */
+  createdAt: number
+  /**
+   * Minimum zoom level the provider has tiles for.
+   */
+  minZoom?: number
+  /**
+   * Maximum native zoom level the provider has tiles for (higher zooms are upscaled).
+   */
+  maxZoom?: number
+  /**
+   * Attribution string shown on the map.
+   */
+  attribution?: string
+  /**
+   * WGS84 bounds used to frame the provider ("center on provider"), when known.
+   */
+  bounds?: MapOverlayBounds
+  /**
+   * XYZ tile URL template (`url` providers only), e.g. `https://host/tiles/{z}/{x}/{y}.png`.
+   */
+  urlTemplate?: string
+  /**
+   * Whether the URL template uses the TMS y-axis convention (`url` providers only).
+   */
+  tms?: boolean
+  /**
+   * Archive container format (`file` providers only).
+   */
+  format?: CustomTileArchiveFormat
+  /**
+   * Size of the stored archive in bytes (`file` providers only).
+   */
+  fileSize?: number
+}
+
 export type IconDimensions = {
   /**
    * The size of the icon in pixels
