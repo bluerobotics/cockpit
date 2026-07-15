@@ -128,13 +128,27 @@
                     class="!h-[24px] !w-[24px] !min-w-[24px]"
                     @click="editCommand(index)"
                   />
-                  <v-btn
-                    size="x-small"
-                    variant="outlined"
-                    icon="mdi-delete"
-                    class="!h-[24px] !w-[24px] !min-w-[24px]"
-                    @click="removeCommand(index)"
-                  />
+                  <v-tooltip
+                    location="top"
+                    :text="
+                      isProtectedNavWaypoint(command)
+                        ? 'A waypoint must keep a MAV_CMD_NAV_WAYPOINT command'
+                        : 'Delete command'
+                    "
+                  >
+                    <template #activator="{ props: deleteTooltipProps }">
+                      <div v-bind="deleteTooltipProps">
+                        <v-btn
+                          size="x-small"
+                          variant="outlined"
+                          icon="mdi-delete"
+                          class="!h-[24px] !w-[24px] !min-w-[24px]"
+                          :disabled="isProtectedNavWaypoint(command)"
+                          @click="removeCommand(index)"
+                        />
+                      </div>
+                    </template>
+                  </v-tooltip>
                 </div>
               </div>
             </div>
@@ -157,6 +171,7 @@
             v-if="showCommandForm"
             :existing-command="editingCommand"
             :is-editing="editingCommandIndex !== -1"
+            :lock-command-selection="isEditingProtectedNavWaypoint"
             @command-ready="handleCommandReady"
             @cancel="handleCommandCancel"
           />
@@ -186,6 +201,8 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import {
   AltitudeReferenceType,
+  countNavWaypointCommands,
+  isNavWaypointCommand,
   MissionCommand,
   MissionCommandType,
   Waypoint,
@@ -300,6 +317,14 @@ const handleCommandCancel = (): void => {
   editingCommandIndex.value = -1
   emit('shouldUpdateWaypoints')
 }
+
+const isProtectedNavWaypoint = (command: MissionCommand): boolean =>
+  isNavWaypointCommand(command) && countNavWaypointCommands(waypointOnMissionStore.value?.commands ?? []) <= 1
+
+const isEditingProtectedNavWaypoint = computed(
+  () =>
+    editingCommand.value !== undefined && editingCommandIndex.value >= 0 && isProtectedNavWaypoint(editingCommand.value)
+)
 
 const editCommand = (index: number): void => {
   if (!waypointOnMissionStore.value?.commands) return
