@@ -559,6 +559,7 @@ import PlotterImg from '@/assets/widgets/Plotter.png'
 import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
 import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
+import WebRTCStatsImg from '@/assets/widgets/WebRTCStats.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { getWidgetsFromBlueOS } from '@/libs/blueos'
@@ -772,6 +773,7 @@ const widgetImages = {
   URLVideoPlayer: URLVideoPlayerImg,
   VideoPlayer: VideoPlayerImg,
   VirtualHorizon: VirtualHorizonImg,
+  WebRTCStats: WebRTCStatsImg,
 }
 
 const widgetAddMenuGroupOptions = {
