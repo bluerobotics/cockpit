@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { CameraMode } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { app_version } from '@/libs/cosmos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { isElectron, sanitizeFilenameComponent } from '@/libs/utils'
@@ -279,6 +280,14 @@ export const useSnapshotStore = defineStore('snapshot', () => {
         console.error(`Failed to capture snapshot for stream '${streamName}':`, err)
         failed.push(streamName)
       }
+    }
+
+    // Best-effort MAVLink broadcast so systems like BlueOS can mirror the snapshot action.
+    if (videoStore.broadcastCameraActionsOverMavlink && succeeded.some((name) => streamNames.includes(name))) {
+      if (videoStore.setCameraModeOnCapture) {
+        vehicleStore.setCameraMode(videoStore.mavlinkCameraTargetId, CameraMode.CAMERA_MODE_IMAGE)
+      }
+      vehicleStore.startImageCapture(videoStore.mavlinkCameraTargetId)
     }
 
     return { succeeded, failed }
