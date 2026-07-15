@@ -148,6 +148,15 @@ export class IndexedDbStore {
   }
 
   /**
+   * Count entries, optionally restricted to a key range (native count, no values are read).
+   * @param {IDBKeyRange} [query] - Key range to restrict the count to
+   * @returns {Promise<number>} The number of matching entries
+   */
+  async count(query?: IDBKeyRange): Promise<number> {
+    return this.run<number>('readonly', (store) => store.count(query))
+  }
+
+  /**
    * Delete every entry whose key falls within the given range, in a single native operation.
    * @param {IDBKeyRange} query - Key range to delete
    */
