@@ -26,11 +26,10 @@
                 <div class="flex items-start gap-3">
                   <v-icon color="amber" class="mt-1">mdi-information</v-icon>
                   <div>
-                    <h4 class="text-amber-200 font-medium mb-2">Browser Version</h4>
+                    <h4 class="text-amber-200 font-medium mb-2">Cockpit Lite</h4>
                     <p class="text-amber-100 text-sm">
-                      Reading external serial GNSS receivers is only available in the standalone (desktop) version of
-                      Cockpit. Browsers cannot access serial devices outside of a secure context, so this feature is
-                      disabled here.
+                      Reading external serial GNSS receivers is only available in Cockpit Standalone. Browsers cannot
+                      access serial devices outside of a secure context, so this feature is disabled here.
                     </p>
                   </div>
                 </div>

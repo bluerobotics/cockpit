@@ -271,7 +271,7 @@
           <template #info>
             <li>
               Configure live video processing to process videos in real-time during recording for instant availability
-              when recording stops. This is only available in the Electron (desktop) version.
+              when recording stops. This is only available in Cockpit Standalone.
             </li>
             <li>
               Choose whether to save backup raw chunks alongside the final video file. This provides safety for video
@@ -303,10 +303,10 @@
               <div class="flex items-start gap-3">
                 <v-icon color="amber" class="mt-1">mdi-information</v-icon>
                 <div>
-                  <h4 class="text-amber-200 font-medium mb-2">Browser Version</h4>
+                  <h4 class="text-amber-200 font-medium mb-2">Cockpit Lite</h4>
                   <p class="text-amber-100 text-sm">
-                    Video processing is not available in the browser version. Your recordings will be saved as raw
-                    chunks that can be downloaded and processed using the standalone version of Cockpit.
+                    Video processing is not available in Cockpit Lite. Your recordings will be saved as raw chunks that
+                    can be downloaded and processed using Cockpit Standalone.
                   </p>
                 </div>
               </div>
@@ -315,7 +315,7 @@
             <div class="flex items-center justify-start w-[96%] ml-2">
               <v-checkbox
                 v-model="videoStore.enableLiveProcessing"
-                label="Live video processing (Electron)"
+                label="Live video processing (Standalone)"
                 class="text-sm mx-2"
                 hide-details
                 :disabled="!isElectron()"
@@ -324,7 +324,7 @@
                 :text="
                   isElectron()
                     ? 'Process videos in real-time during recording for instant availability when recording stops'
-                    : 'Live video processing is only available in the standalone version'
+                    : 'Live video processing is only available in Cockpit Standalone'
                 "
               >
                 <template #activator="{ props }">
@@ -358,7 +358,7 @@
                   <p class="mt-2 text-gray-300">
                     You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.
                   </p>
-                  <p class="mt-2 text-gray-300">For the browser version the chunks are always saved by default.</p>
+                  <p class="mt-2 text-gray-300">In Cockpit Lite the chunks are always saved by default.</p>
                 </div>
               </v-tooltip>
             </div>

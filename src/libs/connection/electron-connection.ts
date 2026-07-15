@@ -34,7 +34,7 @@ class ElectronConnectionIPC {
    */
   async initialize(): Promise<void> {
     if (!window.electronAPI) {
-      throw new Error('This connection is only available in desktop version')
+      throw new Error('This connection is only available in Cockpit Standalone')
     }
 
     this._isOpen = await window.electronAPI.linkOpen(this.path)

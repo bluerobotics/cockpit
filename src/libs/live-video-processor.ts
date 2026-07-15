@@ -71,7 +71,7 @@ export class LiveVideoProcessor {
    */
   async startProcessing(): Promise<void> {
     if (!isElectron()) {
-      throw new Error('Live video processing is only available in Electron')
+      throw new Error('Live video processing is only available in Cockpit Standalone')
     }
 
     this.isProcessing = true
@@ -232,7 +232,7 @@ export class LiveVideoProcessor {
     onProgress?: (progress: number, message: string) => void
   ): Promise<string> {
     if (!isElectron() || !window.electronAPI) {
-      throw new Error('ZIP processing is only available in Electron')
+      throw new Error('ZIP processing is only available in Cockpit Standalone')
     }
 
     if (!zipFilePaths || zipFilePaths.length === 0) {

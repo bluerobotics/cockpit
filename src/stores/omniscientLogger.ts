@@ -39,38 +39,38 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     // Separate memory metrics for different process types
     cockpitMainMemoryVariable = {
       id: 'cockpit-main-memory',
-      name: 'Cockpit Main Memory (Electron)',
+      name: 'Cockpit Main Memory (Standalone)',
       type: 'number',
       description:
-        'The memory usage of the main process in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
+        'The memory usage of the main process in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitMainMemoryVariable)
 
     cockpitRenderersMemoryVariable = {
       id: 'cockpit-renderers-memory',
-      name: 'Cockpit Renderers Memory (Electron)',
+      name: 'Cockpit Renderers Memory (Standalone)',
       type: 'number',
       description:
-        'The total memory usage of the renderer processes in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
+        'The total memory usage of the renderer processes in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitRenderersMemoryVariable)
 
     cockpitGpuMemoryVariable = {
       id: 'cockpit-gpu-memory',
-      name: 'Cockpit GPU Memory (Electron)',
+      name: 'Cockpit GPU Memory (Standalone)',
       type: 'number',
       description:
-        'The memory usage of the GPU in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
+        'The memory usage of the GPU in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitGpuMemoryVariable)
 
     // CPU usage tracking
     cockpitCpuUsageVariable = {
       id: 'cockpit-cpu-usage',
-      name: 'Cockpit CPU Usage (Electron)',
+      name: 'Cockpit CPU Usage (Standalone)',
       type: 'number',
       description:
-        'The CPU usage of the standalone Cockpit application as a percentage. This value is updated every 100ms. Only available in Electron.',
+        'The CPU usage of Cockpit Standalone as a percentage. This value is updated every 100ms. Only available in Cockpit Standalone.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitCpuUsageVariable)
   }

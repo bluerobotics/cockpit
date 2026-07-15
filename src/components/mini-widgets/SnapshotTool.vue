@@ -77,7 +77,7 @@
             />
           </template>
 
-          <span> Some features like “Capturing Cockpit work area” are only available in the Electron version. </span>
+          <span> Some features like “Capturing Cockpit work area” are only available in Cockpit Standalone. </span>
         </v-tooltip>
       </div>
       <div class="flex items-center justify-start w-[90%] -mb-2">
@@ -154,7 +154,7 @@
           @update:model-value="(val) => (miniWidget.options.captureWorkspace = val)"
         />
         <p class="ml-[4px] -mb-[2px] text-sm" :class="{ 'opacity-20 pointer-events-none': !isElectronEnv }">
-          Capture Cockpit work area (Desktop-only feature)
+          Capture Cockpit work area (Standalone-only feature)
         </p>
       </div>
       <v-text-field

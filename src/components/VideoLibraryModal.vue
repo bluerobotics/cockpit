@@ -371,7 +371,7 @@
                           class="flex items-center gap-2 cursor-pointer"
                           @click="isInstructionsExpanded = !isInstructionsExpanded"
                         >
-                          <span class="text-sm text-white/70">Browser Version Instructions</span>
+                          <span class="text-sm text-white/70">Cockpit Lite Instructions</span>
                           <v-icon
                             class="text-white/70 transition-transform duration-200"
                             :class="{ 'rotate-180': isInstructionsExpanded }"
@@ -391,8 +391,7 @@
                             <div class="text-white/80 text-sm space-y-1">
                               <p>
                                 These are raw video chunks that need to be processed. The processing can be done
-                                exclusively in the standalone version of Cockpit. The browser version can only record
-                                the video chunks.
+                                exclusively in Cockpit Standalone. Cockpit Lite can only record the video chunks.
                               </p>
                               <div>
                                 <p class="font-medium mb-2">To process your videos:</p>
@@ -403,7 +402,7 @@
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">2.</span>
-                                    <span>Open the standalone version of Cockpit (desktop app)</span>
+                                    <span>Open Cockpit Standalone</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">3.</span>
@@ -627,7 +626,7 @@
                           <ol class="text-white/80 text-sm space-y-2">
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">1.</span>
-                              <span>Download raw video chunks from the browser version's "Raw" tab</span>
+                              <span>Download raw video chunks from Cockpit Lite's "Raw" tab</span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">2.</span>
@@ -831,7 +830,7 @@ const videoSubTabs = [
     label: 'Processed',
     icon: 'mdi-video',
     disabled: !isElectron(),
-    tooltip: isElectron() ? '' : 'Only available in standalone version',
+    tooltip: isElectron() ? '' : 'Only available in Cockpit Standalone',
   },
   {
     name: 'raw',
@@ -845,7 +844,7 @@ const videoSubTabs = [
     label: 'Processing',
     icon: 'mdi-cog-outline',
     disabled: !isElectron(),
-    tooltip: isElectron() ? 'Process ZIP files with raw video chunks' : 'Only available in standalone version',
+    tooltip: isElectron() ? 'Process ZIP files with raw video chunks' : 'Only available in Cockpit Standalone',
   },
 ]
 
@@ -854,7 +853,7 @@ const openElectronFolder = (opener: () => void): void => {
     opener()
   } else {
     openSnackbar({
-      message: 'This feature is only available in the desktop version of Cockpit.',
+      message: 'This feature is only available in Cockpit Standalone.',
       duration: 3000,
       variant: 'error',
       closeButton: true,
@@ -876,7 +875,7 @@ const playVideoInDefaultPlayer = (fileName: string): void => {
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openVideoFile(fileName)
   } else {
-    openSnackbar({ message: 'This feature is only available in the desktop version of Cockpit.', variant: 'error' })
+    openSnackbar({ message: 'This feature is only available in Cockpit Standalone.', variant: 'error' })
   }
 }
 
