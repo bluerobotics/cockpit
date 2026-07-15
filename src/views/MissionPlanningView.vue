@@ -746,6 +746,7 @@ import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -1008,6 +1009,9 @@ const { mapReady } = mapContext
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
+const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
 // Frame the map on a GeoTIFF overlay when requested from the configuration panel
 watch(
@@ -4126,6 +4130,9 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   await mapOverlays.initOverlays(planningMap.value, layerControl)
 
+  // Register any user-defined custom tile providers as selectable base layers on the layer control
+  initCustomTileProviders(planningMap.value, layerControl, Object.values(tileLayers.baseMaps))
+
   // Initialize scale control (always show)
   createScaleControl()
 
@@ -4196,6 +4203,7 @@ onUnmounted(() => {
   stopTileFallbackWatcher?.()
   stopTileFallbackWatcher = undefined
   mapOverlays.destroyOverlays()
+  destroyCustomTileProviders()
 
   // Reset the map context so descendants stop reacting to the destroyed instance
   mapContext.mapReady.value = false
@@ -4950,6 +4958,9 @@ watch(
   box-shadow: var(--glass-box-shadow) !important;
   color: var(--glass-color) !important;
   border: var(--glass-border) !important;
+  /* Leaflet's default padding is asymmetric (6px left, 10px right); even it out so the full-width
+     "Add map provider" button sits equidistant from both panel edges. */
+  padding: 6px 8px !important;
 }
 
 :deep(.leaflet-control-layers-list) {

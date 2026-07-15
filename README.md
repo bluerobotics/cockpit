@@ -188,6 +188,7 @@ ArduCopter support has been physically tested, but the primary development team 
 - **Points of interest** management
 - **Mission import/export** for easy backup and reuse
 - **Real-time mission monitoring** and execution
+- **Custom map tile providers** via XYZ URL templates or imported tile archives (ZIP/MBTiles/PMTiles), managed under Settings > Sources and selectable as base maps in the map's layer selector. Imported archives are stored on the connected vehicle and cached locally, so importing requires a vehicle connection; URL providers and already-cached archives work offline. Available in both the Standalone and Lite builds.
 
 ### 📊 **Data Management**
 - **[Data Lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake)** for centralized variable storage and retrieval
