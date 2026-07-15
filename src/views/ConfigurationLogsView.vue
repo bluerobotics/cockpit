@@ -391,6 +391,46 @@
                   </div>
                 </template>
               </ExpansiblePanel>
+              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+                <template #title>Stored Telemetry Data</template>
+                <template #content>
+                  <div class="flex flex-col gap-y-2 pt-2 pb-1 px-1">
+                    <p class="text-[12px]">
+                      Total stored entries: <span class="font-bold">{{ totalLogEntriesLabel }}</span>
+                    </p>
+                    <p class="text-[11px] text-white/60 -mt-1">
+                      Remove telemetry entries recorded before a chosen date to free up space.
+                    </p>
+                    <v-text-field
+                      v-model="deletionDate"
+                      type="date"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      label="Delete entries before"
+                      class="mt-1 telemetry-date-field"
+                    />
+                    <p v-if="deletionDate" class="text-[12px]">
+                      Entries before this date: <span class="font-bold">{{ entriesBeforeDateLabel }}</span>
+                      <span v-if="entriesBeforePercentageLabel" class="text-white/60">
+                        ({{ entriesBeforePercentageLabel }} of total)</span
+                      >
+                    </p>
+                    <div class="flex justify-end w-full mt-1">
+                      <v-btn
+                        size="x-small"
+                        variant="text"
+                        color="white"
+                        :disabled="!deletionDate || !entriesBeforeDate"
+                        @click="openDeleteOldTelemetryDialog"
+                      >
+                        Delete old entries
+                        <v-icon size="18" class="ml-2">mdi-trash-can-outline</v-icon>
+                      </v-btn>
+                    </div>
+                  </div>
+                </template>
+              </ExpansiblePanel>
               <div class="flex justify-end w-full mt-2">
                 <v-btn size="x-small" variant="text" class="mr-2" @click="resetAllChips">
                   Reset Positions
@@ -456,6 +496,7 @@
 </template>
 
 <script setup lang="ts">
+import { format } from 'date-fns'
 import type * as monacoTypes from 'monaco-editor'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
@@ -463,6 +504,7 @@ import { VueDraggable } from 'vue-draggable-plus'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlassButton from '@/components/GlassButton.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { openSnackbar } from '@/composables/snackbar'
 import {
   getAllDataLakeVariablesInfo,
   getDataLakeVariableInfo,
@@ -474,7 +516,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
-const { showDialog } = useInteractionDialog()
+const { showDialog, closeDialog } = useInteractionDialog()
 
 const interfaceStore = useAppInterfaceStore()
 
@@ -754,6 +796,79 @@ const newFrequencyString = computed({
   get: () => newFrequency.value.toString(),
   set: (value) => (newFrequency.value = parseFloat(value)),
 })
+
+const totalLogEntries = ref<number | null>(null)
+const entriesBeforeDate = ref<number | null>(null)
+const deletionDate = ref('')
+
+const deletionCutoff = computed(() => (deletionDate.value ? new Date(`${deletionDate.value}T00:00:00`) : null))
+
+const totalLogEntriesLabel = computed(() =>
+  totalLogEntries.value === null ? '—' : totalLogEntries.value.toLocaleString()
+)
+const entriesBeforeDateLabel = computed(() =>
+  entriesBeforeDate.value === null ? '…' : entriesBeforeDate.value.toLocaleString()
+)
+const entriesBeforePercentageLabel = computed(() => {
+  if (entriesBeforeDate.value === null || !totalLogEntries.value) return null
+  const percentage = (entriesBeforeDate.value / totalLogEntries.value) * 100
+  return percentage > 0 && percentage < 0.1 ? '<0.1%' : `${percentage.toFixed(1)}%`
+})
+
+const refreshEntriesBeforeDate = async (): Promise<void> => {
+  entriesBeforeDate.value = deletionCutoff.value
+    ? await datalogger.countTemporaryLogPointsBefore(deletionCutoff.value)
+    : null
+}
+
+const refreshLogEntryCounts = async (): Promise<void> => {
+  totalLogEntries.value = await datalogger.countTemporaryLogPoints()
+  await refreshEntriesBeforeDate()
+}
+
+watch(deletionDate, refreshEntriesBeforeDate)
+onMounted(refreshLogEntryCounts)
+
+const deleteOldTelemetryEntries = async (cutoff: Date, amount: number): Promise<void> => {
+  try {
+    await datalogger.deleteTemporaryLogPointsBefore(cutoff)
+    logUserAction(`Deleted ${amount} telemetry entries recorded before ${format(cutoff, 'yyyy-MM-dd')}`)
+    openSnackbar({
+      variant: 'success',
+      message: `Deleted ${amount} old telemetry ${amount === 1 ? 'entry' : 'entries'}.`,
+      duration: 3000,
+    })
+  } catch (error) {
+    openSnackbar({ variant: 'error', message: `Failed to delete telemetry entries: ${error}`, duration: 5000 })
+  }
+  await refreshLogEntryCounts()
+}
+
+const openDeleteOldTelemetryDialog = (): void => {
+  const cutoff = deletionCutoff.value
+  const amount = entriesBeforeDate.value
+  if (!cutoff || !amount) return
+
+  logUserAction('Opened delete-old-telemetry-entries dialog')
+  showDialog({
+    variant: 'warning',
+    title: 'Delete old telemetry entries?',
+    message: `This will permanently remove ${amount} telemetry ${
+      amount === 1 ? 'entry' : 'entries'
+    } recorded before ${format(cutoff, 'LLL dd, yyyy')}. This cannot be undone.`,
+    actions: [
+      { text: 'Cancel', size: 'small', action: closeDialog },
+      {
+        text: 'Delete',
+        size: 'small',
+        action: () => {
+          closeDialog()
+          deleteOldTelemetryEntries(cutoff, amount)
+        },
+      },
+    ],
+  })
+}
 </script>
 <style scoped>
 .wrapclass {
@@ -780,6 +895,9 @@ const newFrequencyString = computed({
   width: 100%;
   line-height: 1.25;
   padding: 4px 0;
+}
+.telemetry-date-field :deep(input::-webkit-calendar-picker-indicator) {
+  filter: invert(1);
 }
 .frosted-button {
   background-color: rgba(255, 255, 255, 0.2);
