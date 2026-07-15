@@ -42,6 +42,16 @@ const telemetryDisplayDataKey = 'cockpit-datalogger-overlay-grid'
 const telemetryDisplayOptionsKey = 'cockpit-datalogger-overlay-options'
 const logIntervalKey = 'cockpit-datalogger-log-interval'
 
+/**
+ * Build the IndexedDB key used to store a temporary log point for the given epoch. The epoch is
+ * zero-padded to 13 digits so keys sort lexicographically in chronological order even if the system
+ * clock is set before 2001; that ordering is what lets `generateLog` read a recording window with a
+ * single `IDBKeyRange` query instead of scanning the whole store.
+ * @param {number} epoch - Log point epoch, in milliseconds.
+ * @returns {string} The storage key.
+ */
+const temporaryLogPointKey = (epoch: number): string => `epoch=${epoch.toString().padStart(13, '0')}`
+
 const defaultTelemetryDisplayData = defaultSensorDataloggerProfile as OverlayGrid
 const defaultTelemetryDisplayOptions = {
   fontSize: 30,
@@ -351,7 +361,7 @@ class DataLogger {
         data: structuredClone(variablesData),
       }
 
-      await this.cockpitTemporaryLogsDB.setItem(`epoch=${logPoint.epoch}`, logPoint)
+      await this.cockpitTemporaryLogsDB.setItem(temporaryLogPointKey(logPoint.epoch), logPoint)
       this.datetimeLastLogPoint = new Date()
 
       if (this.shouldBeLogging()) {
@@ -501,51 +511,33 @@ class DataLogger {
     const logDateTimeFmt = `${logDateFormat} / HH꞉mm꞉ss O`
     const fileName = `Cockpit (${format(initialTime, logDateTimeFmt)} - ${format(finalTime, logDateTimeFmt)}).clog`
 
-    const availableLogsKeys = await this.cockpitTemporaryLogsDB.keys()
+    // Consider logs that start a little before the initial time and end a little after the final time, so we don't
+    // miss data at the start or end of the recording. Keys sort chronologically (see temporaryLogPointKey), so this
+    // range query reads only the recording window instead of the whole store.
+    const lowerKey = temporaryLogPointKey(initialTime.getTime() - 10000)
+    const upperKey = temporaryLogPointKey(finalTime.getTime() + 10000)
+    const logPointsInWindow = await this.cockpitTemporaryLogsDB.getAll<CockpitStandardLogPoint>(
+      IDBKeyRange.bound(lowerKey, upperKey)
+    )
 
-    // The key is in the format epoch=<epoch>. We extract the epoch and compare it to the initial and final times
-    // to see if the log point is in the range of the desired log.
-    const keysLogPointsInRange = availableLogsKeys.filter((key) => {
-      const epochString = Number(key.split('=')[1])
-      const logPointDate = new Date(epochString)
-      // Consider logs that start a little before the initial time and end a little after the final time, so we don't
-      // miss data at the start or end of the recording.
-      const aLittleBitBeforeInitialTime = new Date(initialTime.getTime() - 10000)
-      const aLittleBitAfterFinalTime = new Date(finalTime.getTime() + 10000)
-      return logPointDate >= aLittleBitBeforeInitialTime && logPointDate <= aLittleBitAfterFinalTime
-    })
-
-    // Generate an object with the initial and final epoch of each log point
-    // The initial epoch is the name of the key, and the final epoch can be determined from the next point.
-    const infoLogPointsInRange = keysLogPointsInRange.map((key, index, array) => {
-      const epochString = Number(key.split('=')[1])
-      const initialDate = new Date(epochString)
-
-      let finalDate: Date | null = null
-      if (index !== array.length - 1) {
-        const nextEpochString = Number(array[index + 1].split('=')[1])
-        finalDate = new Date(nextEpochString)
-      }
-
-      return { key, initialDate, finalDate }
-    })
-
-    if (keysLogPointsInRange.length === 0) {
+    if (logPointsInWindow.length === 0) {
       throw new Error('No log points found in the given range.')
     }
 
     const logPointsInRange: CockpitStandardLogPoint[] = []
-    for (const info of infoLogPointsInRange) {
-      const log = (await this.cockpitTemporaryLogsDB.getItem(info.key)) as CockpitStandardLogPoint
-
+    logPointsInWindow.forEach((log, index, array) => {
       // Only consider real log points(objects with an epoch and data property, and non-empty data)
-      if (log.epoch === undefined || log.data === undefined || Object.keys(log.data).length === 0) continue
+      if (log.epoch === undefined || log.data === undefined || Object.keys(log.data).length === 0) return
+
+      // The point is valid until the next point starts, so we use that to know when its data stops being current.
+      const initialDate = new Date(log.epoch)
+      const finalDate = index !== array.length - 1 ? new Date(array[index + 1].epoch) : null
 
       // Exclude those log points that end before the initial time or start after the final time
-      if ((info.finalDate && info.finalDate < initialTime) || info.initialDate > finalTime) continue
+      if ((finalDate && finalDate < initialTime) || initialDate > finalTime) return
 
       logPointsInRange.push(log)
-    }
+    })
 
     // Sort the log points by epoch, generate a final log file and put in in the local database
     const sortedLogPoints = logPointsInRange.sort((a, b) => a.epoch - b.epoch)
