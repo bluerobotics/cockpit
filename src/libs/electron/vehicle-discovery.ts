@@ -264,7 +264,7 @@ class VehicleDiscover {
     signal?: AbortSignal
   ): Promise<NetworkVehicle[]> {
     if (!isElectron()) {
-      throw new Error('For technical reasons, finding vehicles is only available in Electron.')
+      throw new Error('For technical reasons, finding vehicles is only available in Cockpit Standalone.')
     }
 
     if (this.currentSearch !== undefined) {
@@ -282,7 +282,8 @@ class VehicleDiscover {
 
       try {
         if (!window.electronAPI?.getInfoOnSubnets) {
-          const msg = 'For technical reasons, getting information about the local subnet is only available in Electron.'
+          const msg =
+            'For technical reasons, getting information about the local subnet is only available in Cockpit Standalone.'
           throw new Error(msg)
         }
 

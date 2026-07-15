@@ -78,7 +78,7 @@ export const importGeoTiffFile = async (file: File): Promise<MapOverlayMeta> => 
   const available = await getOverlayStorageBytesAvailable()
   if (available !== undefined && file.size > available) {
     throw new OverlayStorageQuotaError(
-      `Not enough browser storage to save "${file.name}". Free up space or use the Standalone (desktop) app.`
+      `Not enough browser storage to save "${file.name}". Free up space or use Cockpit Standalone.`
     )
   }
 
@@ -90,7 +90,7 @@ export const importGeoTiffFile = async (file: File): Promise<MapOverlayMeta> => 
   } catch (error) {
     if (error instanceof DOMException && error.name === 'QuotaExceededError') {
       throw new OverlayStorageQuotaError(
-        `Browser storage is full, so "${file.name}" could not be saved. Free up space or use the Standalone app.`
+        `Browser storage is full, so "${file.name}" could not be saved. Free up space or use Cockpit Standalone.`
       )
     }
     throw error

@@ -1002,7 +1002,7 @@ const openCockpitFolder = (): void => {
     window.electronAPI?.openCockpitFolder()
   } else {
     openSnackbar({
-      message: 'This feature is only available in the desktop version of Cockpit.',
+      message: 'This feature is only available in Cockpit Standalone.',
       duration: 3000,
       variant: 'error',
       closeButton: true,

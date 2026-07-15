@@ -171,8 +171,8 @@
             class="mt-2"
           >
             <div class="text-body-2">
-              <strong>Note:</strong> Specifying the User-Agent header only works in the standalone Electron version of
-              the application, not in the browser/extension version.
+              <strong>Note:</strong> Specifying the User-Agent header only works in Cockpit Standalone, not in Cockpit
+              Lite.
             </div>
           </v-alert>
         </v-form>

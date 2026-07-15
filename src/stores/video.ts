@@ -1225,7 +1225,7 @@ export const useVideoStore = defineStore('video', () => {
    */
   const addRtspStreamCorrespondency = (rtspUrl: string): VideoStreamCorrespondency => {
     if (!window.electronAPI) {
-      throw new Error('RTSP streams are only available in the standalone version.')
+      throw new Error('RTSP streams are only available in Cockpit Standalone.')
     }
 
     let parsedUrl: URL

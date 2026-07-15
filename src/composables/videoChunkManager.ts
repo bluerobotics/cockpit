@@ -581,7 +581,7 @@ export const useVideoChunkManager = (): {
    */
   const processChunkGroup = async (group: ChunkGroup): Promise<void> => {
     if (!isElectron() || !window.electronAPI) {
-      openSnackbar({ message: 'Manual processing is only available in Electron', variant: 'error' })
+      openSnackbar({ message: 'Manual processing is only available in Cockpit Standalone', variant: 'error' })
       return
     }
 
