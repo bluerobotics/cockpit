@@ -10,6 +10,7 @@
           item-title="name"
           item-value="value"
           hide-details
+          :disabled="lockCommandSelection"
           class="spaced-number w-full"
           density="compact"
           theme="dark"
@@ -27,12 +28,16 @@
           item-title="name"
           item-value="value"
           hide-details
+          :disabled="lockCommandSelection"
           class="spaced-number w-full"
           density="compact"
           theme="dark"
           variant="plain"
           @update:model-value="onMavCommandChange"
         ></v-select>
+        <p v-if="lockCommandSelection" class="w-full text-center text-[10px] opacity-75 mt-1">
+          The primary MAV_CMD_NAV_WAYPOINT command cannot be changed.
+        </p>
       </div>
 
       <!-- Parameter Inputs -->
@@ -117,6 +122,10 @@ const props = defineProps<{
    * Whether this is an edit operation
    */
   isEditing?: boolean
+  /**
+   * Locks the type and command selects so the primary MAV_CMD_NAV_WAYPOINT cannot be changed away.
+   */
+  lockCommandSelection?: boolean
 }>()
 
 const emit = defineEmits<{

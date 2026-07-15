@@ -78,6 +78,22 @@ export type MavlinkNonNavCommand = {
 export type MissionCommand = MavlinkNavCommand | MavlinkNonNavCommand
 
 /**
+ * Whether a command is the primary navigation command that carries a waypoint's map position.
+ * @param {MissionCommand} command Command to check.
+ * @returns {command is MavlinkNavCommand} True when the command is a MAV_CMD_NAV_WAYPOINT navigation command.
+ */
+export const isNavWaypointCommand = (command: MissionCommand): command is MavlinkNavCommand =>
+  command.type === MissionCommandType.MAVLINK_NAV_COMMAND && command.command === MavCmd.MAV_CMD_NAV_WAYPOINT
+
+/**
+ * Counts how many MAV_CMD_NAV_WAYPOINT commands a waypoint holds.
+ * @param {MissionCommand[]} commands Commands of the waypoint.
+ * @returns {number} Number of MAV_CMD_NAV_WAYPOINT commands.
+ */
+export const countNavWaypointCommands = (commands: MissionCommand[]): number =>
+  commands.filter(isNavWaypointCommand).length
+
+/**
  * Possible types for waypoints. Usually used to decide what function should the waypoint perform.
  */
 export enum AltitudeReferenceType {

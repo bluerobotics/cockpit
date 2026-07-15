@@ -15,6 +15,8 @@ import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
   AltitudeReferenceType,
   CockpitMission,
+  countNavWaypointCommands,
+  isNavWaypointCommand,
   MapOverlayMeta,
   MapTileProvider,
   MapTileProviderPreference,
@@ -391,6 +393,10 @@ export const useMissionStore = defineStore('mission', () => {
     if (commandIndex < 0 || commandIndex >= waypoint.commands.length) {
       throw Error(`Invalid command index ${commandIndex} for waypoint ${waypointId}.`)
     }
+    // A waypoint must always keep at least one MAV_CMD_NAV_WAYPOINT, otherwise it is dropped on upload.
+    if (isNavWaypointCommand(waypoint.commands[commandIndex]) && countNavWaypointCommands(waypoint.commands) <= 1) {
+      throw Error(`Cannot remove the last MAV_CMD_NAV_WAYPOINT command from waypoint ${waypointId}.`)
+    }
     waypoint.commands.splice(commandIndex, 1)
   }
 
@@ -401,6 +407,13 @@ export const useMissionStore = defineStore('mission', () => {
     }
     if (commandIndex < 0 || commandIndex >= waypoint.commands.length) {
       throw Error(`Invalid command index ${commandIndex} for waypoint ${waypointId}.`)
+    }
+    const removesLastNavWaypoint =
+      isNavWaypointCommand(waypoint.commands[commandIndex]) &&
+      !isNavWaypointCommand(updatedCommand) &&
+      countNavWaypointCommands(waypoint.commands) <= 1
+    if (removesLastNavWaypoint) {
+      throw Error(`Cannot remove the last MAV_CMD_NAV_WAYPOINT command from waypoint ${waypointId}.`)
     }
     waypoint.commands[commandIndex] = updatedCommand
   }
