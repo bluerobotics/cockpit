@@ -554,6 +554,41 @@ class DataLogger {
   }
 
   /**
+   * Build the key range covering every temporary log point recorded strictly before the given time.
+   * @param {Date} before - Cutoff time; the range covers all points older than this.
+   * @returns {IDBKeyRange} Range of temporary-log keys older than the cutoff.
+   */
+  private temporaryLogPointsBeforeRange(before: Date): IDBKeyRange {
+    return IDBKeyRange.upperBound(temporaryLogPointKey(before.getTime()), true)
+  }
+
+  /**
+   * Count how many temporary telemetry log points are currently stored.
+   * @returns {Promise<number>} Total number of stored log points.
+   */
+  async countTemporaryLogPoints(): Promise<number> {
+    return this.cockpitTemporaryLogsDB.count()
+  }
+
+  /**
+   * Count the temporary telemetry log points recorded strictly before the given time.
+   * @param {Date} before - Cutoff time; only points older than this are counted.
+   * @returns {Promise<number>} Number of stored log points older than the cutoff.
+   */
+  async countTemporaryLogPointsBefore(before: Date): Promise<number> {
+    return this.cockpitTemporaryLogsDB.count(this.temporaryLogPointsBeforeRange(before))
+  }
+
+  /**
+   * Delete every temporary telemetry log point recorded strictly before the given time.
+   * @param {Date} before - Cutoff time; points older than this are removed.
+   * @returns {Promise<void>}
+   */
+  async deleteTemporaryLogPointsBefore(before: Date): Promise<void> {
+    await this.cockpitTemporaryLogsDB.removeRange(this.temporaryLogPointsBeforeRange(before))
+  }
+
+  /**
    * Convert Cockpit standard log files to Advanced SubStation Alpha subtitle overlays
    * @param {CockpitStandardLog} log
    * @param {number} videoWidth
