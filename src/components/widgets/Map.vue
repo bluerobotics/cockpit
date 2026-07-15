@@ -242,6 +242,8 @@
 
   <PoiManager ref="poiManagerMapWidgetRef" />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
+  <BaseStationConfigPanel />
+  <BaseStationContextPopup />
   <MissionChecklist
     :model-value="isMissionChecklistOpen"
     @confirmed="executeMissionOnVehicle"
@@ -291,6 +293,8 @@ import copterMarkerImage from '@/assets/arducopter-top-view.avif'
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
+import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
@@ -299,6 +303,8 @@ import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
+import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -308,6 +314,13 @@ import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
+import {
+  baseStationMenuIcon,
+  baseStationPlaceMenuLabel,
+  configureBaseStationMenuIcon,
+  configureBaseStationMenuLabel,
+  removeBaseStationMenuLabel,
+} from '@/libs/baseStation/menu'
 import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
@@ -349,6 +362,7 @@ const {
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const widgetStore = useWidgetManagerStore()
+const baseStationStore = useBaseStation()
 const router = useRouter()
 
 const mapContext = provideMapContext()
@@ -1188,6 +1202,8 @@ const targetFollower = new TargetFollower(
 targetFollower.setTrackableTarget(WhoToFollow.VEHICLE, () => vehiclePosition.value)
 targetFollower.setTrackableTarget(WhoToFollow.HOME, () => home.value)
 
+useBaseStationOverlay(map, mapReady)
+
 // Calculate live vehicle position
 const vehiclePosition = computed(() =>
   vehicleStore.coordinates.latitude
@@ -1469,33 +1485,20 @@ const globalOriginLatitude = ref(0)
 const globalOriginLongitude = ref(0)
 const globalOriginMarker = shallowRef<L.Marker>()
 
-const menuItems = reactive([
-  {
-    item: 'Set home waypoint',
-    action: () => onMenuOptionSelect('set-home-waypoint'),
-    icon: 'mdi-home-map-marker',
-  },
-  {
-    item: 'Set Global Origin',
-    action: () => onMenuOptionSelect('set-global-origin'),
-    icon: 'mdi-crosshairs-question',
-  },
-  {
-    item: 'Place Point of Interest',
-    action: () => onMenuOptionSelect('place-poi'),
-    icon: 'mdi-map-marker-plus',
-  },
+const staticTopMenuItems = [
+  { item: 'Set home waypoint', action: () => onMenuOptionSelect('set-home-waypoint'), icon: 'mdi-home-map-marker' },
+  { item: 'Set Global Origin', action: () => onMenuOptionSelect('set-global-origin'), icon: 'mdi-crosshairs-question' },
+  { item: 'Place Point of Interest', action: () => onMenuOptionSelect('place-poi'), icon: 'mdi-map-marker-plus' },
   {
     item: 'Add overlay (GeoTIFF)',
     action: () => onMenuOptionSelect('add-overlay'),
     icon: 'mdi-image-plus',
     _isOverlay: true,
   },
-  {
-    item: 'Copy coordinates',
-    action: () => onMenuOptionSelect('copy-coordinates'),
-    icon: 'mdi-content-copy',
-  },
+  { item: 'Copy coordinates', action: () => onMenuOptionSelect('copy-coordinates'), icon: 'mdi-content-copy' },
+]
+
+const staticBottomMenuItems = [
   { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
   {
     item: 'Set default map position',
@@ -1507,7 +1510,40 @@ const menuItems = reactive([
     action: () => onMenuOptionSelect('clear-vehicle-path-history'),
     icon: 'mdi-gesture',
   },
-])
+]
+
+const baseStationMenuEntries = computed(() => {
+  const entries = [
+    {
+      item: baseStationPlaceMenuLabel(baseStationStore.config.enabled),
+      action: () => onMenuOptionSelect('place-base-station'),
+      icon: baseStationMenuIcon,
+    },
+  ]
+  if (baseStationStore.config.enabled) {
+    entries.push(
+      {
+        item: configureBaseStationMenuLabel,
+        action: () => onMenuOptionSelect('configure-base-station'),
+        icon: configureBaseStationMenuIcon,
+      },
+      {
+        item: removeBaseStationMenuLabel,
+        action: () => onMenuOptionSelect('remove-base-station'),
+        icon: baseStationMenuIcon,
+      }
+    )
+  }
+  return entries
+})
+
+const menuItems = reactive([...staticTopMenuItems, ...baseStationMenuEntries.value, ...staticBottomMenuItems])
+
+// The base-station entries change label/visibility with the store; rebuild the fixed segments
+// around them so the reactive array handed to the context menu keeps its identity.
+watch(baseStationMenuEntries, (entries) => {
+  menuItems.splice(0, menuItems.length, ...staticTopMenuItems, ...entries, ...staticBottomMenuItems)
+})
 
 const updateSkipToWpMenu = (): void => {
   const want = contextMenuSelectedWpIndex.value !== null
@@ -1711,6 +1747,22 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
     case 'clear-vehicle-path-history':
       missionStore.clearVehicleHistory()
       openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+      break
+
+    case 'place-base-station':
+      if (clickedLocation.value) {
+        baseStationStore.setPosition(clickedLocation.value)
+        baseStationStore.configPanelOpen = true
+        logUserAction('Placed the base station via the map context menu')
+      }
+      break
+
+    case 'configure-base-station':
+      baseStationStore.configPanelOpen = true
+      break
+
+    case 'remove-base-station':
+      confirmRemoveBaseStation(showDialog, closeDialog)
       break
 
     default:
