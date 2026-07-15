@@ -423,7 +423,11 @@ export interface PoiMarkerStyle {
 /**
  * Extended PointOfInterest interface with UI-specific rendering properties for use on HUD components
  */
-export interface PoiMarker extends Omit<PointOfInterest, 'id' | 'description' | 'timestamp' | 'coordinates'> {
+export interface PoiMarker
+  extends Omit<
+    PointOfInterest,
+    'id' | 'description' | 'timestamp' | 'coordinates' | 'latitude' | 'longitude' | 'fallbackCoordinates'
+  > {
   /**
    * POI identifier (alias for PointOfInterest.id)
    */
