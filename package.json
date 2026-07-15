@@ -213,8 +213,62 @@
         "--socket=pulseaudio",
         "--filesystem=/run/udev:ro",
         "--filesystem=~/Cockpit:create",
+        "--filesystem=xdg-run/speech-dispatcher",
         "--share=network",
-        "--talk-name=org.freedesktop.Notifications"
+        "--talk-name=org.freedesktop.Notifications",
+        "--talk-name=org.freedesktop.SpeechDispatcher"
+      ],
+      "modules": [
+        {
+          "name": "libspeechd",
+          "config-opts": [
+            "--disable-static",
+            "--with-ibmtts=no",
+            "--with-kali=no",
+            "--with-baratinoo=no",
+            "--with-voxin=no",
+            "--without-flite",
+            "--disable-python"
+          ],
+          "no-make-install": true,
+          "post-install": [
+            "cd ./src/api/c && make install"
+          ],
+          "cleanup": [
+            "*.la",
+            "*.a",
+            "/include"
+          ],
+          "sources": [
+            {
+              "type": "archive",
+              "url": "https://github.com/brailcom/speechd/releases/download/0.11.5/speech-dispatcher-0.11.5.tar.gz",
+              "sha512": "d6d880bce0ae5bc2a5d519ef7740c689ae8b4b0bb658379762810e4beae3e465a429fbe19f7c490e89db0ea6a36aedd4b2287ac9251b90059b5c2cb3c0dd8a28"
+            }
+          ],
+          "modules": [
+            {
+              "name": "dotconf",
+              "sources": [
+                {
+                  "type": "archive",
+                  "url": "https://github.com/williamh/dotconf/archive/refs/tags/v1.4.1.tar.gz",
+                  "sha512": "a6cada8621295b268d4b4fd85bc0c207e78324c9e84754ead2fdf6c1598ec8bdf626f9c24e66063d921c95d73e83b50ab50416a9b4c9a7a631392552ec46f55a"
+                },
+                {
+                  "type": "script",
+                  "commands": [
+                    "autoreconf -fiv"
+                  ],
+                  "dest-filename": "autogen.sh"
+                }
+              ],
+              "cleanup": [
+                "*"
+              ]
+            }
+          ]
+        }
       ],
       "runtime": "org.freedesktop.Platform",
       "runtimeVersion": "22.08",
