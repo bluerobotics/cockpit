@@ -8,6 +8,7 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
 import { getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
+import { IndexedDbStore } from './indexed-db-store'
 import { settingsManager } from './settings-management'
 import { unitAbbreviation } from './units'
 import { degrees } from './utils'
@@ -287,11 +288,10 @@ class DataLogger {
     description: 'Local backups of Cockpit sensor logs, to be retrieved in case of failure.',
   })
 
-  cockpitTemporaryLogsDB = localforage.createInstance({
-    driver: localforage.INDEXEDDB,
+  cockpitTemporaryLogsDB = new IndexedDbStore({
     name: 'Cockpit - Temporary Sensor Log points',
     storeName: 'cockpit-temporary-sensor-logs-db',
-    version: 1.0,
+    version: 1,
     description: 'Temporary storage of Cockpit sensor log points.',
   })
 
