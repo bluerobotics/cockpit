@@ -6,7 +6,13 @@ import { round } from '@/libs/utils'
 import { AlertLevel } from '@/types/alert'
 import { type Waypoint, AltitudeReferenceType, MissionCommandType } from '@/types/mission'
 
-import { MavFrame, MAVLinkType, MavMissionType, MavSeverity } from '../../connection/m2r/messages/mavlink2rest-enum'
+import {
+  CameraMode,
+  MavFrame,
+  MAVLinkType,
+  MavMissionType,
+  MavSeverity,
+} from '../../connection/m2r/messages/mavlink2rest-enum'
 import type { VehicleConfigurationSettings } from '../types'
 
 const cockpitMavlinkFrameCorrespondency: [MavFrame, AltitudeReferenceType][] = [
@@ -135,6 +141,27 @@ export const alertLevelFromMavSeverity = {
   [MavSeverity.MAV_SEVERITY_INFO]: AlertLevel.Info,
   // Useful non-operational messages that can assist in debugging. These should not occur during normal operation.
   [MavSeverity.MAV_SEVERITY_DEBUG]: AlertLevel.Info,
+}
+
+// MAVLink2Rest exposes CAMERA_MODE as strings, but COMMAND_LONG params are numeric, so map them here.
+export const cameraModeCommandValue: Record<CameraMode, number> = {
+  [CameraMode.CAMERA_MODE_IMAGE]: 0,
+  [CameraMode.CAMERA_MODE_VIDEO]: 1,
+  [CameraMode.CAMERA_MODE_IMAGE_SURVEY]: 2,
+}
+
+/**
+ * Extra options for sending a COMMAND_LONG
+ */
+export interface SendCommandLongOptions {
+  /**
+   * MAVLink target component id (defaults to the autopilot)
+   */
+  targetComponent?: number
+  /**
+   * Whether to wait for a COMMAND_ACK; set false for fire-and-forget sends (defaults to true)
+   */
+  awaitAck?: boolean
 }
 
 /**
