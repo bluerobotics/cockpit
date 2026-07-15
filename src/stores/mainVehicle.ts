@@ -22,7 +22,7 @@ import {
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
-import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { CameraMode, MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
@@ -1037,6 +1037,64 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     await mainVehicle.value.setCruiseSpeed(speedMps)
   }
 
+  /**
+   * Broadcast a video-capture (recording) start over MAVLink
+   * @param {number} cameraId - Target camera id (0 for all cameras)
+   * @param {number} streamId - Video stream id (0 for all streams)
+   * @param {number} statusFrequencyHz - Frequency for CAMERA_CAPTURE_STATUS messages while recording (0 to disable)
+   * @returns {void}
+   */
+  function sendStartVideoCaptureCommand(cameraId = 0, streamId = 0, statusFrequencyHz = 0): void {
+    mainVehicle.value?.sendStartVideoCaptureCommand(cameraId, streamId, statusFrequencyHz)
+  }
+
+  /**
+   * Broadcast a video-capture (recording) stop over MAVLink
+   * @param {number} cameraId - Target camera id (0 for all cameras)
+   * @param {number} streamId - Video stream id (0 for all streams)
+   * @returns {void}
+   */
+  function sendStopVideoCaptureCommand(cameraId = 0, streamId = 0): void {
+    mainVehicle.value?.sendStopVideoCaptureCommand(cameraId, streamId)
+  }
+
+  /**
+   * Broadcast a single image capture over MAVLink
+   * @param {number} cameraId - Target camera id (0 for all cameras)
+   * @returns {void}
+   */
+  function sendStartImageCaptureCommand(cameraId = 0): void {
+    mainVehicle.value?.sendStartImageCaptureCommand(cameraId)
+  }
+
+  /**
+   * Broadcast an image-capture sequence stop over MAVLink
+   * @param {number} cameraId - Target camera id (0 for all cameras)
+   * @returns {void}
+   */
+  function sendStopImageCaptureCommand(cameraId = 0): void {
+    mainVehicle.value?.sendStopImageCaptureCommand(cameraId)
+  }
+
+  /**
+   * Set the running mode (image/video) of the target camera over MAVLink
+   * @param {number} cameraId - Target camera id (0 for all cameras)
+   * @param {CameraMode} cameraMode - Desired camera mode
+   * @returns {void}
+   */
+  function sendSetCameraModeCommand(cameraId: number, cameraMode: CameraMode): void {
+    mainVehicle.value?.sendSetCameraModeCommand(cameraId, cameraMode)
+  }
+
+  /**
+   * Request the target camera to emit its CAMERA_CAPTURE_STATUS over MAVLink
+   * @param {number} cameraId - Target camera id (0 for all cameras)
+   * @returns {void}
+   */
+  function sendRequestCameraCaptureStatusCommand(cameraId = 0): void {
+    mainVehicle.value?.sendRequestCameraCaptureStatusCommand(cameraId)
+  }
+
   return {
     arm,
     takeoff,
@@ -1056,6 +1114,12 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     returnHome,
     setMissionCurrent,
     setCruiseSpeed,
+    sendStartVideoCaptureCommand,
+    sendStopVideoCaptureCommand,
+    sendStartImageCaptureCommand,
+    sendStopImageCaptureCommand,
+    sendSetCameraModeCommand,
+    sendRequestCameraCaptureStatusCommand,
     getCurrentVehicleName,
     mainVehicle,
     globalAddress,
