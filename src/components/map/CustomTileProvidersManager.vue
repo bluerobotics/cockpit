@@ -9,22 +9,21 @@
           size="small"
           prepend-icon="mdi-file-plus-outline"
           :loading="importing"
-          :disabled="!vehicleConnected"
           @click="importArchives"
         >
           Import (.zip, .mbtiles, .pmtiles)
         </v-btn>
       </div>
-      <div v-if="!vehicleConnected" class="flex items-start gap-x-2 text-xs opacity-80">
+      <div v-if="!vehicleOnline" class="flex items-start gap-x-2 text-xs opacity-80">
         <v-icon icon="mdi-information-outline" size="16" class="mt-[2px]" />
         <span>
-          Importing a tile archive stores it on the connected vehicle. Connect to a vehicle to import; URL providers and
-          already-downloaded archives work offline.
+          Archives are saved on this device and uploaded to the vehicle automatically once it's online. URL providers
+          and already-cached archives work fully offline.
         </span>
       </div>
       <div v-if="importing" class="flex items-center gap-x-3">
         <v-progress-linear indeterminate color="white" height="6" rounded class="flex-1" />
-        <span class="text-xs opacity-80 whitespace-nowrap">Uploading to vehicle…</span>
+        <span class="text-xs opacity-80 whitespace-nowrap">Importing…</span>
       </div>
     </div>
 
@@ -134,6 +133,12 @@
             @keyup.esc="cancelRename(provider)"
           />
           <span v-else class="truncate">{{ provider.name }}</span>
+          <v-tooltip v-if="provider.pendingVehicleSync" location="top" open-delay="300" max-width="240">
+            <template #activator="{ props: pendingSyncProps }">
+              <v-icon v-bind="pendingSyncProps" icon="mdi-cloud-clock-outline" size="16" class="flex-none opacity-80" />
+            </template>
+            <span>Saved on this device. Will upload to the vehicle once it's online.</span>
+          </v-tooltip>
         </div>
         <span class="w-[30%] truncate text-xs opacity-80 text-center">{{ providerTypeLabel(provider) }}</span>
         <span class="w-[24%] truncate text-xs opacity-80 text-center">{{
@@ -175,7 +180,7 @@ const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 
-const vehicleConnected = computed(() => Boolean(vehicleStore.globalAddress))
+const vehicleOnline = computed(() => vehicleStore.isVehicleOnline)
 
 const urlForm = reactive<{
   /**
@@ -271,12 +276,6 @@ const submitUrlProvider = (): void => {
 }
 
 const importArchives = async (): Promise<void> => {
-  const vehicleAddress = vehicleStore.globalAddress
-  if (!vehicleAddress) {
-    openSnackbar({ message: 'Connect to a vehicle before importing a tile archive.', variant: 'error' })
-    return
-  }
-
   const files = await pickTileArchiveFiles()
   if (files.length === 0) return
 
@@ -288,7 +287,7 @@ const importArchives = async (): Promise<void> => {
       continue
     }
     try {
-      const provider = await importTileArchiveFile(file, vehicleAddress)
+      const provider = await importTileArchiveFile(file)
       missionStore.addCustomTileProvider(provider)
       addedCount += 1
     } catch (error) {
@@ -303,11 +302,13 @@ const importArchives = async (): Promise<void> => {
 
   if (addedCount > 0) {
     logUserAction('Imported a custom map tile archive')
-    openSnackbar({
-      message: `${addedCount} custom map provider${addedCount > 1 ? 's' : ''} added.`,
-      variant: 'success',
-      duration: 3000,
-    })
+    // When online the sync composable uploads immediately and shows its own confirmation; offline, tell the user
+    // the archive is saved locally and will sync later.
+    const plural = addedCount > 1 ? 's' : ''
+    const message = vehicleOnline.value
+      ? `${addedCount} custom map provider${plural} added.`
+      : `${addedCount} custom map provider${plural} added. Will upload to the vehicle once it's online.`
+    openSnackbar({ message, variant: 'success', duration: 3000 })
   }
 }
 

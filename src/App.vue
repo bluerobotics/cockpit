@@ -156,6 +156,7 @@ import SlideToConfirm from './components/SlideToConfirm.vue'
 import SplashScreen from './components/SplashScreen.vue'
 import WidgetBar from './components/WidgetBar.vue'
 import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
+import { useCustomTileProviderVehicleSync } from './composables/map/useCustomTileProviderVehicleSync'
 import { useSnackbar } from './composables/snackbar'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
@@ -179,6 +180,9 @@ useSnapshotStore()
 // Listen for `vehicle-sync-complete` events to auto-import vehicle-type defaults or open the
 // VehicleDefaultsAutoImportModal when the user still needs to make a decision.
 useVehicleDefaultsAutoImport()
+
+// Upload custom map tile archives imported while offline to the vehicle once it comes online.
+useCustomTileProviderVehicleSync()
 
 const showAboutDialog = ref(false)
 const currentSubMenuComponent = ref<SubMenuComponent>(null)

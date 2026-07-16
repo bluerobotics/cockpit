@@ -720,6 +720,11 @@ export interface CustomTileProviderMeta {
    * Size of the stored archive in bytes (`file` providers only).
    */
   fileSize?: number
+  /**
+   * Whether the archive is cached locally but not yet uploaded to the vehicle (`file` providers only). Set when
+   * imported offline and cleared once the vehicle comes online and the upload succeeds.
+   */
+  pendingVehicleSync?: boolean
 }
 
 export type IconDimensions = {

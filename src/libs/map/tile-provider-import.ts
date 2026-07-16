@@ -5,7 +5,7 @@ import type { CustomTileArchiveFormat, CustomTileProviderMeta } from '@/types/mi
 
 import { requestPersistentStorage } from './storage-quota'
 import { openTileArchive } from './tile-archive'
-import { removeCachedTileArchive, setCachedTileArchive } from './tile-provider-storage'
+import { getCachedTileArchive, removeCachedTileArchive, setCachedTileArchive } from './tile-provider-storage'
 
 const ARCHIVE_EXTENSIONS: Record<string, CustomTileArchiveFormat> = {
   zip: 'zip',
@@ -116,14 +116,15 @@ export const buildUrlTileProvider = (input: UrlTileProviderInput): CustomTilePro
 }
 
 /**
- * Validates a tile archive, uploads it to the vehicle for durable/shared storage, caches it locally for
- * rendering, and returns its provider metadata. The caller adds the returned metadata to the mission store.
+ * Validates a tile archive and caches it locally for rendering, returning its provider metadata flagged for a
+ * later vehicle upload. Works offline: the archive is usable immediately from the local cache and
+ * {@link syncTileProviderToVehicle} uploads it once a vehicle is online. The caller adds the returned metadata
+ * to the mission store.
  * @param {File} file - The tile archive to import.
- * @param {string} vehicleAddress - Address of the connected vehicle to store the archive on.
- * @returns {Promise<CustomTileProviderMeta>} The metadata describing the stored provider.
- * @throws {Error} When the format is unsupported, the archive is invalid, or the upload fails.
+ * @returns {Promise<CustomTileProviderMeta>} The metadata describing the locally-cached provider.
+ * @throws {Error} When the format is unsupported or the archive is invalid.
  */
-export const importTileArchiveFile = async (file: File, vehicleAddress: string): Promise<CustomTileProviderMeta> => {
+export const importTileArchiveFile = async (file: File): Promise<CustomTileProviderMeta> => {
   const format = tileArchiveFormatFromFile(file)
   if (!format) throw new Error(`"${file.name}" is not a supported tile archive (.zip, .mbtiles or .pmtiles).`)
 
@@ -133,8 +134,6 @@ export const importTileArchiveFile = async (file: File, vehicleAddress: string):
   source.close()
 
   const id = uuid()
-  await uploadFileToVehicle(vehicleAddress, tileProviderSubfolder, tileArchiveFileName({ id, format }), file)
-
   await requestPersistentStorage()
   await setCachedTileArchive(id, file)
 
@@ -148,7 +147,26 @@ export const importTileArchiveFile = async (file: File, vehicleAddress: string):
     maxZoom,
     bounds,
     createdAt: Date.now(),
+    pendingVehicleSync: true,
   }
+}
+
+/**
+ * Uploads a `file` provider's locally-cached archive to the vehicle for durable/shared storage. Used to drain
+ * providers imported offline once a vehicle is online. No-op for non-`file` providers.
+ * @param {CustomTileProviderMeta} provider - The provider whose cached archive should be uploaded.
+ * @param {string} vehicleAddress - Address of the connected vehicle to store the archive on.
+ * @returns {Promise<void>} Resolves once the archive has been uploaded.
+ * @throws {Error} When the archive is missing from the local cache or the upload fails.
+ */
+export const syncTileProviderToVehicle = async (
+  provider: CustomTileProviderMeta,
+  vehicleAddress: string
+): Promise<void> => {
+  if (provider.type !== 'file' || !provider.format) return
+  const archive = await getCachedTileArchive(provider.id)
+  if (!archive) throw new Error(`No local copy of "${provider.name}" is available to upload.`)
+  await uploadFileToVehicle(vehicleAddress, tileProviderSubfolder, tileArchiveFileName(provider), archive)
 }
 
 /**
@@ -163,7 +181,8 @@ export const deleteStoredTileProvider = async (
   vehicleAddress?: string
 ): Promise<void> => {
   await removeCachedTileArchive(provider.id)
-  if (provider.type !== 'file' || !provider.format || !vehicleAddress) return
+  // A provider still pending sync was never uploaded, so there is nothing on the vehicle to delete.
+  if (provider.type !== 'file' || !provider.format || !vehicleAddress || provider.pendingVehicleSync) return
   try {
     await deleteFileFromVehicle(vehicleAddress, tileProviderSubfolder, tileArchiveFileName(provider))
   } catch (error) {
