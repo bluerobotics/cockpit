@@ -44,6 +44,28 @@ When explaining:
 - Reference specific files with line numbers when relevant
 - Show code examples from the actual codebase when possible
 
+## Before writing code (minimalism)
+
+The best code is the code never written. Understand the problem first — read the task and the code it touches, trace the real flow end to end — *then* climb this ladder and stop at the first rung that holds:
+
+1. Does this need to be built at all? (YAGNI)
+2. Does it already exist in this codebase? Reuse the existing helper, util, composable, or component (see "Reuse before reinventing").
+3. Does the language / standard library already do this? Use it.
+4. Does a native browser or platform feature cover it? Use it.
+5. Does an already-installed dependency solve it? Use it (see Critical Rule #1).
+6. Can this be one line? Make it one line.
+7. Only then: write the minimum code that works.
+
+Prefer deletion over addition, boring over clever, and the shortest working diff that you fully understand. Question complex requests ("Do you actually need X, or does Y cover it?") instead of silently building them.
+
+**Fix the root cause, not the symptom.** A bug report names a symptom. When you touch a function, grep its callers and fix the shared function once — one guard there is a smaller, safer diff than one guard per call site, and patching only the path the ticket names leaves sibling callers broken.
+
+**Do not be lazy about:** understanding the problem, input validation at trust boundaries, error handling that prevents data loss, security, accessibility, and the calibration real hardware needs (clocks drift, sensors read off — the vehicle is never the spec ideal).
+
+**Leave one runnable check.** Non-trivial logic must leave behind at least ONE runnable check — the smallest thing that fails if the logic breaks (an assert-based self-check or one small test; no new frameworks or fixtures). Trivial one-liners need none.
+
+**Mark deliberate corner-cuts.** When you knowingly cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic), leave a `ponytail:` comment naming the ceiling and the upgrade path.
+
 ## Scope discipline
 
 Touch only the lines required for the change you were asked to make. The following are forbidden unless the user explicitly requested them:
