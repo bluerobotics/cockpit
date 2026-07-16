@@ -27,6 +27,7 @@ export enum SubMenuComponentName {
   SettingsTelemetry = 'settings-telemetry',
   SettingsAlerts = 'settings-alerts',
   SettingsDev = 'settings-dev',
+  SettingsCloud = 'settings-cloud',
   SettingsMission = 'settings-mission',
   SettingsActions = 'settings-actions',
   SettingsSources = 'settings-sources',

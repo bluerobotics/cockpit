@@ -202,6 +202,7 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { SubMenuComponent } from '@/types/general'
 import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
+import ConfigurationCloudView from '@/views/ConfigurationCloudView.vue'
 import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.vue'
 import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
@@ -401,6 +402,12 @@ const configMenu = computed(() => {
       title: 'MAVLink',
       componentName: SubMenuComponentName.SettingsMAVLink,
       component: markRaw(ConfigurationMAVLinkView) as SubMenuComponent,
+    })
+    menusToShow.push({
+      icon: 'mdi-cloud-outline',
+      title: 'Cloud',
+      componentName: SubMenuComponentName.SettingsCloud,
+      component: markRaw(ConfigurationCloudView) as SubMenuComponent,
     })
   }
   return menusToShow
