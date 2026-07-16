@@ -658,3 +658,71 @@ export const affectedAngleTriples = (
   }
   return triples
 }
+
+const layersControlActionClass = 'cockpit-leaflet-layers-action-btn'
+
+/**
+ * A clickable action appended to the bottom of a Leaflet layers control's list.
+ */
+export interface LayersControlAction {
+  /**
+   * Button label.
+   */
+  label: string
+  /**
+   * Invoked when the action button is clicked.
+   */
+  onClick: () => void
+}
+
+/**
+ * Creates a Leaflet layers control that renders a clickable action row (e.g. "Add map provider") at the bottom
+ * of its list. The row is re-injected every time the control is added to a map, so it survives the hover-driven
+ * add/remove cycles the map widget performs on its controls.
+ * @param {Record<string, L.Layer>} baseMaps - Base layers to expose (radio section).
+ * @param {Record<string, L.Layer> | undefined} overlays - Optional overlays (checkbox section).
+ * @param {LayersControlAction} action - The action row to render below the layer list.
+ * @returns {L.Control.Layers} The configured layers control instance.
+ */
+export const createLayersControlWithAction = (
+  baseMaps: Record<string, L.Layer>,
+  overlays: Record<string, L.Layer> | undefined,
+  action: LayersControlAction
+): L.Control.Layers => {
+  const ExtendedLayersControl = L.Control.Layers.extend({
+    onAdd(this: L.Control.Layers, map: L.Map): HTMLElement {
+      const baseOnAdd = L.Control.Layers.prototype.onAdd as (m: L.Map) => HTMLElement
+      const container = baseOnAdd.call(this, map)
+      const list = container.querySelector('.leaflet-control-layers-list') as HTMLElement | null
+      if (!list) return container
+      list.querySelectorAll('.' + layersControlActionClass).forEach((el) => el.remove())
+
+      const separator = document.createElement('div')
+      separator.className = 'leaflet-control-layers-separator'
+
+      const button = document.createElement('button')
+      button.className = layersControlActionClass
+      button.type = 'button'
+      button.textContent = action.label
+      Object.assign(button.style, {
+        display: 'block',
+        width: '100%',
+        boxSizing: 'border-box',
+        padding: '6px 8px',
+        marginTop: '6px',
+        borderRadius: '4px',
+        background: '#f5f5f522',
+        cursor: 'pointer',
+        color: '#fff',
+        boxShadow: '1px 1px 2px 0 rgba(0, 0, 0, 0.2)',
+      } satisfies Partial<CSSStyleDeclaration>)
+      L.DomEvent.disableClickPropagation(button)
+      L.DomEvent.on(button, 'click', action.onClick)
+
+      list.appendChild(separator)
+      list.appendChild(button)
+      return container
+    },
+  })
+  return new (ExtendedLayersControl as unknown as typeof L.Control.Layers)(baseMaps, overlays)
+}

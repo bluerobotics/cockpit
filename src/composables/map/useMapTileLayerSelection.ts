@@ -1,7 +1,9 @@
-import L, { type Control, type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
+import { type Control, type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
 import { watch } from 'vue'
 
 import type { MapTileLayers } from '@/composables/map/useMapTileLayers'
+import { createLayersControlWithAction } from '@/libs/map/utils-map'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import type { MapTileProvider } from '@/types/mission'
 
@@ -40,6 +42,7 @@ export interface MapTileLayerSelection {
  */
 export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLayerSelection => {
   const missionStore = useMissionStore()
+  const interfaceStore = useAppInterfaceStore()
   const { baseMaps, overlays, esri } = tileLayers
 
   const preferredBaseLayer = (): L.TileLayer => {
@@ -59,16 +62,27 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
     return layers
   }
 
-  const createLayerControl = (): Control.Layers => L.control.layers(baseMaps, overlays)
+  const createLayerControl = (): Control.Layers =>
+    createLayersControlWithAction(baseMaps, overlays, {
+      label: 'Add map provider',
+      onClick: () => {
+        logUserAction('Opened custom map providers from the map layer selector')
+        interfaceStore.openSettingsSourcesCustomProviders()
+      },
+    })
 
   const registerLayerSync = (map: LeafletMap): void => {
     // These layers-control events only fire from user clicks on the control, so logging here reflects a real
     // interaction (programmatic base/overlay changes go through map.addLayer/removeLayer, not the control).
     map.on('baselayerchange', (event: LayersControlEvent) => {
       const name = event.name
-      if (!name.includes(name as MapTileProvider)) return
-      logUserAction(`Switched map base layer to '${event.name}'`)
-      missionStore.userLastMapTileProvider = event.name as MapTileProvider
+      logUserAction(`Switched map base layer to '${name}'`)
+      // Built-in providers persist by name here; custom providers are added to the control at runtime (not part
+      // of the built-in `baseMaps`) and persist by id in useCustomTileProviders, keyed by layer identity.
+      if (name in baseMaps) {
+        missionStore.userLastMapTileProvider = name as MapTileProvider
+        missionStore.userLastCustomMapProviderId = null
+      }
     })
 
     const persistOverlay = (name: string, enabled: boolean): void => {

@@ -71,6 +71,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
     showSplashScreen: true,
+    // One-shot request (consumed on mount) asking the Sources config view to expand its "Custom map providers"
+    // panel, e.g. when reached via the map layer selector's "Add map provider" action.
+    sourcesCustomProvidersExpandRequested: false,
   }),
   actions: {
     updateWidth() {
@@ -98,6 +101,13 @@ export const useAppInterfaceStore = defineStore('responsive', {
     },
     openVehicleDefaultsJoystickImport(): void {
       this.isVehicleDefaultsJoystickImportModalVisible = true
+    },
+    openSettingsSourcesCustomProviders(): void {
+      this.isMainMenuVisible = true
+      this.mainMenuCurrentStep = 2
+      this.currentSubMenuName = SubMenuName.settings
+      this.currentSubMenuComponentName = SubMenuComponentName.SettingsSources
+      this.sourcesCustomProvidersExpandRequested = true
     },
   },
   getters: {

@@ -300,6 +300,7 @@ import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
@@ -655,6 +656,9 @@ const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
 
+// Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
+const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
+
 // Replace failed tiles with a procedural noise background sampled by lat/lon
 const getTileFallbackOptions = (): NoiseTileOptions => ({
   baseColor: missionStore.mapFallbackBaseColor,
@@ -925,6 +929,9 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
 
+  // Register any user-defined custom tile providers as selectable base layers on the layer control
+  if (map.value) initCustomTileProviders(map.value, layerControl, Object.values(tileLayers.baseMaps))
+
   // Apply the current showButtons state to the leaflet controls
   if (showButtons.value && map.value) {
     map.value.addControl(zoomControl)
@@ -1149,6 +1156,7 @@ onBeforeUnmount(() => {
 
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
+  destroyCustomTileProviders()
 
   if (map.value) {
     map.value.off('contextmenu')
@@ -2204,6 +2212,9 @@ const centerOnMission = (): void => {
   box-shadow: var(--glass-box-shadow) !important;
   color: var(--glass-color) !important;
   border: var(--glass-border) !important;
+  /* Leaflet's default padding is asymmetric (6px left, 10px right); even it out so the full-width
+     "Add map provider" button sits equidistant from both panel edges. */
+  padding: 6px 8px !important;
 }
 
 :deep(.leaflet-control-layers-list) {
