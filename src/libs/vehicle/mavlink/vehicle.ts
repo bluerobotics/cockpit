@@ -12,10 +12,12 @@ import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
+  CameraMode,
   getMAVLinkMessageId,
   GpsFixType,
   MavAutopilot,
   MavCmd,
+  MavComponent,
   MAVLinkType,
   MavMissionResult,
   MavMissionType,
@@ -34,7 +36,9 @@ import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
 import {
   type MAVLinkParameterSetData,
   type MessageIntervalOptions,
+  type SendCommandLongOptions,
   alertLevelFromMavSeverity,
+  cameraModeCommandValue,
   convertCockpitWaypointsToMavlink,
   convertMavlinkWaypointsToCockpit,
 } from '@/libs/vehicle/mavlink/types'
@@ -145,10 +149,13 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   /**
    * Helper to send mavlink commands
    * @param {Message.CommandLong | Message.CommandInt} commandMessage
+   * @param {boolean} awaitAck - Whether to wait for a COMMAND_ACK. Set false for fire-and-forget sends (e.g. camera commands whose consumers may never ACK).
    * @returns {Promise<void>} A promise that resolves with the command acknowledgment.
    */
-  async sendCommand(commandMessage: Message.CommandLong | Message.CommandInt): Promise<void> {
+  async sendCommand(commandMessage: Message.CommandLong | Message.CommandInt, awaitAck = true): Promise<void> {
     sendMavlinkMessage(commandMessage)
+
+    if (!awaitAck) return
 
     // Monitor the acknowledgment of the command and throw an error if it fails or reaches a timeout
     let incomingAckCommand: CommandAck | undefined = undefined
@@ -202,6 +209,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * @param {number} param5
    * @param {number} param6
    * @param {number} param7
+   * @param {SendCommandLongOptions} options - Target component and acknowledgment behavior.
    * @returns {Promise<void>} A promise that resolves when the command is acknowledged.
    */
   async sendCommandLong(
@@ -212,8 +220,10 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     param4 = 0,
     param5 = 0,
     param6 = 0,
-    param7 = 0
+    param7 = 0,
+    options: SendCommandLongOptions = {}
   ): Promise<void> {
+    const { targetComponent = MavComponent.MAV_COMP_ID_AUTOPILOT1, awaitAck = true } = options
     const commandMessage: Message.CommandLong = {
       type: MAVLinkType.COMMAND_LONG,
       param1: param1,
@@ -227,10 +237,10 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
         type: mav_command,
       },
       target_system: this.currentSystemId,
-      target_component: 1,
+      target_component: targetComponent,
       confirmation: 0,
     }
-    return this.sendCommand(commandMessage)
+    return this.sendCommand(commandMessage, awaitAck)
   }
 
   /**
@@ -275,6 +285,107 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       autocontinue: 0,
     }
     return this.sendCommand(commandMessage)
+  }
+
+  /**
+   * Resolve the MAVLink target component and camera-id command param for a configured camera target.
+   * Follows the MAVLink camera-targeting convention: 0 broadcasts to all cameras, 1-6 addresses
+   * autopilot-connected cameras, and 7-255 addresses a dedicated MAVLink camera component.
+   * @param {number} cameraId - Target camera id as configured by the user (0-255).
+   * @returns {[targetComponent: number, cameraParam: number]} Target component and camera-id command param.
+   */
+  private resolveCameraTarget(cameraId: number): [targetComponent: number, cameraParam: number] {
+    if (cameraId >= 1 && cameraId <= 6) {
+      return [MavComponent.MAV_COMP_ID_AUTOPILOT1, cameraId]
+    }
+    if (cameraId >= 7 && cameraId <= 255) {
+      return [cameraId, cameraId]
+    }
+    return [MavComponent.MAV_COMP_ID_ALL, 0]
+  }
+
+  /**
+   * Send a fire-and-forget camera COMMAND_LONG, logging (but not surfacing) any send failure.
+   * @param {MavCmd} command - Camera command to send.
+   * @param {number} targetComponent - Resolved MAVLink target component.
+   * @param {number[]} params - COMMAND_LONG params 1-7 (missing trailing params default to 0).
+   * @returns {void}
+   */
+  private sendCameraCommand(command: MavCmd, targetComponent: number, params: number[]): void {
+    const [p1 = 0, p2 = 0, p3 = 0, p4 = 0, p5 = 0, p6 = 0, p7 = 0] = params
+    this.sendCommandLong(command, p1, p2, p3, p4, p5, p6, p7, { targetComponent, awaitAck: false }).catch((error) =>
+      console.debug(`Failed to send camera command ${command}: ${error}`)
+    )
+  }
+
+  /**
+   * Start video capture (recording) on the target camera.
+   * @param {number} cameraId - Target camera id (0 for all cameras).
+   * @param {number} streamId - Video stream id (0 for all streams).
+   * @param {number} statusFrequencyHz - Frequency for CAMERA_CAPTURE_STATUS messages while recording (0 to disable).
+   * @returns {void}
+   */
+  startVideoCapture(cameraId = 0, streamId = 0, statusFrequencyHz = 0): void {
+    const [targetComponent, cameraParam] = this.resolveCameraTarget(cameraId)
+    this.sendCameraCommand(MavCmd.MAV_CMD_VIDEO_START_CAPTURE, targetComponent, [
+      streamId,
+      statusFrequencyHz,
+      cameraParam,
+    ])
+  }
+
+  /**
+   * Stop video capture (recording) on the target camera.
+   * @param {number} cameraId - Target camera id (0 for all cameras).
+   * @param {number} streamId - Video stream id (0 for all streams).
+   * @returns {void}
+   */
+  stopVideoCapture(cameraId = 0, streamId = 0): void {
+    const [targetComponent, cameraParam] = this.resolveCameraTarget(cameraId)
+    this.sendCameraCommand(MavCmd.MAV_CMD_VIDEO_STOP_CAPTURE, targetComponent, [streamId, cameraParam])
+  }
+
+  /**
+   * Start a single image capture on the target camera.
+   * @param {number} cameraId - Target camera id (0 for all cameras).
+   * @returns {void}
+   */
+  startImageCapture(cameraId = 0): void {
+    const [targetComponent, cameraParam] = this.resolveCameraTarget(cameraId)
+    // Single capture: param2 interval 0, param3 total images 1, param4 sequence 1.
+    this.sendCameraCommand(MavCmd.MAV_CMD_IMAGE_START_CAPTURE, targetComponent, [cameraParam, 0, 1, 1])
+  }
+
+  /**
+   * Stop an ongoing image capture sequence on the target camera.
+   * @param {number} cameraId - Target camera id (0 for all cameras).
+   * @returns {void}
+   */
+  stopImageCapture(cameraId = 0): void {
+    const [targetComponent, cameraParam] = this.resolveCameraTarget(cameraId)
+    this.sendCameraCommand(MavCmd.MAV_CMD_IMAGE_STOP_CAPTURE, targetComponent, [cameraParam])
+  }
+
+  /**
+   * Set the running mode (image/video) of the target camera.
+   * @param {number} cameraId - Target camera id (0 for all cameras).
+   * @param {CameraMode} mode - Desired camera mode.
+   * @returns {void}
+   */
+  setCameraMode(cameraId: number, mode: CameraMode): void {
+    const [targetComponent, cameraParam] = this.resolveCameraTarget(cameraId)
+    this.sendCameraCommand(MavCmd.MAV_CMD_SET_CAMERA_MODE, targetComponent, [cameraParam, cameraModeCommandValue[mode]])
+  }
+
+  /**
+   * Request the target camera to emit its CAMERA_CAPTURE_STATUS.
+   * @param {number} cameraId - Target camera id (0 for all cameras).
+   * @returns {void}
+   */
+  requestCameraCaptureStatus(cameraId = 0): void {
+    const [targetComponent] = this.resolveCameraTarget(cameraId)
+    // param1 = 1 requests the capture status (MAV_BOOL_TRUE).
+    this.sendCameraCommand(MavCmd.MAV_CMD_REQUEST_CAMERA_CAPTURE_STATUS, targetComponent, [1])
   }
 
   /**

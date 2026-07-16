@@ -13,6 +13,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { WebRTCManager } from '@/composables/webRTC'
 import { type ProcessedStreamInfo, getIpsInformationFromVehicle, getStreamInformationFromVehicle } from '@/libs/blueos'
+import { CameraMode } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import {
@@ -48,7 +49,15 @@ export const useVideoStore = defineStore('video', () => {
   const alertStore = useAlertStore()
   const { showDialog, closeDialog } = useInteractionDialog()
 
-  const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
+  const {
+    globalAddress,
+    rtcConfiguration,
+    webRTCSignallingURI,
+    startVideoCapture,
+    stopVideoCapture,
+    setCameraMode,
+    requestCameraCaptureStatus,
+  } = useMainVehicleStore()
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
   const streamsCorrespondency = useBlueOsStorage<VideoStreamCorrespondency[]>('cockpit-streams-correspondency', [])
@@ -69,6 +78,11 @@ export const useVideoStore = defineStore('video', () => {
   const userRestoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-restored-stream-ids', [])
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
   const suppressNotGrowingDialogs = ref(false)
+  const broadcastCameraActionsOverMavlink = useBlueOsStorage('cockpit-broadcast-camera-actions-over-mavlink', false)
+  const mavlinkCameraTargetId = useBlueOsStorage('cockpit-mavlink-camera-target-id', 0)
+  const mavlinkVideoStreamId = useBlueOsStorage('cockpit-mavlink-video-stream-id', 0)
+  const setCameraModeOnCapture = useBlueOsStorage('cockpit-mavlink-set-camera-mode-on-capture', false)
+  const requestCaptureStatusOnCapture = useBlueOsStorage('cockpit-mavlink-request-capture-status', false)
 
   const streamInformation = ref<ProcessedStreamInfo[]>([])
   const go2rtcStreamInfo = ref<Record<string, Go2RTCStreamInfo>>({})
@@ -570,6 +584,26 @@ export const useVideoStore = defineStore('video', () => {
     )
   }
 
+  // Best-effort MAVLink broadcast of recording actions, so systems like BlueOS can mirror the recording state.
+  const broadcastRecordingStart = (): void => {
+    if (!broadcastCameraActionsOverMavlink.value) return
+    if (setCameraModeOnCapture.value) {
+      setCameraMode(mavlinkCameraTargetId.value, CameraMode.CAMERA_MODE_VIDEO)
+    }
+    startVideoCapture(mavlinkCameraTargetId.value, mavlinkVideoStreamId.value)
+    if (requestCaptureStatusOnCapture.value) {
+      requestCameraCaptureStatus(mavlinkCameraTargetId.value)
+    }
+  }
+
+  const broadcastRecordingStop = (): void => {
+    if (!broadcastCameraActionsOverMavlink.value) return
+    stopVideoCapture(mavlinkCameraTargetId.value, mavlinkVideoStreamId.value)
+    if (requestCaptureStatusOnCapture.value) {
+      requestCameraCaptureStatus(mavlinkCameraTargetId.value)
+    }
+  }
+
   /**
    * Stop recording the stream
    * @param {string} streamName - Name of the stream
@@ -589,6 +623,8 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName]!.timeRecordingStart = undefined
 
     activeStreams.value[streamName]!.mediaRecorder!.stop()
+
+    broadcastRecordingStop()
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
@@ -744,6 +780,8 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.start(1000)
+
+    broadcastRecordingStart()
 
     // Initialize live processor if enabled and on Electron
     if (enableLiveProcessing.value && window.electronAPI) {
@@ -1317,5 +1355,10 @@ export const useVideoStore = defineStore('video', () => {
     addRtspStreamCorrespondency,
     enableLiveProcessing,
     keepRawVideoChunksAsBackup,
+    broadcastCameraActionsOverMavlink,
+    mavlinkCameraTargetId,
+    mavlinkVideoStreamId,
+    setCameraModeOnCapture,
+    requestCaptureStatusOnCapture,
   }
 })

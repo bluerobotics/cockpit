@@ -147,12 +147,95 @@
                 </template>
                 <template #bottom></template>
               </v-data-table>
-              <div class="flex items-center justify-start">
-                <v-checkbox v-model="showIgnoredStreams" label="Show ignored streams" hide-details class="text-sm" />
-                <span v-if="ignoredStreamExternalIds.length > 0" class="text-gray-400 text-sm ml-2">
-                  ({{ ignoredStreamExternalIds.length }} ignored)
-                </span>
+              <div class="flex items-center justify-between w-[95%]">
+                <div class="flex items-center justify-start">
+                  <v-checkbox v-model="showIgnoredStreams" label="Show ignored streams" hide-details class="text-sm" />
+                  <span v-if="ignoredStreamExternalIds.length > 0" class="text-gray-400 text-sm ml-2">
+                    ({{ ignoredStreamExternalIds.length }} ignored)
+                  </span>
+                </div>
+                <div class="flex items-center justify-end">
+                  <v-checkbox
+                    v-model="videoStore.broadcastCameraActionsOverMavlink"
+                    label="Broadcast camera actions over MAVLink"
+                    class="text-sm mx-2"
+                    hide-details
+                    @update:model-value="handleBroadcastCameraActionsUpdate"
+                  />
+                  <v-tooltip
+                    text="Send MAVLink camera commands when recording or taking a snapshot, so systems like BlueOS can mirror the action (e.g. start in-vehicle recording)"
+                  >
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" size="small" color="white" class="ml-2">mdi-information-outline</v-icon>
+                    </template>
+                  </v-tooltip>
+                </div>
               </div>
+
+              <template v-if="videoStore.broadcastCameraActionsOverMavlink">
+                <div class="flex items-center justify-start w-[50%] ml-2">
+                  <v-text-field
+                    v-model.number="videoStore.mavlinkCameraTargetId"
+                    label="Target camera ID"
+                    variant="filled"
+                    type="number"
+                    class="uri-input mt-4"
+                    theme="dark"
+                    density="compact"
+                    max="255"
+                    min="0"
+                    hint="0 for all cameras, 1-6 for autopilot-connected cameras, 7-255 for a MAVLink camera component"
+                    @update:focused="handleCameraTargetIdBlur"
+                  />
+                </div>
+                <div class="flex items-center justify-start w-[50%] ml-2">
+                  <v-text-field
+                    v-model.number="videoStore.mavlinkVideoStreamId"
+                    label="Video stream ID"
+                    variant="filled"
+                    type="number"
+                    class="uri-input mt-4"
+                    theme="dark"
+                    density="compact"
+                    min="0"
+                    hint="0 for all video streams"
+                    @update:focused="handleVideoStreamIdBlur"
+                  />
+                </div>
+                <div class="flex items-center justify-start w-[96%]">
+                  <v-checkbox
+                    v-model="videoStore.setCameraModeOnCapture"
+                    label="Set camera mode before capture"
+                    class="text-sm mx-2"
+                    hide-details
+                    @update:model-value="handleSetCameraModeOnCaptureUpdate"
+                  />
+                  <v-tooltip
+                    text="Send SET_CAMERA_MODE (video before recording, image before snapshots) before the capture command"
+                  >
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" size="small" color="white" class="ml-2">mdi-information-outline</v-icon>
+                    </template>
+                  </v-tooltip>
+                </div>
+                <div class="flex items-center justify-start w-[96%]">
+                  <v-checkbox
+                    v-model="videoStore.requestCaptureStatusOnCapture"
+                    label="Request capture status"
+                    class="text-sm mx-2"
+                    hide-details
+                    @update:model-value="handleRequestCaptureStatusUpdate"
+                  />
+                  <v-tooltip
+                    text="Request CAMERA_CAPTURE_STATUS after starting or stopping a recording, to reconcile the vehicle-side state"
+                  >
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" size="small" color="white" class="ml-2">mdi-information-outline</v-icon>
+                    </template>
+                  </v-tooltip>
+                </div>
+              </template>
+
               <div v-if="isElectron()" class="mt-4 mr-2 mb-2 w-[95%]">
                 <div class="text-sm text-gray-300 mb-2">Add direct RTSP stream (Standalone)</div>
                 <div class="flex items-end gap-2 w-full">
@@ -285,7 +368,70 @@
             </li>
           </template>
           <template #content>
-            <div class="flex items-center justify-end w-[96%] ml-2 mb-4">
+            <div class="flex items-start justify-between w-[96%] ml-2 mb-2">
+              <div class="flex flex-col">
+                <div class="flex items-center justify-start">
+                  <v-checkbox
+                    v-model="videoStore.enableLiveProcessing"
+                    label="Live video processing (Electron)"
+                    class="text-sm mx-2"
+                    hide-details
+                    :disabled="!isElectron()"
+                  />
+                  <v-tooltip
+                    :text="
+                      isElectron()
+                        ? 'Process videos in real-time during recording for instant availability when recording stops'
+                        : 'Live video processing is only available in the standalone version'
+                    "
+                  >
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
+                    </template>
+                  </v-tooltip>
+                </div>
+
+                <div class="flex items-center justify-start">
+                  <v-checkbox
+                    v-model="videoStore.keepRawVideoChunksAsBackup"
+                    label="Save backup raw chunks"
+                    class="text-sm mx-2"
+                    :disabled="!isElectron()"
+                    hide-details
+                  />
+                  <v-tooltip max-width="400px">
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
+                    </template>
+                    <div class="text-sm">
+                      <p class="mb-2">Save the raw video chunks alongside the final video file for backup purposes.</p>
+                      <p class="mb-2">
+                        <strong>Enabled:</strong> Raw chunks are preserved after recording. Videos use ~2x storage space
+                        but provide safety for reconstruction if the final video is corrupted.
+                      </p>
+                      <p>
+                        <strong>Disabled:</strong> Raw chunks are automatically deleted after successful processing,
+                        using minimal storage space.
+                      </p>
+                      <p class="mt-2 text-gray-300">
+                        You can always manually clean up backup chunks later using the "Temporary" tab in the Video
+                        Library.
+                      </p>
+                      <p class="mt-2 text-gray-300">For the browser version the chunks are always saved by default.</p>
+                    </div>
+                  </v-tooltip>
+                </div>
+
+                <div class="flex items-center justify-start">
+                  <v-checkbox
+                    v-model="snapshotStore.zipMultipleFiles"
+                    label="Zip multiple files"
+                    class="text-sm mx-2"
+                    hide-details
+                  />
+                </div>
+              </div>
+
               <v-btn variant="flat" class="bg-[#FFFFFF22] px-3 elevation-1" @click="openVideoLibrary">
                 <template #append>
                   <v-divider vertical></v-divider>
@@ -310,65 +456,6 @@
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div class="flex items-center justify-start w-[96%] ml-2">
-              <v-checkbox
-                v-model="videoStore.enableLiveProcessing"
-                label="Live video processing (Electron)"
-                class="text-sm mx-2"
-                hide-details
-                :disabled="!isElectron()"
-              />
-              <v-tooltip
-                :text="
-                  isElectron()
-                    ? 'Process videos in real-time during recording for instant availability when recording stops'
-                    : 'Live video processing is only available in the standalone version'
-                "
-              >
-                <template #activator="{ props }">
-                  <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
-                </template>
-              </v-tooltip>
-            </div>
-
-            <div class="flex items-center justify-start w-[96%] ml-2">
-              <v-checkbox
-                v-model="videoStore.keepRawVideoChunksAsBackup"
-                label="Save backup raw chunks"
-                class="text-sm mx-2"
-                :disabled="!isElectron()"
-                hide-details
-              />
-              <v-tooltip max-width="400px">
-                <template #activator="{ props }">
-                  <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
-                </template>
-                <div class="text-sm">
-                  <p class="mb-2">Save the raw video chunks alongside the final video file for backup purposes.</p>
-                  <p class="mb-2">
-                    <strong>Enabled:</strong> Raw chunks are preserved after recording. Videos use ~2x storage space but
-                    provide safety for reconstruction if the final video is corrupted.
-                  </p>
-                  <p>
-                    <strong>Disabled:</strong> Raw chunks are automatically deleted after successful processing, using
-                    minimal storage space.
-                  </p>
-                  <p class="mt-2 text-gray-300">
-                    You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.
-                  </p>
-                  <p class="mt-2 text-gray-300">For the browser version the chunks are always saved by default.</p>
-                </div>
-              </v-tooltip>
-            </div>
-            <div class="flex items-center justify-start w-[50%] ml-2">
-              <v-checkbox
-                v-model="snapshotStore.zipMultipleFiles"
-                label="Zip multiple files"
-                class="text-sm mx-2"
-                hide-details
-              />
             </div>
           </template>
         </ExpansiblePanel>
@@ -675,6 +762,33 @@ function handleAllowedIpsUpdate(newValue: string[] | null): void {
 const openVideoLibrary = (): void => {
   logUserAction('Opened Video Library')
   interfaceStore.videoLibraryVisibility = true
+}
+
+const handleBroadcastCameraActionsUpdate = (value: boolean | null): void => {
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} broadcasting camera actions over MAVLink`)
+}
+
+const clampToUint8 = (value: number): number =>
+  Number.isFinite(value) ? Math.min(255, Math.max(0, Math.round(value))) : 0
+
+const handleCameraTargetIdBlur = (focused: boolean): void => {
+  if (focused) return
+  videoStore.mavlinkCameraTargetId = clampToUint8(videoStore.mavlinkCameraTargetId)
+  logUserAction(`Set MAVLink target camera ID to '${videoStore.mavlinkCameraTargetId}'`)
+}
+
+const handleVideoStreamIdBlur = (focused: boolean): void => {
+  if (focused) return
+  videoStore.mavlinkVideoStreamId = clampToUint8(videoStore.mavlinkVideoStreamId)
+  logUserAction(`Set MAVLink video stream ID to '${videoStore.mavlinkVideoStreamId}'`)
+}
+
+const handleSetCameraModeOnCaptureUpdate = (value: boolean | null): void => {
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} setting camera mode before capture over MAVLink`)
+}
+
+const handleRequestCaptureStatusUpdate = (value: boolean | null): void => {
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} requesting camera capture status over MAVLink`)
 }
 
 /**
