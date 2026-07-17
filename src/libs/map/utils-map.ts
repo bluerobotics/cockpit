@@ -27,6 +27,15 @@ export const singleStepZoomMapOptions: Pick<
 }
 
 /**
+ * Whether a map reference already holds a usable Leaflet instance, which it may not while the owning
+ * component is still mounting.
+ * @param {L.Map | undefined} instance - The map reference to check.
+ * @returns {boolean} True when the instance exists and has a container.
+ */
+export const isLeafletMapReady = (instance: L.Map | undefined): instance is L.Map =>
+  !!instance && typeof instance.getContainer === 'function' && !!instance.getContainer()
+
+/**
  * Great-circle distance between two coordinates.
  * @param {WaypointCoordinates} from - The first coordinate pair ([latitude, longitude]).
  * @param {WaypointCoordinates} to - The second coordinate pair ([latitude, longitude]).
