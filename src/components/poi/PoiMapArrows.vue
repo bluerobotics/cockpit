@@ -4,7 +4,7 @@
       <div v-for="arrow in poiEdgeArrows" :key="arrow.poiId" class="poi-edge-pin" :style="arrow.style">
         <v-tooltip location="top" :text="arrow.tooltipText" content-class="poi-arrow-tooltip">
           <template #activator="{ props: tooltipProps }">
-            <div v-bind="tooltipProps" class="poi-pin-container" @click.stop="centerMapOnPoi(arrow.poiId)">
+            <div v-bind="tooltipProps" :class="pinContainerClass" @click.stop="centerMapOnPoi(arrow.poiId)">
               <div
                 class="poi-pin-shape"
                 :style="{
@@ -22,7 +22,7 @@
       <div class="poi-edge-pin" :style="vehicleEdgeArrow.style">
         <v-tooltip location="top" :text="vehicleEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
           <template #activator="{ props: tooltipProps }">
-            <div v-bind="tooltipProps" class="poi-pin-container" @click.stop="handleVehicleArrowClick">
+            <div v-bind="tooltipProps" :class="pinContainerClass" @click.stop="handleVehicleArrowClick">
               <div
                 class="poi-pin-shape"
                 :style="{
@@ -40,7 +40,7 @@
       <div class="poi-edge-pin" :style="homeEdgeArrow.style">
         <v-tooltip location="top" :text="homeEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
           <template #activator="{ props: tooltipProps }">
-            <div v-bind="tooltipProps" class="poi-pin-container" @click.stop="handleHomeArrowClick">
+            <div v-bind="tooltipProps" :class="pinContainerClass" @click.stop="handleHomeArrowClick">
               <div
                 class="poi-pin-shape"
                 :style="{
@@ -58,7 +58,7 @@
       <div class="poi-edge-pin" :style="baseStationEdgeArrow.style">
         <v-tooltip location="top" :text="baseStationEdgeArrow.tooltipText" content-class="poi-arrow-tooltip">
           <template #activator="{ props: tooltipProps }">
-            <div v-bind="tooltipProps" class="poi-pin-container" @click.stop="handleBaseStationArrowClick">
+            <div v-bind="tooltipProps" :class="pinContainerClass" @click.stop="handleBaseStationArrowClick">
               <div
                 class="poi-pin-shape"
                 :style="{
@@ -82,8 +82,9 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { clampPointToCircle, isInsideCircle, rotatePointAroundCenter } from '@/libs/map/minimap-geometry'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
-import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
+import { calculateHaversineDistance, formatMetersShort } from '@/libs/mission/general-estimates'
 import { poiPinRotation } from '@/libs/utils-poi'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Edge, EdgeIntersection, PoiEdgeArrow, TargetEdgeArrow, WaypointCoordinates } from '@/types/mission'
@@ -143,13 +144,29 @@ interface Props {
    */
   widget?: Widget
   /**
-   * Target follower instance
+   * Target follower instance. Optional: when absent (e.g. the vehicle-centered minimap, where the
+   * vehicle never leaves the center), the vehicle/home arrow click-to-follow is disabled.
    */
-  targetFollower: TargetFollower
+  targetFollower?: TargetFollower
   /**
    * Force the top and bottom bar-offset compensation on regardless of the widget state.
    */
   forceFullScreen?: boolean
+  /**
+   * Shape of the boundary the PoI arrows clamp to. Defaults to the rectangular container edges; 'circle'
+   * clamps to the largest circle inscribed in the container, for round/faded maps.
+   */
+  boundary?: 'rectangle' | 'circle'
+  /**
+   * Rotation applied to the map container, in degrees (positive clockwise). Only the rotating minimap sets
+   * it; the arrows sit outside the container, so they have to follow its spin themselves.
+   */
+  bearing?: number
+  /**
+   * Whether clicking a pin acts on the map. Defaults to true. A map that stays centered on a tracked target
+   * cannot honour either action, so it opts out and the pins become pure indicators.
+   */
+  interactive?: boolean
 }
 
 const props = defineProps<Props>()
@@ -160,6 +177,11 @@ const widgetStore = useWidgetManagerStore()
 // Get map instance from composable
 const { map: mapLayer } = useMapContext()
 const map = computed(() => mapLayer.value ?? null)
+
+const pinContainerClass = computed(() => [
+  'poi-pin-container',
+  { 'poi-pin-container--static': props.interactive === false },
+])
 
 const poiEdgeArrows = ref<PoiEdgeArrow[]>([])
 const vehicleEdgeArrow = ref<TargetEdgeArrow | null>(null)
@@ -287,6 +309,31 @@ const getPoiArrowStyle = (
   return style
 }
 
+/** A pin position on the circular boundary plus the direction from the center to it. */
+interface CircleArrow {
+  /** Absolute-positioning style placing the pin on the boundary. */
+  style: PoiEdgeArrow['style']
+  /** Direction from the circle center to the pin, in degrees (0 = right, 90 = down). */
+  angleDeg: number
+}
+
+// Distance, in pixels, from the circular boundary to the container edge, so pins sit fully inside.
+const circleInset = 24
+
+// Clamp an off-screen target to the circle inscribed in the container. Returns null when the target is
+// visible (inside the circle) or the container is too small to hold one.
+const computeCircularArrow = (targetPoint: L.Point, width: number, height: number): CircleArrow | null => {
+  const center = { x: width / 2, y: height / 2 }
+  const radius = Math.min(width, height) / 2 - circleInset
+  const onScreenPoint = rotatePointAroundCenter(center, targetPoint, props.bearing ?? 0)
+  if (radius <= 0 || isInsideCircle(center, onScreenPoint, radius)) return null
+  const clamped = clampPointToCircle(center, onScreenPoint, radius)
+  return {
+    style: { left: `${clamped.x}px`, top: `${clamped.y}px`, transform: 'translate(-50%, -50%)' },
+    angleDeg: clamped.angleDeg,
+  }
+}
+
 // Calculate edge arrow for a generic target (vehicle, home waypoint, or a second vehicle).
 const calculateTargetEdgeArrow = (
   targetPosition: WaypointCoordinates | undefined,
@@ -335,6 +382,18 @@ const calculateTargetEdgeArrow = (
     return null
   }
 
+  if (props.boundary === 'circle') {
+    const circleArrow = computeCircularArrow(targetPoint, width, height)
+    if (!circleArrow) return null
+    const circleDistanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
+    return {
+      style: circleArrow.style,
+      angle: circleArrow.angleDeg + 90,
+      tooltipText: `${targetName} - ${formatMetersShort(circleDistanceMeters)}`,
+      color: targetColor,
+    }
+  }
+
   // Check if target is visible on the map (within container bounds)
   if (
     targetPoint.x >= 0 &&
@@ -347,8 +406,7 @@ const calculateTargetEdgeArrow = (
   }
 
   const distanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
-  const distanceText =
-    distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+  const distanceText = formatMetersShort(distanceMeters)
 
   const distanceX = targetPoint.x - centerPoint.x
   const distanceY = targetPoint.y - centerPoint.y
@@ -412,7 +470,7 @@ const calculateTargetEdgeArrow = (
 
 // Calculate POI arrow angle and position to be placed on the edges of the map
 const calculatePoiEdgeArrows = (): void => {
-  if (!props.mapReady || !map.value || !(map.value instanceof L.Map)) {
+  if (!props.showPoiArrows || !props.mapReady || !map.value || !(map.value instanceof L.Map)) {
     poiEdgeArrows.value = []
     return
   }
@@ -458,6 +516,22 @@ const calculatePoiEdgeArrows = (): void => {
       return
     }
 
+    if (props.boundary === 'circle') {
+      const circleArrow = computeCircularArrow(poiPoint, width, height)
+      if (!circleArrow) return
+      const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
+      const distanceText = formatMetersShort(distanceMeters)
+      arrows.push({
+        poiId: poi.id,
+        icon: poi.icon,
+        style: circleArrow.style,
+        angle: circleArrow.angleDeg + 90,
+        tooltipText: `${poi.name} - ${distanceText}`,
+        color: poi.color,
+      })
+      return
+    }
+
     // Check if POI marker is visible on screen, accounting for marker extent beyond its anchor.
     const markerHalfWidth = 16
     const markerHeight = 32
@@ -471,8 +545,7 @@ const calculatePoiEdgeArrows = (): void => {
     }
 
     const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
-    const distanceText =
-      distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+    const distanceText = formatMetersShort(distanceMeters)
 
     const distanceX = poiPoint.x - centerPoint.x
     const distanceY = poiPoint.y - centerPoint.y
@@ -552,7 +625,7 @@ const debouncedUpdateTargetArrows = useDebounceFn(calculateTargetArrows, 150)
 const throttledUpdateTargetArrows = useThrottleFn(calculateTargetArrows, 15)
 
 const centerMapOnPoi = (poiId: string): void => {
-  if (!map.value) return
+  if (!map.value || props.interactive === false) return
 
   const poi = resolvedPointsOfInterest.value.find((p) => p.id === poiId)
   if (!poi) return
@@ -561,16 +634,16 @@ const centerMapOnPoi = (poiId: string): void => {
 }
 
 const handleVehicleArrowClick = (): void => {
-  props.targetFollower.goToTarget(WhoToFollow.VEHICLE, true)
+  props.targetFollower?.goToTarget(WhoToFollow.VEHICLE, true)
 }
 
 const handleHomeArrowClick = (): void => {
-  props.targetFollower.goToTarget(WhoToFollow.HOME, true)
+  props.targetFollower?.goToTarget(WhoToFollow.HOME, true)
 }
 
 const handleBaseStationArrowClick = (): void => {
   logUserAction('Centered the map on the base station via the offscreen arrow')
-  props.targetFollower.goToTarget(WhoToFollow.BASE_STATION, true)
+  props.targetFollower?.goToTarget(WhoToFollow.BASE_STATION, true)
 }
 
 watch(
@@ -613,6 +686,26 @@ watch(
     if (ready && map.value && map.value instanceof L.Map) {
       debouncedUpdateArrows()
       debouncedUpdateTargetArrows()
+    }
+  }
+)
+
+// Arrow geometry is skipped while the arrows are hidden, so switching them back on has to recompute it.
+watch(
+  () => props.showPoiArrows,
+  (show) => {
+    if (show && props.mapReady && map.value && map.value instanceof L.Map) {
+      debouncedUpdateArrows()
+    }
+  }
+)
+
+// A rotating map moves the pins around its edge without moving the view, so no map event announces it.
+watch(
+  () => props.bearing,
+  () => {
+    if (props.mapReady && map.value && map.value instanceof L.Map) {
+      throttledUpdateArrows()
     }
   }
 )
@@ -689,6 +782,14 @@ onBeforeUnmount(() => {
 
 .poi-pin-container:hover {
   transform: scale(1.15);
+}
+
+.poi-pin-container--static {
+  cursor: default;
+}
+
+.poi-pin-container--static:hover {
+  transform: none;
 }
 
 .poi-pin-shape {
