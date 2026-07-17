@@ -104,7 +104,7 @@
     ref="contextMenuRef"
     :key="contextMenuVersion"
     :visible="contextMenuVisible"
-    :width="'260px'"
+    :min-width="'260px'"
     :menu-items="menuItems"
     @close="hideContextMenuAndMarker"
   >

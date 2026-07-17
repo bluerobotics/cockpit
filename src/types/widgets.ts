@@ -1,5 +1,6 @@
 import { DataLakeVariable } from '@/types/data-lake'
 import { ProtocolAction } from '@/types/joystick'
+import type { ContextMenuItem } from '@/types/user-interface'
 
 import type { Point2D, SizeRect2D } from './general'
 
@@ -635,6 +636,10 @@ export type WidgetManagerVars = {
    * Wether thewidget should be highlited or not
    */
   highlighted: boolean
+  /**
+   * Context-menu items the widget contributes to the WidgetHugger menu, kept in sync by the widget itself
+   */
+  contextMenuItems?: ContextMenuItem[]
 }
 
 /**
