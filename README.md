@@ -338,6 +338,16 @@ Cockpit is dual-licensed:
 
 See [LICENSE.md](LICENSE.md) for details.
 
+### Third-party components
+
+Cockpit distributions bundle the following components under the GNU General Public License. Each one remains under its own license, and its source is available from the project linked below:
+
+| Component | License | Bundled in |
+| --- | --- | --- |
+| [leaflet-rotate](https://github.com/Raruto/leaflet-rotate) | GPL-3.0 | Standalone and Lite |
+| [FFmpeg](https://github.com/BtbN/FFmpeg-Builds) | GPL-3.0 | Standalone |
+| [Piper](https://github.com/OHF-Voice/piper1-gpl) | GPL-3.0 | Standalone |
+
 ---
 
 ## 🏢 About Blue Robotics
