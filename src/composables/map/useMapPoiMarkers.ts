@@ -2,6 +2,7 @@ import L, { type LatLngTuple, type LeafletEvent, type LeafletMouseEvent, type Ma
 import { type Ref, type ShallowRef, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { isLeafletMapReady } from '@/libs/map/utils-map'
 import { getPoiIconSignature, getPoiMarkerColor, getPoiMarkerOpacity, getPoiTooltipHtml } from '@/libs/utils-poi'
 import type { ResolvedPointOfInterest } from '@/types/mission'
 
@@ -89,11 +90,6 @@ export const useMapPoiMarkers = (
       poi.isLiveTracked,
     ])
 
-  // The map ref can momentarily hold a template-ref DOM element before the Leaflet instance is
-  // assigned (consumers reuse the same ref name for the container and the map), so guard on the API.
-  const isMapReady = (instance: Map | undefined): instance is Map =>
-    !!instance && typeof instance.getContainer === 'function' && !!instance.getContainer()
-
   const poiIconConfig = (poi: ResolvedPointOfInterest): L.DivIconOptions => ({
     html: `
     <div class="poi-marker-container">
@@ -123,7 +119,7 @@ export const useMapPoiMarkers = (
   })
 
   const addMarker = (poi: ResolvedPointOfInterest): void => {
-    if (!isMapReady(map.value)) return
+    if (!isLeafletMapReady(map.value)) return
 
     const marker = L.marker(poi.coordinates as LatLngTuple, {
       icon: L.divIcon(poiIconConfig(poi)),
@@ -179,7 +175,7 @@ export const useMapPoiMarkers = (
 
   const updateMarker = (poi: ResolvedPointOfInterest): void => {
     const marker = markers.value[poi.id]
-    if (!isMapReady(map.value) || !marker) return
+    if (!isLeafletMapReady(map.value) || !marker) return
 
     // Skip markers whose data hasn't changed since last render, so editing or moving one PoI doesn't
     // rebuild every other marker's icon and tear down its Leaflet Draggable instance mid-interaction.
@@ -228,9 +224,9 @@ export const useMapPoiMarkers = (
   watch(
     resolvedPointsOfInterest,
     async (pois) => {
-      if (!isMapReady(map.value)) {
+      if (!isLeafletMapReady(map.value)) {
         await nextTick()
-        if (!isMapReady(map.value)) return
+        if (!isLeafletMapReady(map.value)) return
       }
       syncMarkers(pois)
     },
@@ -241,7 +237,7 @@ export const useMapPoiMarkers = (
   watch(
     map,
     (instance) => {
-      if (isMapReady(instance)) syncMarkers(resolvedPointsOfInterest.value)
+      if (isLeafletMapReady(instance)) syncMarkers(resolvedPointsOfInterest.value)
     },
     { immediate: true }
   )
