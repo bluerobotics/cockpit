@@ -6,7 +6,7 @@
     ref="contextMenuRef"
     :visible="contextMenuVisible"
     :menu-items="contextMenuItems"
-    width="200px"
+    min-width="200px"
     @close="contextMenuVisible = false"
   >
     <template #default>
