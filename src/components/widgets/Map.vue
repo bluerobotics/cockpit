@@ -287,10 +287,6 @@ import {
 } from 'vue'
 import { useRouter } from 'vue-router'
 
-import copterMarkerImage from '@/assets/arducopter-top-view.avif'
-import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
-import brov2MarkerImage from '@/assets/brov2-marker.avif'
-import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
@@ -309,7 +305,7 @@ import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelec
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
-import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
@@ -322,6 +318,7 @@ import {
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { copyToClipboard, degrees } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
+import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -1248,23 +1245,7 @@ watch(vehicleStore.coordinates, () => {
   if (!map.value || !vehiclePosition.value) return
 
   if (vehicleMarker.value === undefined) {
-    let vehicleIconUrl = genericVehicleMarkerImage
-
-    if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
-      vehicleIconUrl = blueboatMarkerImage
-    } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
-      vehicleIconUrl = brov2MarkerImage
-    } else if (
-      [
-        MavType.MAV_TYPE_QUADROTOR,
-        MavType.MAV_TYPE_HEXAROTOR,
-        MavType.MAV_TYPE_OCTOROTOR,
-        MavType.MAV_TYPE_TRICOPTER,
-        MavType.MAV_TYPE_DODECAROTOR,
-      ].includes(vehicleStore.vehicleType)
-    ) {
-      vehicleIconUrl = copterMarkerImage
-    }
+    const vehicleIconUrl = vehicleMarkerImageUrl(vehicleStore.vehicleType)
 
     const vehicleMarkerIcon = L.divIcon({
       className: 'vehicle-marker',
