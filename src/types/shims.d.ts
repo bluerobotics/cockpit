@@ -17,6 +17,7 @@ declare module 'vuetify/lib/directives'
 declare module '@peermetrics/webrtc-stats'
 declare module 'piexifjs'
 declare module '@kmamal/sdl'
+declare module 'leaflet-rotate'
 
 declare module 'vue-virtual-scroller' {
   import Vue, { ComponentOptions, PluginObject, Component } from 'vue'

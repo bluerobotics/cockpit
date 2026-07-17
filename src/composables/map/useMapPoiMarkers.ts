@@ -31,6 +31,11 @@ export interface UseMapPoiMarkersOptions {
    * Called when a marker is right-clicked, with the up-to-date PoI and the originating event.
    */
   onContextMenu?: (poi: ResolvedPointOfInterest, event: MouseEvent) => void
+  /**
+   * Whether the markers are currently drawn. Defaults to always shown. While false the markers are removed
+   * instead of hidden, so a surface that toggles PoIs off stops paying for their syncing.
+   */
+  show?: () => boolean
 }
 
 /**
@@ -213,7 +218,18 @@ export const useMapPoiMarkers = (
     if (gotoTargetId.value === poiId) gotoTargetId.value = null
   }
 
+  const removeAllMarkers = (): void => {
+    Object.values(markers.value).forEach((marker) => marker.remove())
+    markers.value = {}
+    Object.keys(lastRenderedSignatures).forEach((id) => delete lastRenderedSignatures[id])
+    Object.keys(iconSignatures).forEach((id) => delete iconSignatures[id])
+  }
+
   const syncMarkers = (pois: ResolvedPointOfInterest[]): void => {
+    if (options.show?.() === false) {
+      removeAllMarkers()
+      return
+    }
     const liveIds = new Set(pois.map((p) => p.id))
     Object.keys(markers.value).forEach((id) => {
       if (!liveIds.has(id)) removeMarker(id)
@@ -242,12 +258,14 @@ export const useMapPoiMarkers = (
     { immediate: true }
   )
 
-  onBeforeUnmount(() => {
-    Object.values(markers.value).forEach((marker) => marker.remove())
-    markers.value = {}
-    Object.keys(lastRenderedSignatures).forEach((id) => delete lastRenderedSignatures[id])
-    Object.keys(iconSignatures).forEach((id) => delete iconSignatures[id])
-  })
+  watch(
+    () => options.show?.() ?? true,
+    () => {
+      if (isLeafletMapReady(map.value)) syncMarkers(resolvedPointsOfInterest.value)
+    }
+  )
+
+  onBeforeUnmount(removeAllMarkers)
 
   return { markers, gotoTargetId, setGotoTarget }
 }
