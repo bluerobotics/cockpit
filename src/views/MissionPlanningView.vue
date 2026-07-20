@@ -3910,8 +3910,11 @@ const buildCurrentMissionSnapshot = (): CockpitMission => ({
     // typed but hasn't committed back to the store yet (e.g. by uploading the mission).
     defaultCruiseSpeed: localCruiseSpeed.value,
   },
-  waypoints: structuredClone(toRaw(missionStore.currentPlanningWaypoints)),
-  surveys: structuredClone(toRaw(missionStore.currentPlanningSurveys)),
+  // Editing a waypoint (e.g. moveWaypoint) re-injects Vue reactive proxies into the arrays, which
+  // toRaw only unwraps at the top level and structuredClone then chokes on. A JSON round-trip strips
+  // that reactivity at every depth, matching how the store already serializes these same arrays.
+  waypoints: JSON.parse(JSON.stringify(missionStore.currentPlanningWaypoints)),
+  surveys: JSON.parse(JSON.stringify(missionStore.currentPlanningSurveys)),
 })
 
 const currentMissionSnapshot = ref<CockpitMission>(buildCurrentMissionSnapshot())
