@@ -411,7 +411,7 @@
     <div
       v-show="widgetMode === 'Regular'"
       ref="availableWidgetsContainer"
-      class="flex items-center justify-between w-full h-full gap-3 overflow-x-auto text-white -mb-1 pr-2 cursor-pointer"
+      class="flex items-center justify-between w-full h-full gap-3 overflow-x-scroll overflow-y-hidden text-white -mb-1 pr-2 cursor-pointer"
     >
       <div
         v-for="widget in allAvailableWidgets"
@@ -436,10 +436,10 @@
             <div />
             <img v-bind="tooltipProps" :src="widget.icon" alt="widget-icon" class="p-4 max-h-[75%] max-w-[95%]" />
             <div
-              class="flex items-center justify-center w-full p-1 transition-all rounded-b-md text-white overflow-hidden"
+              class="flex items-center justify-center w-full py-1 px-2 transition-all rounded-b-md text-white"
               :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#4fa483]': !widget.isExternal }"
             >
-              <span class="whitespace-normal text-center break-words leading-tight 2xl:text-sm text-xs px-1">{{
+              <span class="whitespace-normal text-center">{{
                 widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
               }}</span>
             </div>
@@ -454,7 +454,7 @@
     <div
       v-show="widgetMode === 'Mini'"
       ref="availableMiniWidgetsContainer"
-      class="flex items-center w-full h-full gap-3 overflow-auto pr-2"
+      class="flex items-center w-full h-full gap-3 overflow-x-scroll overflow-y-hidden pr-2"
     >
       <div
         v-for="miniWidget in availableMiniWidgetTypes"
@@ -483,13 +483,13 @@
     <div
       v-show="widgetMode === 'Input'"
       ref="availableCustomWidgetElementsContainer"
-      class="flex items-center w-full h-full gap-3 overflow-auto pr-2"
+      class="flex items-center w-full h-full gap-3 overflow-x-scroll overflow-y-hidden pr-2"
     >
       <div
         v-for="miniWidget in availableCustomWidgetElementsTypes"
         id="mini-widget-card"
         :key="miniWidget.hash"
-        class="flex flex-col items-center w-full justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] aspect-square cursor-pointer elevation-4 overflow-clip"
+        class="flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
         draggable="false"
       >
         <div />
