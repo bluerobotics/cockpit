@@ -559,6 +559,7 @@ import PlotterImg from '@/assets/widgets/Plotter.png'
 import URLVideoPlayerImg from '@/assets/widgets/URLVideoPlayer.png'
 import VideoPlayerImg from '@/assets/widgets/VideoPlayer.png'
 import VirtualHorizonImg from '@/assets/widgets/VirtualHorizon.png'
+import WebcamViewImg from '@/assets/widgets/WebcamView.png'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { getWidgetsFromBlueOS } from '@/libs/blueos'
@@ -765,6 +766,7 @@ const widgetImages = {
   DoItYourself: DoItYourselfImg,
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
+  Webcam: WebcamViewImg,
   Map: MapImg,
   MiniWidgetsBar: MiniWidgetsBarImg,
   MissionControlPanel: MissionControlPanelImg,
