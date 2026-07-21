@@ -378,22 +378,30 @@
   <div class="flex items-center justify-between edit-panel bottom-panel" :class="{ active: editMode }">
     <div class="w-px h-full bg-[#FFFFFF18]" />
     <div
-      class="flex flex-col justify-around items-center 2xl:w-[30%] w-[25%] max-w-[240px] h-full text-white 2xl:pr-2 px-1 2xl:py-5 xl:py-4 lg:py-1"
+      class="flex flex-col items-center 2xl:w-[40%] w-[35%] max-w-[280px] h-full text-white 2xl:pr-2 px-1 2xl:py-3 xl:py-4 lg:py-1 overflow-y-auto"
     >
-      <div>
-        <p class="2xl:text-md text-xs ml-1">Widget type:</p>
-        <v-select
-          v-model="widgetMode"
-          theme="dark"
-          variant="filled"
-          density="compact"
-          :items="['Regular', 'Mini', 'Input']"
-          class="bg-[#27384255] 2xl:scale-100 scale-[80%]"
-          hide-details
-          @update:model-value="onWidgetPaletteModeChange"
-        />
+      <div class="flex flex-col items-center justify-center w-full h-[50%]">
+        <div class="w-full">
+          <p class="2xl:text-md text-xs text-center pb-3">Widget type:</p>
+          <div class="flex w-full gap-3 mt-1 px-3">
+            <v-btn
+              v-for="mode in widgetModes"
+              :key="mode"
+              size="small"
+              variant="flat"
+              rounded="md"
+              class="flex-1 min-w-0 text-xs"
+              :class="
+                widgetMode === mode ? 'bg-[#3B7B62] text-white' : 'bg-[#27384255] text-[#FFFFFFAA] hover:brightness-125'
+              "
+              @click="selectWidgetMode(mode)"
+            >
+              {{ mode }}
+            </v-btn>
+          </div>
+        </div>
       </div>
-      <div class="flex flex-col items-center justify-start w-full pl-2">
+      <div class="flex flex-col items-center justify-start w-full h-[50%] pl-2">
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
           To be placed on the main view area
         </div>
@@ -402,7 +410,7 @@
           To be placed on the top and bottom bars
         </div>
         <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
-        <div v-show="widgetMode === 'Input'">
+        <div v-show="widgetMode === 'Input'" class="mt-6">
           <v-btn type="flat" class="bg-[#FFFFFF33] text-white w-[95%]" @click="addContainer">Add new container </v-btn>
         </div>
       </div>
@@ -875,7 +883,9 @@ const openMiniWidgetConfig = (widget: MiniWidget): void => {
   store.miniWidgetManagerVars(widget.hash).configMenuOpen = true
 }
 
-const onWidgetPaletteModeChange = (mode: string): void => {
+const selectWidgetMode = (mode: WidgetPaletteMode): void => {
+  if (widgetMode.value === mode) return
+  widgetMode.value = mode
   logUserAction(`Switched widget palette to '${mode}' mode`)
 }
 
@@ -995,7 +1005,9 @@ onMounted(() => {
   })
 })
 
-const widgetMode = ref('Regular')
+const widgetModes = ['Regular', 'Mini', 'Input'] as const
+type WidgetPaletteMode = (typeof widgetModes)[number]
+const widgetMode = ref<WidgetPaletteMode>('Regular')
 
 // Resize mini widgets so they fit the layout when the widget mode is set to mini widgets
 const miniWidgetContainers = ref<Record<string, HTMLElement>>({})
