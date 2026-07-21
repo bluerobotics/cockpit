@@ -125,7 +125,7 @@
             Main view area
             <v-badge
               :content="store.currentView.widgets.length"
-              color="#4FA483"
+              color="#3B7B62"
               rounded="md"
               class="ml-10 2xl:mb-1 opacity-90"
               :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
@@ -197,7 +197,7 @@
                   return count + (container.name.startsWith('Top') ? container.widgets.length : 0)
                 }, 0)
               "
-              color="#4FA483"
+              color="#3B7B62"
               rounded="md"
               class="ml-10 2xl:mb-1 opacity-90"
               :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
@@ -264,7 +264,7 @@
                   return count + (container.name.startsWith('Bottom') ? container.widgets.length : 0)
                 }, 0)
               "
-              color="#4FA483"
+              color="#3B7B62"
               rounded="md"
               class="ml-10 2xl:mb-1 opacity-90"
               :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
@@ -333,7 +333,7 @@
             {{ miniWidgetContainer.name }}
             <v-badge
               :content="miniWidgetContainer.widgets?.length"
-              color="#4FA483"
+              color="#3B7B62"
               rounded="md"
               class="ml-10 2xl:mb-1 opacity-90"
               :class="interfaceStore.isLg || interfaceStore.isOnSmallScreen ? 'scale-75' : ''"
@@ -437,7 +437,7 @@
             <img v-bind="tooltipProps" :src="widget.icon" alt="widget-icon" class="p-4 max-h-[75%] max-w-[95%]" />
             <div
               class="flex items-center justify-center w-full py-1 px-2 transition-all rounded-b-md text-white"
-              :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#4fa483]': !widget.isExternal }"
+              :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#3B7B62]': !widget.isExternal }"
             >
               <span class="whitespace-normal text-center">{{
                 widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
@@ -471,7 +471,7 @@
           </div>
         </div>
         <div
-          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
+          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B7B62] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
@@ -499,7 +499,7 @@
           </div>
         </div>
         <div
-          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#4FA483] rounded-b-md text-white"
+          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B7B62] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
