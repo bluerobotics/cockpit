@@ -157,9 +157,7 @@ const modalPositionStyle = computed(() => {
     case 'menuitem':
       return {
         top: '50%',
-        left: interfaceStore.isOnSmallScreen
-          ? `${interfaceStore.mainMenuWidth - 20}px`
-          : `${interfaceStore.mainMenuWidth + 30}px`,
+        left: `${(interfaceStore.mainMenuActualWidth || interfaceStore.mainMenuWidth) + 15}px`,
         transform: 'translateY(-50%)',
         zIndex: zIndexToggle.value,
       }

@@ -4,7 +4,7 @@
       v-if="interfaceStore.isMainMenuVisible"
       ref="mainMenu"
       class="left-menu slide-in"
-      :style="[glassMenuStyles, simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth]"
+      :style="[glassMenuStyles, simplifiedMainMenu ? simplifiedMenuWidth : mainMenuWidth]"
     >
       <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full">
         <v-window-item :value="1" class="h-full">
@@ -14,61 +14,62 @@
           >
             <div
               class="h-full justify-between align-center items-center select-none"
-              :class="
+              :class="[
                 interfaceStore.isOnSmallScreen
                   ? 'gap-y-0 pt-2 pb-3 sm:sm:py-0 sm:-ml-[3px] xs:xs:py-0 xs:-ml-[3px]'
-                  : 'lg:gap-y-2 xl:gap-y-3 gap-y-4 py-4'
-              "
+                  : 'lg:gap-y-2 xl:gap-y-3 gap-y-4 py-4',
+                simplifiedMainMenu ? '!py-1.5' : '',
+              ]"
             >
               <GlassButton
                 v-if="route.name === 'widgets-view'"
-                :label="simplifiedMainMenu ? '' : 'Edit Interface'"
+                label="Edit Interface"
                 :selected="widgetStore.editingMode"
-                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : [menuLabelSize, '-mb-0.5 mt-6']"
+                :horizontal="simplifiedMainMenu"
                 :icon="simplifiedMainMenu ? 'mdi-pencil' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
-                :width="buttonSize"
+                :width="simplifiedMainMenu ? undefined : buttonSize"
                 @click="toggleEditMode"
                 ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="Edit Mode Icon" />
               </GlassButton>
               <GlassButton
                 v-if="route.name !== 'widgets-view'"
-                :label="simplifiedMainMenu ? '' : 'Flight'"
-                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                label="Flight"
+                :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : [menuLabelSize, '-mb-0.5 mt-6']"
+                :horizontal="simplifiedMainMenu"
                 :icon="simplifiedMainMenu ? 'mdi-send' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
-                :width="buttonSize"
+                :width="simplifiedMainMenu ? undefined : buttonSize"
                 :selected="$route.name === 'Flight'"
                 @click="goToFlightView"
                 ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="Flight Icon" />
               </GlassButton>
               <GlassButton
                 v-if="route.name !== 'Mission planning'"
-                :label="simplifiedMainMenu ? '' : 'Mission Planning'"
-                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                label="Mission Planning"
+                :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : [menuLabelSize, '-mb-0.5 mt-6']"
+                :horizontal="simplifiedMainMenu"
                 :icon="simplifiedMainMenu ? 'mdi-map-marker-radius-outline' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
-                :width="buttonSize"
+                :width="simplifiedMainMenu ? undefined : buttonSize"
                 :selected="$route.name === 'Mission planning'"
                 @click="goToMissionPlanning"
                 ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon" />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : 'Settings'"
-                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                label="Settings"
+                :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : [menuLabelSize, '-mb-0.5 mt-6']"
+                :horizontal="simplifiedMainMenu"
                 :icon="simplifiedMainMenu ? 'mdi-cog' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Configuration' : undefined"
-                :width="buttonSize"
+                :width="simplifiedMainMenu ? undefined : buttonSize"
                 :selected="showSubMenu"
-                class="mb-1"
+                :class="simplifiedMainMenu ? '' : 'mb-1'"
                 :style="
                   interfaceStore.highlightedComponent === 'settings-menu-item' && {
                     animation: 'highlightBackground 0.5s alternate 20',
@@ -79,27 +80,26 @@
                 ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : 'Tools'"
-                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                label="Tools"
+                :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : [menuLabelSize, '-mb-0.5 mt-6']"
+                :horizontal="simplifiedMainMenu"
                 :icon="simplifiedMainMenu ? 'mdi-tools' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
-                :width="buttonSize"
+                :width="simplifiedMainMenu ? undefined : buttonSize"
                 :selected="showSubMenu"
-                class="mb-1"
+                :class="simplifiedMainMenu ? '' : 'mb-1'"
                 @click="selectSubMenu(SubMenuName.tools)"
                 ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
-                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                :label="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+                :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : [menuLabelSize, '-mb-0.5 mt-6']"
+                :horizontal="simplifiedMainMenu"
                 :icon="simplifiedMainMenu ? fullScreenToggleIcon : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
-                :button-class="simplifiedMainMenu ? '-mb-2' : ''"
-                :width="buttonSize"
+                :width="simplifiedMainMenu ? undefined : buttonSize"
                 :selected="false"
                 @click="toggleFullscreenAndCloseMenu"
                 ><img
@@ -109,14 +109,14 @@
                 />
               </GlassButton>
               <GlassButton
-                :label="simplifiedMainMenu ? '' : 'About'"
-                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                label="About"
+                :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : [menuLabelSize, '-mb-0.5 mt-6']"
+                :horizontal="simplifiedMainMenu"
                 :icon="simplifiedMainMenu ? 'mdi-information-outline' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'About' : undefined"
                 :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
-                :width="buttonSize"
+                :width="simplifiedMainMenu ? undefined : buttonSize"
                 :selected="showSubMenu"
                 @click="openAboutDialog"
                 ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
@@ -132,8 +132,9 @@
             <GlassButton
               v-for="menuitem in currentSubMenu"
               :key="menuitem.title"
-              :label="simplifiedMainMenu ? undefined : menuitem.title"
-              :label-class="menuLabelSize"
+              :label="menuitem.title"
+              :label-class="simplifiedMainMenu ? simplifiedMenuLabelSize : menuLabelSize"
+              :horizontal="simplifiedMainMenu"
               :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
               :icon="menuitem.icon"
               :selected="interfaceStore.currentSubMenuComponentName === menuitem.componentName"
@@ -151,15 +152,16 @@
                 <div v-if="currentSubMenuComponent === menuitem.component" class="arrow-left"></div>
               </template>
             </GlassButton>
-            <div class="flex flex-col justify-center align-center pb-1">
+            <div class="flex flex-col justify-center align-center" :class="simplifiedMainMenu ? 'pb-0.5' : 'pb-1'">
               <v-divider width="70%" />
               <GlassButton
                 :label-class="menuLabelSize"
+                :class="simplifiedMainMenu ? '!py-1 -mt-1' : undefined"
                 icon="mdi-arrow-left"
-                :icon-class="interfaceStore.isOnSmallScreen ? '' : '-mb-[1px]'"
-                :button-class="interfaceStore.isOnSmallScreen ? (simplifiedMainMenu ? '-mt-1' : 'mt-1') : undefined"
+                icon-class="translate-x-[1px] translate-y-[1px]"
+                :button-class="interfaceStore.isOnSmallScreen ? (simplifiedMainMenu ? '-mt-0.5' : 'mt-1') : undefined"
                 variant="round"
-                :width="buttonSize / 2.4"
+                :width="(buttonSize / 2.4) * (simplifiedMainMenu ? 0.8 : 1)"
                 :selected="false"
                 @click="closeSubMenu"
               />
@@ -252,13 +254,10 @@ const scrollContainerRef = ref<HTMLElement | null>(null)
 const subMenuScrollContainerRef = ref<HTMLElement | null>(null)
 
 const containerRectMain = ref({ width: 0, height: 0 })
-const containerRectSub = ref({ width: 0, height: 0 })
 const isScrolledToTop = ref(true)
 const isScrolledToBottom = ref(false)
 
 const originalBarWidth = 1800
-const LOWER_RATIO = 1.4
-const UPPER_RATIO = 1.2
 
 const simplifiedMainMenu = ref(false)
 
@@ -295,17 +294,10 @@ useResizeObserver(scrollContainerRef, (entries) => {
   }
 })
 
-useResizeObserver(subMenuScrollContainerRef, (entries) => {
+useResizeObserver(mainMenu, (entries) => {
   if (entries.length) {
-    containerRectSub.value = {
-      width: entries[0].contentRect.width,
-      height: entries[0].contentRect.height,
-    }
+    interfaceStore.mainMenuActualWidth = (entries[0].target as HTMLElement).offsetWidth
   }
-})
-
-const activeContainerRect = computed(() => {
-  return interfaceStore.mainMenuCurrentStep === 1 ? containerRectMain.value : containerRectSub.value
 })
 
 const topBottomBarScale = computed(() => {
@@ -319,15 +311,27 @@ const maxScreenHeightPixelsThatFitsLargeMenu = computed(() => {
   return visibleAreaHeight
 })
 
-const shouldSimplifyMainMEnu = computed(() => {
-  return maxScreenHeightPixelsThatFitsLargeMenu.value > activeContainerRect.value.height
-})
+// Height the main menu needs in its full (non-simplified) layout, sampled only while that layout
+// is on screen so the decision below reads a value independent of the currently rendered layout.
+// Every page inherits this single decision, so submenus match whatever the main menu resolves to.
+const normalMainMenuHeight = ref(0)
 
 watchEffect(() => {
-  const ratio = (activeContainerRect.value.height * 2) / maxScreenHeightPixelsThatFitsLargeMenu.value
-  if (!shouldSimplifyMainMEnu.value && ratio > LOWER_RATIO) {
+  if (!simplifiedMainMenu.value && containerRectMain.value.height > 0) {
+    normalMainMenuHeight.value = containerRectMain.value.height
+  }
+})
+
+// Leave the simplified layout only once there is a clear (5%) margin of extra room, so the two
+// layouts cannot toggle repeatedly around the fit boundary.
+const simplifiedMenuExitMargin = 1.05
+
+watchEffect(() => {
+  if (normalMainMenuHeight.value === 0) return
+  const availableHeight = maxScreenHeightPixelsThatFitsLargeMenu.value
+  if (!simplifiedMainMenu.value && availableHeight < normalMainMenuHeight.value) {
     simplifiedMainMenu.value = true
-  } else if (shouldSimplifyMainMEnu.value && ratio * 0.8 < UPPER_RATIO) {
+  } else if (simplifiedMainMenu.value && availableHeight > normalMainMenuHeight.value * simplifiedMenuExitMargin) {
     simplifiedMainMenu.value = false
   }
 })
@@ -487,6 +491,10 @@ const mainMenuWidth = computed(() => {
   return { width }
 })
 
+const simplifiedMenuWidth = computed(() => {
+  return { width: 'auto', paddingLeft: '3px', paddingRight: '5px', borderRadius: '0 10px 10px 0' }
+})
+
 const buttonSize = computed(() => {
   if (interfaceStore.is2xl) return 72
   if (interfaceStore.isXl) return 66
@@ -506,6 +514,16 @@ const menuLabelSize = computed(() => {
   if (interfaceStore.isSm) return 'text-[10px]'
   if (interfaceStore.isXs && windowHeight.value >= 700) return 'text-[12px]'
   return 'text-[10px]'
+})
+
+const simplifiedMenuLabelSize = computed(() => {
+  if (interfaceStore.is2xl) return 'text-[13.5px]'
+  if (interfaceStore.isXl) return 'text-[12.6px]'
+  if (interfaceStore.isLg) return 'text-[11.7px]'
+  if (interfaceStore.isMd) return 'text-[10.8px]'
+  if (interfaceStore.isSm) return 'text-[9px]'
+  if (interfaceStore.isXs && windowHeight.value >= 700) return 'text-[10.8px]'
+  return 'text-[9px]'
 })
 
 const glassMenuStyles = computed(() => ({

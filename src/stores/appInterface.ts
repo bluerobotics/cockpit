@@ -59,6 +59,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     mainMenuStyleTrigger: useBlueOsStorage('cockpit-main-menu-style', 'center-left'),
     componentToHighlight: 'none',
     isMainMenuVisible: false,
+    mainMenuActualWidth: 0,
     mainMenuCurrentStep: 1,
     currentSubMenuName: ref<SubMenuName | null>(null),
     currentSubMenuComponentName: ref<SubMenuComponentName | null>(null),
