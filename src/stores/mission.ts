@@ -56,6 +56,12 @@ export const useMissionStore = defineStore('mission', () => {
   const userLastMapZoom = useBlueOsStorage<number>('cockpit-user-last-map-zoom', DEFAULT_MAP_ZOOM)
   const followVehicleOnMap = useBlueOsStorage<boolean>('cockpit-map-follow-vehicle', false)
   const draftMission = useBlueOsStorage('cockpit-draft-mission', {})
+  // Snapshot of the last mission uploaded to the vehicle, kept so users can restore it for quick edits
+  // even across sessions, without re-downloading it from the (possibly deployed) vehicle.
+  const lastUploadedMission = useBlueOsStorage<CockpitMission | Record<string, never>>(
+    'cockpit-last-uploaded-mission',
+    {}
+  )
   const vehicleMission = useBlueOsStorage<Waypoint[]>('cockpit-vehicle-mission', [])
   const vehicleMissionRevision = useBlueOsStorage<number>('cockpit-vehicle-mission-rev', 0)
   const alwaysSwitchToFlightMode = useBlueOsStorage('cockpit-mission-always-switch-to-flight-mode', false)
@@ -370,6 +376,10 @@ export const useMissionStore = defineStore('mission', () => {
 
   const clearDraft = (): void => {
     draftMission.value = {}
+  }
+
+  const setLastUploadedMission = (mission: CockpitMission): void => {
+    lastUploadedMission.value = mission
   }
 
   const bumpVehicleMissionRevision = (wps: Waypoint[]): void => {
@@ -780,8 +790,10 @@ export const useMissionStore = defineStore('mission', () => {
     requestMapOverlayFocus,
     persistDraft,
     clearDraft,
+    setLastUploadedMission,
     bumpVehicleMissionRevision,
     draftMission,
+    lastUploadedMission,
     vehicleMission,
     vehicleMissionRevision,
     alwaysSwitchToFlightMode,

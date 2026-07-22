@@ -129,8 +129,13 @@
     </div>
     <div
       v-show="!interfaceStore.isMainMenuVisible"
+      ref="missionToolboxRef"
       class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-y-auto z-[200]"
-      :style="[interfaceStore.globalGlassMenuStyles, { height: 'auto', maxHeight: calculatedHeight, width: '320px' }]"
+      :style="[
+        interfaceStore.globalGlassMenuStyles,
+        { height: 'auto', maxHeight: calculatedHeight, width: '320px' },
+        missionToolboxPinnedTop !== null ? { top: `${missionToolboxPinnedTop}px` } : {},
+      ]"
     >
       <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
         <button
@@ -386,7 +391,7 @@
         </div>
 
         <div>
-          <div class="flex w-full justify-between my-2 px-1">
+          <div class="flex w-full justify-between my-2 px-3">
             <v-tooltip location="top" text="Undo (Ctrl+Z / Cmd+Z)">
               <template #activator="{ props }">
                 <v-btn
@@ -456,37 +461,100 @@
             </v-tooltip>
           </div>
         </div>
-        <v-divider v-if="isCreatingSimplePath || isCreatingSurvey" class="my-2" />
-        <button
+        <div
           v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
-          :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
-          :class="{
-            'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-              missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline,
-          }"
-          class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
-          @click="uploadMissionToVehicle"
+          class="flex flex-row items-stretch gap-2 m-2 mt-2"
         >
-          UPLOAD MISSION TO VEHICLE
-        </button>
-        <button
-          v-if="missionStore.currentPlanningWaypoints.length > 0"
-          :disabled="loading"
-          class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-          @click="openCLearMissionDialog"
+          <button
+            :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
+            :class="{
+              'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
+                missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline,
+            }"
+            class="flex-1 min-w-0 h-[40px] py-2 px-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
+            @click="uploadMissionToVehicle"
+          >
+            UPLOAD MISSION TO VEHICLE
+          </button>
+          <v-tooltip
+            location="top"
+            :text="missionActionsMenuExpanded ? 'Hide mission actions' : 'Show mission actions'"
+          >
+            <template #activator="{ props }">
+              <button
+                v-bind="props"
+                :aria-label="missionActionsMenuExpanded ? 'Hide mission actions' : 'Show mission actions'"
+                class="relative flex items-center justify-center h-[40px] py-2 px-1 rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+                @click="toggleMissionActionsMenu"
+              >
+                <span
+                  v-if="hasLastUploadedMission && !missionActionsMenuExpanded"
+                  class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#3B78A8]"
+                />
+                <v-icon
+                  size="28"
+                  class="text-white transition-transform duration-200"
+                  :class="{ 'rotate-180': missionActionsMenuExpanded }"
+                >
+                  mdi-menu-down
+                </v-icon>
+              </button>
+            </template>
+          </v-tooltip>
+        </div>
+        <v-expand-transition
+          v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
+          @after-enter="clampMissionToolboxWithinView"
+          @after-leave="onMissionActionsMenuCollapsed"
         >
-          <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>CLEAR CURRENT MISSION</p>
-        </button>
-        <button
-          :disabled="loading || !vehicleStore.isVehicleOnline"
-          class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-          :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
-          @click="downloadMissionFromVehicle"
-        >
-          <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
-        </button>
+          <div v-if="missionActionsMenuExpanded" class="flex flex-col">
+            <v-divider class="mx-2 my-1 opacity-5" />
+            <button
+              :disabled="loading"
+              class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+              @click="openCLearMissionDialog"
+            >
+              <v-progress-circular v-if="loading" size="20" class="py-4" />
+              <p v-else>CLEAR CURRENT MISSION</p>
+            </button>
+            <button
+              :disabled="loading || !vehicleStore.isVehicleOnline"
+              class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+              :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+              @click="downloadMissionFromVehicle"
+            >
+              <v-progress-circular v-if="loading" size="20" class="py-4" />
+              <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
+            </button>
+            <button
+              v-if="hasLastUploadedMission"
+              :disabled="loading"
+              class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+              @click="restoreLastUploadedMission"
+            >
+              RESTORE LAST UPLOADED MISSION
+            </button>
+          </div>
+        </v-expand-transition>
+        <div v-else-if="!isCreatingSimplePath && !isCreatingSurvey" class="flex flex-col gap-2 m-2 mt-2">
+          <button
+            :disabled="loading || !vehicleStore.isVehicleOnline"
+            class="h-auto py-2 px-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+            @click="downloadMissionFromVehicle"
+          >
+            <v-progress-circular v-if="loading" size="20" class="py-4" />
+            <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
+          </button>
+          <button
+            v-if="hasLastUploadedMission"
+            :disabled="loading"
+            class="h-auto py-2 px-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            @click="restoreLastUploadedMission"
+          >
+            RESTORE LAST UPLOADED MISSION
+          </button>
+        </div>
       </div>
     </div>
     <v-tooltip location="top" text="Switch to Flight mode">
@@ -707,6 +775,7 @@ import {
   setSurveyAreaSquareMeters,
   useMissionEstimates,
 } from '@/composables/useMissionEstimates'
+import { useMissionOperations } from '@/composables/useMissionOperations'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -861,12 +930,14 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
+    // Keep the uploaded mission on the planner (draft) and store a restorable snapshot so quick edits
+    // don't require re-downloading it from the vehicle.
+    missionStore.setLastUploadedMission(buildCurrentMissionSnapshot())
     const message = 'Go to Flight Mode and click the “play” button to start the mission.'
 
     if (missionStore.alwaysSwitchToFlightMode) {
       router.push('/')
       missionStore.bumpVehicleMissionRevision(missionItemsToUpload)
-      missionStore.clearDraft()
       return
     }
     showDialog({
@@ -897,7 +968,6 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     })
     hasUploadedMission.value = true
     missionStore.bumpVehicleMissionRevision(missionItemsToUpload)
-    missionStore.clearDraft()
   } catch (error) {
     showDialog({
       variant: 'error',
@@ -3788,8 +3858,11 @@ const buildCurrentMissionSnapshot = (): CockpitMission => ({
     // typed but hasn't committed back to the store yet (e.g. by uploading the mission).
     defaultCruiseSpeed: localCruiseSpeed.value,
   },
-  waypoints: structuredClone(toRaw(missionStore.currentPlanningWaypoints)),
-  surveys: structuredClone(toRaw(missionStore.currentPlanningSurveys)),
+  // Editing a waypoint (e.g. moveWaypoint) re-injects Vue reactive proxies into the arrays, which
+  // toRaw only unwraps at the top level and structuredClone then chokes on. A JSON round-trip strips
+  // that reactivity at every depth, matching how the store already serializes these same arrays.
+  waypoints: JSON.parse(JSON.stringify(missionStore.currentPlanningWaypoints)),
+  surveys: JSON.parse(JSON.stringify(missionStore.currentPlanningSurveys)),
 })
 
 const currentMissionSnapshot = ref<CockpitMission>(buildCurrentMissionSnapshot())
@@ -3821,6 +3894,51 @@ const currentMissionEstimatesSnapshot = computed<MissionEstimatesSnapshot>(() =>
 const openMissionLibrary = (): void => {
   logUserAction('Opened the mission library')
   interfaceStore.missionLibraryVisibility = true
+}
+
+const { hasLastUploadedMission, restoreLastUploadedMission } = useMissionOperations({
+  loadDraftMission,
+  showDialog,
+  closeDialog,
+  openSnackbar,
+})
+
+const missionToolboxRef = ref<HTMLElement | null>(null)
+const missionActionsMenuExpanded = ref(false)
+// While the actions menu is open the toolbox is pinned to its current top so it grows downward instead
+// of re-centering (which would shove the whole toolbox up); null lets it re-center at rest.
+const missionToolboxPinnedTop = ref<number | null>(null)
+
+const toggleMissionActionsMenu = (): void => {
+  const willOpen = !missionActionsMenuExpanded.value
+  logUserAction(`${willOpen ? 'Opened' : 'Closed'} the mission actions menu`)
+
+  if (willOpen && missionToolboxRef.value) {
+    missionToolboxPinnedTop.value = missionToolboxRef.value.offsetTop
+  }
+
+  missionActionsMenuExpanded.value = willOpen
+}
+
+// Shift the pinned toolbox up only if the expanded panel would overflow the bottom of the available
+// area, never past the top bar, so it opens downward whenever there is room. Runs on the expand
+// transition's after-enter so the panel is measured at full height, not mid-animation.
+const clampMissionToolboxWithinView = (): void => {
+  const el = missionToolboxRef.value
+  if (!el || missionToolboxPinnedTop.value === null) return
+
+  const topBound = widgetStore.currentTopBarHeightPixels + 10
+  const bottomBound = windowHeight.value - widgetStore.currentBottomBarHeightPixels - 10
+  const rect = el.getBoundingClientRect()
+
+  const bottomOverflow = rect.bottom - bottomBound
+  if (bottomOverflow <= 0) return
+
+  missionToolboxPinnedTop.value -= Math.min(bottomOverflow, rect.top - topBound)
+}
+
+const onMissionActionsMenuCollapsed = (): void => {
+  missionToolboxPinnedTop.value = null
 }
 
 const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
