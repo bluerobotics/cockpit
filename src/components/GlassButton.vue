@@ -1,7 +1,8 @@
 <template>
   <div
-    class="flex flex-col items-center w-full 2xl:gap-y-1 xl: gap-y-1 py-2"
+    class="flex w-full 2xl:gap-y-1 xl:gap-y-1 py-2"
     :class="[
+      isHorizontal ? 'flex-row items-center justify-start gap-x-2 px-2' : 'flex-col items-center',
       isUncontained && !isSelected ? (isNoEffects ? '' : 'mark-on-hover') : '',
       isSelected === true ? 'frosted-button-selected' : '',
       isDisabled ? 'opacity-[0.4] cursor-default' : 'opacity-100 cursor-pointer',
@@ -9,8 +10,9 @@
   >
     <button
       :disabled="isDisabled"
-      class="flex flex-col items-center justify-center mt-3 -mb-2"
+      class="flex flex-col items-center justify-center"
       :class="[
+        isHorizontal ? '' : 'mt-3 -mb-2',
         isUncontained ? 'no-glass' : 'frosted-button',
         { 'frosted-button-disabled': isDisabled, 'rounded-full': isRound },
         buttonClass,
@@ -38,8 +40,13 @@
     </button>
     <div
       v-if="isRound || isUncontained"
-      class="flex justify-center align-center text-center select-none text-white px-4 font-semibold leading-[17px]"
-      :class="[labelClass, interfaceStore.isOnPhoneScreen ? 'mt-0' : 'mt-2']"
+      class="flex align-center select-none text-white font-semibold leading-[17px]"
+      :class="[
+        labelClass,
+        isHorizontal
+          ? 'justify-start text-left whitespace-nowrap'
+          : ['justify-center text-center px-4', interfaceStore.isOnPhoneScreen ? 'mt-0' : 'mt-2'],
+      ]"
     >
       {{ label }}
     </div>
@@ -105,6 +112,10 @@ const props = defineProps<{
    * No effects on hover.
    */
   noEffects?: boolean
+  /**
+   * Lay the icon and label out in a row (icon left, label right) instead of stacking the label below.
+   */
+  horizontal?: boolean
 }>()
 
 const label = computed(() => props.label)
@@ -117,6 +128,7 @@ const isUncontained = computed(() => props.variant === 'uncontained')
 const calculatedIconSize = computed(() => (isRound.value ? (props.width || 26) * 0.7 : props.iconSize))
 const iconClass = computed(() => props.iconClass)
 const isNoEffects = computed(() => props.noEffects)
+const isHorizontal = computed(() => props.horizontal)
 
 const buttonStyle = computed(() => ({
   width: props.width || (props.iconSize || 24) * 1.1,
