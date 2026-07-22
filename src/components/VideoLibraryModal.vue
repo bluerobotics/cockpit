@@ -722,6 +722,7 @@ import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref,
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { useVideoChunkManager } from '@/composables/videoChunkManager'
+import { createThumbnail } from '@/libs/snapshot'
 import { formatBytes, formatDate, isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useSnapshotStore } from '@/stores/snapshot'
@@ -1159,7 +1160,7 @@ const fetchPictures = async (): Promise<void> => {
           const fullBlob = (await snapshotStore.snapshotStorage.getItem(filename)) as Blob | null
           if (fullBlob) {
             try {
-              thumbBlob = await snapshotStore.createThumbnail(fullBlob, 200, 113)
+              thumbBlob = await createThumbnail(fullBlob, 200, 113)
               await snapshotStore.snapshotThumbStorage.setItem(thumbKey, thumbBlob)
             } catch (err) {
               console.error(`Failed to create thumbnail for "${filename}"`, err)
