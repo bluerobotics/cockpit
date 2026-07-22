@@ -149,11 +149,13 @@ const openWidgetConfig = (): void => {
   widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen = true
 }
 
-const contextMenuItems = computed(() =>
-  isWidgetConfigurable[widget.value.component as WidgetType]
+const contextMenuItems = computed(() => {
+  const registered = widgetStore.widgetManagerVars(widget.value.hash).contextMenuItems ?? []
+  const optionsItem = isWidgetConfigurable[widget.value.component as WidgetType]
     ? [{ item: 'Options', action: openWidgetConfig, icon: 'mdi-cog' }]
     : []
-)
+  return [...registered, ...optionsItem]
+})
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 

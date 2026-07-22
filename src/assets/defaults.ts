@@ -50,6 +50,7 @@ export const defaultWidgetManagerVars: WidgetManagerVars = {
   lastNonMaximizedWidth: 0.2,
   lastNonMaximizedHeight: 0.36,
   highlighted: false,
+  contextMenuItems: [],
 }
 
 export const defaultMiniWidgetManagerVars: MiniWidgetManagerVars = {

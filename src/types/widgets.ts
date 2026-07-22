@@ -1,5 +1,6 @@
 import { DataLakeVariable } from '@/types/data-lake'
 import { ProtocolAction } from '@/types/joystick'
+import type { ContextMenuItem } from '@/types/user-interface'
 
 import type { Point2D, SizeRect2D } from './general'
 
@@ -105,6 +106,7 @@ export enum WidgetType {
   IFrame = 'IFrame',
   ImageView = 'ImageView',
   Map = 'Map',
+  MiniMap = 'MiniMap',
   MiniWidgetsBar = 'MiniWidgetsBar',
   MissionControlPanel = 'MissionControlPanel',
   Plotter = 'Plotter',
@@ -635,6 +637,10 @@ export type WidgetManagerVars = {
    * Wether thewidget should be highlited or not
    */
   highlighted: boolean
+  /**
+   * Context-menu items the widget contributes to the WidgetHugger menu, kept in sync by the widget itself
+   */
+  contextMenuItems?: ContextMenuItem[]
 }
 
 /**
@@ -873,6 +879,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.IFrame]: true,
   [WidgetType.ImageView]: true,
   [WidgetType.Map]: true,
+  [WidgetType.MiniMap]: true,
   [WidgetType.MiniWidgetsBar]: false,
   [WidgetType.Plotter]: true,
   [WidgetType.URLVideoPlayer]: true,
@@ -915,6 +922,7 @@ export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
   [WidgetType.IFrame]: false,
   [WidgetType.ImageView]: false,
   [WidgetType.Map]: true,
+  [WidgetType.MiniMap]: false,
   [WidgetType.MiniWidgetsBar]: false,
   [WidgetType.Plotter]: false,
   [WidgetType.URLVideoPlayer]: false,
@@ -936,6 +944,7 @@ export const widgetDefaultSizes: Partial<Record<WidgetType, SizeRect2D>> = {
   [WidgetType.IFrame]: { width: 0.4, height: 0.4 },
   [WidgetType.ImageView]: { width: 0.3, height: 0.3 },
   [WidgetType.Map]: { width: 1, height: 1 },
+  [WidgetType.MiniMap]: { width: 0.18, height: 0.32 },
   [WidgetType.MiniWidgetsBar]: { width: 0.2, height: 0.1 },
   [WidgetType.Plotter]: { width: 0.4, height: 0.3 },
   [WidgetType.URLVideoPlayer]: { width: 0.5, height: 0.4 },

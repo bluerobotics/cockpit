@@ -14,7 +14,7 @@
           :style="[
             interfaceStore.globalGlassMenuStyles,
             { background: '#33333333', border: '1px solid #FFFFFF44' },
-            { width: width },
+            { minWidth: width, width: 'max-content' },
           ]"
         >
           <template v-if="menuItems">
@@ -24,7 +24,7 @@
               class="flex justify-between items-center px-4 h-10 hover:bg-[#FFFFFF11] cursor-pointer text-[14px] border-b-[1px] border-[#FFFFFF11]"
               @click="handleItemClick(item)"
             >
-              <p>{{ item.item }}</p>
+              <p class="whitespace-nowrap">{{ item.item }}</p>
               <v-icon v-if="item.icon" :icon="item.icon" size="16" class="text-[#FFFFFF88] ml-4" />
             </div>
           </template>

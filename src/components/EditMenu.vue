@@ -561,6 +561,7 @@ import DoItYourselfImg from '@/assets/widgets/DoItYourself.png'
 import IFrameImg from '@/assets/widgets/IFrame.png'
 import ImageViewImg from '@/assets/widgets/ImageView.png'
 import MapImg from '@/assets/widgets/Map.png'
+import MiniMapImg from '@/assets/widgets/MiniMap.png'
 import MiniWidgetsBarImg from '@/assets/widgets/MiniWidgetsBar.png'
 import MissionControlPanelImg from '@/assets/widgets/MissionControlPanel.png'
 import PlotterImg from '@/assets/widgets/Plotter.png'
@@ -774,6 +775,7 @@ const widgetImages = {
   IFrame: IFrameImg,
   ImageView: ImageViewImg,
   Map: MapImg,
+  MiniMap: MiniMapImg,
   MiniWidgetsBar: MiniWidgetsBarImg,
   MissionControlPanel: MissionControlPanelImg,
   Plotter: PlotterImg,
