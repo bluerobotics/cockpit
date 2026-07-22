@@ -47,6 +47,10 @@ export interface EIXFType {
    */
   longitude: number
   /**
+   * Instant the snapshot was captured
+   */
+  capturedAt: Date
+  /**
    * Yaw angle of the vehicle during the snapshot
    */
   yaw?: number

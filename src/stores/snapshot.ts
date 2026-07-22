@@ -9,6 +9,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { app_version } from '@/libs/cosmos'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
+import { formatExifDateTime, formatExifGpsDateStamp, toExifGpsTimeStamp } from '@/libs/snapshot'
 import { isElectron, sanitizeFilenameComponent } from '@/libs/utils'
 import { snapshotStorage, snapshotThumbStorage } from '@/libs/videoStorage'
 import { useMissionStore } from '@/stores/mission'
@@ -56,7 +57,8 @@ export const useSnapshotStore = defineStore('snapshot', () => {
   }
 
   const buildExif = (opts: EIXFType): SnapshotExif => {
-    const { latitude, longitude, yaw, pitch, roll, width, height } = opts
+    const { latitude, longitude, capturedAt, yaw, pitch, roll, width, height } = opts
+    const dateTime = formatExifDateTime(capturedAt)
 
     const jsonComment = {
       vehicle_attitude: {
@@ -69,17 +71,22 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     return {
       '0th': {
         [piexif.ImageIFD.Software]: `Cockpit ${app_version.version} - Blue Robotics`,
+        [piexif.ImageIFD.DateTime]: dateTime,
       },
       'Exif': {
         [piexif.ExifIFD.UserComment]: JSON.stringify(jsonComment),
         [piexif.ExifIFD.PixelXDimension]: width,
         [piexif.ExifIFD.PixelYDimension]: height,
+        [piexif.ExifIFD.DateTimeOriginal]: dateTime,
+        [piexif.ExifIFD.DateTimeDigitized]: dateTime,
       },
       'GPS': {
         [piexif.GPSIFD.GPSLatitudeRef]: latitude >= 0 ? 'N' : 'S',
         [piexif.GPSIFD.GPSLongitudeRef]: longitude >= 0 ? 'E' : 'W',
         [piexif.GPSIFD.GPSLatitude]: toDMS(Math.abs(latitude)),
         [piexif.GPSIFD.GPSLongitude]: toDMS(Math.abs(longitude)),
+        [piexif.GPSIFD.GPSDateStamp]: formatExifGpsDateStamp(capturedAt),
+        [piexif.GPSIFD.GPSTimeStamp]: toExifGpsTimeStamp(capturedAt),
       },
     }
   }
@@ -230,6 +237,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
     const { yaw, pitch, roll } = vehicleStore.attitude
     const { latitude, longitude } = vehicleStore.coordinates
     const missionName = missionStore.missionName || 'Cockpit'
+    const capturedAt = new Date()
 
     const succeeded: string[] = []
     const failed: string[] = []
@@ -241,6 +249,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
           const wsExif = buildExif({
             latitude,
             longitude,
+            capturedAt,
             yaw,
             pitch,
             roll,
@@ -266,7 +275,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
         let stBlob = await captureStreamFrame(streamName)
         const thumbBlob = await createThumbnail(stBlob, 200, 113)
         const { width, height } = videoStore.getMediaStream(streamName)?.getVideoTracks()[0].getSettings() || {}
-        const stExif = buildExif({ latitude, longitude, yaw, pitch, roll, width, height })
+        const stExif = buildExif({ latitude, longitude, capturedAt, yaw, pitch, roll, width, height })
         stBlob = await maybeEmbedExif(stBlob, stExif)
         const internalStreamName = videoStore.internalStreamNameFromExternal(streamName) ?? streamName
         const filename = snapshotFilename(internalStreamName, missionName)
