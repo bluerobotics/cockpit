@@ -52,6 +52,7 @@ import {
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
+import i18n from '@/plugins/i18n'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import { flattenData } from '../common/data-flattener'
@@ -174,7 +175,10 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
 
     if (!receivedCommandAck) {
       throw Error(
-        `No acknowledgment received for command '${commandMessage.command.type}' before timeout (${timeout / 1000}s).`
+        i18n.global.t("No acknowledgment received for command '{{command}}' before timeout ({{timeout}}s).", {
+          command: commandMessage.command.type,
+          timeout: timeout / 1000,
+        })
       )
     }
 
@@ -1103,7 +1107,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       await sleep(250)
       const timeSinceLastTimeout = new Date().getTime() - timeoutEpoch
       if (timeSinceLastTimeout > timeoutBetweenItems) {
-        const msg = `[Mission download] Timeout reached while fetching mission count.`
+        const msg = i18n.global.t('Timeout reached while fetching mission count.')
         console.error(msg)
         throw Error(msg)
       }
@@ -1124,7 +1128,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
 
     // If the items count is not received, throw an error
     if (itemsCount === undefined) {
-      const msg = '[Mission download] Did not receive number of mission items from vehicle.'
+      const msg = i18n.global.t('Did not receive number of mission items from vehicle.')
       console.error(msg)
       throw Error(msg)
     }
@@ -1146,7 +1150,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       await sleep(1)
       const timeSinceLastTimeout = new Date().getTime() - timeoutEpoch
       if (timeSinceLastTimeout > timeoutBetweenItems) {
-        const msg = `[Mission download] Timeout reached while downloading mission items.`
+        const msg = i18n.global.t('Timeout reached while downloading mission items.')
         console.error(msg)
         throw Error(msg)
       }
@@ -1282,8 +1286,10 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     const resetMode = this.modesAvailable().get(resetModeName)
     if (resetMode === undefined) {
       throw Error(
-        `${resetModeName} mode is not available.
-        Please put the vehicle in ${resetModeName} mode manually so a new mission can be started.`
+        i18n.global.t(
+          '{{mode}} mode is not available. Please put the vehicle in {{mode}} mode manually so a new mission can be started.',
+          { mode: resetModeName }
+        )
       )
     }
 
@@ -1297,7 +1303,9 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     }
 
     if (this.mode() !== resetMode) {
-      throw Error(`Could not put vehicle in ${resetModeName} mode. Please do it manually.`)
+      throw Error(
+        i18n.global.t('Could not put vehicle in {{mode}} mode. Please do it manually.', { mode: resetModeName })
+      )
     }
   }
 
@@ -1316,7 +1324,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       await sleep(100)
     }
     if (!this.isArmed) {
-      throw Error('Could not arm the vehicle. Please arm it manually.')
+      throw Error(i18n.global.t('Could not arm the vehicle. Please arm it manually.'))
     }
 
     await this.sendCommandLong(MavCmd.MAV_CMD_MISSION_START, 0, 0)
@@ -1404,7 +1412,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       console.debug(`[Mission upload] Time since last timeout: ${timeSinceLastTimeout / 1000}s`)
       if (timeSinceLastTimeout > timeoutBetweenItems) {
         console.error('[Mission upload] Timeout reached while uploading mission.')
-        throw Error(`Timeout reached while uploading mission.`)
+        throw Error(i18n.global.t('Timeout reached while uploading mission.'))
       }
 
       // Check if the vehicle has requested a mission item
@@ -1463,10 +1471,10 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
 
     if (missionAck === undefined) {
       console.error('[Mission upload] Mission acknowledgment is undefined. Upload failed.')
-      throw Error('Did not receive acknowledgment of mission upload.')
+      throw Error(i18n.global.t('Did not receive acknowledgment of mission upload.'))
     } else if (missionAck !== MavMissionResult.MAV_MISSION_ACCEPTED) {
       console.error('[Mission upload] Mission acknowledgment is not MAV_MISSION_ACCEPTED. Upload failed.')
-      throw Error(`Failed uploading mission. Result received: ${missionAck}.`)
+      throw Error(i18n.global.t('Failed uploading mission. Result received: {{result}}.', { result: missionAck }))
     }
 
     loadingCallback(100)

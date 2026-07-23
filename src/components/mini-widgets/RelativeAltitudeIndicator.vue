@@ -8,7 +8,7 @@
           {{ String.fromCharCode(0x20) }} {{ unitAbbreviation[displayUnitPreferences.distance] }}
         </span>
       </div>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">Alt (Rel)</span>
+      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ $t('Alt (Rel)') }}</span>
     </div>
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
@@ -21,7 +21,7 @@
             size="30"
             variant="text"
             class="text-white text-[22px]"
-            aria-label="Close"
+            :aria-label="$t('Close')"
             @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
           >
             <i class="mdi mdi-close"></i>
@@ -30,7 +30,7 @@
         <v-select
           v-if="!configUseCustomAltitudeVariable"
           v-model="configAltitudeVariableId"
-          label="Altitude source"
+          :label="$t('Altitude source')"
           :items="altitudeSourceOptions"
           item-title="title"
           item-value="value"
@@ -46,7 +46,7 @@
           :items="availableDataLakeNumberVariables"
           item-title="name"
           item-value="id"
-          label="Data lake variable"
+          :label="$t('Data lake variable')"
           hint="Select any numeric data lake variable"
           persistent-hint
           theme="dark"
@@ -58,7 +58,7 @@
         />
         <v-checkbox
           v-model="configUseCustomAltitudeVariable"
-          label="Use custom data lake variable"
+          :label="$t('Use custom data lake variable')"
           hide-details
           @update:model-value="onUseCustomAltitudeVariableToggled"
         />

@@ -98,7 +98,7 @@
         :style="[interfaceStore.globalGlassMenuStyles, { maxHeight: '300px', overflowY: 'auto' }]"
       >
         <template v-for="(poi, index) in pois" :key="poi.id">
-          <v-tooltip location="left" text="Click to center, double-click to track">
+          <v-tooltip location="left" :text="$t('Click to center, double-click to track')">
             <template #activator="{ props: itemProps }">
               <v-list-item
                 v-bind="itemProps"
@@ -119,6 +119,7 @@
 
 <script setup lang="ts">
 import { type StyleValue, computed, defineModel } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
@@ -157,6 +158,7 @@ const emit = defineEmits<{
 
 const interfaceStore = useAppInterfaceStore()
 const { resolvedPointsOfInterest: pois } = usePointsOfInterest()
+const { t } = useI18n()
 
 const poiTargetKey = (poiId: string): string => `poi:${poiId}`
 
@@ -222,33 +224,33 @@ const disabledButtonColor = '#FFFFFF44'
 const centerActivatorTooltipText = computed(() => {
   if (isTrackingAnyPoi.value) {
     const tracked = pois.value.find((poi) => poiTargetKey(poi.id) === props.followerTarget)
-    return `Tracking "${tracked?.name ?? 'a point of interest'}". Open to change target.`
+    return `Tracking "${tracked?.name ?? t('a point of interest')}". Open to change target.`
   }
-  if (props.followerTarget === WhoToFollow.HOME) return 'Tracking home position. Open to change target.'
-  if (props.followerTarget === WhoToFollow.VEHICLE) return 'Tracking vehicle position. Open to change target.'
-  return 'Center map on home, vehicle or mission.'
+  if (props.followerTarget === WhoToFollow.HOME) return t('Tracking home position. Open to change target.')
+  if (props.followerTarget === WhoToFollow.VEHICLE) return t('Tracking vehicle position. Open to change target.')
+  return t('Center map on home, vehicle or mission.')
 })
 
 const centerMissionButtonTooltipText = computed(() => {
-  if (!props.hasMissionWaypoints) return 'Cannot center map on mission (no waypoints available).'
-  return 'Click to center the map on the current mission.'
+  if (!props.hasMissionWaypoints) return t('Cannot center map on mission (no waypoints available).')
+  return t('Click to center the map on the current mission.')
 })
 
 const centerHomeButtonTooltipText = computed(() => {
-  if (props.home === undefined) return 'Cannot center map on home (home position undefined).'
-  if (props.followerTarget === WhoToFollow.HOME) return 'Tracking home position. Click to stop tracking.'
-  return 'Click once to center on home or twice to track it.'
+  if (props.home === undefined) return t('Cannot center map on home (home position undefined).')
+  if (props.followerTarget === WhoToFollow.HOME) return t('Tracking home position. Click to stop tracking.')
+  return t('Click once to center on home or twice to track it.')
 })
 
 const centerVehicleButtonTooltipText = computed(() => {
-  if (!props.isVehicleOnline) return 'Cannot center map on vehicle (vehicle offline).'
-  if (props.vehiclePosition === undefined) return 'Cannot center map on vehicle (vehicle position undefined).'
-  if (props.followerTarget === WhoToFollow.VEHICLE) return 'Tracking vehicle position. Click to stop tracking.'
-  return 'Click once to center on vehicle or twice to track it.'
+  if (!props.isVehicleOnline) return t('Cannot center map on vehicle (vehicle offline).')
+  if (props.vehiclePosition === undefined) return t('Cannot center map on vehicle (vehicle position undefined).')
+  if (props.followerTarget === WhoToFollow.VEHICLE) return t('Tracking vehicle position. Click to stop tracking.')
+  return t('Click once to center on vehicle or twice to track it.')
 })
 
 const centerPoiButtonTooltipText = computed(() => {
-  if (pois.value.length === 0) return 'No points of interest to center on.'
+  if (pois.value.length === 0) return t('No points of interest to center on.')
   return 'Center on a point of interest.'
 })
 </script>

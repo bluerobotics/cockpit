@@ -1,28 +1,35 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>General configuration</template>
+    <template #title>{{ $t('General configuration') }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>User settings</template>
+          <template #title>{{ $t('User settings') }}</template>
           <template #info>
             <p class="w-full">
-              User related configuration. Here you can set the user that is currently set for this device as well as
-              create a new user account.
+              {{
+                $t(
+                  'User related configuration. Here you can set the user that is currently set for this device as well as create a new user account.'
+                )
+              }}
               <br />
               <br />
-              <span class="font-semibold">Pirate mode</span> allows Cockpit to expose advanced features, like setting
-              the frequency of MAVLink messages. Take care when enabling this mode.
+              <span class="font-semibold">{{ $t('Pirate mode') }}</span>
+              {{
+                $t(
+                  'Pirate mode allows Cockpit to expose advanced features, like setting the frequency of MAVLink messages. Take care when enabling this mode.'
+                )
+              }}
             </p>
           </template>
           <template #content>
             <div class="flex flex-col w-full items-start">
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
-                  <span class="mr-2">Current user:</span>
+                  <span class="mr-2">{{ $t('Current user:') }}</span>
                   <span class="font-semibold text-2xl cursor-pointer" @click="manageUsers">{{
                     missionStore.username
                   }}</span>
@@ -35,23 +42,51 @@
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
                     @click="manageUsers"
-                    >Manage users</v-btn
+                    >{{ $t('Manage users') }}</v-btn
                   >
+                </div>
+              </div>
+              <v-divider class="w-full opacity-[0.08]" />
+              <div class="flex flex-row w-full items-center py-5 gap-x-4">
+                <div class="flex w-[33%]">{{ $t('Language:') }}</div>
+                <div class="flex w-[66%]">
+                  <v-select
+                    v-model="currentLocale"
+                    :items="languageOptions"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    class="max-w-[200px] glass-select"
+                    theme="dark"
+                    :menu-props="{
+                      contentClass: 'glass-menu',
+                    }"
+                    @update:model-value="changeLanguage"
+                  />
                 </div>
               </div>
               <v-divider class="w-full opacity-[0.08]" />
               <div class="flex flex-row w-full items-center justify-between py-3 gap-x-2 gap-y-3 flex-wrap">
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
-                  Show tutorial
+                  {{ $t('Show tutorial') }}
+                </v-btn>
+                <v-btn
+                  v-if="isElectron()"
+                  size="x-small"
+                  class="bg-[#FFFFFF22] shadow-1"
+                  variant="flat"
+                  @click="openCockpitFolder"
+                >
+                  {{ $t('Open Cockpit folder') }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openCockpitSettingsDialog">
-                  Manage Cockpit settings
+                  {{ $t('Manage Cockpit settings') }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="togglePirateMode">
-                  {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
+                  {{ interfaceStore.pirateMode ? $t('Disable pirate mode') : $t('Enable pirate mode') }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openExternalFeaturesModal">
-                  Extension features
+                  {{ $t('Extension features') }}
                 </v-btn>
                 <v-btn
                   size="x-small"
@@ -60,12 +95,12 @@
                   prepend-icon="mdi-shield-lock-outline"
                   @click="openDataPrivacyModal"
                 >
-                  Shared Data
+                  {{ $t('Shared Data') }}
                 </v-btn>
               </div>
               <v-divider v-if="isElectron()" class="w-full opacity-[0.08]" />
               <div v-if="isElectron()" class="flex flex-col w-full py-4 gap-1">
-                <span class="text-md mb-1 text-slate-200">Cockpit folder location:</span>
+                <span class="text-md mb-1 text-slate-200">{{ $t('Cockpit folder location:') }}</span>
                 <div class="flex items-center gap-6">
                   <v-tooltip
                     :text="cockpitFolderPath"
@@ -104,7 +139,7 @@
                     variant="flat"
                     @click="openCockpitFolder"
                   >
-                    Open folder
+                    {{ $t('Open Cockpit folder') }}
                   </v-btn>
                 </div>
               </div>
@@ -113,9 +148,9 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle network connection (global address)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info>Sets the network address for device communication. E.g: blueos.local</template>
+          <template #title>{{ $t('Vehicle network connection (global address)') }}</template>
+          <template #subtitle>{{ $t('Current address') }}: {{ mainVehicleStore.globalAddress }}</template>
+          <template #info>{{ $t('Sets the network address for device communication. E.g: blueos.local') }}</template>
           <template #content>
             <v-btn
               v-if="isElectron()"
@@ -124,7 +159,7 @@
               variant="flat"
               @click="openVehicleDiscoveryDialog"
             >
-              Search for vehicles
+              {{ $t('Search for vehicles') }}
             </v-btn>
             <v-form
               ref="globalAddressForm"
@@ -147,14 +182,14 @@
                   variant="filled"
                   type="input"
                   density="compact"
-                  hint="Address of the Vehicle. E.g: blueos.local"
+                  :hint="$t('Address of the Vehicle. E.g: blueos.local')"
                   hide-details
                   class="w-[80%]"
                   :rules="[isValidHostAddress, isValidConnectionURI]"
                   @click:append-inner="resetGlobalAddress"
                 >
                   <template #append-inner>
-                    <v-icon v-tooltip.bottom="'Reset global address'" color="white" @click="resetGlobalAddress">
+                    <v-icon v-tooltip.bottom="$t('Reset global address')" color="white" @click="resetGlobalAddress">
                       mdi-restore
                     </v-icon>
                   </template>
@@ -167,19 +202,23 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('Apply') }}
                 </v-btn>
               </div>
             </v-form>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>MAVLink2REST URI</template>
+          <template #title>{{ $t('MAVLink2REST URI') }}</template>
           <template #subtitle>
-            Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
-            Status:
+            {{ $t('Current address') }}: {{ ConnectionManager.mainConnection()?.uri().toString() ?? $t('None') }}<br />
+            {{ $t('Status') }}:
             {{
-              vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
+              vehicleConnected
+                ? $t('connected')
+                : vehicleConnected === undefined
+                ? $t('connecting...')
+                : $t('failed to connect')
             }}
           </template>
           <template #content>
@@ -201,12 +240,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a Mavlink2Rest"
+                    :hint="$t('URI of a Mavlink2Rest')"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="$t('Reset to default')"
                         color="white"
                         :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                         @click="resetMainVehicleConnectionURI"
@@ -223,7 +262,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('Apply') }}
                 </v-btn>
               </div>
               <div class="flex justify-end mt-6">
@@ -233,13 +272,13 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="$t('Enable custom')"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? $t('Enabled') : $t('Disabled') }}
                   </div>
                 </div>
               </div>
@@ -247,8 +286,10 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Video connection (WebRTC)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
+          <template #title>{{ $t('Video connection (WebRTC)') }}</template>
+          <template #subtitle
+            >{{ $t('Current address') }}: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template
+          >
           <template #content>
             <v-form
               ref="webRTCSignallingForm"
@@ -267,12 +308,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a WebRTC Signalling Server URI"
+                    :hint="$t('URI of a WebRTC Signalling Server URI')"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="$t('Reset to default')"
                         color="white"
                         :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
                         @click="resetWebRTCSignallingURI"
@@ -289,7 +330,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ $t('Apply') }}
                 </v-btn>
               </div>
               <div>
@@ -299,13 +340,13 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="$t('Enable custom')"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? $t('Enabled') : $t('Disabled') }}
                   </div>
                 </div>
               </div>
@@ -313,7 +354,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Custom WebRTC configuration</template>
+          <template #title>{{ $t('Custom WebRTC configuration') }}</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
               <v-textarea
@@ -321,9 +362,9 @@
                 v-model="customRtcConfiguration"
                 :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
                 variant="outlined"
-                label="Custom WebRTC Configuration"
+                :label="$t('Custom WebRTC Configuration')"
                 :rows="6"
-                hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
+                :hint="rtcConfigHint"
                 class="w-full"
               />
               <div class="flex flex-col justify-around align-center w-[100px] -mr-6">
@@ -335,19 +376,19 @@
                   type="submit"
                   @click="handleCustomRtcConfiguration"
                 >
-                  Apply
+                  {{ $t('Apply') }}
                 </v-btn>
 
                 <div class="flex flex-col align-end text-[10px] -mt-8">
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="$t('Enable custom')"
                     class="-mt-5 bg-transparent"
                     rounded="lg"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? $t('Enabled') : $t('Disabled') }}
                   </div>
                 </div>
               </div>
@@ -355,16 +396,17 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Generic WebSocket connections</template>
+          <template #title>{{ $t('Generic WebSocket connections') }}</template>
           <template #info>
             <div class="w-full">
-              <p>Connect to external WebSocket servers to receive data and inject it into the data-lake.</p>
+              <p>{{ $t('Connect to external WebSocket servers to receive data and inject it into the data-lake.') }}</p>
               <ul class="list-disc list-inside mt-2">
                 <li>
-                  Messages should be in the format <span class="font-mono">variableName=value</span>, one per message.
+                  {{ $t('Messages should be in the format') }}
+                  <span class="font-mono">variableName=value</span>, {{ $t('one per message') }}.
                 </li>
                 <li>
-                  You can use data-lake variables to compose the URL, for example:
+                  {{ $t('You can use data-lake variables to compose the URL, for example:') }}
                   <span class="font-mono">{{ exampleGenericWebSocketUrl }}</span>
                 </li>
               </ul>
@@ -389,7 +431,9 @@
                   <v-btn icon="mdi-close" size="x-small" variant="text" @click="removeGenericWebSocket(url)" />
                 </div>
               </div>
-              <div v-else class="text-sm opacity-60 mb-4">No connections configured.</div>
+              <div v-else class="text-sm opacity-60 mb-4">
+                {{ $t('No connections configured.') }}
+              </div>
 
               <!-- Add new connection -->
               <div class="flex justify-start items-center">
@@ -410,27 +454,21 @@
                   variant="text"
                   @click="addGenericWebSocket"
                 >
-                  Add connection
+                  {{ $t('Add connection') }}
                 </v-btn>
               </div>
             </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle connection timeouts</template>
+          <template #title>{{ $t('Vehicle connection timeouts') }}</template>
           <template #info>
             <p class="w-full">
-              Heartbeat timeout: Time without heartbeats before Cockpit considers the vehicle offline. Increase this
-              value when using high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take
-              longer than the default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.
+              {{ $t('Heartbeat timeout: Time without heartbeats before Cockpit considers the vehicle offline. Increase this value when using high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take longer than the default 5 seconds to arrive. Unrelated to the autopilot\'s GCS (heartbeat) failsafe.') }}
             </p>
             <br />
             <p class="w-full">
-              Watchdog timeout: Time the MAVLink websocket may stay open without receiving any message before Cockpit
-              forcibly recycles it and reconnects. This is the recovery threshold, not the offline indicator: setting it
-              lower than the heartbeat timeout (above) means a brief link drop can be silently recovered before Cockpit
-              ever flips to "vehicle offline". On high-latency links where short stalls are normal, raise this value so
-              the socket is not torn down on every minor delivery delay.
+              {{ $t('Watchdog timeout: Time the MAVLink websocket may stay open without receiving any message before Cockpit forcibly recycles it and reconnects. This is the recovery threshold, not the offline indicator: setting it lower than the heartbeat timeout (above) means a brief link drop can be silently recovered before Cockpit ever flips to "vehicle offline". On high-latency links where short stalls are normal, raise this value so the socket is not torn down on every minor delivery delay.') }}
             </p>
           </template>
           <template #content>
@@ -439,7 +477,7 @@
               :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'"
             >
               <div class="min-w-0">
-                <div class="mb-1 text-sm">Heartbeat timeout</div>
+                <div class="mb-1 text-sm">{{ $t('Heartbeat timeout') }}</div>
                 <v-form
                   ref="connectionTimeoutForm"
                   v-model="connectionTimeoutFormValid"
@@ -458,7 +496,7 @@
                       :rules="[isValidConnectionTimeout]"
                     >
                       <template #append-inner>
-                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetConnectionTimeout">
+                        <v-icon v-tooltip.bottom="$t('Reset to default')" color="white" @click="resetConnectionTimeout">
                           mdi-restore
                         </v-icon>
                       </template>
@@ -476,7 +514,7 @@
                 </v-form>
               </div>
               <div class="min-w-0">
-                <div class="mb-1 text-sm">Watchdog timeout</div>
+                <div class="mb-1 text-sm">{{ $t('Watchdog timeout') }}</div>
                 <v-form
                   ref="watchdogTimeoutForm"
                   v-model="watchdogTimeoutFormValid"
@@ -495,7 +533,7 @@
                       :rules="[isValidWatchdogTimeout]"
                     >
                       <template #append-inner>
-                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetWatchdogTimeout">
+                        <v-icon v-tooltip.bottom="$t('Reset to default')" color="white" @click="resetWatchdogTimeout">
                           mdi-restore
                         </v-icon>
                       </template>
@@ -507,7 +545,7 @@
                       variant="text"
                       type="submit"
                     >
-                      Apply
+                      {{ $t('Apply') }}
                     </v-btn>
                   </div>
                 </v-form>
@@ -524,6 +562,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useLocale } from 'vuetify'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
@@ -555,6 +595,39 @@ const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const { openSnackbar } = useSnackbar()
 const { showDialog, closeDialog } = useInteractionDialog()
+const { locale, t } = useI18n()
+const rtcConfigHint = computed(() =>
+  locale.value === 'zh'
+    ? "例如：{ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
+    : "e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
+)
+const { current: vuetifyLocale } = useLocale()
+
+const currentLocale = ref(locale.value)
+const languageOptions = [
+  { title: 'English', value: 'en' },
+  { title: '中文', value: 'zh' },
+]
+
+const changeLanguage = (newLocale: string): void => {
+  locale.value = newLocale
+  vuetifyLocale.value = newLocale === 'zh' ? 'zhHans' : 'en'
+  localStorage.setItem('cockpit-language', newLocale)
+
+  try {
+    if (window.electronAPI?.updateMenuLanguage) {
+      window.electronAPI.updateMenuLanguage(newLocale)
+    }
+  } catch (error) {
+    console.warn('Failed to update Electron menu language:', error)
+  }
+
+  openSnackbar({
+    message: t('Language changed successfully'),
+    variant: 'success',
+    duration: 3000,
+  })
+}
 
 const globalAddressForm = ref()
 const globalAddressFormValid = ref(false)
@@ -590,17 +663,18 @@ const browseCockpitFolder = async (): Promise<void> => {
 
   const selectedName = selected.split(/[/\\]/).filter(Boolean).pop() ?? ''
   showDialog({
-    title: 'Cockpit folder location',
-    message:
-      `The selected folder is not named "Cockpit". Would you like to use ` +
-      `${selected} directly, or create and use a Cockpit subfolder inside it?`,
+    title: t('Cockpit folder location'),
+    message: t(
+      'The selected folder is not named "Cockpit". Would you like to use {selected} directly, or create and use a Cockpit subfolder inside it?',
+      { selected }
+    ),
     variant: 'info',
     persistent: true,
     maxWidth: 700,
     actions: [
-      { text: 'Cancel', size: 'small', action: () => closeDialog() },
+      { text: t('Cancel'), size: 'small', action: () => closeDialog() },
       {
-        text: `Use ${selectedName}`,
+        text: t('Use {name}', { name: selectedName }),
         size: 'small',
         action: () => {
           closeDialog()
@@ -608,7 +682,7 @@ const browseCockpitFolder = async (): Promise<void> => {
         },
       },
       {
-        text: `Use ${selectedName}/Cockpit`,
+        text: t('Use {name}/Cockpit', { name: selectedName }),
         size: 'small',
         action: () => {
           closeDialog()
@@ -858,7 +932,7 @@ const isValidHostAddress = (value: string): boolean | string => {
 const isValidConnectionURI = (value: string): boolean | string => {
   const forbiddenStartStrings = ['http://', 'https://', 'ws://', 'wss://']
   if (forbiddenStartStrings.some((protocol) => value.startsWith(protocol))) {
-    return 'Address should not include protocol (e.g.: "http://", "wss://").'
+    return t('Address should not include protocol (e.g.: "http://", "wss://")')
   }
 
   try {
@@ -1002,7 +1076,7 @@ const openCockpitFolder = (): void => {
     window.electronAPI?.openCockpitFolder()
   } else {
     openSnackbar({
-      message: 'This feature is only available in Cockpit Standalone.',
+      message: t('This feature is only available in Cockpit Standalone.'),
       duration: 3000,
       variant: 'error',
       closeButton: true,
@@ -1013,5 +1087,27 @@ const openCockpitFolder = (): void => {
 <style scoped>
 .uri-input {
   width: 100% !important;
+}
+
+.glass-select :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.glass-select :deep(.v-field:hover) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.glass-select :deep(.v-field--focused) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.glass-select :deep(.v-overlay__content) {
+  background: rgba(30, 30, 30, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
 }
 </style>

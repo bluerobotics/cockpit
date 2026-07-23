@@ -57,14 +57,14 @@
               <div class="flex items-center gap-x-3 shrink-0">
                 <v-switch
                   v-model="overlay.visible"
-                  label="Visible"
+                  :label="$t('Visible')"
                   color="white"
                   hide-details
                   density="compact"
                   base-color="#FFFFFF33"
                 />
                 <v-icon
-                  v-tooltip.bottom="'Center map on overlay'"
+                  v-tooltip.bottom="$t('Center map on overlay')"
                   icon="mdi-image-filter-center-focus"
                   size="18"
                   color="white"
@@ -72,7 +72,7 @@
                   @click="centerOnOverlay(overlay)"
                 />
                 <v-icon
-                  v-tooltip.bottom="'Remove overlay'"
+                  v-tooltip.bottom="$t('Remove overlay')"
                   icon="mdi-trash-can-outline"
                   size="18"
                   color="white"
@@ -85,7 +85,7 @@
               <v-select
                 v-model="overlay.renderMode"
                 :items="renderModeOptions"
-                label="Render mode"
+                :label="$t('Render mode')"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -112,7 +112,7 @@
       <v-divider class="mx-8" />
       <v-card-actions>
         <div class="flex justify-end w-full pa-0 mr-2">
-          <v-btn color="white" @click="emit('update:modelValue', false)">Close</v-btn>
+          <v-btn color="white" @click="emit('update:modelValue', false)">{{ $t('Close') }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>

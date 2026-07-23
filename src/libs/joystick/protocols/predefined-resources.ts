@@ -1,14 +1,23 @@
-import { getAllActionLinks, saveActionLink } from '@/libs/actions/action-links'
-import { createDataLakeVariable, DataLakeVariableType } from '@/libs/actions/data-lake'
-import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
+﻿import { getAllActionLinks, saveActionLink } from '@/libs/actions/action-links'
+import {
+  createDataLakeVariable,
+  DataLakeVariableType,
+  getDataLakeVariableInfo,
+  updateDataLakeVariableInfo,
+} from '@/libs/actions/data-lake'
+import {
+  createTransformingFunction,
+  getAllTransformingFunctions,
+  updateTransformingFunction,
+} from '@/libs/actions/data-lake-transformations'
 import {
   getAllMavlinkMessageActionConfigs,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
 import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { getUnindentedString } from '@/libs/utils'
-import { MessageFieldType } from '@/types/cockpit-actions'
-import { customActionTypes } from '@/types/cockpit-actions'
+import i18n from '@/plugins/i18n'
+import { customActionTypes, MessageFieldType } from '@/types/cockpit-actions'
 
 import { DataLakeVariableAction } from './data-lake'
 
@@ -42,23 +51,33 @@ export const joystickInputAxes: Record<(typeof joystickAxisConfig)[number]['key'
 
 const setupMavlinkCameraResources = (): void => {
   const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
-  // Initialize camera zoom variables
-  createDataLakeVariable({ id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-zoom-increase', name: 'Camera Zoom Increase', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-zoom-speed', name: 'Camera Zoom Speed', ...commonVariableConfig }, 3)
+  const cameraVariables = [
+    { id: 'camera-zoom-decrease', nameKey: 'Camera Zoom Decrease', defaultValue: 0 },
+    { id: 'camera-zoom-increase', nameKey: 'Camera Zoom Increase', defaultValue: 0 },
+    { id: 'camera-zoom-speed', nameKey: 'Camera Zoom Speed', defaultValue: 3 },
+    { id: 'camera-focus-decrease', nameKey: 'Camera Focus Decrease', defaultValue: 0 },
+    { id: 'camera-focus-increase', nameKey: 'Camera Focus Increase', defaultValue: 0 },
+    { id: 'camera-focus-speed', nameKey: 'Camera Focus Speed', defaultValue: 3 },
+  ]
 
-  // Initialize camera focus variables
-  createDataLakeVariable({ id: 'camera-focus-decrease', name: 'Camera Focus Decrease', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-focus-increase', name: 'Camera Focus Increase', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-focus-speed', name: 'Camera Focus Speed', ...commonVariableConfig }, 3)
+  for (const { id, nameKey, defaultValue } of cameraVariables) {
+    const name = i18n.global.t(nameKey)
+    const existing = getDataLakeVariableInfo(id)
+    if (existing) {
+      if (existing.name !== name) updateDataLakeVariableInfo({ ...existing, name })
+    } else {
+      createDataLakeVariable({ id, name, ...commonVariableConfig }, defaultValue)
+    }
+  }
 
   // Initialize camera zoom transforming function
   try {
     const func = getAllTransformingFunctions().find((f) => f.id === 'camera-zoom')
+    const zoomName = i18n.global.t('Camera Zoom')
     if (!func) {
       createTransformingFunction(
         'camera-zoom',
-        'Camera Zoom',
+        zoomName,
         'number',
         getUnindentedString(`
           const zoom = ({{camera-zoom-increase}} - {{camera-zoom-decrease}}) * {{camera-zoom-speed}}
@@ -66,6 +85,8 @@ const setupMavlinkCameraResources = (): void => {
         `),
         'Used to control the camera zoom. The value is the difference between {{camera-zoom-increase}} and {{camera-zoom-decrease}}, multiplied by {{camera-zoom-speed}}.'
       )
+    } else if (func.name !== zoomName) {
+      updateTransformingFunction({ ...func, name: zoomName })
     }
   } catch (error) {
     console.error('Error creating camera zoom transforming function:', error)
@@ -74,10 +95,11 @@ const setupMavlinkCameraResources = (): void => {
   // Initialize camera focus transforming function
   try {
     const func = getAllTransformingFunctions().find((f) => f.id === 'camera-focus')
+    const focusName = i18n.global.t('Camera Focus')
     if (!func) {
       createTransformingFunction(
         'camera-focus',
-        'Camera Focus',
+        focusName,
         'number',
         getUnindentedString(`
           const focus = ({{camera-focus-increase}} - {{camera-focus-decrease}}) * {{camera-focus-speed}}
@@ -85,6 +107,8 @@ const setupMavlinkCameraResources = (): void => {
         `),
         'Used to control the camera focus. The value is the difference between {{camera-focus-increase}} and {{camera-focus-decrease}}, multiplied by {{camera-focus-speed}}.'
       )
+    } else if (func.name !== focusName) {
+      updateTransformingFunction({ ...func, name: focusName })
     }
   } catch (error) {
     console.error('Error creating camera focus transforming function:', error)

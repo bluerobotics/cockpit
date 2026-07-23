@@ -76,7 +76,7 @@
           <v-btn variant="text" @click="closeDialog">Done</v-btn>
         </template>
         <template v-else>
-          <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+          <v-btn variant="text" @click="closeDialog">{{ $t('Cancel') }}</v-btn>
           <v-spacer />
           <v-btn
             v-if="step === 'intro'"

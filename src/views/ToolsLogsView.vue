@@ -1,6 +1,6 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Data Logs</template>
+    <template #title>{{ $t('Data Logs') }}</template>
     <template #content>
       <div
         class="max-h-[85vh] overflow-y-auto -mr-4"
@@ -9,7 +9,7 @@
         <ExpansiblePanel :is-expanded="true" no-top-divider>
           <template #title>
             <div class="flex justify-between items-center w-full">
-              <span>Data Sessions</span>
+              <span>{{ $t('Data Sessions') }}</span>
               <div class="flex items-center gap-2">
                 <v-menu v-if="selectedSessionIds.length > 0">
                   <template #activator="{ props }">
@@ -19,7 +19,7 @@
                       :class="{ 'opacity-50 pointer-events-none': isDownloadingZip }"
                       @click.stop
                     >
-                      <v-tooltip text="Download selected sessions as ZIP">
+                      <v-tooltip :text="$t('Download selected sessions as ZIP')">
                         <template #activator="{ props: tooltipProps }">
                           <v-icon v-bind="tooltipProps">mdi-download-multiple</v-icon>
                         </template>
@@ -31,13 +31,13 @@
                     <v-list-item @click="downloadSelectedSessions('json')">
                       <v-list-item-title class="flex items-center gap-2">
                         <v-icon size="small">mdi-code-json</v-icon>
-                        Download a ZIP of JSONs
+                        {{ $t('Download a ZIP of JSONs') }}
                       </v-list-item-title>
                     </v-list-item>
                     <v-list-item @click="downloadSelectedSessions('csv')">
                       <v-list-item-title class="flex items-center gap-2">
                         <v-icon size="small">mdi-file-delimited</v-icon>
-                        Download a ZIP of CSVs
+                        {{ $t('Download a ZIP of CSVs') }}
                       </v-list-item-title>
                     </v-list-item>
                   </v-list>
@@ -48,7 +48,7 @@
                   :class="{ 'opacity-50 pointer-events-none': isDeletingBatch }"
                   @click.stop="deleteSelectedSessions"
                 >
-                  <v-tooltip text="Delete selected sessions">
+                  <v-tooltip :text="$t('Delete selected sessions')">
                     <template #activator="{ props }">
                       <v-icon v-bind="props">mdi-delete-sweep</v-icon>
                     </template>
@@ -59,7 +59,7 @@
                   :class="{ 'opacity-50 pointer-events-none': hasSelection }"
                   @click.stop="refreshSessions"
                 >
-                  <v-tooltip text="Refresh sessions">
+                  <v-tooltip :text="$t('Refresh sessions')">
                     <template #activator="{ props }">
                       <v-icon v-bind="props" :class="{ 'animate-spin': isLoading }">mdi-refresh</v-icon>
                     </template>
@@ -70,14 +70,14 @@
                   :class="{ 'opacity-50 pointer-events-none': hasSelection }"
                   @click.stop="deleteOldSessions"
                 >
-                  <v-tooltip text="Delete sessions older than 24 hours">
+                  <v-tooltip :text="$t('Delete sessions older than 24 hours')">
                     <template #activator="{ props }">
                       <v-icon v-bind="props">mdi-delete-clock</v-icon>
                     </template>
                   </v-tooltip>
                 </span>
                 <span class="text-sm text-gray-300 cursor-pointer" @click.stop="openExportSettingsDialog">
-                  <v-tooltip text="Data export settings">
+                  <v-tooltip :text="$t('Data export settings')">
                     <template #activator="{ props }">
                       <v-icon v-bind="props" size="20">mdi-cog</v-icon>
                     </template>
@@ -87,15 +87,14 @@
             </div>
           </template>
           <template #info>
-            Raw data lake variables are recorded while Cockpit is running. Select which variables to record from the
-            Data Lake table, then download session logs here in JSON or CSV format.
+            {{ $t('Raw data lake variables are recorded while Cockpit is running. Select which variables to record from the Data Lake table, then download session logs here in JSON or CSV format.') }}
           </template>
           <template #content>
             <div v-if="isLoading" class="flex justify-center items-center py-8">
               <v-progress-circular indeterminate color="white" />
             </div>
             <div v-else-if="sessions.length === 0" class="text-center py-8 text-gray-400">
-              No data sessions found. Select variables to record in the Data Lake table.
+              {{ $t('No data sessions found. Select variables to record in the Data Lake table.') }}
             </div>
             <v-data-table
               v-else
@@ -139,13 +138,13 @@
                         <v-list-item @click="downloadSession(item, 'json')">
                           <v-list-item-title class="flex items-center gap-2">
                             <v-icon size="small">mdi-code-json</v-icon>
-                            Download as JSON
+                            {{ $t('Download as JSON') }}
                           </v-list-item-title>
                         </v-list-item>
                         <v-list-item @click="downloadSession(item, 'csv')">
                           <v-list-item-title class="flex items-center gap-2">
                             <v-icon size="small">mdi-file-delimited</v-icon>
-                            Download as CSV
+                            {{ $t('Download as CSV') }}
                           </v-list-item-title>
                         </v-list-item>
                       </v-list>
@@ -196,17 +195,17 @@
             <p class="text-sm mb-1 font-weight-medium">Column labels</p>
             <p class="text-sm mb-2">How variable columns are labeled in CSV and JSON files.</p>
             <v-radio-group v-model="exportVariableKey" density="compact" hide-details>
-              <v-radio label="Variable ID" value="id" />
-              <v-radio label="Short variable ID" value="short-id" />
-              <v-radio label="Variable name" value="name" />
+              <v-radio :label="$t('Variable ID')" value="id" />
+              <v-radio :label="$t('Short variable ID')" value="short-id" />
+              <v-radio :label="$t('Variable name')" value="name" />
             </v-radio-group>
 
             <p class="text-sm mt-5 mb-1 font-weight-medium">Logging interval</p>
             <p class="text-sm mb-2">How often selected variables are recorded.</p>
             <v-radio-group v-model="loggingMode" density="compact" hide-details>
-              <v-radio label="Raw (record on every value change)" value="raw" />
+              <v-radio :label="$t('Raw (record on every value change)')" value="raw" />
               <div class="flex items-center gap-2">
-                <v-radio label="Fixed interval" value="interval" />
+                <v-radio :label="$t('Fixed interval')" value="interval" />
                 <v-text-field
                   v-model.number="intervalMs"
                   type="number"
@@ -224,7 +223,7 @@
           <v-divider class="mx-6" />
           <v-card-actions class="px-6 pb-4">
             <v-spacer />
-            <v-btn variant="text" @click="showSettingsDialog = false">Close</v-btn>
+            <v-btn variant="text" @click="showSettingsDialog = false">{{ $t('Close') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -239,6 +238,7 @@
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -254,6 +254,7 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
+const { t } = useI18n()
 
 const sessions = ref<DataLakeSessionInfo[]>([])
 const showSettingsDialog = ref(false)
@@ -300,10 +301,10 @@ const rowProps = ({ item }: SessionRowProps): Record<string, string> => ({
 })
 
 const headers = [
-  { title: 'Date/Time', key: 'dateTimeFormatted', sortable: true },
-  { title: 'Data Points', key: 'dataPointCount', sortable: true },
-  { title: 'Duration', key: 'durationSeconds', sortable: true },
-  { title: 'Actions', key: 'actions', align: 'end', sortable: false },
+  { title: t('Date/Time'), key: 'dateTimeFormatted', sortable: true },
+  { title: t('Data Points'), key: 'dataPointCount', sortable: true },
+  { title: t('Duration'), key: 'durationSeconds', sortable: true },
+  { title: t('Actions'), key: 'actions', align: 'end', sortable: false },
 ]
 
 const formatDuration = (seconds: number): string => {
@@ -331,7 +332,7 @@ const refreshSessions = async (): Promise<void> => {
   try {
     sessions.value = await DataLakeLogger.getDataSessions()
   } catch (error) {
-    openSnackbar({ message: 'Failed to load data sessions', variant: 'error' })
+    openSnackbar({ message: t('Failed to load data sessions'), variant: 'error' })
   } finally {
     isLoading.value = false
   }
@@ -365,12 +366,12 @@ const downloadSession = async (session: DataLakeSessionInfo, formatType: 'json' 
 
   isDownloading.value = session.id
   try {
-    openSnackbar({ message: 'Generating log file...', variant: 'info', duration: 2000 })
+    openSnackbar({ message: t('Generating log file...'), variant: 'info', duration: 2000 })
 
     const log = await DataLakeLogger.generateLogFromSession(session)
 
     if (log.length === 0) {
-      openSnackbar({ message: 'No data points found in session', variant: 'warning' })
+      openSnackbar({ message: t('No data points found in session'), variant: 'warning' })
       return
     }
 
@@ -392,9 +393,9 @@ const downloadSession = async (session: DataLakeSessionInfo, formatType: 'json' 
     const fileName = DataLakeLogger.sessionExportFileName(session, extension)
     saveAs(blob, fileName)
 
-    openSnackbar({ message: `Downloaded ${fileName}`, variant: 'success' })
+    openSnackbar({ message: `${t('Downloaded')} ${fileName}`, variant: 'success' })
   } catch (error) {
-    openSnackbar({ message: 'Failed to download session', variant: 'error' })
+    openSnackbar({ message: t('Failed to download session'), variant: 'error' })
   } finally {
     isDownloading.value = null
   }
@@ -409,12 +410,12 @@ const downloadSelectedSessions = async (formatType: 'json' | 'csv'): Promise<voi
   logUserAction(`Downloaded ${selectedSessions.length} data sessions as ${formatType.toUpperCase()} ZIP`)
   isDownloadingZip.value = true
   try {
-    openSnackbar({ message: 'Generating ZIP file...', variant: 'info', duration: 2000 })
+    openSnackbar({ message: t('Generating ZIP file...'), variant: 'info', duration: 2000 })
 
     const { blob, includedCount } = await dataLakeLogger.generateSessionsZip(selectedSessions, formatType)
 
     if (includedCount === 0) {
-      openSnackbar({ message: 'No data points found in the selected sessions', variant: 'warning' })
+      openSnackbar({ message: t('No data points found in the selected sessions'), variant: 'warning' })
       return
     }
 
@@ -422,10 +423,10 @@ const downloadSelectedSessions = async (formatType: 'json' | 'csv'): Promise<voi
     const fileName = `Cockpit_Data_Logs_${dateStr}.zip`
     saveAs(blob, fileName)
 
-    openSnackbar({ message: `Downloaded ${fileName}`, variant: 'success' })
+    openSnackbar({ message: `${t('Downloaded')} ${fileName}`, variant: 'success' })
     selectedSessionIds.value = []
   } catch (error) {
-    openSnackbar({ message: 'Failed to download selected sessions', variant: 'error' })
+    openSnackbar({ message: t('Failed to download selected sessions'), variant: 'error' })
   } finally {
     isDownloadingZip.value = false
   }

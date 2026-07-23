@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>Joystick configuration </template>
+    <template #title>{{ $t('Joystick configuration') }}</template>
     <template #content>
       <div
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'"
@@ -13,36 +13,37 @@
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
           <p class="text-sm text-center opacity-80 mt-2 mb-1">
-            No joystick connected. Live input is unavailable, but you can still configure mappings, import defaults, and
-            import or export joystick configurations below.
+            {{
+              $t(
+                'No joystick connected. Live input is unavailable, but you can still configure mappings, import defaults, and import or export joystick configurations below.'
+              )
+            }}
           </p>
         </div>
         <div>
           <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
-            <template #title>General settings</template>
+            <template #title>{{ $t('General settings') }}</template>
             <template #info>
               <div class="flex flex-col items-start px-5 font-medium">
-                <li>
-                  View and configure your controller button and joystick behaviors, in a diagram and/or table display.
-                </li>
-                <li>
-                  Button presses and joystick movements are highlighted, and can be assigned to vehicle functions or
-                  Cockpit Actions.
-                </li>
-                <li>Advanced configuration is available for setting axis limits.</li>
+                <p>
+                  {{
+                    $t(
+                      'View and configure your controller button and joystick behaviors, in a diagram and/or table display.'
+                    )
+                  }}
+                </p>
               </div>
             </template>
             <template v-if="showJoystickWarningMessage" #warning>
               <div class="text-center text-yellow-200">
-                <p class="font-semibold">System update is recommended</p>
+                <p class="font-semibold">{{ $t('System update is recommended') }}</p>
                 <br />
                 <p class="font-medium">
-                  It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support
-                  the extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have
-                  support for additional buttons and axes on the joystick. This is especially important if you sometimes
-                  use other control station software, like QGroundControl, as Cockpit can preferentially use the
-                  extended buttons to reduce configuration clashes. We recommend using BlueOS &ge; 1.2.0, and &ge;
-                  version 4.1.2 for ArduPilot-based autopilot firmware.
+                  {{
+                    $t(
+                      "It seems like you're running versions of Mavlink2Rest (BlueOS) and/or ArduPilot that do not support the extended MAVLink MANUAL_CONTROL message. We strongly suggest upgrading both so you can have support for additional buttons and axes on the joystick. This is especially important if you sometimes use other control station software, like QGroundControl, as Cockpit can preferentially use the extended buttons to reduce configuration clashes. We recommend using BlueOS ≥ 1.2.0, and ≥ version 4.1.2 for ArduPilot-based autopilot firmware."
+                    )
+                  }}
                 </p>
                 <p />
               </div>
@@ -56,24 +57,27 @@
                     "
                     class="flex flex-col items-center px-5 py-3 m-5 font-bold border rounded-md text-blue-grey-darken-1 bg-blue-lighten-5 w-fit"
                   >
-                    <p>Could not stablish communication with the vehicle.</p>
+                    <p>{{ $t('Could not establish communication with the vehicle.') }}</p>
                     <p>
-                      Button functions will appear as numbers. If connection is restablished, function names will
-                      appear.
+                      {{
+                        $t(
+                          'Button functions will appear as numbers. If connection is restablished, function names will appear.'
+                        )
+                      }}
                     </p>
                   </div>
 
                   <div v-if="availableModifierKeys" class="flex flex-row items-center mt-2 mb-3">
                     <v-switch
                       :model-value="controllerStore.holdLastInputWhenWindowHidden"
-                      label="Hold last joystick input when window is hidden (tab changed or window minimized)"
+                      :label="$t('Hold last joystick input when window is hidden (tab changed or window minimized)')"
                       class="scale-[85%] -mb-4"
                       @update:model-value="setHoldLastInputWhenWindowHidden"
                     />
                   </div>
                   <div class="flex w-full justify-center mb-2">
                     <span class="text-lg font-medium" :class="{ 'text-sm': interfaceStore.isOnSmallScreen }">
-                      {{ controllerStore.protocolMapping.name }}
+                      {{ $t(controllerStore.protocolMapping.name) }}
                     </span>
                   </div>
                 </div>
@@ -84,8 +88,8 @@
                     theme="dark"
                     @update:model-value="setTabView"
                   >
-                    <v-tab value="svg">Visual</v-tab>
-                    <v-tab value="table">Table</v-tab>
+                    <v-tab value="svg">{{ $t('Visual') }}</v-tab>
+                    <v-tab value="table">{{ $t('Table') }}</v-tab>
                     <div class="flex w-full h-[46px] justify-end align-center mr-[5px]">
                       <div />
                       <div class="flex justify-between mr-5">
@@ -107,7 +111,7 @@
                             ]"
                             @click="changeModifierKeyTab(button.id as CockpitModifierKeyOption)"
                           >
-                            {{ button.name }}
+                            {{ translateModifierKeyName(button.name) }}
                           </v-btn>
                         </div>
                       </div>
@@ -115,7 +119,7 @@
                         class="flex border-[1px] border-[#FFFFFF22] rounded-md elevation-1 mb-[2px] mr-[4px]"
                         :style="interfaceStore.globalGlassMenuStyles"
                       >
-                        <v-tooltip location="top" text="Download joystick mappings">
+                        <v-tooltip location="top" :text="$t('Download joystick mappings')">
                           <template #activator="{ props }">
                             <v-btn
                               v-bind="props"
@@ -127,7 +131,7 @@
                           /></template>
                         </v-tooltip>
                         <v-divider vertical />
-                        <v-tooltip location="top" text="Upload joystick mappings">
+                        <v-tooltip location="top" :text="$t('Upload joystick mappings')">
                           <template #activator="{ props }">
                             <label v-bind="props">
                               <input
@@ -141,7 +145,7 @@
                           </template>
                         </v-tooltip>
                         <v-divider vertical />
-                        <v-tooltip location="top" text="Import default mapping for this vehicle">
+                        <v-tooltip location="top" :text="$t('Import default mapping for this vehicle')">
                           <template #activator="{ props }">
                             <v-btn
                               v-bind="props"
@@ -166,11 +170,13 @@
                   :key="key"
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
+                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} {{ $t('controller') }}</p>
                   <div class="flex items-center gap-2 -mb-8">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
-                      :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
+                      :label="
+                        controllerStore.disabledJoysticks.includes(joystick.model) ? $t('Disabled') : $t('Enabled')
+                      "
                       hide-details
                       class="-mt-2"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
@@ -216,7 +222,7 @@
                     class="flex flex-row items-start justify-end w-full gap-4 -mr-8 mb-[20px]"
                   >
                     <div class="flex w-[60%] flex-col items-center">
-                      <p class="text-xs font-semibold opacity-80 mb-2">Additional buttons</p>
+                      <p class="text-xs font-semibold opacity-80 mb-2">{{ $t('Additional buttons') }}</p>
                       <div class="grid grid-cols-3 sm:grid-cols-3 xl:grid-cols-4 gap-3 w-full">
                         <div
                           v-for="buttonId in getButtonsNotInSvg(joystick)"
@@ -251,7 +257,7 @@
                     </div>
                     <v-divider vertical />
                     <div v-if="getAxesNotInSvg(joystick).length" class="flex-1 w-1 /5 flex flex-col items-center">
-                      <p class="text-xs font-semibold opacity-80 mb-2">Additional axes</p>
+                      <p class="text-xs font-semibold opacity-80 mb-2">{{ $t('Additional axes') }}</p>
                       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                         <div
                           v-for="axisId in getAxesNotInSvg(joystick)"
@@ -284,11 +290,15 @@
                   :key="key"
                   class="w-full flex-centered flex-column"
                 >
-                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <span class="text-md font-semibold w-full text-center -mt-8"
+                    >{{ joystick.model }} {{ $t('controller') }}</span
+                  >
                   <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
-                      :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
+                      :label="
+                        controllerStore.disabledJoysticks.includes(joystick.model) ? $t('Disabled') : $t('Enabled')
+                      "
                       hide-details
                       class="-mt-2 -mb-1"
                       @update:model-value="toggleJoystickEnabling(joystick.model)"
@@ -297,7 +307,9 @@
                 </div>
 
                 <div class="w-full flex-centered flex-column">
-                  <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
+                  <p class="text-start text-sm font-bold w-[93%] mb-1">
+                    {{ $t('Axes') }}
+                  </p>
                   <v-data-table
                     :items="tableItems"
                     class="elevation-1 bg-transparent rounded-lg mb-[20px]"
@@ -307,22 +319,34 @@
                   >
                     <template #headers>
                       <tr>
-                        <th class="w-[100px] text-center"><p class="text-[16px] font-bold">Name</p></th>
-                        <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Preview</p></th>
-                        <th class="w-[50px] text-center"><p class="text-[16px] font-bold">Direction</p></th>
-                        <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Min</p></th>
-                        <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
-                        <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
+                        <th class="w-[100px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Name') }}</p>
+                        </th>
+                        <th class="w-[120px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Preview') }}</p>
+                        </th>
+                        <th class="w-[50px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Direction') }}</p>
+                        </th>
+                        <th class="w-[110px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Min') }}</p>
+                        </th>
+                        <th class="w-[120px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Axis') }}</p>
+                        </th>
+                        <th class="w-[110px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Max') }}</p>
+                        </th>
                       </tr>
                       <p v-if="tableItems.length === 0" class="fixed top-[67%] left-[40%]">
-                        Press a key or move an axis
+                        {{ $t('Press a key or move an axis') }}
                       </p>
                     </template>
                     <template #item="{ item }">
                       <tr v-if="item.type === 'axis'">
                         <td class="w-[100px] text-center">
                           <div class="flex items-center justify-center gap-x-4">
-                            <p>{{ item.type }}</p>
+                            <p>{{ $t('Axis') }}</p>
                             <p>{{ item.id }}</p>
                           </div>
                         </td>
@@ -366,7 +390,14 @@
                             variant="plain"
                             theme="dark"
                             return-object
-                          />
+                          >
+                            <template #selection="{ item: selectItem }">
+                              {{ translateActionName(selectItem.raw) }}
+                            </template>
+                            <template #item="{ props, item: selectItem }">
+                              <v-list-item v-bind="props" :title="translateActionName(selectItem.raw)"></v-list-item>
+                            </template>
+                          </v-select>
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
@@ -394,7 +425,9 @@
                     ></template>
                   </v-data-table>
 
-                  <p class="text-start text-sm font-bold w-[93%] mb-1">Buttons</p>
+                  <p class="text-start text-sm font-bold w-[93%] mb-1">
+                    {{ $t('Buttons') }}
+                  </p>
                   <v-data-table
                     :headers="headers"
                     :items="tableItems"
@@ -405,20 +438,30 @@
                   >
                     <template #headers>
                       <tr>
-                        <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Name</p></th>
+                        <th class="w-[120px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Name') }}</p>
+                        </th>
                         <th class="w-[120px] text-center">
                           <div
                             class="flex justify-center w-full"
                             :class="{ '-mr-3': currentModifierKey.id !== 'regular' }"
                           >
-                            <p class="text-[16px] font-bold">Function</p>
+                            <p class="text-[16px] font-bold">
+                              {{ $t('Function') }}
+                            </p>
                             <p v-if="currentModifierKey.id !== 'regular'" class="text-[10px] text-end ml-2">
                               ({{ currentModifierKey.id }})
                             </p>
                           </div>
                         </th>
-                        <th class="w-[150px] text-center"><p class="text-[16px] font-bold">Custom label</p></th>
-                        <th class="w-[50px] text-center"><p class="text-[16px] font-bold">Actions</p></th>
+                        <th class="w-[150px] text-center">
+                          <p class="text-[16px] font-bold">
+                            {{ $t('Custom label') }}
+                          </p>
+                        </th>
+                        <th class="w-[50px] text-center">
+                          <p class="text-[16px] font-bold">{{ $t('Actions') }}</p>
+                        </th>
                       </tr>
                     </template>
                     <template #item="{ item }">
@@ -430,14 +473,14 @@
                                 item.type === 'button' && isButtonPressed(item.id as JoystickButton) ? 'bg-[#2c99ce]' : 'bg-transparent'
                               "
                           >
-                            <p>{{ item.type }}</p>
+                            <p>{{ $t('Button') }}</p>
                             <p>{{ item.id }}</p>
                           </div>
                         </td>
                         <td class="w-[120px]">
                           <div>
                             <p class="text-center">
-                              {{ currentButtonActions[item.id as JoystickButton]?.action.name }}
+                              {{ translateActionName(currentButtonActions[item.id as JoystickButton]?.action) }}
                             </p>
                           </div>
                         </td>
@@ -453,14 +496,14 @@
                         </td>
                         <td class="text-center w-[50px]">
                           <v-btn
-                            v-tooltip:top="'Unmap'"
+                            v-tooltip:top="$t('Unmap Input')"
                             icon="mdi-delete-circle"
                             variant="text"
                             @click="unbindCurrentInput(item as JoystickButtonInput)"
                           >
                           </v-btn>
                           <v-btn
-                            v-tooltip="'Map function to button'"
+                            v-tooltip="$t('Map function to button')"
                             icon="mdi-circle-edit-outline"
                             variant="text"
                             class="text-[16px]"
@@ -477,13 +520,16 @@
             </template>
           </ExpansiblePanel>
           <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
-            <template #title>Axis Calibration</template>
+            <template #title>{{ $t('Axis Calibration') }}</template>
             <template #info>
               <div class="flex flex-col items-start px-5 font-medium">
-                <li>Calibrate your joystick to ensure accurate axis inputs.</li>
+                <li>{{ $t('Calibrate your joystick to ensure accurate axis inputs.') }}</li>
                 <li>
-                  Click the button to open the calibration dialog, then follow the instructions to calibrate your
-                  joystick axes.
+                  {{
+                    $t(
+                      'Click the button to open the calibration dialog, then follow the instructions to calibrate your joystick axes.'
+                    )
+                  }}
                 </li>
               </div>
             </template>
@@ -500,7 +546,9 @@
   <teleport to="body">
     <InteractionDialog :show-dialog="inputClickedDialog" max-width="auto" variant="text-only" persistent>
       <template #title>
-        <div class="flex justify-center w-full font-bold mt-1">Input mapping</div>
+        <div class="flex justify-center w-full font-bold mt-1">
+          {{ $t('Input mapping') }}
+        </div>
       </template>
       <template #content>
         <v-icon class="fixed top-3 right-3 cursor-pointer" @click="closeInputMappingDialog">mdi-close</v-icon>
@@ -520,29 +568,29 @@
                   class="bg-[#FFFFFF33]"
                   @click="updateButtonAction(input, shiftFunction as ProtocolAction)"
                 >
-                  Assign as Shift
+                  {{ $t('Assign as Shift') }}
                 </v-btn>
                 <v-btn
                   variant="elevated"
                   class="bg-[#FFFFFF33]"
                   @click="unbindCurrentInput(input as JoystickButtonInput)"
                 >
-                  Unmap Input
+                  {{ $t('Unmap Input') }}
                 </v-btn>
               </div>
               <div class="flex-1 my-4"></div>
               <div class="flex flex-col items-start text-sm font-semibold gap-y-1">
                 <div class="flex items-center">
                   <img src="@/assets/cockpit-logo.avif" class="w-4 h-4 mr-2" alt="Cockpit" />
-                  <span>Cockpit Action</span>
+                  <span>{{ $t('Cockpit Action') }}</span>
                 </div>
                 <div class="flex items-center">
                   <img src="@/assets/mavlink-logo.avif" class="w-4 h-4 mr-2 ml-[1px] mt-[4px]" alt="MAVLink" />
-                  <span>MAVLink Manual Control</span>
+                  <span>{{ $t('MAVLink Manual Control') }}</span>
                 </div>
                 <div class="flex items-center">
                   <v-icon icon="mdi-database" size="small" class="mr-2" />
-                  <span>Data Lake Variable</span>
+                  <span>{{ $t('Data Lake Variable') }}</span>
                 </div>
               </div>
             </div>
@@ -554,7 +602,7 @@
                   variant="outlined"
                   theme="dark"
                   type="text"
-                  placeholder="Search actions..."
+                  :placeholder="$t('Search actions...')"
                   class="mb-1"
                   hide-details
                 />
@@ -586,7 +634,7 @@
                       />
                     </div>
                     <p class="text-center text-xs px-8">
-                      {{ action.name }}
+                      {{ translateActionName(action as ProtocolAction) }}
                     </p>
                   </Button>
                 </div>
@@ -594,7 +642,9 @@
             </div>
           </div>
           <template v-if="currentAxisInputs.length > 0">
-            <p class="flex items-center justify-center w-full text-lg font-semibold mb-2 mt-2">Axis mapping</p>
+            <p class="flex items-center justify-center w-full text-lg font-semibold mb-2 mt-2">
+              {{ $t('Axis mapping') }}
+            </p>
           </template>
           <div class="flex flex-col items-center justify-between my-2">
             <Transition>
@@ -615,7 +665,7 @@
             <v-text-field
               v-model.number="selectedProfileAxesCorrespondencies[input.id].min"
               class="bg-transparent w-[110px]"
-              label="Min"
+              :label="$t('Min')"
               type="number"
               density="compact"
               variant="outlined"
@@ -631,11 +681,18 @@
               class="bg-transparent w-[120px] mx-2"
               theme="dark"
               return-object
-            />
+            >
+              <template #selection="{ item }">
+                {{ translateActionName(item.raw) }}
+              </template>
+              <template #item="{ props, item }">
+                <v-list-item v-bind="props" :title="translateActionName(item.raw)"></v-list-item>
+              </template>
+            </v-select>
             <v-text-field
               v-model.number="selectedProfileAxesCorrespondencies[input.id].max"
               class="bg-transparent w-[110px]"
-              label="Max"
+              :label="$t('Max')"
               type="number"
               density="compact"
               variant="outlined"
@@ -646,7 +703,7 @@
       </template>
       <template #actions>
         <div class="flex justify-end w-full">
-          <v-btn variant="text" class="m-1" @click="closeInputMappingDialog"> Close </v-btn>
+          <v-btn variant="text" class="m-1" @click="closeInputMappingDialog">{{ $t('Close') }}</v-btn>
         </div>
       </template>
     </InteractionDialog>
@@ -656,6 +713,7 @@
 <script setup lang="ts">
 import semver from 'semver'
 import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -669,7 +727,7 @@ import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transforma
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
-import { modifierKeyActions } from '@/libs/joystick/protocols/other'
+import { getModifierKeyActions, modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -695,6 +753,7 @@ const controllerStore = useControllerStore()
 const { globalAddress } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
+const { t } = useI18n()
 
 const showJoystickWarningMessage = ref(false)
 const searchText = ref('')
@@ -721,7 +780,7 @@ const justRemappedInput = ref<boolean>()
 const justRemappedAxisInput = ref<boolean>()
 const inputClickedDialog = ref(false)
 const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
-const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
+const availableModifierKeys = computed(() => Object.values(getModifierKeyActions()))
 const showJoystickLayout = ref(true)
 const currentTabVIew = ref('table')
 const maxVisibleInputs = 64
@@ -964,7 +1023,7 @@ const currentButtonActions = computed(
 const unbindCurrentInput = (input: JoystickButtonInput): void => {
   const actions: ProtocolAction = {
     id: 'no_function',
-    name: 'No function',
+    name: t('No function'),
     protocol: JoystickProtocol.CockpitAction,
   }
   updateButtonAction(input, actions)
@@ -985,7 +1044,10 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
     showJoystickLayout.value = false
     nextTick(() => (showJoystickLayout.value = true))
   }, 1000)
-  openSnackbar({ message: `Button ${input.id} remapped to function '${action.name}'.`, variant: 'success' })
+  openSnackbar({
+    message: t("Button {id} remapped to function '{name}'.", { id: input.id, name: action.name }),
+    variant: 'success',
+  })
 }
 
 // Automatically set the current joystick when it changes for the first time
@@ -1080,5 +1142,43 @@ const toggleJoystickEnabling = (joystickModel: string): void => {
   } else {
     controllerStore.disabledJoysticks.push(joystickModel)
   }
+}
+// Translate modifier key names
+const translateModifierKeyName = (name: string): string => {
+  const nameMap: Record<string, string> = {
+    Regular: t('Regular'),
+    Shift: t('Shift'),
+  }
+  return nameMap[name] || name
+}
+
+// Translate action names dynamically based on action ID
+const translateActionName = (action: ProtocolAction): string => {
+  if (!action) return ''
+
+  // Handle special cases by ID
+  const idToKeyMap: Record<string, string> = {
+    no_function: 'No function',
+    go_to_next_view: 'Go to next view',
+    go_to_previous_view: 'Go to previous view',
+    toggle_full_screen: 'Toggle full screen',
+    mavlink_arm: 'Mavlink arm',
+    mavlink_disarm: 'Mavlink disarm',
+    toggle_bottom_bar: 'Toggle bottom bar',
+    toggle_top_bar: 'Toggle top bar',
+    start_recording_all_streams: 'Start recording all streams',
+    stop_recording_all_streams: 'Stop recording all streams',
+    toggle_recording_all_streams: 'Toggle recording all streams',
+    take_snapshot: 'Take snapshot',
+    hold_to_confirm: 'Hold to confirm',
+  }
+
+  const translationKey = idToKeyMap[action.id]
+  if (translationKey) {
+    return t(translationKey)
+  }
+
+  // For other actions, return the name as is
+  return action.name
 }
 </script>

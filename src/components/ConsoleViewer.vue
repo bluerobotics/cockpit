@@ -8,7 +8,7 @@
         density="compact"
         variant="outlined"
         hide-details
-        placeholder="Filter…"
+        :placeholder="$t('Filter…')"
         clearable
         class="max-w-[240px]"
       />
@@ -17,7 +17,7 @@
         variant="text"
         icon
         :color="invertSearch ? 'white' : 'grey'"
-        :title="invertSearch ? 'Excluding lines that match the filter' : 'Including lines that match the filter'"
+        :title="invertSearch ? $t('Excluding lines that match the filter') : $t('Including lines that match the filter')"
         @click="invertSearch = !invertSearch"
       >
         <v-icon>{{ invertSearch ? 'mdi-filter-minus' : 'mdi-filter' }}</v-icon>
@@ -43,15 +43,15 @@
         variant="text"
         icon
         :color="autoScroll ? 'white' : 'grey'"
-        :title="autoScroll ? 'Auto-scroll on' : 'Auto-scroll paused'"
+        :title="autoScroll ? $t('Auto-scroll on') : $t('Auto-scroll paused')"
         @click="toggleAutoScroll"
       >
         <v-icon>{{ autoScroll ? 'mdi-arrow-down-bold-box' : 'mdi-pause-box' }}</v-icon>
       </v-btn>
-      <v-btn size="small" variant="text" class="text-white" icon title="Copy visible logs" @click="copyVisible">
+      <v-btn size="small" variant="text" class="text-white" icon :title="$t('Copy visible logs')" @click="copyVisible">
         <v-icon>mdi-content-copy</v-icon>
       </v-btn>
-      <v-btn size="small" variant="text" class="text-white" icon title="Clear view" @click="clearView">
+      <v-btn size="small" variant="text" class="text-white" icon :title="$t('Clear view')" @click="clearView">
         <v-icon>mdi-broom</v-icon>
       </v-btn>
     </div>

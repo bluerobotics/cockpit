@@ -1,18 +1,18 @@
-<template>
+﻿<template>
   <v-dialog :model-value="modelValue" max-width="600px" @update:model-value="emit('update:modelValue', $event)">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">
-        {{ editingExistingFunction ? 'Edit Compound Variable' : 'New Compound Variable' }}
+        {{ editingExistingFunction ? $t('Edit Compound Variable') : $t('New Compound Variable') }}
       </v-card-title>
       <v-card-text class="px-8">
         <div class="flex flex-col gap-4">
           <div class="flex items-center gap-2">
             <v-text-field
               v-model="newFunction.id"
-              label="Variable ID"
+              :label="$t('Variable ID')"
               variant="outlined"
               :disabled="editingExistingFunction || !isManualIdEnabled"
-              :rules="[(v) => !!v || 'ID is required']"
+              :rules="[(v) => !!v || $t('ID is required')]"
               class="flex-1"
               density="compact"
               hide-details
@@ -29,29 +29,29 @@
           </div>
           <v-text-field
             v-model="newFunction.name"
-            label="Variable Name"
+            :label="$t('Variable Name')"
             variant="outlined"
-            :rules="[(v) => !!v || 'Name is required']"
+            :rules="[(v) => !!v || $t('Name is required')]"
             density="compact"
             hide-details
           />
           <div class="flex items-center gap-2">
-            <label class="text-sm">Variable Type: </label>
+            <label class="text-sm">{{ $t('Variable Type') }}: </label>
             <v-radio-group
               v-model="newFunction.type"
-              :rules="[(v) => !!v || 'Type is required']"
+              :rules="[(v) => !!v || $t('Type is required')]"
               density="compact"
               hide-details
               inline
             >
-              <v-radio class="ml-3 mr-4" label="String" value="string" />
-              <v-radio class="ml-3 mr-4" label="Number" value="number" />
-              <v-radio class="ml-3 mr-4" label="Boolean" value="boolean" />
+              <v-radio class="ml-3 mr-4" :label="$t('String')" value="string" />
+              <v-radio class="ml-3 mr-4" :label="$t('Number')" value="number" />
+              <v-radio class="ml-3 mr-4" :label="$t('Boolean')" value="boolean" />
             </v-radio-group>
           </div>
           <div class="flex flex-col gap-2">
             <div class="flex justify-between items-center">
-              <label class="text-sm">Expression</label>
+              <label class="text-sm">{{ $t('Expression') }}</label>
               <v-btn
                 variant="text"
                 density="compact"
@@ -62,13 +62,17 @@
             </div>
             <v-expand-transition>
               <div v-if="isExpressionInfoVisible" class="mb-2 text-sm pa-2 bg-[#FFFFFF11] rounded">
-                Create complex transformations by combining existing Data Lake variables using JavaScript expressions.
+                {{
+                  $t(
+                    'Create complex transformations by combining existing Data Lake variables using JavaScript expressions.'
+                  )
+                }}
                 <br />
-                • Type <code>&#123;&#123;</code> to access available variables
+                • {{ $t('Type {{ to access available variables') }}
                 <br />
-                • Return is optional, but should be included in complex expressions
+                • {{ $t('Return is optional, but should be included in complex expressions') }}
                 <br />
-                • Remember to set the type accordingly
+                • {{ $t('Remember to set the type accordingly') }}
               </div>
             </v-expand-transition>
             <div
@@ -78,9 +82,9 @@
           </div>
           <v-textarea
             v-model="newFunction.description"
-            label="Description"
+            :label="$t('Description')"
             variant="outlined"
-            placeholder="Optional description of what this transformation does"
+            :placeholder="$t('Optional description of what this transformation does')"
             rows="1"
             density="compact"
             hide-details
@@ -90,8 +94,8 @@
       <v-divider class="mx-10" />
       <v-card-actions>
         <div class="flex justify-between items-center pa-2 w-full h-full">
-          <v-btn color="white" variant="text" @click="closeDialog">Cancel</v-btn>
-          <v-btn color="white" :disabled="!isValidForm" @click="saveTransformingFunction">Save</v-btn>
+          <v-btn color="white" variant="text" @click="closeDialog">{{ $t('Cancel') }}</v-btn>
+          <v-btn color="white" :disabled="!isValidForm" @click="saveTransformingFunction">{{ $t('Save') }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -100,6 +104,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useSnackbar } from '@/composables/snackbar'
 import {
@@ -111,6 +116,7 @@ import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { machinizeString } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
+const { t: $t } = useI18n()
 const { openSnackbar } = useSnackbar()
 
 /**
@@ -204,7 +210,7 @@ const isValidForm = computed(() => {
 
 const saveTransformingFunction = (): void => {
   if (!isValidForm.value) {
-    openSnackbar({ message: 'Please fill in all fields', variant: 'error' })
+    openSnackbar({ message: $t('Please fill in all fields.'), variant: 'error' })
     return
   }
   logUserAction('Saved data-lake transforming function')

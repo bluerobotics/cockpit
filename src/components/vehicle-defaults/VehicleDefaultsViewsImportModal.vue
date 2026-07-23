@@ -19,7 +19,7 @@
           <VehicleDefaultsViewsGroupContent variant="standalone" />
 
           <div class="mt-4 flex justify-space-between">
-            <v-btn variant="text" @click="close">Cancel</v-btn>
+            <v-btn variant="text" @click="close">{{ $t('Cancel') }}</v-btn>
             <v-btn
               :disabled="!hasDefaultProfile || selectedDefaultViewNames.length === 0"
               variant="text"

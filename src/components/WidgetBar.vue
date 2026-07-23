@@ -35,7 +35,11 @@
       :class="position === 'top' ? 'below' : 'above'"
     >
       <v-tooltip
-        text="Too many widgets in this bar — some are being cropped or hidden. Consider removing some or moving them to a Collapsible Container or Mini Widgets Bar widget so they are all shown correctly."
+        :text="
+          t(
+            'Too many widgets in this bar — some are being cropped or hidden. Consider removing some or moving them to a Collapsible Container or Mini Widgets Bar widget so they are all shown correctly.'
+          )
+        "
         :location="position === 'top' ? 'bottom' : 'top'"
         open-delay="300"
         max-width="350"
@@ -58,7 +62,7 @@
         :style="{ height: barHeightPixels, [position]: '0' }"
       >
         <v-tooltip
-          text="There's no available space for all widgets, so some elements are cut off. Open edit-mode to fix that."
+          :text="overflowTooltipText"
           :location="position === 'top' ? 'bottom' : 'top'"
           open-delay="200"
           max-width="300"
@@ -75,6 +79,7 @@
 <script setup lang="ts">
 import { useResizeObserver, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -85,6 +90,10 @@ import MiniWidgetContainer from './MiniWidgetContainer.vue'
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 const { width: windowWidth } = useWindowSize()
+const { t } = useI18n()
+const overflowTooltipText = t(
+  "There's no available space for all widgets, so some elements are cut off. open edit-mode to fix that."
+)
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 interface Props {

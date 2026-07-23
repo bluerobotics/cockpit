@@ -139,7 +139,7 @@
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSurvey"
         >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
+          {{ missionStore.currentPlanningWaypoints.length > 0 ? $t('ADD SURVEY') : $t('CREATE SURVEY') }}
         </button>
         <button
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
@@ -147,17 +147,17 @@
           class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
           @click="toggleSimplePath"
         >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
+          {{ missionStore.currentPlanningWaypoints.length > 0 ? $t('ADD SIMPLE PATH') : $t('CREATE SIMPLE PATH') }}
         </button>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath && !vehicleStore.isVehicleOnline"
           class="flex flex-col mx-4 my-2 gap-y-1"
         >
           <div class="flex flex-row justify-between items-center">
-            <p class="text-sm">Planning for</p>
+            <p class="text-sm">{{ $t('Planning for') }}</p>
             <v-tooltip
               location="top"
-              text="No vehicle connected. Pick the vehicle type so vehicle-specific planning features show up."
+              :text="$t('No vehicle connected. Pick the vehicle type so vehicle-specific planning features show up.')"
             >
               <template #activator="{ props: tooltipProps }">
                 <v-icon v-bind="tooltipProps" size="14" class="opacity-70">mdi-information-outline</v-icon>
@@ -181,7 +181,7 @@
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
         >
-          <p class="text-sm">Cruise speed</p>
+          <p class="text-sm">{{ $t('Cruise speed') }}</p>
           <input
             v-model.number="localCruiseSpeed"
             class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
@@ -190,14 +190,14 @@
             step="0.5"
             @change="cruiseSpeedTouched = true"
           />
-          <p class="text-sm">m/s</p>
+          <p class="text-sm">{{ $t('m/s') }}</p>
         </div>
         <div
           v-if="showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
           class="flex flex-col px-4 py-3 gap-y-2 ma-2 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#00000022]"
         >
           <div class="flex justify-between my-[1px]">
-            <p class="self-center text-sm font-bold -mt-1 text-start">New mission checklist</p>
+            <p class="self-center text-sm font-bold -mt-1 text-start">{{ $t('New mission checklist') }}</p>
             <v-icon class="text-sm -mr-[5px] cursor-pointer -mt-[1px]" @click="showMissionCreationTips = false"
               >mdi-close</v-icon
             >
@@ -207,7 +207,7 @@
             <v-icon v-if="home === undefined" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
             <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
             <p :class="{ 'cursor-pointer hover:underline': home === undefined }" @click="handleAddHomeWaypointByClick">
-              Set home waypoint
+              {{ $t('Set home waypoint') }}
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -219,7 +219,7 @@
               :class="{ 'cursor-pointer hover:underline': missionStore.currentPlanningWaypoints.length === 0 }"
               @click="missionStore.currentPlanningWaypoints.length === 0 ? toggleSimplePath() : undefined"
             >
-              Create mission path
+              {{ $t('Create mission path') }}
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -228,17 +228,17 @@
               >mdi-alert-circle</v-icon
             >
             <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
-            <p class="mr-2">Set cruise speed</p>
+            <p class="mr-2">{{ $t('Set cruise speed') }}</p>
 
             <v-tooltip v-if="isSurfaceBoat" location="right">
               <template #activator="{ props }">
                 <v-icon v-bind="props" class="ml-4 text-slate-400 text-sm cursor-help">mdi-information-outline</v-icon>
               </template>
               <div class="text-sm pa-1">
-                <p class="mb-1 text-center"><strong>Tested BlueBoat speeds:</strong></p>
-                <p class="mb-[3px]">Safe: 1 to 1.5 m/s</p>
-                <p class="mb-[3px]">Average: 2 m/s</p>
-                <p>Max: 3 m/s (heavily depends on wind, waves and stream)</p>
+                <p class="mb-1 text-center"><strong>{{ $t('Tested BlueBoat speeds:') }}</strong></p>
+                <p class="mb-[3px]">{{ $t('Safe: 1 to 1.5 m/s') }}</p>
+                <p class="mb-[3px]">{{ $t('Average: 2 m/s') }}</p>
+                <p>{{ $t('Max: 3 m/s (heavily depends on wind, waves and stream).') }}</p>
               </div>
             </v-tooltip>
           </div>
@@ -249,7 +249,7 @@
               :class="{ 'cursor-pointer hover:underline': !hasUploadedMission }"
               @click="!hasUploadedMission ? uploadMissionToVehicle() : undefined"
             >
-              Upload to the vehicle
+              {{ $t('Upload to the vehicle') }}
             </p>
           </div>
         </div>
@@ -258,7 +258,7 @@
           class="flex flex-row justify-between px-3 py-1 my-2 mx-6 rounded-md select-none border-[1px] border-[#FFFFFF22] bg-[#ffad4322] cursor-pointer opacity-60 elevation-4"
           @click="handleDoNotShowTipsAgain"
         >
-          <p class="text-sm">Don't show again</p>
+          <p class="text-sm">{{ $t("Don't show again") }}</p>
           <p class="text-sm">{{ countdownToHideTips }}</p>
         </div>
         <div
@@ -270,20 +270,20 @@
           <p
             class="text-sm flex justify-start items-center bg-[#1e498f] rounded-full pl-3 pr-1 py-1 border-[1px] border-[#FFFFFF44] elevation-2 cursor-pointer"
           >
-            <span>Set home waypoint</span>
+            <span>{{ $t('Set home waypoint') }}</span>
             <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
           </p>
         </div>
         <v-divider v-if="!isCreatingSimplePath && !isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
-          <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">{{ $t('Distance between lines (m)') }}</p>
           <input
             v-model.number="distanceBetweenSurveyLines"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
             min="1"
           />
-          <p class="m-1 overflow-visible text-sm text-slate-200">Lines angle (degrees)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">{{ $t('Lines angle (degrees)') }}</p>
           <input
             v-model.number="surveyLinesAngleDisplay"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
@@ -291,7 +291,7 @@
             min="0"
             max="359"
           />
-          <p class="m-1 overflow-visible text-sm text-slate-200">Turnaround distance (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">{{ $t('Turnaround distance (m)') }}</p>
           <input
             v-model.number="turnaroundDistance"
             class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]"
@@ -299,7 +299,7 @@
           />
           <v-checkbox
             :model-value="surveyCrosshatch"
-            label="Re-fly at 90° (crosshatch)"
+            :label="$t('Re-fly at 90° (crosshatch)')"
             theme="dark"
             density="compact"
             hide-details
@@ -307,15 +307,15 @@
             @update:model-value="setSurveyCrosshatch"
           />
           <p class="mx-5 mb-2 text-[11px] opacity-70 text-slate-200">
-            Flies the area again at 90° for better photogrammetry coverage (≈doubles flight time).
+            {{ $t('Flies the area again at 90° for better photogrammetry coverage (≈doubles flight time).') }}
           </p>
-          <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">{{ $t('Altitude (m)') }}</p>
           <input
             v-model.number="currentWaypointAltitude"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
           />
-          <p class="m-1 overflow-visible text-sm text-slate-200">Altitude type:</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">{{ $t('Altitude type:') }}</p>
           <v-select
             v-model="currentWaypointAltitudeRefType"
             :items="availableFrames"
@@ -336,7 +336,7 @@
             class="h-auto py-2 px-2 m-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
             @click="generateWaypointsFromSurvey"
           >
-            GENERATE WAYPOINTS
+            {{ $t('GENERATE WAYPOINTS') }}
           </button>
           <div class="flex w-full justify-end">
             <v-btn
@@ -345,7 +345,7 @@
               class="h-auto my-1 font-medium text-xs rounded-md transition-colors duration-200"
               @click="clearSurveyPathByUser"
             >
-              Clear Path
+              {{ $t('Clear Path') }}
             </v-btn>
           </div>
           <button
@@ -354,14 +354,14 @@
             class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
             @click="toggleSurvey"
           >
-            Cancel Survey
+            {{ $t('Cancel Survey') }}
           </button>
         </div>
         <v-divider v-if="isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSimplePath" class="flex flex-col w-full h-full p-2 -mt-[5px]">
-          <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
+          <p class="overflow-visible my-1 text-sm text-slate-200">{{ $t('Altitude (m)') }}</p>
           <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
-          <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
+          <p class="overflow-visible mt-2 text-sm text-slate-200">{{ $t('Altitude type:') }}</p>
           <v-select
             v-model="currentWaypointAltitudeRefType"
             :items="availableFrames"
@@ -381,13 +381,13 @@
             :class="{ 'bg-[#FFFFFF11] text-[#FFFFFF22]': missionStore.currentPlanningWaypoints.length < 2 }"
             @click="toggleSimplePath"
           >
-            END SIMPLE PATH
+            {{ $t('END SIMPLE PATH') }}
           </button>
         </div>
 
         <div>
           <div class="flex w-full justify-between my-2 px-1">
-            <v-tooltip location="top" text="Undo (Ctrl+Z / Cmd+Z)">
+            <v-tooltip location="top" :text="$t('Undo (Ctrl+Z / Cmd+Z)')">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -401,7 +401,7 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Redo (Ctrl+Y / Cmd+Y)">
+            <v-tooltip location="top" :text="$t('Redo (Ctrl+Y / Cmd+Y)')">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -415,7 +415,7 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Mission library">
+            <v-tooltip location="top" :text="$t('Mission library')">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -428,7 +428,7 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Clear mission on vehicle">
+            <v-tooltip location="top" :text="$t('Clear mission on vehicle')">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -442,7 +442,7 @@
               </template>
             </v-tooltip>
             <v-divider vertical />
-            <v-tooltip location="top" text="Mission Settings">
+            <v-tooltip location="top" :text="$t('Mission Settings')">
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -467,7 +467,7 @@
           class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
           @click="uploadMissionToVehicle"
         >
-          UPLOAD MISSION TO VEHICLE
+          {{ $t('UPLOAD MISSION TO VEHICLE') }}
         </button>
         <button
           v-if="missionStore.currentPlanningWaypoints.length > 0"
@@ -476,7 +476,7 @@
           @click="openCLearMissionDialog"
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>CLEAR CURRENT MISSION</p>
+          <p v-else>{{ $t('CLEAR CURRENT MISSION') }}</p>
         </button>
         <button
           :disabled="loading || !vehicleStore.isVehicleOnline"
@@ -485,17 +485,17 @@
           @click="downloadMissionFromVehicle"
         >
           <v-progress-circular v-if="loading" size="20" class="py-4" />
-          <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
+          <p v-else>{{ $t('DOWNLOAD MISSION FROM VEHICLE') }}</p>
         </button>
       </div>
     </div>
-    <v-tooltip location="top" text="Switch to Flight mode">
+    <v-tooltip location="top" :text="$t('Switch to Flight Mode')">
       <template #activator="{ props: tooltipProps }">
         <v-btn
           v-bind="tooltipProps"
           class="absolute right-[135px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
           elevation="8"
-          text="Flight mode"
+          :text="$t('Flight mode')"
           append-icon="mdi-send"
           :style="interfaceStore.globalGlassMenuStyles"
           hide-details
@@ -504,7 +504,7 @@
         />
       </template>
     </v-tooltip>
-    <v-tooltip location="top center" text="Download map tiles">
+    <v-tooltip location="top center" :text="$t('Download map tiles')">
       <template #activator="{ props: tooltipProps }">
         <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
           <template #activator="{ props: menuProps }">
@@ -518,9 +518,9 @@
           </template>
 
           <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-            <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+            <v-list-item class="py-0" :title="$t('Save visible Esri tiles')" @click="saveEsri" />
             <v-divider />
-            <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+            <v-list-item class="py-0" :title="$t('Save visible OSM tiles')" @click="saveOSM" />
           </v-list>
         </v-menu>
       </template>
@@ -551,7 +551,7 @@
       class="fixed left-[7px] flex text-md font-bold text-white z-30 drop-shadow-md"
       :style="`top: ${widgetStore.currentTopBarHeightPixelsScaled + 10}px`"
     >
-      Uploading mission to vehicle...
+      {{ $t('Uploading mission to vehicle...') }}
     </p>
   </div>
 
@@ -641,7 +641,7 @@
     :style="`top: ${widgetStore.currentTopBarHeightPixelsScaled}px`"
     class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
   >
-    Loading mission...
+    {{ $t('Loading mission...') }}
   </p>
   <div
     v-if="isSavingOfflineTiles"
@@ -649,7 +649,7 @@
     :style="interfaceStore.globalGlassMenuStyles"
   >
     <p>
-      Saving offline map content
+      {{ $t('Saving offline map content') }}
       <span v-if="savingLayerName">({{ savingLayerName }})</span>:&nbsp; {{ savePercentage }}%
       <span v-if="estimatedDownloadedMB && estimatedTotalMB">
         (~{{ estimatedDownloadedMB }} / {{ estimatedTotalMB }} MB)
@@ -674,6 +674,7 @@ import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
@@ -753,6 +754,8 @@ import {
   SurveyPath,
 } from '@/types/mission'
 import { ScreenBounds } from '@/types/user-interface'
+
+const { t } = useI18n()
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
@@ -858,10 +861,10 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 
   try {
     if (!vehicleStore.isVehicleOnline) {
-      throw 'Vehicle is not online.'
+      throw t('Vehicle is not online.')
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
-    const message = 'Go to Flight Mode and click the “play” button to start the mission.'
+    const message = t('Go to Flight Mode and click the play button to start the mission.')
 
     if (missionStore.alwaysSwitchToFlightMode) {
       router.push('/')
@@ -871,28 +874,28 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     }
     showDialog({
       variant: 'success',
-      title: 'Mission upload succeeded',
+      title: t('Mission upload succeeded'),
       message,
       persistent: false,
       timer: undefined,
       maxWidth: '750px',
       actions: [
-        { text: 'Close', color: 'white', action: closeDialog },
+        { text: t('Close'), color: 'white', action: closeDialog },
         {
-          text: 'Always switch to Flight Mode',
+          text: t('Always switch to Flight Mode'),
           color: 'white',
           action: () => {
             missionStore.alwaysSwitchToFlightMode = true
             openSnackbar({
               variant: 'info',
               message:
-                'You will be switched to Flight Mode automatically in the future. To change this, go to Mission Planning settings.',
+                t('You will be switched to Flight Mode automatically in the future. To change this, go to Mission Planning settings.'),
               duration: 5000,
             })
             router.push('/')
           },
         },
-        { text: 'Switch to Flight Mode', color: 'white', action: () => router.push('/') },
+        { text: t('Switch to Flight Mode'), color: 'white', action: () => router.push('/') },
       ],
     })
     hasUploadedMission.value = true
@@ -901,7 +904,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   } catch (error) {
     showDialog({
       variant: 'error',
-      title: 'Mission upload failed',
+      title: t('Mission upload failed'),
       message: error as string,
       timer: 3000,
       persistent: false,
@@ -940,7 +943,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
-    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+    showDialog({ variant: 'error', title: t('Mission download failed'), message: error as string, timer: 5000 })
   } finally {
     loading.value = false
     fetchingMission.value = false
@@ -968,10 +971,10 @@ const followerTarget = ref<string | undefined>(undefined)
 const currentWaypointAltitude = ref(0)
 const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
 const availableFrames = Object.values(AltitudeReferenceType).map((value: AltitudeReferenceType) => ({
-  name: value,
+  name: t(value),
   value,
 }))
-const plannedVehicleTypeItems = PLANNABLE_VEHICLE_TYPES
+const plannedVehicleTypeItems = PLANNABLE_VEHICLE_TYPES.map((item) => ({ ...item, label: t(item.label) }))
 
 const onPlannedVehicleTypeChange = (value?: MavType): void => {
   logUserAction(`Selected "${vehicleTypeLabel(value)}" as the planning vehicle type`)
@@ -1358,7 +1361,7 @@ const handleAddHomeWaypointByClick = (): void => {
   isSettingHomeWaypoint.value = true
   openSnackbar({
     variant: 'info',
-    message: 'Click anywhere on the map to set the home position',
+    message: t('Click anywhere on the map to set the home position'),
     duration: 5000,
   })
 }
@@ -2112,12 +2115,12 @@ const setHomePosition = async (): Promise<void> => {
     await vehicleStore.setHomeWaypoint(newHome, 0)
     openSnackbar({
       variant: 'success',
-      message: `Home position set to ${newHome[0].toFixed(2)}, ${newHome[1].toFixed(2)}`,
+      message: t('Home position set to {lat}, {lon}', { lat: newHome[0].toFixed(2), lon: newHome[1].toFixed(2) }),
     })
   } catch (error) {
     openSnackbar({
       variant: 'error',
-      message: `Failed to set home position: ${error}`,
+      message: `${t('Failed to set home position:')} ${error}`,
     })
   }
 }
@@ -2332,7 +2335,7 @@ const performUndo = (): void => {
   const snapshot = missionStore.popUndoSnapshot()
   if (!snapshot) {
     if (!undoLimitShown) {
-      openSnackbar({ variant: 'error', message: 'No more steps to undo.', duration: 2000 })
+      openSnackbar({ variant: 'error', message: t('No more steps to undo.'), duration: 2000 })
       undoLimitShown = true
     }
     return
@@ -2422,7 +2425,7 @@ const performRedo = (): void => {
   const snapshot = missionStore.popRedoSnapshot()
   if (!snapshot) {
     if (!redoLimitShown) {
-      openSnackbar({ variant: 'error', message: 'No more steps to redo.', duration: 2000 })
+      openSnackbar({ variant: 'error', message: t('No more steps to redo.'), duration: 2000 })
       redoLimitShown = true
     }
     return
@@ -2514,13 +2517,13 @@ const clearSurveyCreation = (): void => {
 const deleteSelectedSurvey = (): void => {
   const surveyId = selectedSurveyId.value
   if (!surveyId) {
-    openSnackbar({ variant: 'error', message: 'No survey selected to delete.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('No survey selected to delete.'), duration: 2000 })
     return
   }
 
   const surveyIndex = surveys.value.findIndex((s) => s.id === surveyId)
   if (surveyIndex === -1) {
-    openSnackbar({ variant: 'error', message: 'Selected survey does not exist.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('Selected survey does not exist.'), duration: 2000 })
     return
   }
 
@@ -2564,7 +2567,7 @@ const deleteSelectedSurvey = (): void => {
     removeSurveyAreaSquareMeters(surveyId)
   }
 
-  openSnackbar({ variant: 'success', message: 'Survey deleted.', duration: 2000 })
+  openSnackbar({ variant: 'success', message: t('Survey deleted.'), duration: 2000 })
   hideContextMenu()
   updateWaypointMarkers()
 }
@@ -3293,7 +3296,7 @@ const generateWaypointsFromSurvey = (): void => {
     lastMarker.getElement()?.querySelector('.waypoint-main-marker')?.classList.add('green-marker')
   }
 
-  openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
+  openSnackbar({ variant: 'success', message: t('Waypoints generated from survey path.'), duration: 1000 })
 }
 
 // Helper function to create waypoint marker HTML with command count indicator
@@ -3365,7 +3368,7 @@ const setSurveyCrosshatch = (value: boolean | null): void => {
 
 const toggleSurveyCrosshatch = (): void => {
   if (!selectedSurvey.value) {
-    openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('No survey selected.'), duration: 2000 })
     return
   }
   logUserAction(`${selectedSurvey.value.crosshatch ? 'Disabled' : 'Enabled'} 90° crosshatch on survey`)
@@ -3376,7 +3379,7 @@ const toggleSurveyCrosshatch = (): void => {
 
 const regenerateSurveyWaypoints = (angle?: number): void => {
   if (!selectedSurveyId.value) {
-    openSnackbar({ variant: 'error', message: 'No survey selected.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('No survey selected.'), duration: 2000 })
     return
   }
 
@@ -3426,7 +3429,7 @@ const regenerateSurveyWaypoints = (angle?: number): void => {
     )
 
     if (firstOldWaypointIndex === -1) {
-      openSnackbar({ variant: 'error', message: 'Failed to find old waypoints.', duration: 2000 })
+      openSnackbar({ variant: 'error', message: t('Failed to find old waypoints.'), duration: 2000 })
       return
     }
 
@@ -3526,7 +3529,7 @@ const undoGenerateWaypoints = (): void => {
 
   const survey = surveys.value.find((s) => s.id === surveyId)
   if (!surveyId || !survey) {
-    openSnackbar({ variant: 'error', message: 'Nothing to undo.', duration: 2000 })
+    openSnackbar({ variant: 'error', message: t('Nothing to undo.'), duration: 2000 })
     undoIsInProgress.value = false
     return
   }
@@ -3594,7 +3597,7 @@ const undoGenerateWaypoints = (): void => {
 
   rebuildSurveyPolygonFromPositions()
   clearSurveyPolygonUndoStack()
-  openSnackbar({ variant: 'success', message: 'Undo successful.', duration: 1000 })
+  openSnackbar({ variant: 'success', message: t('Undo successful.'), duration: 1000 })
   undoIsInProgress.value = false
   removeSurveyAreaSquareMeters(surveyId)
 }
@@ -3769,7 +3772,7 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
       await tryFetchHome()
       homeRetryTimer = setInterval(tryFetchHome, 1000)
     }
-    openSnackbar({ variant: 'success', message: 'Draft mission loaded.', duration: 2000 })
+    openSnackbar({ variant: 'success', message: t('Draft mission loaded.'), duration: 2000 })
   } catch (error) {
     openSnackbar({ variant: 'error', message: `Failed to load draft mission: ${error}`, duration: 3000 })
   }
@@ -3830,7 +3833,7 @@ const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
 
   showDialog({
     variant: 'info',
-    title: 'Load mission',
+    title: t('Load mission'),
     message: `Where should "${mission.name}" be placed?`,
     persistent: false,
     maxWidth: 620,
@@ -3974,6 +3977,11 @@ onMounted(async () => {
 
   extraOsm?.addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')
+  // Translate Leaflet default zoom button titles
+  const zoomInBtn = planningMap.value.zoomControl.getContainer()?.querySelector('.leaflet-control-zoom-in') as HTMLElement
+  const zoomOutBtn = planningMap.value.zoomControl.getContainer()?.querySelector('.leaflet-control-zoom-out') as HTMLElement
+  if (zoomInBtn) zoomInBtn.title = t('Zoom in')
+  if (zoomOutBtn) zoomOutBtn.title = t('Zoom out')
 
   // Replace failed tiles with a procedural noise background sampled by lat/lon, so
   // operators retain a motion-trackable backdrop where imagery is unavailable.
@@ -4434,10 +4442,10 @@ const openPoiDialog = (): void => {
     logUserAction('Opened point of interest dialog')
     poiManagerRef.value.openDialog(cursorCoordinates.value)
   } else if (!cursorCoordinates.value) {
-    showDialog({ variant: 'error', title: 'Error', message: 'Cannot place Point of Interest without map coordinates.' })
+    showDialog({ variant: 'error', title: t('Error'), message: t('Cannot place Point of Interest without map coordinates.') })
     console.error('Cannot open POI dialog without click coordinates for new POI')
   } else if (!poiManagerRef.value) {
-    showDialog({ variant: 'error', title: 'Error', message: 'POI Manager is not available.' })
+    showDialog({ variant: 'error', title: t('Error'), message: t('POI Manager is not available.') })
     console.error('Cannot open POI dialog, POI Manager ref is not set.')
   }
   hideContextMenu()

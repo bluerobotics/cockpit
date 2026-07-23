@@ -5,7 +5,7 @@
     @click="exitEditMode"
   >
     <v-btn icon="mdi-close" size="54" class="bg-[#334a5755] text-[#FFFFFFCC] text-[28px] rounded-full elevation-5" />
-    <div class="ml-2 mt-[7px] text-[26px]">Exit</div>
+    <div class="ml-2 mt-[7px] text-[26px]">{{ $t('Exit') }}</div>
   </div>
   <div v-if="editMode" class="flex fixed top-0 left-0 h-[100vh] w-[22vw] bg-[#031C2B]" />
   <div
@@ -16,7 +16,9 @@
       <div class="pt-1 bg-[#041e2e99] pb-2">
         <div class="flex justify-center w-full bg-[#CBCBCB09] relative">
           <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
-            <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">Views</p>
+            <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
+              {{ $t('Views') }}
+            </p>
           </div>
           <v-menu offset-y theme="dark">
             <template #activator="{ props: buttonProps }">
@@ -31,32 +33,32 @@
             <v-list>
               <v-list-item class="hover:bg-white/[0.04]">
                 <label class="flex w-full h-full cursor-pointer justify-between">
-                  <v-list-item-title>Import views</v-list-item-title>
+                  <v-list-item-title>{{ $t('Import views') }}</v-list-item-title>
                   <input type="file" accept="application/json" hidden @change="(e: Event) => importViewsGroup(e)" />
                   <v-icon size="20">mdi-upload</v-icon>
                 </label>
               </v-list-item>
               <v-list-item @click="exportViewsGroup">
                 <div class="flex w-full justify-between">
-                  <v-list-item-title>Export views</v-list-item-title>
+                  <v-list-item-title>{{ $t('Export views') }}</v-list-item-title>
                   <v-icon size="20">mdi-download</v-icon>
                 </div>
               </v-list-item>
               <v-list-item @click="openVehicleDefaultsImportModal">
                 <div class="flex w-full justify-between">
-                  <v-list-item-title class="mr-6">Import vehicle defaults</v-list-item-title>
+                  <v-list-item-title class="mr-6">{{ $t('Import vehicle defaults') }}</v-list-item-title>
                   <v-icon size="20">mdi-import</v-icon>
                 </div>
               </v-list-item>
               <v-list-item @click="toggleSnapToGrid">
                 <div class="flex w-full justify-between mt-[6px]">
-                  <v-list-item-title>{{ store.snapToGrid ? 'Disable grid' : 'Enable grid' }}</v-list-item-title>
+                  <v-list-item-title>{{ store.snapToGrid ? $t('Disable grid') : $t('Enable grid') }}</v-list-item-title>
                   <v-icon size="22">{{ store.snapToGrid ? 'mdi-grid' : 'mdi-grid-off' }}</v-icon>
                 </div>
               </v-list-item>
               <v-list-item @click="resetViewsGroup">
                 <div class="flex w-full justify-between mt-[6px]">
-                  <v-list-item-title class="mr-6">Reset to default</v-list-item-title>
+                  <v-list-item-title class="mr-6">{{ $t('Reset to default') }}</v-list-item-title>
                   <v-icon size="20" class="mt-[2px]">mdi-reload</v-icon>
                 </div>
               </v-list-item>
@@ -104,7 +106,7 @@
     <div class="flex justify-center w-full bg-[#CBCBCB09] shrink-0">
       <div class="flex 2xl:max-w-[400px] xl:max-w-[330px] lg:max-w-[260px] justify-center 2xl:py-2 py-1 text-md">
         <p class="overflow-hidden 2xl:text-sm text-xs text-ellipsis whitespace-nowrap opacity-60">
-          Widgets in {{ store.currentView.name }}
+          {{ $t('Widgets in {name}', { name: $t(store.currentView.name) }) }}
         </p>
       </div>
     </div>
@@ -122,7 +124,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Main view area
+            {{ $t('Main view area') }}
             <v-badge
               :content="store.currentView.widgets.length"
               color="#3B7B62"
@@ -190,7 +192,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Top Bar
+            {{ $t('Top Bar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -212,7 +214,7 @@
           >
             <div v-if="miniWidgetContainer.name.startsWith('Top')">
               <span class="w-full px-1 2xl:text-sm text-xs text-left select-none text-slate-400">{{
-                miniWidgetContainer.name
+                $t(miniWidgetContainer.name)
               }}</span>
               <div class="flex flex-col items-center w-full 2xl:px-3 overflow-x-hidden grow">
                 <TransitionGroup name="fade">
@@ -229,7 +231,7 @@
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
                       <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                        {{ widget.name || widget.component }}
+                        {{ $t(widget.name || widget.component) }}
                       </p>
                     </div>
                     <v-divider vertical class="opacity-10 mr-1" />
@@ -257,7 +259,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            Bottom Bar
+            {{ $t('Bottom Bar') }}
             <v-badge
               :content="
                 store.miniWidgetContainersInCurrentView.reduce((count, container) => {
@@ -279,7 +281,7 @@
           >
             <div v-if="miniWidgetContainer.name.startsWith('Bottom')">
               <span class="w-full px-1 2xl:text-sm text-xs text-left select-none text-slate-400">{{
-                miniWidgetContainer.name
+                $t(miniWidgetContainer.name)
               }}</span>
               <div class="flex flex-col items-center w-full 2xl:px-3 overflow-x-hidden grow">
                 <TransitionGroup name="fade">
@@ -299,7 +301,7 @@
                   >
                     <div class="flex items-center justify-start w-full overflow-auto">
                       <p class="overflow-hidden select-none text-ellipsis whitespace-nowrap 2xl:text-sm text-xs ml-3">
-                        {{ widget.name || widget.component }}
+                        {{ $t(widget.name || widget.component) }}
                       </p>
                     </div>
                     <v-divider vertical class="opacity-10 mr-1" />
@@ -330,7 +332,7 @@
           <div
             class="flex w-[90%] justify-between items-center 2xl:text-[18px] xl:text-[16px] lg:text-[14px] -mb-3 font-normal ml-2"
           >
-            {{ miniWidgetContainer.name }}
+            {{ $t(miniWidgetContainer.name) }}
             <v-badge
               :content="miniWidgetContainer.widgets?.length"
               color="#3B7B62"
@@ -382,7 +384,7 @@
     >
       <div class="flex flex-col items-center justify-center w-full h-[50%]">
         <div class="w-full">
-          <p class="2xl:text-md text-xs text-center pb-3">Widget type:</p>
+          <p class="2xl:text-md text-xs text-center pb-3">{{ $t('Widget type:') }}</p>
           <div class="flex w-full gap-3 mt-1 px-3">
             <v-btn
               v-for="mode in widgetModes"
@@ -396,22 +398,26 @@
               "
               @click="selectWidgetMode(mode)"
             >
-              {{ mode }}
+              {{ $t(mode) }}
             </v-btn>
           </div>
         </div>
       </div>
       <div class="flex flex-col items-center justify-start w-full h-[50%] pl-2">
         <div v-show="widgetMode === 'Regular'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the main view area
+          {{ $t('To be placed on the main view area') }}
         </div>
-        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
+        <div v-show="widgetMode === 'Regular'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">
+          {{ $t('(Drag card to add)') }}
+        </div>
         <div v-show="widgetMode === 'Mini'" class="w-[90%] 2xl:text-[16px] text-xs text-center mt-6">
-          To be placed on the top and bottom bars
+          {{ $t('To be placed on the top and bottom bars') }}
         </div>
         <div v-show="widgetMode === 'Mini'" class="text-xs mt-3 2xl:px-3 px-2 rounded-lg">(Drag card to add)</div>
         <div v-show="widgetMode === 'Input'" class="mt-6">
-          <v-btn type="flat" class="bg-[#FFFFFF33] text-white w-[95%]" @click="addContainer">Add new container </v-btn>
+          <v-btn type="flat" class="bg-[#FFFFFF33] text-white w-[95%]" @click="addContainer">{{
+            $t('Add new container')
+          }}</v-btn>
         </div>
       </div>
     </div>
@@ -448,13 +454,13 @@
               :class="{ 'bg-[#135da3]': widget.isExternal, 'bg-[#3B7B62]': !widget.isExternal }"
             >
               <span class="whitespace-normal text-center">{{
-                widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase())
+                $t(widget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()))
               }}</span>
             </div>
           </template>
           <div class="text-center">
             <div v-if="widget.isExternal">{{ widget.name }}</div>
-            <div>Drag to add</div>
+            <div>{{ $t('Drag to add') }}</div>
           </div>
         </v-tooltip>
       </div>
@@ -483,7 +489,7 @@
         >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
-            'Very generic indicator'
+            $t('Very Generic Indicator')
           }}</span>
         </div>
       </div>
@@ -521,19 +527,19 @@
     <GlassModal :is-visible="viewRenameDialogRevealed" class="rounded-lg">
       <v-card class="bg-transparent text-white w-[36rem] pt-6 px-4 pb-2">
         <v-card-text>
-          <p>New view name</p>
+          <p>{{ $t('New view name') }}</p>
           <v-text-field v-model="newViewName" counter="25" variant="filled" />
           <v-switch
             v-model="store.currentView.showBottomBarOnBoot"
-            label="Show bottom bar on boot"
+            :label="$t('Show bottom bar on boot')"
             class="mt-2 mx-2"
             :color="store.currentView.showBottomBarOnBoot ? 'white' : undefined"
           />
         </v-card-text>
         <v-divider />
         <v-card-actions class="flex justify-between pt-3">
-          <v-btn @click="viewRenameDialog.cancel">Cancel</v-btn>
-          <v-btn @click="viewRenameDialog.confirm">Save</v-btn>
+          <v-btn @click="viewRenameDialog.cancel">{{ $t('Cancel') }}</v-btn>
+          <v-btn @click="viewRenameDialog.confirm">{{ $t('Save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </GlassModal>
@@ -549,6 +555,7 @@ import { useConfirmDialog } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { type UseDraggableOptions, useDraggable, VueDraggable } from 'vue-draggable-plus'
 
 import { defaultMiniWidgetManagerVars } from '@/assets/defaults'
@@ -602,6 +609,7 @@ const { showDialog, closeDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
 const store = useWidgetManagerStore()
 const mainVehicleStore = useMainVehicleStore()
+const { t } = useI18n()
 
 const openVehicleDefaultsImportModal = (): void => {
   logUserAction('Opened vehicle defaults import dialog')
@@ -953,7 +961,7 @@ const getExternalWidgetSetupInfos = async (): Promise<void> => {
     // Only surface the error to the user when the vehicle is reachable; while it is offline we
     // expect the fetch to fail and a retry will run automatically once it comes online (issue #2650).
     if (mainVehicleStore.isVehicleOnline) {
-      const errorMessage = 'Error getting info around external widgets from BlueOS.'
+      const errorMessage = t('Error getting info around external widgets from BlueOS.')
       openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })
     }
   }

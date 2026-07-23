@@ -62,7 +62,7 @@
               :items="filteredSeriesList"
               item-title="label"
               item-value="id"
-              label="Variables to plot"
+              :label="$t('Variables to plot')"
               multiple
               chips
               closable-chips
@@ -77,7 +77,7 @@
             <div class="flex items-start gap-1">
               <v-text-field
                 v-model="draftMaxPointsPerSeries"
-                label="Max points per series"
+                :label="$t('Max points per series')"
                 type="number"
                 suffix="pts"
                 theme="dark"
@@ -94,7 +94,7 @@
                 :disabled="!isDraftMaxPointsDirty"
                 @click="applyMaxPointsPerSeries"
               >
-                Apply
+                {{ $t('Apply') }}
               </v-btn>
             </div>
           </div>
@@ -151,7 +151,7 @@
             </v-btn>
             <v-checkbox
               v-model="normalizePerSeries"
-              label="Normalize per series"
+              :label="$t('Normalize per series')"
               hide-details
               density="compact"
               class="-my-2"

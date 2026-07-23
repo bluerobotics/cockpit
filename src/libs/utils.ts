@@ -176,8 +176,10 @@ export const reloadCockpit = (timeout = 3000): void => {
  */
 export const isElectron = (): boolean => {
   // Check if the userAgent contains 'electron' (for renderer process)
+  // Must also verify electronAPI is available — some embedded browsers (e.g. VS Code)
+  // run on Electron but don't have Cockpit's electronAPI preload.
   if (typeof navigator === 'object' && typeof navigator.userAgent === 'string') {
-    return navigator.userAgent.toLowerCase().includes('electron')
+    return navigator.userAgent.toLowerCase().includes('electron') && typeof window.electronAPI !== 'undefined'
   }
 
   // Check if the process object exists and contains 'electron' (for main process)

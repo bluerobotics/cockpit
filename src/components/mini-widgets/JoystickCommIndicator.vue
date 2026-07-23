@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <v-tooltip :text="tooltipText" location="bottom">
       <template #activator="{ props: tooltipProps }">
@@ -21,7 +21,7 @@
 
     <InteractionDialog
       v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
-      :title="joystickConnected ? 'Joystick connected' : 'Joystick disconnected'"
+      :title="joystickConnected ? t('Joystick connected') : t('Joystick disconnected')"
       max-width="400px"
       variant="text-only"
     >
@@ -39,7 +39,9 @@
         </div>
       </template>
       <template #actions>
-        <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">Close</v-btn>
+        <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">{{
+          $t('Close')
+        }}</v-btn>
       </template>
     </InteractionDialog>
   </div>
@@ -47,6 +49,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, toRefs } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { joystickManager } from '@/libs/joystick/manager'
@@ -67,6 +70,7 @@ const miniWidget = toRefs(props).miniWidget
 
 const widgetStore = useWidgetManagerStore()
 const controllerStore = useControllerStore()
+const { t } = useI18n()
 const joystickConnected = ref(false)
 
 onMounted(() => {
@@ -80,14 +84,14 @@ const indicatorClass = computed(() => {
 })
 
 const tooltipText = computed(() => {
-  if (!joystickConnected.value) return 'Joystick disconnected'
-  if (!controllerStore.enableForwarding) return 'Joystick connected but disabled'
-  return 'Joystick connected and enabled'
+  if (!joystickConnected.value) return t('Joystick disconnected')
+  if (!controllerStore.enableForwarding) return t('Connected but disabled')
+  return t('Connected and enabled')
 })
 
 const switchLabel = computed(() => {
-  if (controllerStore.enableForwarding) return 'Joystick commands enabled'
-  return 'Joystick commands paused'
+  if (controllerStore.enableForwarding) return t('Commands enabled')
+  return t('Commands paused')
 })
 
 const setJoystickForwarding = (value: boolean | null): void => {

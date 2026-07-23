@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>Development configuration</template>
+    <template #title>{{ $t('Development configuration') }}</template>
     <template #content>
       <div
         class="max-h-[85vh] overflow-y-auto -mr-2 mb-2"
@@ -12,8 +12,15 @@
         >
           <div class="flex flex-row flex-wrap justify-start gap-x-[20px]">
             <v-switch
+              v-model="devStore.developmentMode"
+              :label="$t('Development mode')"
+              color="white"
+              hide-details
+              class="min-w-[155px]"
+            />
+            <v-switch
               :model-value="devStore.enableBlueOsSettingsSync"
-              label="BlueOS settings sync"
+              :label="$t('BlueOS settings sync')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -21,7 +28,7 @@
             />
             <v-switch
               :model-value="devStore.enableSystemLogging"
-              label="Enable system logging"
+              :label="$t('Enable system logging')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -29,7 +36,7 @@
             />
             <v-switch
               :model-value="devStore.showSplashScreenOnStartup"
-              label="Show splashscreen on startup"
+              :label="$t('Show splashscreen on startup')"
               color="white"
               hide-details
               class="min-w-[155px]"
@@ -40,7 +47,7 @@
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
             <div class="flex justify-between items-center">
-              <span>System logs</span>
+              <span>{{ $t('System logs') }}</span>
               <div class="flex items-center gap-2">
                 <span
                   v-if="hasSelection"
@@ -48,7 +55,7 @@
                   :class="{ 'opacity-50 pointer-events-none': isDownloadingZip }"
                   @click.stop="downloadSelectedLogs"
                 >
-                  <v-tooltip text="Download selected logs as ZIP">
+                  <v-tooltip :text="$t('Download selected logs as ZIP')">
                     <template #activator="{ props }">
                       <v-icon v-bind="props">mdi-download-multiple</v-icon>
                     </template>
@@ -61,7 +68,7 @@
                   :class="{ 'opacity-50 pointer-events-none': isDeletingBatch }"
                   @click.stop="deleteSelectedLogs"
                 >
-                  <v-tooltip text="Delete selected logs">
+                  <v-tooltip :text="$t('Delete selected logs')">
                     <template #activator="{ props }">
                       <v-icon v-bind="props">mdi-delete-sweep</v-icon>
                     </template>
@@ -75,14 +82,14 @@
                   :disabled="hasSelection"
                   @click.stop="openConsole"
                 >
-                  Open console
+                  {{ $t('Open console') }}
                 </v-btn>
                 <span
                   class="text-sm text-gray-300 cursor-pointer"
                   :class="{ 'opacity-50 pointer-events-none': hasSelection }"
                   @click.stop="deleteOldLogs"
                 >
-                  <v-tooltip text="Delete old logs">
+                  <v-tooltip :text="$t('Delete old logs')">
                     <template #activator="{ props }">
                       <v-icon left class="mr-2" v-bind="props">mdi-delete-clock</v-icon>
                     </template>
@@ -140,6 +147,7 @@
 import { format, parse } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -157,6 +165,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useDevelopmentStore } from '@/stores/development'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
+const { t } = useI18n()
 const devStore = useDevelopmentStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
@@ -213,9 +222,9 @@ interface CurrentLogInfo {
 /* eslint-enable jsdoc/require-jsdoc */
 
 const headers = [
-  { title: 'Date/Time', key: 'dateTimeMs', sortable: true },
-  { title: 'Size', key: 'sizeBytes', sortable: true },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: t('Date/Time'), key: 'dateTimeMs', sortable: true },
+  { title: t('Size'), key: 'sizeBytes', sortable: true },
+  { title: t('Actions'), key: 'actions', sortable: false },
 ]
 
 const updateCurrentSessionLogSize = async (): Promise<void> => {
@@ -339,9 +348,9 @@ const downloadLog = async (logName: string): Promise<void> => {
   logUserAction(`Downloaded system log '${logName}'`)
   try {
     saveAs(await getLogBlob(logName), logName)
-    openSnackbar({ message: `Downloaded ${logName}`, variant: 'success' })
+    openSnackbar({ message: `${t('Downloaded')} ${logName}`, variant: 'success' })
   } catch (error) {
-    openSnackbar({ message: 'Failed to download log', variant: 'error' })
+    openSnackbar({ message: t('Failed to download log'), variant: 'error' })
   }
 }
 
@@ -364,7 +373,7 @@ const downloadSelectedLogs = async (): Promise<void> => {
     }
 
     if (entries.length === 0) {
-      openSnackbar({ message: 'No logs could be read', variant: 'warning' })
+      openSnackbar({ message: t('No logs could be read'), variant: 'warning' })
       return
     }
 
@@ -375,7 +384,7 @@ const downloadSelectedLogs = async (): Promise<void> => {
     openSnackbar({ message: `Downloaded ${fileName}`, variant: 'success' })
     selectedLogNames.value = []
   } catch (error) {
-    openSnackbar({ message: 'Failed to download selected logs', variant: 'error' })
+    openSnackbar({ message: t('Failed to download selected logs'), variant: 'error' })
   } finally {
     isDownloadingZip.value = false
   }

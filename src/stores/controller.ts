@@ -1,4 +1,4 @@
-import { useDocumentVisibility } from '@vueuse/core'
+﻿import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
@@ -22,6 +22,7 @@ import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
 import { isMappingBlank } from '@/migration/default-profile-importer'
 import { legacyProtocolMappingsKey, migrateLegacyJoystickMapping } from '@/migration/profile-migrations'
+import i18n from '@/plugins/i18n'
 import {
   type GamepadToCockpitStdMapping,
   type JoystickProtocolActionsMapping,
@@ -189,12 +190,15 @@ export const useControllerStore = defineStore('controller', () => {
         preventJoystickForwarding.value = true
 
         showDialog({
-          title: 'Multiple joystick controllers detected',
+          title: i18n.global.t('Multiple joystick controllers detected'),
           message: [
-            `Another ground control station is already sending joystick commands to this vehicle, and using multiple
-            joysticks simultaneously can cause unpredictable behavior.`,
-            `If you still want to use this joystick, click the top-right joystick widget and enable forwarding. You can
-            also disable the joystick forwarding on the other Cockpit instance the same way.`,
+            i18n.global.t(
+              'Another ground control station is already sending joystick commands to this vehicle, and using multiple joysticks simultaneously can cause unpredictable behavior.'
+            ),
+            i18n.global.t(
+              'If you still want to use this joystick, click the top-right joystick widget and enable forwarding. ' +
+                'You can also disable the joystick forwarding on the other Cockpit instance the same way.'
+            ),
           ],
           variant: 'warning',
           maxWidth: 720,
@@ -343,9 +347,16 @@ export const useControllerStore = defineStore('controller', () => {
           const oldMappingId = oldMapping.axesCorrespondencies[axis as unknown as JoystickAxis]?.action?.id
           const wasMapped = oldMappingId === mapping.action.id
           if (isDuplicated && wasMapped) {
-            const warningText = `Unmapping '${mapping.action.name}' from input ${axis} layout.
-              Cannot use same action on multiple axes.`
-            showDialog({ message: warningText, variant: 'warning' })
+            showDialog({
+              message: i18n.global.t(
+                "Unmapping '{{name}}' from input {{axis}} layout. Cannot use same action on multiple axes.",
+                {
+                  name: mapping.action.name,
+                  axis,
+                }
+              ),
+              variant: 'warning',
+            })
             newMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action = otherAvailableActions.no_function
           }
         })
@@ -368,7 +379,7 @@ export const useControllerStore = defineStore('controller', () => {
       Object.entries(mapping).forEach(([btn, action]) => {
         const modKeyAction = modifierKeyActions[modKey as CockpitModifierKeyOption]
         if (JSON.stringify(action.action) !== JSON.stringify(modKeyAction)) return
-        showDialog({ message: "Cannot map modifier key to it's own layout.", variant: 'warning' })
+        showDialog({ message: i18n.global.t('Cannot map modifier to own layout'), variant: 'warning' })
         protocolMapping.value.buttonsCorrespondencies[modKey as CockpitModifierKeyOption][
           Number(btn) as JoystickButton
         ].action = otherAvailableActions.no_function
@@ -379,7 +390,10 @@ export const useControllerStore = defineStore('controller', () => {
       const actionToUnmap = protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action
       if (JSON.stringify(actionToUnmap) === JSON.stringify(otherAvailableActions.no_function)) return
       showDialog({
-        message: `Unmapping '${actionToUnmap.name} from ${v.modKey} layout. Cannot use same button as the modifier.`,
+        message: i18n.global.t("Unmapping '{{name}}' from {{layout}} layout. Cannot use same button as the modifier.", {
+          name: actionToUnmap.name,
+          layout: v.modKey,
+        }),
         variant: 'warning',
       })
       protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action = otherAvailableActions.no_function
@@ -398,7 +412,11 @@ export const useControllerStore = defineStore('controller', () => {
       const contents = event.target.result
       const maybeProfile = JSON.parse(contents)
       if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
-        showDialog({ variant: 'error', message: 'Invalid joystick mapping file.', timer: 3000 })
+        showDialog({
+          variant: 'error',
+          message: i18n.global.t('Invalid joystick mapping file'),
+          timer: 3000,
+        })
         return
       }
       cockpitStdMappings.value[joystick.model] = maybeProfile
@@ -423,11 +441,19 @@ export const useControllerStore = defineStore('controller', () => {
         !maybeFunctionsMapping['axesCorrespondencies'] ||
         !maybeFunctionsMapping['buttonsCorrespondencies']
       ) {
-        showDialog({ message: 'Invalid functions mapping file.', variant: 'error', timer: 3000 })
+        showDialog({
+          message: i18n.global.t('Invalid functions mapping file'),
+          variant: 'error',
+          timer: 3000,
+        })
         return
       }
       protocolMapping.value = maybeFunctionsMapping
-      showDialog({ message: 'Functions mapping imported successfully.', variant: 'success', timer: 2000 })
+      showDialog({
+        message: i18n.global.t('Functions mapping imported successfully'),
+        variant: 'success',
+        timer: 2000,
+      })
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])

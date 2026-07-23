@@ -11,6 +11,7 @@ import {
 } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { isElectron } from '@/libs/utils'
+import i18n from '@/plugins/i18n'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useMainVehicleStore } from './mainVehicle'
@@ -23,7 +24,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   // Routine to log the memory usage of the application
   const cockpitMemoryUsageVariable = {
     id: 'cockpit-memory-usage',
-    name: 'Cockpit Memory Usage',
+    name: i18n.global.t('Cockpit Memory Usage'),
     type: 'number',
     description: 'The memory usage of the Cockpit application in MB. This value is updated every 100ms.',
   } as DataLakeVariable
@@ -39,38 +40,38 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     // Separate memory metrics for different process types
     cockpitMainMemoryVariable = {
       id: 'cockpit-main-memory',
-      name: 'Cockpit Main Memory (Standalone)',
+      name: i18n.global.t('Cockpit Main Memory (Standalone)'),
       type: 'number',
       description:
-        'The memory usage of the main process in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The memory usage of the main process in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitMainMemoryVariable)
 
     cockpitRenderersMemoryVariable = {
       id: 'cockpit-renderers-memory',
-      name: 'Cockpit Renderers Memory (Standalone)',
+      name: i18n.global.t('Cockpit Renderers Memory (Standalone)'),
       type: 'number',
       description:
-        'The total memory usage of the renderer processes in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The total memory usage of the renderer processes in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitRenderersMemoryVariable)
 
     cockpitGpuMemoryVariable = {
       id: 'cockpit-gpu-memory',
-      name: 'Cockpit GPU Memory (Standalone)',
+      name: i18n.global.t('Cockpit GPU Memory (Standalone)'),
       type: 'number',
       description:
-        'The memory usage of the GPU in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The memory usage of the GPU in the standalone Cockpit application, in MB. This value is updated every 100ms. Only available in Electron.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitGpuMemoryVariable)
 
     // CPU usage tracking
     cockpitCpuUsageVariable = {
       id: 'cockpit-cpu-usage',
-      name: 'Cockpit CPU Usage (Standalone)',
+      name: i18n.global.t('Cockpit CPU Usage (Standalone)'),
       type: 'number',
       description:
-        'The CPU usage of Cockpit Standalone as a percentage. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The CPU usage of the standalone Cockpit application as a percentage. This value is updated every 100ms. Only available in Electron.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitCpuUsageVariable)
   }
@@ -153,7 +154,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const appAverageFrameRateSampleDelay = 100
   const cockpitAppFrameRateVariable = {
     id: 'cockpit-app-frame-rate',
-    name: 'Cockpit App Frame Rate',
+    name: i18n.global.t('Cockpit App Frame Rate'),
     type: 'number',
     description: 'The framerate of the Cockpit application rendering in fps. This value is updated every 100ms.',
   } as DataLakeVariable
