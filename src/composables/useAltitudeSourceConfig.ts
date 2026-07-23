@@ -7,7 +7,7 @@ import {
   listenToDataLakeVariablesInfoChanges,
   unlistenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
-import { isPresetAltitudeVariableId } from '@/libs/data-sources/altitude'
+import { isPresetAltitudeVariableId, migrateAltitudeVariableId } from '@/libs/data-sources/altitude'
 
 /** Altitude source selections saved when the config menu opens. */
 type AltitudeConfigSnapshot = {
@@ -25,7 +25,8 @@ type AltitudeVariableOptions = {
 }
 
 /**
- * Merge persisted altitude options with defaults and infer custom mode when needed.
+ * Merge persisted altitude options with defaults, migrate legacy preset paths
+ * to their templated form, and infer custom mode when needed.
  * @param {T} defaultOptions - Default widget options
  * @param {Partial<T>} persistedOptions - Persisted widget options
  * @returns {T} Merged widget options
@@ -35,6 +36,10 @@ export const mergeAltitudeVariableOptions = <T extends AltitudeVariableOptions>(
   persistedOptions: Partial<T>
 ): T => {
   const merged = { ...defaultOptions, ...persistedOptions }
+
+  if (merged.altitudeVariableId) {
+    merged.altitudeVariableId = migrateAltitudeVariableId(merged.altitudeVariableId) as T['altitudeVariableId']
+  }
 
   if (merged.altitudeVariableId && !isPresetAltitudeVariableId(merged.altitudeVariableId)) {
     merged.useCustomAltitudeVariable = true
