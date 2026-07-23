@@ -699,6 +699,7 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useSnackbar } from '@/composables/snackbar'
 import {
@@ -712,6 +713,7 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
+import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
 import {
   createGridOverlay,
   fitMapToWaypoints,
@@ -761,6 +763,10 @@ const widgetStore = useWidgetManagerStore()
 const missionEstimates = useMissionEstimates()
 const angleOverlay = useVertexAngleOverlay()
 const dragMeasureOverlay = useDragMeasureOverlay(angleOverlay)
+const surveyArrowOverlay = useSurveyArrowOverlay({
+  surveys: () => surveysWithLiveWaypoints.value,
+  previewPath: () => surveyPreviewPath.value,
+})
 
 const { height: windowHeight } = useWindowSize()
 
@@ -989,6 +995,10 @@ const selectedSurveyId = ref<string>('')
 const surveyPolygonLayers = ref<{ [key: string]: Polygon }>({})
 const lastSelectedSurveyId = ref('')
 const surveys = computed(() => missionStore.currentPlanningSurveys)
+
+const surveysWithLiveWaypoints = computed<Survey[]>(() =>
+  applyLiveWaypointCoordinates(surveys.value, missionStore.currentPlanningWaypoints)
+)
 const undoIsInProgress = ref(false)
 const undoWaypointInsertIndex = ref<number | null>(null)
 const undoSurveyInsertIndex = ref<number | null>(null)
@@ -2858,6 +2868,7 @@ const surveyPathLayer = shallowRef<L.Polyline | null>(null)
 const surveyCrosshatchPathLayer = shallowRef<L.Polyline | null>(null)
 const surveyTurnaroundLayers = shallowRef<L.Polyline[]>([])
 const surveyPolygonLayer = shallowRef<L.Polygon | null>(null)
+const surveyPreviewPath = shallowRef<SurveyPreview | null>(null)
 
 const removeSurveyCrosshatchPathLayer = (): void => {
   if (surveyCrosshatchPathLayer.value) {
@@ -2872,6 +2883,7 @@ const clearSurveyPathByUser = (): void => {
 }
 
 const clearSurveyPath = (): void => {
+  surveyPreviewPath.value = null
   if (surveyPathLayer.value) {
     planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
     surveyPathLayer.value = null
@@ -2970,6 +2982,7 @@ const updatePolygon = (): void => {
 
 const checkAndRemoveSurveyPath = (): void => {
   if (surveyPolygonVertexesPositions.value.length >= 4 || !surveyPathLayer.value) return
+  surveyPreviewPath.value = null
   planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
   surveyPathLayer.value = null
   removeSurveyCrosshatchPathLayer()
@@ -2994,6 +3007,7 @@ const createSurveyPath = (): void => {
     )
 
     if (result.path.length === 0) {
+      surveyPreviewPath.value = null
       showDialog({
         variant: 'error',
         message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
@@ -3012,6 +3026,13 @@ const createSurveyPath = (): void => {
 
     const crosshatchStart = result.crosshatchStartIndex
     const firstPassPath = crosshatchStart !== undefined ? result.path.slice(0, crosshatchStart) : result.path
+    // Include the last point of the first pass so the transit leg into the second pass is drawn.
+    const crosshatchPath = crosshatchStart !== undefined ? result.path.slice(Math.max(0, crosshatchStart - 1)) : []
+
+    surveyPreviewPath.value = {
+      firstPass: firstPassPath.map((point) => [point.lat, point.lng]),
+      crosshatch: crosshatchPath.map((point) => [point.lat, point.lng]),
+    }
 
     surveyPathLayer.value = L.polyline(firstPassPath, {
       color: '#2563EB',
@@ -3021,11 +3042,10 @@ const createSurveyPath = (): void => {
     }).addTo(toRaw(planningMap.value)!)
 
     if (crosshatchStart !== undefined) {
-      // Include the last point of the first pass so the transit leg into the second pass is drawn.
-      surveyCrosshatchPathLayer.value = L.polyline(result.path.slice(Math.max(0, crosshatchStart - 1)), {
+      surveyCrosshatchPathLayer.value = L.polyline(crosshatchPath, {
         color: '#A855F7',
-        weight: 1,
-        opacity: 0.56,
+        weight: 1.5,
+        opacity: 0.8,
         className: 'survey-path-crosshatch',
       }).addTo(toRaw(planningMap.value)!)
     }
@@ -3041,6 +3061,7 @@ const createSurveyPath = (): void => {
       )
     }
   } catch (error) {
+    surveyPreviewPath.value = null
     showDialog({
       variant: 'error',
       message: `Failed to generate survey path: ${(error as Error).message}`,
@@ -3996,6 +4017,7 @@ onMounted(async () => {
   pane.style.zIndex = '640'
   pane.style.pointerEvents = 'none'
   angleOverlay.initAngleOverlay(planningMap.value!)
+  surveyArrowOverlay.initArrowOverlay(planningMap.value!)
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
@@ -4136,6 +4158,7 @@ onUnmounted(() => {
   clearLiveMeasure()
   dragMeasureOverlay.destroyDragMeasureOverlay()
   angleOverlay.destroyAngleOverlay()
+  surveyArrowOverlay.destroyArrowOverlay()
 
   detachTileFallbacks.forEach((detach) => detach())
   detachTileFallbacks = []
@@ -4600,6 +4623,10 @@ watch(
   pointer-events: none;
 }
 .measure-angle-tag {
+  background: transparent;
+  border: none;
+}
+.survey-arrow {
   background: transparent;
   border: none;
 }
