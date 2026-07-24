@@ -1,19 +1,19 @@
 <template>
   <div
-    class="flex items-center justify-start h-full px-4 mr-1 transition-all cursor-pointer hover:bg-slate-200/30 min-w-[20%] select-none"
+    class="flex items-center justify-start h-full px-4 mr-1 cursor-pointer min-w-[20%] select-none"
     :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
     @click="configMenuOpen = true"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
     <div class="flex items-center overflow-hidden text-lg font-medium text-white whitespace-nowrap">
-      <p class="overflow-x-hidden text-ellipsis">
-        {{ store.missionName }}
-        <FontAwesomeIcon
-          v-if="store.missionNameIsAutomatic"
-          icon="fa-pen-to-square"
-          size="1x"
-          class="ml-2 text-slate-200/30"
-        />
-      </p>
+      <p class="min-w-0 overflow-x-hidden text-ellipsis">{{ store.missionName }}</p>
+      <FontAwesomeIcon
+        icon="fa-pen-to-square"
+        size="1x"
+        class="ml-2 shrink-0 text-slate-200/30 mb-1"
+        :class="isHovered ? 'opacity-100' : 'opacity-0'"
+      />
     </div>
   </div>
 
@@ -203,6 +203,7 @@ const configMenuOpen = computed({
 
 const stagedName = ref('')
 const stagedIsAutomatic = ref(true)
+const isHovered = ref(false)
 const showExistingMissionPicker = ref(false)
 const showMissionForm = ref(false)
 const missionFormMode = ref<'create' | 'edit'>('create')
