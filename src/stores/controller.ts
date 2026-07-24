@@ -66,6 +66,8 @@ export const useControllerStore = defineStore('controller', () => {
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
   const preventJoystickForwarding = ref(false)
+  // Guards against concurrent other-GCS conflict checks racing to show the warning dialog more than once.
+  let checkingForOtherManualControlSources = false
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
 
   // Self-heal: if we booted with a blank mapping but legacy data is reachable now (e.g. from raw localStorage or
@@ -165,44 +167,49 @@ export const useControllerStore = defineStore('controller', () => {
 
     // Add new joysticks
     for (const [index, joystick] of newMap) {
-      // Check if there were joysticks connected before this one
-      const thereWereJoysticksBefore = joysticks.value.size > 0
-
       if (joysticks.value.has(index)) continue
       joystick.model = joystickManager.getModel(joystick.gamepad.id)
       const { product_id, vendor_id } = joystickManager.getVidPid(joystick.gamepad.id)
       joysticks.value.set(index, joystick)
       console.info(`Joystick ${index} connected. Model: ${joystick.model} // VID: ${vendor_id} // PID: ${product_id}`)
 
-      if (thereWereJoysticksBefore && enableForwarding.value) {
-        console.warn('There are joysticks connected and forwarding already. Skipping joystick conflict check.')
-        return
+      // The conflict check is only meaningful for the first joystick that takes control. Re-running it on every
+      // (re)connection made the warning dialog pop up repeatedly and kept disabling forwarding, stealing control
+      // from the joystick already in use (issue #2798). Skip it once forwarding is active, already prevented, or
+      // a check is in flight.
+      if (enableForwarding.value || preventJoystickForwarding.value || checkingForOtherManualControlSources) {
+        continue
       }
 
       // Check if other GCS is sending MANUAL_CONTROL messages
-      const vehicleAddress = await mainVehicleStore.getVehicleAddress()
-      const otherSourceDetected = await checkForOtherManualControlSources(vehicleAddress)
+      checkingForOtherManualControlSources = true
+      try {
+        const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+        const otherSourceDetected = await checkForOtherManualControlSources(vehicleAddress)
 
-      if (otherSourceDetected) {
-        console.warn('Other GCS sending MANUAL_CONTROL messages detected. Disabling joystick forwarding.')
-        enableForwarding.value = false
-        preventJoystickForwarding.value = true
+        if (otherSourceDetected) {
+          console.warn('Other GCS sending MANUAL_CONTROL messages detected. Disabling joystick forwarding.')
+          enableForwarding.value = false
+          preventJoystickForwarding.value = true
 
-        showDialog({
-          title: 'Multiple joystick controllers detected',
-          message: [
-            `Another ground control station is already sending joystick commands to this vehicle, and using multiple
-            joysticks simultaneously can cause unpredictable behavior.`,
-            `If you still want to use this joystick, click the top-right joystick widget and enable forwarding. You can
-            also disable the joystick forwarding on the other Cockpit instance the same way.`,
-          ],
-          variant: 'warning',
-          maxWidth: 720,
-          persistent: false,
-        })
-      } else {
-        console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
-        enableForwarding.value = true
+          showDialog({
+            title: 'Multiple joystick controllers detected',
+            message: [
+              `Another ground control station is already sending joystick commands to this vehicle, and using multiple
+              joysticks simultaneously can cause unpredictable behavior.`,
+              `If you still want to use this joystick, click the top-right joystick widget and enable forwarding. You can
+              also disable the joystick forwarding on the other Cockpit instance the same way.`,
+            ],
+            variant: 'warning',
+            maxWidth: 720,
+            persistent: false,
+          })
+        } else {
+          console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
+          enableForwarding.value = true
+        }
+      } finally {
+        checkingForOtherManualControlSources = false
       }
     }
 
