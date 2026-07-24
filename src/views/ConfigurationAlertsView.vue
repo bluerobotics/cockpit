@@ -1,22 +1,25 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
-    <template #title>Alerts configuration</template>
+    <template #title>{{ $t('Alerts configuration') }}</template>
     <template #content>
       <div
         class="flex flex-col justify-around align-start ml-5 max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider>
-          <template #title>Voice alerts:</template>
+          <template #title>{{ $t('Voice alerts:') }}</template>
           <template #info>
-            Enable voice alerts to receive audible notifications about system and vehicle activities. <br />
-            Select specific alert levels to customize which types of notifications you receive.
+            {{
+              $t(
+                'Enable voice alerts to receive audible notifications about system and vehicle activities. Select specific alert levels to customize which types of notifications you receive.'
+              )
+            }}
           </template>
           <template #content>
             <div class="flex justify-between">
               <v-switch
                 :model-value="alertStore.enableVoiceAlerts"
-                label="Enable voice alerts"
+                :label="$t('Enable voice alerts')"
                 color="white"
                 class="ml-3"
                 @update:model-value="setVoiceAlertsEnabled"
@@ -27,13 +30,13 @@
                 max="1"
                 step="0.05"
                 hide-details
-                label="Alerts volume"
+                :label="$t('Alerts volume')"
                 color="white"
                 class="max-w-[300px]"
                 :disabled="!alertStore.enableVoiceAlerts"
               />
             </div>
-            <span class="text-sm font-medium mt-4">Alert levels:</span>
+            <span class="text-sm font-medium mt-4">{{ $t('Alert levels:') }}</span>
             <div class="flex flex-wrap items-center justify-start">
               <div
                 v-for="enabledLevel in alertStore.enabledAlertLevels"
@@ -42,14 +45,14 @@
               >
                 <v-checkbox
                   :model-value="enabledLevel.enabled"
-                  :label="capitalize(enabledLevel.level)"
+                  :label="translateAlertLevel(enabledLevel.level)"
                   hide-details
                   color="white"
                   @update:model-value="(value) => setAlertLevelEnabled(enabledLevel.level, value)"
                 />
               </div>
             </div>
-            <span class="text-sm font-medium mt-4">Alert voice:</span>
+            <span class="text-sm font-medium mt-4">{{ $t('Alert voice:') }}</span>
             <Dropdown
               :model-value="alertStore.selectedAlertSpeechVoiceName"
               :options="alertStore.availableAlertSpeechVoiceNames"
@@ -63,7 +66,7 @@
         <!-- Armed Menu Warning Toggle -->
         <v-switch
           :model-value="!alertStore.neverShowArmedMenuWarning"
-          label="Show warning when opening menu with armed vehicle"
+          :label="$t('Show warning when opening menu with armed vehicle')"
           color="white"
           class="mt-3 mb-2 ml-3"
           hide-details
@@ -75,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { capitalize } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Dropdown from '@/components/Dropdown.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -84,8 +87,21 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
+const { t } = useI18n()
 const interfaceStore = useAppInterfaceStore()
 const alertStore = useAlertStore()
+
+// Translate alert level names
+const translateAlertLevel = (level: string): string => {
+  const mapping: Record<string, string> = {
+    info: t('Info'),
+    success: t('Success'),
+    error: t('Error'),
+    warning: t('Warning'),
+    critical: t('Critical'),
+  }
+  return mapping[level.toLowerCase()] || level
+}
 
 const setVoiceAlertsEnabled = (value: boolean | null): void => {
   const enabled = value ?? false

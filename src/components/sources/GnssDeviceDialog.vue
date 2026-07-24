@@ -15,7 +15,7 @@
       <div v-if="device" class="flex flex-col gap-y-4 px-1 -mt-7 text-white">
         <v-text-field
           v-model="device.name"
-          label="Name"
+          :label="$t('Name')"
           variant="outlined"
           density="compact"
           hide-details
@@ -31,13 +31,13 @@
             :items="gnss.availablePorts.value"
             item-title="path"
             item-value="path"
-            label="Serial port"
+            :label="$t('Serial port')"
             theme="dark"
             variant="outlined"
             density="compact"
             hide-details
             :disabled="!gnss.isSupported"
-            no-data-text="No serial ports found"
+            :no-data-text="$t('No serial ports found')"
             class="flex-1"
             @update:model-value="onPortSelected"
           />
@@ -51,7 +51,7 @@
           <v-select
             v-model="device.baud"
             :items="commonBaudRates"
-            label="Baud rate"
+            :label="$t('Baud rate')"
             theme="dark"
             variant="outlined"
             density="compact"
@@ -141,9 +141,9 @@
         <v-btn text :disabled="!device?.name" @click="onAdd">Add device</v-btn>
       </template>
       <template v-else>
-        <v-btn text @click="onDelete">Delete device</v-btn>
+        <v-btn text @click="onDelete">{{ $t('Delete device') }}</v-btn>
         <v-spacer></v-spacer>
-        <v-btn text @click="close">Close</v-btn>
+        <v-btn text @click="close">{{ $t('Close') }}</v-btn>
       </template>
     </template>
   </InteractionDialog>
@@ -151,6 +151,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ConsoleViewer from '@/components/ConsoleViewer.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -184,6 +185,7 @@ const emit = defineEmits<{
 
 const gnss = useGnss()
 const { showDialog, closeDialog } = useInteractionDialog()
+const { t } = useI18n()
 
 const device = computed(() =>
   props.create ? gnss.draft.value : gnss.devices.value.find((e) => e.id === props.deviceId)
@@ -191,7 +193,7 @@ const device = computed(() =>
 const activeId = computed(() => device.value?.id ?? '')
 const plannedId = computed(() => gnss.planDeviceId(device.value?.name ?? ''))
 const displayId = computed(() => (props.create ? plannedId.value : activeId.value))
-const dialogTitle = computed(() => (props.create ? 'Add GNSS device' : `Configure ${device.value?.name ?? 'device'}`))
+const dialogTitle = computed(() => (props.create ? t('Add GNSS device') : t('Configure {name}', { name: device.value?.name ?? t('device') })))
 
 const status = computed(() => gnss.statuses[activeId.value] ?? 'disconnected')
 const fix = computed(() => gnss.latestFixes[activeId.value])

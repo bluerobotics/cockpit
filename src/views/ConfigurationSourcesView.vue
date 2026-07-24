@@ -36,7 +36,7 @@
               </div>
 
               <div v-if="gnss.devices.value.length === 0" class="text-sm opacity-60 py-4 text-center">
-                No GNSS devices configured.
+                {{ $t('No GNSS devices configured.') }}
               </div>
 
               <div v-else class="flex flex-col">
@@ -63,7 +63,7 @@
                     icon="mdi-cog"
                     variant="text"
                     size="x-small"
-                    title="Configure"
+                    :title="$t('Configure')"
                     @click="openDialog(device.id)"
                   />
                 </div>
@@ -72,7 +72,7 @@
               <div class="flex justify-center mt-3">
                 <v-btn variant="outlined" class="rounded-lg" :disabled="!gnss.isSupported" @click="onAddDevice">
                   <v-icon start>mdi-plus</v-icon>
-                  Add USB/serial GNSS source
+                  {{ $t('Add USB/serial GNSS source') }}
                 </v-btn>
               </div>
             </div>

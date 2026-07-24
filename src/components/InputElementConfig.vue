@@ -19,7 +19,7 @@
         prepend-icon="mdi-delete"
         @click="deleteElement"
       >
-        Delete
+        {{ $t('Delete') }}
       </v-btn>
       <ExpansiblePanel
         v-if="currentElement"
@@ -31,7 +31,9 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title><p class="ml-10">Options</p></template>
+        <template #title
+          ><p class="ml-10">{{ $t('Options') }}</p></template
+        >
         <template #content>
           <div class="flex flex-col h-full items-center mb-4 -ml-[7px] w-[248px]">
             <div
@@ -156,7 +158,7 @@
                             class="bg-[#FFFFFF22] my-[10px] mr-[23px] w-22"
                             size="x-small"
                             v-bind="props"
-                            >edit</v-btn
+                            >{{ $t('Edit') }}</v-btn
                           >
                         </div>
                       </template>
@@ -166,20 +168,20 @@
                       >
                         <div class="flex gap-x-4">
                           <div class="flex flex-col items-center">
-                            <p class="text-[14px]">{{ `Option ${index + 1} name` }}</p>
+                            <p class="text-[14px]">{{ $t('Option {index} name', { index: index + 1 }) }}</p>
                             <input
                               v-model="currentElement.options.layout[optionKey][index].name"
-                              placeholder="option name"
+                              :placeholder="$t('option name')"
                               theme="dark"
                               type="text"
                               class="p-2 w-[120px] bg-[#FFFFFF11]"
                             />
                           </div>
                           <div class="flex flex-col items-center">
-                            <p class="text-[14px]">{{ `Option ${index + 1} value` }}</p>
+                            <p class="text-[14px]">{{ $t('Option {index} value', { index: index + 1 }) }}</p>
                             <input
                               v-model="currentElement.options.layout[optionKey][index].value"
-                              placeholder="value"
+                              :placeholder="$t('value')"
                               theme="dark"
                               type="text"
                               class="p-2 w-[120px] bg-[#FFFFFF11]"
@@ -199,7 +201,7 @@
                                 isOptionsMenuOpen[index] = false
                               }
                             "
-                            >close</v-btn
+                            >{{ $t('Close') }}</v-btn
                           >
                           <v-btn
                             variant="text"
@@ -213,8 +215,9 @@
                                 isOptionsMenuOpen[index + 1] = true
                               }
                             "
-                            >add another option</v-btn
                           >
+                            {{ $t('add another option') }}
+                          </v-btn>
                         </div>
                       </v-card>
                     </v-menu>
@@ -224,7 +227,7 @@
                     class="bg-[#3B78A8] my-[10px] mr-[13px] w-22"
                     size="x-small"
                     @click="addSelectorOption(optionKey)"
-                    >add</v-btn
+                    >{{ $t('Add') }}</v-btn
                   >
                 </div>
               </template>
@@ -244,12 +247,12 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title>Actions</template>
+        <template #title>{{ $t('Actions') }}</template>
         <template #content>
           <div class="flex flex-col h-full items-center mb-4 -ml-[7px] w-[248px]">
             <template v-if="currentElement.component !== CustomWidgetElementType.Button">
               <div class="flex w-full justify-between items-center h-auto border-b-[1px] border-[#FFFFFF33]">
-                <p class="text-center w-full text-sm">Data-lake variable</p>
+                <p class="text-center w-full text-sm">{{ $t('Data-lake variable') }}</p>
                 <div
                   v-if="!openNewDataLakeVariableForm && !openDataLakeVariableSelector"
                   class="flex flex-col justify-end items-center self-end h-auto mt-1"
@@ -263,7 +266,7 @@
                     class="bg-[#3B78A8] mr-[13px] w-[60px]"
                     size="x-small"
                     @click="openVariableCreationForm"
-                    >create</v-btn
+                    >{{ $t('Create') }}</v-btn
                   >
                   <v-btn
                     v-if="!currentElement.options.dataLakeVariable?.name"
@@ -271,7 +274,7 @@
                     class="bg-[#FFFFFF22] mr-[13px] my-1"
                     size="x-small"
                     @click="openVariableSelector"
-                    >select</v-btn
+                    >{{ $t('Select') }}</v-btn
                   >
                 </div>
                 <template
@@ -303,7 +306,7 @@
                 class="self-start mt-[9px]"
                 size="x-small"
                 @click="handleResetVariable"
-                >{{ currentElement.options.dataLakeVariable?.name ? 'reset' : 'back' }}</v-btn
+                >{{ currentElement.options.dataLakeVariable?.name ? $t('Reset') : $t('Back') }}</v-btn
               >
             </template>
             <template v-if="openNewDataLakeVariableForm">
@@ -313,16 +316,16 @@
                   'border-[1px] border-red-700': dataLakeVariableError.includes('This name is already in use'),
                 }"
               >
-                <p class="ml-1 text-[14px]">Name</p>
+                <p class="ml-1 text-[14px]">{{ $t('Name') }}</p>
                 <input v-model="futureDataLakeVariable.name" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
               </div>
               <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
-                <p class="ml-1 text-[14px]">Description</p>
+                <p class="ml-1 text-[14px]">{{ $t('Description') }}</p>
                 <input v-model="futureDataLakeVariable.description" type="text" class="p-2 bg-[#FFFFFF11] w-[123px]" />
               </div>
               <div class="flex w-full justify-between">
                 <v-btn variant="text" class="self-start mt-[9px]" size="x-small" @click="handleResetVariable">{{
-                  currentElement.options.dataLakeVariable?.name ? 'reset' : 'back'
+                  currentElement.options.dataLakeVariable?.name ? $t('Reset') : $t('Back')
                 }}</v-btn>
                 <div>
                   <v-btn
@@ -331,7 +334,7 @@
                     class="mr-[15px] mt-2"
                     :disabled="currentElement.options.dataLakeVariable === undefined"
                     @click="deleteParameterFromDataLake"
-                    >delete</v-btn
+                    >{{ $t('Delete') }}</v-btn
                   >
                   <v-btn
                     variant="elevated"
@@ -342,7 +345,7 @@
                     }"
                     :disabled="futureDataLakeVariable.name === ''"
                     @click="saveOrUpdateParameter"
-                    >{{ currentElement.options.dataLakeVariable === undefined ? 'save' : 'update' }}</v-btn
+                    >{{ currentElement.options.dataLakeVariable === undefined ? $t('Save') : $t('Update') }}</v-btn
                   >
                 </div>
               </div>
@@ -350,7 +353,7 @@
 
             <template v-if="currentElement.component === CustomWidgetElementType.Button">
               <div class="flex justify-between items-center h-[40px] w-full border-b-[1px] border-[#FFFFFF33]">
-                <p class="ml-1 text-[14px]">Action to trigger</p>
+                <p class="ml-1 text-[14px]">{{ $t('Action to trigger') }}</p>
                 <select v-model="currentElement.options.cockpitAction" class="p-2 bg-[#FFFFFF11] w-[123px]">
                   <option
                     v-for="cockpitAction in availableCockpitActions"
@@ -378,6 +381,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
@@ -398,6 +402,7 @@ import { CustomWidgetElement, CustomWidgetElementType } from '@/types/widgets'
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
+const { t } = useI18n()
 
 const currentElement = ref<CustomWidgetElement | undefined>(widgetStore.elementToShowOnDrawer)
 const defaultDataLakeVariable: DataLakeVariable = {
@@ -489,10 +494,10 @@ const openVariableSelector = (): void => {
 
 const showActionExistsError = (): void => {
   openSnackbar({
-    message: 'Variable name already exists',
+    message: t('Variable name already exists'),
     variant: 'error',
   })
-  dataLakeVariableError.value.push('This name is already in use')
+  dataLakeVariableError.value.push(t('Variable name already exists'))
   setTimeout(() => {
     dataLakeVariableError.value.splice(0, 1)
   }, 3000)
@@ -504,12 +509,12 @@ const deleteParameterFromDataLake = async (): Promise<void> => {
       logUserAction(`Deleted data-lake variable '${currentElement.value.options.dataLakeVariable.name}'`)
       await deleteDataLakeVariable(currentElement.value.options.dataLakeVariable)
       openSnackbar({
-        message: 'Action variable deleted',
+        message: t('Action variable deleted'),
         variant: 'success',
       })
     } catch (e) {
       openSnackbar({
-        message: 'Error deleting action variable',
+        message: t('Error deleting action variable'),
         variant: 'error',
       })
     }

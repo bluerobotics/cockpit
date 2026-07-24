@@ -1,16 +1,17 @@
-<template>
+﻿<template>
   <BaseConfigurationView>
     <template #help-icon> </template>
-    <template #title>Video configuration</template>
+    <template #title>{{ $t('Video configuration') }}</template>
     <template #content>
       <div class="flex-col h-full ml-[1vw] w-[920px] max-h-[85vh] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Streams mapping</template>
+          <template #title>{{ $t('Streams mapping') }}</template>
           <template #info>
-            Here you can map your external video streams to internal names and manage ignored streams. Active streams
-            allow you to easily switch between different video sources in Cockpit. The widgets will be connected to the
-            internal names, and the external video stream will be mapped to the internal name. Ignored streams (shown
-            with "--" as internal name) can be restored by clicking the restore button.
+            {{
+              $t(
+                'Here you can map your external video streams to internal names and manage ignored streams. Active streams allow you to easily switch between different video sources in Cockpit.'
+              )
+            }}
           </template>
           <template #content>
             <div class="flex justify-center flex-col w-full ml-2 mt-2">
@@ -24,25 +25,25 @@
                 <template #headers>
                   <tr>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Internal name</p>
+                      <p class="text-[16px] font-bold">{{ $t('Internal name') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">External name</p>
+                      <p class="text-[16px] font-bold">{{ $t('External name') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Type</p>
+                      <p class="text-[16px] font-bold">{{ $t('Type') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Video source</p>
+                      <p class="text-[16px] font-bold">{{ $t('Video source') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Resolution</p>
+                      <p class="text-[16px] font-bold">{{ $t('Resolution') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Status</p>
+                      <p class="text-[16px] font-bold">{{ $t('Status') }}</p>
                     </th>
                     <th class="text-center">
-                      <p class="text-[16px] font-bold">Actions</p>
+                      <p class="text-[16px] font-bold">{{ $t('Actions') }}</p>
                     </th>
                   </tr>
                 </template>
@@ -143,22 +144,31 @@
                   </tr>
                 </template>
                 <template #no-data>
-                  <div class="text-gray-400 py-4 w-[200px] text-end">No available streams found.</div>
+                  <div class="text-gray-400 py-4 w-[200px] text-end">
+                    {{ $t('No available streams found.') }}
+                  </div>
                 </template>
                 <template #bottom></template>
               </v-data-table>
               <div class="flex items-center justify-start">
-                <v-checkbox v-model="showIgnoredStreams" label="Show ignored streams" hide-details class="text-sm" />
+                <v-checkbox
+                  v-model="showIgnoredStreams"
+                  :label="$t('Show ignored streams')"
+                  hide-details
+                  class="text-sm"
+                />
                 <span v-if="ignoredStreamExternalIds.length > 0" class="text-gray-400 text-sm ml-2">
                   ({{ ignoredStreamExternalIds.length }} ignored)
                 </span>
               </div>
               <div v-if="isElectron()" class="mt-4 mr-2 mb-2 w-[95%]">
-                <div class="text-sm text-gray-300 mb-2">Add direct RTSP stream (Standalone)</div>
+                <div class="text-sm text-gray-300 mb-2">
+                  {{ $t('Add direct RTSP stream (Standalone)') }}
+                </div>
                 <div class="flex items-end gap-2 w-full">
                   <v-text-field
                     v-model="rtspUrlInput"
-                    label="RTSP URL"
+                    :label="$t('RTSP URL')"
                     density="compact"
                     variant="outlined"
                     class="flex-1 min-w-0"
@@ -166,7 +176,7 @@
                     @keyup.enter="addRtspStream"
                     @input="rtspInputError = ''"
                   />
-                  <v-btn variant="text" class="shrink-0 mb-[3px]" @click="addRtspStream">Add</v-btn>
+                  <v-btn variant="text" class="shrink-0 mb-[3px]" @click="addRtspStream">{{ $t('Add') }}</v-btn>
                 </div>
                 <div v-if="rtspInputError" class="text-red-300 text-sm mt-2">
                   {{ rtspInputError }}
@@ -176,11 +186,13 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Allowed WebRTC remote IP Addresses</template>
+          <template #title>{{ $t('Allowed WebRTC remote IP Addresses') }}</template>
           <template #info>
-            Select the IP addresses to allow connecting to for WebRTC video streaming. For best performance it is
-            recommended to only use the most reliable interfaces - e.g. avoid wireless interfaces if there is a
-            tethered/wired interface available. If no value is specified, all available routes are allowed.
+            {{
+              $t(
+                'Select the IP addresses to allow connecting to for WebRTC video streaming. For best performance it is recommended to only use the most reliable interfaces - e.g. avoid wireless interfaces if there is a tethered/wired interface available. If no value is specified, all available routes are allowed.'
+              )
+            }}
           </template>
           <template #content>
             <div class="flex justify-center flex-col w-[90%] ml-2">
@@ -188,7 +200,7 @@
                 :model-value="allowedIceIps"
                 multiple
                 :items="availableIceIps"
-                label="Allowed WebRTC remote IP Addresses"
+                :label="$t('Allowed WebRTC remote IP Addresses')"
                 class="uri-input"
                 variant="outlined"
                 chips
@@ -200,7 +212,7 @@
               />
               <v-checkbox
                 v-model="videoStore.enableAutoIceIpFetch"
-                label="Enable auto-retrieval of allowed IP addresses"
+                :label="$t('Enable auto-retrieval of allowed IP addresses')"
                 hide-details
                 class="mb-2"
               />
@@ -208,16 +220,13 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Allowed WebRTC protocols:</template>
+          <template #title>{{ $t('Allowed WebRTC protocols:') }}</template>
           <template #info>
-            <li>
-              Video stream quality may be enhanced by enforcing a protocol that is well-suited to the available network
-              infrastructure.
-            </li>
-            <li>
-              UDP can be lower latency but may drop frames, while TCP enforces frame ordering at the cost of some
-              increased latency and jitter.
-            </li>
+            {{
+              $t(
+                'Video stream quality may be enhanced by enforcing a protocol that is well-suited to the available network infrastructure. UDP can be lower latency but may drop frames, while TCP enforces frame ordering at the cost of some increased latency and jitter.'
+              )
+            }}
           </template>
           <template #content>
             <div class="flex items-center justify-start">
@@ -236,16 +245,13 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>RTP Jitter Buffer (Target) duration:</template>
+          <template #title>{{ $t('RTP Jitter Buffer (Target) duration:') }}</template>
           <template #info>
-            <li>
-              Increasing the buffer duration causes additional video latency, but can help to compensate for network
-              jitter and provide more consistent frame timing in the display.
-            </li>
-            <li>
-              Cockpit's default is zero milliseconds, but you can set a custom value, or leave the field empty to use
-              your browser's default.
-            </li>
+            {{
+              $t(
+                "Increasing the buffer duration causes additional video latency, but can help to compensate for network jitter and provide more consistent frame timing in the display. Cockpit's default is zero milliseconds, but you can set a custom value, or leave the field empty to use your browser's default."
+              )
+            }}
           </template>
           <template #content>
             <div class="flex items-center justify-start w-[50%] ml-2">
@@ -262,27 +268,30 @@
                 :rules="jitterBufferTargetRules"
                 @input="handleJitterBufferTargetInput"
               />
-              <a class="ml-3">ms</a>
+              <a class="ml-3">{{ $t('ms') }}</a>
             </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Video library options:</template>
+          <template #title>{{ $t('Video library options:') }}</template>
           <template #info>
-            <li>
-              Configure live video processing to process videos in real-time during recording for instant availability
-              when recording stops. This is only available in Cockpit Standalone.
-            </li>
-            <li>
-              Choose whether to save backup raw chunks alongside the final video file. This provides safety for video
-              reconstruction if something goes wrong, but uses approximately double the storage space.
-            </li>
-            <li>
-              Select whether video and subtitle files should be bundled together in a ZIP archive, or downloaded
-              individually. Zipping allows a single download of a group of files, but requires waiting for the files to
-              get zipped together. Depending on file sizes, the zipping process may complete within seconds or could
-              take minutes.
-            </li>
+            {{
+              $t(
+                'Configure live video processing to process videos in real-time during recording for instant availability when recording stops. This is only available in Cockpit Standalone.'
+              )
+            }}
+            <br /><br />
+            {{
+              $t(
+                'Choose whether to save backup raw chunks alongside the final video file. This provides safety for video reconstruction if something goes wrong, but uses approximately double the storage space.'
+              )
+            }}
+            <br /><br />
+            {{
+              $t(
+                'Select whether video and subtitle files should be bundled together in a ZIP archive, or downloaded individually. Zipping allows a single download of a group of files, but requires waiting for the files to get zipped together. Depending on file sizes, the zipping process may complete within seconds or could take minutes.'
+              )
+            }}
           </template>
           <template #content>
             <div class="flex items-center justify-end w-[96%] ml-2 mb-4">
@@ -295,7 +304,7 @@
                     </v-icon></v-badge
                   >
                 </template>
-                Video Library
+                {{ $t('Video Library') }}
               </v-btn>
             </div>
             <!-- Browser Environment Notice -->
@@ -303,10 +312,15 @@
               <div class="flex items-start gap-3">
                 <v-icon color="amber" class="mt-1">mdi-information</v-icon>
                 <div>
-                  <h4 class="text-amber-200 font-medium mb-2">Cockpit Lite</h4>
+                  <h4 class="text-amber-200 font-medium mb-2">
+                    {{ $t('Cockpit Lite') }}
+                  </h4>
                   <p class="text-amber-100 text-sm">
-                    Video processing is not available in Cockpit Lite. Your recordings will be saved as raw chunks that
-                    can be downloaded and processed using Cockpit Standalone.
+                    {{
+                      $t(
+                        'Video processing is not available in Cockpit Lite. Your recordings will be saved as raw chunks that can be downloaded and processed using Cockpit Standalone.'
+                      )
+                    }}
                   </p>
                 </div>
               </div>
@@ -315,7 +329,7 @@
             <div class="flex items-center justify-start w-[96%] ml-2">
               <v-checkbox
                 v-model="videoStore.enableLiveProcessing"
-                label="Live video processing (Standalone)"
+                :label="$t('Live video processing (Standalone)')"
                 class="text-sm mx-2"
                 hide-details
                 :disabled="!isElectron()"
@@ -323,8 +337,8 @@
               <v-tooltip
                 :text="
                   isElectron()
-                    ? 'Process videos in real-time during recording for instant availability when recording stops'
-                    : 'Live video processing is only available in Cockpit Standalone'
+                    ? $t('Process videos in real-time during recording for instant availability when recording stops')
+                    : $t('Live video processing is only available in Cockpit Standalone')
                 "
               >
                 <template #activator="{ props }">
@@ -336,7 +350,7 @@
             <div class="flex items-center justify-start w-[96%] ml-2">
               <v-checkbox
                 v-model="videoStore.keepRawVideoChunksAsBackup"
-                label="Save backup raw chunks"
+                :label="$t('Save backup raw chunks')"
                 class="text-sm mx-2"
                 :disabled="!isElectron()"
                 hide-details
@@ -346,26 +360,40 @@
                   <v-icon v-bind="props" class="ml-2 text-slate-400">mdi-information-outline</v-icon>
                 </template>
                 <div class="text-sm">
-                  <p class="mb-2">Save the raw video chunks alongside the final video file for backup purposes.</p>
                   <p class="mb-2">
-                    <strong>Enabled:</strong> Raw chunks are preserved after recording. Videos use ~2x storage space but
-                    provide safety for reconstruction if the final video is corrupted.
+                    {{ $t('Save the raw video chunks alongside the final video file for backup purposes.') }}
+                  </p>
+                  <p class="mb-2">
+                    {{
+                      $t(
+                        'Enabled: Raw chunks are preserved after recording. Videos use ~2x storage space but provide safety for reconstruction if the final video is corrupted.'
+                      )
+                    }}
                   </p>
                   <p>
-                    <strong>Disabled:</strong> Raw chunks are automatically deleted after successful processing, using
-                    minimal storage space.
+                    {{
+                      $t(
+                        'Disabled: Raw chunks are automatically deleted after successful processing, using minimal storage space.'
+                      )
+                    }}
                   </p>
                   <p class="mt-2 text-gray-300">
-                    You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.
+                    {{
+                      $t(
+                        'You can always manually clean up backup chunks later using the "Temporary" tab in the Video Library.'
+                      )
+                    }}
                   </p>
-                  <p class="mt-2 text-gray-300">In Cockpit Lite the chunks are always saved by default.</p>
+                  <p class="mt-2 text-gray-300">
+                    {{ $t('In Cockpit Lite the chunks are always saved by default.') }}
+                  </p>
                 </div>
               </v-tooltip>
             </div>
             <div class="flex items-center justify-start w-[50%] ml-2">
               <v-checkbox
                 v-model="snapshotStore.zipMultipleFiles"
-                label="Zip multiple files"
+                :label="$t('Zip multiple files')"
                 class="text-sm mx-2"
                 hide-details
               />
@@ -379,23 +407,23 @@
   <!-- Edit Stream Name Dialog -->
   <InteractionDialog
     v-model:show-dialog="showEditDialog"
-    title="Edit stream"
+    :title="$t('Edit stream')"
     variant="text-only"
     :persistent="true"
     :actions="[
-      { text: 'Cancel', size: 'small', action: onCancelStreamRename },
-      { text: 'Save', size: 'small', disabled: !newStreamName.trim(), action: saveStreamNameFromDialog },
+      { text: $t('Cancel'), size: 'small', action: onCancelStreamRename },
+      { text: $t('Save'), size: 'small', disabled: !newStreamName.trim(), action: saveStreamNameFromDialog },
     ]"
   >
     <template #content>
       <div class="flex flex-col gap-6 px-4 mb-6">
         <div class="text-sm text-gray-400">
-          <span>External stream name: </span>
+          <span>{{ $t('External stream name') }}: </span>
           <span class="text-gray-200">{{ editingStream?.externalId }}</span>
         </div>
         <v-text-field
           v-model="newStreamName"
-          label="Internal stream name"
+          :label="$t('Internal stream name')"
           variant="outlined"
           density="compact"
           hide-details
@@ -416,30 +444,41 @@
   <!-- Unavailable Stream Confirmation Dialog -->
   <InteractionDialog
     v-model:show-dialog="showUnavailableStreamDialog"
-    title="Stream is not available"
+    :title="$t('Stream is not available')"
     variant="text-only"
     :persistent="true"
     max-width="520px"
     :actions="[
-      { text: 'KEEP IGNORED', size: 'small', action: closeUnavailableStreamDialog },
-      { text: 'DELETE PERMANENTLY', size: 'small', action: deleteStreamPermanently },
+      {
+        text: $t('KEEP IGNORED'),
+        size: 'small',
+        action: closeUnavailableStreamDialog,
+      },
+      {
+        text: $t('DELETE PERMANENTLY'),
+        size: 'small',
+        action: deleteStreamPermanently,
+      },
     ]"
   >
     <template #content>
       <div class="flex flex-col gap-4 px-4 mb-6">
         <p class="text-sm text-gray-300">
-          The stream <span class="text-gray-100 font-medium">'{{ unavailableStreamId }}'</span> you're trying to restore
-          is not available anymore.
+          {{ $t('The stream is not available anymore.').replace('{streamId}', `'${unavailableStreamId}'`) }}
         </p>
-        <p class="text-sm text-gray-300">You have two options:</p>
+        <p class="text-sm text-gray-300">{{ $t('You have two options:') }}</p>
         <ul class="text-sm text-gray-300 ml-4 space-y-1">
           <li>
-            • <strong>Keep it ignored:</strong> Maintain it in the ignored list so it won't be mapped automatically if
-            it becomes available again
+            ?{{
+              $t("Maintain it in the ignored list so it won't be mapped automatically if it becomes available again.")
+            }}
           </li>
           <li>
-            • <strong>Delete it permanently:</strong> Remove it from the ignored list, so if it becomes available again
-            it will be mapped automatically.
+            ?{{
+              $t(
+                'Remove it completely from the ignored list. If it becomes available in the future, it will be automatically mapped.'
+              )
+            }}
           </li>
         </ul>
       </div>

@@ -10,7 +10,7 @@
                 <div class="mb-1 text-2xl rounded-full frosted-button w-[46px] h-[46px]">
                   <v-icon size="30">mdi-map-marker-path</v-icon>
                 </div>
-                <div class="text-sm">Missions</div>
+                <div class="text-sm">{{ $t('Missions') }}</div>
               </button>
             </div>
             <div>
@@ -21,7 +21,7 @@
                 >
                   <v-icon class="text-[18px]">mdi-close</v-icon>
                 </div>
-                <div class="text-sm">Close</div>
+                <div class="text-sm">{{ $t('Close') }}</div>
               </button>
             </div>
           </div>
@@ -32,7 +32,7 @@
           <div class="flex flex-col flex-1 min-h-0 min-w-0 h-full">
             <!-- Header -->
             <div class="flex justify-between items-center px-6 pt-4 pb-2 shrink-0">
-              <h3 class="text-lg font-medium">Mission Library</h3>
+              <h3 class="text-lg font-medium">{{ $t('Mission Library') }}</h3>
             </div>
 
             <!-- Cards Grid -->
@@ -61,11 +61,11 @@
                   </div>
                   <div class="absolute top-1 right-1 flex flex-col gap-1">
                     <div class="card-action-button" @click.stop="onLoadClick(mission)">
-                      <v-tooltip activator="parent" location="left" open-delay="500">Place mission on map</v-tooltip>
+                      <v-tooltip activator="parent" location="left" open-delay="500">{{ $t('Place mission on map') }}</v-tooltip>
                       <v-icon size="16" class="text-white">mdi-map-plus</v-icon>
                     </div>
                     <div class="card-action-button" @click.stop="onDeleteClick(mission)">
-                      <v-tooltip activator="parent" location="left" open-delay="500">Delete mission</v-tooltip>
+                      <v-tooltip activator="parent" location="left" open-delay="500">{{ $t('Delete mission') }}</v-tooltip>
                       <v-icon size="16" class="text-white">mdi-delete</v-icon>
                     </div>
                   </div>
@@ -106,9 +106,9 @@
             <div v-else class="flex flex-1 min-h-0 pt-6 items-center justify-center text-center px-6">
               <div class="max-w-md mx-auto">
                 <v-icon size="60" class="text-white/30 mb-4">mdi-map-marker-path</v-icon>
-                <h4 class="text-lg font-medium text-white mb-2">No missions saved</h4>
+                <h4 class="text-lg font-medium text-white mb-2">{{ $t('No missions saved') }}</h4>
                 <p class="text-white/70 text-sm">
-                  Plan a mission and use “Save current mission” to add it to your library.
+                  {{ $t('Plan a mission and use “Save current mission” to add it to your library.') }}
                 </p>
               </div>
             </div>
@@ -117,7 +117,7 @@
             <div class="shrink-0 h-14 flex justify-between items-center px-4" style="border-top: 1px solid #ffffff0d">
               <span class="text-sm text-white/70">
                 {{ missionStore.savedMissions.length }}
-                {{ missionStore.savedMissions.length === 1 ? 'item' : 'items' }} total
+                {{ missionStore.savedMissions.length === 1 ? $t('item') : $t('items') }} {{ $t('total') }}
               </span>
               <div class="flex items-center gap-2">
                 <v-btn
@@ -127,10 +127,10 @@
                   :disabled="!canSaveCurrent"
                   @click="openSaveDialog"
                 >
-                  Save current mission
+                  {{ $t('Save current mission') }}
                 </v-btn>
                 <v-btn variant="text" size="small" prepend-icon="mdi-upload" @click="triggerImportFile">
-                  Import file
+                  {{ $t('Import file') }}
                 </v-btn>
                 <input
                   ref="importInput"
@@ -182,7 +182,7 @@
                 size="small"
                 @click="onExportClick(detailMission)"
               >
-                Export
+                {{ $t('Export') }}
               </v-btn>
               <v-btn
                 variant="text"
@@ -191,38 +191,38 @@
                 size="small"
                 @click="onDeleteClick(detailMission)"
               >
-                Delete
+                {{ $t('Delete') }}
               </v-btn>
             </div>
           </div>
           <v-divider class="my-0 opacity-[0.09]" />
           <div class="text-sm flex flex-col gap-1">
             <div class="flex justify-between">
-              <span class="text-white/60">Waypoints</span>
+              <span class="text-white/60">{{ $t('Waypoints') }}</span>
               <span>{{ detailMission.waypoints.length }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-white/60">Surveys</span>
+              <span class="text-white/60">{{ $t('Surveys') }}</span>
               <span>{{ detailMission.surveys?.length ?? 0 }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-white/60">Vehicle type</span>
+              <span class="text-white/60">{{ $t('Vehicle type') }}</span>
               <span>{{ vehicleTypeLabel(detailMission.vehicleType) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-white/60">Cruise speed</span>
+              <span class="text-white/60">{{ $t('Cruise speed') }}</span>
               <span>{{ detailMission.settings.defaultCruiseSpeed }} m/s</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-white/60">Created</span>
+              <span class="text-white/60">{{ $t('Created') }}</span>
               <span>{{ formatDate(new Date(detailMission.createdAt)) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-white/60">Updated</span>
+              <span class="text-white/60">{{ $t('Updated') }}</span>
               <span>{{ formatDate(new Date(detailMission.updatedAt)) }}</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-white/60">Location</span>
+              <span class="text-white/60">{{ $t('Location') }}</span>
               <div class="flex items-center gap-2">
                 <a
                   :href="googleEarthUrl(detailLocation)"
@@ -230,7 +230,7 @@
                   rel="noopener"
                   class="text-blue-300 hover:text-blue-200 inline-flex mr-2"
                 >
-                  <v-tooltip activator="parent" location="top" open-delay="500">Open in Google Earth</v-tooltip>
+                  <v-tooltip activator="parent" location="top" open-delay="500">{{ $t('Open in Google Earth') }}</v-tooltip>
                   <v-icon size="18">mdi-google-earth</v-icon>
                 </a>
                 <span>{{ detailLocation[0]?.toFixed(6) ?? '—' }}, {{ detailLocation[1]?.toFixed(6) ?? '—' }}</span>
@@ -239,26 +239,26 @@
           </div>
           <v-divider v-if="detailMission.estimates" class="my-2 opacity-[0.09]" />
           <div v-if="detailMission.estimates" class="text-sm">
-            <p class="text-white/60 mb-1">Mission estimates</p>
+            <p class="text-white/60 mb-1">{{ $t('Mission estimates') }}</p>
             <div class="flex flex-col gap-1">
               <div class="flex justify-between">
-                <span class="text-white/60">Length</span>
+                <span class="text-white/60">{{ $t('Length') }}</span>
                 <span>{{ detailMission.estimates.pathLength }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-white/60">ETA</span>
+                <span class="text-white/60">{{ $t('ETA') }}</span>
                 <span>{{ detailMission.estimates.duration }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-white/60">Energy</span>
+                <span class="text-white/60">{{ $t('Energy') }}</span>
                 <span>{{ detailMission.estimates.energy }}</span>
               </div>
               <div v-if="detailMission.estimates.totalSurveyCoverage !== '—'" class="flex justify-between">
-                <span class="text-white/60">Total survey coverage</span>
+                <span class="text-white/60">{{ $t('Total survey coverage') }}</span>
                 <span>{{ detailMission.estimates.totalSurveyCoverage }}</span>
               </div>
               <div v-if="detailMission.estimates.missionCoverageArea !== '—'" class="flex justify-between">
-                <span class="text-white/60">Mission area (≈)</span>
+                <span class="text-white/60">{{ $t('Mission area (≈)') }}</span>
                 <span>{{ detailMission.estimates.missionCoverageArea }}</span>
               </div>
             </div>
@@ -268,9 +268,9 @@
       <v-divider class="opacity-[0.09]" />
       <v-card-actions>
         <div class="flex justify-between w-full pa-1">
-          <v-btn variant="text" color="white" @click="showDetail = false">Close</v-btn>
+          <v-btn variant="text" color="white" @click="showDetail = false">{{ $t('Close') }}</v-btn>
           <v-btn color="white" prepend-icon="mdi-map-plus" @click="onLoadClick(detailMission)">
-            Place mission on map
+            {{ $t('Place mission on map') }}
           </v-btn>
         </div>
       </v-card-actions>
@@ -280,13 +280,13 @@
   <!-- Save current mission dialog -->
   <v-dialog v-model="showSaveDialog" max-width="500px" persistent>
     <v-card :style="interfaceStore.globalGlassMenuStyles" class="text-white">
-      <v-card-title class="text-lg font-semibold text-center">Save mission to library</v-card-title>
+      <v-card-title class="text-lg font-semibold text-center">{{ $t('Save mission to library') }}</v-card-title>
       <v-icon icon="mdi-close" class="absolute top-3 right-3 cursor-pointer" @click="showSaveDialog = false" />
       <form @submit.prevent="confirmSaveMission">
         <v-card-text>
           <div class="flex flex-col gap-y-5">
             <div class="flex flex-col gap-y-1">
-              <label for="save-mission-name" class="text-sm text-white/80">Mission name</label>
+              <label for="save-mission-name" class="text-sm text-white/80">{{ $t('Mission name') }}</label>
               <input
                 id="save-mission-name"
                 v-model="saveForm.name"
@@ -295,7 +295,7 @@
               />
             </div>
             <div class="flex flex-col gap-y-1">
-              <label for="save-mission-description" class="text-sm text-white/80">Description (optional)</label>
+              <label for="save-mission-description" class="text-sm text-white/80">{{ $t('Description (optional)') }}</label>
               <textarea
                 id="save-mission-description"
                 v-model="saveForm.description"
@@ -307,8 +307,8 @@
         </v-card-text>
         <v-card-actions>
           <div class="flex justify-between gap-2 w-full pa-1 pt-2" style="border-top: 1px solid #ffffff0d">
-            <v-btn type="button" variant="text" color="white" @click="showSaveDialog = false">Cancel</v-btn>
-            <v-btn type="submit" color="white" :disabled="!saveForm.name.trim()">Save</v-btn>
+            <v-btn type="button" variant="text" color="white" @click="showSaveDialog = false">{{ $t('Cancel') }}</v-btn>
+            <v-btn type="submit" color="white" :disabled="!saveForm.name.trim()">{{ $t('Save') }}</v-btn>
           </div>
         </v-card-actions>
       </form>
@@ -320,6 +320,8 @@
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+import { useI18n } from 'vue-i18n'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
@@ -357,6 +359,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'load-mission', mission: SavedMission): void
 }>()
+
+const { t } = useI18n()
 
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
@@ -429,7 +433,7 @@ watch(showDetail, (visible) => {
 const openSaveDialog = (): void => {
   if (!props.currentMissionSnapshot) return
   saveForm.value = {
-    name: missionStore.missionName || `Mission ${format(new Date(), 'LLL dd, yyyy HH:mm')}`,
+    name: missionStore.missionName || `${t('Mission')} ${format(new Date(), 'LLL dd, yyyy HH:mm')}`,
     description: '',
     id: undefined,
   }
@@ -461,7 +465,7 @@ const confirmSaveMission = (): void => {
   })
   showSaveDialog.value = false
   logUserAction(`Saved mission "${trimmedName}" to the library`)
-  openSnackbar({ variant: 'success', message: 'Mission saved to library.', duration: 2500 })
+  openSnackbar({ variant: 'success', message: t('Mission saved to library.'), duration: 2500 })
 }
 
 const onLoadClick = (mission: SavedMission): void => {
@@ -488,7 +492,7 @@ const onDeleteClick = (mission: SavedMission): void => {
           }
           closeDialog()
           logUserAction(`Deleted mission "${mission.name}" from the library`)
-          openSnackbar({ variant: 'info', message: 'Mission deleted from library.', duration: 2500 })
+          openSnackbar({ variant: 'info', message: t('Mission deleted from library.'), duration: 2500 })
         },
       },
     ],
@@ -505,7 +509,7 @@ const onExportClick = (mission: SavedMission): void => {
   const date = format(new Date(), 'yyyy-MM-dd_HH-mm-ss')
   saveAs(blob, `${sanitizedName}_${date}.cmp`)
   logUserAction(`Exported mission "${mission.name}" from the library`)
-  openSnackbar({ variant: 'success', message: 'Mission exported.', duration: 2000 })
+  openSnackbar({ variant: 'success', message: t('Mission exported.'), duration: 2000 })
 }
 
 const triggerImportFile = (): void => {

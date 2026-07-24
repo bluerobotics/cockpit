@@ -12,7 +12,7 @@
         />
       </template>
       <template #title
-        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">On screen telemetry data</div></template
+        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">{{ $t('On screen telemetry data') }}</div></template
       >
       <template #content>
         <div
@@ -31,7 +31,7 @@
           >
             <div id="leftColumn" class="flex flex-col justify-start align-start mt-[2vh] overflow-auto">
               <ExpansiblePanel compact mark-expanded darken-content hover-effect>
-                <template #title>Overlay Options</template>
+                <template #title>{{ $t('Overlay Options') }}</template>
                 <template #content>
                   <div>
                     <div class="flex flex-col flex-wrap justify-between align-start gap-y-0 pt-3">
@@ -39,7 +39,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Font size</span
+                          >{{ $t('Font size') }}</span
                         >
                         <v-text-field
                           v-model="telemetryDisplayOptions.fontSize"
@@ -51,7 +51,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Shadow size</span
+                          >{{ $t('Shadow size') }}</span
                         >
                         <v-text-field
                           v-model="telemetryDisplayOptions.fontShadowSize"
@@ -76,7 +76,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Font color</span
+                                >{{ $t('Font color') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -101,7 +101,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Outline color</span
+                                >{{ $t('Outline color') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -125,7 +125,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Shadow color</span
+                                >{{ $t('Shadow color') }}</span
                               >
                               <div
                                 v-bind="props"
@@ -148,7 +148,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Bold</span
+                            >{{ $t('Bold') }}</span
                           >
                         </div>
                         <div
@@ -159,7 +159,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Italic</span
+                            >{{ $t('Italic') }}</span
                           >
                         </div>
                         <div
@@ -170,7 +170,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Underline</span
+                            >{{ $t('Underline') }}</span
                           >
                         </div>
                         <div
@@ -181,7 +181,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Strikethrough</span
+                            >{{ $t('Strikethrough') }}</span
                           >
                         </div>
                       </div>
@@ -190,7 +190,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Vehicle Variables</template>
+                <template #title>{{ $t('Vehicle Variables') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="loggedVariables"
@@ -212,14 +212,14 @@
                         :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
                         label
                         class="cursor-grab elevation-1"
-                        >{{ variable }}</v-chip
+                        >{{ $t(variable) }}</v-chip
                       >
                     </div>
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Mission Variables</template>
+                <template #title>{{ $t('Mission Variables') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="otherLoggingElements"
@@ -241,18 +241,18 @@
                         :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
                         label
                         class="cursor-grab elevation-1"
-                        >{{ element }}</v-chip
+                        >{{ $t(element) }}</v-chip
                       >
                     </div>
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Data Lake Variables</template>
+                <template #title>{{ $t('Data Lake Variables') }}</template>
                 <template #content>
                   <v-text-field
                     v-model="dataLakeSearch"
-                    placeholder="Search variables..."
+                    :placeholder="$t('Search variables...')"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -286,14 +286,14 @@
                         label
                         class="cursor-grab elevation-1 w-full justify-start"
                       >
-                        <span class="data-lake-variable-label">{{ resolveDisplayName(variable) }}</span>
+                        <span class="data-lake-variable-label">{{ $t(resolveDisplayName(variable)) }}</span>
                       </v-chip>
                     </div>
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Custom Messages</template>
+                <template #title>{{ $t('Custom Messages') }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="customMessageElements"
@@ -340,10 +340,10 @@
                       <div
                         class="frosted-button backdrop-blur-md rounded-lg overflow-visible w-[400px] flex flex-col px-4 pt-2 pb-3 elevation-2"
                       >
-                        <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
-                        <span v-pre class="text-[10px] text-slate-400 text-center w-full mt-1"
-                          >Type {{ to autocomplete data lake variables</span
-                        >
+                        <span class="text-sm font-bold text-white text-center w-full">{{ $t('Enter message') }}</span>
+                        <span class="text-[10px] text-slate-400 text-center w-full mt-1">
+                          {{ $t('Type {{ to autocomplete data lake variables') }}
+                        </span>
                         <div
                           ref="messageEditorContainer"
                           class="h-[60px] w-full mt-2 border border-[#FFFFFF33] rounded-lg"
@@ -356,7 +356,7 @@
                           prepend-icon="mdi-plus"
                           @click="addCustomMessageElement()"
                         >
-                          Add
+                          {{ $t('Add') }}
                         </v-btn>
                       </div>
                     </v-menu>
@@ -364,9 +364,9 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Settings</template>
+                <template #title>{{ $t('Settings') }}</template>
                 <template #content>
-                  <p class="text-[12px] mt-2 ml-1">Telemetry frequency - 1 to 100 Hz (default 1 Hz)</p>
+                  <p class="text-[12px] mt-2 ml-1">{{ $t('Telemetry frequency - 1 to 100 Hz (default 1 Hz)') }}</p>
                   <div class="flex mb-1 justify">
                     <v-slider
                       v-model="newFrequency"
@@ -392,14 +392,14 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Stored Telemetry Data</template>
+                <template #title>{{ $t('Stored Telemetry Data') }}</template>
                 <template #content>
                   <div class="flex flex-col gap-y-2 pt-2 pb-1 px-1">
                     <p class="text-[12px]">
-                      Total stored entries: <span class="font-bold">{{ totalLogEntriesLabel }}</span>
+                      {{ $t('Total stored entries:') }} <span class="font-bold">{{ totalLogEntriesLabel }}</span>
                     </p>
                     <p class="text-[11px] text-white/60 -mt-1">
-                      Remove telemetry entries recorded before a chosen date to free up space.
+                      {{ $t('Remove telemetry entries recorded before a chosen date to free up space.') }}
                     </p>
                     <v-text-field
                       v-model="deletionDate"
@@ -407,13 +407,13 @@
                       density="compact"
                       variant="outlined"
                       hide-details
-                      label="Delete entries before"
+                      :label="$t('Delete entries before')"
                       class="mt-1 telemetry-date-field"
                     />
                     <p v-if="deletionDate" class="text-[12px]">
-                      Entries before this date: <span class="font-bold">{{ entriesBeforeDateLabel }}</span>
+                      {{ $t('Entries before this date:') }} <span class="font-bold">{{ entriesBeforeDateLabel }}</span>
                       <span v-if="entriesBeforePercentageLabel" class="text-white/60">
-                        ({{ entriesBeforePercentageLabel }} of total)</span
+                        ({{ entriesBeforePercentageLabel }} {{ $t('of total') }})</span
                       >
                     </p>
                     <div class="flex justify-end w-full mt-1">
@@ -424,7 +424,7 @@
                         :disabled="!deletionDate || !entriesBeforeDate"
                         @click="openDeleteOldTelemetryDialog"
                       >
-                        Delete old entries
+                        {{ $t('Delete old entries') }}
                         <v-icon size="18" class="ml-2">mdi-trash-can-outline</v-icon>
                       </v-btn>
                     </div>
@@ -433,7 +433,7 @@
               </ExpansiblePanel>
               <div class="flex justify-end w-full mt-2">
                 <v-btn size="x-small" variant="text" class="mr-2" @click="resetAllChips">
-                  Reset Positions
+                  {{ $t('Reset Positions') }}
                   <v-icon size="18" class="ml-2">mdi-restore</v-icon>
                 </v-btn>
               </div>
@@ -479,7 +479,7 @@
                       "
                       class="cursor-grab elevation-1"
                       :class="interfaceStore.isOnSmallScreen ? '' : 'my-[2px]'"
-                      >{{ resolveDisplayName(variable) }}
+                      >{{ $t(resolveDisplayName(variable)) }}
                       <v-icon right class="ml-2 -mr-1" @click="removeChipFromGrid(config.key, variable)">
                         mdi-close
                       </v-icon>

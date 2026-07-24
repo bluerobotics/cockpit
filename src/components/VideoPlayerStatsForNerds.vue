@@ -7,7 +7,9 @@
 <script lang="ts" setup>
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 import { useVideoStore } from '@/stores/video'
 import type { Go2RTCStreamInfo } from '@/types/video'
 import { WebRTCStatsEvent } from '@/types/video'
@@ -157,17 +159,37 @@ function draw(): void {
 
     const color = connectionLost ? 'red' : 'white'
     const stats = [
-      { label: 'Stream', value: props.streamName, color: color },
-      { label: 'Size', value: videoHeight ? `${videoHeight}p` : 'N/A', color: color },
-      { label: 'Packets Lost', value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`, color: color },
-      { label: 'Frame drops', value: framedrops, color: color },
-      { label: 'Nack', value: nackCount, color: color },
-      { label: 'Pli', value: pliCount, color: color },
-      { label: 'Fir', value: firCount, color: color },
-      { label: 'Processing ', value: `${processingDelayDelta.toFixed(0)}ms`, color: color },
-      { label: 'Freezes', value: `${freezes}(${frozenTime.toFixed(1)}s)`, color: color },
-      { label: 'Bitrate', value: `${bitrate.toFixed(0)}kbps`, color: 'rgb(255, 165, 0)' },
-      { label: 'FPS', value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
+      { label: t('Stream'), value: props.streamName, color: color },
+      {
+        label: t('Resolution'),
+        value: videoHeight ? `${videoHeight}p` : 'N/A',
+        color: color,
+      },
+      {
+        label: t('Packets Lost'),
+        value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`,
+        color: color,
+      },
+      { label: t('Frame Drops'), value: framedrops, color: color },
+      { label: t('Negative Acknowledgment (NACK)'), value: nackCount, color: color },
+      { label: t('Picture Loss Indication (PLI)'), value: pliCount, color: color },
+      { label: t('Full Intra Frame Request (FIR)'), value: firCount, color: color },
+      {
+        label: t('Processing'),
+        value: `${processingDelayDelta.toFixed(0)}ms`,
+        color: color,
+      },
+      {
+        label: t('Freezes'),
+        value: `${freezes}(${frozenTime.toFixed(1)}s)`,
+        color: color,
+      },
+      {
+        label: t('Bitrate'),
+        value: `${bitrate.toFixed(0)}kbps`,
+        color: 'rgb(255, 165, 0)',
+      },
+      { label: t('Frames Per Second (FPS)'), value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
     ]
 
     stats.forEach((stat, index) => {

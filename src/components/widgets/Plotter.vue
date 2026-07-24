@@ -3,7 +3,7 @@
     v-if="!widget.options.dataLakeVariableId"
     class="w-full h-full flex items-center justify-center text-center text-white text-h5 font-weight-bold p-4 overflow-hidden"
   >
-    Please open the Plotter widget configuration menu to select a variable to be plotted.
+    {{ $t('Please open the Plotter widget configuration menu to select a variable to be plotted.') }}
   </p>
   <div v-else class="main">
     <canvas ref="canvasRef" :width="canvasSize.width" :height="canvasSize.height" />
@@ -20,7 +20,7 @@
       >
         <!-- Data source section -->
         <ExpansiblePanel no-top-divider no-bottom-divider is-expanded compact>
-          <template #title>Data Source</template>
+          <template #title>{{ $t('Data Source') }}</template>
           <template #content>
             <div class="py-2">
               <v-autocomplete
@@ -28,8 +28,8 @@
                 :items="availableDataLakeNumberVariables"
                 item-title="name"
                 item-value="id"
-                label="Data Lake variable"
-                hint="Select a variable to be plotted"
+                :label="$t('Data Lake variable')"
+                :hint="$t('Select a variable to be plotted')"
                 persistent-hint
                 theme="dark"
                 variant="outlined"
@@ -43,43 +43,87 @@
 
         <!-- Appearance section -->
         <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
-          <template #title>Appearance</template>
+          <template #title>{{ $t('Appearance') }}</template>
           <template #content>
             <div class="flex flex-wrap gap-x-8 gap-y-2 py-2">
-              <v-checkbox v-model="widget.options.showTitle" label="Show title" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showTitle" :label="$t('Show title')" hide-details class="-mt-1" />
               <v-menu :close-on-content-click="false">
                 <template #activator="{ props: colorPickerActivatorProps }">
                   <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                    <span class="mt-3">Background color</span>
+                    <span class="mt-3">{{ $t('Background color') }}</span>
                     <div
                       class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                       :style="{ backgroundColor: widget.options.backgroundColor }"
                     ></div>
                   </div>
                 </template>
-                <v-color-picker v-model="widget.options.backgroundColor" label="Background" hide-inputs theme="dark" />
+                <v-color-picker
+                  v-model="widget.options.backgroundColor"
+                  :label="$t('Background')"
+                  hide-inputs
+                  theme="dark"
+                />
               </v-menu>
               <v-menu :close-on-content-click="false">
                 <template #activator="{ props: colorPickerActivatorProps }">
                   <div v-bind="colorPickerActivatorProps" class="flex cursor-pointer">
-                    <span class="mt-3">Line color</span>
+                    <span class="mt-3">{{ $t('Line color') }}</span>
                     <div
                       class="w-[30px] h-[30px] border-2 border-slate-700 rounded-lg cursor-pointer ml-2 mt-2"
                       :style="{ backgroundColor: widget.options.lineColor }"
                     ></div>
                   </div>
                 </template>
-                <v-color-picker v-model="widget.options.lineColor" label="Line" hide-inputs theme="dark" />
+                <v-color-picker v-model="widget.options.lineColor" :label="$t('Line')" hide-inputs theme="dark" />
               </v-menu>
               <v-text-field
                 v-model.number="widget.options.lineThickness"
                 type="number"
-                label="Line thickness"
+                :label="$t('Line thickness')"
                 variant="outlined"
                 density="compact"
-                :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
+                :rules="[(v: number) => v > 0 || $t('Must be greater than {value}', { value: 0 })]"
                 style="max-width: 110px"
                 hide-details
+              />
+            </div>
+          </template>
+        </ExpansiblePanel>
+
+        <!-- Data points section -->
+        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
+          <template #title>{{ $t('Data Points') }}</template>
+          <template #content>
+            <div class="py-2">
+              <div class="flex flex-wrap gap-x-8 gap-y-2">
+                <v-text-field
+                  v-model.number="widget.options.decimalPlaces"
+                  type="number"
+                  :label="$t('Decimal places')"
+                  variant="outlined"
+                  density="comfortable"
+                  :rules="[(v: number) => v >= 0 || $t('Must be 0 or greater')]"
+                  :hint="$t('Number of decimal places to be displayed')"
+                  width="100px"
+                />
+                <v-checkbox v-model="widget.options.limitSamples" :label="$t('Limit number of samples')" />
+                <v-text-field
+                  v-model.number="widget.options.maxSamples"
+                  type="number"
+                  :label="$t('Maximum samples')"
+                  variant="outlined"
+                  density="comfortable"
+                  :disabled="!widget.options.limitSamples"
+                  :rules="[(v: number) => v > 0 || $t('Must be greater than {value}', { value: 0 })]"
+                  :hint="$t('Higher values will show more history but may impact performance')"
+                  width="150px"
+                />
+              </div>
+              <v-checkbox
+                v-model="widget.options.updateOnConstantValue"
+                :label="$t('Update on constant value')"
+                :hint="$t('Advance graph when value is unchanged (shows horizontal lines for constant values)')"
+                persistent-hint
               />
             </div>
           </template>
@@ -87,89 +131,34 @@
 
         <!-- Statistics display section -->
         <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
-          <template #title>Statistics Display</template>
+          <template #title>{{ $t('Statistics Display') }}</template>
           <template #content>
-            <div class="flex flex-wrap items-center gap-x-6 py-2">
-              <v-checkbox v-model="widget.options.showCurrent" label="Current" hide-details class="-mt-1" />
-              <v-checkbox v-model="widget.options.showMin" label="Min" hide-details class="-mt-1" />
-              <v-checkbox v-model="widget.options.showMedian" label="Median" hide-details class="-mt-1" />
-              <v-checkbox v-model="widget.options.showAvg" label="Avg" hide-details class="-mt-1" />
-              <v-checkbox v-model="widget.options.showMax" label="Max" hide-details class="-mt-1" />
-              <v-checkbox v-model="widget.options.showStdDev" label="Std Dev" hide-details class="-mt-1" />
-              <div class="h-12 border-l border-slate-500"></div>
-              <v-text-field
-                v-model.number="widget.options.decimalPlaces"
-                type="number"
-                label="Decimal places"
-                variant="outlined"
-                density="compact"
-                :rules="[(v: number) => v >= 0 || 'Must be 0 or greater']"
-                style="max-width: 110px"
-                hide-details
-              />
-              <v-tooltip text="Number of decimal places to be displayed" location="top">
-                <template #activator="{ props: infoProps }">
-                  <v-icon v-bind="infoProps" size="small" class="text-slate-400 -ml-4">mdi-information-outline</v-icon>
-                </template>
-              </v-tooltip>
-            </div>
-          </template>
-        </ExpansiblePanel>
-
-        <!-- Time axis section -->
-        <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
-          <template #title>Time Axis</template>
-          <template #content>
-            <div class="flex flex-wrap items-center gap-x-4 py-2">
-              <v-checkbox v-model="widget.options.limitSamples" label="Limit samples" hide-details class="-mt-1" />
-              <v-text-field
-                v-model.number="widget.options.maxSamples"
-                type="number"
-                label="Max samples"
-                variant="outlined"
-                density="compact"
-                :disabled="!widget.options.limitSamples"
-                :rules="[(v: number) => v > 0 || 'Must be greater than 0']"
-                style="max-width: 110px"
-                hide-details
-              />
-              <v-tooltip text="Higher values will show more history but may impact performance" location="top">
-                <template #activator="{ props: infoProps }">
-                  <v-icon v-bind="infoProps" size="small" class="text-slate-400 -ml-2">mdi-information-outline</v-icon>
-                </template>
-              </v-tooltip>
-              <div class="h-12 border-l border-slate-500"></div>
-              <v-checkbox
-                v-model="widget.options.updateOnConstantValue"
-                label="Update on constant value"
-                hide-details
-                class="-mt-1"
-              />
-              <v-tooltip
-                text="Advance graph when value is unchanged (shows horizontal lines for constant values)"
-                location="top"
-                max-width="300px"
-              >
-                <template #activator="{ props: infoProps }">
-                  <v-icon v-bind="infoProps" size="small" class="text-slate-400 -ml-2 -mt-1"
-                    >mdi-information-outline</v-icon
-                  >
-                </template>
-              </v-tooltip>
+            <div class="flex flex-wrap gap-x-6 py-2">
+              <v-checkbox v-model="widget.options.showCurrent" :label="$t('Current')" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showMin" :label="$t('Min')" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showMedian" :label="$t('Median')" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showAvg" :label="$t('Avg')" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showMax" :label="$t('Max')" hide-details class="-mt-1" />
+              <v-checkbox v-model="widget.options.showStdDev" :label="$t('Std Dev')" hide-details class="-mt-1" />
             </div>
           </template>
         </ExpansiblePanel>
 
         <!-- Vertical Range section -->
         <ExpansiblePanel no-top-divider no-bottom-divider compact :is-expanded="!interfaceStore.isOnSmallScreen">
-          <template #title>Vertical Range</template>
+          <template #title>{{ $t('Vertical Range') }}</template>
           <template #content>
             <div class="flex items-center gap-x-4 py-2 mb-2">
-              <v-checkbox v-model="widget.options.useFixedMinY" label="Fixed minimum" hide-details class="-mt-1" />
+              <v-checkbox
+                v-model="widget.options.useFixedMinY"
+                :label="$t('Fixed minimum')"
+                hide-details
+                class="-mt-1"
+              />
               <v-text-field
                 v-model.number="widget.options.fixedMinY"
                 type="number"
-                label="Min value"
+                :label="$t('Min value')"
                 variant="outlined"
                 density="compact"
                 :disabled="!widget.options.useFixedMinY"
@@ -177,11 +166,16 @@
                 hide-details
               />
               <div class="h-12 border-l border-slate-500"></div>
-              <v-checkbox v-model="widget.options.useFixedMaxY" label="Fixed maximum" hide-details class="-mt-1" />
+              <v-checkbox
+                v-model="widget.options.useFixedMaxY"
+                :label="$t('Fixed maximum')"
+                hide-details
+                class="-mt-1"
+              />
               <v-text-field
                 v-model.number="widget.options.fixedMaxY"
                 type="number"
-                label="Max value"
+                :label="$t('Max value')"
                 variant="outlined"
                 density="compact"
                 :disabled="!widget.options.useFixedMaxY"
@@ -195,7 +189,7 @@
     </template>
     <template #actions>
       <div class="flex w-full justify-end my-2">
-        <v-btn @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">Close</v-btn>
+        <v-btn @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">{{ $t('Close') }}</v-btn>
       </div>
     </template>
   </InteractionDialog>

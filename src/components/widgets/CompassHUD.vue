@@ -46,7 +46,7 @@
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
     <v-card class="px-8 pb-2 pt-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">HUD Compass widget config</v-card-title>
+      <v-card-title class="text-center">{{ $t('HUD Compass widget config') }}</v-card-title>
       <v-btn
         class="absolute top-3 right-0 text-lg rounded-full"
         variant="text"
@@ -59,7 +59,7 @@
         <div class="flex w-full justify-between">
           <v-switch
             class="ma-1"
-            label="Show yaw value"
+            :label="$t('Show yaw value')"
             :color="widget.options.showYawValue ? 'white' : undefined"
             :model-value="widget.options.showYawValue"
             hide-details
@@ -67,7 +67,7 @@
           />
           <v-switch
             class="ma-1"
-            label="Use -180/+180 range"
+            :label="$t('Use -180/+180 range')"
             :color="widget.options.useNegativeRange ? 'white' : undefined"
             :model-value="widget.options.useNegativeRange"
             hide-details
@@ -78,7 +78,7 @@
         <div class="flex w-full justify-between">
           <v-switch
             class="ma-1 w-[220px]"
-            label="Show home on HUD"
+            :label="$t('Show home on HUD')"
             :color="widget.options.showHomeOnHUD ? 'white' : undefined"
             :model-value="widget.options.showHomeOnHUD"
             hide-details
@@ -88,7 +88,7 @@
         <div class="flex w-full justify-between">
           <v-switch
             class="ma-1 w-[220px]"
-            label="Show POIs on HUD"
+            :label="$t('Show POIs on HUD')"
             :color="widget.options.poi?.showPoiOnHUD ? 'white' : undefined"
             :model-value="widget.options.poi?.showPoiOnHUD ?? true"
             hide-details
@@ -100,12 +100,12 @@
             v-if="widget.options.poi?.showPoiOnHUD || widget.options.showHomeOnHUD"
             v-model="widget.options.poi.showDistances"
             :items="[
-              { title: 'All markers', value: 'all' },
-              { title: 'Highlighted marker only', value: 'highlightedMarker' },
-              { title: 'Box on HUD side', value: 'onHudSide' },
-              { title: 'No distance tags', value: 'none' },
+              { title: $t('All markers'), value: 'all' },
+              { title: $t('Highlighted marker only'), value: 'highlightedMarker' },
+              { title: $t('Box on HUD side'), value: 'onHudSide' },
+              { title: $t('No distance tags'), value: 'none' },
             ]"
-            label="Show distance tags"
+            :label="$t('Show distance tags')"
             class="mt-2 max-w-[280px]"
             density="compact"
             hide-details
@@ -114,7 +114,7 @@
         <v-divider class="mt-3 opacity-5" />
         <v-expansion-panels theme="dark" class="mt-3">
           <v-expansion-panel class="bg-[#FFFFFF11] text-white mt-2">
-            <v-expansion-panel-title>Color</v-expansion-panel-title>
+            <v-expansion-panel-title>{{ $t('Color') }}</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-color-picker
                 v-model="widget.options.hudColor"
@@ -133,7 +133,9 @@
       </div>
       <v-card-actions>
         <div class="flex w-full h-full justify-end items-center pt-1">
-          <v-btn class="-mr-4" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">Close</v-btn>
+          <v-btn class="-mr-4" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">{{
+            $t('Close')
+          }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>

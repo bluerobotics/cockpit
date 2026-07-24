@@ -9,6 +9,7 @@ import { availableCockpitActions, registerActionCallback } from '@/libs/joystick
 import { buildExif, createThumbnail, maybeEmbedExif, snapshotFilename } from '@/libs/snapshot'
 import { isElectron } from '@/libs/utils'
 import { snapshotStorage, snapshotThumbStorage } from '@/libs/videoStorage'
+import i18n from '@/plugins/i18n'
 import { useMissionStore } from '@/stores/mission'
 import { StorageDB } from '@/types/general'
 import { SnapshotFileDescriptor, SnapshotResult } from '@/types/snapshot'
@@ -200,7 +201,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
     const files = maybeFiles.filter((file): file is SnapshotFileDescriptor => file.blob instanceof Blob)
     if (files.length === 0) {
-      showDialog({ message: 'No files found.', variant: 'error' })
+      showDialog({ message: i18n.global.t('No files found'), variant: 'error' })
       return
     }
     if (shouldZip) {

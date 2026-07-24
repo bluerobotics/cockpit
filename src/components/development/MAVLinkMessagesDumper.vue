@@ -1,8 +1,7 @@
 <template>
   <div class="flex flex-col gap-3 px-2 py-3">
     <p class="text-sm text-slate-100/70">
-      Captures every MAVLink message exchanged with the main connection (both incoming and outgoing) into an in-memory
-      buffer. Use it to inspect the raw stream when debugging issues like multi-instance messages or missing values.
+      {{ $t('Captures every MAVLink message exchanged with the main connection (both incoming and outgoing) into an in-memory buffer. Use it to inspect the raw stream when debugging issues like multi-instance messages or missing values.') }}
     </p>
     <div class="flex flex-wrap items-center gap-3">
       <v-btn
@@ -12,7 +11,7 @@
         :prepend-icon="isMavlinkDumperRecording ? 'mdi-stop' : 'mdi-record'"
         @click="toggleMavlinkDumperRecording"
       >
-        {{ isMavlinkDumperRecording ? 'Stop' : 'Start' }}
+        {{ isMavlinkDumperRecording ? t('Stop') : t('Start') }}
       </v-btn>
       <v-btn
         variant="outlined"
@@ -21,7 +20,7 @@
         :disabled="!mavlinkDumperHasDump"
         @click="openInMemoryDumpViewer"
       >
-        {{ isMavlinkDumperRecording ? 'Live plot' : 'Plot last recording' }}
+        {{ isMavlinkDumperRecording ? t('Live plot') : t('Plot last recording') }}
       </v-btn>
       <v-btn
         variant="outlined"
@@ -30,7 +29,7 @@
         :disabled="!mavlinkDumperHasDump || isMavlinkDumperRecording"
         @click="downloadMavlinkDump"
       >
-        Download dump
+        {{ t('Download dump') }}
       </v-btn>
       <v-btn
         variant="outlined"
@@ -39,7 +38,7 @@
         :disabled="isMavlinkDumperRecording"
         @click="openDumpFilePicker"
       >
-        Load &amp; plot dump
+        {{ t('Load & plot dump') }}
       </v-btn>
       <v-btn
         variant="text"
@@ -48,7 +47,7 @@
         :disabled="!mavlinkDumperHasDump || isMavlinkDumperRecording"
         @click="onClearMavlinkDumperDump"
       >
-        Clear
+        {{ t('Clear') }}
       </v-btn>
       <input
         ref="dumpFileInput"
@@ -60,15 +59,15 @@
     </div>
     <div class="mavlink-dumper-stats">
       <span class="mavlink-dumper-stat">
-        <span class="mavlink-dumper-stat-label">Messages:</span>
+        <span class="mavlink-dumper-stat-label">{{ t('Messages:') }}</span>
         <span class="mavlink-dumper-stat-value">{{ mavlinkDumperMessageCount.toLocaleString() }}</span>
       </span>
       <span class="mavlink-dumper-stat">
-        <span class="mavlink-dumper-stat-label">Size:</span>
+        <span class="mavlink-dumper-stat-label">{{ t('Size:') }}</span>
         <span class="mavlink-dumper-stat-value">{{ formatMavlinkDumperSize(mavlinkDumperDumpSizeBytes) }}</span>
       </span>
       <span v-if="mavlinkDumperStartedAt !== null" class="mavlink-dumper-stat">
-        <span class="mavlink-dumper-stat-label">{{ isMavlinkDumperRecording ? 'Recording for:' : 'Captured:' }}</span>
+        <span class="mavlink-dumper-stat-label">{{ isMavlinkDumperRecording ? t('Recording for:') : t('Captured:') }}</span>
         <span class="mavlink-dumper-stat-value">{{ formatDumpDuration(elapsedMavlinkDumperRecordingMs) }}</span>
       </span>
     </div>
@@ -79,6 +78,7 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import MavlinkDumpViewer from '@/components/MavlinkDumpViewer.vue'
 import {
@@ -93,6 +93,7 @@ import {
   stopMavlinkDumperRecording,
 } from '@/libs/mavlink-message-dumper'
 
+const { t } = useI18n()
 const elapsedMavlinkDumperRecordingMs = ref(0)
 let mavlinkDumperTickInterval: ReturnType<typeof setInterval> | null = null
 

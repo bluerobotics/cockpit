@@ -19,7 +19,7 @@
           <VehicleDefaultsJoystickMappingContent variant="standalone" />
 
           <div class="mt-4 flex justify-space-between">
-            <v-btn variant="text" @click="close">Cancel</v-btn>
+            <v-btn variant="text" @click="close">{{ $t('Cancel') }}</v-btn>
             <v-btn :disabled="!hasImportOffer || selectedJoystickRowsCount === 0" variant="text" @click="onImportClick">
               Import selected
             </v-btn>

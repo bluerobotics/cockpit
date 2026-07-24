@@ -1,5 +1,5 @@
 <template>
-  <div class="map-north-indicator" :style="interfaceStore.globalGlassMenuStyles" role="img" aria-label="North">
+  <div class="map-north-indicator" :style="interfaceStore.globalGlassMenuStyles" role="img" :aria-label="$t('North')">
     <v-icon class="map-north-indicator__arrow">mdi-navigation</v-icon>
     <span class="map-north-indicator__label">N</span>
   </div>

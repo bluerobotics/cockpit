@@ -145,13 +145,13 @@ const isDecember = (): boolean => getMonth(new Date()) === 11
 
 import { useFullscreen } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { isElectron } from '@/libs/utils'
 
-const randomLightHeartedMessage = ref<string>('')
-let timerId: ReturnType<typeof setTimeout>
+const { tm } = useI18n()
 
-const startupLightHeartedMessages: string[] = [
+const englishMessages = [
   'Distributing dolphins for sonar translations...',
   'Observing octopuses to optimize dark mode...',
   'Persuading Poseidon to trade us his trident...',
@@ -177,11 +177,11 @@ const startupLightHeartedMessages: string[] = [
   'Deploying rubber ducks for safety certification...',
   'Filling ballast tanks with fresh ideas...',
   'Mapping ocean puns… depth-level humor detected...',
-  'Rendering waves pixel by pixel — surf’s almost up...',
+  "Rendering waves pixel by pixel — surf's almost up...",
   'Teaching seagulls the latest hover gestures...',
   'Checking tide tables to schedule snack breaks...',
   'Swapping batteries in the sea turtles (just kidding)...',
-  'Dusting off code gremlins  —  please keep arms inside the Cockpit...',
+  'Dusting off code gremlins — please keep arms inside the Cockpit...',
   'Aligning gyros — because spin is only fun on dance floors...',
   'Bribing barracudas with breadcrumbs for better bandwidth...',
   'Untangling anchor chains from last season’s memes...',
@@ -247,14 +247,22 @@ const startupLightHeartedMessages: string[] = [
   'Vacuuming sand from the ocean floor cache...',
 ]
 
-const remainingMessages = ref<string[]>([...startupLightHeartedMessages])
+const getStartupMessages = (): string[] => {
+  const messages = tm('splashMessages')
+  return Array.isArray(messages) && messages.length > 0 ? (messages as string[]) : englishMessages
+}
+
+const randomLightHeartedMessage = ref<string>('')
+let timerId: ReturnType<typeof setTimeout>
+
+const remainingMessages = ref<string[]>([...getStartupMessages()])
 
 const scheduleNextMessage = (): void => {
   const randomIndex = Math.floor(Math.random() * remainingMessages.value.length)
   const delay = Math.random() * 5000 + 3000
 
   if (remainingMessages.value.length === 0) {
-    remainingMessages.value = [...startupLightHeartedMessages]
+    remainingMessages.value = [...getStartupMessages()]
   }
   randomLightHeartedMessage.value = remainingMessages.value.splice(randomIndex, 1)[0]
   timerId = setTimeout(scheduleNextMessage, delay)

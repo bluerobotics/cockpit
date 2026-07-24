@@ -1,27 +1,35 @@
-<template>
+﻿<template>
   <div class="mb-4">
     <div class="font-bold mb-2 flex items-center justify-between">
       <span>{{ type }}</span>
       <button
         class="ml-2 text-gray-400 hover:text-white p-1 rounded-full hover:bg-[#FFFFFF22]"
-        title="Stop tracking this message"
+        :title="$t('Stop tracking this message')"
         @click="emit('remove', type)"
       >
-        <span class="text-sm">✕</span>
+        <span class="text-sm">×</span>
       </button>
     </div>
-    <div class="ml-1 text-xs text-gray-400 mb-1">Incoming Messages:</div>
+    <div class="ml-1 text-xs text-gray-400 mb-1">
+      {{ $t('Incoming Messages:') }}
+    </div>
     <div v-if="incomingMessage" class="ml-2 text-sm whitespace-pre-wrap">
-      <div class="text-xs text-blue-300">Received at: {{ incomingMessage.timestamp }}</div>
+      <div class="text-xs text-blue-300">{{ $t('Received at:') }} {{ incomingMessage.timestamp }}</div>
       <pre>{{ JSON.stringify(incomingMessage.message, null, 2) }}</pre>
     </div>
-    <div v-else class="ml-2 text-sm text-gray-400">No incoming messages</div>
-    <div class="ml-1 text-xs text-gray-400 mt-2 mb-1">Outgoing Messages:</div>
+    <div v-else class="ml-2 text-sm text-gray-400">
+      {{ $t('No incoming messages') }}
+    </div>
+    <div class="ml-1 text-xs text-gray-400 mt-2 mb-1">
+      {{ $t('Outgoing Messages:') }}
+    </div>
     <div v-if="outgoingMessage" class="ml-2 text-sm whitespace-pre-wrap">
-      <div class="text-xs text-green-300">Sent at: {{ outgoingMessage.timestamp }}</div>
+      <div class="text-xs text-green-300">{{ $t('Sent at:') }} {{ outgoingMessage.timestamp }}</div>
       <pre>{{ JSON.stringify(outgoingMessage.message, null, 2) }}</pre>
     </div>
-    <div v-else class="ml-2 text-sm text-gray-400">No outgoing messages</div>
+    <div v-else class="ml-2 text-sm text-gray-400">
+      {{ $t('No outgoing messages') }}
+    </div>
   </div>
 </template>
 

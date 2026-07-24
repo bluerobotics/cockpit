@@ -1,5 +1,5 @@
 <template>
-  <v-tooltip :text="commTooltip" location="top">
+  <v-tooltip :text="store.isVehicleOnline ? $t('Vehicle connected') : $t('Vehicle disconnected')" location="top">
     <template #activator="{ props: tooltipProps }">
       <div
         class="relative"
@@ -20,17 +20,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const store = useMainVehicleStore()
-
-const commTooltip = computed((): string => {
-  if (store.isVehicleOnline) return 'Vehicle connected'
-  if (store.isVehicleConnectionLost) return 'Vehicle disconnected'
-  return 'No vehicle connected'
-})
 </script>
 
 <style scoped>

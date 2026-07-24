@@ -1,19 +1,19 @@
 <template>
   <BaseConfigurationView>
-    <template #title>MAVLink</template>
+    <template #title>{{ $t('MAVLink') }}</template>
     <template #content>
       <div
         class="max-h-[85vh] overflow-y-auto -mr-4"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[85vw]' : 'max-w-[50vw]'"
       >
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider>
-          <template #title>Messages dumper</template>
+          <template #title>{{ $t('Messages dumper') }}</template>
           <template #content>
             <MAVLinkMessagesDumper />
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
-          <template #title>Message Inspector</template>
+          <template #title>{{ $t('Message Inspector') }}</template>
           <template #content>
             <MAVLinkInspector />
           </template>

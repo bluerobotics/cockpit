@@ -1,4 +1,4 @@
-import '@/libs/cosmos'
+﻿import '@/libs/cosmos'
 
 import { useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
@@ -27,6 +27,7 @@ import { settingsManager } from '@/libs/settings-management'
 import { isEqual, sequentialArray } from '@/libs/utils'
 import { isViewsGroupBlank } from '@/migration/default-profile-importer'
 import { legacySavedProfilesKey, migrateLegacyViewsGroup } from '@/migration/profile-migrations'
+import i18n from '@/plugins/i18n'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Point2D, SizeRect2D } from '@/types/general'
@@ -137,7 +138,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const showElementPropsDrawer = (customWidgetElementHash: string): void => {
     const customWidgetElement = getElementByHash(customWidgetElementHash)
     if (!customWidgetElement) {
-      openSnackbar({ variant: 'error', message: 'Could not find element with the given hash.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: i18n.global.t('Element not found'), duration: 3000 })
       return
     }
     elementToShowOnDrawer.value = customWidgetElement
@@ -180,7 +181,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const widgetIndex = currentViewWidgets.findIndex((widget) => widget.hash === widgetHash)
 
     if (widgetIndex === -1) {
-      openSnackbar({ variant: 'error', message: 'Widget not found with the given hash.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: i18n.global.t('Widget not found'), duration: 3000 })
       return
     }
 
@@ -191,7 +192,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     loadedWidget.position = currentPosition
     currentViewWidgets[widgetIndex] = loadedWidget
 
-    openSnackbar({ variant: 'success', message: 'Widget loaded successfully with new hash.', duration: 3000 })
+    openSnackbar({
+      variant: 'success',
+      message: i18n.global.t('Widget loaded successfully'),
+      duration: 3000,
+    })
   }
 
   const reassignHashesToWidget = (widget: Widget): void => {
@@ -442,7 +447,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   function renameView(view: View, name: string): void {
     const index = currentProfile.value.views.indexOf(view)
     if (name.length === 0) {
-      showDialog({ variant: 'error', message: 'View name cannot be blank.', timer: 2000 })
+      showDialog({
+        variant: 'error',
+        message: i18n.global.t('View name cannot be blank'),
+        timer: 2000,
+      })
       return
     }
     currentProfile.value.views[index].name = name
@@ -454,7 +463,11 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    */
   const selectView = (view: View): void => {
     if (!view.visible) {
-      showDialog({ variant: 'error', message: 'Cannot select a view that is not visible.', timer: 5000 })
+      showDialog({
+        variant: 'error',
+        message: i18n.global.t('Cannot select invisible view'),
+        timer: 5000,
+      })
       return
     }
     const index = currentProfile.value.views.indexOf(view)
@@ -565,7 +578,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       return
     }
 
-    showDialog({ variant: 'error', message: 'Mini-widget container not found.' })
+    showDialog({ variant: 'error', message: i18n.global.t('Mini widget container not found') })
   }
 
   const customWidgetContainers = computed<MiniWidgetContainer[]>(() =>

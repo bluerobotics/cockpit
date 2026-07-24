@@ -1,91 +1,279 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "🏗️ Build Docker Container",
-            "type": "shell",
-            "command": "echo 'Building Docker container...' && docker build -t yarn-cockpit-container .devcontainer/ && echo '✅ Container built successfully!'",
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            },
-            "group": "build",
-            "options": {
-                "env": {
-                    "INSIDE_CONTAINER": "${env:REMOTE_CONTAINERS}"
-                }
-            },
-            "runOptions": {
-                "runOn": "default"
-            }
-        },
-        {
-            "label": "🚀 Start Dev Server",
-            "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -it -v ${workspaceFolder}:/workspace -p 5173:5173 yarn-cockpit-container dev; else yarn dev --host 0.0.0.0; fi",
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "dedicated",
-                "showReuseMessage": false,
-                "clear": true,
-                "close": false
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "📦 Install Dependencies",
-            "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container install; else yarn install; fi",
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            }
-        },
-        {
-            "label": "🧪 Run Tests",
-            "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container test; else yarn test; fi",
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            }
-        },
-        {
-            "label": "🔨 Build",
-            "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container run build; else yarn run build; fi",
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            }
-        },
-        {
-            "label": "🧹 Clean Install",
-            "type": "shell",
-            "command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container bash -c \"rm -rf node_modules yarn.lock && yarn install\"; else rm -rf node_modules yarn.lock && yarn install; fi",
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true
-            }
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "🏗️ Build Docker Container",
+			"type": "shell",
+			"command": "echo 'Building Docker container...' && docker build -t yarn-cockpit-container .devcontainer/ && echo '✅ Container built successfully!'",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"group": "build",
+			"options": {
+				"env": {
+					"INSIDE_CONTAINER": "${env:REMOTE_CONTAINERS}"
+				}
+			},
+			"runOptions": {
+				"runOn": "default"
+			}
+		},
+		{
+			"label": "🚀 Start Dev Server",
+			"type": "shell",
+			"command": "if [ -z  \"$CONTAINER\" ]; then docker run -it -v ${workspaceFolder}:/workspace -p 5173:5173 yarn-cockpit-container dev; else yarn dev --host 0.0.0.0; fi",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true,
+				"close": false
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "📦 Install Dependencies",
+			"type": "shell",
+			"command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container install; else yarn install; fi",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "🧪 Run Tests",
+			"type": "shell",
+			"command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container test; else yarn test; fi",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "🔨 Build",
+			"type": "shell",
+			"command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container run build; else yarn run build; fi",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "🧹 Clean Install",
+			"type": "shell",
+			"command": "if [ -z  \"$CONTAINER\" ]; then docker run -v ${workspaceFolder}:/workspace yarn-cockpit-container bash -c \"rm -rf node_modules yarn.lock && yarn install\"; else rm -rf node_modules yarn.lock && yarn install; fi",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "📋 Check Merge State",
+			"type": "shell",
+			"command": "git status",
+			"problemMatcher": []
+		},
+		{
+			"label": "📦 Merge Commit + Squash",
+			"type": "shell",
+			"command": "git commit --no-edit; git reset --soft HEAD~2; git commit -m \"feat(i18n): convert UI strings to i18n with Chinese translations\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "📋 Reset Soft",
+			"type": "shell",
+			"command": "git reset --soft HEAD~2",
+			"problemMatcher": []
+		},
+		{
+			"label": "📦 Final Commit",
+			"type": "shell",
+			"command": "git commit -m 'feat(i18n): convert UI strings to i18n with Chinese translations'",
+			"problemMatcher": []
+		},
+		{
+			"label": "📋 Verify 2 Commits",
+			"type": "shell",
+			"command": "git log --oneline -5",
+			"problemMatcher": []
+		},
+		{
+			"label": "🔍 Reflog",
+			"type": "shell",
+			"command": "git reflog -10",
+			"problemMatcher": []
+		},
+		{
+			"label": "🔧 Restore 2 Commits",
+			"type": "shell",
+			"command": "git reset --soft add87277",
+			"problemMatcher": []
+		},
+		{
+			"label": "📦 Commit #2",
+			"type": "shell",
+			"command": "git commit -m 'feat(i18n): convert UI strings to i18n with Chinese translations'",
+			"problemMatcher": []
+		},
+		{
+			"label": "📋 Final Verify",
+			"type": "shell",
+			"command": "git log --oneline -5",
+			"problemMatcher": []
+		},
+		{
+			"label": "📤 Push to Remote",
+			"type": "shell",
+			"command": "git push --force-with-lease origin feature/i18n-support",
+			"problemMatcher": []
+		},
+		{
+			"label": "🔍 Find Conflicts",
+			"type": "shell",
+			"command": "git fetch upstream master; git merge upstream/master --no-commit --no-ff 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "📦 Take Upstream",
+			"type": "shell",
+			"command": "git checkout --theirs -- src/components/EditMenu.vue src/components/mini-widgets/VeryGenericIndicator.vue",
+			"problemMatcher": []
+		},
+		{
+			"label": "📋 Verify & Stage",
+			"type": "shell",
+			"command": "git diff --name-only --diff-filter=U; git add src/components/EditMenu.vue src/components/mini-widgets/VeryGenericIndicator.vue",
+			"problemMatcher": []
+		},
+		{
+			"label": "📋 Final Check",
+			"type": "shell",
+			"command": "git diff --name-only --diff-filter=U",
+			"problemMatcher": []
+		},
+		{
+			"label": "🔍 ESLint",
+			"type": "shell",
+			"command": "node .\\node_modules\\eslint\\bin\\eslint.js --fix src/components/EditMenu.vue src/components/mini-widgets/VeryGenericIndicator.vue",
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "📦 Commit & Push",
+			"type": "shell",
+			"command": "git add -A; git commit --amend --no-edit; git push --force-with-lease origin feature/i18n-support",
+			"problemMatcher": []
+		},
+		{
+			"label": "🏁 Final",
+			"type": "shell",
+			"command": "git log --oneline -3",
+			"problemMatcher": []
+		},
+		{
+			"label": "🔍 Find All $t() Calls",
+			"type": "shell",
+			"command": "git grep -oh \"\\$t(['\\\"`][^)'\\\"`]+['\\\"`])\" -- '*.vue' '*.ts' | Select-String -Pattern '\\$t' | ForEach-Object { $_ -replace '.*\\$t.([^)]+).*', '$1' } | Sort-Object -Unique > d:\\cockpit\\tkeys.txt; Get-Content d:\\cockpit\\tkeys.txt | Measure-Object | Select-Object -ExpandProperty Count",
+			"problemMatcher": []
+		},
+		{
+			"label": "🔍 Run I18n Check",
+			"type": "shell",
+			"command": "node d:\\cockpit\\check-i18n.js",
+			"problemMatcher": []
+		},
+		{
+			"label": "📦 Add Missing",
+			"type": "shell",
+			"command": "node d:\\cockpit\\add-missing.js; node d:\\cockpit\\check-i18n.js",
+			"problemMatcher": []
+		},
+		{
+			"label": "✅ Verify + Commit",
+			"type": "shell",
+			"command": "node -e \"JSON.parse(require('fs').readFileSync('d:/cockpit/src/locales/zh.json','utf8')); console.log('OK')\"; git add src/locales/zh.json; git commit --amend --no-edit; git push --force-with-lease origin feature/i18n-support",
+			"problemMatcher": []
+		},
+		{
+			"label": "🧹 Clean + Final Check",
+			"type": "shell",
+			"command": "Remove-Item d:\\cockpit\\check-i18n.js,d:\\cockpit\\add-missing.js,d:\\cockpit\\tkeys.txt -ErrorAction SilentlyContinue; node d:\\cockpit\\node_modules\\eslint\\bin\\eslint.js src/locales/zh.json 2>&1; git log --oneline -3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Analyze i18n keys",
+			"type": "shell",
+			"command": "node check-dupes.js 2>&1 | Out-File -FilePath analysis-result.txt -Encoding utf8; Get-Content analysis-result.txt"
+		},
+		{
+			"label": "Analyze i18n keys v2",
+			"type": "shell",
+			"command": "node check-dupes.js; Get-Content dup-check-result.txt"
+		},
+		{
+			"label": "Find unused i18n keys",
+			"type": "shell",
+			"command": "node find-unused.js"
+		},
+		{
+			"label": "Delete find-unused.js",
+			"type": "shell",
+			"command": "Remove-Item d:\\cockpit\\find-unused.js -Force -ErrorAction SilentlyContinue; echo done"
+		},
+		{
+			"label": "Find unused i18n keys v2",
+			"type": "shell",
+			"command": "node find-unused.js"
+		},
+		{
+			"label": "Cleanup analysis files",
+			"type": "shell",
+			"command": "Remove-Item d:\\cockpit\\analyze-i18n.js,d:\\cockpit\\check-dupes.js,d:\\cockpit\\find-unused.js,d:\\cockpit\\dup-check-result.txt,d:\\cockpit\\unused-result.txt -Force -ErrorAction SilentlyContinue; echo cleaned"
+		},
+		{
+			"label": "Cleanup zh.json",
+			"type": "shell",
+			"command": "node cleanup-zh.js",
+			"isBackground": false
+		},
+		{
+			"label": "Cleanup temp files",
+			"type": "shell",
+			"command": "Remove-Item d:\\cockpit\\cleanup-zh.js,d:\\cockpit\\cleanup-result.txt -Force -ErrorAction SilentlyContinue; Write-Output 'cleaned'",
+			"isBackground": false
+		},
+		{
+			"label": "Find duplicate i18n keys",
+			"type": "shell",
+			"command": "node find-dupes.js",
+			"isBackground": false
+		},
+		{
+			"label": "🧹 Clean & Repush",
+			"type": "shell",
+			"command": "Remove-Item 7za-noerr.cmd,add-keys.js,analysis-result.txt,analyze-zh.js,check-splash.js,find-dupes.js,fix-i18n-script.js,fix-msg.js,output.txt,unused-keys-result.txt -ErrorAction SilentlyContinue; git add -A; git commit --amend --no-edit; git log --oneline -3; git push --force-with-lease origin feature/i18n-support",
+			"group": "none"
+		}
+	]
 }

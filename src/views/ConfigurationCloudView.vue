@@ -1,16 +1,16 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Cloud configuration</template>
+    <template #title>{{ $t('Cloud configuration') }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>BlueOS Cloud integration</template>
+          <template #title>{{ $t('BlueOS Cloud integration') }}</template>
           <template #subtitle>
-            <span v-if="cloudStore.isAuthenticated">Signed in as {{ cloudStore.displayName }}</span>
-            <span v-else>Not connected</span>
+            <span v-if="cloudStore.isAuthenticated">{{ $t('Signed in as {name}', { name: cloudStore.displayName }) }}</span>
+            <span v-else>{{ $t('Not connected') }}</span>
           </template>
           <template #info>
             <p class="w-full">
@@ -30,7 +30,7 @@
                     class="mt-0"
                     @update:model-value="onCloudIntegrationToggle"
                   />
-                  <span class="text-sm">Enable BlueOS Cloud integration</span>
+                  <span class="text-sm">{{ $t('Enable BlueOS Cloud integration') }}</span>
                 </div>
                 <v-btn
                   v-if="cloudStore.isAuthenticated"

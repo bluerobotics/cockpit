@@ -10,7 +10,11 @@
     @click="widgetStore.editingMode && widgetStore.showElementPropsDrawer(miniWidget.hash)"
   >
     <v-tooltip
-      text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
+      :text="
+        $t(
+          'This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable'
+        )
+      "
       location="top"
       open-delay="500"
       class="flex items-center"

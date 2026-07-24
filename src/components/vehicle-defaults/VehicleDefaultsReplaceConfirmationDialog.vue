@@ -16,7 +16,7 @@
       </v-card-text>
 
       <v-card-actions class="justify-space-between px-6 pb-4">
-        <v-btn variant="text" @click="$emit('cancel')">Cancel</v-btn>
+        <v-btn variant="text" @click="$emit('cancel')">{{ $t('Cancel') }}</v-btn>
         <v-btn color="error" @click="$emit('confirm')">Replace</v-btn>
       </v-card-actions>
     </v-card>

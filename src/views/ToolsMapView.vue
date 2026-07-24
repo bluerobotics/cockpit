@@ -1,13 +1,13 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Map</template>
+    <template #title>{{ $t('Map') }}</template>
     <template #content>
       <div class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px]">
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Points of Interest</template>
+          <template #title>{{ $t('Points of Interest') }}</template>
           <template #info>
-            <li>View, edit and remove the points of interest shown on the map.</li>
-            <li>Static POIs have fixed coordinates, while live POIs follow data-lake variables.</li>
+            <li>{{ $t('View, edit and remove the points of interest shown on the map.') }}</li>
+            <li>{{ $t('Static POIs have fixed coordinates, while live POIs follow data-lake variables.') }}</li>
           </template>
           <template #content>
             <div class="flex justify-center flex-col ml-2 pr-4 mb-8 mt-2 w-full">
@@ -93,7 +93,7 @@
                     <td colspan="4" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
                       <v-btn variant="outlined" class="rounded-lg" @click="openNewPoiDialog">
                         <v-icon start>mdi-plus</v-icon>
-                        Add point of interest
+                        {{ $t('Add point of interest') }}
                       </v-btn>
                     </td>
                   </tr>
@@ -101,7 +101,7 @@
                 <template #no-data>
                   <tr>
                     <td colspan="4" class="text-center flex items-center justify-center h-[50px] w-full">
-                      <p class="text-[16px] w-full">No points of interest found</p>
+                      <p class="text-[16px] w-full">{{ $t('No points of interest found') }}</p>
                     </td>
                   </tr>
                 </template>
@@ -118,6 +118,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -132,21 +133,22 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
+const { t } = useI18n()
 const { showDialog, closeDialog } = useInteractionDialog()
 const { resolvedPointsOfInterest: pois, removePointOfInterest } = usePointsOfInterest()
 
 const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)
 
 const headers = [
-  { title: 'Name', key: 'name', align: 'start', sortable: true },
-  { title: 'Status', key: 'status', align: 'center', sortable: false },
-  { title: 'Coordinates', key: 'coordinates', align: 'center', sortable: false },
-  { title: 'Actions', key: 'actions', align: 'end', sortable: false },
+  { title: t('Name'), key: 'name', align: 'start', sortable: true },
+  { title: t('Status'), key: 'status', align: 'center', sortable: false },
+  { title: t('Coordinates'), key: 'coordinates', align: 'center', sortable: false },
+  { title: t('Actions'), key: 'actions', align: 'end', sortable: false },
 ] as const
 
 const poiStatusLabel = (poi: ResolvedPointOfInterest): string => {
-  if (!poi.isLiveTracked) return 'Static'
-  return poi.hasValidPosition ? 'Live' : 'No data'
+  if (!poi.isLiveTracked) return t('Static')
+  return poi.hasValidPosition ? t('Live') : t('No data')
 }
 
 const poiStatusColor = (poi: ResolvedPointOfInterest): string => {
