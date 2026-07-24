@@ -101,6 +101,7 @@
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
   <SnackbarContainer />
+  <MultipleJoysticksDialog />
   <FloatingWrapper v-model="devStore.showConsole" title="Console">
     <ConsoleViewer
       :disabled="!devStore.enableSystemLogging"
@@ -131,6 +132,7 @@ import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import FloatingWrapper from '@/components/FloatingWrapper.vue'
 import GlassModal from '@/components/GlassModal.vue'
+import MultipleJoysticksDialog from '@/components/MultipleJoysticksDialog.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'

@@ -12,6 +12,7 @@ export enum JoystickModel {
   XboxController_Bluetooth = 'Xbox controller (bluetooth)',
   XboxController_Wired = 'Xbox controller (wired)',
   XboxController_360 = 'Xbox 360 controller',
+  XboxController_XInput = 'Xbox controller (XInput)',
   LogitechExtreme3DPro = 'Logitech Extreme 3D Pro',
   IpegaPG9023 = 'Ipega PG-9023',
   SteamDeckLCD = 'Steam Deck LCD',
@@ -26,6 +27,7 @@ export const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
   ['054c:0ce6', JoystickModel.DualSense],
   ['054c:09cc', JoystickModel.DualShock4],
   ['045e:02ea', JoystickModel.XboxOne_Wired],
+  ['045e:02ff', JoystickModel.XboxController_XInput],
   ['045e:02e0', JoystickModel.XboxOne_Wireless],
   ['045e:02fd', JoystickModel.XboxOneS_Bluetooth],
   ['045e:0b13', JoystickModel.XboxController_Bluetooth],
@@ -108,6 +110,11 @@ export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToC
   },
   [JoystickModel.XboxController_360]: {
     name: JoystickModel.XboxController_360,
+    axes: [0, 1, 2, 3],
+    buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+  },
+  [JoystickModel.XboxController_XInput]: {
+    name: 'Xbox Controller (XInput)',
     axes: [0, 1, 2, 3],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },

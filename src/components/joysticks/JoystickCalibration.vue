@@ -24,7 +24,7 @@
             <span>Exponential Scaling</span>
           </div>
         </div>
-        <v-btn variant="text" class="text-blue-400" @click="openCalibrationModal"> Calibrate </v-btn>
+        <v-btn variant="text" class="text-white" @click="openCalibrationModal"> Calibrate </v-btn>
       </div>
     </div>
   </div>
