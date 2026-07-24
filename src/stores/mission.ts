@@ -70,6 +70,7 @@ export const useMissionStore = defineStore('mission', () => {
   const showMissionCreationTips = useBlueOsStorage('cockpit-show-mission-creation-tips', true)
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
+  const alwaysShowWaypointNumbers = useBlueOsStorage('cockpit-always-show-waypoint-numbers', false, { debounceMs: 0 })
   const showMissionEstimates = useBlueOsStorage('cockpit-show-mission-estimates', true)
   const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
   const cruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
@@ -805,6 +806,11 @@ export const useMissionStore = defineStore('mission', () => {
     removeThumbnail(id)
   }
 
+  const toggleAlwaysShowWaypointNumbers = (): void => {
+    alwaysShowWaypointNumbers.value = !alwaysShowWaypointNumbers.value
+    logUserAction(`${alwaysShowWaypointNumbers.value ? 'Enabled' : 'Disabled'} always-visible waypoint numbers`)
+  }
+
   return {
     username,
     lastConnectedUser,
@@ -843,6 +849,8 @@ export const useMissionStore = defineStore('mission', () => {
     showMissionCreationTips,
     showChecklistBeforeArm,
     showGridOnMissionPlanning,
+    alwaysShowWaypointNumbers,
+    toggleAlwaysShowWaypointNumbers,
     showMissionEstimates,
     addCommandToWaypoint,
     removeCommandFromWaypoint,

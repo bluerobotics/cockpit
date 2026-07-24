@@ -270,10 +270,12 @@ export const fitMapToWaypoints = (
  * @param {number} turnaroundDistance - Distance in meters to extend (positive) or inset (negative) from the polygon
  *   boundary before turning. Positive values make the vehicle fly past the edges; negative values keep it away.
  * @param {boolean} crosshatch - When true, appends a second pass rotated 90 degrees to form a crosshatch grid.
- * @param {boolean} reverseSweep - When true, sweeps the survey lines from the far side inward, so the path
- *   enters the polygon from the opposite corner. Used to pick the crosshatch pass orientation.
- * @param {boolean} startReversed - When true, the first survey line is traversed in the opposite direction, so
- *   the path enters from the other end of that line. Used to pick the crosshatch pass orientation.
+ * @param {number} crosshatchDistanceBetweenLines - Distance between lines for the crosshatch second pass, in
+ *   meters. Falls back to `distanceBetweenLines` when unset.
+ * @param {boolean} startReversed - When true, each transect starts from the opposite end (flips the line
+ *   direction), moving the entry along the first line to the adjacent corner.
+ * @param {boolean} reverseSweep - When true, the sweep runs from the far side of the area first, moving the
+ *   entry to the opposite side. Combined with `startReversed` this reaches all four survey corners.
  * @returns {SurveyPath} The generated survey path and turnaround segments.
  */
 export const generateSurveyPath = (
@@ -282,8 +284,9 @@ export const generateSurveyPath = (
   linesAngle: number,
   turnaroundDistance = 0,
   crosshatch = false,
-  reverseSweep = false,
-  startReversed = false
+  crosshatchDistanceBetweenLines?: number,
+  startReversed = false,
+  reverseSweep = false
 ): SurveyPath => {
   if (polygonPoints.length < 4) return { path: [], turnaroundSegments: [] }
 
@@ -409,11 +412,48 @@ export const generateSurveyPath = (
       // with the two directions of the first survey line. Enter at the corner nearest the first pass exit so
       // the transit leg is short and does not double back, instead of always entering at a fixed path endpoint.
       const secondAngle = linesAngle + 90
+      const crosshatchDistance = crosshatchDistanceBetweenLines ?? distanceBetweenLines
       const sweeps = [
-        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, false, false),
-        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, false, true),
-        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, true, false),
-        generateSurveyPath(polygonPoints, distanceBetweenLines, secondAngle, turnaroundDistance, false, true, true),
+        generateSurveyPath(
+          polygonPoints,
+          crosshatchDistance,
+          secondAngle,
+          turnaroundDistance,
+          false,
+          undefined,
+          false,
+          false
+        ),
+        generateSurveyPath(
+          polygonPoints,
+          crosshatchDistance,
+          secondAngle,
+          turnaroundDistance,
+          false,
+          undefined,
+          true,
+          false
+        ),
+        generateSurveyPath(
+          polygonPoints,
+          crosshatchDistance,
+          secondAngle,
+          turnaroundDistance,
+          false,
+          undefined,
+          false,
+          true
+        ),
+        generateSurveyPath(
+          polygonPoints,
+          crosshatchDistance,
+          secondAngle,
+          turnaroundDistance,
+          false,
+          undefined,
+          true,
+          true
+        ),
       ]
 
       let bestPass: SurveyPath | null = null
@@ -439,6 +479,155 @@ export const generateSurveyPath = (
     console.error('Error in generateSurveyPath:', error)
     return { path: [], turnaroundSegments: [] }
   }
+}
+
+const cornersPerPass = 4
+
+/**
+ * Number of distinct entry points a survey path exposes. A crosshatch survey doubles the count because the
+ * entry can sit on either pass's endpoint at each of the four physical corners.
+ * @param {boolean} crosshatch - Whether the survey includes a crosshatch pass.
+ * @returns {number} The number of selectable entry points (4 or 8).
+ */
+export const surveyEntryCornerCount = (crosshatch = false): number => (crosshatch ? cornersPerPass * 2 : cornersPerPass)
+
+/**
+ * Parameters shared by the entry-corner helpers, mirroring {@link generateSurveyPath} minus `startReversed`.
+ */
+interface SurveyGenerationParams {
+  /** Polygon vertices to survey. */
+  polygonPoints: L.LatLng[]
+  /** Distance between survey lines, in meters. */
+  distanceBetweenLines: number
+  /** Angle of the survey lines, in degrees. */
+  linesAngle: number
+  /** Turnaround extension/inset distance, in meters. */
+  turnaroundDistance?: number
+  /** Whether to append a 90° crosshatch pass. */
+  crosshatch?: boolean
+  /** Distance between lines for the crosshatch pass, in meters. */
+  crosshatchDistanceBetweenLines?: number
+}
+
+/**
+ * Generates a survey path that begins at the requested entry corner. Corners `0-3` decode into the two
+ * orientation flips so the entry lands on each physical corner along the primary pass; for a crosshatch
+ * survey, corners `4-7` fly the crosshatch pass first, so the entry sits on the perpendicular pass's endpoint
+ * at those same four corners.
+ * @param {SurveyGenerationParams} params - Survey generation parameters.
+ * @param {number} entryCorner - Which entry point (0-3, or 0-7 for a crosshatch survey) to start from.
+ * @returns {SurveyPath} The survey path (with turnaround segments and crosshatch index) whose first point sits on the chosen entry point.
+ */
+export const orderedSurveyPath = (params: SurveyGenerationParams, entryCorner = 0): SurveyPath => {
+  const swapPasses = Boolean(params.crosshatch) && entryCorner >= cornersPerPass
+  const corner = entryCorner % cornersPerPass
+  const startReversed = corner % 2 === 1
+  const reverseSweep = corner >= 2
+
+  const crosshatchDistance = params.crosshatchDistanceBetweenLines ?? params.distanceBetweenLines
+  const primaryDistance = swapPasses ? crosshatchDistance : params.distanceBetweenLines
+  const secondaryDistance = swapPasses ? params.distanceBetweenLines : params.crosshatchDistanceBetweenLines
+  const primaryAngle = swapPasses ? params.linesAngle + 90 : params.linesAngle
+
+  return generateSurveyPath(
+    params.polygonPoints,
+    primaryDistance,
+    primaryAngle,
+    params.turnaroundDistance,
+    params.crosshatch,
+    secondaryDistance,
+    startReversed,
+    reverseSweep
+  )
+}
+
+/**
+ * Computes the outward bearing of the polygon edge nearest a survey entrance/exit, i.e. the direction
+ * perpendicular to that edge pointing away from the polygon interior. A marker sitting on the boundary can
+ * then be oriented relative to the edge it lies on.
+ * @param {L.LatLng[]} polygonPoints - The survey polygon vertices (open ring; the first vertex is not repeated).
+ * @param {L.LatLng} endpoint - The entrance or exit point, on or near the polygon boundary.
+ * @returns {number} The outward compass bearing (degrees clockwise from north) of the nearest edge's normal.
+ */
+export const surveyEndpointEdgeBearing = (polygonPoints: L.LatLng[], endpoint: L.LatLng): number => {
+  const coords = polygonPoints.map((p) => [p.lng, p.lat] as Position)
+  if (coords.length < 3) return 0
+
+  const norm = (bearing: number): number => ((bearing % 360) + 360) % 360
+  const point = turf.point([endpoint.lng, endpoint.lat])
+
+  let closestEdge = 0
+  let closestDistance = Infinity
+  for (let i = 0; i < coords.length; i++) {
+    const edge = turf.lineString([coords[i], coords[(i + 1) % coords.length]])
+    const distance = turf.pointToLineDistance(point, edge, { units: 'meters' })
+    if (distance < closestDistance) {
+      closestDistance = distance
+      closestEdge = i
+    }
+  }
+
+  const edgeBearing = turf.bearing(
+    turf.point(coords[closestEdge]),
+    turf.point(coords[(closestEdge + 1) % coords.length])
+  )
+  const towardCentroid = turf.bearing(point, turf.centroid(turf.polygon([[...coords, coords[0]]])))
+  const normalA = norm(edgeBearing + 90)
+  const normalB = norm(edgeBearing - 90)
+
+  // Of the two edge normals, the outward one is the further from the direction toward the polygon centroid.
+  return deltaBearing(normalA, towardCentroid) > deltaBearing(normalB, towardCentroid) ? normalA : normalB
+}
+
+/**
+ * A direction indicator placed on the leg entering or leaving a survey, pointing along the travel direction.
+ */
+export interface SurveyLegArrow {
+  /** Leg midpoint where the arrow sits, as `[latitude, longitude]`. */
+  position: WaypointCoordinates
+  /** Compass bearing (degrees clockwise from north) of travel along the leg. */
+  bearing: number
+}
+
+/**
+ * Index range a survey occupies within the ordered mission waypoint list.
+ */
+export interface SurveyWaypointRange {
+  /** Index of the survey's first waypoint. */
+  start: number
+  /** Index of the survey's last waypoint. */
+  end: number
+}
+
+/**
+ * Computes a direction arrow for the leg entering and the leg leaving each survey, so those connecting
+ * segments reveal whether the vehicle is heading into the survey or back out to the rest of the mission. Each
+ * arrow sits at the midpoint of that connecting leg.
+ * @param {WaypointCoordinates[]} path - Ordered mission waypoint coordinates.
+ * @param {SurveyWaypointRange[]} surveyRanges - Index ranges the surveys occupy within `path`.
+ * @returns {SurveyLegArrow[]} One arrow per existing entry/exit leg; legs at the mission ends are skipped.
+ */
+export const surveyLegArrows = (path: WaypointCoordinates[], surveyRanges: SurveyWaypointRange[]): SurveyLegArrow[] => {
+  // `boundary` is the entrance/exit waypoint, `outer` its neighbor outside the survey; `travelBearing` is the
+  // vehicle's heading along the leg. The arrow sits at the midpoint of the boundary->outer leg.
+  const legArrow = (
+    boundary: WaypointCoordinates,
+    outer: WaypointCoordinates,
+    travelBearing: number
+  ): SurveyLegArrow => {
+    const midpoint = turf.midpoint(turf.point([boundary[1], boundary[0]]), turf.point([outer[1], outer[0]]))
+    const [lng, lat] = midpoint.geometry.coordinates
+    return { position: [lat, lng], bearing: travelBearing }
+  }
+
+  const arrows: SurveyLegArrow[] = []
+  surveyRanges.forEach(({ start, end }) => {
+    if (start > 0) arrows.push(legArrow(path[start], path[start - 1], bearingBetween(path[start - 1], path[start])))
+    if (end >= 0 && end < path.length - 1) {
+      arrows.push(legArrow(path[end], path[end + 1], bearingBetween(path[end], path[end + 1])))
+    }
+  })
+  return arrows
 }
 
 /**

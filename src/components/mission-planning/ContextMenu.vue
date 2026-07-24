@@ -70,18 +70,18 @@
         </v-tooltip>
       </div>
       <div id="button-4" class="orbit-button orbit-button-4">
-        <v-tooltip text="Swap start and end point of the survey">
+        <v-tooltip text="Rotate the survey entry point to the next corner">
           <template #activator="{ props: tooltipProps3 }">
             <v-btn
               v-bind="tooltipProps3"
               variant="elevated"
-              icon="mdi-swap-horizontal"
+              icon="mdi-rotate-right"
               :style="{ backgroundColor: '#333333EE' }"
               rounded="full"
               size="x-small"
               color="#FFFFFF22"
               class="text-[13px] rotate-[230deg]"
-              @click="handleSwapSurveyEntryExit"
+              @click="handleRotateSurveyEntryPoint"
             ></v-btn>
           </template>
         </v-tooltip>
@@ -328,7 +328,7 @@ const emit = defineEmits<{
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
   (event: 'toggleCrosshatch'): void
-  (event: 'swapSurveyEntryExit'): void
+  (event: 'rotateSurveyEntryPoint'): void
   (event: 'removeWaypoint'): void
   (event: 'placePointOfInterest'): void
   (event: 'setHomePosition'): void
@@ -348,9 +348,10 @@ const crosshatchEnabled = computed(
 const clampedPosition = ref({ x: 0, y: 0 })
 
 watch(
-  () => [props.visible, props.position] as const,
+  () => [props.visible, props.position, props.menuType] as const,
   ([isVisible, pos]) => {
-    clampedPosition.value = { ...pos }
+    const offsetX = props.menuType === 'survey' ? 100 : 0
+    clampedPosition.value = { x: pos.x + offsetX, y: pos.y }
     if (!isVisible) return
     nextTick(() => {
       const el = menuEl.value
@@ -360,7 +361,8 @@ watch(
       const elH = el.offsetHeight
       const vw = window.innerWidth
       const vh = window.innerHeight
-      let { x, y } = pos
+      let x = pos.x + offsetX
+      let y = pos.y
       if (x + elW > vw - margin) x = vw - elW - margin
       if (y + elH > vh - margin) y = vh - elH - margin
       if (x < margin) x = margin
@@ -428,8 +430,8 @@ const handleUndoGenerateWaypoints = (): void => {
   emit('undoGeneratedWaypoints')
 }
 
-const handleSwapSurveyEntryExit = (): void => {
-  emit('swapSurveyEntryExit')
+const handleRotateSurveyEntryPoint = (): void => {
+  emit('rotateSurveyEntryPoint')
 }
 
 const handleToggleCrosshatch = (): void => {
