@@ -21,19 +21,23 @@
     <v-dialog v-model="configMenuOpen" max-width="624px">
       <v-card class="rounded-lg relative" :style="interfaceStore.globalGlassMenuStyles">
         <v-card-title class="text-h6 font-weight-bold py-4 text-center">Mission configuration</v-card-title>
+        <v-btn icon variant="text" size="small" class="absolute top-4 right-4" @click="cancel">
+          <v-icon size="22">mdi-close</v-icon>
+        </v-btn>
         <v-card-text class="px-8">
           <p class="text-subtitle-1 font-weight-bold mb-2">Mission Name</p>
           <v-text-field
             :model-value="stagedName"
-            append-inner-icon="mdi-close"
             variant="outlined"
             density="compact"
             theme="dark"
             hide-details
             @update:model-value="onNameInput"
-            @click:append-inner="restoreLastMissionName"
           />
-          <div class="flex justify-end mt-2">
+          <div class="flex justify-between items-center mt-2">
+            <v-btn variant="text" size="small" class="px-0 text-white" @click="finishCurrentMission">
+              Reset current mission
+            </v-btn>
             <v-btn variant="text" size="small" class="px-0 text-white" @click="generateNewName">
               Generate new name
             </v-btn>
@@ -43,7 +47,7 @@
         <v-card-actions>
           <div class="flex justify-between items-center pa-2 w-full h-full">
             <v-btn variant="text" @click="cancel">Cancel</v-btn>
-            <v-btn :disabled="!hasChanges" @click="save">Save</v-btn>
+            <v-btn :disabled="!canSave" @click="save">Save</v-btn>
           </div>
         </v-card-actions>
       </v-card>
@@ -85,7 +89,7 @@ const configMenuOpen = computed({
 const stagedName = ref('')
 const stagedIsAutomatic = ref(true)
 
-const hasChanges = computed(() => {
+const canSave = computed(() => {
   const name = stagedName.value.trim()
   return !!name && name !== store.missionName
 })
@@ -102,16 +106,45 @@ const onNameInput = (value: string): void => {
   stagedIsAutomatic.value = false
 }
 
-const restoreLastMissionName = (): void => {
-  logUserAction('Restored the last used mission name')
-  stagedName.value = store.lastMissionName
-  stagedIsAutomatic.value = false
-}
-
 const generateNewName = (): void => {
   logUserAction('Generated a new automatic mission name')
   stagedName.value = generateAutomaticMissionName()
   stagedIsAutomatic.value = true
+}
+
+// Resetting closes the running mission and starts a new cycle, which cannot be undone, so it always asks first.
+const confirmMissionReset = (reset: () => void): void => {
+  showDialog({
+    title: 'Reset mission?',
+    message: 'The current mission will be closed and a new one started with a new automatic name.',
+    variant: 'warning',
+    actions: [
+      {
+        text: 'Cancel',
+        action: () => {
+          logUserAction('Cancelled the mission reset')
+          closeDialog()
+        },
+      },
+      {
+        text: 'Reset mission',
+        action: () => {
+          closeDialog()
+          reset()
+        },
+      },
+    ],
+  })
+}
+
+const finishCurrentMission = (): void => {
+  confirmMissionReset(() => {
+    logUserAction('Reset the current mission')
+    const newName = generateAutomaticMissionName()
+    store.applyMissionName(newName, { isAutomatic: true, startNewMission: true })
+    stagedName.value = newName
+    stagedIsAutomatic.value = true
+  })
 }
 
 const cancel = (): void => {
@@ -119,13 +152,7 @@ const cancel = (): void => {
   configMenuOpen.value = false
 }
 
-const save = (): void => {
-  const name = stagedName.value.trim()
-  if (!name || name === store.missionName) {
-    configMenuOpen.value = false
-    return
-  }
-  const isAutomatic = stagedIsAutomatic.value
+const saveLocalMissionName = (name: string, isAutomatic: boolean): void => {
   showDialog({
     title: 'New mission?',
     message: 'Do you want to start a new mission with this name, or just rename the current mission?',
@@ -158,5 +185,14 @@ const save = (): void => {
       },
     ],
   })
+}
+
+const save = (): void => {
+  const name = stagedName.value.trim()
+  if (!name || name === store.missionName) {
+    configMenuOpen.value = false
+    return
+  }
+  saveLocalMissionName(name, stagedIsAutomatic.value)
 }
 </script>
