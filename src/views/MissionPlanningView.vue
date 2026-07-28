@@ -1249,8 +1249,6 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     missionItemsInVehicle.forEach((wp: Waypoint, index) => {
       if (index === 0) {
         home.value = wp.coordinates
-        currentCursorGeoCoordinates.value = wp.coordinates
-        setHomePosition()
       }
       if (index > 0) {
         missionStore.currentPlanningWaypoints.push(wp)
@@ -1541,9 +1539,9 @@ const surveyAreaMarkers = shallowRef<Record<string, L.Marker>>({})
 const liveSurveyAreaMarker = shallowRef<L.Marker | null>(null)
 
 const home = computed({
-  get: () => missionStore.homeMarkerPosition,
+  get: () => missionStore.plannedHomePosition,
   set: (value: WaypointCoordinates | undefined) => {
-    missionStore.homeMarkerPosition = value
+    missionStore.plannedHomePosition = value
   },
 })
 
@@ -2654,9 +2652,9 @@ const clearVehiclePathHistory = (): void => {
   openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
 }
 
-const setHomePositionFromContextMenu = async (): Promise<void> => {
+const setHomePositionFromContextMenu = (): void => {
   logUserAction('Set mission home position from context menu')
-  await setHomePosition()
+  setHomePosition()
 }
 
 const placeBaseStationFromContextMenu = (): void => {
@@ -2673,22 +2671,15 @@ const placeBaseStationFromContextMenu = (): void => {
   logUserAction('Placed the base station via the mission-planning context menu')
 }
 
-const setHomePosition = async (): Promise<void> => {
+// Planning never commands the vehicle. The home point reaches it as the mission's first item on upload.
+const setHomePosition = (): void => {
   if (!currentCursorGeoCoordinates.value) return
   const newHome: [number, number] = [currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1]]
-  try {
-    home.value = newHome
-    await vehicleStore.setHomeWaypoint(newHome, 0)
-    openSnackbar({
-      variant: 'success',
-      message: `Home position set to ${newHome[0].toFixed(2)}, ${newHome[1].toFixed(2)}`,
-    })
-  } catch (error) {
-    openSnackbar({
-      variant: 'error',
-      message: `Failed to set home position: ${error}`,
-    })
-  }
+  home.value = newHome
+  openSnackbar({
+    variant: 'success',
+    message: `Home position set to ${newHome[0].toFixed(2)}, ${newHome[1].toFixed(2)}`,
+  })
 }
 
 const toggleSimplePath = (): void => {
@@ -4434,24 +4425,6 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
   }
 }
 
-let homeRetryTimer: ReturnType<typeof setInterval> | null = null
-const tryFetchHome = async (): Promise<void> => {
-  const MAX_ATTEMPTS = 30
-  let attempts = 0
-  if (vehicleStore.isVehicleOnline) {
-    try {
-      const wp = await vehicleStore.fetchHomeWaypoint()
-      home.value = [...wp.coordinates] as [number, number]
-      clearInterval(homeRetryTimer!)
-    } catch (err) {
-      console.warn('HOME fetch failed, will retry…', err)
-    }
-  }
-  if (++attempts >= MAX_ATTEMPTS) {
-    clearInterval(homeRetryTimer!)
-  }
-}
-
 const loadDraftMission = async (
   mission: CockpitMission,
   options?: {
@@ -4480,10 +4453,6 @@ const loadDraftMission = async (
       missionStore.currentPlanningSurveys.push(...mission.surveys)
     }
 
-    if (!home.value) {
-      await tryFetchHome()
-      homeRetryTimer = setInterval(tryFetchHome, 1000)
-    }
     openSnackbar({ variant: 'success', message: 'Draft mission loaded.', duration: 2000 })
   } catch (error) {
     openSnackbar({ variant: 'error', message: `Failed to load draft mission: ${error}`, duration: 3000 })
@@ -4921,8 +4890,6 @@ onMounted(async () => {
     targetFollower.unFollow()
   }
   if (planningMap.value) applyFollowZoomMode(planningMap.value, !!followerTarget.value)
-  await nextTick()
-  await tryFetchHome()
 })
 
 watch(followerTarget, (newTarget) => {
@@ -4933,17 +4900,6 @@ watch(followerTarget, (newTarget) => {
   }
   if (planningMap.value) applyFollowZoomMode(planningMap.value, !!newTarget)
 })
-
-// Fetch home position when vehicle comes online
-watch(
-  () => vehicleStore.isVehicleOnline,
-  async (isOnline) => {
-    if (!isOnline) return
-    await nextTick()
-    await tryFetchHome()
-  },
-  { immediate: true }
-)
 
 onUnmounted(() => {
   // Debounced saves may still be pending; write the live view now so Flight Mode mounts with it.
