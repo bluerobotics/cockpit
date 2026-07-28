@@ -22,7 +22,7 @@ import {
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
-import { MavAutopilot, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavAutopilot, MavFrame, MAVLinkType, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
@@ -525,15 +525,20 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   /**
    * Set home waypoint on vehicle
-   * @param { [ number, number ] } coordinate of the home waypoint
-   * @param { number } height of the home waypoint
+   * @param { [ number, number ] } coordinate Coordinate of the home waypoint
+   * @param { number } height Height of the home waypoint
+   * @param { MavFrame } frame Reference frame the height is expressed in
    * @returns { Promise<void> }
    */
-  async function setHomeWaypoint(coordinate: [number, number], height: number): Promise<void> {
+  async function setHomeWaypoint(
+    coordinate: [number, number],
+    height: number,
+    frame: MavFrame = MavFrame.MAV_FRAME_GLOBAL
+  ): Promise<void> {
     if (!mainVehicle.value) {
       throw new Error('No vehicle available to set home waypoint.')
     }
-    await mainVehicle.value.setHomeWaypoint(coordinate, height)
+    await mainVehicle.value.setHomeWaypoint(coordinate, height, frame)
     missionStore.homeMarkerPosition = coordinate
   }
 

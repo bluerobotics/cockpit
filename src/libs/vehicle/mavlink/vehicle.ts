@@ -244,6 +244,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * @param {number} x (latitude)
    * @param {number} y (longitude)
    * @param {number} z (altitude)
+   * @param {MavFrame} frame Reference frame the altitude is expressed in
    * @returns {Promise<void>} A promise that resolves when the command is acknowledged.
    */
   async sendCommandInt(
@@ -254,7 +255,8 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     param4 = 0,
     x = 0,
     y = 0,
-    z = 0
+    z = 0,
+    frame: MavFrame = MavFrame.MAV_FRAME_GLOBAL
   ): Promise<void> {
     const commandMessage: Message.CommandInt = {
       type: MAVLinkType.COMMAND_INT,
@@ -270,7 +272,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       },
       target_system: this.currentSystemId,
       target_component: 1,
-      frame: { type: MavFrame.MAV_FRAME_GLOBAL },
+      frame: { type: frame },
       current: 0,
       autocontinue: 0,
     }
@@ -1198,9 +1200,14 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * Set home waypoint on the vehicle
    * @param { [number, number] } coordinates Coordinates of the home waypoint
    * @param { number } altitude Altitude of the home waypoint
+   * @param { MavFrame } frame Reference frame the altitude is expressed in
    */
-  async setHomeWaypoint(coordinates: [number, number], altitude: number): Promise<void> {
-    await this.sendCommandLong(MavCmd.MAV_CMD_DO_SET_HOME, 0, 0, 0, 0, coordinates[0], coordinates[1], altitude)
+  async setHomeWaypoint(
+    coordinates: [number, number],
+    altitude: number,
+    frame: MavFrame = MavFrame.MAV_FRAME_GLOBAL
+  ): Promise<void> {
+    await this.sendCommandInt(MavCmd.MAV_CMD_DO_SET_HOME, 0, 0, 0, 0, coordinates[0], coordinates[1], altitude, frame)
   }
 
   /**
