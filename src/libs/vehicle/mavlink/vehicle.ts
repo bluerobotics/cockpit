@@ -1200,12 +1200,13 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * Set home waypoint on the vehicle
    * @param { [number, number] } coordinates Coordinates of the home waypoint
    * @param { number } altitude Altitude of the home waypoint
-   * @param { MavFrame } frame Reference frame the altitude is expressed in
+   * @param { MavFrame } frame Reference frame the altitude is expressed in. Defaults to home-relative, where an
+   * altitude of zero moves home horizontally and leaves its altitude untouched.
    */
   async setHomeWaypoint(
     coordinates: [number, number],
     altitude: number,
-    frame: MavFrame = MavFrame.MAV_FRAME_GLOBAL
+    frame: MavFrame = MavFrame.MAV_FRAME_GLOBAL_RELATIVE_ALT
   ): Promise<void> {
     await this.sendCommandInt(MavCmd.MAV_CMD_DO_SET_HOME, 0, 0, 0, 0, coordinates[0], coordinates[1], altitude, frame)
   }

@@ -527,13 +527,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * Set home waypoint on vehicle
    * @param { [ number, number ] } coordinate Coordinate of the home waypoint
    * @param { number } height Height of the home waypoint
-   * @param { MavFrame } frame Reference frame the height is expressed in
+   * @param { MavFrame } frame Reference frame the height is expressed in. Defaults to home-relative, where a height
+   * of zero moves home horizontally and leaves its altitude untouched.
    * @returns { Promise<void> }
    */
   async function setHomeWaypoint(
     coordinate: [number, number],
     height: number,
-    frame: MavFrame = MavFrame.MAV_FRAME_GLOBAL
+    frame: MavFrame = MavFrame.MAV_FRAME_GLOBAL_RELATIVE_ALT
   ): Promise<void> {
     if (!mainVehicle.value) {
       throw new Error('No vehicle available to set home waypoint.')
