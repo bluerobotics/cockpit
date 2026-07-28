@@ -1252,6 +1252,11 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
   }
 })
 
+const homeWasCommandedByUser = computed(() => {
+  const commanded = missionStore.userCommandedHomePosition
+  return commanded !== undefined && home.value?.[0] === commanded[0] && home.value?.[1] === commanded[1]
+})
+
 // Create marker for the home position
 const homeMarker = shallowRef<L.Marker>()
 watch(home, () => {
@@ -1275,6 +1280,17 @@ watch(home, () => {
     homeMarker.value.bindTooltip(homeMarkerTooltip)
     homeMarker.value.on('dragend', (e: L.DragEndEvent) => {
       const marker = e.target as L.Marker
+      // A home drawn from a mission is just a rendering of that mission, so dragging it must not command the vehicle.
+      // Snapping back keeps the marker honest, as nothing anywhere would hold the dragged-to position.
+      if (!homeWasCommandedByUser.value) {
+        if (home.value) marker.setLatLng(home.value as LatLngTuple)
+        openSnackbar({
+          message: 'This home point comes from the mission. Use "Set home waypoint" on the map menu to move it.',
+          variant: 'info',
+          duration: 5000,
+        })
+        return
+      }
       const latlng = marker.getLatLng()
       setHomePosition([latlng.lat, latlng.lng])
     })
@@ -1774,8 +1790,10 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 }
 
 const setHomePosition = async (homePosition: [number, number]): Promise<void> => {
+  logUserAction('Set the home position from the map')
   const newHome: [number, number] = [homePosition[0], homePosition[1]]
   home.value = newHome
+  missionStore.userCommandedHomePosition = newHome
 
   await vehicleStore.setHomeWaypoint(newHome, 0)
   if (contextMenuVisible.value) {
