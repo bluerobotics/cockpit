@@ -1718,8 +1718,9 @@ const drawMission = (missionItems: Waypoint[]): void => {
   const drawn: Waypoint[] = []
   missionItems.forEach((wp, idx) => {
     if (idx === 0) {
+      // Only moves the marker. Echoing this back as a set-home command would overwrite the vehicle's home with a
+      // possibly stale one, as missions are restored from persistent storage on startup.
       home.value = wp.coordinates
-      setHomePosition(wp.coordinates)
     } else {
       drawn.push(wp)
     }
