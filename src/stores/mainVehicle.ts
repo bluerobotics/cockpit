@@ -656,7 +656,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       isArmed.value = armed
 
       // Clear vehicle history on disarm/arm transition only when not persistent (persistent history is cleared only via map context menu)
-      if (wasArmed !== undefined && wasArmed !== armed && !isVehiclePositionHistoryPersistent.value) {
+      if (wasArmed !== undefined && wasArmed !== armed && !missionStore.isVehiclePositionHistoryPersistent) {
         missionStore.clearVehicleHistory()
       }
 
