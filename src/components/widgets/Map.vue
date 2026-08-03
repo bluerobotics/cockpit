@@ -278,6 +278,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
+import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -1231,17 +1232,7 @@ const timeAgoSeenText = computed(() => {
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
 
-// Update home position when location is available
-// Try to update home position based on browser geolocation
-navigator?.geolocation?.watchPosition(
-  (position) => {
-    if (!home.value) {
-      home.value = [position.coords.latitude, position.coords.longitude]
-    }
-  },
-  (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
-  { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-)
+useMapCenterFromUserLocation(mapCenter, () => Boolean(home.value || vehiclePosition.value))
 
 // If home position is updated and map was not yet centered on it, center
 let mapNotYetCenteredInHome = true
