@@ -241,7 +241,7 @@
             <v-icon v-if="home === undefined" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
             <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
             <p :class="{ 'cursor-pointer hover:underline': home === undefined }" @click="handleAddHomeWaypointByClick">
-              Set home waypoint
+              Set mission home
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -304,7 +304,7 @@
           <p
             class="text-sm flex justify-start items-center bg-[#1e498f] rounded-full pl-3 pr-1 py-1 border-[1px] border-[#FFFFFF44] elevation-2 cursor-pointer"
           >
-            <span>Set home waypoint</span>
+            <span>Set mission home</span>
             <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
           </p>
         </div>
@@ -1485,11 +1485,11 @@ const handleDoNotShowTipsAgain = (): void => {
 
 const handleAddHomeWaypointByClick = (): void => {
   if (home.value !== undefined) return
-  logUserAction('Started setting mission home waypoint')
+  logUserAction('Started setting the mission home')
   isSettingHomeWaypoint.value = true
   openSnackbar({
     variant: 'info',
-    message: 'Click anywhere on the map to set the home position',
+    message: 'Click anywhere on the map to set the mission home',
     duration: 5000,
   })
 }
@@ -2267,9 +2267,10 @@ const setHomePosition = (): void => {
   if (!currentCursorGeoCoordinates.value) return
   const newHome: [number, number] = [currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1]]
   home.value = newHome
+  const coordinates = `${newHome[0].toFixed(5)}, ${newHome[1].toFixed(5)}`
   openSnackbar({
     variant: 'success',
-    message: `Home position set to ${newHome[0].toFixed(2)}, ${newHome[1].toFixed(2)}`,
+    message: `Mission home set to ${coordinates}. Upload the mission for the change to take effect.`,
   })
 }
 

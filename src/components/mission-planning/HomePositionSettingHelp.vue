@@ -1,16 +1,16 @@
 <template>
   <v-dialog :model-value="modelValue" max-width="560px">
     <v-card :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="font-weight-bold py-4 text-center"> Home waypoint position not set </v-card-title>
+      <v-card-title class="font-weight-bold py-4 text-center"> Mission home not set </v-card-title>
       <v-card-text class="px-12">
         <div class="flex flex-col items-center gap-4">
           <div class="rounded w-[260px] h-auto border-[#FFFFFF22] border-2 elevation-2">
             <img :src="helpGif" alt="Animated help" class="self-center" />
           </div>
           <p class="text-m mt-2 text-justify">
-            Please set the home waypoint position using the context menu on the map. The home waypoint position is used
-            to determine the position where the vehicle will return to when the mission is completed or when the vehicle
-            is in a fail-safe state.
+            Please set the mission home using the context menu on the map. The mission home determines the position
+            where the vehicle will return to when the mission is completed or when the vehicle is in a fail-safe state.
+            It only reaches the vehicle when the mission is uploaded.
           </p>
         </div>
       </v-card-text>
