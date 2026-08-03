@@ -272,6 +272,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
@@ -1206,17 +1207,7 @@ const timeAgoSeenText = computed(() => {
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
 
-// Update home position when location is available
-// Try to update home position based on browser geolocation
-navigator?.geolocation?.watchPosition(
-  (position) => {
-    if (!home.value) {
-      home.value = [position.coords.latitude, position.coords.longitude]
-    }
-  },
-  (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
-  { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-)
+useMapCenterFromUserLocation(mapCenter, () => Boolean(home.value || vehiclePosition.value))
 
 // If home position is updated and map was not yet centered on it, center
 let mapNotYetCenteredInHome = true
@@ -1302,11 +1293,6 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
   }
 })
 
-const homeWasCommandedByUser = computed(() => {
-  const commanded = missionStore.userCommandedHomePosition
-  return commanded !== undefined && home.value?.[0] === commanded[0] && home.value?.[1] === commanded[1]
-})
-
 // Create marker for the home position
 const homeMarker = shallowRef<L.Marker>()
 watch(home, () => {
@@ -1318,7 +1304,6 @@ watch(home, () => {
   if (!homeMarker.value) {
     homeMarker.value = L.marker(position as LatLngTuple, {
       icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }),
-      draggable: true,
     })
     const homeMarkerTooltip = L.tooltip({
       content: '<i class="mdi mdi-home-map-marker text-[18px] "></i>',
@@ -1328,22 +1313,6 @@ watch(home, () => {
       opacity: 1,
     })
     homeMarker.value.bindTooltip(homeMarkerTooltip)
-    homeMarker.value.on('dragend', (e: L.DragEndEvent) => {
-      const marker = e.target as L.Marker
-      // A home drawn from a mission is just a rendering of that mission, so dragging it must not command the vehicle.
-      // Snapping back keeps the marker honest, as nothing anywhere would hold the dragged-to position.
-      if (!homeWasCommandedByUser.value) {
-        if (home.value) marker.setLatLng(home.value as LatLngTuple)
-        openSnackbar({
-          message: 'This home point comes from the mission. Use "Set home waypoint" on the map menu to move it.',
-          variant: 'info',
-          duration: 5000,
-        })
-        return
-      }
-      const latlng = marker.getLatLng()
-      setHomePosition([latlng.lat, latlng.lng])
-    })
     map.value.addLayer(homeMarker.value)
   } else {
     homeMarker.value.setLatLng(position as LatLngTuple)
@@ -1485,7 +1454,6 @@ const globalOriginLongitude = ref(0)
 const globalOriginMarker = shallowRef<L.Marker>()
 
 const staticTopMenuItems = [
-  { item: 'Set home waypoint', action: () => onMenuOptionSelect('set-home-waypoint'), icon: 'mdi-home-map-marker' },
   { item: 'Set Global Origin', action: () => onMenuOptionSelect('set-global-origin'), icon: 'mdi-crosshairs-question' },
   { item: 'Place Point of Interest', action: () => onMenuOptionSelect('place-poi'), icon: 'mdi-map-marker-plus' },
   {
@@ -1723,12 +1691,6 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       }
       break
 
-    case 'set-home-waypoint':
-      if (clickedLocation.value) {
-        setHomePosition(clickedLocation.value as [number, number])
-      }
-      break
-
     case 'set-global-origin':
       if (clickedLocation.value) {
         globalOriginLatitude.value = clickedLocation.value[0]
@@ -1886,18 +1848,6 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     showDialog({ variant: 'error', title: 'Mission download failed', message: messageFromError(error), timer: 5000 })
   } finally {
     fetchingMission.value = false
-  }
-}
-
-const setHomePosition = async (homePosition: [number, number]): Promise<void> => {
-  logUserAction('Set the home position from the map')
-  const newHome: [number, number] = [homePosition[0], homePosition[1]]
-  home.value = newHome
-  missionStore.userCommandedHomePosition = newHome
-
-  await vehicleStore.setHomeWaypoint(newHome, 0)
-  if (contextMenuVisible.value) {
-    contextMenuVisible.value = false
   }
 }
 
