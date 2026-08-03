@@ -258,7 +258,7 @@
             color="white"
             class="text-[16px]"
           ></v-icon>
-          <span class="text-white text-sm ml-4">Set home waypoint</span>
+          <span class="text-white text-sm ml-4">Set mission home</span>
         </v-list-item>
         <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handlePlaceBaseStation">
@@ -337,7 +337,7 @@
         <div>
           <v-icon
             v-if="canSetHome"
-            v-tooltip="'Set home waypoint'"
+            v-tooltip="'Set mission home'"
             variant="text"
             icon="mdi-home-map-marker"
             rounded="full"
