@@ -62,7 +62,7 @@
         :activator-style="{ bottom: bottomButtonsDisplacement }"
         @center-on-mission="centerOnMission"
       />
-      <MapNorthIndicator class="north-indicator" />
+      <MapNorthIndicator v-if="showButtons" class="north-indicator" />
       <PoiMapArrows
         :map-ready="mapReady"
         :show-poi-arrows="widget.options.showPoiArrows"
