@@ -730,7 +730,7 @@ import {
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
-import { degrees } from '@/libs/utils'
+import { degrees, messageFromError } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -904,7 +904,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     showDialog({
       variant: 'error',
       title: 'Mission upload failed',
-      message: error as string,
+      message: messageFromError(error),
       timer: 3000,
       persistent: false,
     })
@@ -942,7 +942,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
-    showDialog({ variant: 'error', title: 'Mission download failed', message: error as string, timer: 5000 })
+    showDialog({ variant: 'error', title: 'Mission download failed', message: messageFromError(error), timer: 5000 })
   } finally {
     loading.value = false
     fetchingMission.value = false

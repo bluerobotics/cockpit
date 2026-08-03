@@ -401,3 +401,12 @@ export const tryACoupleOfTimes = async <T>(
   // If we have reached the limit of tries, throw an error
   throw new Error(`Failed to execute function '${fn.name || 'function'}' after ${times} tries. Will stop trying.`)
 }
+
+/**
+ * Extract a displayable message from a caught value.
+ * @param {unknown} error The value caught in a try/catch block.
+ * @returns {string} The error message, or the value's string representation when it is not an Error.
+ */
+export const messageFromError = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error)
+}
