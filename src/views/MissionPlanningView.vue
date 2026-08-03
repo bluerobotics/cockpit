@@ -938,6 +938,7 @@ import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
+import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -5108,16 +5109,7 @@ useMapVehiclePathLayer(planningMap, {
 watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())
 watch(planningMap, () => setMapCursor())
 
-// Try to update map center position based on browser geolocation
-navigator?.geolocation?.watchPosition(
-  (position) => {
-    if (!home.value && !vehiclePosition.value) {
-      mapCenter.value = [position.coords.latitude, position.coords.longitude]
-    }
-  },
-  (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
-  { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-)
+useMapCenterFromUserLocation(mapCenter, () => Boolean(home.value || vehiclePosition.value))
 
 watch(
   () => interfaceStore.mainMenuCurrentStep,
