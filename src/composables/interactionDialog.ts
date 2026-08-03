@@ -61,6 +61,16 @@ export interface DialogResult {
 }
 
 /**
+ * Reactive state backing the mounted dialog component.
+ */
+type DialogState = DialogOptions & {
+  /**
+   * Indicates whether the dialog should be shown.
+   */
+  showDialog: boolean
+}
+
+/**
  * Provides methods to control the interaction dialog.
  * @returns {object} - An object containing the showDialog and closeDialog methods.
  */
@@ -77,15 +87,7 @@ export function useInteractionDialog(): {
    */
   closeDialog: () => void
 } {
-  const dialogProps = reactive<
-    DialogOptions & {
-      /**
-       * Indicates whether the dialog should be shown.
-       * @type {boolean}
-       */
-      showDialog: boolean
-    }
-  >({
+  const defaultDialogState = (): DialogState => ({
     message: '',
     variant: '',
     title: '',
@@ -95,6 +97,8 @@ export function useInteractionDialog(): {
     persistent: true,
     timer: 0,
   })
+
+  const dialogProps = reactive<DialogState>(defaultDialogState())
 
   let dialogApp: App<Element> | null = null
   let mountPoint: HTMLElement | null = null
@@ -137,7 +141,9 @@ export function useInteractionDialog(): {
     // forever. Resolve (rather than reject) to avoid unhandled rejections for the many callers that don't await.
     resolveFn?.({ isConfirmed: false })
     return new Promise((resolve, reject) => {
-      Object.assign(dialogProps, options, { showDialog: true })
+      // Merge over a fresh set of defaults so options the caller omits (notably `actions`) never leak from the
+      // previous dialog, which would otherwise leave a stale destructive button on an unrelated dialog.
+      Object.assign(dialogProps, defaultDialogState(), options, { showDialog: true })
       resolveFn = resolve
       rejectFn = reject
       mountDialog()
