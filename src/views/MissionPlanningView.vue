@@ -793,6 +793,7 @@ import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissio
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
+import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
@@ -4539,16 +4540,7 @@ watch(
 watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())
 watch(planningMap, () => setMapCursor())
 
-// Try to update map center position based on browser geolocation
-navigator?.geolocation?.watchPosition(
-  (position) => {
-    if (!home.value && !vehiclePosition.value) {
-      mapCenter.value = [position.coords.latitude, position.coords.longitude]
-    }
-  },
-  (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
-  { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-)
+useMapCenterFromUserLocation(mapCenter, () => Boolean(home.value || vehiclePosition.value))
 
 watch(
   () => interfaceStore.mainMenuCurrentStep,
