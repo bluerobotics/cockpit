@@ -614,18 +614,20 @@
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
   <PoiManager ref="poiManagerRef" />
-  <PoiMapArrows
-    :map-ready="mapReady"
-    :force-full-screen="true"
-    :show-poi-arrows="true"
-    :show-home-arrow="true"
-    :show-vehicle-arrow="true"
-    :vehicle-position="vehiclePosition"
-    :home="home"
-    :map-center="mapCenter"
-    :zoom="zoom"
-    :target-follower="targetFollower"
-  />
+  <Teleport to="#planningMap">
+    <PoiMapArrows
+      :map-ready="mapReady"
+      :force-full-screen="true"
+      :show-poi-arrows="true"
+      :show-home-arrow="true"
+      :show-vehicle-arrow="true"
+      :vehicle-position="vehiclePosition"
+      :home="home"
+      :map-center="mapCenter"
+      :zoom="zoom"
+      :target-follower="targetFollower"
+    />
+  </Teleport>
 
   <v-progress-linear
     v-if="fetchingMission"
