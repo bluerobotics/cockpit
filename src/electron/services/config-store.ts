@@ -1,6 +1,12 @@
 import Store from 'electron-store'
 
 const electronStoreSchema = {
+  chromiumSwitches: {
+    type: 'array',
+    items: {
+      type: 'string',
+    },
+  },
   cockpitFolderPath: {
     type: 'string',
   },
@@ -28,6 +34,10 @@ const electronStoreSchema = {
  * Stores configuration data
  */
 export interface ElectronStoreSchema {
+  /**
+   * Extra Chromium command-line switches applied at launch, as a workaround for GPU and video driver bugs
+   */
+  chromiumSwitches: string[] | undefined
   /**
    * Custom Cockpit folder path, overriding the default ~/Cockpit
    */

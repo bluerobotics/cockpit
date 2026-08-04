@@ -5,6 +5,7 @@ import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupGo2RTCService } from './services/go2rtc'
+import { applyChromiumSwitches } from './services/gpu'
 import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
@@ -19,6 +20,9 @@ import { setupWorkspaceService } from './services/workspace'
 
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
 setupElectronLogService()
+
+// Chromium only reads its command line when the GPU process starts, so this has to happen before the app is ready
+applyChromiumSwitches()
 
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
