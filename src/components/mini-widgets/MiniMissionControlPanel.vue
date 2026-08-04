@@ -50,7 +50,7 @@
           />
         </template>
       </v-tooltip>
-      <CruiseSpeedControl icon-class="text-[16px]" />
+      <CruiseSpeedControl icon-class="text-[16px]" :show-speed-value="false" />
       <v-tooltip location="top" open-delay="800" text="Return to home">
         <template #activator="{ props: homeProps }">
           <v-btn

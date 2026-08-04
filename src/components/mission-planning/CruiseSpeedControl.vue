@@ -2,7 +2,7 @@
   <div class="relative flex items-center -mt-[2px]">
     <v-menu :close-on-content-click="false" location="top" offset="8">
       <template #activator="{ props: speedProps }">
-        <v-tooltip location="top" open-delay="800" text="Cruise speed">
+        <v-tooltip location="top" open-delay="800" :text="`Cruise speed (${liveCruiseSpeed.toFixed(1)} m/s)`">
           <template #activator="{ props: speedTooltipProps }">
             <v-btn
               v-bind="{ ...speedProps, ...speedTooltipProps }"
@@ -32,6 +32,13 @@
         />
       </div>
     </v-menu>
+    <span
+      v-if="showSpeedValue"
+      class="absolute left-1/2 top-full -translate-x-1/2 mt-[-5px] px-[3px] rounded-[2px] bg-white text-[#333333] text-[8px] font-bold leading-[11px] select-none pointer-events-none"
+      aria-hidden="true"
+    >
+      {{ liveCruiseSpeed.toFixed(1) }}
+    </span>
   </div>
 </template>
 
@@ -49,8 +56,12 @@ withDefaults(
      * Classes applied to the speedometer icon button
      */
     iconClass?: string
+    /**
+     * Whether the commanded speed is shown as a tag under the button
+     */
+    showSpeedValue?: boolean
   }>(),
-  { iconClass: 'text-[18px]' }
+  { iconClass: 'text-[18px]', showSpeedValue: true }
 )
 
 const interfaceStore = useAppInterfaceStore()
