@@ -155,6 +155,7 @@ Business/domain logic must not live inside `.vue` components. Keep components li
 - Reactive orchestration (refs, computed, watchers, lifecycle) that wraps that logic → composables under `src/composables/`. Composables may import Vue; the pure logic they call should still live in `.ts` modules.
 - A `.vue` `<script>` should mostly call into `.ts`/composables, not implement the logic itself.
 - Exception: trivial glue (a one-line handler, simple template-only formatting) can stay in the component. Extract once it is non-trivial, reused, or worth testing on its own.
+- Do not pile new bulk onto a file that is already large. Once a file is past ~2000 lines, new logic goes into a child component, a composable, or free functions in `src/libs/` instead of another hundred lines on the end of it.
 
 ## Reuse before reinventing
 
