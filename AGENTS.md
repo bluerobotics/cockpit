@@ -200,6 +200,12 @@ When a widget or mini-widget needs a vehicle telemetry value:
 - To expose a new MAVLink field, extend the flattener (`src/libs/vehicle/common/data-flattener.ts`) rather than special-casing the widget.
 - Vehicle stores are for app-level state (connection, vehicle identity, mode, etc.), not for per-telemetry-message values.
 
+## Heavy work and the main thread
+
+- Canvas work is synchronous and freezes the interface while it runs: `toDataURL`, `getImageData`/`putImageData`, large `drawImage` compositing, and per-pixel loops. Measure before assuming a capture or an overlay is cheap.
+- Make sure the encoder matches the extension you promise the user. Cockpit once wrote PNG data under a `.jpeg` name, costing ~800ms per workspace snapshot where the real thing takes ~80ms.
+- Be strictest with expensive work that runs on its own, from an interval, timer, watcher, or mount hook, rather than from a user action. The user cannot connect the stutter to anything they did, and cannot stop it.
+
 ## Logging user interactions
 
 - Any new feature with user interaction must log every interaction (e.g. user opened a menu, clicked button X, switched to tab Y, closed a dialog). Use the global `logUserAction(message)` helper (defined in `src/libs/cosmos.ts`), which prepends a `[UserAction]` tag and writes through the console logger captured by `src/libs/system-logging.ts`. Do not call `console.*` directly or use ad-hoc tracking.
