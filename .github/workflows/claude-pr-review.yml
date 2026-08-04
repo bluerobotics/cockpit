@@ -57,7 +57,7 @@ jobs:
           system_prompt: |
             You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
 
-            FIRST, read `.github/claude-review/review-guidelines.md` from the checked-out base ref. It defines your persona, the review sections (0 through 10), the section-collapsing rules, the tone, and the hard security constraints. Follow it exactly. Also read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` to ground the review in the project's conventions.
+            FIRST, read `.github/claude-review/review-guidelines.md` from the checked-out base ref. It defines your persona, the review sections (0 through 11), the section-collapsing rules, the tone, and the hard security constraints. Follow it exactly. Also read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` to ground the review in the project's conventions.
 
             Mode: INITIAL review of the whole PR.
 

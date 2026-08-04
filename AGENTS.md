@@ -120,12 +120,15 @@ After running the lint and typecheck commands, check whether they auto-fixed (mo
 - When implementing new widgets, or adding/removing entries in the Options object of existing widgets, use the object merging approach (use `src/components/widgets/Plotter.vue` as a reference) to merge a default-options object with the persistent one. This ensures the new entries are added to existing widgets from the users persistence.
 - If a new Cockpit local-storage setting is being created or modified (be it directly using the settings-management.ts backend or the useBlueOsStorage composable), make sure it starts with `cockpit-` so its correctly tracked and parsed in our backend and UIs.
 
-## Settings migrations
+## Persistence and settings migrations
 
+- Choose the storage backend deliberately. `useBlueOsStorage` syncs the value to the vehicle, so every topside computer and every operator of that vehicle shares it. Machine-specific values — device and serial paths, local filesystem paths, window geometry — must stay machine-local, and must never be auto-acted on after a sync, since auto-connecting to a synced `/dev/ttyUSB0` can open the wrong device. Identify hardware by a stable id (USB VID/PID, device serial) rather than by path.
+- Avoid automatic user-data migrations. They are the riskiest thing we ship, so treat them as a last resort rather than the normal way to reshape a key.
+- Prefer the non-destructive route: introduce a new versioned key (e.g. `cockpit-foo-v2`) and read the old key only as a fallback, leaving the user's original data untouched. Do not reuse the old key with a new schema.
+- Write an automatic migration only when you fully understand the transformation, it is provably idempotent, and it cannot lose data. Once the new key has been written, re-running the migration on a later launch must never overwrite user data.
 - Migration logic for `cockpit-*` keys lives in `src/utils/migrations.ts` / `src/utils/widget-migrations.ts` (or a sibling under `src/utils/`), not inside Pinia stores. Stores call the migration helpers; they never embed the migration body.
-- When the shape of a persisted key changes, introduce a new versioned key (e.g. `cockpit-foo-v2`) and migrate from the old one — do not reuse the old key with a new schema.
-- Migrations must be idempotent: once the new key has been written, re-running the migration on a later launch must never overwrite user data.
 - Do not write migration code for keys that were never released to users. Just change the schema.
+- When a change to a default or to existing behavior leaves already-configured users on the old value, decide explicitly whether to carry them over or to leave them alone — and when you leave them, tell the user what changed.
 
 ## Plans
 
