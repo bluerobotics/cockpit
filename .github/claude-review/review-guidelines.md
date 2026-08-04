@@ -68,6 +68,7 @@ Persisted data is the one thing a bad PR can destroy for good, so this section i
 - Scope discipline: flag renames, declaration/import/hook reorders, `const`/`let`/`var` swaps, helper moves between files, and formatter-only reflows that are unrelated to the stated purpose of the PR.
 - Empty/filler JSDoc: flag (as `major`) any added `/** */` block whose summary or `@param`/`@returns` body is empty, whitespace-only, or filler text.
 - Minimalism (per the AGENTS.md "Before writing code" ladder): flag over-engineering, unrequested abstractions, boilerplate, and net additions that a smaller diff, an existing helper/util/composable, the standard library, a native platform feature, or an already-installed dependency could have covered. Reward deletion. Confirm deliberate corner-cuts with a known ceiling are marked with a `ponytail:` comment naming the ceiling and upgrade path.
+- No groundwork for future PRs: flag added or exported code with no call site in this PR, and any "this is the foundation for the next one" justification. If a later PR needs it, it lands there, next to the usage that justifies it and can be reviewed against it.
 
 ### 4. Security
 Sub-check ALL of the following, but only write out the ones that produce a finding. If none of them produce a finding, collapse the whole section to the one-line check-mark form (do not list the clean sub-checks):

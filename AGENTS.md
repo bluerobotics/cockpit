@@ -58,6 +58,8 @@ The best code is the code never written. Understand the problem first — read t
 
 Prefer deletion over addition, boring over clever, and the shortest working diff that you fully understand. Question complex requests ("Do you actually need X, or does Y cover it?") instead of silently building them.
 
+**Do not write code for a future PR.** No helper, type, or exported function laid down as groundwork for the next branch. If a later PR needs it, it lands there, next to the call site that justifies it — nothing you add should be unused when the PR merges.
+
 **Fix the root cause, not the symptom.** A bug report names a symptom. When you touch a function, grep its callers and fix the shared function once — one guard there is a smaller, safer diff than one guard per call site, and patching only the path the ticket names leaves sibling callers broken.
 
 **Do not be lazy about:** understanding the problem, input validation at trust boundaries, error handling that prevents data loss, security, accessibility, and the calibration real hardware needs (clocks drift, sensors read off — the vehicle is never the spec ideal).
