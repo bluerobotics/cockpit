@@ -12,20 +12,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rereview:
-    name: Claude PR Re-review
+  # Only run when: the comment is on a PR, starts with the `/review` command, is not from a bot,
+  # and the commenter can push here. The `if:` below is a cheap first pass that keeps the job from
+  # being scheduled for outsiders, but `author_association` only proves organization membership —
+  # an org member with read-only access to this repository still reports MEMBER. The permission
+  # lookup is the real decision, and it lives in its own job on purpose: the endpoint needs a
+  # token with push access, and the job that runs the model must not be given one. This job checks
+  # out nothing and runs a single read-only API call, so its wider token never touches PR content.
+  authorize:
+    name: Authorize
     runs-on: ubuntu-latest
-    # Only run when: the comment is on a PR, starts with the `/review` command,
-    # is not from a bot, and the commenter has write access
-    # (OWNER/MEMBER/COLLABORATOR). We intentionally do NOT allow the PR author by
-    # login alone, since an external fork author could otherwise spend Anthropic
-    # credits by repeatedly commenting `/review` on their own PR. A maintainer can
-    # trigger a re-review on a contributor's behalf.
     if: >
       github.event.issue.pull_request &&
       startsWith(github.event.comment.body, '/review') &&
       github.event.comment.user.type != 'Bot' &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    permissions:
+      contents: write
+    steps:
+      # Fails closed: anything other than a definite admin/write answer is a refusal.
+      - name: Require write access
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          # Assign, then override on failure: `$(... || echo unknown)` would append to whatever
+          # error body gh printed on stdout instead of replacing it.
+          level=$(gh api "repos/$REPO/collaborators/$ACTOR/permission" --jq '.permission' 2>/dev/null) || level='unknown'
+          echo "$ACTOR has '$level' permission on $REPO"
+          case "$level" in
+            admin | write) ;;
+            *)
+              echo "::error::/review requires write access to $REPO. $ACTOR has '$level'."
+              exit 1
+              ;;
+          esac
+
+  rereview:
+    name: Claude PR Re-review
+    needs: authorize
+    runs-on: ubuntu-latest
+    # We intentionally do NOT allow the PR author by login alone, since an external fork author
+    # could otherwise spend Anthropic credits by repeatedly commenting `/review` on their own PR.
+    # A maintainer can trigger a re-review on a contributor's behalf.
     permissions:
       contents: read
       pull-requests: write
