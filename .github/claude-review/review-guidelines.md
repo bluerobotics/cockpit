@@ -117,6 +117,7 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 - Oversized commits: flag a single very large commit (several hundred lines and up) even when it is nominally one thing. It cannot be reviewed as a unit and there were almost certainly atomic steps inside it.
 - Self-correcting commits: flag a commit that reverts or reimplements an earlier commit in the same PR. The reviewer has to read the original and then the one undoing it, which raises the review burden and leaves more room for mistakes; it should have been squashed into its target. The exception is a reviewer-requested architectural change late in a long PR, where rebasing everything costs more rework than it saves.
 - Stacked PRs: flag commits replicated from a sibling or base PR. They should be rebased away once that PR merges rather than carried into this one's history.
+- Behavior changes ride alone: flag a fix or a modification to existing behavior folded into a feature commit that happens to touch the same code. It has to be reviewable on its own, and revertable or backportable without dragging the feature along. The exception is a large refactor of that same behavior, where the change genuinely belongs to the refactor commit and splitting it out would be artificial.
 
 ### 9. Tests
 - Missing coverage for new logic, brittle tests, tests that were removed/weakened, testability concerns.
