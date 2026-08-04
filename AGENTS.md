@@ -211,6 +211,7 @@ When a widget or mini-widget needs a vehicle telemetry value:
 
 ## User feedback (snackbars and dialogs)
 
+- Every discrete user action needs visible feedback when it finishes or fails — a snackbar, an unambiguous UI state change, or a dialog. `logUserAction` does not count; it writes to a log the user never sees. Downloads, exports, and saves need this most, since Standalone has no browser-native download notification. The rare exception is when the resulting UI state change is itself unmistakable.
 - `openSnackbar` (`src/composables/snackbar.ts`) already writes to the logger. Do not pair it with a `console.log`/`warn`/`error` of the same message.
 - Do not open a new dialog while a dialog of the same purpose is already open. Guard against re-opens, especially inside timed loops (snapshots, retries, watchers).
 - For modal confirmations and from→to choices, reuse the existing `useInteractionDialog` composable (`src/composables/interactionDialog.ts`) and existing dialog patterns before creating a new component.

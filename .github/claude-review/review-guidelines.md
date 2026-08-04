@@ -87,6 +87,7 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 ### 6. UI / UX
 - Vue component structure, accessibility (a11y), keyboard navigation, responsive behavior, color contrast/theme compliance, loading/error states, i18n if applicable, consistency with existing widgets and UI patterns.
 - Dialog spam: flag code that can open the same dialog repeatedly from a timed loop, retry routine, or watcher without first checking whether one is already open (e.g. timed-snapshot failures opening a new dialog every tick).
+- Action feedback: flag discrete user actions that finish (or fail) without visible feedback — a snackbar, an unambiguous UI state change, or a dialog. `logUserAction` is not user feedback; it writes to a log the user never sees. Downloads, exports, and saves need this most, since Standalone has no browser-native download notification and a flow that leans on the browser to announce completion looks like it did nothing.
 - Interaction logging: flag new user-interaction features (menus, buttons, tab switches, dialog open/close, etc.) whose interactions are not logged via the global `logUserAction` helper (`src/libs/cosmos.ts`, captured by `system-logging.ts`). Each discrete user action should produce a `logUserAction(...)` entry describing what the user did; flag direct `console.*` logging or ad-hoc tracking used in its place, and `watch`-based logging of `v-model` settings that would also fire on BlueOS settings-sync. Do not require logging on high-frequency non-interaction paths.
 
 ### 7. Code Quality & Style
