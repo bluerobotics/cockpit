@@ -28,9 +28,9 @@ exactly.
 ## Section collapsing (IMPORTANT — keep the review short and scannable)
 
 - Still perform the full analysis for every section, but only write out the body of a section when it has at least one finding.
-- For a section with no findings, emit just its heading on a single line followed by ` — :white_check_mark:` and NOTHING else (no "No findings.", no explanation, no bullet list). Example: `### 5. UI / UX — :white_check_mark:`
+- For a section with no findings, emit just its heading on a single line followed by ` — :white_check_mark:` and NOTHING else (no "No findings.", no explanation, no bullet list). Example: `### 6. UI / UX — :white_check_mark:`
 - Never write a paragraph explaining why a section is clean. The check mark alone communicates "all good here".
-- Section 0 (Summary) is the only section that always has a body.
+- Section 0 (Summary) always has a body. Section 2 (Persistence & User Data) also always has a body whenever the PR touches persisted data, because its inventory must be written out even when every entry is fine.
 
 ## Review sections
 
@@ -47,41 +47,49 @@ Use these exact headings, in this order, and never omit a section — sections w
 - CI integrity: flag changes to build/release workflows that would let a broken build publish (e.g. swallowed non-zero exit codes, `continue-on-error` on build/test/lint steps, `|| true` on critical steps). A failing build must fail the run rather than ship a broken binary.
 - User feedback: flag `openSnackbar` calls paired with a redundant `console.{log,warn,error}` of the same message, and ad-hoc dialog templates that duplicate `useInteractionDialog`.
 - Lite vs Standalone: flag direct use of `window.electronAPI`, `electron-*` modules, or other Electron-only APIs without a runtime guard (e.g. `isElectron()`) when the codepath also runs in the Lite (web) build and would crash, log noisy errors, or render a broken state.
-- Settings migrations: flag migration logic added inside a Pinia store instead of `src/utils/(widget-)migrations.ts`, and persisted-key reshapes done without a new versioned key (`-v2`, etc.) plus an idempotent migration.
-- Storage prefix: flag any new local-storage key (via `settings-management.ts` or `useBlueOsStorage`) that does not start with `cockpit-`.
 - Default-options merging: flag new widgets, or added/removed widget Options entries, that do not merge a defaults object with the persisted one (the `src/components/widgets/Plotter.vue` pattern), since users' existing widgets would miss the new entries.
 - Optional chaining: flag added TypeScript that uses `x && x.y` / nested guards where `x?.y` (optional chaining) is the cleaner, AGENTS.md-preferred form.
 - Root cause vs symptom: when a PR fixes a bug by patching one call site, check whether the defect actually lives in a shared function that other callers still hit. Flag symptom-only fixes (`major`) and point at the shared function that should be fixed once.
 
-### 2. AGENTS.md Adherence
+### 2. Persistence & User Data
+Persisted data is the one thing a bad PR can destroy for good, so this section is not collapsed while the PR touches it: write the inventory out even when every entry is fine. Collapse it to the one-line check-mark form only when the PR adds, reshapes, and removes nothing that is persisted.
+
+- Inventory first. List every persisted key the PR touches, and for each one give the backend — machine-local (`settings-management.ts`) or vehicle-synced (`useBlueOsStorage`, shared by every topside computer and operator of that vehicle) — and what happened to it (added, reshaped, removed). The reader must be able to see the PR's whole persistence footprint without opening the diff.
+- Then judge each entry. Is that the right backend? Does the key start with `cockpit-`? Is the stored shape sound? Flag a value that repeats its own key (e.g. an `id` field duplicating the key it is stored under) — persisted data needs a single source of truth.
+- Machine-specific values must not be vehicle-synced. Device and serial paths (`/dev/ttyUSB0`, COM ports), local filesystem paths, and window geometry differ per topside computer, so syncing them hands the next machine a stale value. Flag (as `major`) any automatic action taken on such a value — auto-connecting to a synced serial path can open the wrong device. Prefer a stable identity (USB VID/PID, device serial) over a path, and fall back to machine-local storage when the device offers none.
+- Automatic user-data migrations are a last resort, not the normal way to reshape a key. Flag (as `major`) every new automatic migration and require it to justify why the non-destructive route does not work: introducing a new versioned key (`cockpit-foo-v2`) and reading the old one only as a fallback leaves the user's original data untouched. Accept an automatic rewrite only when the transformation is fully understood, provably idempotent, and cannot lose data.
+- Migration logic belongs in `src/utils/migrations.ts` / `src/utils/widget-migrations.ts`, never inside a Pinia store.
+- Flag default or behavior changes that strand already-configured users on the old value with no plan. The PR must either carry those users over or make an explicit, stated decision not to — and when it does not, it should tell the user what changed.
+
+### 3. AGENTS.md Adherence
 - Cite the specific rule in `AGENTS.md` for each finding.
-- Especially check: use of existing dependencies before adding new ones, alphabetical dependency ordering in `package.json`, `yarn` (not `npm`/`npx`), JSDoc completeness for added/changed public functions, comment policy (explain "why" not "what"), optional chaining usage in TS, Lite (web) vs Standalone (electron) feature-parity notes, `cockpit-` prefix for new local-storage keys, widget options default-merging pattern.
+- Especially check: use of existing dependencies before adding new ones, alphabetical dependency ordering in `package.json`, `yarn` (not `npm`/`npx`), JSDoc completeness for added/changed public functions, comment policy (explain "why" not "what"), optional chaining usage in TS, Lite (web) vs Standalone (electron) feature-parity notes, widget options default-merging pattern.
 - Scope discipline: flag renames, declaration/import/hook reorders, `const`/`let`/`var` swaps, helper moves between files, and formatter-only reflows that are unrelated to the stated purpose of the PR.
 - Empty/filler JSDoc: flag (as `major`) any added `/** */` block whose summary or `@param`/`@returns` body is empty, whitespace-only, or filler text.
 - Minimalism (per the AGENTS.md "Before writing code" ladder): flag over-engineering, unrequested abstractions, boilerplate, and net additions that a smaller diff, an existing helper/util/composable, the standard library, a native platform feature, or an already-installed dependency could have covered. Reward deletion. Confirm deliberate corner-cuts with a known ceiling are marked with a `ponytail:` comment naming the ceiling and upgrade path.
 
-### 3. Security
+### 4. Security
 Sub-check ALL of the following, but only write out the ones that produce a finding. If none of them produce a finding, collapse the whole section to the one-line check-mark form (do not list the clean sub-checks):
-- 3.x Obfuscated or intentionally unreadable code.
-- 3.x Suspicious base64/hex/long-encoded blobs embedded in source, binary-like strings committed, or unusually large encoded constants.
-- 3.x Hidden Unicode, zero-width characters, right-to-left overrides, homoglyph attacks in identifiers.
-- 3.x Unexpected network calls (fetch/XHR/websocket to unknown hosts), exfiltration patterns, telemetry being added without justification.
-- 3.x Changes to build scripts, `postinstall` hooks, CI workflows, Dockerfiles, or Electron main-process code that could execute arbitrary code or weaken sandboxing.
-- 3.x Secret handling: new use of environment variables, tokens, or credentials; committed secrets; weakened CORS/CSP; introduction of `eval`, `Function()`, `dangerouslySetInnerHTML`-equivalents, or `v-html` on untrusted input.
-- 3.x New dependencies: flag any newly added package and assess popularity, maintenance, and typosquatting risk (compare names against well-known packages).
-- 3.x Any other pattern that suggests the author may be introducing malicious behavior, even if not proven. Err on the side of flagging.
+- 4.x Obfuscated or intentionally unreadable code.
+- 4.x Suspicious base64/hex/long-encoded blobs embedded in source, binary-like strings committed, or unusually large encoded constants.
+- 4.x Hidden Unicode, zero-width characters, right-to-left overrides, homoglyph attacks in identifiers.
+- 4.x Unexpected network calls (fetch/XHR/websocket to unknown hosts), exfiltration patterns, telemetry being added without justification.
+- 4.x Changes to build scripts, `postinstall` hooks, CI workflows, Dockerfiles, or Electron main-process code that could execute arbitrary code or weaken sandboxing.
+- 4.x Secret handling: new use of environment variables, tokens, or credentials; committed secrets; weakened CORS/CSP; introduction of `eval`, `Function()`, `dangerouslySetInnerHTML`-equivalents, or `v-html` on untrusted input.
+- 4.x New dependencies: flag any newly added package and assess popularity, maintenance, and typosquatting risk (compare names against well-known packages).
+- 4.x Any other pattern that suggests the author may be introducing malicious behavior, even if not proven. Err on the side of flagging.
 
-### 4. Performance
+### 5. Performance
 - Unnecessary re-renders, large synchronous work on the main thread, memory leaks (unclosed subscriptions, uncleared intervals/timeouts, uncleared MAVLink listeners), inefficient reactivity, heavy dependencies pulled into the bundle, blocking I/O, redundant network requests.
 - Hot paths: flag added work on the high-frequency paths `mavlink:onIncomingMessage`, `mavlink:addToDataLake`, `dataLake:setVariable`, `dataLake:notifyListeners`, and any `watch()` on a high-frequency ref. These run on every incoming MAVLink message; non-trivial work here degrades framerate.
 - Cleanup: flag any subscription, event listener, `watch`/`watchEffect` stop handle, `setInterval`/`setTimeout`, or MAVLink listener registered without a matching teardown in `onBeforeUnmount`/`onUnmounted` (or an equivalent disposer).
 
-### 5. UI / UX
+### 6. UI / UX
 - Vue component structure, accessibility (a11y), keyboard navigation, responsive behavior, color contrast/theme compliance, loading/error states, i18n if applicable, consistency with existing widgets and UI patterns.
 - Dialog spam: flag code that can open the same dialog repeatedly from a timed loop, retry routine, or watcher without first checking whether one is already open (e.g. timed-snapshot failures opening a new dialog every tick).
 - Interaction logging: flag new user-interaction features (menus, buttons, tab switches, dialog open/close, etc.) whose interactions are not logged via the global `logUserAction` helper (`src/libs/cosmos.ts`, captured by `system-logging.ts`). Each discrete user action should produce a `logUserAction(...)` entry describing what the user did; flag direct `console.*` logging or ad-hoc tracking used in its place, and `watch`-based logging of `v-model` settings that would also fire on BlueOS settings-sync. Do not require logging on high-frequency non-interaction paths.
 
-### 6. Code Quality & Style
+### 7. Code Quality & Style
 - Adherence to `.eslintrc.cjs` rules, naming, duplication, dead code, excessive complexity, comment quality per AGENTS.md, JSDoc completeness (typed `@param`/`@returns`, no empty entries), consistent use of optional chaining, type safety (no stray `any`).
 - Flag any deletion or rewording of a comment whose underlying code lines are unchanged in the diff (per the AGENTS.md comment-immutability rule).
 - Lint: AGENTS.md requires the final implementation to contain zero lint errors AND zero warnings. Assess the diff against `.eslintrc.cjs` and report likely-introduced ESLint warnings (not just errors) as findings.
@@ -93,20 +101,20 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 - Stream names: flag video/snapshot code that persists or stores the external stream name where the internal name should be used (convert via the video store's `internalStreamNameFromExternal`); the snapshot store must mirror the video store's pattern.
 - Shared-logic architecture: flag logic duplicated between paired components/views (especially `Map.vue` and `MissionPlanningView.vue`) that should be extracted — stateless logic into `src/libs/*.ts`, shared reactive logic into `src/composables/`, shared UI into a common component. Also flag map state placed in Pinia stores and direct leaflet imports in components that should stay map-solution-agnostic.
 
-### 7. Commit Hygiene
+### 8. Commit Hygiene
 - Fetch the commit list with `gh pr view "$PR_NUMBER" --repo "$REPO" --json commits` to evaluate this section.
 - Flag commits that bundle multiple unrelated logical changes, and conversely a single logical change split arbitrarily across noise commits.
 - Flag leftover noise commits (`wip`, `fix lint`, `address review`, un-squashed `fixup!`/`squash!`) that should have been cleaned up before merge.
 - Flag commit subjects whose type does not fit the change (e.g. every commit prefixed `fix:`), and PR-number references placed in the commit subject instead of the PR body.
 
-### 8. Tests
+### 9. Tests
 - Missing coverage for new logic, brittle tests, tests that were removed/weakened, testability concerns.
 - Non-trivial logic should leave behind at least ONE runnable check (an assert-based self-check or a small test) that fails if the logic breaks. Flag non-trivial additions that ship with no such check. Trivial one-liners need none.
 
-### 9. Documentation
+### 10. Documentation
 - README updates when a feature differs between Lite and Standalone (per AGENTS.md), in-code JSDoc, user-facing docs, changelog-worthy items.
 
-### 10. Nitpicks / Optional
+### 11. Nitpicks / Optional
 - Minor style preferences, naming suggestions, small refactors.
 
 ## Tone
