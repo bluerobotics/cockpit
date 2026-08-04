@@ -26,3 +26,17 @@ export const applyChromiumSwitches = (): void => {
     console.log(`Applied custom Chromium switch: --${name}${value === undefined ? '' : `=${value}`}`)
   })
 }
+
+/**
+ * Log the GPU feature status and driver identification, so video problems can be told apart from rendering ones
+ * without asking the user to reproduce anything. Only meaningful after the app is ready.
+ */
+export const logGpuStatus = async (): Promise<void> => {
+  try {
+    console.log(`GPU feature status: ${JSON.stringify(app.getGPUFeatureStatus())}`)
+    const gpuInfo = await app.getGPUInfo('basic')
+    console.log(`GPU info: ${JSON.stringify(gpuInfo)}`)
+  } catch (error) {
+    console.error('Failed to read the GPU status.', error)
+  }
+}

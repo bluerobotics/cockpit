@@ -5,7 +5,7 @@ import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupGo2RTCService } from './services/go2rtc'
-import { applyChromiumSwitches } from './services/gpu'
+import { applyChromiumSwitches, logGpuStatus } from './services/gpu'
 import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
@@ -136,6 +136,8 @@ setupGo2RTCService()
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
   console.log(`Cockpit version: ${app.getVersion()}`)
+
+  await logGpuStatus()
 
   // Inject a Referer header for OSM tile requests before the first tile is fetched, so the
   // standalone build (loaded from file://) complies with the OSM tile usage policy.
