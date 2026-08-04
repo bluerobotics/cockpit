@@ -164,6 +164,8 @@ Before writing a new helper, composable, or component, search for an existing on
 - UI: check existing components and dialogs for an established pattern before building a new one.
 If the same logic would live in two or more places, extract it once and reuse it.
 
+Then ask where it belongs, not just whether to extract it. Do not widen an existing module's purpose to host something unrelated — a bearing formatter is not a mission estimate, and a generic JSON serializer does not belong inside a specialized store. Put it in the module whose stated responsibility already covers it, or make a new one.
+
 ## Video and snapshot stream names
 
 - Persisted and internal artifacts (filenames, stored options, snapshot/video records) use the internal stream name; only user-facing UI shows the external name.
