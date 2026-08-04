@@ -5,7 +5,10 @@ on:
     types: [created]
 
 concurrency:
-  group: claude-pr-rereview-${{ github.event.issue.number }}
+  # Keyed on the command as well as the PR: concurrency is evaluated before the job's `if:`, so the
+  # run for an ordinary comment still joins the group and, with cancel-in-progress, cancels a
+  # re-review already running.
+  group: claude-pr-rereview-${{ github.event.issue.number }}-${{ startsWith(github.event.comment.body, '/review') }}
   cancel-in-progress: true
 
 jobs:
