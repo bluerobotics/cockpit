@@ -457,6 +457,14 @@ export const useBlueOsCloudStore = defineStore('blueOsCloud', () => {
   }
 
   /**
+   * Clears only the cycle link so this session has no active cloud mission, while keeping the last mission id
+   * available for "continue previous".
+   */
+  const clearMissionCycleLink = (): void => {
+    linkedMissionCycleId.value = null
+  }
+
+  /**
    * Queues an update (rename, relocate and/or re-describe) for the currently linked mission, coalescing with any
    * pending create/update for it. Works offline.
    * @param {UpdateLinkedMissionInput} input - Fields to change.
@@ -500,6 +508,7 @@ export const useBlueOsCloudStore = defineStore('blueOsCloud', () => {
     startCloudMission,
     linkExistingMission,
     finishMission,
+    clearMissionCycleLink,
     updateLinkedMission,
     flushMissionSyncQueue,
   }

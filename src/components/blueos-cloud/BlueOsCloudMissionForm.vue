@@ -65,27 +65,10 @@
 import { ref, watch } from 'vue'
 
 import BlueOsCloudLocationPicker from '@/components/blueos-cloud/BlueOsCloudLocationPicker.vue'
+import type { MissionFormSubmitPayload } from '@/composables/blueos-cloud/useBlueOsCloudMission'
 import { generateAutomaticMissionName } from '@/libs/mission/automatic-name'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import type { WaypointCoordinates } from '@/types/mission'
-
-/**
- * Payload emitted when the user submits the create/edit mission form.
- */
-type MissionFormSubmitPayload = {
-  /**
-   * Mission title.
-   */
-  name: string
-  /**
-   * Mission description.
-   */
-  description: string
-  /**
-   * Mission start location, or `null` when unset.
-   */
-  location: WaypointCoordinates | null
-}
 
 const props = withDefaults(
   defineProps<{

@@ -21,24 +21,19 @@
     <v-dialog v-model="configMenuOpen" max-width="624px">
       <v-card class="rounded-lg relative" :style="interfaceStore.globalGlassMenuStyles">
         <v-card-title class="text-h6 font-weight-bold py-4 text-center">Mission configuration</v-card-title>
-        <v-btn icon variant="text" size="small" class="absolute top-4 right-4" @click="cancel">
+        <v-btn icon variant="text" size="small" aria-label="Close" class="absolute top-4 right-4" @click="cancel">
           <v-icon size="22">mdi-close</v-icon>
         </v-btn>
         <v-card-text class="px-8">
-          <template v-if="cloudActive">
-            <!-- No mission associated with this cycle yet: choose to select an existing one or create a new one. -->
-            <div v-if="!hasMissionThisCycle" class="flex justify-center gap-4 py-6">
-              <v-btn
-                variant="flat"
-                class="bg-[#FFFFFF22]"
-                prepend-icon="mdi-folder-open-outline"
-                @click="openExistingMissionPicker"
-              >
-                Select existing mission
-              </v-btn>
-              <v-btn variant="flat" class="bg-[#FFFFFF22]" prepend-icon="mdi-plus" @click="openCreateMissionForm">
-                Create a new mission
-              </v-btn>
+          <template v-if="isCloudActive">
+            <!-- No mission associated with this cycle yet: choose continue / select / create. -->
+            <div v-if="!hasMissionThisCycle" class="py-2">
+              <BlueOsCloudMissionDecisionOptions
+                :previous-mission="previousCloudMission"
+                @continue-previous="continuePreviousMission"
+                @select-existing="openExistingMissionPicker"
+                @create-new="openCreateMissionForm"
+              />
             </div>
 
             <!-- A mission is associated: show its details (read-only) and its cloud sync status. -->
@@ -50,14 +45,18 @@
                     {{ linkedCloudMission?.title || 'Untitled mission' }}
                   </p>
                 </div>
-                <v-btn variant="text" size="small" class="text-white" @click="openEditMissionForm">Edit mission</v-btn>
-              </div>
-              <div class="flex items-center gap-4">
-                <div class="flex-1 min-w-0">
-                  <p class="text-caption opacity-70 mb-1">Description</p>
-                  <p class="text-body-2 ma-0">{{ linkedCloudMission?.description || 'Not set' }}</p>
+                <div class="flex items-center gap-1 shrink-0">
+                  <v-btn variant="text" size="small" class="text-white" @click="openEditMissionForm"
+                    >Edit mission</v-btn
+                  >
+                  <v-btn variant="text" size="small" class="text-white" @click="finishCloudMission">
+                    Reset mission
+                  </v-btn>
                 </div>
-                <v-btn variant="text" size="small" class="text-white" @click="finishCloudMission">Reset mission</v-btn>
+              </div>
+              <div class="min-w-0">
+                <p class="text-caption opacity-70 mb-1">Description</p>
+                <p class="text-body-2 ma-0">{{ linkedCloudMission?.description || 'Not set' }}</p>
               </div>
               <div class="flex items-center gap-4">
                 <div class="flex-1 min-w-0">
@@ -119,11 +118,7 @@
         <v-divider class="mt-2 mx-10" />
         <v-card-actions>
           <div class="flex justify-between items-center pa-2 w-full h-full">
-            <template v-if="cloudActive && hasMissionThisCycle">
-              <v-spacer />
-              <v-btn variant="text" @click="cancel">Cancel</v-btn>
-            </template>
-            <template v-else-if="cloudActive">
+            <template v-if="isCloudActive">
               <v-spacer />
               <v-btn variant="text" @click="cancel">Close</v-btn>
             </template>
@@ -148,14 +143,14 @@
       v-model="showExistingMissionPicker"
       title="Select a BlueOS Cloud mission"
       description="Pick a mission to continue logging to."
-      @selected="onExistingMissionSelected"
+      @selected="selectExistingMission"
     />
     <BlueOsCloudMissionForm
       v-model="showMissionForm"
-      :mode="missionFormMode"
-      :initial-name="missionFormInitialName"
-      :initial-description="missionFormInitialDescription"
-      :initial-location="missionFormInitialLocation"
+      :mode="missionForm.mode"
+      :initial-name="missionForm.name"
+      :initial-description="missionForm.description"
+      :initial-location="missionForm.location"
       @submit="onMissionFormSubmit"
     />
   </teleport>
@@ -164,12 +159,12 @@
 <script setup lang="ts">
 import { computed, ref, toRefs, watch } from 'vue'
 
+import BlueOsCloudMissionDecisionOptions from '@/components/blueos-cloud/BlueOsCloudMissionDecisionOptions.vue'
 import BlueOsCloudMissionForm from '@/components/blueos-cloud/BlueOsCloudMissionForm.vue'
 import BlueOsCloudMissionPicker from '@/components/blueos-cloud/BlueOsCloudMissionPicker.vue'
+import { type MissionFormSubmitPayload, useBlueOsCloudMission } from '@/composables/blueos-cloud/useBlueOsCloudMission'
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { useSnackbar } from '@/composables/snackbar'
 import { buildBlueOsCloudMissionUrl } from '@/libs/blueos-cloud/api'
-import { BlueOsCloudMission } from '@/libs/blueos-cloud/types'
 import { generateAutomaticMissionName } from '@/libs/mission/automatic-name'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useBlueOsCloudStore } from '@/stores/blueOsCloud'
@@ -194,7 +189,16 @@ const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 const cloudStore = useBlueOsCloudStore()
 const { showDialog, closeDialog } = useInteractionDialog()
-const { openSnackbar } = useSnackbar()
+const {
+  isCloudActive,
+  hasMissionThisCycle,
+  previousMission: previousCloudMission,
+  ensureLinkedMissionLoaded,
+  continuePreviousMission,
+  selectExistingMission,
+  createMission,
+  editLinkedMission,
+} = useBlueOsCloudMission()
 
 const configMenuOpen = computed({
   get: () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
@@ -206,20 +210,26 @@ const stagedIsAutomatic = ref(true)
 const isHovered = ref(false)
 const showExistingMissionPicker = ref(false)
 const showMissionForm = ref(false)
-const missionFormMode = ref<'create' | 'edit'>('create')
-const missionFormInitialName = ref('')
-const missionFormInitialDescription = ref('')
-const missionFormInitialLocation = ref<WaypointCoordinates | null>(null)
 
-// BlueOS Cloud missions are an advanced feature, gated behind pirate mode like the Cloud settings menu.
-const cloudActive = computed(() => interfaceStore.pirateMode && cloudStore.isAuthenticated)
-
-// Stamp that ties a cloud mission link to the current mission cycle (renewed after 6h idle / a new day).
-const currentCycleId = computed(() => new Date(store.missionStartTime).getTime())
-
-const hasMissionThisCycle = computed(
-  () => !!cloudStore.linkedMissionId && cloudStore.linkedMissionCycleId === currentCycleId.value
-)
+// Grouped so opening the form in either mode always sets every field it prefills.
+const missionForm = ref<{
+  /**
+   * Whether the form creates a new mission or edits the linked one.
+   */
+  mode: 'create' | 'edit'
+  /**
+   * Mission name to prefill.
+   */
+  name: string
+  /**
+   * Mission description to prefill.
+   */
+  description: string
+  /**
+   * Mission start location to prefill.
+   */
+  location: WaypointCoordinates | null
+}>({ mode: 'create', name: '', description: '', location: null })
 
 const linkedCloudMission = computed(() => cloudStore.linkedMission)
 
@@ -255,6 +265,7 @@ watch(configMenuOpen, (open) => {
   logUserAction('Opened the mission configuration menu')
   stagedName.value = store.missionName
   stagedIsAutomatic.value = store.missionNameIsAutomatic
+  if (isCloudActive.value) void ensureLinkedMissionLoaded()
 })
 
 const onNameInput = (value: string): void => {
@@ -352,81 +363,34 @@ const save = (): void => {
   saveLocalMissionName(name, stagedIsAutomatic.value)
 }
 
-const openExistingMissionPicker = async (): Promise<void> => {
+const openExistingMissionPicker = (): void => {
   logUserAction('Opened the BlueOS Cloud mission picker')
   showExistingMissionPicker.value = true
-  try {
-    if (cloudStore.missions.length === 0) await cloudStore.refreshMissions()
-  } catch {
-    // Errors are surfaced inside the picker via `cloudStore.lastError`.
-  }
-}
-
-const onExistingMissionSelected = (mission: BlueOsCloudMission): void => {
-  logUserAction(`Opened BlueOS Cloud mission '${mission.title}'`)
-  store.applyMissionName(mission.title, { isAutomatic: false, startNewMission: false })
-  cloudStore.linkExistingMission(mission.id, currentCycleId.value)
-  openSnackbar({
-    message: `Now logging to BlueOS Cloud mission "${mission.title}".`,
-    variant: 'success',
-    duration: 3000,
-    closeButton: true,
-  })
 }
 
 const openCreateMissionForm = (): void => {
   logUserAction('Opened the BlueOS Cloud mission creation form')
-  missionFormMode.value = 'create'
-  missionFormInitialName.value = ''
-  missionFormInitialDescription.value = ''
-  missionFormInitialLocation.value = null
+  missionForm.value = { mode: 'create', name: '', description: '', location: null }
   showMissionForm.value = true
 }
 
 const openEditMissionForm = (): void => {
   logUserAction('Opened the BlueOS Cloud mission edit form')
-  missionFormMode.value = 'edit'
-  missionFormInitialName.value = linkedCloudMission.value?.title ?? ''
-  missionFormInitialDescription.value = linkedCloudMission.value?.description ?? ''
-  missionFormInitialLocation.value = linkedMissionLocation.value
+  missionForm.value = {
+    mode: 'edit',
+    name: linkedCloudMission.value?.title ?? '',
+    description: linkedCloudMission.value?.description ?? '',
+    location: linkedMissionLocation.value,
+  }
   showMissionForm.value = true
 }
 
-const onMissionFormSubmit = (payload: {
-  /**
-   * Mission title.
-   */
-  name: string
-  /**
-   * Mission description.
-   */
-  description: string
-  /**
-   * Mission start location.
-   */
-  location: WaypointCoordinates | null
-}): void => {
-  const { name, description, location } = payload
-  const latitude = location?.[0] ?? null
-  const longitude = location?.[1] ?? null
-
-  if (missionFormMode.value === 'edit') {
-    store.applyMissionName(name, { isAutomatic: false, startNewMission: false })
-    cloudStore.updateLinkedMission({ name, description, latitude, longitude })
-    logUserAction('Edited the linked BlueOS Cloud mission')
-    openSnackbar({ message: `Mission "${name}" updated.`, variant: 'success', duration: 3000, closeButton: true })
-    return
+const onMissionFormSubmit = (payload: MissionFormSubmitPayload): void => {
+  if (missionForm.value.mode === 'edit') {
+    editLinkedMission(payload)
+  } else {
+    createMission(payload)
   }
-
-  store.applyMissionName(name, { isAutomatic: false, startNewMission: true })
-  cloudStore.startCloudMission({ name, description, latitude, longitude }, currentCycleId.value)
-  logUserAction(`Created BlueOS Cloud mission '${name}'`)
-  openSnackbar({
-    message: `Mission "${name}" saved. It will sync to BlueOS Cloud when online.`,
-    variant: 'success',
-    duration: 3000,
-    closeButton: true,
-  })
 }
 
 const finishCloudMission = (): void => {
