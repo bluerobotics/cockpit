@@ -595,6 +595,10 @@ export const useMissionStore = defineStore('mission', () => {
 
   let didAutoEndCurrentRun = false
 
+  // Distinguishes a cruise speed the user actually asked for from the untouched default, so a vehicle running a
+  // mission that was never planned here keeps the speed its own parameters define.
+  let cruiseSpeedWasCommanded = false
+
   /**
    * Applies the active cruise speed to the vehicle as a live command.
    * @param {number} [speedMps] - Speed to apply; defaults to the current active cruise speed
@@ -604,9 +608,21 @@ export const useMissionStore = defineStore('mission', () => {
     const speed = Number(speedMps)
     if (!Number.isFinite(speed) || speed <= 0) return
     cruiseSpeed.value = speed
+    cruiseSpeedWasCommanded = true
     if (!mainVehicleStore.isVehicleOnline) return
     await mainVehicleStore.setCruiseSpeed(speed)
   }
+
+  // Entering a mode resets the autopilot's desired speed to its cruise-speed parameter, and a mission resumed mid-way
+  // never replays the DO_CHANGE_SPEED uploaded with the first waypoint. Only AUTO is re-commanded, so a deliberately
+  // slower Guided leg keeps the speed the pilot chose there.
+  watch(
+    () => mainVehicleStore.mode,
+    (newMode) => {
+      if (newMode !== 'AUTO' || !cruiseSpeedWasCommanded) return
+      applyCruiseSpeed().catch((err) => console.error('Failed to re-apply cruise speed on AUTO mode:', err))
+    }
+  )
 
   // Allow executing missions
   const executeMissionOnVehicle = async (): Promise<boolean> => {
