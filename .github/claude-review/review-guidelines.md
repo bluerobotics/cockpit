@@ -110,9 +110,13 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 
 ### 8. Commit Hygiene
 - Fetch the commit list with `gh pr view "$PR_NUMBER" --repo "$REPO" --json commits` to evaluate this section.
-- Flag commits that bundle multiple unrelated logical changes, and conversely a single logical change split arbitrarily across noise commits.
+- Flag commits that bundle multiple unrelated logical changes.
 - Flag leftover noise commits (`wip`, `fix lint`, `address review`, un-squashed `fixup!`/`squash!`) that should have been cleaned up before merge.
 - Flag commit subjects whose type does not fit the change (e.g. every commit prefixed `fix:`), and PR-number references placed in the commit subject instead of the PR body.
+- Over-splitting: flag one logical change spread across several commits, which forces the reviewer back and forth between commits doing the same thing. Automated commit-splitting is the usual cause — atomic does not mean one commit per file, per hunk, or per noise step.
+- Oversized commits: flag a single very large commit (several hundred lines and up) even when it is nominally one thing. It cannot be reviewed as a unit and there were almost certainly atomic steps inside it.
+- Self-correcting commits: flag a commit that reverts or reimplements an earlier commit in the same PR. The reviewer has to read the original and then the one undoing it, which raises the review burden and leaves more room for mistakes; it should have been squashed into its target. The exception is a reviewer-requested architectural change late in a long PR, where rebasing everything costs more rework than it saves.
+- Stacked PRs: flag commits replicated from a sibling or base PR. They should be rebased away once that PR merges rather than carried into this one's history.
 
 ### 9. Tests
 - Missing coverage for new logic, brittle tests, tests that were removed/weakened, testability concerns.

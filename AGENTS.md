@@ -186,6 +186,10 @@ This applies to any pair of components/views with substantial overlap, not just 
 ## Commit hygiene
 
 - Each commit is one logical change. If a single fix touches three independent things, make three commits.
+- One logical change is also only one commit. Do not split it per file or per hunk — that makes the reviewer read the same change several times over.
+- Keep a commit reviewable in one sitting. Several hundred lines in a single commit is hard to follow even when it is nominally one thing, so look for the atomic steps inside it.
+- Never leave a commit that fixes or reimplements an earlier commit on the same branch; squash it into its target. The exception is a reviewer-requested architectural change late in a long PR, where rebasing everything costs more rework than it saves.
+- When stacking PRs, rebase away the commits replicated from the base PR once it merges, so each branch carries only its own history.
 - When the user runs `git reset --soft <ref>` and asks you to recommit, group the working-tree changes back into the logical commits they described — do not pile everything into a single commit.
 - When fixing feedback for code that is already committed on the branch, prefer `git commit --fixup <sha>` over a new standalone "fix typo"/"address review" commit, unless the user says otherwise.
 - Fold `fixup!`/`squash!` commits into their targets with `git rebase --autosquash` BEFORE pushing (or before opening a PR / requesting review). Never leave a `fixup!`/`squash!` commit in pushed history — the branch should always be presented already squashed.
