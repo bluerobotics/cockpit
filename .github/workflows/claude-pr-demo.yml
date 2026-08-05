@@ -40,6 +40,11 @@ jobs:
       DEMO_BRANCH: pr-demos
       PR_NUMBER: ${{ github.event.issue.number }}
       REPO: ${{ github.repository }}
+      # claude-code-base-action runs its own setup-node, defaulting to 18.x, which replaces the
+      # version installed below by the time the agent's shell exists. Node 18 has no global
+      # WebSocket, so the recorder dies on `new WebSocket(...)` even though the smoke test — which
+      # runs before the action — passed. This is the documented way to tell the action otherwise.
+      NODE_VERSION: '22.13.0'
     steps:
       # The recorder, the guidelines and AGENTS.md all come from the base ref. The PR gets to be
       # filmed, but it does not get to choose the code that drives the browser or the agent.
@@ -154,6 +159,9 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           model: "claude-opus-4-6"
           max_turns: "100"
+          # The action's own default is 10 minutes, which does not survive recording a clip and
+          # watching the frames back, let alone the couple of retakes that usually takes.
+          timeout_minutes: "20"
           # No `curl`: nothing the agent does needs the network, and the diff it reads is untrusted,
           # so denying it removes the obvious way to exfiltrate anything it is tricked into reading.
           allowed_tools: "Bash(node:*),Bash(ffmpeg:*),Bash(ls:*),Bash(cat:*),Bash(jq:*),Bash(wc:*),Bash(head:*),Bash(tail:*),Bash(mkdir:*),Bash(cp:*),Bash(rm:*),Bash(pkill:*),View,GlobTool,GrepTool,BatchTool,Write,Edit"
