@@ -45,6 +45,9 @@ jobs:
       # WebSocket, so the recorder dies on `new WebSocket(...)` even though the smoke test — which
       # runs before the action — passed. This is the documented way to tell the action otherwise.
       NODE_VERSION: '22.13.0'
+      # Only reported against, never enforced on its own — `max_turns` is what actually holds
+      # spend down, so re-derive it from the cost line whenever this figure moves.
+      DEMO_BUDGET_USD: '2.00'
     steps:
       # The recorder, the guidelines and AGENTS.md all come from the base ref. The PR gets to be
       # filmed, but it does not get to choose the code that drives the browser or the agent.
@@ -151,6 +154,7 @@ jobs:
         run: node scripts/uicast/record.mjs scripts/uicast/scene-selftest.mjs /tmp/selftest.mp4
 
       - name: Record the demo
+        id: record
         uses: anthropics/claude-code-base-action@beta
         env:
           HEAD_SHA: ${{ env.HEAD_SHA }}
@@ -158,7 +162,13 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           model: "claude-opus-4-6"
-          max_turns: "100"
+          # Spend cap, expressed as turns because neither the action nor Claude Code takes a
+          # currency budget. Opus 4.6 bills $5/M in, $25/M out, $0.50/M cache read and $6.25/M
+          # cache write, and for this job almost all of it is context being re-read rather than
+          # anything generated. Measured on run 31021157391: the fixed context costs ~$1.25 over
+          # the first ten turns and ~$0.04/turn after that, so $DEMO_BUDGET_USD runs out at turn
+          # 27. Re-derive this from the cost line below if the guidelines or the model change.
+          max_turns: "26"
           # The action's own default is 10 minutes, which does not survive recording a clip and
           # watching the frames back, let alone the couple of retakes that usually takes.
           timeout_minutes: "20"
@@ -205,6 +215,42 @@ jobs:
 
             Follow the system instructions and `.github/claude-review/demo-video-guidelines.md` exactly.
             Produce either (`demo/demo.mp4` + `demo/scenario.mjs` + `demo/comment.md`) or `demo/skipped.md`.
+
+      # Runs even when the agent failed, because an expensive run that produced nothing is exactly
+      # the one worth pricing. Claude Code reports its own total only on a clean finish, so a run
+      # cut short by the turn cap or the timeout has to be priced from its usage blocks.
+      # continue-on-error because this only reports: `if: always()` makes the step run after a
+      # failure, it does not stop the step's own failure from failing the job — and this one sits
+      # in front of the publish step, so without it a hiccup here would withhold a good recording.
+      - name: Price the recording
+        if: always()
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.record.outputs.execution_file }}
+        run: |
+          set -euo pipefail
+          if [ -z "${EXECUTION_FILE:-}" ] || [ ! -f "$EXECUTION_FILE" ]; then
+            echo "no execution log to price"
+            exit 0
+          fi
+          # Slurped and walked recursively so this works whether the log is a JSON array or the
+          # newline-delimited stream, and regardless of how deeply usage is nested.
+          usd=$(jq -s -r '
+            ([.. | objects | select(has("total_cost_usd")) | .total_cost_usd] | last) //
+            ([.. | objects | select(has("cache_read_input_tokens"))]
+              | (map(.input_tokens // 0) | add // 0) * 5
+              + (map(.output_tokens // 0) | add // 0) * 25
+              + (map(.cache_creation_input_tokens // 0) | add // 0) * 6.25
+              + (map(.cache_read_input_tokens // 0) | add // 0) * 0.5
+              | . / 1000000) // 0
+          ' "$EXECUTION_FILE")
+          line=$(printf 'Demo recording cost $%.2f of its $%.2f budget.' "$usd" "$DEMO_BUDGET_USD")
+          echo "$line" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Passed in rather than interpolated into the program text, and coerced with +0 so a
+          # value awk would otherwise treat as a string is still compared as a number.
+          if awk -v u="$usd" -v b="$DEMO_BUDGET_USD" 'BEGIN { exit !(u + 0 > b + 0) }'; then
+            echo "::warning::$line Lower max_turns, or raise DEMO_BUDGET_USD if the cap is too tight."
+          fi
 
       - name: Publish the demo and post the comment
         env:
