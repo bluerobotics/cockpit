@@ -5,7 +5,7 @@ import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupGo2RTCService } from './services/go2rtc'
-import { applyChromiumSwitches, logGpuStatus } from './services/gpu'
+import { applyChromiumSwitches, logGpuStatus, markStartupAsHealthy } from './services/gpu'
 import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
@@ -89,6 +89,7 @@ function createWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.setTitle(`Cockpit (${app.getVersion()})`)
+    markStartupAsHealthy()
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {

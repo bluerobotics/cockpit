@@ -10,12 +10,28 @@ import store from './config-store'
  * These exist as an escape hatch for GPU and video driver bugs that only reproduce on specific hardware, where the
  * workaround is a Chromium switch (e.g. "disable-zero-copy-dxgi-video" for stalling video on some Windows/AMD
  * combinations). Must run before the app is ready, as the GPU process reads the command line on startup.
+ *
+ * A switch can always turn out to break rendering on a given machine, so the persisted ones are guarded: a flag is
+ * raised before they are applied and only lowered once a window finishes loading. Finding it still raised on the next
+ * launch means the previous attempt never got that far, so the switches are set aside instead of applied again.
  */
 export const applyChromiumSwitches = (): void => {
-  const switches = [
-    ...parseChromiumSwitches(store.get('chromiumSwitches')),
-    ...parseChromiumSwitches(process.env.COCKPIT_CHROMIUM_SWITCHES),
-  ]
+  const persisted = store.get('chromiumSwitches') ?? []
+
+  if (store.get('chromiumSwitchesBootPending') && persisted.length > 0) {
+    store.set('chromiumSwitchesDisabled', persisted)
+    store.set('chromiumSwitches', [])
+    store.set('chromiumSwitchesBootPending', false)
+    console.warn(`Cockpit failed to start with these Chromium switches, so they were disabled: ${persisted.join(' ')}`)
+  }
+
+  const entries = store.get('chromiumSwitches') ?? []
+  if (entries.length > 0) {
+    store.set('chromiumSwitchesBootPending', true)
+  }
+
+  // Switches from the environment are a support and development override, so they stay outside of the failsafe.
+  const switches = [...parseChromiumSwitches(entries), ...parseChromiumSwitches(process.env.COCKPIT_CHROMIUM_SWITCHES)]
 
   switches.forEach(({ name, value }) => {
     if (value === undefined) {
@@ -25,6 +41,15 @@ export const applyChromiumSwitches = (): void => {
     }
     console.log(`Applied custom Chromium switch: --${name}${value === undefined ? '' : `=${value}`}`)
   })
+}
+
+/**
+ * Clear the pending-boot flag, marking the applied switches as safe. Called once a window has finished loading.
+ */
+export const markStartupAsHealthy = (): void => {
+  if (store.get('chromiumSwitchesBootPending')) {
+    store.set('chromiumSwitchesBootPending', false)
+  }
 }
 
 /**
