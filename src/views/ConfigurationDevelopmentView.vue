@@ -36,6 +36,17 @@
               @update:model-value="onToggleSplashScreen"
             />
           </div>
+          <div v-if="isRunningInElectron" class="flex justify-start w-full mt-3">
+            <v-btn
+              variant="outlined"
+              color="white"
+              size="small"
+              prepend-icon="mdi-cog-play-outline"
+              @click="openAdvancedInitializationOptions"
+            >
+              Open advanced initialization options
+            </v-btn>
+          </div>
         </div>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-bottom-divider>
           <template #title>
@@ -129,6 +140,7 @@
           </template>
         </ExpansiblePanel>
       </div>
+      <AdvancedInitializationOptionsDialog v-model:show-dialog="showAdvancedInitializationOptions" />
     </template>
   </BaseConfigurationView>
 </template>
@@ -141,6 +153,7 @@ import { format, parse } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
 
+import AdvancedInitializationOptionsDialog from '@/components/AdvancedInitializationOptionsDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import {
@@ -181,6 +194,13 @@ const onToggleSplashScreen = (value: boolean | null): void => {
 const openConsole = (): void => {
   logUserAction('Opened system console')
   devStore.showConsole = true
+}
+
+const showAdvancedInitializationOptions = ref(false)
+
+const openAdvancedInitializationOptions = (): void => {
+  logUserAction('Opened the advanced initialization options dialog')
+  showAdvancedInitializationOptions.value = true
 }
 
 /* eslint-disable jsdoc/require-jsdoc */

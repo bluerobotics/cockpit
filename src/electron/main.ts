@@ -5,7 +5,7 @@ import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupGo2RTCService } from './services/go2rtc'
-import { applyChromiumSwitches, logGpuStatus, markStartupAsHealthy } from './services/gpu'
+import { applyChromiumSwitches, logGpuStatus, markStartupAsHealthy, setupGpuService } from './services/gpu'
 import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
@@ -133,6 +133,7 @@ setupWorkspaceService()
 setupJoystickMonitoring()
 setupVideoRecordingService()
 setupGo2RTCService()
+setupGpuService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')

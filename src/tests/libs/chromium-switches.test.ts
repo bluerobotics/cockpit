@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseChromiumSwitches } from '@/libs/chromium-switches'
+import {
+  blockedChromiumSwitchNames,
+  parseChromiumSwitches,
+  predefinedChromiumSwitches,
+  validateChromiumSwitchEntry,
+} from '@/libs/chromium-switches'
 
 describe('parseChromiumSwitches', () => {
   it('Parses switches with and without values, ignoring leading dashes', () => {
@@ -29,5 +34,49 @@ describe('parseChromiumSwitches', () => {
 
   it('Returns nothing when unset', () => {
     expect(parseChromiumSwitches(undefined)).toEqual([])
+  })
+})
+
+describe('validateChromiumSwitchEntry', () => {
+  it('Accepts well-formed switches, with or without a value', () => {
+    expect(validateChromiumSwitchEntry('--disable-gpu')).toBeUndefined()
+    expect(validateChromiumSwitchEntry('enable-features=SomeFeature,OtherFeature')).toBeUndefined()
+  })
+
+  it('Accepts switches Chromium may not know, since unknown switches are ignored', () => {
+    expect(validateChromiumSwitchEntry('not-a-real-chromium-switch')).toBeUndefined()
+  })
+
+  it('Rejects empty entries and entries containing spaces', () => {
+    expect(validateChromiumSwitchEntry('  ')).toBeDefined()
+    expect(validateChromiumSwitchEntry('--disable-gpu --disable-gpu-compositing')).toBeDefined()
+  })
+
+  it('Rejects names that cannot be Chromium switches', () => {
+    expect(validateChromiumSwitchEntry('Disable_GPU')).toBeDefined()
+    expect(validateChromiumSwitchEntry('--=value')).toBeDefined()
+  })
+
+  it('Rejects switches that would weaken security or stability', () => {
+    blockedChromiumSwitchNames.forEach((name) => {
+      expect(validateChromiumSwitchEntry(`--${name}`)).toBeDefined()
+    })
+    expect(validateChromiumSwitchEntry('--remote-debugging-port=9222')).toBeDefined()
+  })
+})
+
+describe('predefinedChromiumSwitches', () => {
+  it('Only offers switches that pass validation', () => {
+    predefinedChromiumSwitches.forEach(({ entry }) => {
+      expect(validateChromiumSwitchEntry(entry)).toBeUndefined()
+    })
+  })
+
+  it('Describes every option and targets at least one platform', () => {
+    predefinedChromiumSwitches.forEach(({ title, description, platforms }) => {
+      expect(title.length).toBeGreaterThan(0)
+      expect(description.length).toBeGreaterThan(0)
+      expect(platforms.length).toBeGreaterThan(0)
+    })
   })
 })

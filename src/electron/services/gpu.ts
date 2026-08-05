@@ -1,6 +1,7 @@
-import { app } from 'electron'
+import { app, ipcMain } from 'electron'
 
-import { parseChromiumSwitches } from '@/libs/chromium-switches'
+import { parseChromiumSwitches, validateChromiumSwitchEntry } from '@/libs/chromium-switches'
+import type { ChromiumSwitchesState } from '@/types/chromium-switches'
 
 import store from './config-store'
 
@@ -64,4 +65,36 @@ export const logGpuStatus = async (): Promise<void> => {
   } catch (error) {
     console.error('Failed to read the GPU status.', error)
   }
+}
+
+/**
+ * Registers IPC for reading and writing the Chromium switches, and for restarting the app so they take effect.
+ */
+export const setupGpuService = (): void => {
+  ipcMain.handle('get-chromium-switches', (): ChromiumSwitchesState => {
+    return {
+      entries: store.get('chromiumSwitches') ?? [],
+      disabledAfterFailedStartup: store.get('chromiumSwitchesDisabled') ?? [],
+    }
+  })
+
+  ipcMain.handle('set-chromium-switches', (_event, entries: string[]): void => {
+    // The renderer already validates, but this is the boundary that decides what gets on the command line.
+    entries.forEach((entry) => {
+      const problem = validateChromiumSwitchEntry(entry)
+      if (problem !== undefined) {
+        throw new Error(`Refused to save the Chromium switch "${entry}": ${problem}`)
+      }
+    })
+
+    store.set('chromiumSwitches', entries)
+    store.set('chromiumSwitchesDisabled', [])
+    console.log(`Saved custom Chromium switches: ${entries.join(' ') || '(none)'}`)
+  })
+
+  ipcMain.handle('relaunch-app', (): void => {
+    console.log('Relaunching the application.')
+    app.relaunch()
+    app.quit()
+  })
 }

@@ -1,5 +1,6 @@
 import { isBrowser } from 'browser-or-node'
 
+import type { ChromiumSwitchesState } from '@/types/chromium-switches'
 import { type ElectronLog } from '@/types/electron-general'
 import { ElectronStorageDB } from '@/types/general'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
@@ -481,6 +482,22 @@ declare global {
        * @returns {Promise<TelemetrySystemHardwareInfo>} Serializable hardware fields
        */
       getHardwareTelemetryInfo: () => Promise<TelemetrySystemHardwareInfo>
+      /**
+       * Get the custom Chromium switches applied at launch
+       * @returns {Promise<ChromiumSwitchesState>} The saved switches and any disabled after a failed startup
+       */
+      getChromiumSwitches: () => Promise<ChromiumSwitchesState>
+      /**
+       * Save the custom Chromium switches, which only take effect after a restart
+       * @param {string[]} entries Switches to apply on the next launch
+       * @returns {Promise<void>} Rejects when any entry is malformed or unsafe
+       */
+      setChromiumSwitches: (entries: string[]) => Promise<void>
+      /**
+       * Restart the application
+       * @returns {Promise<void>} Resolves as the application quits
+       */
+      relaunchApp: () => Promise<void>
       /**
        * Start live video streaming process with FFmpeg
        * @param firstChunk - The first video chunk blob
