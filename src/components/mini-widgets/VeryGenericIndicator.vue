@@ -661,6 +661,7 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
   miniWidget.value.options.iconName = template.iconName
   miniWidget.value.options.variableUnit = template.variableUnit
   miniWidget.value.options.variableMultiplier = template.variableMultiplier
+  miniWidget.value.options.decimalPlaces = template.decimalPlaces ?? null
 }
 </script>
 
