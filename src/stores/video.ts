@@ -207,7 +207,11 @@ export const useVideoStore = defineStore('video', () => {
     // ponytail: feeds differing only in the URL query still fall back to '[2]'; keep the query here if one shows up
     const feed = pathSegments.filter(Boolean).pop()?.split('?')[0] ?? ''
 
-    return ['RTSP', host, feed].filter(Boolean).join(' ')
+    // RadCams announce themselves over ONVIF as "UnderwaterCam", which MCM hands us as the source name
+    const sourceName = streamInformation.value.find((info) => info.rtspSourceUrl === rtspUrl)?.sourceName ?? ''
+    const prefix = sourceName.toLowerCase().includes('underwatercam') ? 'RadCam RTSP' : 'RTSP'
+
+    return [prefix, host, feed].filter(Boolean).join(' ')
   }
 
   const initializeStreamsCorrespondency = (): void => {
