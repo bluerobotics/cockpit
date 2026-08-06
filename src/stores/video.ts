@@ -224,13 +224,14 @@ export const useVideoStore = defineStore('video', () => {
     const existingInternalNames = streamsCorrespondency.value.map((corr) => corr.name)
     const newCorrespondencies: VideoStreamCorrespondency[] = []
 
-    let i = 1
     unmappedExternalStreams.forEach((streamName) => {
-      // Find the next available internal name (Stream 1, Stream 2, etc.)
-      let internalName = `Stream ${i}`
+      // Name the stream after the external name, disambiguating collisions with a bracketed counter suffix
+      const baseName = streamName.trim() || 'Stream'
+      let internalName = baseName
+      let suffix = 2
       while (existingInternalNames.includes(internalName)) {
-        i++
-        internalName = `Stream ${i}`
+        internalName = `${baseName} [${suffix}]`
+        suffix++
       }
 
       newCorrespondencies.push({
@@ -238,7 +239,6 @@ export const useVideoStore = defineStore('video', () => {
         externalId: streamName,
       })
       existingInternalNames.push(internalName) // Track this name to avoid duplicates
-      i++
     })
 
     // Add new correspondences to the existing ones instead of replacing them
