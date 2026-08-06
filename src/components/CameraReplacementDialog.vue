@@ -122,6 +122,14 @@
           </template>
         </div>
 
+        <div v-if="showRtspPreferenceNote" class="flex items-start gap-2">
+          <v-icon size="16" color="grey-lighten-1" class="mt-[2px]">mdi-information-outline</v-icon>
+          <span class="text-xs text-gray-400">
+            Cockpit Standalone can pull RTSP streams directly from the camera, which performs better than WebRTC and
+            uses less of the vehicle's computing resources.
+          </span>
+        </div>
+
         <p class="text-xs text-gray-500 mt-1">
           {{ affectedWidgetCount }} widget{{ affectedWidgetCount === 1 ? '' : 's' }} will be updated.
         </p>
@@ -134,6 +142,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { isElectron } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { VideoStreamCorrespondency } from '@/types/video'
@@ -146,6 +155,7 @@ const videoStore = useVideoStore()
 const widgetStore = useWidgetManagerStore()
 
 const STABILIZATION_DELAY_MS = 15000
+const isStandalone = isElectron()
 
 const showDialog = ref(false)
 const dialogTriggered = ref(false)
@@ -274,11 +284,19 @@ const unusedAvailableStreams = computed(() => {
 const replacementItems = computed(() => {
   return unusedAvailableStreams.value.map((corr) => {
     const info = videoStore.getStreamDisplayInfo(corr.externalId)
+    const preferredSuffix = isStandalone && info.protocolLabel === 'RTSP' ? ' [Preferred]' : ''
     return {
       internalName: corr.name,
-      label: `${corr.name} (${info.protocolLabel} - ${info.resolution})`,
+      label: `${corr.name} (${info.protocolLabel} - ${info.resolution})${preferredSuffix}`,
     }
   })
+})
+
+const showRtspPreferenceNote = computed((): boolean => {
+  if (!isStandalone) return false
+  return unusedAvailableStreams.value.some(
+    (corr) => videoStore.getStreamDisplayInfo(corr.externalId).protocolLabel === 'RTSP'
+  )
 })
 
 const affectedWidgetCount = computed((): number => {
