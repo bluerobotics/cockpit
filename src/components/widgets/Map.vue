@@ -249,6 +249,7 @@ import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/m
 import {
   createGridOverlay,
   fitMapToWaypoints,
+  persistLiveMapView,
   singleStepZoomMapOptions,
   TargetFollower,
   WhoToFollow,
@@ -1077,6 +1078,9 @@ watch(
 // - disable auto update for target follower
 // - remove event listeners
 onBeforeUnmount(() => {
+  // Debounced saves may still be pending; write the live view now so Mission Planning mounts with it.
+  persistLiveMapView(missionStore.saveLastMapPosition, map.value, zoom.value, mapCenter.value)
+
   targetFollower.disableAutoUpdate()
   stopUnFollowOnUserDrag?.()
   window.removeEventListener('keydown', onKeydown)

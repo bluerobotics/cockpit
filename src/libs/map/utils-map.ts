@@ -263,6 +263,29 @@ export const fitMapToWaypoints = (
 }
 
 /**
+ * Persist the live map view into the shared last-position store.
+ * Prefer the Leaflet instance when present so a leave mid-gesture still records the real center/zoom.
+ * @param { (zoom: number, center: WaypointCoordinates) => void } save Writer for the shared last-view keys.
+ * @param { L.Map | undefined } map Live Leaflet map, when still mounted.
+ * @param { number } zoom Fallback zoom from the local ref.
+ * @param { WaypointCoordinates } center Fallback center from the local ref.
+ * @returns { void }
+ */
+export const persistLiveMapView = (
+  save: (zoom: number, center: WaypointCoordinates) => void,
+  map: L.Map | undefined,
+  zoom: number,
+  center: WaypointCoordinates
+): void => {
+  if (map) {
+    const { lat, lng } = map.getCenter()
+    save(map.getZoom(), [lat, lng])
+    return
+  }
+  save(zoom, center)
+}
+
+/**
  * Generates a survey path based on the given polygon and parameters.
  * @param {L.LatLng[]} polygonPoints - The points of the polygon.
  * @param {number} distanceBetweenLines - The distance between survey lines in meters.

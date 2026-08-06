@@ -717,6 +717,7 @@ import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/m
 import {
   createGridOverlay,
   fitMapToWaypoints,
+  persistLiveMapView,
   singleStepZoomMapOptions,
   TargetFollower,
   WhoToFollow,
@@ -4123,6 +4124,9 @@ watch(
 )
 
 onUnmounted(() => {
+  // Debounced saves may still be pending; write the live view now so Flight Mode mounts with it.
+  persistLiveMapView(missionStore.saveLastMapPosition, planningMap.value, zoom.value, mapCenter.value)
+
   targetFollower.disableAutoUpdate()
   stopUnFollowOnUserDrag?.()
   if (planningMap.value) {
