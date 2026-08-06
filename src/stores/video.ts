@@ -182,6 +182,34 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
+  const uniqueInternalName = (baseName: string, takenNames: string[]): string => {
+    let name = baseName
+    let suffix = 2
+    while (takenNames.includes(name)) {
+      name = `${baseName} [${suffix}]`
+      suffix++
+    }
+    return name
+  }
+
+  // A bare RTSP URL tells the user nothing, so name the stream after the host serving it. Dropping
+  // the credentials keeps them out of the name, and out of the filenames and stored options derived
+  // from it. Not URL(): cameras are not consistent about the '//', and a scheme without it parses
+  // as an opaque path, leaving the hostname empty and the stream named after nothing.
+  const rtspBaseName = (rtspUrl: string): string => {
+    const [authority, ...pathSegments] = rtspUrl
+      .trim()
+      .replace(/^rtsps?:\/{0,2}/i, '')
+      .split('/')
+    const host = (authority.split('@').pop() ?? '').replace(/:\d+$/, '')
+
+    // The path is what tells two feeds of the same camera apart, like an ONVIF main and sub profile
+    // ponytail: feeds differing only in the URL query still fall back to '[2]'; keep the query here if one shows up
+    const feed = pathSegments.filter(Boolean).pop()?.split('?')[0] ?? ''
+
+    return ['RTSP', host, feed].filter(Boolean).join(' ')
+  }
+
   const initializeStreamsCorrespondency = (): void => {
     // Move already-mapped RadCam WebRTC streams to the ignored list
     // TODO: This whole logic around auto-ignoring RadCam WebRTC streams should be removed once the MCM stutter problem is fixed
@@ -225,14 +253,7 @@ export const useVideoStore = defineStore('video', () => {
     const newCorrespondencies: VideoStreamCorrespondency[] = []
 
     unmappedExternalStreams.forEach((streamName) => {
-      // Name the stream after the external name, disambiguating collisions with a bracketed counter suffix
-      const baseName = streamName.trim() || 'Stream'
-      let internalName = baseName
-      let suffix = 2
-      while (existingInternalNames.includes(internalName)) {
-        internalName = `${baseName} [${suffix}]`
-        suffix++
-      }
+      const internalName = uniqueInternalName(streamName.trim() || 'Stream', existingInternalNames)
 
       newCorrespondencies.push({
         name: internalName,
@@ -268,13 +289,8 @@ export const useVideoStore = defineStore('video', () => {
     const existingInternalNames = streamsCorrespondency.value.map((corr) => corr.name)
     const newCorrespondencies: VideoStreamCorrespondency[] = []
 
-    let i = 1
     for (const rtspUrl of unmappedRtspUrls) {
-      let internalName = `RTSP Stream ${i}`
-      while (existingInternalNames.includes(internalName)) {
-        i++
-        internalName = `RTSP Stream ${i}`
-      }
+      const internalName = uniqueInternalName(rtspBaseName(rtspUrl), existingInternalNames)
 
       newCorrespondencies.push({
         name: internalName,
@@ -284,7 +300,6 @@ export const useVideoStore = defineStore('video', () => {
         autoDiscovered: true,
       })
       existingInternalNames.push(internalName)
-      i++
     }
 
     streamsCorrespondency.value = [...streamsCorrespondency.value, ...newCorrespondencies]
@@ -1306,12 +1321,7 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     const existingInternalNames = streamsCorrespondency.value.map((corr) => corr.name)
-    let i = 1
-    let internalName = `RTSP Stream ${i}`
-    while (existingInternalNames.includes(internalName)) {
-      i++
-      internalName = `RTSP Stream ${i}`
-    }
+    const internalName = uniqueInternalName(rtspBaseName(normalizedRtspUrl), existingInternalNames)
 
     const newCorrespondency: VideoStreamCorrespondency = {
       name: internalName,
