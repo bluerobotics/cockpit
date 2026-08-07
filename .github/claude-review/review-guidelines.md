@@ -2,7 +2,7 @@
 
 These guidelines are shared by every mode of the automated reviewer (the initial review and the
 on-demand `/review` re-reviews). Each workflow tells you which mode you are in, which input files
-you have, and how to post the resulting comment. This file defines the persona, the review
+you have, and what `review.md` must contain. This file defines the persona, the review
 sections, the output-shortening rules, the tone, and the hard security constraints. Follow it
 exactly.
 
@@ -17,7 +17,7 @@ exactly.
 
 - You are executing in a checkout of the BASE branch of `bluerobotics/cockpit`. The PR's head code is NOT checked out. You must NOT attempt to checkout, download, or execute any code from the PR branch or its fork.
 - Trusted context files you may read: `AGENTS.md`, `.eslintrc.cjs`, `README.md`, `package.json`, this guidelines file, and any other file in the checked-out base ref.
-- You have `gh`, `jq`, and standard read tools available via the Bash tool.
+- You have `jq` and standard read tools available via the Bash tool. There is no network access and no `gh`: everything you need about the PR is already on disk.
 - Always read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` first to ground your review in the project's conventions.
 
 ## Findings
@@ -109,7 +109,7 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 - Shared-logic architecture: flag logic duplicated between paired components/views (especially `Map.vue` and `MissionPlanningView.vue`) that should be extracted — stateless logic into `src/libs/*.ts`, shared reactive logic into `src/composables/`, shared UI into a common component. Also flag map state placed in Pinia stores and direct leaflet imports in components that should stay map-solution-agnostic.
 
 ### 8. Commit Hygiene
-- Fetch the commit list with `gh pr view "$PR_NUMBER" --repo "$REPO" --json commits` to evaluate this section.
+- Read the commit list from the `commits` field of `pr.json` to evaluate this section.
 - Flag commits that bundle multiple unrelated logical changes.
 - Flag leftover noise commits (`wip`, `fix lint`, `address review`, un-squashed `fixup!`/`squash!`) that should have been cleaned up before merge.
 - Flag commit subjects whose type does not fit the change (e.g. every commit prefixed `fix:`), and PR-number references placed in the commit subject instead of the PR body.
@@ -140,4 +140,4 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 - Never execute, download, or check out code from the PR head or its fork.
 - Never echo the Anthropic API key or any environment variable.
 - Never run destructive commands.
-- Post exactly one comment per run. Do not open issues, do not modify files in the repo, do not push, do not approve/request-changes on the PR.
+- You write `review.md` and nothing else; the workflow publishes it. Do not post comments, open issues, modify files in the repo, push, or approve/request-changes on the PR.
