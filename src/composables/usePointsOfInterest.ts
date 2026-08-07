@@ -1,4 +1,4 @@
-import { type ComputedRef, type Ref, computed, reactive, watch } from 'vue'
+import { type ComputedRef, computed, reactive, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
@@ -83,8 +83,8 @@ const migratePointOfInterest = (poi: LegacyPointOfInterest): PointOfInterest => 
  * Shared reactive state and actions for managing points of interest.
  */
 interface PointsOfInterestState {
-  /** Persisted POI definitions */
-  pointsOfInterest: Ref<PointOfInterest[]>
+  /** Persisted POI definitions, always read as a list even when the stored value is not one */
+  pointsOfInterest: ComputedRef<PointOfInterest[]>
   /** POIs with coordinates resolved from the data lake (consumed by the UI) */
   resolvedPointsOfInterest: ComputedRef<ResolvedPointOfInterest[]>
   /** Adds a new POI */
@@ -105,7 +105,12 @@ const createState = (): PointsOfInterestState => {
   // Migrate any legacy POIs to the current model (coordinates split into data-lake-backed sources).
   // POIs created before this feature lack `fallbackCoordinates`; those get a fresh human-friendly id
   // derived from their name (de-duplicated). POIs already in the current model keep their id.
-  const rawPois = pointsOfInterest.value as unknown as LegacyPointOfInterest[]
+  const storedPois = pointsOfInterest.value as unknown
+  const storedPoisAreList = Array.isArray(storedPois)
+  if (!storedPoisAreList) {
+    console.warn(`[PointsOfInterest] Stored '${pointsOfInterestKey}' is not a list. Reading it as empty.`)
+  }
+  const rawPois = storedPoisAreList ? (storedPois as LegacyPointOfInterest[]) : []
   const usedIds = rawPois.filter((poi) => poi.fallbackCoordinates !== undefined).map((poi) => poi.id)
   const migrated = rawPois.map((raw) => {
     const poi = migratePointOfInterest(raw)
@@ -115,7 +120,9 @@ const createState = (): PointsOfInterestState => {
     return { ...poi, id }
   })
 
-  if (JSON.stringify(migrated) !== JSON.stringify(pointsOfInterest.value)) {
+  // Only a real migration writes back. This key is vehicle-synced, so overwriting an unrecognized
+  // value would delete the POIs of every operator of that vehicle, automatically and with no undo.
+  if (storedPoisAreList && JSON.stringify(migrated) !== JSON.stringify(storedPois)) {
     pointsOfInterest.value = migrated
   }
 
@@ -177,9 +184,23 @@ const createState = (): PointsOfInterestState => {
     })
   }
 
+  // The only place downstream code may assume a list, since this shared singleton is created during the
+  // setup of every POI consumer and a throw here would take all of them down at once.
+  const storedListIsReadable = computed(() => Array.isArray(pointsOfInterest.value))
+  const validPointsOfInterest = computed<PointOfInterest[]>(() =>
+    storedListIsReadable.value ? pointsOfInterest.value : []
+  )
+
   watch(
-    pointsOfInterest,
+    validPointsOfInterest,
     (pois) => {
+      // An unreadable value means the POI list is unknown, not empty, and `syncPoiCoordinateVariables`
+      // prunes every POI transforming function it is not given, so syncing an empty list here would
+      // delete them all and push that deletion to the vehicle.
+      if (!storedListIsReadable.value) {
+        console.warn(`[PointsOfInterest] Stored '${pointsOfInterestKey}' is not a list. Skipping coordinate sync.`)
+        return
+      }
       syncPoiCoordinateVariables(pois)
       syncOutputListeners(pois)
       seedLiteralCoordinateValues(pois)
@@ -188,7 +209,7 @@ const createState = (): PointsOfInterestState => {
   )
 
   const resolvedPointsOfInterest = computed<ResolvedPointOfInterest[]>(() =>
-    pointsOfInterest.value.map((poi) => {
+    validPointsOfInterest.value.map((poi) => {
       const latitudeVariableId = poiLatitudeVariableId(poi.id)
       const longitudeVariableId = poiLongitudeVariableId(poi.id)
       // Every POI follows its data-lake-backed coordinates. A fixed number is just an expression that
@@ -206,18 +227,20 @@ const createState = (): PointsOfInterestState => {
     })
   )
 
+  // The mutators go through the normalized list, so an unreadable stored value makes an edit a no-op
+  // instead of a throw. Adding is the exception: the user asked for a POI, so the list is rewritten.
   const addPointOfInterest = (poi: PointOfInterest): void => {
-    pointsOfInterest.value.push(poi)
+    pointsOfInterest.value = [...validPointsOfInterest.value, poi]
   }
 
   const updatePointOfInterest = (id: string, update: Partial<PointOfInterest>): void => {
-    const index = pointsOfInterest.value.findIndex((poi) => poi.id === id)
+    const index = validPointsOfInterest.value.findIndex((poi) => poi.id === id)
     if (index === -1) return
     pointsOfInterest.value[index] = { ...pointsOfInterest.value[index], ...update, timestamp: Date.now() }
   }
 
   const removePointOfInterest = (id: string): void => {
-    const index = pointsOfInterest.value.findIndex((poi) => poi.id === id)
+    const index = validPointsOfInterest.value.findIndex((poi) => poi.id === id)
     if (index !== -1) pointsOfInterest.value.splice(index, 1)
   }
 
@@ -230,7 +253,7 @@ const createState = (): PointsOfInterestState => {
   }
 
   return {
-    pointsOfInterest,
+    pointsOfInterest: validPointsOfInterest,
     resolvedPointsOfInterest,
     addPointOfInterest,
     updatePointOfInterest,
