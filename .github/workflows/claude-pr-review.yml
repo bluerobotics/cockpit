@@ -47,6 +47,7 @@ jobs:
       # talked into doing reach the API — submitting an approval is a single call. The agent writes
       # `review.md`; the step below publishes it with the token nowhere near the model.
       - name: Run Claude PR review
+        id: review
         uses: anthropics/claude-code-base-action@beta
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -55,8 +56,11 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           model: "claude-opus-4-6"
-          max_turns: "40"
-          allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),View,GlobTool,GrepTool,BatchTool,Write"
+          # The investigation passes are search-heavy — tracing callers out to an entry point is
+          # several greps per changed function — and at 40 the budget was spent before they started.
+          max_turns: "80"
+          timeout_minutes: "25"
+          allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),View,GlobTool,GrepTool,BatchTool,Write"
           system_prompt: |
             You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
 
@@ -97,6 +101,19 @@ jobs:
 
             Follow the system instructions and `.github/claude-review/review-guidelines.md` exactly.
             Do not skip any section heading. Do not execute or fetch PR head code.
+
+      # Runs even when the agent failed, because a run that burned its budget and produced nothing is
+      # exactly the one worth pricing. continue-on-error because this only reports, and it sits in
+      # front of the publish step — a hiccup here must not withhold a good review.
+      - name: Price the review
+        if: always()
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          # An estimate until the first runs land: re-derive it from the cost line this step prints,
+          # the way DEMO_BUDGET_USD was. max_turns is what actually caps spend; this only reports.
+          REVIEW_BUDGET_USD: '4.00'
+        run: .github/scripts/price-agent-run.sh "$EXECUTION_FILE" "$REVIEW_BUDGET_USD" 'PR review'
 
       # Sticky by the seq=1 marker, so a re-run of this workflow replaces its own comment rather
       # than stacking another one. The token lives here and not in the agent step.
