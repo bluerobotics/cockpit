@@ -71,6 +71,22 @@ export const replaceDataLakeInputsInString = (input: string, replaceFunction?: (
 }
 
 /**
+ * Get the id of the single data lake variable a string is made of, be it a bare id, taken as-is
+ * without checking it exists, or a lone '{{ }}' reference. A string mixing a reference with other
+ * text has no sole variable.
+ * @param {string} input The string to inspect
+ * @returns {string | null} The variable id, or null when the string is not a single variable
+ */
+export const getSoleDataLakeVariableIdInString = (input: string): string | null => {
+  const value = input.trim()
+  if (value === '') return null
+
+  const inputs = findDataLakeInputsInString(value)
+  if (inputs.length === 0) return value
+  return inputs.length === 1 && inputs[0] === value ? getDataLakeVariableIdFromInput(value) : null
+}
+
+/**
  * Find all data lake variable ids in a string.
  * @param {string} input The string to search for data lake variable ids
  * @returns {string[]} An array of data lake variable ids
