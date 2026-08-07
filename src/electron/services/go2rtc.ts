@@ -90,12 +90,26 @@ const startGo2RTC = async (): Promise<number> => {
     return go2rtcPort
   }
 
-  const port = await getFreeTcpPort()
+  // Allocated together so every socket is bound before any is released, which keeps the ports distinct.
+  const [port, rtspPort, webrtcPort] = await Promise.all([getFreeTcpPort(), getFreeTcpPort(), getFreeTcpPort()])
   const configDir = join(tmpdir(), 'cockpit-go2rtc')
   await fs.mkdir(configDir, { recursive: true })
 
   const configPath = join(configDir, 'go2rtc.yaml')
-  const config = `api:\n  listen: "127.0.0.1:${port}"\n  origin: "*"\n`
+  const config = [
+    'api:',
+    `  listen: "127.0.0.1:${port}"`,
+    '  origin: "*"',
+    // Left on its defaults go2rtc serves RTSP on :8554 and WebRTC on :8555 across every interface,
+    // colliding with MediaMTX or with a second go2rtc.
+    'rtsp:',
+    `  listen: "127.0.0.1:${rtspPort}"`,
+    // ponytail: the WebRTC port carries UDP too, but is picked by probing TCP, so a port free on TCP and
+    // taken on UDP would break ICE. Upgrade path is probing both, once anything reports it in the wild.
+    'webrtc:',
+    `  listen: ":${webrtcPort}"`,
+    '',
+  ].join('\n')
   await fs.writeFile(configPath, config, 'utf-8')
 
   const binaryPath = getGo2RTCPath()
