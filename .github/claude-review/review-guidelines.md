@@ -77,6 +77,20 @@ Severity is decided by impact if the finding is never fixed, against this rubric
 | `minor` | Correct but worse: avoidable cost, duplication, a missing check, a confusing name. |
 | `nit` | Taste. You would not raise it in person. |
 
+Every review ends with the findings ledger: a machine-readable record of every finding the PR has
+ever had, which the next re-review reads instead of re-parsing your prose. Emit it as the last thing
+in `review.md`, as its own block with nothing after it, and never as a prose table:
+
+```
+<!-- claude-pr-review-ledger
+[{"id":"1.1","severity":"major","status":"open","title":"...","raised_at":"<sha>"}]
+-->
+```
+
+`status` is one of `open`, `disputed`, `addressed`, `obsolete`; in an initial review every entry is
+`open`. Add `author_argument` to a `disputed` entry. The workflow tells you which findings to carry
+in from the previous run.
+
 Severity never describes how confident you are that the finding is real. If you are unsure whether
 something is a defect, investigate it — do not downgrade it to hedge. A review made entirely of
 `minor` and `nit` cannot change a verdict, so reaching for those by default makes the whole review
