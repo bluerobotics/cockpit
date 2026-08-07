@@ -16,6 +16,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      statuses: write
     steps:
       # SECURITY: do not pass `ref:` here. `pull_request_target` checks out the
       # base ref by default, which is trusted code. We must NEVER checkout the
@@ -133,3 +134,9 @@ jobs:
           else
             gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file review.md
           fi
+          # Clears the `review-is-current` check for this commit, so the status heals as soon as a
+          # review lands rather than waiting for another push to re-evaluate it.
+          gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state='success' \
+            -f context='review-is-current' \
+            -f description="Reviewed at ${HEAD_SHA:0:7}."

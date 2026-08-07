@@ -1,0 +1,57 @@
+name: Claude PR Review Current
+
+# The initial review fires only on `opened` and re-reviews only on an explicit `/review`, so a
+# rebase just before merge — which is the norm here — ships code no review has ever seen. This
+# reports that as a status check instead of relying on someone remembering to ask for one.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: claude-pr-review-current-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Review is current
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft }}
+    # SECURITY: this job checks out nothing, runs no model, and reads only the PR's own comments,
+    # so `pull_request_target` never brings PR code near anything. It needs the elevated token
+    # because the read-only one a fork PR gets cannot post a commit status.
+    permissions:
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Compare the latest review against the head commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Newest review by seq, then the sha it recorded reviewing. Empty when the bot has not
+          # commented yet, which is the `pending` case rather than the stale one.
+          reviewed=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
+                  | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
+                  | (last.body // "" | capture("sha=(?<s>[0-9a-fA-F]+)").s) // ""')
+
+          if [ "$reviewed" = "$HEAD_SHA" ]; then
+            state=success
+            description="Reviewed at ${HEAD_SHA:0:7}."
+          elif [ -z "$reviewed" ]; then
+            state=pending
+            description="No automated review yet."
+          else
+            state=failure
+            description="Last review was ${reviewed:0:7}, head is ${HEAD_SHA:0:7}. Comment /review."
+          fi
+
+          echo "$description"
+          gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state="$state" \
+            -f context='review-is-current' \
+            -f description="$description" \
+            -f target_url="https://github.com/$REPO/pull/$PR_NUMBER"

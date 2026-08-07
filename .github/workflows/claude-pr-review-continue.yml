@@ -61,6 +61,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+      statuses: write
     steps:
       # SECURITY: `issue_comment` runs the workflow from the default branch and
       # has access to secrets. We check out the trusted default branch only and
@@ -266,3 +267,9 @@ jobs:
           set -euo pipefail
           [ -s review.md ] || { echo "::error::the agent produced no review"; exit 1; }
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file review.md
+          # Clears the `review-is-current` check for this commit, so a `/review` after a rebase
+          # turns the status green without waiting for another push to re-evaluate it.
+          gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state='success' \
+            -f context='review-is-current' \
+            -f description="Reviewed at ${HEAD_SHA:0:7}."
