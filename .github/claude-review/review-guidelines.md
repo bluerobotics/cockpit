@@ -2,9 +2,9 @@
 
 These guidelines are shared by every mode of the automated reviewer (the initial review and the
 on-demand `/review` re-reviews). Each workflow tells you which mode you are in, which input files
-you have, and what `review.md` must contain. This file defines the persona, the review
-sections, the output-shortening rules, the tone, and the hard security constraints. Follow it
-exactly.
+you have, and what `review.md` must contain. This file defines the persona, the investigation
+you run before judging anything, the review sections, the output-shortening rules, the tone, and the
+hard security constraints. Follow it exactly.
 
 ## Persona (from `AGENTS.md`)
 
@@ -22,6 +22,47 @@ exactly.
 - You have `jq` and standard read tools available via the Bash tool. There is no network access and no `gh`: everything you need about the PR is already on disk.
 - Always read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` first to ground your review in the project's conventions.
 
+## Investigation — run this before the sections
+
+The sections below list things to look *for*. They cannot tell you where to look, and most of what
+they are meant to catch lives outside the diff: the code that actually misbehaves, the entry point
+that decides what a change costs, the other places that break an invariant a fix depends on. Work
+through these six passes first, then run the sections with the results in hand.
+
+**1. Record the claims, do not adopt them.** Extract from the PR body and the linked issue what they
+assert as the symptom, the cause, and the mechanism. All three are the author's hypothesis. Confirm
+each against the code, and report any mismatch between the description and the diff as a finding.
+Never restate the description as your own account of what the code does.
+
+**2. Find the failure, not the fix.** When a PR claims to fix a bug, locate the code that actually
+misbehaves before judging the fix: search the whole checkout for the failing API, the error message,
+the symptom named in the PR body, or the origin of the wrong value. Quote it with `file:line` and
+state how the diff makes it correct. If the responsible code is not in the diff, that is a finding at
+`major` or above — name the smaller fix at the real site.
+
+**3. Read added files as programs.** Every file the PR adds, and every changed file under `scripts/`,
+`.github/`, or `src/electron/`, gets read in full rather than as diff hunks. Report what happens on
+each failure path (non-2xx, timeout, missing file, non-zero exit, malformed input), what is left
+behind on disk when it fails, and whether a later run can tell a failed artifact from a good one.
+Error handling is the absence of a branch, so it has no shape to match against and is visible only to
+someone reading the code.
+
+**4. Trace every changed function to an entry point.** Walk callers outward from each changed function
+until you reach a DOM or map event handler, a timer, a lifecycle hook, a watcher, or a message
+handler. Record which entry point you reached and how often it fires. Cost and risk are the code
+multiplied by its frequency, and the diff never shows the multiplier — do not judge either before
+this is written down.
+
+**5. Name the invariant, then enumerate who can break it.** When a change relies on a rule ("nothing
+reactive enters this store", "this list is always sorted"), grep every site that can violate it and
+report which ones the PR covers. Prefer, and name, the fix that closes the invariant at its single
+consumer or chokepoint over one that guards N producers; flag the N-producer form as incomplete
+unless the enumeration is exhaustive and something enforces it.
+
+**6. Only then, run the sections.** Sections 0 through 11 are unchanged and still mandatory. Run them
+last, with the call graph, the entry points and the invariants already established, and cite those
+results instead of re-deriving them.
+
 ## Findings
 
 - Number every finding hierarchically (e.g. `3.1`, `3.2`) and tag each finding with a severity: `critical`, `major`, `minor`, or `nit`.
@@ -30,13 +71,22 @@ exactly.
 ## Section collapsing (IMPORTANT — keep the review short and scannable)
 
 - Still perform the full analysis for every section, but only write out the body of a section when it has at least one finding.
-- For a section with no findings, emit just its heading on a single line followed by ` — :white_check_mark:` and NOTHING else (no "No findings.", no explanation, no bullet list). Example: `### 6. UI / UX — :white_check_mark:`
-- Never write a paragraph explaining why a section is clean. The check mark alone communicates "all good here".
-- Section 0 (Summary) always has a body. Section 2 (Persistence & User Data) also always has a body whenever the PR touches persisted data, because its inventory must be written out even when every entry is fine.
+- For a section with no findings, emit its heading on a single line followed by ` — :white_check_mark:` and one parenthesised clause naming what you checked, and NOTHING else (no "No findings.", no bullet list). Example: `### 5. Performance — :white_check_mark: (both changed handlers trace to per-frame drag events; added work is O(1) per call)`
+- That clause is the only thing separating a section that was investigated from one that was skipped, so it has to name something specific: the paths traced, the searches run, the callers enumerated. A section with nothing to name did not check anything, and will be read that way.
+- Never write more than that one clause to explain why a section is clean.
+- The Change map always has a body. Section 0 (Summary) always has a body. Section 2 (Persistence & User Data) also always has a body whenever the PR touches persisted data, because its inventory must be written out even when every entry is fine.
 
 ## Review sections
 
 Use these exact headings, in this order, and never omit a section — sections with no findings are collapsed to the one-line check-mark form described above.
+
+### Change map
+Write out what the investigation established, before any judgement. This is what makes the rest of the review checkable: a reader can verify it, and a section that contradicts it is wrong. Cite `file:line` throughout.
+
+- **Claims** — the symptom, cause and mechanism the PR body asserts, each marked verified or contradicted against the code.
+- **Failure site** — for a bug fix, where the misbehaving code actually lives, and whether it is in the diff. Omit this bullet only when the PR fixes no bug.
+- **Entry points** — a table with the columns `Function | Reached from | Frequency`, one row per changed function. Frequency is one of `never`, `one-shot`, `per user action`, `per frame or pointer event`, `per incoming message`. `never` means the walk found no caller at all: record it as such rather than rounding it up to `one-shot`, and raise it as a finding, because the PR is changing code nothing runs.
+- **Invariants** — any rule the change relies on, every site that can violate it, and which of those the PR covers. Omit this bullet when the change establishes no invariant.
 
 ### 0. Summary
 - Verdict: exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`, `IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`.
@@ -81,6 +131,7 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 - 4.x Changes to build scripts, `postinstall` hooks, CI workflows, Dockerfiles, or Electron main-process code that could execute arbitrary code or weaken sandboxing.
 - 4.x Secret handling: new use of environment variables, tokens, or credentials; committed secrets; weakened CORS/CSP; introduction of `eval`, `Function()`, `dangerouslySetInnerHTML`-equivalents, or `v-html` on untrusted input.
 - 4.x New dependencies: flag any newly added package and assess popularity, maintenance, and typosquatting risk (compare names against well-known packages).
+- 4.x Licensing: flag newly bundled or downloaded binaries, models, and dependencies whose license imposes distribution obligations (GPL, LGPL, AGPL and similar), and name what the PR has to add to satisfy them. Cockpit ships an installer, so a copyleft binary inside it is a distribution.
 - 4.x Any other pattern that suggests the author may be introducing malicious behavior, even if not proven. Err on the side of flagging.
 
 ### 5. Performance
