@@ -5,10 +5,17 @@ import { promises as fs } from 'fs'
 import http from 'http'
 import { createServer } from 'net'
 import { tmpdir } from 'os'
-import { join } from 'path'
+import { delimiter, dirname, join } from 'path'
 
 import type { Go2RTCStreamInfo } from '@/types/video'
 
+import {
+  type RtpSourceConfig,
+  buildRtpGo2rtcSource,
+  rtpInputTemplate,
+  rtpInputTemplateName,
+} from '../../libs/rtp-source'
+import { getFFmpegPath } from './ffmpeg-path'
 import { getGo2RTCPath } from './go2rtc-path'
 
 let go2rtcProcess: ChildProcess | null = null
@@ -108,13 +115,27 @@ const startGo2RTC = async (): Promise<number> => {
     // taken on UDP would break ICE. Upgrade path is probing both, once anything reports it in the wild.
     'webrtc:',
     `  listen: ":${webrtcPort}"`,
+    // ffmpeg-backed sources publish into the RTSP server above.
+    'ffmpeg:',
+    `  ${rtpInputTemplateName}: '${rtpInputTemplate}'`,
     '',
   ].join('\n')
   await fs.writeFile(configPath, config, 'utf-8')
 
+  let ffmpegDir: string | undefined
+  try {
+    ffmpegDir = dirname(getFFmpegPath())
+  } catch (error) {
+    console.warn('[go2rtc] Bundled FFmpeg not found, UDP video streams will not work:', error)
+  }
+
   const binaryPath = getGo2RTCPath()
   const proc = spawn(binaryPath, ['-config', configPath], {
     stdio: ['ignore', 'pipe', 'pipe'],
+    // go2rtc resolves `ffmpeg` through PATH. Naming the bundled binary in its `ffmpeg.bin` setting instead
+    // would break on any install path containing a space, since go2rtc splits the command it builds on
+    // whitespace while probing the binary without that splitting.
+    env: ffmpegDir ? { ...process.env, PATH: `${ffmpegDir}${delimiter}${process.env.PATH ?? ''}` } : process.env,
   })
 
   proc.stdout?.on('data', (data) => {
@@ -186,6 +207,16 @@ const addStream = async (name: string, rtspUrl: string): Promise<void> => {
   )}`
   await httpRequest(url, 'PUT')
   console.log(`[go2rtc] Added stream '${name}' -> ${rtspUrl}`)
+}
+
+/**
+ * Register a raw RTP over UDP stream with go2rtc, ingested through the bundled FFmpeg
+ * @param {string} name - Unique stream name
+ * @param {RtpSourceConfig} config - Address and port to listen on, and the codec to expect there
+ * @returns {Promise<void>}
+ */
+const addRtpStream = async (name: string, config: RtpSourceConfig): Promise<void> => {
+  await addStream(name, buildRtpGo2rtcSource(config))
 }
 
 /**
@@ -428,6 +459,15 @@ export const setupGo2RTCService = (): void => {
       await addStream(name, rtspUrl)
     } catch (error) {
       console.error('[go2rtc] Error adding stream:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('go2rtc-add-rtp-stream', async (_, name: string, config: RtpSourceConfig) => {
+    try {
+      await addRtpStream(name, config)
+    } catch (error) {
+      console.error('[go2rtc] Error adding RTP stream:', error)
       throw error
     }
   })

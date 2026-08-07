@@ -42,9 +42,10 @@ const props = defineProps({
   },
 })
 
-const isRtspStream = (): boolean => {
+// Streams the go2rtc sidecar ingests report their stats through it, rather than through WebRTC's own stats.
+const isGo2rtcStream = (): boolean => {
   if (!props.streamName) return false
-  return videoStore.getStreamProtocol(props.streamName) === 'rtsp'
+  return videoStore.getStreamProtocol(props.streamName) !== 'webrtc'
 }
 
 const canvasRef = ref(null)
@@ -123,8 +124,8 @@ function draw(): void {
   ctx.font = '10px Arial'
 
   // Draw stats and plots for both types of streams.
-  // The stats and plots are different from one to another since RTSP and WebRTC streams provide different types of information.
-  if (isRtspStream()) {
+  // The stats and plots are different from one to another since go2rtc-backed and WebRTC streams provide different types of information.
+  if (isGo2rtcStream()) {
     drawPlot(rtspBitrateData.value, 'rgb(255, 165, 0)', maxRtspBitrate)
     drawPlot(rtspPacketRateData.value, 'rgb(100, 200, 255)', maxRtspPacketRate)
     drawPlot(rtspStallData.value, 'rgb(255, 0, 0)', 1)
@@ -211,7 +212,7 @@ watch(videoStore.activeStreams, (streams): void => {
 })
 
 const fetchRtspInfo = async (): Promise<void> => {
-  if (!isRtspStream() || !window.electronAPI) return
+  if (!isGo2rtcStream() || !window.electronAPI) return
   try {
     const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
     const info = allInfo[props.streamName]
@@ -240,7 +241,7 @@ onMounted(() => {
   intervalId = setInterval(update, props.updateInterval)
   draw()
 
-  if (isRtspStream()) {
+  if (isGo2rtcStream()) {
     fetchRtspInfo()
     rtspInfoInterval = setInterval(fetchRtspInfo, 100)
   }

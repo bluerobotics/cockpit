@@ -520,6 +520,12 @@ declare global {
        */
       go2rtcAddStream: (name: string, rtspUrl: string) => Promise<void>
       /**
+       * Register a raw RTP over UDP stream with the go2rtc sidecar for WebRTC consumption
+       * @param name - Unique stream name used for WebRTC signaling
+       * @param config - Address and port to listen on, and the codec to expect there
+       */
+      go2rtcAddRtpStream: (name: string, config: import('@/libs/rtp-source').RtpSourceConfig) => Promise<void>
+      /**
        * Remove an RTSP stream from the go2rtc sidecar
        * @param name - The stream name to remove
        */

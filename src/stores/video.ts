@@ -20,8 +20,10 @@ import {
   LiveVideoProcessorChunkAppendingError,
   LiveVideoProcessorInitializationError,
 } from '@/libs/live-video-processor'
+import { type RtpSourceConfig, buildRtpUrl, parseRtpUrl, rtpConfigError } from '@/libs/rtp-source'
 import { datalogger } from '@/libs/sensors-logging'
-import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import { isElectron, isEqual, messageFromError, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import { protocolFromExternalId } from '@/libs/video-stream-protocol'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -106,10 +108,10 @@ export const useVideoStore = defineStore('video', () => {
   )
 
   const namesAvailableStreams = computed(() => {
-    const rtspStreams = streamsCorrespondency.value
-      .filter((stream) => (stream.protocol ?? 'webrtc') === 'rtsp')
+    const go2rtcStreams = streamsCorrespondency.value
+      .filter((stream) => (stream.protocol ?? 'webrtc') !== 'webrtc')
       .map((stream) => stream.externalId)
-    return [...new Set([...namesAvailableWebRTCStreams.value, ...rtspStreams])]
+    return [...new Set([...namesAvailableWebRTCStreams.value, ...go2rtcStreams])]
   })
 
   const namessAvailableAbstractedStreams = computed(() => {
@@ -153,9 +155,23 @@ export const useVideoStore = defineStore('video', () => {
     resolution: string
     /** FPS string (e.g. "30fps") or empty if unknown */
     fps: string
-    /** Protocol type label ("WebRTC" or "RTSP") */
+    /** Protocol type label ("WebRTC", "RTSP" or "UDP") */
     protocolLabel: string
   } => {
+    if (getStreamProtocol(externalId) === 'rtp') {
+      const go2rtcInfo = go2rtcStreamInfo.value[externalId]
+      const config = parseRtpUrl(externalId)
+      // The configured codec is preferred because go2rtc only reports one once a consumer starts the stream.
+      const encode = config?.codec.toUpperCase() ?? go2rtcInfo?.codec
+
+      return {
+        source: `UDP port ${config?.port ?? '?'} (${encode ?? '...'})`,
+        resolution: go2rtcInfo?.width ? `${go2rtcInfo.width}x${go2rtcInfo.height}` : '...',
+        fps: go2rtcInfo?.fps ? `${go2rtcInfo.fps}fps` : '',
+        protocolLabel: 'UDP',
+      }
+    }
+
     if (getStreamProtocol(externalId) === 'rtsp') {
       const mcmInfo = streamInformation.value.find((i) => i.rtspSourceUrl === externalId)
       const go2rtcInfo = go2rtcStreamInfo.value[externalId]
@@ -379,8 +395,8 @@ export const useVideoStore = defineStore('video', () => {
     })
   }, 300)
 
-  const rtspActivating = new Set<string>()
-  let rtspUnsupportedWarned = false
+  const go2rtcActivating = new Set<string>()
+  let go2rtcUnsupportedWarned = false
 
   /**
    * Activates a stream by starting it and storing it's variables inside a common object.
@@ -389,37 +405,43 @@ export const useVideoStore = defineStore('video', () => {
    * @param {string} streamName - Unique name for the stream, common between the multiple consumers
    */
   const activateStream = (streamName: string): void => {
-    if (getStreamProtocol(streamName) === 'rtsp') {
-      if (rtspActivating.has(streamName)) return
+    const protocol = getStreamProtocol(streamName)
+    if (protocol !== 'webrtc') {
+      if (go2rtcActivating.has(streamName)) return
       if (activeStreams.value[streamName]?.go2rtcManager) return
 
-      const rtspUrl = getRtspUrl(streamName)
-      if (!rtspUrl) {
-        showDialog({ message: `RTSP URL for stream '${streamName}' is missing.`, variant: 'error' })
+      const rtspUrl = protocol === 'rtsp' ? getRtspUrl(streamName) : undefined
+      const rtpConfig = protocol === 'rtp' ? parseRtpUrl(streamName) : undefined
+      if (!rtspUrl && !rtpConfig) {
+        showDialog({ message: `Video source for stream '${streamName}' is missing or invalid.`, variant: 'error' })
         return
       }
       if (!window.electronAPI) {
         // Activation is attempted repeatedly (e.g. via VideoPlayer's 1s polling), so guard the dialog
         // to a single notification per session to avoid spamming the user during boot.
-        if (!rtspUnsupportedWarned) {
-          rtspUnsupportedWarned = true
+        if (!go2rtcUnsupportedWarned) {
+          go2rtcUnsupportedWarned = true
           showDialog({
             message:
               'It looks like some of your video-related widgets (e.g.: video player, mini video recorder, snapshot tool)' +
-              ' are connected to RTSP streams, which are not supported in Cockpit Lite. To make sure those widgets work,' +
-              ' re-configure them to only use WebRTC, or upgrade to Cockpit Standalone, which supports both WebRTC and RTSP streams.',
+              ' are connected to RTSP or UDP video streams, which are not supported in Cockpit Lite. To make sure those' +
+              ' widgets work, re-configure them to only use WebRTC, or install Cockpit Standalone, which supports all of them.',
             variant: 'error',
           })
         }
         return
       }
 
-      rtspActivating.add(streamName)
+      go2rtcActivating.add(streamName)
 
       void (async () => {
         try {
           const port = await window.electronAPI!.go2rtcGetPort()
-          await window.electronAPI!.go2rtcAddStream(streamName, rtspUrl)
+          if (rtpConfig) {
+            await window.electronAPI!.go2rtcAddRtpStream(streamName, rtpConfig)
+          } else {
+            await window.electronAPI!.go2rtcAddStream(streamName, rtspUrl!)
+          }
 
           const manager = new Go2RTCManager(port, streamName)
           const { mediaStream, connected } = manager.start()
@@ -434,12 +456,12 @@ export const useVideoStore = defineStore('video', () => {
             mediaRecorder: undefined,
             timeRecordingStart: undefined,
           }
-          console.debug(`Activated RTSP stream '${streamName}' via go2rtc.`)
+          console.debug(`Activated ${protocol.toUpperCase()} stream '${streamName}' via go2rtc.`)
         } catch (error) {
-          console.error(`Failed to activate RTSP stream '${streamName}':`, error)
-          showDialog({ message: `Failed to start RTSP stream '${streamName}'.`, variant: 'error' })
+          console.error(`Failed to activate ${protocol.toUpperCase()} stream '${streamName}':`, error)
+          showDialog({ message: `Failed to start video stream '${streamName}'.`, variant: 'error' })
         } finally {
-          rtspActivating.delete(streamName)
+          go2rtcActivating.delete(streamName)
         }
       })()
       return
@@ -1263,9 +1285,17 @@ export const useVideoStore = defineStore('video', () => {
         userRestoredStreamIds.value = [...userRestoredStreamIds.value, externalId]
       }
 
-      const isRtsp = externalId.startsWith('rtsp://') || externalId.startsWith('rtsps://')
-      if (isRtsp) {
+      const protocol = protocolFromExternalId(externalId)
+      if (protocol === 'rtsp') {
         initializeRtspStreamsCorrespondency()
+      } else if (protocol === 'rtp') {
+        // Nothing rediscovers a UDP stream, but its id fully describes it, so it can be rebuilt from scratch.
+        try {
+          addRtpStreamCorrespondency(parseRtpUrl(externalId)!)
+        } catch (error) {
+          openSnackbar({ variant: 'error', message: `Could not restore '${externalId}': ${messageFromError(error)}` })
+          return
+        }
       } else if (namesAvailableStreams.value.includes(externalId)) {
         initializeStreamsCorrespondency()
       } else {
@@ -1318,6 +1348,48 @@ export const useVideoStore = defineStore('video', () => {
       externalId: normalizedRtspUrl,
       protocol: 'rtsp',
       rtspUrl: normalizedRtspUrl,
+    }
+    streamsCorrespondency.value = [...streamsCorrespondency.value, newCorrespondency]
+    return newCorrespondency
+  }
+
+  /**
+   * Add a new raw RTP over UDP stream to the correspondency list (Electron/standalone only)
+   * @param {RtpSourceConfig} config - Address and port to listen on, and the codec to expect there
+   * @returns {VideoStreamCorrespondency} The created correspondency entry
+   */
+  const addRtpStreamCorrespondency = (config: RtpSourceConfig): VideoStreamCorrespondency => {
+    if (!window.electronAPI) {
+      throw new Error('UDP video streams are only available in Cockpit Standalone.')
+    }
+
+    const configError = rtpConfigError(config)
+    if (configError) {
+      throw new Error(configError)
+    }
+
+    // Two listeners on one port would fight over the socket, and 0.0.0.0 already covers every other address.
+    const conflict = streamsCorrespondency.value.find((stream) => {
+      const other = stream.protocol === 'rtp' ? parseRtpUrl(stream.externalId) : undefined
+      if (other === undefined) return false
+      return other.port === config.port && (other.host === config.host || [other.host, config.host].includes('0.0.0.0'))
+    })
+    if (conflict) {
+      throw new Error(`Port ${config.port} is already used by '${conflict.name}'.`)
+    }
+
+    const existingInternalNames = streamsCorrespondency.value.map((corr) => corr.name)
+    let i = 1
+    let internalName = `UDP Stream ${i}`
+    while (existingInternalNames.includes(internalName)) {
+      i++
+      internalName = `UDP Stream ${i}`
+    }
+
+    const newCorrespondency: VideoStreamCorrespondency = {
+      name: internalName,
+      externalId: buildRtpUrl(config),
+      protocol: 'rtp',
     }
     streamsCorrespondency.value = [...streamsCorrespondency.value, newCorrespondency]
     return newCorrespondency
@@ -1377,6 +1449,7 @@ export const useVideoStore = defineStore('video', () => {
     deleteStreamCorrespondency,
     restoreIgnoredStream,
     addRtspStreamCorrespondency,
+    addRtpStreamCorrespondency,
     enableLiveProcessing,
     keepRawVideoChunksAsBackup,
   }
