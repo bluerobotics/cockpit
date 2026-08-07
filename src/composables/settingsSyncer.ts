@@ -128,7 +128,13 @@ export function useBlueOsStorage<T>(
   )
 
   settingsManager.registerListener(key, (newSetting: CockpitSetting) => {
+    // A stored setting can carry no value at all, and applying it would hand every consumer an
+    // undefined where the returned type promises T, so the last known value is kept instead.
     const newValue = newSetting.value
+    if (newValue === undefined) {
+      console.warn(`[SettingsSyncer] Ignoring value-less update for key '${key}'. Keeping current value.`)
+      return
+    }
     if (isEqual(newValue, refedValue.value)) {
       return
     }
