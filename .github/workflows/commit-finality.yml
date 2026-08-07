@@ -43,7 +43,7 @@ jobs:
         uses: anthropics/claude-code-base-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: ${{ vars.COMMIT_CHECK_MODEL || 'claude-sonnet-4-6' }}
+          model: ${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-4-6' }}
           max_turns: "5"
           allowed_tools: "View,Write"
           system_prompt: |

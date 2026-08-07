@@ -60,7 +60,7 @@ jobs:
           HEAD_SHA: ${{ env.HEAD_SHA }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: "claude-opus-4-6"
+          model: ${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-4-6' }}
           # The investigation passes are search-heavy — tracing callers out to an entry point is
           # several greps per changed function — and at 40 the budget was spent before they started.
           max_turns: "80"
