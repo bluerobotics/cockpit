@@ -76,8 +76,9 @@ jobs:
             What you must do:
             1. Read the trusted context files and the guidelines.
             2. Read `pr.json` and `pr.diff`. Read any additional base-ref files you need directly from disk.
-            3. Produce the full structured review defined in the guidelines (numbered findings, severities, collapsed clean sections).
-            4. Write it to `review.md`. That is your only output — the workflow publishes it.
+            3. Run the six investigation passes in the guidelines. They are not optional and they come before any judgement: most of what the sections are meant to catch lives outside the diff, so searching the base checkout is the job, not a detour.
+            4. Produce the full structured review defined in the guidelines — the Change map first, then the numbered findings, severities, and collapsed clean sections.
+            5. Write it to `review.md`. That is your only output — the workflow publishes it.
 
             The `review.md` contract:
             - Line 1 MUST be the hidden marker exactly, with the real value of $HEAD_SHA substituted: `<!-- claude-pr-review-bot:v1 seq=1 sha=$HEAD_SHA -->`
