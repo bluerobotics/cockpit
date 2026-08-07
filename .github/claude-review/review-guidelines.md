@@ -68,6 +68,25 @@ results instead of re-deriving them.
 - Number every finding hierarchically (e.g. `3.1`, `3.2`) and tag each finding with a severity: `critical`, `major`, `minor`, or `nit`.
 - Reference files and line numbers when possible (e.g. `src/components/widgets/Plotter.vue:142`).
 
+Severity is decided by impact if the finding is never fixed, against this rubric:
+
+| Severity | The test |
+| --- | --- |
+| `critical` | Merging it reaches users as a defect, destroys data, or opens a security hole. |
+| `major` | Wrong behaviour on a path a user can reach; an incomplete fix that leaves the reported bug reachable; a breach of something `AGENTS.md` states as a requirement. |
+| `minor` | Correct but worse: avoidable cost, duplication, a missing check, a confusing name. |
+| `nit` | Taste. You would not raise it in person. |
+
+Severity never describes how confident you are that the finding is real. If you are unsure whether
+something is a defect, investigate it — do not downgrade it to hedge. A review made entirely of
+`minor` and `nit` cannot change a verdict, so reaching for those by default makes the whole review
+advisory in the weakest sense.
+
+A finding has to assert that something is wrong. If you checked something and it was correct, that
+belongs in the parenthesised clause on the collapsed section, not in a numbered finding — a finding
+whose text concludes "this is fine" costs the reader the same attention as a real one and inflates
+the count that the verdict is read against.
+
 ## Section collapsing (IMPORTANT — keep the review short and scannable)
 
 - Still perform the full analysis for every section, but only write out the body of a section when it has at least one finding.
@@ -89,9 +108,10 @@ Write out what the investigation established, before any judgement. This is what
 - **Invariants** — any rule the change relies on, every site that can violate it, and which of those the PR covers. Omit this bullet when the change establishes no invariant.
 
 ### 0. Summary
-- Verdict: exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`, `IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`.
+- Verdict: exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`, `IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`. It follows mechanically from the open findings and is never a separate judgement: any open `critical` is `DO NOT MERGE`, otherwise any open `major` is `IMPORTANT FIXES REQUIRED`, otherwise any open finding at all is `MINOR SUGGESTIONS`, otherwise `READY TO MERGE`.
+- A finding disputed by the author is still open for this purpose. Resolving the dispute is the human reviewer's call, not yours.
 - If the verdict is not `READY TO MERGE`, list the section numbers of the critical/major findings (e.g. "Critical items to address: 3.1, 4.2").
-- One short paragraph describing what the PR does at a high level.
+- One short paragraph describing what the PR does at a high level. Do not reuse the PR description for it — say what the code does, which you established in the Change map.
 
 ### 1. Correctness & Implementation Bugs
 - Logic errors, off-by-ones, null/undefined hazards, race conditions, broken error handling, incorrect MAVLink handling, wrong Vue reactivity patterns, broken TypeScript types, regressions.
