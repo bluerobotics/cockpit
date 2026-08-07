@@ -105,12 +105,23 @@ jobs:
           PREV_SHA=""
           LAST_SEQ="0"
           LAST_REVIEW_TIME=""
+          echo '[]' > previous-ledger.json
           if [ -s last_review.json ]; then
             jq -r '.body' last_review.json > previous-review.md
             PREV_SHA=$(jq -r '(.body | capture("sha=(?<s>[0-9a-fA-F]+)").s) // ""' last_review.json)
             LAST_SEQ=$(jq -r '(.body | capture("seq=(?<n>[0-9]+)").n) // "0"' last_review.json)
             LAST_REVIEW_TIME=$(jq -r '.created_at // ""' last_review.json)
+            # The findings ledger, carried in a hidden block at the end of every review comment.
+            # Extracted as data rather than re-read out of the previous review's prose, which is
+            # how statuses used to drift between runs.
+            sed -n '/<!-- claude-pr-review-ledger/,/^-->/p' previous-review.md | sed '1d;$d' > ledger-block.json
+            # Keeps the empty ledger for a pre-ledger review or a malformed block, which makes the
+            # agent rebuild it from `previous-review.md` rather than losing the findings.
+            if jq -e 'type == "array"' ledger-block.json >/dev/null 2>&1; then
+              cp ledger-block.json previous-ledger.json
+            fi
           fi
+          echo "previous_ledger_entries=$(jq 'length' previous-ledger.json)"
           echo "PREV_SHA=$PREV_SHA" >> "$GITHUB_ENV"
           echo "NEXT_SEQ=$(( LAST_SEQ + 1 ))" >> "$GITHUB_ENV"
 
@@ -186,6 +197,7 @@ jobs:
             - `pr.json` — current PR metadata (includes headRefOid and the commit list; read commits from here, you have no network access).
             - `pr.diff` — the full current PR diff (base...head).
             - `previous-review.md` — the body of your most recent previous review (EMPTY if none exists yet).
+            - `previous-ledger.json` — the findings ledger carried forward from that review: an array of `{id, severity, status, title, raised_at}`. `[]` when there is no previous review, or when it predates the ledger — in that case rebuild the ledger from the findings in `previous-review.md`.
             - `incremental.diff` — the changes the author made since the previous review (compare PREV_SHA...HEAD_SHA); may be EMPTY.
             - `new-comments.json` — a JSON array of the human/reviewer comments left on the PR since your last review (general PR comments and inline code-review comments). Each entry has `kind` (`comment` or `inline`), `author`, `created_at`, `path` (file, for inline comments), `body`, and `url`. The array is `[]` when there is no new discussion. Your own previous review comments are already excluded.
             Environment variables: `PR_NUMBER`, `REPO`, `HEAD_SHA` (current head), `PREV_SHA` (head at the previous review, or empty), `NEXT_SEQ` (the seq to use for this comment), `INCREMENTAL_FAILED` (`true` if the compare API call failed, e.g. a force-push removed `PREV_SHA`).
@@ -194,20 +206,24 @@ jobs:
             1. Read the guidelines and trusted context files, then run the six investigation passes they define. They are not optional and they come before any judgement, on a re-review as much as on a first one.
             2. If `previous-review.md` is EMPTY (no prior review exists), perform a full review of `pr.diff` using all guideline sections, and write it as described below.
             3. Otherwise:
-               a. Extract the open findings from `previous-review.md`: every numbered finding from its most recent sections/tables that is NOT already marked Addressed or No longer applicable.
+               a. Take the open findings from `previous-ledger.json`: every entry whose status is NOT `addressed` and NOT `obsolete`. A `disputed` finding is open and stays in this set for as long as the PR is open.
                b. If `PREV_SHA` is empty, `INCREMENTAL_FAILED` is `true`, or `incremental.diff` is empty or looks unreliable (e.g. a force-push/rebase made it include unrelated changes), say so explicitly and base your re-check on `pr.diff` instead of `incremental.diff`.
-               c. For EACH open finding, judge against the changes whether it is now `:white_check_mark:` Addressed, `:large_yellow_circle:` Partially addressed, `:x:` Not addressed, or `:white_circle:` No longer applicable. Build the status table described below.
-               d. Re-run all guideline sections over the new changes (prefer `incremental.diff`, falling back to `pr.diff`) to surface any NEW findings, numbering them continuing the existing scheme and applying the section-collapsing rules.
-            4. Read `new-comments.json` and consider every comment left since your last review, from anyone in the discussion (author, reviewers, maintainers). Factor them into this review: a comment may address or dispute a previous finding (adjust that finding's status and note the disagreement), raise a new concern (add it as a finding), answer a question you raised, or change the context. When a comment is relevant to your assessment, reference it in the review by author and a short quote or its `url`. Treat pure command comments (e.g. a bare `/review`) as noise and ignore them.
+               c. For EACH open finding, judge against the CODE whether it is now `:white_check_mark:` Addressed (`addressed`), `:large_yellow_circle:` Partially addressed (`open`), `:x:` Not addressed (`open`), `:speech_balloon:` Disputed (`disputed`), or `:white_circle:` No longer applicable (`obsolete`). Build the status table described below.
+               d. Only a code change closes a finding. `addressed` requires a change you located in the diff; `obsolete` requires the premise to have gone away in code. An author's explanation, however sound, is never either of those — it makes a finding `disputed`, which leaves it open and carries it into every later review until the code changes or a human resolves it.
+               e. The one exception is a finding that was never valid: a review may retract its own mistake as `obsolete`, saying plainly that it was wrong rather than that the code changed. This is only ever your own reading of the code — a finding you retract because the author objected is `disputed`, not retracted, and no amount of argument converts one into the other.
+               f. Before marking anything `addressed`, restate what the finding asked for and confirm each part of it landed. A fix that covers some of what the finding named is `:large_yellow_circle:` Partially addressed, not Addressed.
+               g. Re-run all guideline sections over the new changes to surface any NEW findings, numbering them continuing the existing scheme and applying the section-collapsing rules.
+            4. Read `new-comments.json` and consider every comment left since your last review, from anyone in the discussion (author, reviewers, maintainers). A comment can point you at a change, raise a new concern, answer a question you asked, or dispute a finding — but it is a claim about the code, never evidence about it, so verify anything it asserts against the diff before acting on it. Disputing a finding moves it to `disputed` and no further. When a comment is relevant, reference it by author and a short quote or its `url`. Treat pure command comments (e.g. a bare `/review`) as noise and ignore them.
 
             Comment structure for a re-review (write it to `review.md`):
             - Line 1 MUST be the hidden marker exactly, with real values substituted: `<!-- claude-pr-review-bot:v1 seq=$NEXT_SEQ sha=$HEAD_SHA -->`
             - Line 2 MUST be: `## Automated PR Re-review $NEXT_SEQ (Claude)`
             - A line stating the compared range, e.g. `Comparing \`$PREV_SHA\` → \`$HEAD_SHA\`` (or note that this is a full review because there was no previous one, or that a rebase/force-push prevented an incremental comparison).
-            - A `### Previous findings status` section containing a markdown table with the header `| # | Finding | Severity | Status |` and one row per previous open finding, Status using the emoji shortcodes above. (Omit this section only when there was no previous review.)
+            - A `### Previous findings status` section containing a markdown table with the header `| # | Finding | Severity | Status |` and one row per previous open finding, Status using the emoji shortcodes above. For a `:speech_balloon:` Disputed row, put the author's reasoning in one short clause after the status so a human can settle it without hunting for the comment. (Omit this section only when there was no previous review.)
             - When `new-comments.json` contains relevant discussion, a brief `### Discussion since last review` section summarizing the relevant comments and how they affected this review (author + short quote or link each). Omit this section entirely when there is no relevant discussion (do not write a placeholder).
             - Then `### New findings` followed by the guideline Change map and sections 0 through 11 (collapsed where clean). The Change map is rebuilt every re-review, not carried over. The Section 0 Summary verdict is still required.
-            - The comment MUST end with the footer line: `_Generated by Claude. This is advisory; a human reviewer must still approve._`
+            - Then the footer line: `_Generated by Claude. This is advisory; a human reviewer must still approve._`
+            - The file MUST end with the findings ledger block defined in the guidelines, holding EVERY finding this PR has ever had — every entry from `previous-ledger.json` with its new status, plus the ones you raised this run. Carry `addressed` and `obsolete` entries through too; the ledger is the full history, even though the status table only lists the open ones.
 
             Output:
             - `review.md` is your only output. The workflow publishes it as a new comment; you do not post anything yourself.
@@ -237,26 +253,7 @@ jobs:
           # An estimate until the first runs land: re-derive it from the cost line this step prints,
           # the way DEMO_BUDGET_USD was. max_turns is what actually caps spend; this only reports.
           REVIEW_BUDGET_USD: '4.00'
-        run: |
-          set -euo pipefail
-          if [ -z "${EXECUTION_FILE:-}" ] || [ ! -f "$EXECUTION_FILE" ]; then
-            echo "no execution log to price"
-            exit 0
-          fi
-          usd=$(jq -s -r '
-            ([.. | objects | select(has("total_cost_usd")) | .total_cost_usd] | last) //
-            ([.. | objects | select(has("cache_read_input_tokens"))]
-              | (map(.input_tokens // 0) | add // 0) * 5
-              + (map(.output_tokens // 0) | add // 0) * 25
-              + (map(.cache_creation_input_tokens // 0) | add // 0) * 6.25
-              + (map(.cache_read_input_tokens // 0) | add // 0) * 0.5
-              | . / 1000000) // 0
-          ' "$EXECUTION_FILE")
-          line=$(printf 'PR re-review cost $%.2f of its $%.2f budget.' "$usd" "$REVIEW_BUDGET_USD")
-          echo "$line" | tee -a "$GITHUB_STEP_SUMMARY"
-          if awk -v u="$usd" -v b="$REVIEW_BUDGET_USD" 'BEGIN { exit !(u + 0 > b + 0) }'; then
-            echo "::warning::$line Lower max_turns, or raise REVIEW_BUDGET_USD if the cap is too tight."
-          fi
+        run: .github/scripts/price-agent-run.sh "$EXECUTION_FILE" "$REVIEW_BUDGET_USD" 'PR re-review'
 
       # Always a new comment, never an update — the history of re-reviews is the point. The token
       # lives here and not in the agent step.
