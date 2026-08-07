@@ -227,30 +227,7 @@ jobs:
         continue-on-error: true
         env:
           EXECUTION_FILE: ${{ steps.record.outputs.execution_file }}
-        run: |
-          set -euo pipefail
-          if [ -z "${EXECUTION_FILE:-}" ] || [ ! -f "$EXECUTION_FILE" ]; then
-            echo "no execution log to price"
-            exit 0
-          fi
-          # Slurped and walked recursively so this works whether the log is a JSON array or the
-          # newline-delimited stream, and regardless of how deeply usage is nested.
-          usd=$(jq -s -r '
-            ([.. | objects | select(has("total_cost_usd")) | .total_cost_usd] | last) //
-            ([.. | objects | select(has("cache_read_input_tokens"))]
-              | (map(.input_tokens // 0) | add // 0) * 5
-              + (map(.output_tokens // 0) | add // 0) * 25
-              + (map(.cache_creation_input_tokens // 0) | add // 0) * 6.25
-              + (map(.cache_read_input_tokens // 0) | add // 0) * 0.5
-              | . / 1000000) // 0
-          ' "$EXECUTION_FILE")
-          line=$(printf 'Demo recording cost $%.2f of its $%.2f budget.' "$usd" "$DEMO_BUDGET_USD")
-          echo "$line" | tee -a "$GITHUB_STEP_SUMMARY"
-          # Passed in rather than interpolated into the program text, and coerced with +0 so a
-          # value awk would otherwise treat as a string is still compared as a number.
-          if awk -v u="$usd" -v b="$DEMO_BUDGET_USD" 'BEGIN { exit !(u + 0 > b + 0) }'; then
-            echo "::warning::$line Lower max_turns, or raise DEMO_BUDGET_USD if the cap is too tight."
-          fi
+        run: .github/scripts/price-agent-run.sh "$EXECUTION_FILE" "$DEMO_BUDGET_USD" 'Demo recording'
 
       - name: Publish the demo and post the comment
         env:
