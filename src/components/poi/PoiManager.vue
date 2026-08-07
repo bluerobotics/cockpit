@@ -40,74 +40,40 @@
         <v-text-field v-model="newPoiDescription" label="Description" variant="outlined"></v-text-field>
 
         <div class="flex flex-col mb-2">
-          <fieldset class="poi-field mb-5">
-            <legend class="poi-field-legend">
-              <span>Latitude</span>
-              <v-tooltip location="top">
-                <template #activator="{ props }">
-                  <v-icon v-bind="props" size="14" color="grey">mdi-help-circle-outline</v-icon>
-                </template>
-                <div class="max-w-xs">
-                  <p class="text-sm mb-2">
-                    Enter a fixed coordinate, or an expression that follows live data and updates on the map.
-                  </p>
-                  <p class="text-sm">
-                    Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
-                    &#123;&#123; mavlink/buoy/latitude &#125;&#125; + 0.0001.
-                  </p>
-                </div>
-              </v-tooltip>
-            </legend>
-            <div class="poi-expression-wrapper">
-              <div ref="latEditorContainer" class="poi-expression-editor" />
-              <div v-if="activeField === 'lat'" class="poi-var-dropdown">
-                <div
-                  v-for="item in filteredVariables"
-                  :key="item.id"
-                  class="poi-var-option"
-                  @mousedown.prevent="insertVariable('lat', item.id)"
-                >
-                  <span class="poi-var-name">{{ item.name }}</span>
-                  <span class="poi-var-id">{{ item.id }}</span>
-                </div>
-                <div v-if="filteredVariables.length === 0" class="poi-var-empty">No matching variables</div>
-              </div>
-            </div>
-          </fieldset>
-          <fieldset class="poi-field mb-4">
-            <legend class="poi-field-legend">
-              <span>Longitude</span>
-              <v-tooltip location="top">
-                <template #activator="{ props }">
-                  <v-icon v-bind="props" size="14" color="grey">mdi-help-circle-outline</v-icon>
-                </template>
-                <div class="max-w-xs">
-                  <p class="text-sm mb-2">
-                    Enter a fixed coordinate, or an expression that follows live data and updates on the map.
-                  </p>
-                  <p class="text-sm">
-                    Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
-                    &#123;&#123; mavlink/buoy/longitude &#125;&#125; + 0.0001.
-                  </p>
-                </div>
-              </v-tooltip>
-            </legend>
-            <div class="poi-expression-wrapper">
-              <div ref="lngEditorContainer" class="poi-expression-editor" />
-              <div v-if="activeField === 'lng'" class="poi-var-dropdown">
-                <div
-                  v-for="item in filteredVariables"
-                  :key="item.id"
-                  class="poi-var-option"
-                  @mousedown.prevent="insertVariable('lng', item.id)"
-                >
-                  <span class="poi-var-name">{{ item.name }}</span>
-                  <span class="poi-var-id">{{ item.id }}</span>
-                </div>
-                <div v-if="filteredVariables.length === 0" class="poi-var-empty">No matching variables</div>
-              </div>
-            </div>
-          </fieldset>
+          <DataLakeExpressionInput
+            v-if="poiDialogVisible"
+            v-model="newPoiLatExpression"
+            label="Latitude"
+            :variable-filter="isCoordinateVariable"
+            class="mb-5"
+          >
+            <template #hint>
+              <p class="text-sm mb-2">
+                Enter a fixed coordinate, or an expression that follows live data and updates on the map.
+              </p>
+              <p class="text-sm">
+                Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
+                &#123;&#123; mavlink/buoy/latitude &#125;&#125; + 0.0001.
+              </p>
+            </template>
+          </DataLakeExpressionInput>
+          <DataLakeExpressionInput
+            v-if="poiDialogVisible"
+            v-model="newPoiLngExpression"
+            label="Longitude"
+            :variable-filter="isCoordinateVariable"
+            class="mb-4"
+          >
+            <template #hint>
+              <p class="text-sm mb-2">
+                Enter a fixed coordinate, or an expression that follows live data and updates on the map.
+              </p>
+              <p class="text-sm">
+                Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
+                &#123;&#123; mavlink/buoy/longitude &#125;&#125; + 0.0001.
+              </p>
+            </template>
+          </DataLakeExpressionInput>
         </div>
 
         <div class="mb-4">
@@ -173,17 +139,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineExpose, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineExpose, ref, watch } from 'vue'
 
+import DataLakeExpressionInput from '@/components/DataLakeExpressionInput.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { generatePointOfInterestId, usePointsOfInterest } from '@/composables/usePointsOfInterest'
-import {
-  getAllDataLakeVariablesInfo,
-  listenToDataLakeVariablesInfoChanges,
-  unlistenToDataLakeVariablesInfoChanges,
-} from '@/libs/actions/data-lake'
-import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
+import { type DataLakeVariable } from '@/libs/actions/data-lake'
 import { machinizeString } from '@/libs/utils'
 import type { PoiCoordinateSource, PointOfInterest, PointOfInterestCoordinates } from '@/types/mission'
 
@@ -192,208 +154,8 @@ const { showDialog } = useInteractionDialog()
 
 // Number-typed data-lake variables offered in the coordinate dropdowns. POIs' own backing
 // variables are excluded to avoid clutter and self-reference.
-const availableVariables = ref<
-  {
-    /** Data-lake variable id */
-    id: string
-    /** Human-readable variable name */
-    name: string
-  }[]
->([])
-
-const refreshAvailableVariables = (): void => {
-  availableVariables.value = Object.values(getAllDataLakeVariablesInfo())
-    .filter((variable) => variable.type === 'number' && !variable.id.startsWith('cockpit/pois/'))
-    .map((variable) => ({ id: variable.id, name: variable.name || variable.id }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-}
-
-let variablesInfoListenerId: string | undefined
-onMounted(() => {
-  refreshAvailableVariables()
-  variablesInfoListenerId = listenToDataLakeVariablesInfoChanges(refreshAvailableVariables)
-})
-
-// Latitude/longitude expressions are edited in compact Monaco editors. Clicking an editor opens a
-// dropdown of every available variable; typing in the editor filters it (by the token under the
-// cursor) and picking one inserts a `{{ variable }}` reference at the cursor.
-const latEditorContainer = ref<HTMLElement | null>(null)
-const lngEditorContainer = ref<HTMLElement | null>(null)
-let latEditor: monaco.editor.IStandaloneCodeEditor | null = null
-let lngEditor: monaco.editor.IStandaloneCodeEditor | null = null
-
-type CoordinateField = 'lat' | 'lng'
-
-// Which editor's variable dropdown is open, and the term used to filter it.
-const activeField = ref<CoordinateField | null>(null)
-const variableFilter = ref('')
-
-// Set right after inserting a variable, so the programmatic re-focus does not immediately reopen the dropdown.
-let suppressReopen = false
-
-// Whether each field still shows its initial value (dialog just opened, not yet edited). While
-// pristine, clicking the field shows the full variable list instead of filtering by the pre-filled
-// number (which would otherwise match nothing).
-const pristine: Record<CoordinateField, boolean> = { lat: true, lng: true }
-
-const filteredVariables = computed(() => {
-  const term = variableFilter.value.toLowerCase()
-  if (!term) return availableVariables.value
-  return availableVariables.value.filter(
-    (variable) => variable.id.toLowerCase().includes(term) || variable.name.toLowerCase().includes(term)
-  )
-})
-
-const editorForField = (field: CoordinateField): monaco.editor.IStandaloneCodeEditor | null =>
-  field === 'lat' ? latEditor : lngEditor
-
-const textUntilCursor = (editor: monaco.editor.IStandaloneCodeEditor): string => {
-  const model = editor.getModel()
-  const position = editor.getPosition()
-  if (!model || !position) return ''
-  return model.getValueInRange({
-    startLineNumber: position.lineNumber,
-    startColumn: 1,
-    endLineNumber: position.lineNumber,
-    endColumn: position.column,
-  })
-}
-
-// The text the dropdown filters by: the partial name inside an open `{{ ... ` or, failing that, the
-// variable-like token immediately before the cursor.
-const filterTermAtCursor = (editor: monaco.editor.IStandaloneCodeEditor): string => {
-  const text = textUntilCursor(editor)
-  const lastOpen = text.lastIndexOf('{{')
-  if (lastOpen !== -1 && !text.includes('}}', lastOpen)) return text.slice(lastOpen + 2).trim()
-  return text.match(/[\w/.-]*$/)?.[0] ?? ''
-}
-
-const isPlainNumber = (value: string): boolean => value.trim() !== '' && Number.isFinite(Number(value))
-
-// The dropdown shows the full list while the field is pristine or holds a plain number (filtering by
-// a number matches nothing); otherwise it filters by the token under the cursor.
-const dropdownFilterTerm = (editor: monaco.editor.IStandaloneCodeEditor, field: CoordinateField): string => {
-  if (pristine[field] || isPlainNumber(editor.getValue())) return ''
-  return filterTermAtCursor(editor)
-}
-
-const insertVariable = (field: CoordinateField, variableId: string): void => {
-  const editor = editorForField(field)
-  const position = editor?.getPosition()
-  if (!editor || !position) return
-
-  const text = textUntilCursor(editor)
-  const lastOpen = text.lastIndexOf('{{')
-
-  // Replace an open `{{ ...` (or the trailing token) so picking from the dropdown never nests braces.
-  const startColumn =
-    lastOpen !== -1 && !text.includes('}}', lastOpen)
-      ? lastOpen + 1
-      : position.column - (text.match(/[\w/.-]*$/)?.[0].length ?? 0)
-
-  const range = new monaco.Range(position.lineNumber, startColumn, position.lineNumber, position.column)
-  editor.executeEdits('insert-data-lake-variable', [{ range, text: `{{ ${variableId} }}`, forceMoveMarkers: true }])
-  activeField.value = null
-  suppressReopen = true
-  editor.focus()
-}
-
-const createCoordinateEditor = (
-  field: CoordinateField,
-  container: HTMLElement,
-  value: string,
-  onChange: (value: string) => void
-): monaco.editor.IStandaloneCodeEditor => {
-  const editor = createMonacoEditor(container, {
-    language: 'plaintext',
-    value,
-    editorOverrides: {
-      lineNumbers: 'off',
-      glyphMargin: false,
-      folding: false,
-      lineDecorationsWidth: 8,
-      lineNumbersMinChars: 0,
-      fontSize: 13,
-      padding: { top: 8, bottom: 8 },
-      renderLineHighlight: 'none',
-      overviewRulerLanes: 0,
-      minimap: { enabled: false },
-      wordWrap: 'on',
-      scrollBeyondLastLine: false,
-      scrollbar: { vertical: 'hidden', horizontal: 'hidden' },
-      quickSuggestions: false,
-      wordBasedSuggestions: 'off',
-      suggestOnTriggerCharacters: false,
-      autoClosingBrackets: 'never',
-    },
-  })
-
-  // Grow the editor to fit its content so a wrapped long expression spans multiple lines instead of
-  // being clipped at a fixed height.
-  const applyAutoHeight = (): void => {
-    const contentHeight = editor.getContentHeight()
-    container.style.height = `${contentHeight}px`
-    editor.layout({ width: container.clientWidth, height: contentHeight })
-  }
-  editor.onDidContentSizeChange(applyAutoHeight)
-  applyAutoHeight()
-
-  pristine[field] = true
-
-  const openDropdown = (): void => {
-    activeField.value = field
-    variableFilter.value = dropdownFilterTerm(editor, field)
-  }
-
-  editor.onDidChangeModelContent(() => {
-    pristine[field] = false
-    onChange(editor.getValue().trim())
-    if (activeField.value === field) variableFilter.value = dropdownFilterTerm(editor, field)
-  })
-  editor.onMouseDown(openDropdown)
-  editor.onDidFocusEditorText(() => {
-    if (suppressReopen) {
-      suppressReopen = false
-      return
-    }
-    openDropdown()
-  })
-  editor.onDidChangeCursorPosition(() => {
-    if (activeField.value === field) variableFilter.value = dropdownFilterTerm(editor, field)
-  })
-  // Delay so a dropdown item's mousedown can run before blur closes the dropdown.
-  editor.onDidBlurEditorText(() =>
-    setTimeout(() => {
-      if (activeField.value === field) activeField.value = null
-    }, 150)
-  )
-  editor.onKeyDown((event) => {
-    if (event.keyCode === monaco.KeyCode.Escape) activeField.value = null
-  })
-
-  return editor
-}
-
-const initCoordinateEditors = (): void => {
-  if (latEditorContainer.value && !latEditor) {
-    latEditor = createCoordinateEditor('lat', latEditorContainer.value, newPoiLatExpression.value, (value) => {
-      newPoiLatExpression.value = value
-    })
-  }
-  if (lngEditorContainer.value && !lngEditor) {
-    lngEditor = createCoordinateEditor('lng', lngEditorContainer.value, newPoiLngExpression.value, (value) => {
-      newPoiLngExpression.value = value
-    })
-  }
-}
-
-const disposeCoordinateEditors = (): void => {
-  latEditor?.dispose()
-  lngEditor?.dispose()
-  latEditor = null
-  lngEditor = null
-  activeField.value = null
-}
+const isCoordinateVariable = (variable: DataLakeVariable): boolean =>
+  variable.type === 'number' && !variable.id.startsWith('cockpit/pois/')
 
 const poiDialogVisible = ref(false)
 const newPoiName = ref('')
@@ -408,21 +170,6 @@ const newPoiLngExpression = ref('')
 const isIconPickerOpen = ref(false)
 const iconSearchQuery = ref('')
 const isColorPickerOpen = ref(false)
-
-// Spin the expression editors up while the dialog is open, and tear them down on close so Monaco
-// instances are not leaked across opens.
-watch(poiDialogVisible, (visible) => {
-  if (visible) {
-    nextTick(initCoordinateEditors)
-  } else {
-    disposeCoordinateEditors()
-  }
-})
-
-onUnmounted(() => {
-  disposeCoordinateEditors()
-  if (variablesInfoListenerId) unlistenToDataLakeVariablesInfoChanges(variablesInfoListenerId)
-})
 
 // Snapshot of the POI as it was when the dialog opened, used to revert unsaved live-preview edits.
 const originalPoi = ref<PointOfInterest | null>(null)
@@ -796,95 +543,6 @@ defineExpose({
 .poi-dialog-text-fields .v-select .v-field__input {
   padding-top: 4px;
   padding-bottom: 4px;
-}
-
-/* Outlined field with a notched label (the legend cuts the top border, like a v-text-field). */
-.poi-field {
-  min-inline-size: 0;
-  margin: 0;
-  padding: 2px 8px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  border-radius: 4px;
-}
-
-.poi-field-legend {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: 4px;
-  padding: 0 4px;
-  font-size: 12px;
-  line-height: 1;
-  color: #ffffffb3;
-}
-
-.poi-expression-wrapper {
-  position: relative;
-}
-
-.poi-expression-editor {
-  min-height: 36px;
-  width: 100%;
-  overflow: visible;
-}
-
-.poi-expression-editor .monaco-editor,
-.poi-expression-editor .monaco-editor .margin,
-.poi-expression-editor .monaco-editor-background {
-  background-color: transparent !important;
-}
-
-.poi-expression-editor .monaco-editor,
-.poi-expression-editor .monaco-editor.focused,
-.poi-expression-editor .monaco-editor .inputarea {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.poi-expression-editor .monaco-editor .overflow-guard {
-  border-radius: 4px;
-}
-
-.poi-var-dropdown {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
-  z-index: 30;
-  max-height: 220px;
-  overflow-y: auto;
-  background-color: #1e1e1e;
-  border: 1px solid #ffffff33;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.poi-var-option {
-  display: flex;
-  flex-direction: column;
-  padding: 6px 10px;
-  cursor: pointer;
-}
-
-.poi-var-option:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.poi-var-name {
-  font-size: 13px;
-  color: #ffffffde;
-}
-
-.poi-var-id {
-  font-size: 11px;
-  color: #ffffff80;
-}
-
-.poi-var-empty {
-  padding: 8px 10px;
-  font-size: 12px;
-  color: #ffffff80;
 }
 
 .poi-color-picker {
