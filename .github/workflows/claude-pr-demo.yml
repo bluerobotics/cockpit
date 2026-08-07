@@ -161,7 +161,7 @@ jobs:
           SMOKETEST: ${{ steps.smoketest.outcome }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: ${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-4-6' }}
+          model: ${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}
           # Spend cap, expressed as turns because neither the action nor Claude Code takes a
           # currency budget. Opus 4.6 bills $5/M in, $25/M out, $0.50/M cache read and $6.25/M
           # cache write, and for this job almost all of it is context being re-read rather than
