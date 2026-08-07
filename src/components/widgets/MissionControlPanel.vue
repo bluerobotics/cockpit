@@ -1,26 +1,29 @@
 <template>
-  <div class="min-w-[290px] min-h-[95px] flex items-end">
+  <div class="min-w-[290px] min-h-[115px] flex items-end">
     <div
       class="w-full rounded-lg overflow-hidden -mt-2"
-      :class="[isWrapped ? 'h-[42px]' : 'h-full']"
+      :class="[isWrapped ? 'h-[38px]' : 'h-full']"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <div class="flex flex-col justify-start items-center h-full pt-2 cursor-pointer">
-        <div class="flex justify-between w-full px-2 pb-[2px] border-b-[1px] border-[#FFFFFF15]">
+      <div class="flex flex-col justify-start items-center h-full pt-1 cursor-pointer">
+        <div class="flex items-center justify-between w-full px-2 pb-[2px] border-b-[1px] border-[#FFFFFF15]">
           <v-icon class="cursor-grab opacity-40" @mousedown="enableMovingOnDrag" @mouseup="disableMovingOnDrag">
             mdi-drag
           </v-icon>
-          <div class="select-none text-[14px] font-bold mt-[1px]">Mission control panel</div>
+          <div class="select-none text-[14px] font-bold mb-[2px]">Mission control panel</div>
           <v-btn
             :icon="isWrapped ? 'mdi-chevron-up' : 'mdi-chevron-down'"
             variant="text"
-            size="36"
-            class="mt-[-6px] opacity-60 -mr-1"
+            size="30"
+            class="opacity-60 -mr-1"
             @click="toggleWrapContainer"
           />
         </div>
         <v-divider v-if="!isWrapped" />
-        <div v-show="!isWrapped" class="flex justify-center items-center w-full h-full">
+        <div
+          v-show="!isWrapped"
+          class="flex justify-center items-center w-full h-full bg-[#00000022] shadow-[inset_0_2px_3px_-1px_rgba(0,0,0,0.45)]"
+        >
           <div
             class="flex w-full h-full justify-start items-center overflow-hidden px-1"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
@@ -104,22 +107,63 @@
                   />
                 </template>
 
-                <v-list>
+                <v-list class="py-0">
                   <v-list-item
                     :disabled="!vehicleStore.isVehicleOnline"
                     class="cursor-pointer"
                     @click="handleDownloadMissionOnMap"
                   >
-                    <v-list-item-title>Download mission from vehicle</v-list-item-title>
+                    <v-list-item-title class="text-[14px]">Download mission from vehicle</v-list-item-title>
                   </v-list-item>
-
-                  <v-list-item class="cursor-pointer" @click="handleClearMissionOnMap">
-                    <v-list-item-title>Clear mission on map</v-list-item-title>
+                  <v-divider class="opacity-10" />
+                  <v-list-item
+                    :disabled="!vehicleStore.isVehicleOnline"
+                    class="cursor-pointer py-0"
+                    @click="handleClearMissionOnMap"
+                  >
+                    <v-list-item-title class="text-[14px]">Clear mission on map</v-list-item-title>
+                  </v-list-item>
+                  <v-divider class="opacity-10" />
+                  <v-list-item class="cursor-pointer" @click="missionStore.resetMissionDistance()">
+                    <v-list-item-title class="text-[14px]">Reset mission distance</v-list-item-title>
+                  </v-list-item>
+                  <v-divider class="opacity-10" />
+                  <v-list-item class="cursor-pointer" @click="handleResetTotalDistance">
+                    <v-list-item-title class="text-[14px]">Reset total distance</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
             </div>
           </div>
+        </div>
+        <v-divider v-if="!isWrapped" class="w-full opacity-10" />
+        <div
+          v-if="!isWrapped"
+          class="flex justify-center items-center gap-4 w-full px-2 py-[2px] text-[11px] tabular-nums select-none"
+        >
+          <div class="relative left-[-10px] flex items-center gap-4">
+            <v-icon size="14" class="opacity-80 text-[#ffb85b]">mdi-map-marker-distance</v-icon>
+            <v-tooltip location="bottom" open-delay="800" text="Total distance the vehicle has traveled">
+              <template #activator="{ props: totalProps }">
+                <div v-bind="totalProps" class="flex items-center gap-1 text-[#ffb85b] -ml-[10px]">
+                  <span class="opacity-80">Total:</span>
+                  <span class="font-bold">{{ formattedTotalDistance }}</span>
+                </div>
+              </template>
+            </v-tooltip>
+          </div>
+          <v-tooltip
+            location="bottom"
+            open-delay="800"
+            text="Distance traveled during the current mission, since waypoint 1"
+          >
+            <template #activator="{ props: missionProps }">
+              <div v-bind="missionProps" class="flex items-center gap-1 text-[#ffb85b]">
+                <span class="opacity-80">Mission:</span>
+                <span class="font-bold">{{ formattedMissionDistance }}</span>
+              </div>
+            </template>
+          </v-tooltip>
         </div>
       </div>
     </div>
@@ -132,6 +176,7 @@ import { computed, onBeforeMount, ref, toRefs } from 'vue'
 import CruiseSpeedControl from '@/components/mission-planning/CruiseSpeedControl.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { useTraveledDistances } from '@/composables/useTraveledDistances'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -176,8 +221,8 @@ const disableMovingOnDrag = (): void => {
 }
 
 const widgetSize = {
-  width: 0.14638572402097255,
-  height: 0.09641222207770606,
+  width: 0.152,
+  height: 0.11,
 }
 
 const skipToPreviousWaypoint = (): void => {
@@ -190,6 +235,8 @@ const skipToNextWaypoint = (): void => {
   missionStore.skipToWaypoint(1)
 }
 
+const { formattedTotalDistance, formattedMissionDistance } = useTraveledDistances()
+
 const handleDownloadMissionOnMap = async (): Promise<void> => {
   logUserAction('Requested mission download from vehicle to map')
   missionStore.requestMapMissionDownload()
@@ -198,6 +245,26 @@ const handleDownloadMissionOnMap = async (): Promise<void> => {
 const handleClearMissionOnMap = (): void => {
   logUserAction('Cleared mission drawn on map')
   missionStore.requestMapClear()
+}
+
+const handleResetTotalDistance = (): void => {
+  showDialog({
+    title: 'Reset total distance',
+    message: `The total distance traveled by this vehicle (${formattedTotalDistance.value}) will be discarded and start counting from zero. This cannot be undone.`,
+    variant: 'warning',
+    actions: [
+      { text: 'Cancel', size: 'small', action: closeDialog },
+      {
+        text: 'Reset',
+        size: 'small',
+        action: () => {
+          closeDialog()
+          missionStore.resetTotalDistance()
+          openSnackbar({ message: 'Total traveled distance reset', variant: 'success' })
+        },
+      },
+    ],
+  })
 }
 
 onBeforeMount(() => {
