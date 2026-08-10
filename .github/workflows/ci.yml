@@ -68,6 +68,13 @@ jobs:
         with:
           node-version: '22.13.0'
 
+      # `yarn lint` covers only the JS/TS globs, so the shell under `.github/scripts/` needs its own
+      # check. The command parser fails silently when it regresses — a wrong id list still publishes.
+      # It needs nothing but bash and jq, so it runs before the install rather than behind a build
+      # whose failure would hide it.
+      - name: Check the review command parser
+        run: .github/scripts/review-command.sh --self-check
+
       - name: Install, lint, typecheck, and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
