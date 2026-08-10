@@ -1,6 +1,6 @@
 /**
- * Pure text logic behind the data-lake expression input: what its variable dropdown filters by, and
- * where an inserted `{{ variable }}` reference starts.
+ * Pure logic behind the data-lake expression input: what its variable dropdown filters by, where an
+ * inserted `{{ variable }}` reference starts, and how the keyboard moves through the dropdown.
  */
 
 const trailingTokenRegex = /[\w/.-]*$/
@@ -35,4 +35,16 @@ export const insertionStartColumn = (textUntilCursor: string, cursorColumn: numb
   const lastOpen = openReferenceStart(textUntilCursor)
   if (lastOpen !== -1) return lastOpen + 1
   return cursorColumn - (textUntilCursor.match(trailingTokenRegex)?.[0].length ?? 0)
+}
+
+/**
+ * Where the dropdown highlight lands when the user moves through the list, wrapping at both ends.
+ * @param {number} current - Currently highlighted option, `-1` while none is active
+ * @param {number} lastIndex - Index of the list's last option
+ * @param {'down' | 'up'} direction - Direction the user moved in
+ * @returns {number} The option to highlight
+ */
+export const nextHighlightedIndex = (current: number, lastIndex: number, direction: 'down' | 'up'): number => {
+  if (direction === 'down') return current >= lastIndex ? 0 : current + 1
+  return current <= 0 ? lastIndex : current - 1
 }
