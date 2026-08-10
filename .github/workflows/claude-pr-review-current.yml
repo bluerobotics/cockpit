@@ -33,10 +33,15 @@ jobs:
           set -euo pipefail
           # Newest review by seq, then the sha it recorded reviewing. Empty when the bot has not
           # commented yet, which is the `pending` case rather than the stale one.
-          reviewed=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-            --jq '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
-                  | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
-                  | (last.body // "" | capture("sha=(?<s>[0-9a-fA-F]+)").s) // ""')
+          # Author-filtered: the marker is a label anyone can type, and this status is the only
+          # automated signal that a rebase shipped code no review has seen. Without the filter a
+          # commenter can post a high-seq marker naming the head sha and turn the gate green.
+          # Streamed and slurped because `--paginate` runs `--jq` per page.
+          reviewed=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' \
+            | jq -rs '[.[] | select(.user.login == "github-actions[bot]" and .user.type == "Bot"
+                                    and (.body | startswith("<!-- claude-pr-review-bot:v1")))]
+                      | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
+                      | (last.body // "" | capture("sha=(?<s>[0-9a-fA-F]+)").s) // ""')
 
           if [ "$reviewed" = "$HEAD_SHA" ]; then
             state=success
