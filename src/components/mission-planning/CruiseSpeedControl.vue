@@ -9,7 +9,7 @@
               size="x-small"
               icon="mdi-speedometer"
               variant="text"
-              :class="iconClass"
+              :class="compact ? 'text-[16px]' : 'text-[18px]'"
               :disabled="!vehicleStore.isVehicleOnline"
             />
           </template>
@@ -33,8 +33,12 @@
       </div>
     </v-menu>
     <span
-      v-if="showSpeedValue"
-      class="absolute left-1/2 top-full -translate-x-1/2 mt-[-5px] px-[3px] rounded-[2px] bg-white text-[#333333] text-[8px] font-bold leading-[11px] select-none pointer-events-none"
+      class="absolute left-1/2 top-full -translate-x-1/2 px-[3px] rounded-[2px] bg-white text-[#333333] font-bold select-none pointer-events-none"
+      :class="
+        compact
+          ? 'text-[7.2px] leading-[10px] mt-[-11px] border-2 border-slate-800'
+          : 'text-[8px] leading-[11px] mt-[-5px]'
+      "
       aria-hidden="true"
     >
       {{ liveCruiseSpeed.toFixed(1) }}
@@ -50,19 +54,12 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
-withDefaults(
-  defineProps<{
-    /**
-     * Classes applied to the speedometer icon button
-     */
-    iconClass?: string
-    /**
-     * Whether the commanded speed is shown as a tag under the button
-     */
-    showSpeedValue?: boolean
-  }>(),
-  { iconClass: 'text-[18px]', showSpeedValue: true }
-)
+defineProps<{
+  /**
+   * Render the compact variant sized for the mini-widget bar (smaller icon, bordered speed tag)
+   */
+  compact?: boolean
+}>()
 
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
