@@ -4,12 +4,11 @@ on:
   issue_comment:
     types: [created]
 
-concurrency:
-  # Keyed on the command as well as the PR: concurrency is evaluated before the job's `if:`, so the
-  # run for an ordinary comment still joins the group and, with cancel-in-progress, cancels a
-  # re-review already running.
-  group: claude-pr-rereview-${{ github.event.issue.number }}-${{ startsWith(github.event.comment.body, '/review') }}
-  cancel-in-progress: true
+# No workflow-level concurrency on purpose. Concurrency is evaluated before any job, so the key can
+# only test the raw comment body — which meant a comment merely starting with `/review` cancelled a
+# re-review that was mid-run, and no key written here can tell `/reviewing this now` from a command.
+# Cancellation is not worth that: the `rereview` job serializes instead (see its own block), and a
+# superseded run now costs a duplicate run rather than a destroyed one.
 
 jobs:
   # Only run when: the comment is on a PR, looks like one of our commands, is not from a bot, and the
