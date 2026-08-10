@@ -13,12 +13,17 @@
     </legend>
     <div class="dl-expression-wrapper">
       <div ref="editorContainer" class="dl-expression-editor" />
-      <div v-if="isDropdownOpen" class="dl-expression-dropdown">
+      <div v-if="isDropdownOpen" :id="listboxId" class="dl-expression-dropdown" role="listbox">
         <div
-          v-for="item in filteredVariables"
+          v-for="(item, index) in filteredVariables"
+          :id="optionId(index)"
           :key="item.id"
           class="dl-expression-option"
+          :class="{ 'dl-expression-option-highlighted': index === highlightedIndex }"
+          role="option"
+          :aria-selected="index === highlightedIndex"
           @mousedown.prevent="insertVariable(item.id)"
+          @mouseenter="highlightedIndex = index"
         >
           <span class="dl-expression-option-name">{{ item.name }}</span>
           <span class="dl-expression-option-id">{{ item.id }}</span>
@@ -30,7 +35,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
+import { v4 as uuid } from 'uuid'
+import { computed, nextTick, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import {
   type DataLakeVariable,
@@ -38,7 +44,7 @@ import {
   listenToDataLakeVariablesInfoChanges,
   unlistenToDataLakeVariablesInfoChanges,
 } from '@/libs/actions/data-lake'
-import { filterTermAtCursor, insertionStartColumn } from '@/libs/data-lake-expression-input'
+import { filterTermAtCursor, insertionStartColumn, nextHighlightedIndex } from '@/libs/data-lake-expression-input'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { isNumber } from '@/libs/utils'
 
@@ -68,6 +74,12 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null
 
 const isDropdownOpen = ref(false)
 const variableFilterTerm = ref('')
+
+// The option the keyboard acts on, `-1` until the user navigates into the list so Enter keeps
+// meaning whatever it meant in the field. Ids are per instance, since the POI dialog renders two.
+const highlightedIndex = ref(-1)
+const listboxId = `dl-expression-listbox-${uuid()}`
+const optionId = (index: number): string => `${listboxId}-option-${index}`
 
 // Set right after inserting a variable, so the programmatic re-focus does not immediately reopen the dropdown.
 let suppressReopen = false
@@ -138,8 +150,11 @@ const insertVariable = (variableId: string): void => {
   editor.executeEdits('insert-data-lake-variable', [{ range, text: `{{ ${variableId} }}`, forceMoveMarkers: true }])
 
   isDropdownOpen.value = false
+  // Monaco dispatches its focus event synchronously, so the flag only has to hold across this call.
+  // Leaving it set would swallow the next genuine focus, stranding a keyboard user on one variable.
   suppressReopen = true
   editor.focus()
+  suppressReopen = false
 }
 
 const createEditor = (container: HTMLElement): monaco.editor.IStandaloneCodeEditor => {
@@ -164,6 +179,9 @@ const createEditor = (container: HTMLElement): monaco.editor.IStandaloneCodeEdit
       wordBasedSuggestions: 'off',
       suggestOnTriggerCharacters: false,
       autoClosingBrackets: 'never',
+      // Monaco otherwise eats Tab as indentation, stranding a keyboard user in a one-line field
+      // that has nothing to indent.
+      tabFocusMode: true,
     },
   })
 
@@ -180,6 +198,7 @@ const createEditor = (container: HTMLElement): monaco.editor.IStandaloneCodeEdit
   const openDropdown = (): void => {
     isDropdownOpen.value = true
     variableFilterTerm.value = dropdownFilterTerm()
+    highlightedIndex.value = -1
   }
 
   createdEditor.onDidChangeModelContent(() => {
@@ -202,11 +221,70 @@ const createEditor = (container: HTMLElement): monaco.editor.IStandaloneCodeEdit
   // Delay so a dropdown item's mousedown can run before blur closes the dropdown.
   createdEditor.onDidBlurEditorText(() => setTimeout(() => (isDropdownOpen.value = false), 150))
   createdEditor.onKeyDown((event) => {
-    if (event.keyCode === monaco.KeyCode.Escape) isDropdownOpen.value = false
+    // The editor would otherwise move the cursor or break the line under the keys the list uses,
+    // and an unstopped Escape reaches the dialog the field sits in and closes it.
+    const keepKeyToTheList = (): void => {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+
+    if (event.keyCode === monaco.KeyCode.Escape) {
+      if (!isDropdownOpen.value) return
+      isDropdownOpen.value = false
+      keepKeyToTheList()
+      return
+    }
+
+    // Neither field this serves is meant to hold two lines, so Enter takes the active option, or
+    // does nothing at all rather than breaking the line.
+    if (event.keyCode === monaco.KeyCode.Enter) {
+      const activeVariable = isDropdownOpen.value ? filteredVariables.value[highlightedIndex.value] : undefined
+      if (activeVariable) insertVariable(activeVariable.id)
+      keepKeyToTheList()
+      return
+    }
+
+    // Reopening from the keyboard, since the list closes on every insertion and picking a second
+    // variable would otherwise need the mouse.
+    if (!isDropdownOpen.value) {
+      if (event.keyCode !== monaco.KeyCode.DownArrow) return
+      openDropdown()
+      keepKeyToTheList()
+      return
+    }
+    if (filteredVariables.value.length === 0) return
+
+    const lastIndex = filteredVariables.value.length - 1
+    if (event.keyCode === monaco.KeyCode.DownArrow) {
+      highlightedIndex.value = nextHighlightedIndex(highlightedIndex.value, lastIndex, 'down')
+    } else if (event.keyCode === monaco.KeyCode.UpArrow) {
+      highlightedIndex.value = nextHighlightedIndex(highlightedIndex.value, lastIndex, 'up')
+    } else {
+      return
+    }
+
+    keepKeyToTheList()
   })
 
   return createdEditor
 }
+
+watch(filteredVariables, () => (highlightedIndex.value = -1))
+
+// Monaco owns the focused element, so the state a screen reader reads off it has to be applied to
+// its textarea by hand.
+watch([isDropdownOpen, highlightedIndex], async () => {
+  await nextTick()
+  const textArea = editor?.getDomNode()?.querySelector('textarea')
+  textArea?.setAttribute('aria-expanded', String(isDropdownOpen.value))
+  if (!isDropdownOpen.value || highlightedIndex.value < 0) {
+    textArea?.removeAttribute('aria-activedescendant')
+    return
+  }
+  const highlightedOptionId = optionId(highlightedIndex.value)
+  textArea?.setAttribute('aria-activedescendant', highlightedOptionId)
+  document.getElementById(highlightedOptionId)?.scrollIntoView({ block: 'nearest' })
+})
 
 // Follow changes the parent makes on its own (e.g. applying a preset) without disturbing typing.
 watch(
@@ -224,6 +302,13 @@ onMounted(() => {
   refreshAvailableVariables()
   variablesInfoListenerId = listenToDataLakeVariablesInfoChanges(refreshAvailableVariables)
   if (editorContainer.value) editor = createEditor(editorContainer.value)
+  const textArea = editor?.getDomNode()?.querySelector('textarea')
+  textArea?.setAttribute('aria-controls', listboxId)
+  // Monaco exposes the textarea as a plain textbox, which supports neither `aria-expanded` nor an
+  // active descendant, so the list would never be announced. `aria-expanded` is required on the
+  // role, and the field is collapsed until the watcher below first says otherwise.
+  textArea?.setAttribute('role', 'combobox')
+  textArea?.setAttribute('aria-expanded', 'false')
 })
 
 onUnmounted(() => {
@@ -304,7 +389,8 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.dl-expression-option:hover {
+.dl-expression-option:hover,
+.dl-expression-option-highlighted {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
