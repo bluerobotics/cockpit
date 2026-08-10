@@ -29,7 +29,11 @@ jobs:
       - name: Checkout base ref (trusted)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # Deep enough for `git log` to show what this repository's commit conventions actually are.
+          # At depth 1 the reviewer had to assume them, and assumed wrong. Only the subject lines are
+          # ever read, so the trees and blobs behind those commits are not worth fetching.
+          fetch-depth: 200
+          filter: tree:0
 
       - name: Fetch PR metadata and diff
         env:
@@ -67,7 +71,7 @@ jobs:
           # nothing; a first review of the same PR does the same reading.
           max_turns: "120"
           timeout_minutes: "35"
-          allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),View,GlobTool,GrepTool,BatchTool,Write"
+          allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),Bash(git log:*),View,GlobTool,GrepTool,BatchTool,Write"
           system_prompt: |
             You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
 

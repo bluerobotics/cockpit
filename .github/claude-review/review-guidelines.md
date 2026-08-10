@@ -278,6 +278,7 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 
 ### 8. Commit Hygiene
 - Read the commit list from the `commits` field of `pr.json` to evaluate this section.
+- Subject style is whatever this repository already does, so read it off `git log` on the checkout rather than applying a convention from memory. Cockpit's history is mostly scope-prefixed (`map:`, `widgets:`, `ci:`) alongside conventional types, so neither style is a finding in itself — what you are judging, per the bullet below, is whether the prefix describes this particular change.
 - Flag commits that bundle multiple unrelated logical changes.
 - Flag leftover noise commits (`wip`, `fix lint`, `address review`, un-squashed `fixup!`/`squash!`) that should have been cleaned up before merge.
 - Flag commit subjects whose type does not fit the change (e.g. every commit prefixed `fix:`), and PR-number references placed in the commit subject instead of the PR body.
