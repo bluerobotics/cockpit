@@ -12,13 +12,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Only run when: the comment is on a PR, starts with `/review` or `/resolve`, is not from a bot,
-  # and the commenter can push here. The `if:` below is a cheap first pass that keeps the job from
-  # being scheduled for outsiders, but `author_association` only proves organization membership —
-  # an org member with read-only access to this repository still reports MEMBER. The permission
-  # lookup is the real decision, and it lives in its own job on purpose: the endpoint needs a
-  # token with push access, and the job that runs the model must not be given one. This job checks
-  # out nothing and runs a single read-only API call, so its wider token never touches PR content.
+  # Only run when: the comment is on a PR, looks like one of our commands, is not from a bot, and the
+  # commenter can push here. The `if:` below is a cheap first pass that keeps the job from being
+  # scheduled for outsiders, and it stays deliberately loose: an expression cannot see past the first
+  # line of a body, so anchoring the command here rejected `/review` followed by a newline — silently,
+  # since an unscheduled job posts nothing at all. `command` below is the real answer, read off the
+  # first line by a script that is unit-checked, and `/reviewing this now` stops there having spent
+  # only this job. `author_association` is likewise only a first pass: an org member with read-only
+  # access to this repository still reports MEMBER, so the permission lookup is the real decision. It
+  # lives in its own job on purpose — the endpoint needs a token with push access, and the job that
+  # runs the model must not be given one. Only `.github/scripts` is checked out here, and without
+  # credentials, so the wider token is never written to disk beside an untrusted comment body.
   #
   # This job is also where a `/resolve` is made durable. It is never queued behind anything, so it
   # always runs, and it records the authorized resolution as a comment of its own. Whether the
@@ -40,14 +44,37 @@ jobs:
       # through the issues endpoint, but every other commenting job here declares this one too and
       # the first `/resolve` a maintainer ever types is the worst place to be proved wrong.
       pull-requests: write
+    outputs:
+      command: ${{ steps.command.outputs.command }}
     steps:
+      - name: Checkout the command parser (trusted)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      # Assigned and echoed separately rather than piped into $GITHUB_OUTPUT: the default shell is
+      # `bash -e` without `pipefail`, so a pipeline would report tee's success and leave the gate
+      # below reading an empty command.
+      - name: Identify the command
+        id: command
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          command=$(.github/scripts/review-command.sh --command)
+          echo "$command" >> "$GITHUB_OUTPUT"
+          echo "$command"
+
       # Fails closed: anything other than a definite admin/write answer is a refusal.
       - name: Require write access
+        if: steps.command.outputs.command != 'none'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           ACTOR: ${{ github.event.comment.user.login }}
-          COMMAND: ${{ startsWith(github.event.comment.body, '/resolve') && '/resolve' || '/review' }}
+          COMMAND: /${{ steps.command.outputs.command }}
         run: |
           set -euo pipefail
           # Assign, then override on failure: `$(... || echo unknown)` would append to whatever
@@ -63,6 +90,7 @@ jobs:
           esac
 
       - name: Acknowledge the command
+        if: steps.command.outputs.command != 'none'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -76,7 +104,7 @@ jobs:
       # to run reads every resolution posted since the last one, so a dropped, cancelled or queued-out
       # re-review costs nothing but the wait.
       - name: Record the resolution
-        if: startsWith(github.event.comment.body, '/resolve')
+        if: steps.command.outputs.command == 'resolve'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -108,6 +136,9 @@ jobs:
   rereview:
     name: Claude PR Re-review
     needs: authorize
+    # Gated positively, so a command that could not be determined at all is a no-op rather than a
+    # model run: an empty output would satisfy `!= 'none'`.
+    if: contains(fromJSON('["review","resolve"]'), needs.authorize.outputs.command)
     runs-on: ubuntu-latest
     # Serialized rather than cancelled, and per PR rather than per command. The ledger is a
     # read-modify-write of the newest bot comment, so two runs started inside one run's lifetime
@@ -326,6 +357,8 @@ jobs:
             Previous-review head (PREV_SHA): ${{ env.PREV_SHA }}
             Current head (HEAD_SHA): ${{ env.HEAD_SHA }}
             This re-review sequence number (NEXT_SEQ): ${{ env.NEXT_SEQ }}
+
+            Command: /${{ needs.authorize.outputs.command }} (`resolutions.json` carries every resolution banked on this PR, and is `[]` when there are none)
 
             Follow the system instructions and `.github/claude-review/review-guidelines.md` exactly.
             Compare your previous review against the current code, give every previous finding its new status, apply `resolutions.json`, then add any new findings. Lay all of it out as the contract specifies. Do not execute or fetch PR head code.
