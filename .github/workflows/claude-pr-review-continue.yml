@@ -185,14 +185,23 @@ jobs:
             > pr.json
           gh pr diff "$PR_NUMBER" --repo "$REPO" > pr.diff
 
+          # One paginated fetch of the issue comments, which every view below is derived from.
+          # `--paginate` runs `--jq` once per page and concatenates the results, so any filter that
+          # builds an array is only correct while the PR fits on one page: the seq lookup below
+          # returned one object per page, and `$(( LAST_SEQ + 1 ))` then killed the whole step.
+          # Streaming objects and slurping them locally is correct at any length.
+          # No `|| :` here, unlike the optional views below: everything downstream reads this file
+          # as fact, so an empty one from a 502 means "never reviewed" — a full re-review at seq 1
+          # on a PR that has four. Failing the step is the honest outcome.
+          gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' > all-comments.ndjson
+
           # Most recent bot review comment, by highest seq in its marker. This
           # parsing is coupled to the marker format the review prompts write:
           # `<!-- claude-pr-review-bot:v1 seq=<n> sha=<sha> -->`. The `// 0` guard
           # keeps legacy markers without a seq from breaking `tonumber`.
-          gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-            --jq '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
-                  | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
-                  | last // empty' > last_review.json
+          jq -s '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
+                 | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
+                 | last // empty' all-comments.ndjson > last_review.json
 
           PREV_SHA=""
           LAST_SEQ="0"
@@ -227,23 +236,19 @@ jobs:
           # A damaged record costs only itself: `fromjson` raises, and without the `?` one raise
           # aborts the whole map and takes every not-yet-applied resolution with it. Anyone with
           # write access can edit a bot comment, and half of this one is prose inviting a correction.
-          # Nor does the map fail open any more: reporting `[]` is unrecoverable because nobody knows
-          # to look, while a dead step is one `/review` away from fixed.
-          gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-            --jq '[.[] | select(.body | startswith("<!-- claude-pr-review-resolution:v1"))]' \
-            > resolution_comments.json || echo '[]' > resolution_comments.json
-          jq 'map((.body | capture("(?s)^<!-- claude-pr-review-resolution:v1\n(?<j>.*?)\n-->") | .j | fromjson)? // empty)
-              | map(select(.ids | length > 0))
-             ' resolution_comments.json > resolutions.json
+          # No `|| :` for the same reason as the fetch above — reporting `[]` is unrecoverable
+          # because nobody knows to look, while a dead step is one `/review` away from fixed.
+          jq -s '[.[] | select(.body | startswith("<!-- claude-pr-review-resolution:v1"))]
+                 | map((.body | capture("(?s)^<!-- claude-pr-review-resolution:v1\n(?<j>.*?)\n-->") | .j | fromjson)? // empty)
+                 | map(select(.ids | length > 0))' all-comments.ndjson > resolutions.json
           [ -s resolutions.json ] || echo '[]' > resolutions.json
           echo "resolutions_pending=$(jq 'length' resolutions.json)"
 
           # Human/reviewer discussion since the last review (general PR comments and
           # inline code-review comments), so the agent can factor it into the new
           # review. The bot's own review comments (the marker) are excluded.
-          gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-            --jq '.[] | {kind:"comment", author:.user.login, created_at:.created_at, path:null, body:.body, url:.html_url}' \
-            > issue_comments.ndjson || : > issue_comments.ndjson
+          jq -c '{kind:"comment", author:.user.login, created_at:.created_at, path:null, body:.body, url:.html_url}' \
+            all-comments.ndjson > issue_comments.ndjson || : > issue_comments.ndjson
           gh api "repos/$REPO/pulls/$PR_NUMBER/comments" --paginate \
             --jq '.[] | {kind:"inline", author:.user.login, created_at:.created_at, path:.path, body:.body, url:.html_url}' \
             > review_comments.ndjson || : > review_comments.ndjson
@@ -400,9 +405,11 @@ jobs:
           # Only an answer stops the publish. A lookup that fails — rate limit, 502, a dropped page —
           # says nothing about whether a race happened, and the review in hand has already been paid
           # for and exists nowhere but this workspace.
-          if newest=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-              --jq '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
-                    | map(.body | capture("seq=(?<n>[0-9]+)").n | tonumber) | max // 0'); then
+          # Streamed and slurped, not `--paginate --jq '[...]'`: that filter runs per page, and the
+          # multi-line result made this test exit 2 — which `if` swallows, so the guard failed open.
+          if newest=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' \
+              | jq -s '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
+                       | map(.body | capture("seq=(?<n>[0-9]+)").n | tonumber) | max // 0'); then
             if [ "$newest" -ge "$NEXT_SEQ" ]; then
               echo "::error::seq $newest was published while this run worked; expected $(( NEXT_SEQ - 1 )). Re-run /review."
               exit 1
