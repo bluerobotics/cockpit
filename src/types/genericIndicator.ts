@@ -108,4 +108,14 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     variableMultiplier: 1,
     decimalPlaces: 1,
   },
+  {
+    // The Celsius 2 reports through the battery monitor, so its reading arrives as the temperature of
+    // battery instance 0 (`TEMP2_SRC_ID: 1` on the vehicle, which ArduPilot decrements), in centidegrees.
+    displayName: 'Celsius 2',
+    variableName: 'BATTERY_STATUS/id=0/temperature',
+    iconName: 'mdi-thermometer',
+    variableUnit: '°C',
+    variableMultiplier: 0.01,
+    decimalPlaces: 1,
+  },
 ]
