@@ -194,7 +194,7 @@ This applies to any pair of components/views with substantial overlap, not just 
 - When fixing feedback for code that is already committed on the branch, prefer `git commit --fixup <sha>` over a new standalone "fix typo"/"address review" commit, unless the user says otherwise.
 - Fold `fixup!`/`squash!` commits into their targets with `git rebase --autosquash` BEFORE pushing (or before opening a PR / requesting review). Never leave a `fixup!`/`squash!` commit in pushed history — the branch should always be presented already squashed.
 - Branch names follow `issue-<number>-short-words`, using at most 5 words in the descriptive part.
-- Pick the commit-subject type that actually fits the change (`feat`/`fix`/`refactor`/`docs`/etc.). Do not prefix every commit with `fix:`. PR-number references belong in the PR body, not the commit subject.
+- Pick the commit-subject prefix that actually fits the change. Every style in this history is fine: a conventional type (`feat`/`fix`/`refactor`/`docs`/etc.), the area touched (`map:`, `widgets:`, `mission-planning:`, `ci:`), or both together (`fix: widgets: …`), the area form being the most common. What matters is that the prefix describes this change — do not prefix every commit with `fix:`. PR-number references belong in the PR body, not the commit subject.
 
 ## Data-lake first for vehicle data in widgets
 
