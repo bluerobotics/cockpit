@@ -138,8 +138,17 @@ jobs:
         run: |
           set -euo pipefail
           [ -s review.md ] || { echo "::error::the agent produced no review"; exit 1; }
+
+          # Seeds the ledger chain every later re-review reads, using the same script that reads it
+          # back, so a review can never be published in a shape the next run cannot parse.
+          .github/scripts/review-ledger.sh review.md > /dev/null \
+            || { echo "::error::review.md carries no readable findings ledger"; exit 1; }
+
+          # Matched on author as well as marker: a marker is a label anyone can type, and picking a
+          # comment to overwrite by prefix alone lets a commenter choose which one this step edits.
           existing=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-            --jq '.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1 seq=1 ")) | .id' | head -n 1)
+            --jq '.[] | select(.user.login == "github-actions[bot]"
+                               and (.body | startswith("<!-- claude-pr-review-bot:v1 seq=1 "))) | .id' | head -n 1)
           if [ -n "$existing" ]; then
             jq -Rs '{body: .}' < review.md | gh api --method PATCH "repos/$REPO/issues/comments/$existing" --input -
           else
