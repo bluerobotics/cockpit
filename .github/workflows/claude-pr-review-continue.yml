@@ -195,13 +195,21 @@ jobs:
           # on a PR that has four. Failing the step is the honest outcome.
           gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' > all-comments.ndjson
 
+          # SECURITY: a marker is a label anyone can type, not evidence of who wrote it. Both the
+          # review chain and the banked resolutions are authority — one carries the findings, the
+          # other closes them — so both are taken only from comments this workflow itself posted.
+          # Without this, any commenter could forge a resolution and clear the findings on their
+          # own PR, or forge a newer review comment and replace the ledger wholesale.
+          jq -s 'map(select(.user.login == "github-actions[bot]" and .user.type == "Bot"))' \
+            all-comments.ndjson > bot-comments.json
+
           # Most recent bot review comment, by highest seq in its marker. This
           # parsing is coupled to the marker format the review prompts write:
           # `<!-- claude-pr-review-bot:v1 seq=<n> sha=<sha> -->`. The `// 0` guard
           # keeps legacy markers without a seq from breaking `tonumber`.
-          jq -s '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
-                 | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
-                 | last // empty' all-comments.ndjson > last_review.json
+          jq '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
+              | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
+              | last // empty' bot-comments.json > last_review.json
 
           PREV_SHA=""
           LAST_SEQ="0"
@@ -238,9 +246,9 @@ jobs:
           # write access can edit a bot comment, and half of this one is prose inviting a correction.
           # No `|| :` for the same reason as the fetch above — reporting `[]` is unrecoverable
           # because nobody knows to look, while a dead step is one `/review` away from fixed.
-          jq -s '[.[] | select(.body | startswith("<!-- claude-pr-review-resolution:v1"))]
-                 | map((.body | capture("(?s)^<!-- claude-pr-review-resolution:v1\n(?<j>.*?)\n-->") | .j | fromjson)? // empty)
-                 | map(select(.ids | length > 0))' all-comments.ndjson > resolutions.json
+          jq '[.[] | select(.body | startswith("<!-- claude-pr-review-resolution:v1"))]
+              | map((.body | capture("(?s)^<!-- claude-pr-review-resolution:v1\n(?<j>.*?)\n-->") | .j | fromjson)? // empty)
+              | map(select(.ids | length > 0))' bot-comments.json > resolutions.json
           [ -s resolutions.json ] || echo '[]' > resolutions.json
           echo "resolutions_pending=$(jq 'length' resolutions.json)"
 
@@ -408,7 +416,8 @@ jobs:
           # Streamed and slurped, not `--paginate --jq '[...]'`: that filter runs per page, and the
           # multi-line result made this test exit 2 — which `if` swallows, so the guard failed open.
           if newest=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' \
-              | jq -s '[.[] | select(.body | startswith("<!-- claude-pr-review-bot:v1"))]
+              | jq -s '[.[] | select(.user.login == "github-actions[bot]" and .user.type == "Bot"
+                                     and (.body | startswith("<!-- claude-pr-review-bot:v1")))]
                        | map(.body | capture("seq=(?<n>[0-9]+)").n | tonumber) | max // 0'); then
             if [ "$newest" -ge "$NEXT_SEQ" ]; then
               echo "::error::seq $newest was published while this run worked; expected $(( NEXT_SEQ - 1 )). Re-run /review."

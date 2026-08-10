@@ -150,7 +150,7 @@ jobs:
           # Matched on author as well as marker: a marker is a label anyone can type, and picking a
           # comment to overwrite by prefix alone lets a commenter choose which one this step edits.
           existing=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-            --jq '.[] | select(.user.login == "github-actions[bot]"
+            --jq '.[] | select(.user.login == "github-actions[bot]" and .user.type == "Bot"
                                and (.body | startswith("<!-- claude-pr-review-bot:v1 seq=1 "))) | .id' | head -n 1)
           if [ -n "$existing" ]; then
             jq -Rs '{body: .}' < review.md | gh api --method PATCH "repos/$REPO/issues/comments/$existing" --input -
