@@ -306,16 +306,13 @@
 <script setup lang="ts">
 import { useElementSize, watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
-import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import VgiIcon from '@/components/mini-widgets/VgiIcon.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomIcons } from '@/composables/useCustomIcons'
-import {
-  getDataLakeVariableData,
-  listenDataLakeVariable,
-  listenToDataLakeVariablesInfoChanges,
-} from '@/libs/actions/data-lake'
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { listenToDataLakeVariablesInfoChanges, unlistenToDataLakeVariablesInfoChanges } from '@/libs/actions/data-lake'
 import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
 import { type CustomIcon, customIconRefFromId, idFromCustomIconRef, isCustomIconRef } from '@/libs/custom-icons'
 import { CurrentlyLoggedVariables, datalogger } from '@/libs/sensors-logging'
@@ -367,7 +364,9 @@ onBeforeMount(() => {
 
 const widgetStore = useWidgetManagerStore()
 
-const currentState = ref<unknown>(0)
+// Keyed on the variable name so that every writer of it — the config dialog, a preset, or a BlueOS
+// profile sync, which patches the widget in place rather than remounting it — resubscribes.
+const { value: currentState } = useDataLakeVariable(() => miniWidget.value.options.variableName)
 
 const finalValue = computed(() => Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value))
 
@@ -433,9 +432,6 @@ const closeVgiDialog = async (): Promise<void> => {
   managerVars.configMenuOpen = false
 }
 
-const updateVariableState = (): void => {
-  currentState.value = getDataLakeVariableData(miniWidget.value.options.variableName)
-}
 const updateWidgetName = (): void => {
   miniWidget.value.name = miniWidget.value.options.displayName || miniWidget.value.options.variableName
 }
@@ -444,6 +440,8 @@ const updateGenericVariablesNames = (): void => {
   allVariablesNames.value = variablesNames
   // TODO: Update CurrentlyLoggedVariables to match data lake state
 }
+
+let variablesInfoListenerId: string | undefined
 
 const logData = computed(() => ({
   displayName: props.miniWidget.options.displayName,
@@ -484,18 +482,9 @@ watch(
   { immediate: true }
 )
 
-// Watch for changes in the data lake variable
-watch(
-  () => miniWidget.value.options.variableName,
-  (newVariableName) => {
-    if (!newVariableName) return
-    updateVariableState()
-  }
-)
 watch(
   miniWidget,
   () => {
-    updateVariableState()
     updateWidgetName()
     updateGenericVariablesNames()
   },
@@ -508,7 +497,6 @@ onMounted(() => {
     miniWidget.value.options.variableName = miniWidget.value.options.variableName.replaceAll('.', '/')
   }
 
-  updateVariableState()
   updateWidgetName()
   updateGenericVariablesNames()
 
@@ -517,11 +505,13 @@ onMounted(() => {
   }
 
   // Update list of available variables when the data-lake has new stuff
-  listenToDataLakeVariablesInfoChanges(updateGenericVariablesNames)
-
-  chooseVariable(miniWidget.value.options.variableName)
+  variablesInfoListenerId = listenToDataLakeVariablesInfoChanges(updateGenericVariablesNames)
 
   lastWidgetName.value = miniWidget.value.options.displayName
+})
+
+onUnmounted(() => {
+  if (variablesInfoListenerId !== undefined) unlistenToDataLakeVariablesInfoChanges(variablesInfoListenerId)
 })
 
 const fuseOptions = { includeScore: true, ignoreLocation: true, threshold: 0.3 }
@@ -624,8 +614,6 @@ const chooseVariable = (variable: string): void => {
   miniWidget.value.options.variableName = variable
   variableNameSearchString.value = ''
   showVariableChooseModal.value = false
-
-  listenDataLakeVariable(variable, updateVariableState)
 }
 
 const onChooseVariable = (variable: string): void => {
