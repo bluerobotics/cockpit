@@ -63,8 +63,10 @@ jobs:
           model: ${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}
           # The investigation passes are search-heavy — tracing callers out to an entry point is
           # several greps per changed function — and at 40 the budget was spent before they started.
-          max_turns: "80"
-          timeout_minutes: "25"
+          # Kept in step with the re-review, which ran out of turns at 80 on a large PR and published
+          # nothing; a first review of the same PR does the same reading.
+          max_turns: "120"
+          timeout_minutes: "35"
           allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),View,GlobTool,GrepTool,BatchTool,Write"
           system_prompt: |
             You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
@@ -116,9 +118,9 @@ jobs:
         continue-on-error: true
         env:
           EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
-          # An estimate until the first runs land: re-derive it from the cost line this step prints,
-          # the way DEMO_BUDGET_USD was. max_turns is what actually caps spend; this only reports.
-          REVIEW_BUDGET_USD: '4.00'
+          # Derived from the cost line this step prints: 80 turns landed at $3.83-$4.02, so 120 turns
+          # sits near $6. max_turns is what actually caps spend; this only reports.
+          REVIEW_BUDGET_USD: '6.00'
         run: .github/scripts/price-agent-run.sh "$EXECUTION_FILE" "$REVIEW_BUDGET_USD" 'PR review'
 
       # Sticky by the seq=1 marker, so a re-run of this workflow replaces its own comment rather
