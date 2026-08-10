@@ -206,18 +206,14 @@ jobs:
             LAST_REVIEW_TIME=$(jq -r '.created_at // ""' last_review.json)
             # The findings ledger, carried in a hidden block at the end of every review comment.
             # Extracted as data rather than re-read out of the previous review's prose, which is
-            # how statuses used to drift between runs. Takes the LAST block: a review that quotes
-            # the marker in its prose — as one discussing this very extractor did — leaves an
-            # earlier match that swallows everything between the two and parses as nothing.
-            awk '/<!-- claude-pr-review-ledger/ { buf = ""; inblock = 1; next }
-                 inblock && /^-->/ { inblock = 0; last = buf; next }
-                 inblock { buf = buf $0 ORS }
-                 END { printf "%s", last }' previous-review.md > ledger-block.json
+            # how statuses used to drift between runs. The same script guards the publish step, so
+            # a review can never be published in a shape this cannot read back. Its stderr goes to
+            # the log because saying which line failed to parse is the point of having it.
             # Keeps the empty ledger for a pre-ledger review or a malformed block, which makes the
             # agent rebuild it from `previous-review.md` rather than losing the findings.
-            if jq -e 'type == "array"' ledger-block.json >/dev/null 2>&1; then
-              cp ledger-block.json previous-ledger.json
-            fi
+            .github/scripts/review-ledger.sh previous-review.md > ledger-block.json \
+              && cp ledger-block.json previous-ledger.json \
+              || echo "::warning::no readable findings ledger in the previous review"
           fi
           echo "previous_ledger_entries=$(jq 'length' previous-ledger.json)"
           echo "PREV_SHA=$PREV_SHA" >> "$GITHUB_ENV"
@@ -388,11 +384,12 @@ jobs:
           [ -s review.md ] || { echo "::error::the agent produced no review"; exit 1; }
 
           # The ledger is the PR's entire finding history, and it survives only by being copied from
-          # each published comment into the next. Publishing one without it loses the lot, silently,
-          # so it is checked at the single consumer rather than trusted at every path that writes the
-          # file. A failed publish is re-runnable; a published comment is not.
-          grep -q '<!-- claude-pr-review-ledger' review.md \
-            || { echo "::error::review.md carries no findings ledger"; exit 1; }
+          # each published comment into the next. Checked with the same script that reads it back, so
+          # the two can never disagree about what counts as a block — a substring match here passed a
+          # review whose prose merely discussed the ledger. A failed publish is re-runnable; a
+          # published comment is not.
+          .github/scripts/review-ledger.sh review.md > /dev/null \
+            || { echo "::error::review.md carries no readable findings ledger"; exit 1; }
 
           # Serialization should make this unreachable; it is here because the failure it catches is
           # a silent one. If another run published while this one was working, its ledger is the
