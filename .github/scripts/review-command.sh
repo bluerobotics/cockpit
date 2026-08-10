@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #
-# Reads the slash command out of a PR comment: for a `/resolve`, the finding ids and the reason.
+# Reads the slash command out of a PR comment: which command it is, and for `/resolve` the finding
+# ids and reason. This is the authoritative gate — a workflow `if:` cannot see past the first line of
+# a body, so it only pre-filters, and this decides whether a run happens.
 #
 # The ids are taken only from the leading run of them: a reason is free text and routinely cites
 # another finding ("same reasoning as 6.3"), which a scan of the whole line would silently close.
@@ -8,7 +10,8 @@
 # Reads COMMENT_BODY, COMMENT_AUTHOR and COMMENT_URL from the environment rather than taking the body
 # as an argument, so a comment can never reach a shell as code.
 #
-# Usage: review-command.sh <output-file>      # writes the /resolve payload, or `{}`
+# Usage: review-command.sh --command          # prints `command=review|resolve|none` for GITHUB_OUTPUT
+#        review-command.sh <output-file>      # writes the /resolve payload, or `{}`
 #        review-command.sh --self-check
 
 set -euo pipefail
@@ -49,6 +52,18 @@ self_check() {
   tmp=$(mktemp)
   trap 'rm -f "$tmp"' RETURN
 
+  check_command() {
+    local body=$1 expected=$2 got
+    got=$(COMMENT_BODY=$body "$0" --command)
+    if [ "$got" = "command=$expected" ]; then
+      echo "  ok    [command] ${body//$'\n'/\\n}"
+    else
+      echo "  FAIL  [command] ${body//$'\n'/\\n}"
+      echo "        expected command=$expected, got $got"
+      failures=$((failures + 1))
+    fi
+  }
+
   check_resolve() {
     local body=$1 expected=$2 got
     COMMENT_BODY=$body COMMENT_AUTHOR=u COMMENT_URL=U "$0" "$tmp" > /dev/null
@@ -62,6 +77,20 @@ self_check() {
       failures=$((failures + 1))
     fi
   }
+
+  # A command is the first token of the first line. The bodies that broke when this lived in the
+  # workflow `if:` — trailing newline, and command-then-context — are the first two here.
+  check_command '/review' review
+  check_command $'/review\n' review
+  check_command $'/review\n\npushed the fixes' review
+  check_command $'/review\r\nCRLF from the web UI' review
+  check_command '/review please' review
+  check_command '/resolve 1.1 fine by me' resolve
+  check_command $'/resolve\n' resolve
+  check_command '/reviewing this now' none
+  check_command '/resolved 6.1 yesterday' none
+  check_command 'just a normal comment' none
+  check_command '' none
 
   check_resolve '/resolve 1.1 accepted the scoping argument' \
     '{"ids":["1.1"],"reason":"accepted the scoping argument"}'
@@ -93,8 +122,11 @@ case "${1:-}" in
   --self-check)
     self_check
     ;;
+  --command)
+    echo "command=$(command_of "${COMMENT_BODY-}")"
+    ;;
   '')
-    echo 'usage: review-command.sh <output-file> | --self-check' >&2
+    echo 'usage: review-command.sh --command | <output-file> | --self-check' >&2
     exit 1
     ;;
   *)
