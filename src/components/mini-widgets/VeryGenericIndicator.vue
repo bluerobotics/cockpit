@@ -650,6 +650,8 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
   miniWidget.value.options.variableUnit = template.variableUnit
   miniWidget.value.options.variableMultiplier = template.variableMultiplier
   miniWidget.value.options.decimalPlaces = template.decimalPlaces ?? null
+  // Every preset is numeric, and this flag would bypass both the multiplier and the decimal places.
+  miniWidget.value.options.useStringVariable = false
 }
 </script>
 
