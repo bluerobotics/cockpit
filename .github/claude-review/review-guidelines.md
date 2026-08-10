@@ -219,8 +219,7 @@ Sub-check ALL of the following, but only write out the ones that produce a findi
 - Behavior changes ride alone: flag a fix or a modification to existing behavior folded into a feature commit that happens to touch the same code. It has to be reviewable on its own, and revertable or backportable without dragging the feature along. The exception is a large refactor of that same behavior, where the change genuinely belongs to the refactor commit and splitting it out would be artificial.
 
 ### 9. Tests
-- Missing coverage for new logic, brittle tests, tests that were removed/weakened, testability concerns.
-- Non-trivial logic should leave behind at least ONE runnable check (an assert-based self-check or a small test) that fails if the logic breaks. Flag non-trivial additions that ship with no such check. Trivial one-liners need none.
+- Brittle tests, tests that were removed/weakened, testability concerns. Do not ask for new tests or checks for logic the PR adds — that is not a requirement here.
 
 ### 10. Documentation
 - README updates when a feature differs between Lite and Standalone (per AGENTS.md), in-code JSDoc, user-facing docs, changelog-worthy items.
