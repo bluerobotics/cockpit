@@ -64,8 +64,6 @@ Prefer deletion over addition, boring over clever, and the shortest working diff
 
 **Do not be lazy about:** understanding the problem, input validation at trust boundaries, error handling that prevents data loss, security, accessibility, and the calibration real hardware needs (clocks drift, sensors read off — the vehicle is never the spec ideal).
 
-**Leave one runnable check.** Non-trivial logic must leave behind at least ONE runnable check — the smallest thing that fails if the logic breaks (an assert-based self-check or one small test; no new frameworks or fixtures). Trivial one-liners need none.
-
 **Mark deliberate corner-cuts.** When you knowingly cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic), leave a `ponytail:` comment naming the ceiling and the upgrade path.
 
 ## Scope discipline
