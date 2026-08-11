@@ -9,12 +9,13 @@ import {
 } from '@/assets/joystick-profiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OtherProtocol } from '@/libs/joystick/protocols/other'
+import { toPlain } from '@/libs/utils'
 import type { JoystickProtocolActionsMapping } from '@/types/joystick'
 import type { Profile, View } from '@/types/widgets'
 
-// Proxy-safe deep clone; structuredClone can't handle Vue reactivity wrappers or function references that
-// may end up inside the stored mappings/views (seen in the wild when importing defaults crashes the renderer).
-const safeClone = <T>(value: T): T => JSON.parse(JSON.stringify(toRaw(value)))
+// toRaw keeps the JSON walk untracked: buildViewsGroupAfterImport runs inside a computed
+// (useVehicleDefaultsViewsImport.ts), which would otherwise depend on every widget in the layout.
+const safeClone = <T>(value: T): T => toPlain(toRaw(value))
 
 /**
  * Proxy-safe deep clone of a joystick mapping. Use this whenever the import flow needs a detached

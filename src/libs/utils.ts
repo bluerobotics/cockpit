@@ -410,3 +410,14 @@ export const tryACoupleOfTimes = async <T>(
 export const messageFromError = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error)
 }
+
+/**
+ * Deep-clone a JSON-representable value into plain data, dropping any Vue reactivity proxy on it or
+ * nested inside it. Prefer this over `structuredClone`, which throws on reactive proxies. Functions
+ * and `undefined` values are dropped, as JSON cannot represent them. The walk reads through proxies,
+ * so unwrap with `toRaw` first when calling from a `computed` or a render function, or every nested
+ * read becomes a dependency of it.
+ * @param {T} value The value to flatten.
+ * @returns {T} A detached copy holding no proxies.
+ */
+export const toPlain = <T>(value: T): T => JSON.parse(JSON.stringify(value))
