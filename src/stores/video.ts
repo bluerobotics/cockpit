@@ -1226,17 +1226,7 @@ export const useVideoStore = defineStore('video', () => {
     const streamCorr = streamsCorrespondency.value.find((stream) => stream.externalId === streamID)
 
     if (streamCorr) {
-      const oldInternalName = streamCorr.name
       streamCorr.name = newInternalName
-
-      const streamData = activeStreams.value[oldInternalName]
-      if (streamData) {
-        activeStreams.value = {
-          ...activeStreams.value,
-          [newInternalName]: streamData,
-        }
-        delete activeStreams.value[oldInternalName]
-      }
       lastRenamedStreamName.value = newInternalName
     } else {
       throw new Error(`Stream with ID '${streamID}' not found.`)
