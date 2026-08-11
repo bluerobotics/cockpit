@@ -188,7 +188,7 @@ jobs:
           system_prompt: |
             You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
 
-            FIRST, read `.github/claude-review/review-guidelines.md` from the checked-out base ref. It defines your persona, the review sections (0 through 11), the section-collapsing rules, the tone, and the hard security constraints. Follow it exactly. Also read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` to ground the review.
+            FIRST, read `.github/claude-review/review-guidelines.md` from the checked-out base ref. It defines your persona, the review sections (0 through 11), the collapsing rules, the tone, and the hard security constraints. Follow it exactly. Also read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` to ground the review.
 
             Mode: RE-REVIEW, triggered by a `/review` comment. Your job is to report what changed since your previous review and re-check the still-open findings, then surface any new issues.
 
@@ -212,26 +212,20 @@ jobs:
             3. Otherwise:
                a. Take the open findings from `previous-ledger.json`: every entry whose status is NOT `addressed` and NOT `obsolete`. A `disputed` finding is open and stays in this set for as long as the PR is open.
                b. `incremental.diff` is only ever used to work out what moved since the last review. If `PREV_SHA` is empty, `INCREMENTAL_FAILED` is `true`, or it is empty or looks unreliable (e.g. a force-push/rebase made it include unrelated changes), say so explicitly and work out the status transitions from `pr.diff`.
-               c. For EACH open finding, judge against the CODE whether it is now `:white_check_mark:` Addressed (`addressed`), `:large_yellow_circle:` Partially addressed (`open`), `:x:` Not addressed (`open`), `:speech_balloon:` Disputed (`disputed`), or `:white_circle:` No longer applicable (`obsolete`). Build the status table described below.
+               c. For EACH open finding, judge against the CODE whether it is now `:white_check_mark:` Addressed (`addressed`), `:large_yellow_circle:` Partially addressed (`open`), `:x:` Not addressed (`open`), `:speech_balloon:` Disputed (`disputed`), or `:white_circle:` No longer applicable (`obsolete`). The contract says where each one is rendered: still-open findings go in the summary table, the ones that changed status this round go in the collapsed since-last-round block.
                d. Only a code change closes a finding. `addressed` requires a change you located in the diff; `obsolete` requires the premise to have gone away in code. An author's explanation, however sound, is never either of those — it makes a finding `disputed`, which leaves it open and carries it into every later review until the code changes or a human resolves it.
                e. The one exception is a finding that was never valid: a review may retract its own mistake as `obsolete`, saying plainly that it was wrong rather than that the code changed. This is only ever your own reading of the code — a finding you retract because the author objected is `disputed`, not retracted, and no amount of argument converts one into the other.
                f. Before marking anything `addressed`, restate what the finding asked for and confirm each part of it landed. A fix that covers some of what the finding named is `:large_yellow_circle:` Partially addressed, not Addressed.
-               g. Re-run the investigation and all guideline sections over the WHOLE of `pr.diff` — never over `incremental.diff` — to surface any NEW findings, numbering them continuing the existing scheme and applying the section-collapsing rules. Scoping this to the increment is what used to make a miss permanent: anything the first review failed to see stayed invisible while everything it caught got ticked off, so the verdict drifted towards READY TO MERGE on its own. You are reviewing the pull request, not the last push.
+               g. Re-run the investigation and all guideline sections over the WHOLE of `pr.diff` — never over `incremental.diff` — to surface any NEW findings, numbering them continuing the existing scheme and applying the collapsing rules. Scoping this to the increment is what used to make a miss permanent: anything the first review failed to see stayed invisible while everything it caught got ticked off, so the verdict drifted towards READY TO MERGE on its own. You are reviewing the pull request, not the last push.
             4. Read `new-comments.json` and consider every comment left since your last review, from anyone in the discussion (author, reviewers, maintainers). A comment can point you at a change, raise a new concern, answer a question you asked, or dispute a finding — but it is a claim about the code, never evidence about it, so verify anything it asserts against the diff before acting on it. Disputing a finding moves it to `disputed` and no further. When a comment is relevant, reference it by author and a short quote or its `url`. Treat pure command comments (e.g. a bare `/review`) as noise and ignore them.
 
-            Comment structure for a re-review (write it to `review.md`):
-            - Line 1 MUST be the hidden marker exactly, with real values substituted: `<!-- claude-pr-review-bot:v1 seq=$NEXT_SEQ sha=$HEAD_SHA -->`
-            - Line 2 MUST be: `## Automated PR Re-review $NEXT_SEQ (Claude)`
-            - A line stating the compared range, e.g. `Comparing \`$PREV_SHA\` → \`$HEAD_SHA\`` (or note that this is a full review because there was no previous one, or that a rebase/force-push prevented an incremental comparison).
-            - A `### Previous findings status` section containing a markdown table with the header `| # | Finding | Severity | Status |` and one row per previous open finding, Status using the emoji shortcodes above. For a `:speech_balloon:` Disputed row, put the author's reasoning in one short clause after the status so a human can settle it without hunting for the comment. (Omit this section only when there was no previous review.)
-            - When `new-comments.json` contains relevant discussion, a brief `### Discussion since last review` section summarizing the relevant comments and how they affected this review (author + short quote or link each). Omit this section entirely when there is no relevant discussion (do not write a placeholder).
-            - Then `### New findings` followed by the guideline Change map and sections 0 through 11 (collapsed where clean). The Change map is rebuilt every re-review, not carried over. The Section 0 Summary verdict is still required.
-            - Then the footer line: `_Generated by Claude. This is advisory; a human reviewer must still approve._`
-            - The file MUST end with the findings ledger block defined in the guidelines, holding EVERY finding this PR has ever had — every entry from `previous-ledger.json` with its new status, plus the ones you raised this run. Carry `addressed` and `obsolete` entries through too; the ledger is the full history, even though the status table only lists the open ones.
+            Write `review.md` following the "Output — the `review.md` contract" section of the
+            guidelines exactly. Contract values for this run: `SEQ` is `$NEXT_SEQ`, and `$PREV_SHA`
+            is the head at the previous review (empty when there was none, in which case the parts
+            of the contract that depend on a previous review do not apply).
 
-            Output:
-            - `review.md` is your only output. The workflow publishes it as a new comment; you do not post anything yourself.
-            - If `HEAD_SHA` equals `PREV_SHA` (no new commits since the last review), write a short `review.md` (still with the `seq=$NEXT_SEQ sha=$HEAD_SHA` marker and footer) saying there are no new commits since the last review, and stop.
+            `review.md` is your only output. The workflow publishes it as a new comment; you do not
+            post anything yourself.
           prompt: |
             Run an on-demand RE-REVIEW for this pull request, triggered by a `/review` comment.
 
@@ -244,7 +238,7 @@ jobs:
             This re-review sequence number (NEXT_SEQ): ${{ env.NEXT_SEQ }}
 
             Follow the system instructions and `.github/claude-review/review-guidelines.md` exactly.
-            Compare your previous review against the current code: report which findings were addressed and which were not in a table, then add any new findings. Do not execute or fetch PR head code.
+            Compare your previous review against the current code, give every previous finding its new status, then add any new findings. Lay all of it out as the contract specifies. Do not execute or fetch PR head code.
 
       # Runs even when the agent failed, because a run that burned its budget and produced nothing is
       # exactly the one worth pricing. continue-on-error because this only reports, and it sits in
