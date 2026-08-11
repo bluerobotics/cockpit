@@ -193,6 +193,18 @@ export const isElectron = (): boolean => {
 }
 
 /**
+ * Detects the host operating system, named as users know it
+ * @returns {'Linux' | 'Windows' | 'macOS' | undefined} The host OS name, or undefined when it cannot be told
+ */
+export const hostOsName = (): 'Linux' | 'Windows' | 'macOS' | undefined => {
+  const platform = (navigator.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent).toLowerCase()
+  if (platform.includes('linux')) return 'Linux'
+  if (platform.includes('win')) return 'Windows'
+  if (platform.includes('mac')) return 'macOS'
+  return undefined
+}
+
+/**
  * Copy text to clipboard
  * @param {string} text The text to copy
  * @returns {Promise<void>} A promise that resolves when the text is copied

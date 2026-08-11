@@ -110,6 +110,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
 | **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |
+| **Voice Alerts** | Uses the browser/OS speech voices, which vary per system | ✅ Built-in offline voice on every platform (no setup), so alerts sound the same everywhere |
 | **Performance** | Standard | ✅ Optimized build for each system |
 | **Installation** | ✅ No install needed | Requires download |
 | **Multi-platform** | ✅ Any device | Windows, macOS, Linux |
