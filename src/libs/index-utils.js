@@ -6,6 +6,24 @@
  * Handles backup, import, logs download, and reset functionality
  */
 
+// Mirrors `serializeForLogging` in `./utils`, which this module cannot import: index.html loads it as a
+// standalone asset, so a bare specifier here would 404 and take the whole pre-mount capture down with it.
+const serializeForLogging = (value) => {
+  try {
+    if (value instanceof Error) return value.stack ?? `${value.name}: ${value.message}`
+    if (typeof value === 'object' && value !== null) {
+      try {
+        return JSON.stringify(value)
+      } catch {
+        return String(value)
+      }
+    }
+    return String(value)
+  } catch {
+    return ''
+  }
+}
+
 // Global captured logs array
 let capturedLogs = []
 let isCapturing = true
@@ -28,18 +46,7 @@ const originalConsole = {
       capturedLogs.push({
         timestamp: new Date().toISOString(),
         level: method.toUpperCase(),
-        message: args
-          .map((arg) => {
-            if (typeof arg === 'object') {
-              try {
-                return JSON.stringify(arg, null, 2)
-              } catch (e) {
-                return String(arg)
-              }
-            }
-            return String(arg)
-          })
-          .join(' '),
+        message: args.map((arg) => serializeForLogging(arg)).join(' '),
       })
     } else {
       // Restore original console methods
@@ -58,10 +65,12 @@ const originalConsole = {
 // Capture uncaught errors
 window.addEventListener('error', function (event) {
   if (isCapturing) {
+    // This bundle is all the user can download when the app never mounts, so keep the stack whenever there is one.
+    const details = event.error?.stack ?? `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`
     capturedLogs.push({
       timestamp: new Date().toISOString(),
       level: 'ERROR',
-      message: `Uncaught Error: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`,
+      message: `Uncaught Error: ${details}`,
     })
   }
 })
@@ -69,10 +78,11 @@ window.addEventListener('error', function (event) {
 // Capture unhandled promise rejections
 window.addEventListener('unhandledrejection', function (event) {
   if (isCapturing) {
+    const reason = serializeForLogging(event.reason)
     capturedLogs.push({
       timestamp: new Date().toISOString(),
       level: 'ERROR',
-      message: `Unhandled Promise Rejection: ${event.reason}`,
+      message: `Unhandled Promise Rejection: ${reason}`,
     })
   }
 })
