@@ -1,6 +1,7 @@
 import { type ComputedRef, computed, reactive, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { openSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { poiLatitudeVariableId, poiLongitudeVariableId, syncPoiCoordinateVariables } from '@/libs/poi/poi-data-lake'
 import { machinizeString } from '@/libs/utils'
@@ -184,6 +185,8 @@ const createState = (): PointsOfInterestState => {
     })
   }
 
+  let coordinateSyncFailureReported = false
+
   // The only place downstream code may assume a list, since this shared singleton is created during the
   // setup of every POI consumer and a throw here would take all of them down at once.
   const storedListIsReadable = computed(() => Array.isArray(pointsOfInterest.value))
@@ -201,9 +204,21 @@ const createState = (): PointsOfInterestState => {
         console.warn(`[PointsOfInterest] Stored '${pointsOfInterestKey}' is not a list. Skipping coordinate sync.`)
         return
       }
-      syncPoiCoordinateVariables(pois)
-      syncOutputListeners(pois)
-      seedLiteralCoordinateValues(pois)
+      // The data lake and its transforming functions are shared state the POIs neither own nor can
+      // validate, so a malformed entry there degrades the POI coordinates rather than the consumers.
+      try {
+        syncPoiCoordinateVariables(pois)
+        syncOutputListeners(pois)
+        seedLiteralCoordinateValues(pois)
+      } catch (error) {
+        console.error(`[PointsOfInterest] Failed to sync the points of interest. Error: ${error}`)
+        // Every later POI edit hits the same failure, so tell the user once instead of on each one.
+        if (!coordinateSyncFailureReported) {
+          coordinateSyncFailureReported = true
+          const failureMessage = 'Could not update the points of interest. Their positions may be out of date.'
+          openSnackbar({ message: failureMessage, variant: 'error', closeButton: true })
+        }
+      }
     },
     { deep: true, immediate: true }
   )
