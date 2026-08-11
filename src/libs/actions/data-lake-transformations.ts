@@ -18,18 +18,43 @@ const transformingFunctionsKey = 'cockpit-transforming-functions'
 
 let globalTransformingFunctions: TransformingFunction[] = []
 
+// Stored entries the runtime cannot use, held aside so a later save can round-trip them untouched.
+let unusableTransformingFunctions: TransformingFunction[] = []
+
+// Everything that walks the function list assumes both fields are strings, so a stored entry missing
+// either one throws somewhere far from here (`getDataLakeVariableIdFromInput` on load, the POI
+// coordinate sync while pruning), and such an entry can back no variable anyway.
+const isUsableTransformingFunction = (func: TransformingFunction): boolean =>
+  typeof func?.id === 'string' && typeof func.expression === 'string'
+
 const loadTransformingFunctions = (): void => {
   const transformingFunctions = settingsManager.getKeyValue(transformingFunctionsKey)
   if (transformingFunctions === undefined) {
     globalTransformingFunctions = []
     return
   }
-  globalTransformingFunctions = transformingFunctions as TransformingFunction[]
+  // Reading a non-list as empty keeps the failure to the transforming functions: this runs at import
+  // time, so throwing here takes down the whole app rather than the features that use them.
+  if (!Array.isArray(transformingFunctions)) {
+    console.warn(`Stored '${transformingFunctionsKey}' is not a list. Reading it as empty.`)
+    globalTransformingFunctions = []
+    return
+  }
+  const storedFunctions = transformingFunctions as TransformingFunction[]
+  globalTransformingFunctions = storedFunctions.filter((func) => isUsableTransformingFunction(func))
+  unusableTransformingFunctions = storedFunctions.filter((func) => !isUsableTransformingFunction(func))
+  const droppedCount = unusableTransformingFunctions.length
+  if (droppedCount > 0) {
+    console.warn(`Ignoring ${droppedCount} stored transforming function(s) with no id or expression.`)
+  }
   updateTransformingFunctionListeners()
 }
 
 const saveTransformingFunctions = (): void => {
-  settingsManager.setKeyValue(transformingFunctionsKey, globalTransformingFunctions)
+  // The unusable entries go back untouched. This key is vehicle-synced, so persisting only the filtered
+  // list would delete them for every operator of that vehicle, automatically and with no undo.
+  const functionsToStore = [...globalTransformingFunctions, ...unusableTransformingFunctions]
+  settingsManager.setKeyValue(transformingFunctionsKey, functionsToStore)
   updateTransformingFunctionListeners()
 }
 
