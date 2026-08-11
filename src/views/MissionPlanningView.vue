@@ -733,7 +733,7 @@ import {
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
-import { degrees, messageFromError } from '@/libs/utils'
+import { degrees, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -828,7 +828,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   logUserAction('Uploaded mission to vehicle')
   uploadingMission.value = true
   missionUploadProgress.value = 0
-  const missionItemsToUpload: Waypoint[] = JSON.parse(JSON.stringify(missionStore.currentPlanningWaypoints))
+  const missionItemsToUpload = toPlain(missionStore.currentPlanningWaypoints)
 
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionUploadProgress.value = loadingPerc

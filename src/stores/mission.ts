@@ -18,6 +18,7 @@ import {
 } from '@/libs/mission/automatic-name'
 import { generateMissionThumbnailSvg } from '@/libs/mission/library'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
+import { toPlain } from '@/libs/utils'
 import {
   AltitudeReferenceType,
   CockpitMission,
@@ -234,8 +235,8 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   const takeSnapshot = (): MissionSnapshot => ({
-    waypoints: JSON.parse(JSON.stringify(currentPlanningWaypoints)) as Waypoint[],
-    surveys: JSON.parse(JSON.stringify(currentPlanningSurveys)) as Survey[],
+    waypoints: toPlain(currentPlanningWaypoints),
+    surveys: toPlain(currentPlanningSurveys),
   })
 
   /**
