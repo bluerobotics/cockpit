@@ -47,9 +47,15 @@ export const getDataLakeVariableIdFromInput = (input: string): string | null => 
   return match[0].replace('{{', '').replace('}}', '').trim()
 }
 
+/** Hard cap on substitution/discovery passes; protects against pathological inputs. */
+const MAX_DATA_LAKE_RESOLUTION_PASSES = 10
+
 /**
  * Replace all data lake inputs in a string with values from the data lake.
- * If a possible input is not found in the data lake, it will be left unchanged.
+ * Runs multiple substitution passes until the result is stable, so nested
+ * templates (e.g. `{{vehicle/{{autopilotSystemId}}/parameters/X}}`) resolve
+ * fully in a single call. Missing variables are left unchanged by the default
+ * replace function, so subsequent passes can't reintroduce new inputs.
  * @param {string} input The string to replace data lake inputs in
  * @param {Function} replaceFunction The function to use to replace the data lake inputs. If not provided, the default function will be used.
  * @returns {string} The string with data lake inputs replaced
@@ -67,17 +73,40 @@ export const replaceDataLakeInputsInString = (input: string, replaceFunction?: (
 
   const replaceFunctionToUse = replaceFunction || defaultReplaceFunction
 
-  return input.toString().replace(dataLakeInputRegex, (match) => replaceFunctionToUse(match))
+  let current = input.toString()
+  for (let pass = 0; pass < MAX_DATA_LAKE_RESOLUTION_PASSES; pass++) {
+    const next = current.replace(dataLakeInputRegex, (match) => replaceFunctionToUse(match))
+    if (next === current) break
+    current = next
+  }
+  return current
 }
 
 /**
- * Find all data lake variable ids in a string.
+ * Find all data lake variable ids referenced in a string, including those
+ * exposed only after intermediate templates resolve. The discovery runs the
+ * same multi-pass loop as `replaceDataLakeInputsInString` so callers that need
+ * to subscribe to dependencies see the IDs that the eventual substitution will
+ * touch (e.g. both `autopilotSystemId` and the path it expands into).
  * @param {string} input The string to search for data lake variable ids
  * @returns {string[]} An array of data lake variable ids
  */
 export const findDataLakeVariablesIdsInString = (input: string): string[] => {
-  const inputs = findDataLakeInputsInString(input)
-  return inputs.map((i) => getDataLakeVariableIdFromInput(i)).filter((id) => id !== null)
+  if (typeof input !== 'string') return []
+
+  const discoveredIds = new Set<string>()
+  let current = input.toString()
+  for (let pass = 0; pass < MAX_DATA_LAKE_RESOLUTION_PASSES; pass++) {
+    findDataLakeInputsInString(current)
+      .map((rawInput) => getDataLakeVariableIdFromInput(rawInput))
+      .filter((id): id is string => id !== null)
+      .forEach((id) => discoveredIds.add(id))
+
+    const next = replaceDataLakeInputsInString(current)
+    if (next === current) break
+    current = next
+  }
+  return Array.from(discoveredIds)
 }
 
 export const replaceDataLakeInputsInJsonString = (jsonString: string): string => {

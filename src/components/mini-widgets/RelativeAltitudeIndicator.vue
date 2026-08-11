@@ -121,7 +121,9 @@ const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 const currentAltitude = computed<number | undefined>(() => {
   if (resolvedAltitudeVariableId.value === undefined || typeof rawAltitude.value !== 'number') return undefined
+  if (!Number.isFinite(rawAltitude.value)) return undefined
   const altMeters = rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
+  if (!Number.isFinite(altMeters)) return undefined
   return unit(altMeters, 'm').to(displayUnitPreferences.distance).toJSON().value as number
 })
 

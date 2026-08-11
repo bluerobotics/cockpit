@@ -1,14 +1,10 @@
 import { settingsManager } from '../settings-management'
-import {
-  findDataLakeInputsInString,
-  findDataLakeVariablesIdsInString,
-  getDataLakeVariableIdFromInput,
-  replaceDataLakeInputsInString,
-} from '../utils-data-lake'
+import { findDataLakeVariablesIdsInString, replaceDataLakeInputsInString } from '../utils-data-lake'
 import {
   createDataLakeVariable,
   DataLakeVariableType,
   deleteDataLakeVariable,
+  getDataLakeVariableData,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
@@ -33,21 +29,27 @@ const saveTransformingFunctions = (): void => {
   updateTransformingFunctionListeners()
 }
 
+// Substitutes `NaN` for any data-lake variable that has not been populated yet,
+// so expressions referencing missing dependencies evaluate to `NaN` instead of
+// throwing a SyntaxError. Once the missing variable's data arrives, the listener
+// fires and the expression is re-evaluated with the real value.
+const expressionReplaceFunction = (match: string): string => {
+  const variableId = match.replace('{{', '').replace('}}', '').trim()
+  if (!variableId) return 'NaN'
+  const variableData = getDataLakeVariableData(variableId)
+  if (variableData === undefined) return 'NaN'
+  return variableData.toString()
+}
+
 /**
  * Evaluates a data-lake expression, replacing `{{ variable }}` inputs with their current values and
  * running the result as a JavaScript expression (so arithmetic like "{{ x }} * 10" works).
+ * Missing dependencies are substituted with `NaN` so the expression can still evaluate.
  * @param {string} expression - The expression to evaluate
  * @returns {string | number | boolean} The evaluated value
  */
 export const evaluateDataLakeExpression = (expression: string): string | number | boolean => {
-  const expressionWithValues = replaceDataLakeInputsInString(expression)
-
-  // Inputs whose variables have no value yet are left as literal '{{ ... }}' placeholders by the replacement.
-  // Bail out with a clear error instead of letting eval fail with a cryptic "Unexpected token '{'" SyntaxError.
-  const unavailableInputs = findDataLakeInputsInString(expressionWithValues)
-  if (unavailableInputs.length > 0) {
-    throw new Error(`Data lake variable(s) not available yet: ${unavailableInputs.join(', ')}.`)
-  }
+  const expressionWithValues = replaceDataLakeInputsInString(expression, expressionReplaceFunction)
 
   // If the expression contains a return statement, we can just evaluate it directly
   if (expression.includes('return')) {
@@ -86,10 +88,10 @@ const getExpressionValue = (func: TransformingFunction): string | number | boole
   return evaluateDataLakeExpression(func.expression)
 }
 
-const variablesListeners: Record<string, Record<string, string[]>> = {}
+const variablesListeners: Record<string, Record<string, string>> = {}
 
-const nextDelayToEvaluateFaillingTransformingFunction: Record<string, number> = {}
-const lastTimeTriedToEvaluateFaillingTransformingFunction: Record<string, number> = {}
+const nextDelayToEvaluateFailingTransformingFunction: Record<string, number> = {}
+const lastTimeTriedToEvaluateFailingTransformingFunction: Record<string, number> = {}
 const initialEvaluationTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
 // Last error logged per function, so a function that keeps failing the same way (e.g. depends on a vehicle
 // parameter that never arrives) is logged once instead of on every dependency update.
@@ -97,6 +99,66 @@ const lastLoggedErrorForTransformingFunction: Record<string, string> = {}
 
 const setupTransformingFunctionsListeners = (): void => {
   globalTransformingFunctions.forEach((func) => {
+    // Re-syncs the listener set to whatever variables the expression currently
+    // resolves into. Necessary for expressions with nested templates like
+    // `{{vehicle/{{autopilotSystemId}}/parameters/X}}` — when the inner
+    // variable changes, the outer reference resolves to a different ID and we
+    // need to listen to the new one.
+    const syncDependencies = (): void => {
+      const desiredIds = new Set(findDataLakeVariablesIdsInString(func.expression))
+      const currentIds = new Set(Object.keys(variablesListeners[func.id] ?? {}))
+
+      desiredIds.forEach((variableId) => {
+        if (currentIds.has(variableId)) return
+        const listenerId = listenDataLakeVariable(variableId, onDependencyChange)
+        if (!variablesListeners[func.id]) variablesListeners[func.id] = {}
+        variablesListeners[func.id][variableId] = listenerId
+      })
+
+      currentIds.forEach((variableId) => {
+        if (desiredIds.has(variableId)) return
+        const listenerId = variablesListeners[func.id]?.[variableId]
+        if (listenerId) unlistenDataLakeVariable(variableId, listenerId)
+        if (variablesListeners[func.id]) delete variablesListeners[func.id][variableId]
+      })
+    }
+
+    const evaluate = (): void => {
+      try {
+        // If the function is failing, we don't want to evaluate it too often
+        const currentDelay = nextDelayToEvaluateFailingTransformingFunction[func.id] || 10
+        const lastTimeTried = lastTimeTriedToEvaluateFailingTransformingFunction[func.id] || 0
+        if (currentDelay > 0 && lastTimeTried + currentDelay > Date.now()) return
+
+        setDataLakeVariableData(func.id, getExpressionValue(func))
+
+        delete nextDelayToEvaluateFailingTransformingFunction[func.id]
+        delete lastTimeTriedToEvaluateFailingTransformingFunction[func.id]
+        delete lastLoggedErrorForTransformingFunction[func.id]
+      } catch (error) {
+        lastTimeTriedToEvaluateFailingTransformingFunction[func.id] = Date.now()
+        const currentDelay = nextDelayToEvaluateFailingTransformingFunction[func.id] || 10
+        const nextDelay = Math.min(2 * currentDelay, 10000)
+        nextDelayToEvaluateFailingTransformingFunction[func.id] = nextDelay
+        // Avoid spamming the log when the same error repeats on every dependency update.
+        const errorText = `${error}`
+        if (lastLoggedErrorForTransformingFunction[func.id] !== errorText) {
+          lastLoggedErrorForTransformingFunction[func.id] = errorText
+          const msg = `Error evaluating expression for transforming function '${func.id}'. Next evaluation in ${nextDelay} ms. Error: ${errorText}`
+          console.error(msg)
+        }
+      }
+    }
+
+    const onDependencyChange = (): void => {
+      // If the variable changes, we don't need to perform the initial evaluation again
+      clearTimeout(initialEvaluationTimeouts[func.id])
+      evaluate()
+      // Re-sync after evaluation: a change to an inner template variable (e.g.
+      // `autopilotSystemId`) may have shifted the resolved dependency set.
+      syncDependencies()
+    }
+
     // This function is used to evaluate the transforming function when it's created.
     // It's called when the transforming function is created and then every 1000ms until it succeeds, with a max of 10 tries.
     const performInitialEvaluation = (timesTried = 0): void => {
@@ -111,49 +173,11 @@ const setupTransformingFunctionsListeners = (): void => {
           console.error(`Failed to set initial value for transforming function '${func.id}'. Won't try again.`)
         }
       }
+      syncDependencies()
     }
     initialEvaluationTimeouts[func.id] = setTimeout(performInitialEvaluation, 1000)
 
-    const dataLakeVariablesInExpression = getDataLakeVariableIdFromInput(func.expression)
-    if (dataLakeVariablesInExpression) {
-      const variableIds = findDataLakeVariablesIdsInString(func.expression)
-      variableIds.forEach((variableId) => {
-        const listenerId = listenDataLakeVariable(variableId, () => {
-          // If the variable changes, we don't need to perform the initial evaluation again
-          clearTimeout(initialEvaluationTimeouts[func.id])
-          try {
-            // If the function is failing, we don't want to evaluate it too often
-            const currentDelay = nextDelayToEvaluateFaillingTransformingFunction[func.id] || 10
-            const lastTimeTried = lastTimeTriedToEvaluateFaillingTransformingFunction[func.id] || 0
-            if (currentDelay > 0 && lastTimeTried + currentDelay > Date.now()) {
-              return
-            } else {
-              setDataLakeVariableData(func.id, getExpressionValue(func))
-              delete lastLoggedErrorForTransformingFunction[func.id]
-            }
-          } catch (error) {
-            lastTimeTriedToEvaluateFaillingTransformingFunction[func.id] = Date.now()
-            const currentDelay = nextDelayToEvaluateFaillingTransformingFunction[func.id] || 10
-            const nextDelay = Math.min(2 * currentDelay, 10000)
-            nextDelayToEvaluateFaillingTransformingFunction[func.id] = nextDelay
-            // Avoid spamming the log when the same error repeats on every dependency update.
-            const errorText = `${error}`
-            if (lastLoggedErrorForTransformingFunction[func.id] !== errorText) {
-              lastLoggedErrorForTransformingFunction[func.id] = errorText
-              const msg = `Error evaluating expression for transforming function '${func.id}'. Next evaluation in ${nextDelay} ms. Error: ${errorText}`
-              console.error(msg)
-            }
-          }
-        })
-        if (!variablesListeners[func.id]) {
-          variablesListeners[func.id] = { [variableId]: [listenerId] }
-        } else if (!variablesListeners[func.id][variableId]) {
-          variablesListeners[func.id][variableId] = [listenerId]
-        } else {
-          variablesListeners[func.id][variableId].push(listenerId)
-        }
-      })
-    }
+    syncDependencies()
   })
 }
 
@@ -165,16 +189,16 @@ const deleteAllTransformingFunctionsListeners = (): void => {
     clearTimeout(initialEvaluationTimeouts[funcId])
     delete initialEvaluationTimeouts[funcId]
   })
-  Object.keys(nextDelayToEvaluateFaillingTransformingFunction).forEach((funcId) => {
-    delete nextDelayToEvaluateFaillingTransformingFunction[funcId]
-    delete lastTimeTriedToEvaluateFaillingTransformingFunction[funcId]
+  Object.keys(nextDelayToEvaluateFailingTransformingFunction).forEach((funcId) => {
+    delete nextDelayToEvaluateFailingTransformingFunction[funcId]
+    delete lastTimeTriedToEvaluateFailingTransformingFunction[funcId]
   })
-  Object.keys(lastTimeTriedToEvaluateFaillingTransformingFunction).forEach((funcId) => {
-    delete lastTimeTriedToEvaluateFaillingTransformingFunction[funcId]
+  Object.keys(lastTimeTriedToEvaluateFailingTransformingFunction).forEach((funcId) => {
+    delete lastTimeTriedToEvaluateFailingTransformingFunction[funcId]
   })
   Object.entries(variablesListeners).forEach(([funcId, variableListeners]) => {
-    Object.entries(variableListeners).forEach(([variableId, listenerIds]) => {
-      listenerIds.forEach((listenerId) => unlistenDataLakeVariable(variableId, listenerId))
+    Object.entries(variableListeners).forEach(([variableId, listenerId]) => {
+      unlistenDataLakeVariable(variableId, listenerId)
     })
     delete variablesListeners[funcId]
   })

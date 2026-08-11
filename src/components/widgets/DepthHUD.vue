@@ -179,8 +179,9 @@ watch(resolvedAltitudeVariableId, () => {
 })
 
 watch([rawAltitude, resolvedAltitudeVariableId], ([newAlt, resolvedId]) => {
-  if (resolvedId === undefined || typeof newAlt !== 'number') return
+  if (resolvedId === undefined || typeof newAlt !== 'number' || !Number.isFinite(newAlt)) return
   const altMeters = rawAltitudeToMeters(resolvedId, newAlt)
+  if (!Number.isFinite(altMeters)) return
   const newDepth = unit(-altMeters, 'm')
 
   const depthDiff = Math.abs(newDepth.value - (depth.value || 0))
