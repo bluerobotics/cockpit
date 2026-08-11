@@ -294,6 +294,20 @@ if (enableSystemLogging) {
     }
   })
 
+  // Crashes that never pass through `console.*` — anything thrown outside a handler, and the component errors
+  // Vue's development build rethrows instead of logging — would otherwise leave the log with the `[Vue warn]`
+  // component trace and no trace of the error that caused it.
+  window.addEventListener('error', (event) => {
+    // A thrown non-Error carries no stack, so the event's own coordinates are the only location on offer.
+    const location = `${event.filename}:${event.lineno}:${event.colno}`
+    const error = event.error instanceof Error ? event.error : `${event.message} at ${location}`
+    console.error('[UncaughtError]', error)
+  })
+
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('[UnhandledRejection]', event.reason)
+  })
+
   // Flush whatever is still buffered before the window goes away, so the last events aren't lost.
   window.addEventListener('beforeunload', () => {
     flushRepeatSummary()
