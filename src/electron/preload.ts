@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+import type { ChromiumSwitchesState } from '@/types/chromium-switches'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 
@@ -101,4 +102,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   getHardwareTelemetryInfo: () => ipcRenderer.invoke('get-hardware-telemetry-info'),
+  getChromiumSwitches: (): Promise<ChromiumSwitchesState> => ipcRenderer.invoke('get-chromium-switches'),
+  setChromiumSwitches: (entries: string[]): Promise<void> => ipcRenderer.invoke('set-chromium-switches', entries),
+  relaunchApp: (): Promise<void> => ipcRenderer.invoke('relaunch-app'),
 })

@@ -1,6 +1,21 @@
 import Store from 'electron-store'
 
 const electronStoreSchema = {
+  chromiumSwitches: {
+    type: 'array',
+    items: {
+      type: 'string',
+    },
+  },
+  chromiumSwitchesBootPending: {
+    type: 'boolean',
+  },
+  chromiumSwitchesDisabled: {
+    type: 'array',
+    items: {
+      type: 'string',
+    },
+  },
   cockpitFolderPath: {
     type: 'string',
   },
@@ -28,6 +43,18 @@ const electronStoreSchema = {
  * Stores configuration data
  */
 export interface ElectronStoreSchema {
+  /**
+   * Extra Chromium command-line switches applied at launch, as a workaround for GPU and video driver bugs
+   */
+  chromiumSwitches: string[] | undefined
+  /**
+   * Whether a launch with custom Chromium switches is still waiting to be confirmed as successful
+   */
+  chromiumSwitchesBootPending: boolean | undefined
+  /**
+   * Switches that were set aside because Cockpit failed to start with them
+   */
+  chromiumSwitchesDisabled: string[] | undefined
   /**
    * Custom Cockpit folder path, overriding the default ~/Cockpit
    */

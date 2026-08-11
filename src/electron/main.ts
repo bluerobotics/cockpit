@@ -5,6 +5,7 @@ import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
 import { setupGo2RTCService } from './services/go2rtc'
+import { applyChromiumSwitches, logGpuStatus, markStartupAsHealthy, setupGpuService } from './services/gpu'
 import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
@@ -19,6 +20,9 @@ import { setupWorkspaceService } from './services/workspace'
 
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
 setupElectronLogService()
+
+// Chromium only reads its command line when the GPU process starts, so this has to happen before the app is ready
+applyChromiumSwitches()
 
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
@@ -85,6 +89,7 @@ function createWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.setTitle(`Cockpit (${app.getVersion()})`)
+    markStartupAsHealthy()
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -128,10 +133,13 @@ setupWorkspaceService()
 setupJoystickMonitoring()
 setupVideoRecordingService()
 setupGo2RTCService()
+setupGpuService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
   console.log(`Cockpit version: ${app.getVersion()}`)
+
+  await logGpuStatus()
 
   // Inject a Referer header for OSM tile requests before the first tile is fetched, so the
   // standalone build (loaded from file://) complies with the OSM tile usage policy.

@@ -23,6 +23,11 @@ const baseConfig = {
             build: {
               outDir: 'dist/electron',
             },
+            resolve: {
+              alias: {
+                '@': path.resolve(__dirname, 'src'),
+              },
+            },
           },
           onstart: () => {
             // @ts-ignore: process.electronApp exists in vite-plugin-electron but not in the types
@@ -38,6 +43,11 @@ const baseConfig = {
           vite: {
             build: {
               outDir: 'dist/electron',
+            },
+            resolve: {
+              alias: {
+                '@': path.resolve(__dirname, 'src'),
+              },
             },
           },
         },
