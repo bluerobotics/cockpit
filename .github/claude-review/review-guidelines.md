@@ -67,6 +67,7 @@ results instead of re-deriving them.
 
 - Number every finding hierarchically (e.g. `3.1`, `3.2`) and tag each finding with a severity: `critical`, `major`, `minor`, or `nit`.
 - Reference files and line numbers when possible (e.g. `src/components/widgets/Plotter.vue:142`).
+- Every finding also carries a one-sentence plain-language consequence — what breaks, for whom, and when — written so someone who has never opened this codebase understands the stake. It is what the summary table shows, so a finding you cannot explain in one such sentence is one you have not finished investigating.
 
 Severity is decided by impact if the finding is never fixed, against this rubric:
 
@@ -101,31 +102,95 @@ belongs in the parenthesised clause on the collapsed section, not in a numbered 
 whose text concludes "this is fine" costs the reader the same attention as a real one and inflates
 the count that the verdict is read against.
 
-## Section collapsing (IMPORTANT — keep the review short and scannable)
+## Collapsing (IMPORTANT — short for a human, complete for an agent)
 
-- Still perform the full analysis for every section, but only write out the body of a section when it has at least one finding.
-- For a section with no findings, emit its heading on a single line followed by ` — :white_check_mark:` and one parenthesised clause naming what you checked, and NOTHING else (no "No findings.", no bullet list). Example: `### 5. Performance — :white_check_mark: (both changed handlers trace to per-frame drag events; added work is O(1) per call)`
+The comment has two audiences whose needs pull in opposite directions. A maintainer scrolling the PR
+needs the verdict, what is still open, and what only they can decide. A coding agent picking the
+review up needs every file path, line number and traced call. `<details>` blocks serve both at once:
+the full text stays in the comment body, where anything reading it through the API sees all of it,
+while a human sees one summary line per block until they choose to open it.
+
+- Everything above the first `<details>` is the human summary, and it is the only part most readers will ever see. It holds the verdict, the open findings, and the decisions only a human can make — nothing else.
+- Everything else goes inside a `<details>` block, collapsed by default. The contract below fixes which blocks exist and in what order.
+- Leave a blank line after every `</summary>` and before the closing `</details>`. Without it GitHub renders the markdown inside as literal text, and tables worst of all.
+- Every `<summary>` states what is inside and how much of it, so a reader can skip it without opening it: `1. Correctness & Implementation Bugs — 3 findings`, never `Section 1`.
+- Still perform the full analysis for every section. Only write out the body of a section that holds at least one open finding; each of those gets its own `<details>`.
+- Every open finding is written out in full in its section block, including one carried over from an earlier round that nothing changed this round. Mark those `(carried from round N)` and reprint the body — the file paths, the line numbers, the fix. Each comment has to stand on its own: the agent that implements the fixes reads the newest comment, and a finding that survives several rounds is exactly the one it would otherwise have to reconstruct from the comment history. Only findings that are closed or that changed status this round are left to the since-last-round block.
+- Sections with no findings do not get a block each. Group them into one `<details>` whose summary counts them, with a single line inside per section: the heading, ` — :white_check_mark:`, and one parenthesised clause naming what you checked. Nothing else (no "No findings.", no bullet list). Example: `**5. Performance** — :white_check_mark: (both changed handlers trace to per-frame drag events; added work is O(1) per call)`
 - That clause is the only thing separating a section that was investigated from one that was skipped, so it has to name something specific: the paths traced, the searches run, the callers enumerated. A section with nothing to name did not check anything, and will be read that way.
 - Never write more than that one clause to explain why a section is clean.
-- The Change map always has a body. Section 0 (Summary) always has a body. Section 2 (Persistence & User Data) also always has a body whenever the PR touches persisted data, because its inventory must be written out even when every entry is fine.
+- The Change map always has a body, inside its own `<details>`. Section 2 (Persistence & User Data) does too whenever the PR touches persisted data, because its inventory must be written out even when every entry is fine: it takes its own `<details>` in section order, findings or not, and never collapses into the clean-sections block. Say so in its summary, e.g. `2. Persistence & User Data — inventory, no findings`.
 
 ## Review sections
 
-Use these exact headings, in this order, and never omit a section — sections with no findings are collapsed to the one-line check-mark form described above.
+Use these exact headings, in this order, and never omit a section. A section with findings becomes its own `<details>` block; the rest are grouped into the single clean-sections block described above.
 
 ### Change map
-Write out what the investigation established, before any judgement. This is what makes the rest of the review checkable: a reader can verify it, and a section that contradicts it is wrong. Cite `file:line` throughout.
+Write out what the investigation established, and establish it before forming any judgement. This is what makes the rest of the review checkable: a reader can verify it, and a section that contradicts it is wrong. That is the order the work happens in, not the order it is printed in — the contract puts this block below the summary. Cite `file:line` throughout.
 
 - **Claims** — the symptom, cause and mechanism the PR body asserts, each marked verified or contradicted against the code.
 - **Failure site** — for a bug fix, where the misbehaving code actually lives, and whether it is in the diff. Omit this bullet only when the PR fixes no bug.
 - **Entry points** — a table with the columns `Function | Reached from | Frequency`, one row per changed function. Frequency is one of `never`, `one-shot`, `per user action`, `per frame or pointer event`, `per incoming message`. `never` means the walk found no caller at all: record it as such rather than rounding it up to `one-shot`, and raise it as a finding, because the PR is changing code nothing runs.
 - **Invariants** — any rule the change relies on, every site that can violate it, and which of those the PR covers. Omit this bullet when the change establishes no invariant.
 
-### 0. Summary
-- Verdict: exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`, `IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`. It follows mechanically from the open findings and is never a separate judgement: any open `critical` is `DO NOT MERGE`, otherwise any open `major` is `IMPORTANT FIXES REQUIRED`, otherwise any open finding at all is `MINOR SUGGESTIONS`, otherwise `READY TO MERGE`.
-- A finding disputed by the author is still open for this purpose. Resolving the dispute is the human reviewer's call, not yours.
-- If the verdict is not `READY TO MERGE`, list the section numbers of the critical/major findings (e.g. "Critical items to address: 3.1, 4.2").
-- One short paragraph describing what the PR does at a high level. Do not reuse the PR description for it — say what the code does, which you established in the Change map.
+### 0. Summary (the human summary — never collapsed, and carries no section heading of its own)
+
+This is the top of the comment and the only part you can assume gets read. Write it for a maintainer
+who has thirty seconds, not for the agent that will implement the fixes. It has four parts, in this
+order:
+
+**The verdict, as a GitHub alert.** Exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`,
+`IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`. It follows mechanically from the open findings and is
+never a separate judgement: any open `critical` is `DO NOT MERGE`, otherwise any open `major` is
+`IMPORTANT FIXES REQUIRED`, otherwise any open finding at all is `MINOR SUGGESTIONS`, otherwise
+`READY TO MERGE`. A finding disputed by the author is still open for this purpose; settling the
+dispute is the human's call, not yours. Emit it as the alert type that matches, so the colour carries
+the verdict before anything is read, on one line, followed by the open and closed counts. Name the
+`critical` ids explicitly and count the rest (`2 critical (1.1, 1.2) and 6 major`); a line listing
+eight ids is one nobody reads. On a first review nothing has been closed yet, so give the open count
+alone rather than spending half the line on a zero. This paragraph is the only definition of that
+line: the contract below shows where it sits, not how to word it.
+
+| Verdict | Alert | Prefix |
+| --- | --- | --- |
+| `DO NOT MERGE` | `> [!CAUTION]` | `**:no_entry: DO NOT MERGE**` |
+| `IMPORTANT FIXES REQUIRED` | `> [!WARNING]` | `**:warning: IMPORTANT FIXES REQUIRED**` |
+| `MINOR SUGGESTIONS` | `> [!NOTE]` | `**:memo: MINOR SUGGESTIONS**` |
+| `READY TO MERGE` | `> [!TIP]` | `**:white_check_mark: READY TO MERGE**` |
+
+**One short paragraph on what the PR does.** Plain language, no file paths. Do not reuse the PR
+description — say what the code does, which you established in the Change map.
+
+**What still needs attention.** One table of every open finding, carried over or new, with the header
+`| # | Problem | What it means | Severity | Status |`:
+
+- Rows are ordered by severity, blockers first, not by finding id. The id orders the detail below; this table is read top-down and has to put what stops the merge at the top.
+- `#` is the finding id, and every row's detail is somewhere below in this same comment — see the reprint rule in Collapsing. A row whose id leads nowhere is worse than no row.
+- `Problem` is a short noun phrase, not a sentence.
+- `What it means` is one sentence a non-programmer could follow: what breaks, for whom, and when. No jargon, no file paths, no API names — those belong in the finding itself. "Clicking Export does nothing in the browser version" beats "unguarded `electronAPI` call".
+- `Severity` is the word, with `critical` and `major` bolded so blockers stand out.
+- `Status` uses the shortcodes: `:x:` not addressed, `:large_yellow_circle:` partly addressed, `:speech_balloon:` disputed, and for a first review simply `:x:` throughout.
+
+When nothing is open, replace the table with one line saying so.
+
+**Decisions for a human**, under the heading `### :raising_hand: Decisions for a human` — the icon is
+what makes the one block addressed to the reader findable while scrolling past the tables. Only when
+findings are disputed, and omitted entirely otherwise. A
+disputed finding cannot be closed by you or by the author's argument, so this block exists to put the
+choice in front of the one person who can make it. For each disputed finding give its id and title,
+the author's argument in one line, and a checkbox per option:
+
+```
+**1.4 — Snapshot filename derives from a settings count**
+Author's argument: the count is stable for a given vehicle, so collisions cannot happen in practice.
+- [ ] Accept the argument and leave the code as it is
+- [ ] Ask for the change anyway
+```
+
+Ticking a box records the maintainers' decision in the PR where the next reader can see it. Say
+nothing about it closing the finding: the ledger keeps a disputed finding open until the code
+changes, and promising otherwise would advertise something no workflow performs.
+
 
 ### 1. Correctness & Implementation Bugs
 - Logic errors, off-by-ones, null/undefined hazards, race conditions, broken error handling, incorrect MAVLink handling, wrong Vue reactivity patterns, broken TypeScript types, regressions.
@@ -235,20 +300,76 @@ previous review exists. Nothing below is mode-specific: the parts that depend on
 are simply omitted when there is none, which is what makes the first review and the tenth the same
 document.
 
-- Line 1 MUST be the hidden marker exactly, with the real values substituted:
-  `<!-- claude-pr-review-bot:v1 seq=$SEQ sha=$HEAD_SHA -->`. Two other workflows and the maintainers'
-  tooling parse this line, so its shape is fixed.
-- Line 2 MUST be: `## Automated PR Review — round $SEQ`
-- When a previous review exists, a line stating the range you compared: ``Comparing `$PREV_SHA` → `$HEAD_SHA` `` — or, when a rebase or force-push made an incremental comparison unreliable, a sentence saying so and that you worked from the full diff.
-- When a previous review exists, a `### Previous findings status` section: a markdown table with the header `| # | Finding | Severity | Status |` and one row per previously open finding. For a `:speech_balloon:` Disputed row, put the author's reasoning in one short clause after the status, so a human can settle it without hunting for the comment.
-- When there is relevant discussion since the last review, a brief `### Discussion since last review` naming each comment by author with a short quote or its `url`. Omit the section entirely when there is none; never write a placeholder.
-- Then the Change map, then sections 0 through 11, collapsed where clean. The Change map is rebuilt every round, never carried over.
-- Then the footer line: `_Generated by Claude. This is advisory; a human reviewer must still approve._`
-- The file MUST end with the findings ledger block, holding every finding the PR has ever had: each entry carried in from the previous round with its new status, plus the ones you raised this round. Carry `addressed` and `obsolete` entries through as well — the ledger is the full history even though the status table lists only the open ones.
+Write it in exactly this order. Blocks marked *(only when …)* are omitted entirely when they do not
+apply — never replaced by a placeholder saying they are empty.
 
-Two short-circuits, both of which still emit the marker, the footer and the full ledger:
+```
+<!-- claude-pr-review-bot:v1 seq=$SEQ sha=$HEAD_SHA -->
+## Automated PR Review — round $SEQ
 
-- If `pr.diff` is empty or missing, write a short `review.md` explaining that (with an empty `[]` ledger) and stop.
+<the verdict alert, worded exactly as section 0 specifies>
+
+<one plain-language paragraph on what the PR does>
+
+### What still needs attention
+
+| # | Problem | What it means | Severity | Status |
+| --- | --- | --- | --- | --- |
+| 1.1 | Export crashes the browser build | Clicking Export in the browser version stops the page instead of saving anything. | **critical** | :x: |
+
+<this heading and its block only when a finding is disputed>
+### :raising_hand: Decisions for a human
+
+<one block per disputed finding, as specified in section 0>
+
+<this block only when a previous review exists>
+<details>
+<summary>Since round 2 — 5 closed, comparing abc1234 → def5678</summary>
+
+<the range line, the findings whose status changed this round, and the discussion since the last review>
+</details>
+
+<details>
+<summary>Change map — what was established before judging</summary>
+
+<the Change map>
+</details>
+
+<details>
+<summary>1. Correctness & Implementation Bugs — 3 findings</summary>
+
+<the findings>
+</details>
+
+<one such block per section holding an open finding — new or carried over from an earlier round —
+in section order, plus section 2 whenever the PR touches persisted data, findings or not>
+
+<details>
+<summary>Sections with nothing to report (8)</summary>
+
+<one check-mark line per clean section>
+</details>
+
+_Generated by Claude. This is advisory; a human reviewer must still approve._
+
+<!-- claude-pr-review-ledger
+[{"id":"1.1","severity":"critical","status":"open","title":"...","raised_at":"<sha>"}]
+-->
+```
+
+- The marker on line 1 is parsed by two other workflows and by the maintainers' tooling, so its shape is fixed. The ledger is the last thing in the file, with nothing after it.
+- The ledger holds every finding the PR has ever had: each entry carried in from the previous round with its new status, plus the ones raised this round. Carry `addressed` and `obsolete` entries through as well — the ledger is the full history, even though the table above shows only what is open.
+- The Change map is rebuilt every round, never carried over.
+
+Two short-circuits. Both still emit the marker, the verdict alert, the footer and the ledger, and
+both skip everything else. The ledger they emit is the one carried in from the previous round,
+unchanged — a short-circuit judges nothing, so it may not restate a status, and `[]` is correct only
+when there is no previous review to carry. Publishing `[]` over an existing ledger would silently
+drop every finding the PR has, which is the loss the last-block extractor exists to prevent. The
+verdict on both paths is the one the carried ledger produces by the usual rule, or `READY TO MERGE`
+when there is nothing carried:
+
+- If `pr.diff` is empty or missing, say so and stop.
 - If `HEAD_SHA` equals `PREV_SHA`, there are no new commits since the last review: say so and stop.
 
 ## Tone
