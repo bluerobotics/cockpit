@@ -147,12 +147,13 @@ const insertVariable = (variableId: string): void => {
 
   const startColumn = insertionStartColumn(textUntilCursor(), position.column)
   const range = new monaco.Range(position.lineNumber, startColumn, position.lineNumber, position.column)
-  editor.executeEdits('insert-data-lake-variable', [{ range, text: `{{ ${variableId} }}`, forceMoveMarkers: true }])
 
-  isDropdownOpen.value = false
-  // Monaco dispatches its focus event synchronously, so the flag only has to hold across this call.
-  // Leaving it set would swallow the next genuine focus, stranding a keyboard user on one variable.
+  // Covers the two events this edit fires — the content change and the focus — so that neither
+  // reopens the list the user just picked from. Both are dispatched synchronously, so the flag
+  // only has to hold across this call; leaving it set would swallow the next genuine one.
   suppressReopen = true
+  editor.executeEdits('insert-data-lake-variable', [{ range, text: `{{ ${variableId} }}`, forceMoveMarkers: true }])
+  isDropdownOpen.value = false
   editor.focus()
   suppressReopen = false
 }
@@ -205,15 +206,13 @@ const createEditor = (container: HTMLElement): monaco.editor.IStandaloneCodeEdit
     pristine = false
     lastEmittedValue = createdEditor.getValue().trim()
     emit('update:modelValue', lastEmittedValue)
-    if (isDropdownOpen.value) variableFilterTerm.value = dropdownFilterTerm()
+    // Typing brings the list back, since picking a variable closes it while the user is usually
+    // still writing the expression, and nothing else here would reopen it without a refocus.
+    if (!suppressReopen) openDropdown()
   })
   createdEditor.onMouseDown(openDropdown)
   createdEditor.onDidFocusEditorText(() => {
-    if (suppressReopen) {
-      suppressReopen = false
-      return
-    }
-    openDropdown()
+    if (!suppressReopen) openDropdown()
   })
   createdEditor.onDidChangeCursorPosition(() => {
     if (isDropdownOpen.value) variableFilterTerm.value = dropdownFilterTerm()
