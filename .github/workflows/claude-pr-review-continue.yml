@@ -114,8 +114,13 @@ jobs:
             LAST_REVIEW_TIME=$(jq -r '.created_at // ""' last_review.json)
             # The findings ledger, carried in a hidden block at the end of every review comment.
             # Extracted as data rather than re-read out of the previous review's prose, which is
-            # how statuses used to drift between runs.
-            sed -n '/<!-- claude-pr-review-ledger/,/^-->/p' previous-review.md | sed '1d;$d' > ledger-block.json
+            # how statuses used to drift between runs. Takes the LAST block: a review that quotes
+            # the marker in its prose — as one discussing this very extractor did — leaves an
+            # earlier match that swallows everything between the two and parses as nothing.
+            awk '/<!-- claude-pr-review-ledger/ { buf = ""; inblock = 1; next }
+                 inblock && /^-->/ { inblock = 0; last = buf; next }
+                 inblock { buf = buf $0 ORS }
+                 END { printf "%s", last }' previous-review.md > ledger-block.json
             # Keeps the empty ledger for a pre-ledger review or a malformed block, which makes the
             # agent rebuild it from `previous-review.md` rather than losing the findings.
             if jq -e 'type == "array"' ledger-block.json >/dev/null 2>&1; then
