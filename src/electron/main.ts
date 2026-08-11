@@ -13,6 +13,7 @@ import { setupOsmRefererService } from './services/osm-referer'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
 import { setupSystemInfoService } from './services/system-info'
+import { setupTTSService } from './services/tts'
 import { setupUserAgentService } from './services/user-agent'
 import { setupVideoRecordingService } from './services/video-recording'
 import { setupWorkspaceService } from './services/workspace'
@@ -135,6 +136,7 @@ setupWorkspaceService()
 setupJoystickMonitoring()
 setupVideoRecordingService()
 setupGo2RTCService()
+setupTTSService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')

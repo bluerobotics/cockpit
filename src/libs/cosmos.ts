@@ -8,6 +8,7 @@ import type { TelemetrySystemHardwareInfo } from '@/types/platform'
 import { SDLStatus } from '@/types/sdl'
 import type { SerialData, SerialPortInfo } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
+import type { PiperVoiceStatus, TtsDownloadProgress, TtsDownloadResult } from '@/types/tts'
 import type { Go2RTCStreamInfo } from '@/types/video'
 
 import {
@@ -481,6 +482,44 @@ declare global {
        * @returns {Promise<TelemetrySystemHardwareInfo>} Serializable hardware fields
        */
       getHardwareTelemetryInfo: () => Promise<TelemetrySystemHardwareInfo>
+      /**
+       * Whether the bundled Piper synthesizer is available for offline alert speech
+       * @returns {Promise<boolean>} True when the runtime and the default voice are present
+       */
+      ttsAvailable: () => Promise<boolean>
+      /**
+       * Availability of each curated Piper voice on disk (bundled or downloaded)
+       * @returns {Promise<PiperVoiceStatus[]>} One status entry per curated voice
+       */
+      ttsListVoices: () => Promise<PiperVoiceStatus[]>
+      /**
+       * Synthesize speech for a text using a curated Piper voice
+       * @param {string} text - Text to speak
+       * @param {string} voiceKey - The Piper speaker key to synthesize with
+       * @returns {Promise<ArrayBuffer | null>} WAV audio bytes, or null when unavailable or synthesis failed
+       */
+      ttsSynthesize: (text: string, voiceKey: string) => Promise<ArrayBuffer | null>
+      /**
+       * Download the higher-quality model for every curated Piper voice
+       * @returns {Promise<TtsDownloadResult>} How the download ended
+       */
+      ttsDownloadVoices: () => Promise<TtsDownloadResult>
+      /**
+       * Abort the higher-quality voice download currently in progress, if any
+       * @returns {Promise<void>} Resolves once the abort was requested
+       */
+      ttsCancelDownload: () => Promise<void>
+      /**
+       * Delete every downloaded higher-quality Piper voice, reverting to the bundled model
+       * @returns {Promise<boolean>} True when the downloaded voices were removed
+       */
+      ttsDeleteVoices: () => Promise<boolean>
+      /**
+       * Subscribe to progress updates while the higher-quality voices download
+       * @param {(info: TtsDownloadProgress) => void} callback - Receives the voice counts and the current voice's progress
+       * @returns {void}
+       */
+      onTtsDownloadProgress: (callback: (info: TtsDownloadProgress) => void) => void
       /**
        * Start live video streaming process with FFmpeg
        * @param firstChunk - The first video chunk blob

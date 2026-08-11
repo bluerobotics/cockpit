@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
+import type { TtsDownloadProgress } from '@/types/tts'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getInfoOnSubnets: () => ipcRenderer.invoke('get-info-on-subnets'),
@@ -101,4 +102,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   getHardwareTelemetryInfo: () => ipcRenderer.invoke('get-hardware-telemetry-info'),
+  ttsAvailable: () => ipcRenderer.invoke('tts-available'),
+  ttsListVoices: () => ipcRenderer.invoke('tts-list-voices'),
+  ttsSynthesize: async (text: string, voiceKey: string) => {
+    const audio: Uint8Array | null = await ipcRenderer.invoke('tts-synthesize', text, voiceKey)
+    return audio ? audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength) : null
+  },
+  ttsDownloadVoices: () => ipcRenderer.invoke('tts-download-voices'),
+  ttsCancelDownload: () => ipcRenderer.invoke('tts-cancel-download'),
+  ttsDeleteVoices: () => ipcRenderer.invoke('tts-delete-voices'),
+  onTtsDownloadProgress: (callback: (info: TtsDownloadProgress) => void) =>
+    ipcRenderer.on('tts-download-progress', (_event, info) => callback(info)),
 })
