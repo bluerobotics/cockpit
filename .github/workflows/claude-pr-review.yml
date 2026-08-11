@@ -139,6 +139,9 @@ jobs:
           set -euo pipefail
           [ -s review.md ] || { echo "::error::the agent produced no review"; exit 1; }
 
+          # Seeds the marker chain: seq 1 is the line every later run counts from.
+          .github/scripts/review-marker.sh review.md "<!-- claude-pr-review-bot:v1 seq=1 sha=$HEAD_SHA -->"
+
           # Seeds the ledger chain every later re-review reads, using the same script that reads it
           # back, so a review can never be published in a shape the next run cannot parse.
           .github/scripts/review-ledger.sh review.md > /dev/null \

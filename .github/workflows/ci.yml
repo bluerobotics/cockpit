@@ -78,6 +78,9 @@ jobs:
       - name: Check the review ledger reader
         run: .github/scripts/review-ledger.sh --self-check
 
+      - name: Check the review marker writer
+        run: .github/scripts/review-marker.sh --self-check
+
       - name: Install, lint, typecheck, and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
