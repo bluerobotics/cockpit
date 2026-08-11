@@ -1,1 +1,0 @@
-import{r as l,w as o,cd as b,bJ as c,aL as f,aM as v,aN as s}from"./index-DiqRx5wN.js";function V(i){const r=l(void 0);let e,t;const n=a=>{e&&t&&(s(t,e),e=void 0),t=a,r.value=a?f(a):void 0,a&&(e=v(a,u=>{r.value=u}))};return o(()=>b(i),a=>n(a),{immediate:!0}),c(()=>{e&&t&&s(t,e)}),{value:r}}export{V as u};
