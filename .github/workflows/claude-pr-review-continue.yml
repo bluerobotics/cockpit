@@ -383,6 +383,9 @@ jobs:
           set -euo pipefail
           [ -s review.md ] || { echo "::error::the agent produced no review"; exit 1; }
 
+          # Continues the marker chain one seq on, counted from the last published review's line 1.
+          .github/scripts/review-marker.sh review.md "<!-- claude-pr-review-bot:v1 seq=$NEXT_SEQ sha=$HEAD_SHA -->"
+
           # The ledger is the PR's entire finding history, and it survives only by being copied from
           # each published comment into the next. Checked with the same script that reads it back, so
           # the two can never disagree about what counts as a block — a substring match here passed a
