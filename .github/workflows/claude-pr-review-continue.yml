@@ -184,7 +184,7 @@ jobs:
           # 120 turns measured out at ~22min, so the timeout has to clear that with room to spare.
           max_turns: "120"
           timeout_minutes: "35"
-          allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),View,GlobTool,GrepTool,BatchTool,Write"
+          allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),View,GlobTool,GrepTool,BatchTool,Write"
           system_prompt: |
             You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
 
