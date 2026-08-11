@@ -6,7 +6,7 @@ import { join } from 'path'
 
 import { type ElectronLog } from '@/types/electron-general'
 
-import { sanitizeFilenameComponent } from '../../libs/utils'
+import { sanitizeFilenameComponent, serializeForLogging } from '../../libs/utils'
 
 // Import the same date format used in system-logging.ts
 const systemLogDateFormat = 'LLL dd, yyyy'
@@ -57,16 +57,7 @@ export const setupElectronLogService = (): void => {
   const tagLog = (...args: any[]): string => {
     let wholeMessage = ''
     args.forEach((m) => {
-      let msg = m
-      try {
-        if (typeof m === 'object' && m !== null) {
-          msg = JSON.stringify(m)
-        } else {
-          msg = m.toString()
-        }
-      } catch {
-        msg = ''
-      }
+      const msg = serializeForLogging(m)
       if (msg !== '') {
         wholeMessage += ' '
         wholeMessage += msg
@@ -201,16 +192,7 @@ export const setupElectronLogService = (): void => {
 
   // Add the [Renderer] tag and route a single renderer log message to the matching electron-log level.
   const logRendererMessage = (level: string, message: any): void => {
-    let processedMessage = ''
-    try {
-      if (typeof message === 'object' && message !== null) {
-        processedMessage = JSON.stringify(message)
-      } else {
-        processedMessage = message.toString()
-      }
-    } catch {
-      processedMessage = ''
-    }
+    const processedMessage = serializeForLogging(message)
     const taggedMessage = `[Renderer]${processedMessage !== '' ? ' ' + processedMessage : ''}`
 
     // Use original logger functions to avoid double tagging

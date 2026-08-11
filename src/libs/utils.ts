@@ -433,3 +433,29 @@ export const messageFromError = (error: unknown): string => {
  * @returns {T} A detached copy holding no proxies.
  */
 export const toPlain = <T>(value: T): T => JSON.parse(JSON.stringify(value))
+
+/**
+ * Serialize a value into the text kept for it in a log.
+ * @param {unknown} value The value to be logged.
+ * @returns {string} The value's log representation, or an empty string when it cannot be serialized.
+ */
+export const serializeForLogging = (value: unknown): string => {
+  try {
+    // Errors are handled before the object branch because `JSON.stringify` renders one as `{}` — its name,
+    // message and stack are all non-enumerable — throwing away the only part worth logging.
+    if (value instanceof Error) return value.stack ?? `${value.name}: ${value.message}`
+    if (typeof value === 'object' && value !== null) {
+      try {
+        return JSON.stringify(value)
+      } catch {
+        // A value JSON cannot render (a circular object, most often) still deserves a placeholder, since
+        // dropping the argument leaves the entry with nothing but the message that introduced it.
+        return String(value)
+      }
+    }
+    // `String` rather than `.toString()`, which throws on the `null` and `undefined` that reach here.
+    return String(value)
+  } catch {
+    return ''
+  }
+}

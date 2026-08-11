@@ -5,7 +5,7 @@ import localforage from 'localforage'
 import { settingsManager } from '@/libs/settings-management'
 import { systemLoggingEnablingKey } from '@/stores/development'
 
-import { isElectron, sanitizeFilenameComponent } from './utils'
+import { isElectron, sanitizeFilenameComponent, serializeForLogging } from './utils'
 
 export const systemLogDateFormat = 'LLL dd, yyyy'
 export const systemLogTimeFormat = 'HH꞉mm꞉ss O'
@@ -283,16 +283,7 @@ if (enableSystemLogging) {
     window.console[level] = (...o: any[]) => {
       let wholeMessage = ''
       o.forEach((m) => {
-        let msg = m
-        try {
-          if (typeof m === 'object' && m !== null) {
-            msg = JSON.stringify(m)
-          } else {
-            msg = m.toString()
-          }
-        } catch {
-          msg = ''
-        }
+        const msg = serializeForLogging(m)
         if (msg !== '') {
           wholeMessage += ' '
           wholeMessage += msg
