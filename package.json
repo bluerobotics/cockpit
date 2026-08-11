@@ -7,6 +7,7 @@
   "description": "An intuitive and customizable cross-platform ground control station for remote vehicles of all types.",
   "scripts": {
     "build": "vite build",
+    "build:piper": "node scripts/build-piper-macos-arm64.js",
     "build:serve": "vite build && vite preview",
     "coverage": "vitest --coverage",
     "deploy:electron:dir": "ELECTRON=true electron-builder --dir",
@@ -21,7 +22,7 @@
     "dev:electron": "cross-env ELECTRON=true vite --host",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "lint:fix": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
-    "postinstall": "node scripts/download-ffmpeg.js && node scripts/download-go2rtc.js && node scripts/verify-sdl.js",
+    "postinstall": "node scripts/download-ffmpeg.js && node scripts/download-go2rtc.js && node scripts/download-piper.js && node scripts/verify-sdl.js",
     "preview": "vite preview --port 5050",
     "serve": "vite preview",
     "test:ci": "vitest --coverage --run",
@@ -169,6 +170,13 @@
       {
         "from": "binaries/go2rtc/",
         "to": "go2rtc/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "binaries/piper/",
+        "to": "piper/",
         "filter": [
           "**/*"
         ]

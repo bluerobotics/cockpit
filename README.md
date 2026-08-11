@@ -274,6 +274,7 @@ We welcome contributions! We don't have a contribution guide yet, but you can he
 ### Prerequisites
 - **Node.js** 18+ and **yarn** package manager
 - **Git** with submodule support
+- **On ARM-based macOS (Apple Silicon) only**: **CMake**, plus `yarn build:piper` after installing, to compile the offline alert voice from source. There is no prebuilt release for this platform, so without it voice alerts fall back to the system voices.
 
 ### Development Workflow
 1. Fork the repository
