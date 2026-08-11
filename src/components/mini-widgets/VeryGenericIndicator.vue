@@ -258,11 +258,11 @@
           </v-window-item>
 
           <v-window-item value="presets">
-            <div class="flex flex-wrap items-center justify-around">
+            <div class="grid items-center grid-cols-3">
               <div
                 v-for="(template, i) in veryGenericIndicatorPresets"
                 :key="i"
-                class="flex items-center justify-center px-2 m-2 text-white transition-all rounded-md cursor-pointer hover:bg-slate-100/20"
+                class="flex items-center px-2 m-2 text-white transition-all rounded-md cursor-pointer hover:bg-slate-100/20"
                 @click="setIndicatorFromTemplate(template)"
               >
                 <VgiIcon class="relative w-[2rem] icon-symbol text-[34px] mx-2" :icon-name="template.iconName" />
