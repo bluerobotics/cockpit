@@ -195,10 +195,22 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "COCKPIT_VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Cache the Piper runtime (macOS arm64)
+        if: matrix.os == 'macos-15'
+        uses: actions/cache@v4
+        with:
+          path: binaries/piper
+          key: piper-macos-arm64-${{ hashFiles('scripts/build-piper-macos-arm64.js', 'scripts/download-piper.js') }}
+
       - name: Install and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
           yarn build
+
+      # Apple Silicon has no usable prebuilt Piper binary, so it compiles one.
+      - name: Build the Piper runtime (macOS arm64)
+        if: matrix.os == 'macos-15'
+        run: yarn build:piper
 
       - name: Import Apple Certificate and Setup Keychain
         if: (matrix.os == 'macos-15-intel' || matrix.os == 'macos-15') && github.event_name != 'pull_request'
