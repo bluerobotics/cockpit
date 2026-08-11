@@ -3801,20 +3801,21 @@ const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
 
 // Backed by a debounced watcher so the deep clone runs at most once per change burst, instead of
 // firing on every reactive read of the prop while the library modal is open.
-const buildCurrentMissionSnapshot = (): CockpitMission => ({
-  version: 0,
-  settings: {
-    mapCenter: mapCenter.value,
-    zoom: zoom.value,
-    currentWaypointAltitude: currentWaypointAltitude.value,
-    currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
-    // Use the local (in-input) cruise speed so library saves capture pending changes the user
-    // typed but hasn't committed back to the store yet (e.g. by uploading the mission).
-    defaultCruiseSpeed: localCruiseSpeed.value,
-  },
-  waypoints: structuredClone(toRaw(missionStore.currentPlanningWaypoints)),
-  surveys: structuredClone(toRaw(missionStore.currentPlanningSurveys)),
-})
+const buildCurrentMissionSnapshot = (): CockpitMission =>
+  toPlain({
+    version: 0,
+    settings: {
+      mapCenter: mapCenter.value,
+      zoom: zoom.value,
+      currentWaypointAltitude: currentWaypointAltitude.value,
+      currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
+      // Use the local (in-input) cruise speed so library saves capture pending changes the user
+      // typed but hasn't committed back to the store yet (e.g. by uploading the mission).
+      defaultCruiseSpeed: localCruiseSpeed.value,
+    },
+    waypoints: missionStore.currentPlanningWaypoints,
+    surveys: missionStore.currentPlanningSurveys,
+  })
 
 const currentMissionSnapshot = ref<CockpitMission>(buildCurrentMissionSnapshot())
 
