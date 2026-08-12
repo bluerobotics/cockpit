@@ -5,6 +5,7 @@ import { protocol } from '@/libs/blueos'
 // BlueOS bundles the File Browser service behind `/file-browser`, exposing a REST API for reading and
 // writing real files on the vehicle. Unlike the bag-of-holding (a single JSON document), it stores
 // each asset as its own file, so it fits large/binary artifacts without bloating the settings payload.
+// This default sizes a settings-sized request; a caller moving a large file passes its own timeout.
 const requestTimeout = 15000
 
 // Persistent user-data volume on the vehicle (survives reboots and BlueOS updates). File Browser maps
@@ -92,13 +93,15 @@ const ensureFolderExists = async (vehicleAddress: string, token: string, subfold
  * @param {string} subfolder - Folder under `userdata/cockpit` to store the file in.
  * @param {string} fileName - Name of the file to write, including its extension.
  * @param {Blob | string} content - The file's content.
+ * @param {number} [timeout] - Milliseconds to allow the transfer, for content larger than a settings payload.
  * @returns {Promise<void>} Resolves once the file has been written.
  */
 export const uploadFileToVehicle = async (
   vehicleAddress: string,
   subfolder: string,
   fileName: string,
-  content: Blob | string
+  content: Blob | string,
+  timeout = requestTimeout
 ): Promise<void> => {
   await withAuth(vehicleAddress, async (token) => {
     await ensureFolderExists(vehicleAddress, token, subfolder)
@@ -110,7 +113,7 @@ export const uploadFileToVehicle = async (
       {
         headers: { 'X-Auth': token },
         body: content,
-        timeout: requestTimeout,
+        timeout,
         retry: 0,
       }
     )
@@ -122,16 +125,18 @@ export const uploadFileToVehicle = async (
  * @param {string} vehicleAddress - The vehicle's address.
  * @param {string} subfolder - Folder under `userdata/cockpit` the file lives in.
  * @param {string} fileName - Name of the file to read, including its extension.
+ * @param {number} [timeout] - Milliseconds to allow the transfer, for content larger than a settings payload.
  * @returns {Promise<Blob>} The file's content as a Blob.
  */
 export const downloadFileFromVehicle = async (
   vehicleAddress: string,
   subfolder: string,
-  fileName: string
+  fileName: string,
+  timeout = requestTimeout
 ): Promise<Blob> => {
   return await withAuth(vehicleAddress, (token) => {
     const rawPath = `raw/${encodeSegments([...cockpitAssetsRoot, subfolder, fileName])}?auth=${token}`
-    return ky.get(fileBrowserUrl(vehicleAddress, rawPath), { timeout: requestTimeout, retry: 0 }).blob()
+    return ky.get(fileBrowserUrl(vehicleAddress, rawPath), { timeout, retry: 0 }).blob()
   })
 }
 
