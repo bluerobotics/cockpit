@@ -146,7 +146,9 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
@@ -222,18 +224,21 @@ while (i < 181) {
   i += 3
 }
 
+const defaultOptions = {
+  showYawValue: true,
+  hudColor: colorSwatches.value[0][0],
+  useNegativeRange: false,
+  showHomeOnHUD: true,
+  yawVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw',
+  latVariableId: '/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/lat',
+  lonVariableId: '/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/lon',
+  poi: {
+    showPoiOnHUD: true,
+    showDistances: 'onHudSide',
+  },
+}
+
 onBeforeMount(() => {
-  // Set initial widget options if they don't exist
-  const defaultOptions = {
-    showYawValue: true,
-    hudColor: colorSwatches.value[0][0],
-    useNegativeRange: false,
-    showHomeOnHUD: true,
-    poi: {
-      showPoiOnHUD: true,
-      showDistances: 'onHudSide',
-    },
-  }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
@@ -253,15 +258,34 @@ const canvasSize = computed(() => ({
   height: 64,
 }))
 
+const resolvedYawVariableId = useResolvedDataLakeTemplate(() => widget.value.options.yawVariableId)
+const resolvedLatVariableId = useResolvedDataLakeTemplate(() => widget.value.options.latVariableId)
+const resolvedLonVariableId = useResolvedDataLakeTemplate(() => widget.value.options.lonVariableId)
+const { value: rawYaw } = useDataLakeVariable(resolvedYawVariableId)
+const { value: rawLat } = useDataLakeVariable(resolvedLatVariableId)
+const { value: rawLon } = useDataLakeVariable(resolvedLonVariableId)
+
+const vehicleLatitude = computed<number | undefined>(() => {
+  if (rawLat.value === undefined) return undefined
+  return (rawLat.value as number) / 1e7
+})
+
+const vehicleLongitude = computed<number | undefined>(() => {
+  if (rawLon.value === undefined) return undefined
+  return (rawLon.value as number) / 1e7
+})
+
 // The implementation below makes sure we don't update the Yaw value in the widget whenever
 // the system Yaw (from vehicle) updates, preventing unnecessary performance bottlenecks.
 const yaw = ref(0)
 let oldYaw: number | undefined = undefined
-watch(store.attitude, (attitude) => {
-  const yawDiff = Math.abs(degrees(attitude.yaw - (oldYaw || 0)))
+watch(rawYaw, (newYaw) => {
+  if (newYaw === undefined) return
+  const yawRad = newYaw as number
+  const yawDiff = Math.abs(degrees(yawRad - (oldYaw || 0)))
   if (yawDiff > 0.1) {
-    oldYaw = attitude.yaw
-    yaw.value = degrees(store.attitude.yaw)
+    oldYaw = yawRad
+    yaw.value = degrees(yawRad)
   }
 })
 
@@ -293,16 +317,13 @@ const calculateBearing = (vehicleLat: number, vehicleLng: number, poiLat: number
 
 // Get POI data with bearing and distance relative to vehicle
 const poiData = computed(() => {
-  if (!store.coordinates.latitude || !store.coordinates.longitude) return []
+  if (!vehicleLatitude.value || !vehicleLongitude.value) return []
 
   return resolvedPointsOfInterest.value.map((poi) => {
-    const distance = calculateHaversineDistance(
-      [store.coordinates.latitude!, store.coordinates.longitude!],
-      poi.coordinates
-    )
+    const distance = calculateHaversineDistance([vehicleLatitude.value!, vehicleLongitude.value!], poi.coordinates)
     const bearing = calculateBearing(
-      store.coordinates.latitude!,
-      store.coordinates.longitude!,
+      vehicleLatitude.value!,
+      vehicleLongitude.value!,
       poi.coordinates[0],
       poi.coordinates[1]
     )
@@ -359,7 +380,7 @@ type HudMarkerEntry = {
 }
 
 const hudMarkerData = computed((): HudMarkerEntry[] => {
-  if (!store.coordinates.latitude || !store.coordinates.longitude) return []
+  if (!vehicleLatitude.value || !vehicleLongitude.value) return []
 
   const entries: HudMarkerEntry[] = []
 
@@ -373,8 +394,8 @@ const hudMarkerData = computed((): HudMarkerEntry[] => {
     const coords = homeCoordinates.value
     entries.push({
       poi: buildHomeHudPoi(coords),
-      distance: calculateHaversineDistance([store.coordinates.latitude!, store.coordinates.longitude!], coords),
-      bearing: calculateBearing(store.coordinates.latitude!, store.coordinates.longitude!, coords[0], coords[1]),
+      distance: calculateHaversineDistance([vehicleLatitude.value!, vehicleLongitude.value!], coords),
+      bearing: calculateBearing(vehicleLatitude.value!, vehicleLongitude.value!, coords[0], coords[1]),
       markerSize: 12,
     })
   }
@@ -530,8 +551,8 @@ const renderCanvas = (): void => {
 const updatePoiMarkers = (): void => {
   if (
     (!widget.value.options.poi?.showPoiOnHUD && !widget.value.options.showHomeOnHUD) ||
-    !store.coordinates.latitude ||
-    !store.coordinates.longitude
+    !vehicleLatitude.value ||
+    !vehicleLongitude.value
   ) {
     poiMarkers.value = []
     return
@@ -652,11 +673,8 @@ const updatePoiMarkers = (): void => {
         const fallbackName = entry?.poi.name
         const fallbackCoords = entry?.poi.coordinates
 
-        if (fallbackName && fallbackCoords && store.coordinates.latitude && store.coordinates.longitude) {
-          const distance = calculateHaversineDistance(
-            [store.coordinates.latitude, store.coordinates.longitude],
-            fallbackCoords
-          )
+        if (fallbackName && fallbackCoords && vehicleLatitude.value && vehicleLongitude.value) {
+          const distance = calculateHaversineDistance([vehicleLatitude.value, vehicleLongitude.value], fallbackCoords)
           highlightedPoiMarker.value = {
             name: fallbackName,
             distanceText:
@@ -730,7 +748,7 @@ const stopAnimationLoop = (): void => {
 }
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
-watch([hudMarkerData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
+watch([hudMarkerData, vehicleLatitude, vehicleLongitude, canvasSize, yaw], debouncedUpdatePoiMarkers)
 
 watch(
   [() => widget.value.options.showHomeOnHUD, () => store.isVehicleOnline],
