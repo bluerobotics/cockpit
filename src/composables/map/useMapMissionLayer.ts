@@ -22,6 +22,16 @@ export interface UseMapMissionLayerOptions {
   showWaypointDots?: boolean
   /** Handler for a double-click on the mission path (e.g. inserting a waypoint on the clicked segment). */
   onDblClick?: (event: L.LeafletMouseEvent) => void
+  /** Called after every redraw, for surfaces that draw derived overlays on top of the path. */
+  onRedraw?: () => void
+}
+
+/**
+ * Handles exposed by the mission layer composable.
+ */
+export interface UseMapMissionLayerReturn {
+  /** The mission polyline while it is on the map, for surfaces that restyle or measure it. */
+  polyline: ShallowRef<Polyline | null>
 }
 
 /**
@@ -31,11 +41,14 @@ export interface UseMapMissionLayerOptions {
  * for display-only surfaces; the interactive views draw their own markers instead.
  * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; the layer (re)draws once available.
  * @param {UseMapMissionLayerOptions} options - Reactive getters for the waypoints and visibility, plus styling.
- * @returns {void}
+ * @returns {UseMapMissionLayerReturn} The mission polyline reference.
  */
-export const useMapMissionLayer = (map: ShallowRef<Map | undefined>, options: UseMapMissionLayerOptions): void => {
+export const useMapMissionLayer = (
+  map: ShallowRef<Map | undefined>,
+  options: UseMapMissionLayerOptions
+): UseMapMissionLayerReturn => {
   const color = options.color ?? missionPathColor
-  const polyline = shallowRef<Polyline>()
+  const polyline = shallowRef<Polyline | null>(null)
   const dots = shallowRef<LayerGroup>()
 
   const coordinates = (): LatLngTuple[] => options.waypoints().map((waypoint) => waypoint.coordinates as LatLngTuple)
@@ -45,7 +58,7 @@ export const useMapMissionLayer = (map: ShallowRef<Map | undefined>, options: Us
       if (polyline.value) map.value.removeLayer(polyline.value)
       if (dots.value) map.value.removeLayer(dots.value)
     }
-    polyline.value = undefined
+    polyline.value = null
     dots.value = undefined
   }
 
@@ -53,9 +66,10 @@ export const useMapMissionLayer = (map: ShallowRef<Map | undefined>, options: Us
     if (!isLeafletMapReady(map.value)) return
     if (!options.show()) {
       clear()
+      options.onRedraw?.()
       return
     }
-    if (polyline.value === undefined) {
+    if (polyline.value === null) {
       polyline.value = L.polyline([], { color, ...(options.className ? { className: options.className } : {}) }).addTo(
         map.value
       )
@@ -65,15 +79,18 @@ export const useMapMissionLayer = (map: ShallowRef<Map | undefined>, options: Us
     }
     polyline.value.setLatLngs(coordinates())
 
-    if (!options.showWaypointDots) return
-    if (dots.value === undefined) dots.value = L.layerGroup().addTo(map.value)
-    const group = dots.value
-    group.clearLayers()
-    coordinates().forEach((coordinate) => {
-      L.circleMarker(coordinate, { radius: 3, color: '#ffffff', weight: 1, fillColor: color, fillOpacity: 1 }).addTo(
-        group
-      )
-    })
+    if (options.showWaypointDots) {
+      if (dots.value === undefined) dots.value = L.layerGroup().addTo(map.value)
+      const group = dots.value
+      group.clearLayers()
+      coordinates().forEach((coordinate) => {
+        L.circleMarker(coordinate, { radius: 3, color: '#ffffff', weight: 1, fillColor: color, fillOpacity: 1 }).addTo(
+          group
+        )
+      })
+    }
+
+    options.onRedraw?.()
   }
 
   watch([() => options.waypoints().map((waypoint) => waypoint.coordinates.slice()), () => options.show()], redraw, {
@@ -88,4 +105,6 @@ export const useMapMissionLayer = (map: ShallowRef<Map | undefined>, options: Us
   )
 
   onBeforeUnmount(clear)
+
+  return { polyline }
 }
