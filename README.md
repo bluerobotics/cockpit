@@ -190,6 +190,7 @@ ArduCopter support has been physically tested, but the primary development team 
 - **Points of interest** management
 - **Mission import/export** for easy backup and reuse
 - **Real-time mission monitoring** and execution
+- **Custom map tile providers** via XYZ URLs or imported ZIP/MBTiles/PMTiles archives
 
 ### 📊 **Data Management**
 - **[Data Lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake)** for centralized variable storage and retrieval

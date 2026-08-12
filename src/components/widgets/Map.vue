@@ -271,6 +271,7 @@ import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
@@ -616,12 +617,16 @@ const { osm, esri, overlays } = tileLayers
 const seamarks = overlays['Seamarks']
 
 // Restore and persist the user's base-map and overlay selection
-const { getInitialLayers, createLayerControl, registerLayerSync } = useMapTileLayerSelection(tileLayers)
+const { preferredBaseLayer, getInitialLayers, createLayerControl, registerLayerSync } =
+  useMapTileLayerSelection(tileLayers)
 
 // Syncs user-loaded GeoTIFF overlays (sonar/bathymetry surveys) onto this map
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
+const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
 // Replace failed tiles with a procedural noise background sampled by lat/lon
 const getTileFallbackOptions = (): NoiseTileOptions => ({
@@ -893,6 +898,10 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
 
+  // Register any user-defined custom tile providers as selectable base layers on the layer control
+  if (map.value)
+    initCustomTileProviders(map.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
+
   // Apply the current showButtons state to the leaflet controls
   if (showButtons.value && map.value) {
     map.value.addControl(zoomControl)
@@ -1120,6 +1129,7 @@ onBeforeUnmount(() => {
 
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
+  destroyCustomTileProviders()
 
   if (map.value) {
     map.value.off('contextmenu')

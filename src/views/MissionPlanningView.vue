@@ -791,6 +791,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissionPathSignalOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -1063,6 +1064,9 @@ const { mapReady } = mapContext
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
+const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
 // Frame the map on a GeoTIFF overlay when requested from the configuration panel
 watch(
@@ -4154,7 +4158,8 @@ onMounted(async () => {
   const { osm, esri, extraOsm } = tileLayers
 
   // Restore and persist the user's base-map and overlay selection
-  const { getInitialLayers, createLayerControl, registerLayerSync } = useMapTileLayerSelection(tileLayers)
+  const { preferredBaseLayer, getInitialLayers, createLayerControl, registerLayerSync } =
+    useMapTileLayerSelection(tileLayers)
 
   planningMap.value = L.map('planningMap', {
     layers: getInitialLayers(),
@@ -4267,6 +4272,9 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   await mapOverlays.initOverlays(planningMap.value, layerControl)
 
+  // Register any user-defined custom tile providers as selectable base layers on the layer control
+  initCustomTileProviders(planningMap.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
+
   // Initialize scale control (always show)
   createScaleControl()
 
@@ -4341,6 +4349,7 @@ onUnmounted(() => {
   stopTileFallbackWatcher?.()
   stopTileFallbackWatcher = undefined
   mapOverlays.destroyOverlays()
+  destroyCustomTileProviders()
 
   // Reset the map context so descendants stop reacting to the destroyed instance
   mapContext.mapReady.value = false
