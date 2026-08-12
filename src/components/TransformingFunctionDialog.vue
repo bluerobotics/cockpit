@@ -199,7 +199,8 @@ const toggleManualIdEditing = (): void => {
 }
 
 const isValidForm = computed(() => {
-  return newFunction.value.name && newFunction.value.expression && newFunction.value.type && newFunction.value.id
+  const { name, expression, type, id } = newFunction.value
+  return name && expression && type && id.trim()
 })
 
 const saveTransformingFunction = (): void => {
@@ -207,22 +208,31 @@ const saveTransformingFunction = (): void => {
     openSnackbar({ message: 'Please fill in all fields', variant: 'error' })
     return
   }
-  logUserAction('Saved data-lake transforming function')
 
-  if (editingExistingFunction.value && props.editFunction) {
-    const { ...otherProps } = newFunction.value
-    updateTransformingFunction({
-      id: props.editFunction.id,
-      ...otherProps,
-    })
-  } else {
-    createTransformingFunction(
-      newFunction.value.id,
-      newFunction.value.name,
-      newFunction.value.type,
-      newFunction.value.expression,
-      newFunction.value.description
-    )
+  // Both writers reject a variable they cannot evaluate, so the dialog stays open on a rejection
+  // instead of closing on an edit that was never stored. The save itself is logged by the view's
+  // `saved` handler, which only runs once a write went through.
+  try {
+    if (editingExistingFunction.value && props.editFunction) {
+      const { ...otherProps } = newFunction.value
+      updateTransformingFunction({
+        id: props.editFunction.id,
+        ...otherProps,
+      })
+    } else {
+      createTransformingFunction(
+        newFunction.value.id,
+        newFunction.value.name,
+        newFunction.value.type,
+        newFunction.value.expression,
+        newFunction.value.description
+      )
+    }
+  } catch (error) {
+    console.error('Refused to save the compound variable.', error)
+    const message = 'Could not save this compound variable. Close the dialog, open it again and retry.'
+    openSnackbar({ message, variant: 'error' })
+    return
   }
 
   emit('saved')

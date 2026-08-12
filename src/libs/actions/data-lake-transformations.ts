@@ -25,7 +25,20 @@ let unusableTransformingFunctions: TransformingFunction[] = []
 // either one throws somewhere far from here (`getDataLakeVariableIdFromInput` on load, the POI
 // coordinate sync while pruning), and such an entry can back no variable anyway.
 const isUsableTransformingFunction = (func: TransformingFunction): boolean =>
-  typeof func?.id === 'string' && typeof func.expression === 'string'
+  typeof func?.id === 'string' && func.id.trim() !== '' && typeof func.expression === 'string'
+
+// The id is trimmed rather than taken as given because surrounding whitespace survives every check
+// here but makes the entry unreferenceable: `getDataLakeVariableIdFromInput` trims what an
+// expression's `{{ }}` captures, so `{{ my id }}` would never find an id stored as ' my id '.
+const withTrimmedId = (func: TransformingFunction): TransformingFunction =>
+  typeof func?.id === 'string' ? { ...func, id: func.id.trim() } : func
+
+const usableTransformingFunctionOrThrow = (func: TransformingFunction): TransformingFunction => {
+  const trimmedFunc = withTrimmedId(func)
+  if (isUsableTransformingFunction(trimmedFunc)) return trimmedFunc
+  const got = `Got id '${func?.id}' and expression '${func?.expression}'.`
+  throw new Error(`A transforming function needs a non-empty id and a string expression. ${got}`)
+}
 
 const loadTransformingFunctions = (): void => {
   const transformingFunctions = settingsManager.getKeyValue(transformingFunctionsKey)
@@ -41,7 +54,9 @@ const loadTransformingFunctions = (): void => {
     return
   }
   const storedFunctions = transformingFunctions as TransformingFunction[]
-  globalTransformingFunctions = storedFunctions.filter((func) => isUsableTransformingFunction(func))
+  // Stored ids are normalised on the way in too, so an entry a previous version wrote as ' my id ' still
+  // matches the trimmed id an update carries, instead of silently saving nothing.
+  globalTransformingFunctions = storedFunctions.filter((func) => isUsableTransformingFunction(func)).map(withTrimmedId)
   unusableTransformingFunctions = storedFunctions.filter((func) => !isUsableTransformingFunction(func))
   const droppedCount = unusableTransformingFunctions.length
   if (droppedCount > 0) {
@@ -254,6 +269,7 @@ export interface TransformingFunction {
  * @param {'string' | 'number' | 'boolean'} type - Type of the new variable
  * @param {string} expression - Expression to calculate the variable's value
  * @param {string?} description - Description of the new variable
+ * @throws {Error} If the id is empty or the expression is not a string
  */
 export const createTransformingFunction = (
   id: string,
@@ -262,9 +278,9 @@ export const createTransformingFunction = (
   expression: string,
   description?: string
 ): void => {
-  const transformingFunction: TransformingFunction = { name, id, type, expression, description }
+  const transformingFunction = usableTransformingFunctionOrThrow({ name, id, type, expression, description })
   globalTransformingFunctions.push(transformingFunction)
-  createDataLakeVariable({ id, name, type, description })
+  createDataLakeVariable({ id: transformingFunction.id, name, type, description })
   saveTransformingFunctions()
 }
 
@@ -279,13 +295,17 @@ export const getAllTransformingFunctions = (): TransformingFunction[] => {
 /**
  * Updates a transforming function
  * @param {TransformingFunction} func - The function to update
+ * @throws {Error} If the id is empty, the expression is not a string, or no stored function has that id
  */
 export const updateTransformingFunction = (func: TransformingFunction): void => {
-  const index = globalTransformingFunctions.findIndex((f) => f.id === func.id)
-  if (index !== -1) {
-    globalTransformingFunctions[index] = func
-    saveTransformingFunctions()
+  const transformingFunction = usableTransformingFunctionOrThrow(func)
+  const index = globalTransformingFunctions.findIndex((f) => f.id === transformingFunction.id)
+  // Returning quietly here would discard the caller's update while looking like it worked.
+  if (index === -1) {
+    throw new Error(`There is no transforming function with id '${transformingFunction.id}' to update.`)
   }
+  globalTransformingFunctions[index] = transformingFunction
+  saveTransformingFunctions()
 }
 
 /**
