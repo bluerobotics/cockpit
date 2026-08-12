@@ -39,6 +39,30 @@ jobs:
           echo "Commits under review:"
           jq -r '.[] | "- \(.oid[0:8]) \(.message | split("\n")[0])"' commits.json
 
+      # A reference in a commit message re-fires on the issue timeline every time
+      # a fork syncs that commit, so it has to stay in the PR body.
+      - name: Reject GitHub references in commit messages
+        run: |
+          set -euo pipefail
+          # Issue and PR numbers never start with a zero and never reach six
+          # digits, which is what keeps all-numeric hex colors (#000000) out.
+          offenders=$(jq -r '
+            def reference: "#[1-9][0-9]{0,4}(?![0-9A-Za-z_])|github\\.com/[^ ]+/(issues|pull)/[0-9]+";
+            .[]
+            | . as $commit
+            | ($commit.message | split("\n") | map(select(test(reference))) | first) as $line
+            | select($line != null)
+            | "\($commit.oid)\t\($line)"
+          ' commits.json)
+          if [ -n "$offenders" ]; then
+            while IFS=$'\t' read -r oid line; do
+              echo "::error::Commit ${oid:0:8} references a GitHub issue or pull request: ${line}"
+            done <<< "$offenders"
+            echo "Move issue and PR references (#N, owner/repo#N, issue URLs, Fixes/Closes/Resolves) to the PR body and reword these commits."
+            exit 1
+          fi
+          echo "No GitHub references in commit messages."
+
       - name: Classify commits with Claude
         uses: anthropics/claude-code-base-action@beta
         with:
