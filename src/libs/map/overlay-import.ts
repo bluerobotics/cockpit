@@ -1,15 +1,11 @@
 import { v4 as uuid } from 'uuid'
 
+import { pickFilesFromDisk } from '@/libs/utils'
 import type { MapOverlayMeta, MapOverlayRenderMode } from '@/types/mission'
 
 import { OVERLAY_RENDER_VERSION, renderGeoTiffImage } from './geotiff-overlay'
-import {
-  getOverlayStorageBytesAvailable,
-  mapOverlayStorage,
-  removeCachedOverlayRender,
-  requestPersistentOverlayStorage,
-  setCachedOverlayRender,
-} from './overlay-storage'
+import { mapOverlayStorage, removeCachedOverlayRender, setCachedOverlayRender } from './overlay-storage'
+import { getStorageBytesAvailable, requestPersistentStorage } from './storage-quota'
 
 const GEOTIFF_EXTENSIONS = ['tif', 'tiff', 'gtiff']
 
@@ -32,21 +28,7 @@ export class OverlayStorageQuotaError extends Error {
  * identically in Standalone (Electron) and Lite (Web), where the bytes are read in-renderer.
  * @returns {Promise<File[]>} The selected files, or an empty array if the dialog was dismissed.
  */
-export const pickGeoTiffFiles = (): Promise<File[]> => {
-  return new Promise((resolve) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.tif,.tiff,.gtiff,image/tiff'
-    input.multiple = true
-    input.onchange = (event: Event): void => {
-      const files = Array.from((event.target as HTMLInputElement).files ?? [])
-      resolve(files)
-    }
-    // A cancelled dialog never fires `change`; resolve empty so callers don't hang.
-    input.oncancel = (): void => resolve([])
-    input.click()
-  })
-}
+export const pickGeoTiffFiles = (): Promise<File[]> => pickFilesFromDisk('.tif,.tiff,.gtiff,image/tiff')
 
 const overlayNameFromFile = (file: File): string => file.name.replace(/\.(tif|tiff|gtiff)$/i, '')
 
@@ -75,14 +57,14 @@ export const importGeoTiffFile = async (file: File): Promise<MapOverlayMeta> => 
   // the image we cache, so the first display and later reloads reuse it instead of parsing the raster again.
   const { dataUrl, bounds } = await renderGeoTiffImage(file, renderMode)
 
-  const available = await getOverlayStorageBytesAvailable()
+  const available = await getStorageBytesAvailable()
   if (available !== undefined && file.size > available) {
     throw new OverlayStorageQuotaError(
       `Not enough browser storage to save "${file.name}". Free up space or use Cockpit Standalone.`
     )
   }
 
-  await requestPersistentOverlayStorage()
+  await requestPersistentStorage()
 
   const id = uuid()
   try {

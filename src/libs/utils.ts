@@ -473,3 +473,23 @@ export const serializeForLogging = (value: unknown): string => {
     return ''
   }
 }
+
+/**
+ * Opens the browser's file picker and resolves with the files the user chose. Uses a hidden file input so it
+ * behaves identically in Standalone (Electron) and Lite (Web), where the bytes are read in-renderer.
+ * @param {string} accept - Value for the input's `accept` attribute, e.g. `.zip,.mbtiles,.pmtiles`.
+ * @param {boolean} multiple - Whether more than one file can be picked at once.
+ * @returns {Promise<File[]>} The selected files, or an empty array if the dialog was dismissed.
+ */
+export const pickFilesFromDisk = (accept: string, multiple = true): Promise<File[]> => {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = accept
+    input.multiple = multiple
+    input.onchange = (event: Event): void => resolve(Array.from((event.target as HTMLInputElement).files ?? []))
+    // A cancelled dialog never fires `change`; resolve empty so callers don't hang.
+    input.oncancel = (): void => resolve([])
+    input.click()
+  })
+}
