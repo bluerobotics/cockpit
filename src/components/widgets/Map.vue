@@ -890,7 +890,12 @@ onMounted(async () => {
   await refreshMission()
 
   // Initialize vehicle history polyline if vehicle marker is on screen
-  if (map.value && vehicleMarker.value && missionStore.vehiclePositionHistory.length > 0) {
+  if (
+    map.value &&
+    widget.value.options.showVehiclePath &&
+    vehicleMarker.value &&
+    missionStore.vehiclePositionHistory.length > 0
+  ) {
     if (vehicleHistoryPolyline.value === undefined) {
       vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
         map.value
@@ -1392,39 +1397,42 @@ watch([getReachedWaypointIndices, currentMapWpIndex], () => {
 const vehicleHistoryRenderer = L.canvas()
 const vehicleHistoryPolyline = shallowRef<L.Polyline>()
 let lastDrawnHistoryLen = 0
-watch(
-  () => missionStore.vehiclePositionHistoryRevision,
-  () => {
-    const newPoints = missionStore.vehiclePositionHistory
-    if (map.value === undefined || !vehicleMarker.value || !newPoints || newPoints.length === 0) {
-      if (vehicleHistoryPolyline.value && map.value) {
-        map.value.removeLayer(vehicleHistoryPolyline.value)
-        vehicleHistoryPolyline.value = undefined
-      }
-      lastDrawnHistoryLen = 0
-      return
+watch([() => missionStore.vehiclePositionHistoryRevision, () => widget.value.options.showVehiclePath], () => {
+  const newPoints = missionStore.vehiclePositionHistory
+  if (
+    map.value === undefined ||
+    !widget.value.options.showVehiclePath ||
+    !vehicleMarker.value ||
+    !newPoints ||
+    newPoints.length === 0
+  ) {
+    if (vehicleHistoryPolyline.value && map.value) {
+      map.value.removeLayer(vehicleHistoryPolyline.value)
+      vehicleHistoryPolyline.value = undefined
     }
-
-    if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
-        map.value
-      )
-      lastDrawnHistoryLen = 0
-    }
-
-    if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
-      // Append only the new points — O(1) per fire instead of O(N) full rebuild.
-      for (let i = lastDrawnHistoryLen; i < newPoints.length; i++) {
-        vehicleHistoryPolyline.value.addLatLng(newPoints[i] as L.LatLngExpression)
-      }
-    } else {
-      // First draw, or the history shrank (clear/simplify) / stayed same length (push+shift):
-      // fall back to a full rebuild to stay correct.
-      vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
-    }
-    lastDrawnHistoryLen = newPoints.length
+    lastDrawnHistoryLen = 0
+    return
   }
-)
+
+  if (vehicleHistoryPolyline.value === undefined) {
+    vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
+      map.value
+    )
+    lastDrawnHistoryLen = 0
+  }
+
+  if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
+    // Append only the new points — O(1) per fire instead of O(N) full rebuild.
+    for (let i = lastDrawnHistoryLen; i < newPoints.length; i++) {
+      vehicleHistoryPolyline.value.addLatLng(newPoints[i] as L.LatLngExpression)
+    }
+  } else {
+    // First draw, or the history shrank (clear/simplify) / stayed same length (push+shift):
+    // fall back to a full rebuild to stay correct.
+    vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
+  }
+  lastDrawnHistoryLen = newPoints.length
+})
 
 // Handle context menu toggling and selection
 const contextMenuVisible = ref(false)
