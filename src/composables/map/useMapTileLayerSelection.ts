@@ -1,7 +1,9 @@
-import L, { type Control, type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
+import { type Control, type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
 import { watch } from 'vue'
 
 import type { MapTileLayers } from '@/composables/map/useMapTileLayers'
+import { createLayersControlWithAction } from '@/libs/map/utils-map'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import type { MapTileProvider } from '@/types/mission'
 
@@ -17,6 +19,11 @@ const overlayPersistenceFlags: Record<string, OverlayPersistenceFlag> = {
  * Helpers to seed and persist a map's base-map and overlay selection.
  */
 export interface MapTileLayerSelection {
+  /**
+   * Resolves the built-in base map the user's settings ask for: the configured default, or the last
+   * selected one when the default is "Use last selected".
+   */
+  preferredBaseLayer: () => L.TileLayer
   /**
    * Builds the map's initial base layer plus any overlays the user last had enabled.
    */
@@ -40,6 +47,7 @@ export interface MapTileLayerSelection {
  */
 export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLayerSelection => {
   const missionStore = useMissionStore()
+  const interfaceStore = useAppInterfaceStore()
   const { baseMaps, overlays, esri } = tileLayers
 
   const preferredBaseLayer = (): L.TileLayer => {
@@ -59,16 +67,26 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
     return layers
   }
 
-  const createLayerControl = (): Control.Layers => L.control.layers(baseMaps, overlays)
+  const createLayerControl = (): Control.Layers =>
+    createLayersControlWithAction(baseMaps, overlays, {
+      label: 'Add map provider',
+      onClick: () => {
+        logUserAction('Opened custom map providers from the map layer selector')
+        interfaceStore.openSettingsSourcesCustomProviders()
+      },
+    })
 
   const registerLayerSync = (map: LeafletMap): void => {
     // These layers-control events only fire from user clicks on the control, so logging here reflects a real
     // interaction (programmatic base/overlay changes go through map.addLayer/removeLayer, not the control).
     map.on('baselayerchange', (event: LayersControlEvent) => {
-      const name = event.name
-      if (!name.includes(name as MapTileProvider)) return
       logUserAction(`Switched map base layer to '${event.name}'`)
-      missionStore.userLastMapTileProvider = event.name as MapTileProvider
+      // Matched by layer identity because a custom provider may carry the same label as a built-in one. Custom
+      // providers are added to the control at runtime and persist by id in useCustomTileProviders.
+      const builtIn = Object.entries(baseMaps).find(([, layer]) => layer === event.layer)
+      if (!builtIn) return
+      missionStore.userLastMapTileProvider = builtIn[0] as MapTileProvider
+      missionStore.userLastCustomMapProviderId = null
     })
 
     const persistOverlay = (name: string, enabled: boolean): void => {
@@ -93,5 +111,5 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
     )
   }
 
-  return { getInitialLayers, createLayerControl, registerLayerSync }
+  return { preferredBaseLayer, getInitialLayers, createLayerControl, registerLayerSync }
 }

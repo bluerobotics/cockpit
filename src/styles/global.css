@@ -69,6 +69,12 @@ select:focus {
     user-select: none;
 }
 
+/* Leaflet pads the expanded layers control asymmetrically (6px left, 10px right). Even it out on the controls
+   that carry a full-width action row, so the button sits equidistant from both panel edges. */
+.cockpit-leaflet-layers-with-action.leaflet-control-layers-expanded {
+    padding: 6px 8px;
+}
+
 @keyframes highlightBackground {
     0% { background-color: rgba(255, 234, 43, 0.438); }
     100% { background-color: transparent; }
