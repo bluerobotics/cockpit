@@ -9,6 +9,11 @@ interface Navigator {
   userAgentData?: NavigatorUAData
 }
 
+declare module '*?url' {
+  const src: string
+  export default src
+}
+
 declare module '@vue-leaflet/vue-leaflet'
 declare module 'gamepad.js'
 declare module 'vuetify'
