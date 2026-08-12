@@ -23,6 +23,7 @@ import {
   AltitudeReferenceType,
   CockpitMission,
   countNavWaypointCommands,
+  CustomTileProviderMeta,
   isNavWaypointCommand,
   MapOverlayMeta,
   MapTileProvider,
@@ -159,6 +160,30 @@ export const useMissionStore = defineStore('mission', () => {
   const requestMapOverlayFocus = (id: string): void => {
     mapOverlayFocusRequest.value = { id, revision: mapOverlayFocusRequest.value.revision + 1 }
   }
+
+  // Metadata for user-defined custom map tile providers. For `file` providers the tile archive lives on the
+  // vehicle (File Browser) and is cached locally in IndexedDB, both keyed by each entry's `id`.
+  const customTileProviders = useBlueOsStorage<CustomTileProviderMeta[]>('cockpit-custom-tile-providers-v1', [])
+
+  const addCustomTileProvider = (provider: CustomTileProviderMeta): void => {
+    customTileProviders.value.push(provider)
+  }
+
+  const removeCustomTileProvider = (id: string): void => {
+    const index = customTileProviders.value.findIndex((provider) => provider.id === id)
+    if (index !== -1) {
+      customTileProviders.value.splice(index, 1)
+    }
+  }
+
+  const updateCustomTileProvider = (id: string, changes: Partial<CustomTileProviderMeta>): void => {
+    const provider = customTileProviders.value.find((entry) => entry.id === id)
+    if (provider) Object.assign(provider, changes)
+  }
+
+  // Id of the custom provider the user last selected as the map's base layer, so the choice is restored on reload
+  // (built-in base maps are tracked separately by `userLastMapTileProvider`). Null when a built-in map is active.
+  const userLastCustomMapProviderId = useBlueOsStorage<string | null>('cockpit-user-last-custom-map-provider-id', null)
 
   // Only remember user-typed names so the mission-name restore button never brings back an automatic name.
   watch(missionName, () => {
@@ -865,6 +890,11 @@ export const useMissionStore = defineStore('mission', () => {
     removeMapOverlay,
     mapOverlayFocusRequest,
     requestMapOverlayFocus,
+    customTileProviders,
+    addCustomTileProvider,
+    removeCustomTileProvider,
+    updateCustomTileProvider,
+    userLastCustomMapProviderId,
     persistDraft,
     clearDraft,
     bumpVehicleMissionRevision,
