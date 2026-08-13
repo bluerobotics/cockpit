@@ -154,7 +154,7 @@
                 </span>
               </div>
               <div v-if="isElectron()" class="mt-4 mr-2 mb-2 w-[95%]">
-                <div class="text-sm text-gray-300 mb-2">Add direct RTSP stream (Standalone)</div>
+                <div class="text-sm text-gray-300 mb-2">Add direct RTSP stream (standalone)</div>
                 <div class="flex items-end gap-2 w-full">
                   <v-text-field
                     v-model="rtspUrlInput"
@@ -271,7 +271,7 @@
           <template #info>
             <li>
               Configure live video processing to process videos in real-time during recording for instant availability
-              when recording stops. This is only available in Cockpit Standalone.
+              when recording stops. This is only available in Cockpit standalone.
             </li>
             <li>
               Choose whether to save backup raw chunks alongside the final video file. This provides safety for video
@@ -306,7 +306,7 @@
                   <h4 class="text-amber-200 font-medium mb-2">Cockpit Lite</h4>
                   <p class="text-amber-100 text-sm">
                     Video processing is not available in Cockpit Lite. Your recordings will be saved as raw chunks that
-                    can be downloaded and processed using Cockpit Standalone.
+                    can be downloaded and processed using Cockpit standalone.
                   </p>
                 </div>
               </div>
@@ -315,7 +315,7 @@
             <div class="flex items-center justify-start w-[96%] ml-2">
               <v-checkbox
                 v-model="videoStore.enableLiveProcessing"
-                label="Live video processing (Standalone)"
+                label="Live video processing (standalone)"
                 class="text-sm mx-2"
                 hide-details
                 :disabled="!isElectron()"
@@ -324,7 +324,7 @@
                 :text="
                   isElectron()
                     ? 'Process videos in real-time during recording for instant availability when recording stops'
-                    : 'Live video processing is only available in Cockpit Standalone'
+                    : 'Live video processing is only available in Cockpit standalone'
                 "
               >
                 <template #activator="{ props }">

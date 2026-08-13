@@ -171,7 +171,7 @@
             class="mt-2"
           >
             <div class="text-body-2">
-              <strong>Note:</strong> Specifying the User-Agent header only works in Cockpit Standalone, not in Cockpit
+              <strong>Note:</strong> Specifying the User-Agent header only works in Cockpit standalone, not in Cockpit
               Lite.
             </div>
           </v-alert>
