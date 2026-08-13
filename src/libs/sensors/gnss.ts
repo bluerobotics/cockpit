@@ -455,7 +455,7 @@ export const stopGnssDevice = async (deviceId: string): Promise<void> => {
  */
 export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): Promise<void> => {
   if (!isElectron() || !window.electronAPI) {
-    throw new Error('GNSS reading is only available in Cockpit Standalone.')
+    throw new Error('GNSS reading is only available in Cockpit standalone.')
   }
 
   await stopGnssDevice(device.id)
@@ -517,7 +517,7 @@ export const autodetectBaud = async (
   perBaudMs = 1500
 ): Promise<number | null> => {
   if (!isElectron() || !window.electronAPI) {
-    throw new Error('GNSS reading is only available in Cockpit Standalone.')
+    throw new Error('GNSS reading is only available in Cockpit standalone.')
   }
 
   await stopDevicesOnPort(port)

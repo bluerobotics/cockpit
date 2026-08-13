@@ -11,7 +11,7 @@ const GEOTIFF_EXTENSIONS = ['tif', 'tiff', 'gtiff']
 
 /**
  * Error thrown when a GeoTIFF cannot be stored because the browser's IndexedDB quota would be exceeded.
- * More likely in the Lite (Web) build; Standalone (Electron) has a much larger IndexedDB quota.
+ * More likely in the Lite (Web) build; standalone (Electron) has a much larger IndexedDB quota.
  */
 export class OverlayStorageQuotaError extends Error {
   /**
@@ -25,7 +25,7 @@ export class OverlayStorageQuotaError extends Error {
 
 /**
  * Opens a file picker for the user to choose one or more GeoTIFF files. Uses a hidden file input so it works
- * identically in Standalone (Electron) and Lite (Web), where the bytes are read in-renderer.
+ * identically in standalone (Electron) and Lite (Web), where the bytes are read in-renderer.
  * @returns {Promise<File[]>} The selected files, or an empty array if the dialog was dismissed.
  */
 export const pickGeoTiffFiles = (): Promise<File[]> => pickFilesFromDisk('.tif,.tiff,.gtiff,image/tiff')
@@ -60,7 +60,7 @@ export const importGeoTiffFile = async (file: File): Promise<MapOverlayMeta> => 
   const available = await getStorageBytesAvailable()
   if (available !== undefined && file.size > available) {
     throw new OverlayStorageQuotaError(
-      `Not enough browser storage to save "${file.name}". Free up space or use Cockpit Standalone.`
+      `Not enough browser storage to save "${file.name}". Free up space or use Cockpit standalone.`
     )
   }
 
@@ -72,7 +72,7 @@ export const importGeoTiffFile = async (file: File): Promise<MapOverlayMeta> => 
   } catch (error) {
     if (error instanceof DOMException && error.name === 'QuotaExceededError') {
       throw new OverlayStorageQuotaError(
-        `Browser storage is full, so "${file.name}" could not be saved. Free up space or use Cockpit Standalone.`
+        `Browser storage is full, so "${file.name}" could not be saved. Free up space or use Cockpit standalone.`
       )
     }
     throw error

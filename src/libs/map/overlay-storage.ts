@@ -7,7 +7,7 @@ import type { MapOverlayBounds, MapOverlayRenderMode } from '@/types/mission'
 /**
  * Persistent storage for GeoTIFF overlay raster bytes, in IndexedDB for both builds. Overlays are imported
  * input data (not generated output like videos/snapshots), so they are not written to the user's filesystem.
- * In Lite (browser) IndexedDB is origin-quota-limited and evictable; in Standalone (Electron) it has a much
+ * In Lite (browser) IndexedDB is origin-quota-limited and evictable; in standalone (Electron) it has a much
  * larger quota and is effectively durable.
  */
 export const mapOverlayStorage: StorageDB = new LocalForageStorage(

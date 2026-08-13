@@ -39,38 +39,38 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     // Separate memory metrics for different process types
     cockpitMainMemoryVariable = {
       id: 'cockpit-main-memory',
-      name: 'Cockpit Main Memory (Standalone)',
+      name: 'Cockpit Main Memory (standalone)',
       type: 'number',
       description:
-        'The memory usage of the main process in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The memory usage of the main process, in MB. This value is updated every 100ms. Only available in standalone application.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitMainMemoryVariable)
 
     cockpitRenderersMemoryVariable = {
       id: 'cockpit-renderers-memory',
-      name: 'Cockpit Renderers Memory (Standalone)',
+      name: 'Cockpit Renderers Memory (standalone)',
       type: 'number',
       description:
-        'The total memory usage of the renderer processes in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The total memory usage of the renderer processes, in MB. This value is updated every 100ms. Only available in standalone application.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitRenderersMemoryVariable)
 
     cockpitGpuMemoryVariable = {
       id: 'cockpit-gpu-memory',
-      name: 'Cockpit GPU Memory (Standalone)',
+      name: 'Cockpit GPU Memory (standalone)',
       type: 'number',
       description:
-        'The memory usage of the GPU in Cockpit Standalone, in MB. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The memory usage of the GPU, in MB. This value is updated every 100ms. Only available in standalone application.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitGpuMemoryVariable)
 
     // CPU usage tracking
     cockpitCpuUsageVariable = {
       id: 'cockpit-cpu-usage',
-      name: 'Cockpit CPU Usage (Standalone)',
+      name: 'Cockpit CPU Usage (standalone)',
       type: 'number',
       description:
-        'The CPU usage of Cockpit Standalone as a percentage. This value is updated every 100ms. Only available in Cockpit Standalone.',
+        'The CPU usage of Cockpit as a percentage. This value is updated every 100ms. Only available in standalone application.',
     } as DataLakeVariable
     createDataLakeVariable(cockpitCpuUsageVariable)
   }

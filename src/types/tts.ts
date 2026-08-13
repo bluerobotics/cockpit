@@ -1,5 +1,5 @@
 /**
- * A curated Piper voice offered for alert speech on the Standalone build.
+ * A curated Piper voice offered for alert speech on the standalone build.
  */
 export interface PiperVoice {
   /** Stable speaker key used in dropdown option values and IPC (e.g. `amy`). */

@@ -28,7 +28,7 @@
                   <div>
                     <h4 class="text-amber-200 font-medium mb-2">Cockpit Lite</h4>
                     <p class="text-amber-100 text-sm">
-                      Reading external serial GNSS receivers is only available in Cockpit Standalone. Browsers cannot
+                      Reading external serial GNSS receivers is only available in Cockpit standalone. Browsers cannot
                       access serial devices outside of a secure context, so this feature is disabled here.
                     </p>
                   </div>
