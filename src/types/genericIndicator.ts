@@ -114,6 +114,6 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     iconName: 'mdi-thermometer',
     variableUnit: '°C',
     variableMultiplier: 1,
-    decimalPlaces: 1,
+    decimalPlaces: 2,
   },
 ]
