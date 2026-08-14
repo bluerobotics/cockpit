@@ -371,49 +371,17 @@
             </div>
           </template>
           <template #content>
-            <div class="flex flex-col w-full mt-2 pb-8">
-              <!-- Existing connections list -->
-              <div v-if="Object.keys(genericWebSocketConnections).length > 0" class="mb-4">
-                <div
-                  v-for="(conn, url) in genericWebSocketConnections"
-                  :key="url"
-                  class="flex items-center justify-between py-2 px-3 mb-2 rounded bg-[#FFFFFF11]"
-                >
-                  <div class="flex items-center gap-2 flex-1 min-w-0">
-                    <v-icon :color="getLoadingStatusColor(conn.status)" size="small">
-                      {{ getLoadingStatusIcon(conn.status) }}
-                    </v-icon>
-                    <span class="truncate text-sm" :title="url">{{ replaceDataLakeInputsInString(url) }}</span>
-                    <span class="text-xs opacity-60">({{ conn.status }})</span>
-                  </div>
-                  <v-btn icon="mdi-close" size="x-small" variant="text" @click="removeGenericWebSocket(url)" />
-                </div>
-              </div>
-              <div v-else class="text-sm opacity-60 mb-4">No connections configured.</div>
-
-              <!-- Add new connection -->
-              <div class="flex justify-start items-center">
-                <v-text-field
-                  v-model="newGenericWebSocketUrl"
-                  variant="outlined"
-                  type="input"
-                  density="compact"
-                  :hint="exampleGenericWebSocketUrl"
-                  hide-details
-                  @keyup.enter="addGenericWebSocket"
-                />
-                <v-btn
-                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  :disabled="!newGenericWebSocketUrl.trim()"
-                  class="bg-transparent"
-                  :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
-                  variant="text"
-                  @click="addGenericWebSocket"
-                >
-                  Add connection
-                </v-btn>
-              </div>
-            </div>
+            <ConnectionsList
+              v-model="newGenericWebSocketUrl"
+              :rows="genericWebSocketRows"
+              empty-message="No connections configured."
+              address-label="WebSocket address"
+              :address-placeholder="exampleGenericWebSocketUrl"
+              add-button-label="Add connection"
+              remove-tooltip="Remove connection"
+              @add="addGenericWebSocket"
+              @remove="removeGenericWebSocket"
+            />
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
@@ -527,6 +495,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
+import ConnectionsList from '@/components/configuration/ConnectionsList.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -540,7 +509,6 @@ import {
   removeGenericWebSocketConnection,
 } from '@/libs/generic-websocket'
 import { isElectron, isValidNetworkAddress } from '@/libs/utils'
-import { getLoadingStatusColor, getLoadingStatusIcon } from '@/libs/utils/ui'
 import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
@@ -967,6 +935,16 @@ const exampleGenericWebSocketUrl = 'ws://{{ vehicle-address }}:1234'
 const genericWebSocketConnections = ref<Record<string, GenericWebSocketConnection>>({})
 const newGenericWebSocketUrl = ref(exampleGenericWebSocketUrl)
 let unsubscribeGenericWebSocket: (() => void) | null = null
+
+const genericWebSocketRows = computed(() =>
+  Object.entries(genericWebSocketConnections.value).map(([url, connection]) => ({
+    key: url,
+    address: replaceDataLakeInputsInString(url),
+    title: url,
+    status: connection.status,
+    statusLabel: connection.status,
+  }))
+)
 
 onMounted(() => {
   loadCockpitFolderPath()
