@@ -18,11 +18,9 @@
       ]"
       :style="{ width: buttonStyle.width.toString() + 'px', height: buttonStyle.height.toString() + 'px' }"
     >
-      <template v-if="tooltip">
-        <v-tooltip open-delay="600" activator="parent" location="top">
-          {{ tooltip }}
-        </v-tooltip>
-      </template>
+      <v-tooltip v-if="tooltip" activator="parent" location="right">
+        {{ tooltip }}
+      </v-tooltip>
       <template v-if="isRound || isUncontained">
         <slot v-if="$slots.default"></slot>
         <v-icon :size="props.iconSize || calculatedIconSize" :class="iconClass" class="opacity-90">
