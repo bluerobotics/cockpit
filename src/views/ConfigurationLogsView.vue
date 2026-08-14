@@ -6,6 +6,8 @@
           icon="mdi-help-circle-outline"
           :icon-size="interfaceStore.isOnSmallScreen ? 14 : 18"
           :icon-class="interfaceStore.isOnSmallScreen ? '-mt-[2px]' : '-mb-[3px]'"
+          tooltip="Help"
+          tooltip-location="bottom"
           variant="uncontained"
           no-effects
           @click="openHelpDialog"
@@ -332,6 +334,7 @@
                           v-bind="props"
                           icon="mdi-plus-circle-outline"
                           :icon-size="interfaceStore.isOnSmallScreen ? 16 : 20"
+                          tooltip="Add custom message element"
                           variant="uncontained"
                           no-effects
                           @click="props.click"
