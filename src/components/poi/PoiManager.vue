@@ -62,7 +62,7 @@
             v-model="newPoiLngExpression"
             label="Longitude"
             :variable-filter="isCoordinateVariable"
-            class="mb-4"
+            class="mb-5"
           >
             <template #hint>
               <p class="text-sm mb-2">
@@ -71,6 +71,24 @@
               <p class="text-sm">
                 Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
                 &#123;&#123; mavlink/buoy/longitude &#125;&#125; + 0.0001.
+              </p>
+            </template>
+          </DataLakeExpressionInput>
+          <DataLakeExpressionInput
+            v-if="poiDialogVisible"
+            v-model="newPoiHeadingExpression"
+            label="Heading (optional)"
+            :variable-filter="isCoordinateVariable"
+            class="mb-4"
+          >
+            <template #hint>
+              <p class="text-sm mb-2">
+                Direction the point of interest faces, in degrees clockwise from north. Leave it empty for a point with
+                no direction.
+              </p>
+              <p class="text-sm">
+                Enter a fixed angle, or an expression that follows live data — e.g. &#123;&#123; mavlink/boat/heading
+                &#125;&#125;.
               </p>
             </template>
           </DataLakeExpressionInput>
@@ -167,6 +185,7 @@ const newPoiId = ref('')
 const isManualIdEnabled = ref(false)
 const newPoiLatExpression = ref('')
 const newPoiLngExpression = ref('')
+const newPoiHeadingExpression = ref('')
 const isIconPickerOpen = ref(false)
 const iconSearchQuery = ref('')
 const isColorPickerOpen = ref(false)
@@ -331,9 +350,24 @@ const buildCoordinateFields = (): Pick<PointOfInterest, 'latitude' | 'longitude'
   return { latitude, longitude, fallbackCoordinates }
 }
 
+// An empty heading field means the POI faces nowhere in particular. Cleared as null rather than
+// undefined, so the removal is actually stored and synced instead of dropped from the payload.
+const buildHeadingField = (): PoiCoordinateSource | null => {
+  const raw = (newPoiHeadingExpression.value ?? '').toString().trim()
+  return raw === '' ? null : toCoordinateSource(raw)
+}
+
 // Live preview - reflect form edits on the map while editing an existing POI.
 watch(
-  [newPoiName, newPoiDescription, newPoiLatExpression, newPoiLngExpression, newPoiIcon, newPoiColor],
+  [
+    newPoiName,
+    newPoiDescription,
+    newPoiLatExpression,
+    newPoiLngExpression,
+    newPoiHeadingExpression,
+    newPoiIcon,
+    newPoiColor,
+  ],
   () => {
     if (!editingPoiId.value || isInitializingDialog.value) return
 
@@ -342,6 +376,7 @@ watch(
       description: newPoiDescription.value,
       icon: newPoiIcon.value,
       color: newPoiColor.value,
+      heading: buildHeadingField(),
     }
 
     const coordinateFields = buildCoordinateFields()
@@ -384,13 +419,16 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
 
     editingPoiId.value = freshPoi.id
 
-    // Snapshot the original POI so unsaved live-preview edits can be reverted on cancel
-    originalPoi.value = { ...freshPoi }
+    // Snapshot the original POI so unsaved live-preview edits can be reverted on cancel. The heading
+    // is spelled out even when the POI has none, since the snapshot is merged over the previewed POI
+    // and a missing key would leave a previewed heading in place.
+    originalPoi.value = { ...freshPoi, heading: freshPoi.heading ?? null }
 
     newPoiName.value = freshPoi.name
     newPoiDescription.value = freshPoi.description
     newPoiLatExpression.value = freshPoi.latitude.toString()
     newPoiLngExpression.value = freshPoi.longitude.toString()
+    newPoiHeadingExpression.value = freshPoi.heading?.toString() ?? ''
     newPoiIcon.value = freshPoi.icon
     newPoiColor.value = freshPoi.color
     newPoiId.value = freshPoi.id
@@ -406,6 +444,7 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
     newPoiColor.value = getRandomColor()
     newPoiLatExpression.value = coordinates[0].toString()
     newPoiLngExpression.value = coordinates[1].toString()
+    newPoiHeadingExpression.value = ''
     dialogInitialCoordinates.value = [...coordinates]
   } else {
     // Creating a new POI without coordinates (shouldn't happen in normal flow)
@@ -416,6 +455,7 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
     newPoiDescription.value = ''
     newPoiLatExpression.value = ''
     newPoiLngExpression.value = ''
+    newPoiHeadingExpression.value = ''
     newPoiIcon.value = getRandomIcon()
     newPoiColor.value = getRandomColor()
     dialogInitialCoordinates.value = null
@@ -453,6 +493,7 @@ const closeDialog = (): void => {
   newPoiDescription.value = ''
   newPoiLatExpression.value = ''
   newPoiLngExpression.value = ''
+  newPoiHeadingExpression.value = ''
   newPoiIcon.value = getRandomIcon()
   newPoiColor.value = getRandomColor()
   isIconPickerOpen.value = false
@@ -490,6 +531,7 @@ const savePoi = (): void => {
       description: newPoiDescription.value,
       icon: newPoiIcon.value,
       color: newPoiColor.value,
+      heading: buildHeadingField(),
       ...coordinateFields,
     })
   } else {
@@ -499,6 +541,7 @@ const savePoi = (): void => {
       description: newPoiDescription.value,
       icon: newPoiIcon.value,
       color: newPoiColor.value,
+      heading: buildHeadingField(),
       timestamp: Date.now(),
       ...coordinateFields,
     }

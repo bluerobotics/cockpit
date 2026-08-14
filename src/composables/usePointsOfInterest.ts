@@ -3,8 +3,14 @@ import { type ComputedRef, computed, reactive, watch } from 'vue'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
-import { poiLatitudeVariableId, poiLongitudeVariableId, syncPoiCoordinateVariables } from '@/libs/poi/poi-data-lake'
+import {
+  poiHeadingVariableId,
+  poiLatitudeVariableId,
+  poiLongitudeVariableId,
+  syncPoiCoordinateVariables,
+} from '@/libs/poi/poi-data-lake'
 import { machinizeString } from '@/libs/utils'
+import { normalizePoiHeading, poiHasHeading } from '@/libs/utils-poi'
 import type {
   PointOfInterest,
   PointOfInterestColor,
@@ -53,6 +59,8 @@ interface LegacyPointOfInterest {
   longitudeExpression?: number | string
   /** Experimental last known coordinates from an older iteration */
   lastKnownCoordinates?: PointOfInterestCoordinates
+  /** Current-model heading source */
+  heading?: number | string | null
   /** Icon */
   icon: PointOfInterestIcon
   /** Color */
@@ -77,6 +85,9 @@ const migratePointOfInterest = (poi: LegacyPointOfInterest): PointOfInterest => 
     icon: poi.icon,
     color: poi.color,
     timestamp: poi.timestamp ?? Date.now(),
+    // Absent on every POI created before headings existed. Kept absent rather than set to null, so
+    // migrating them does not change the stored list and rewrite it for every operator of the vehicle.
+    ...(poi.heading === undefined ? {} : { heading: poi.heading }),
   }
 }
 
@@ -155,24 +166,19 @@ const createState = (): PointsOfInterestState => {
       delete outputListeners[poiId]
       delete liveCoordinateValues[poiLatitudeVariableId(poiId)]
       delete liveCoordinateValues[poiLongitudeVariableId(poiId)]
+      delete liveCoordinateValues[poiHeadingVariableId(poiId)]
     })
 
     pois.forEach((poi) => {
       if (outputListeners[poi.id]) return
-      const latitudeVariableId = poiLatitudeVariableId(poi.id)
-      const longitudeVariableId = poiLongitudeVariableId(poi.id)
-      mirrorLiveValue(latitudeVariableId)
-      mirrorLiveValue(longitudeVariableId)
-      outputListeners[poi.id] = [
-        {
-          variableId: latitudeVariableId,
-          listenerId: listenDataLakeVariable(latitudeVariableId, () => mirrorLiveValue(latitudeVariableId)),
-        },
-        {
-          variableId: longitudeVariableId,
-          listenerId: listenDataLakeVariable(longitudeVariableId, () => mirrorLiveValue(longitudeVariableId)),
-        },
-      ]
+      // The heading variable is listened to unconditionally, since a POI given a heading later keeps
+      // the listener set it got here, and listening to a variable that does not exist is harmless.
+      const variableIds = [poiLatitudeVariableId(poi.id), poiLongitudeVariableId(poi.id), poiHeadingVariableId(poi.id)]
+      variableIds.forEach(mirrorLiveValue)
+      outputListeners[poi.id] = variableIds.map((variableId) => ({
+        variableId,
+        listenerId: listenDataLakeVariable(variableId, () => mirrorLiveValue(variableId)),
+      }))
     })
   }
 
@@ -182,6 +188,7 @@ const createState = (): PointsOfInterestState => {
     pois.forEach((poi) => {
       if (typeof poi.latitude === 'number') liveCoordinateValues[poiLatitudeVariableId(poi.id)] = poi.latitude
       if (typeof poi.longitude === 'number') liveCoordinateValues[poiLongitudeVariableId(poi.id)] = poi.longitude
+      if (typeof poi.heading === 'number') liveCoordinateValues[poiHeadingVariableId(poi.id)] = poi.heading
     })
   }
 
@@ -238,7 +245,21 @@ const createState = (): PointsOfInterestState => {
         ? [latitude as number, longitude as number]
         : poi.fallbackCoordinates
 
-      return { ...poi, coordinates, isLiveTracked, hasValidPosition, latitudeVariableId, longitudeVariableId }
+      // A POI whose heading was cleared has no heading, even if its backing variable still holds the
+      // last value the now-deleted transforming function wrote.
+      const resolvedHeading = poiHasHeading(poi)
+        ? normalizePoiHeading(liveCoordinateValues[poiHeadingVariableId(poi.id)])
+        : null
+
+      return {
+        ...poi,
+        coordinates,
+        isLiveTracked,
+        hasValidPosition,
+        resolvedHeading,
+        latitudeVariableId,
+        longitudeVariableId,
+      }
     })
   )
 

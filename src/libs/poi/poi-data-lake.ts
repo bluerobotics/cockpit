@@ -20,6 +20,13 @@ export const poiLatitudeVariableId = (poiId: string): string => `cockpit/pois/${
  */
 export const poiLongitudeVariableId = (poiId: string): string => `cockpit/pois/${poiId}/longitude`
 
+/**
+ * Builds the data-lake variable id holding a POI's heading.
+ * @param {string} poiId - The POI id
+ * @returns {string} The heading variable id
+ */
+export const poiHeadingVariableId = (poiId: string): string => `cockpit/pois/${poiId}/heading`
+
 // Prefix shared by every POI-backing data-lake variable, used to find and prune orphaned ones.
 const poiVariablePrefix = 'cockpit/pois/'
 
@@ -35,6 +42,8 @@ export interface PoiCoordinateDefinition {
   latitude: PoiCoordinateSource
   /** Longitude source: a fixed number or a data-lake expression */
   longitude: PoiCoordinateSource
+  /** Heading source: a fixed number or a data-lake expression, or null/absent when the POI has none */
+  heading?: PoiCoordinateSource | null
 }
 
 // Every POI coordinate is backed by a transforming function: a fixed number resolves to itself, an
@@ -62,16 +71,17 @@ const deleteCoordinateFunction = (variableId: string): void => {
 }
 
 /**
- * Removes the transforming functions backing a POI's coordinates.
+ * Removes the transforming functions backing a POI's coordinates and heading.
  * @param {string} poiId - The POI id
  */
 export const unregisterPoiCoordinateVariables = (poiId: string): void => {
   deleteCoordinateFunction(poiLatitudeVariableId(poiId))
   deleteCoordinateFunction(poiLongitudeVariableId(poiId))
+  deleteCoordinateFunction(poiHeadingVariableId(poiId))
 }
 
 /**
- * Keeps the transforming functions backing every POI's coordinates in sync with the given
+ * Keeps the transforming functions backing every POI's coordinates and heading in sync with the given
  * definitions. Creates/updates a function for each current coordinate and prunes those of POIs that
  * no longer exist. Safe to call repeatedly; functions whose expression is unchanged are left as-is.
  * @param {PoiCoordinateDefinition[]} pois - The current POI coordinate definitions
@@ -86,6 +96,12 @@ export const syncPoiCoordinateVariables = (pois: PoiCoordinateDefinition[]): voi
     ensureCoordinateFunction(longitudeVariableId, `${poi.name} longitude`, poi.longitude)
     presentIds.add(latitudeVariableId)
     presentIds.add(longitudeVariableId)
+
+    // A POI without a heading registers no heading function, so clearing one prunes it below.
+    if (poi.heading === undefined || poi.heading === null) return
+    const headingVariableId = poiHeadingVariableId(poi.id)
+    ensureCoordinateFunction(headingVariableId, `${poi.name} heading`, poi.heading)
+    presentIds.add(headingVariableId)
   })
 
   // Prune transforming functions for POIs (or coordinates) that no longer exist.

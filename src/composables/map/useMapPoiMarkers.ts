@@ -2,7 +2,13 @@ import L, { type LatLngTuple, type LeafletEvent, type LeafletMouseEvent, type Ma
 import { type Ref, type ShallowRef, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
-import { getPoiIconSignature, getPoiMarkerColor, getPoiMarkerOpacity, getPoiTooltipHtml } from '@/libs/utils-poi'
+import {
+  getPoiIconSignature,
+  getPoiMarkerColor,
+  getPoiMarkerOpacity,
+  getPoiTooltipHtml,
+  poiPinRotation,
+} from '@/libs/utils-poi'
 import type { ResolvedPointOfInterest } from '@/types/mission'
 
 /**
@@ -78,6 +84,9 @@ export const useMapPoiMarkers = (
   // Icon-only signature per PoI, so a live-tracked PoI merely moving doesn't rebuild its icon (and DOM
   // element), which would cancel in-progress clicks on frequently-updated markers.
   const iconSignatures: Record<string, string> = {}
+  // Last heading written onto each marker, so a live-tracked PoI merely moving does not re-query the
+  // heading element.
+  const lastAppliedHeadings: Record<string, number> = {}
   const poiSignature = (poi: ResolvedPointOfInterest): string =>
     JSON.stringify([
       poi.coordinates,
@@ -87,6 +96,7 @@ export const useMapPoiMarkers = (
       poi.name,
       poi.description,
       poi.isLiveTracked,
+      poi.resolvedHeading,
     ])
 
   // The map ref can momentarily hold a template-ref DOM element before the Leaflet instance is
@@ -94,19 +104,52 @@ export const useMapPoiMarkers = (
   const isMapReady = (instance: Map | undefined): instance is Map =>
     !!instance && typeof instance.getContainer === 'function' && !!instance.getContainer()
 
-  const poiIconConfig = (poi: ResolvedPointOfInterest): L.DivIconOptions => ({
-    html: `
+  // A POI with a heading grows a white tip, the corner of the same teardrop pin the off-screen edge
+  // arrows use, turned to point where the POI faces. The pin sits behind the marker and has the
+  // marker's circle punched out of it, so only the corner shows and its base is that circle's own
+  // curve rather than a chord. Styled inline because the marker DOM is shared by every map surface
+  // while the `.poi-marker-*` rules are per-surface.
+  const headingTipHtml = (heading: number | null): string => {
+    if (heading === null) return ''
+    const circleCutout = 'radial-gradient(circle at center, transparent 15.5px, #000 16px)'
+    return `<div class="poi-marker-heading" style="position: absolute; width: 32px; height: 32px; z-index: 0;
+      background-color: rgba(255, 255, 255, 0.9); border-radius: 50% 50% 50% 0;
+      transform: rotate(${poiPinRotation(heading)}deg);
+      -webkit-mask-image: ${circleCutout}; mask-image: ${circleCutout};
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));"></div>`
+  }
+
+  // The glyph turns with the heading too, so an icon that does have a front (an arrow, a boat) faces
+  // the same way as the tip.
+  const glyphRotationStyle = (heading: number | null): string =>
+    heading === null ? '' : ` transform: rotate(${heading}deg);`
+
+  const poiIconConfig = (poi: ResolvedPointOfInterest): L.DivIconOptions => {
+    const glyphStyle = `color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;${glyphRotationStyle(
+      poi.resolvedHeading
+    )}`
+    return {
+      html: `
     <div class="poi-marker-container">
+      ${headingTipHtml(poi.resolvedHeading)}
       <div class="poi-marker-background" style="background-color: ${getPoiMarkerColor(poi)}80;"></div>
-      <i class="v-icon notranslate mdi ${
-        poi.icon
-      }" style="color: rgba(255, 255, 255, 0.7); position: relative; z-index: 2;"></i>
+      <i class="v-icon notranslate mdi poi-marker-glyph ${poi.icon}" style="${glyphStyle}"></i>
     </div>
   `,
-    className: options.iconClassName,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-  })
+      className: options.iconClassName,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    }
+  }
+
+  // Both parts a heading turns, kept together so the icon rebuild and the in-place update below can
+  // never disagree on where the marker points.
+  const applyHeadingRotation = (markerElement: HTMLElement | undefined, heading: number): void => {
+    const tip = markerElement?.querySelector('.poi-marker-heading') as HTMLElement | null
+    if (tip) tip.style.transform = `rotate(${poiPinRotation(heading)}deg)`
+    const glyph = markerElement?.querySelector('.poi-marker-glyph') as HTMLElement | null
+    if (glyph) glyph.style.transform = `rotate(${heading}deg)`
+  }
 
   const applyGotoTargetStyle = (poiId: string, active: boolean): void => {
     const bg = markers.value[poiId]?.getElement()?.querySelector('.poi-marker-background') as HTMLElement | null
@@ -173,6 +216,7 @@ export const useMapPoiMarkers = (
     markers.value[poi.id] = marker
     lastRenderedSignatures[poi.id] = poiSignature(poi)
     iconSignatures[poi.id] = getPoiIconSignature(poi)
+    if (poi.resolvedHeading !== null) lastAppliedHeadings[poi.id] = poi.resolvedHeading
 
     if (gotoTargetId.value === poi.id) applyGotoTargetStyle(poi.id, true)
   }
@@ -205,6 +249,15 @@ export const useMapPoiMarkers = (
       if (gotoTargetId.value === poi.id) applyGotoTargetStyle(poi.id, true)
     }
 
+    // A live heading changes as often as a live position, so it is turned in place rather than through
+    // the icon rebuild above, which would recreate the marker's DOM element on every update.
+    if (poi.resolvedHeading !== null && lastAppliedHeadings[poi.id] !== poi.resolvedHeading) {
+      applyHeadingRotation(marker.getElement(), poi.resolvedHeading)
+      lastAppliedHeadings[poi.id] = poi.resolvedHeading
+    } else if (poi.resolvedHeading === null) {
+      delete lastAppliedHeadings[poi.id]
+    }
+
     marker.getTooltip()?.setContent(getPoiTooltipHtml(poi, poi.coordinates))
   }
 
@@ -214,6 +267,7 @@ export const useMapPoiMarkers = (
     delete markers.value[poiId]
     delete lastRenderedSignatures[poiId]
     delete iconSignatures[poiId]
+    delete lastAppliedHeadings[poiId]
     if (gotoTargetId.value === poiId) gotoTargetId.value = null
   }
 
@@ -251,6 +305,7 @@ export const useMapPoiMarkers = (
     markers.value = {}
     Object.keys(lastRenderedSignatures).forEach((id) => delete lastRenderedSignatures[id])
     Object.keys(iconSignatures).forEach((id) => delete iconSignatures[id])
+    Object.keys(lastAppliedHeadings).forEach((id) => delete lastAppliedHeadings[id])
   })
 
   return { markers, gotoTargetId, setGotoTarget }
