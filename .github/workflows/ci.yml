@@ -50,6 +50,50 @@ jobs:
           fi
           echo "No pending-rebase markers found."
 
+  # Measures the functions this PR adds or changes and publishes the numbers as an artifact, because
+  # the reviewer that acts on them cannot produce them: it holds the Anthropic key, so it never checks
+  # out head code and has no interpreter. This workflow already runs head code safely, so the counting
+  # belongs here. Deliberately not part of `test`, and needing nothing from it, so the report lands
+  # while the reviewer is still starting rather than behind a typecheck and a full build.
+  complexity-report:
+    name: Complexity report
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The script checks out both sides itself, so it needs the base and the head commit present.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      # `--ignore-scripts` skips the ffmpeg, go2rtc, piper and SDL work that `postinstall` does, none
+      # of which this job opens, and which is most of the install. It also keeps a fork's own
+      # postinstall from running on this runner.
+      - name: Install (ESLint is all this needs)
+        run: yarn install --frozen-lockfile --network-timeout 600000 --ignore-scripts
+
+      # An advisory metric must not turn a PR red. A failed measurement uploads nothing, which is the
+      # absent-report case the reviewer already handles by skipping its complexity checks.
+      - name: Measure the functions this PR changes
+        continue-on-error: true
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .github/scripts/complexity-report.js "$BASE_SHA" "$HEAD_SHA" complexity-report.json
+
+      - name: Upload the report
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-report
+          path: complexity-report.json
+          # Read once, minutes after it is written, by the review workflow for this same head.
+          retention-days: 3
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -81,12 +125,20 @@ jobs:
       - name: Check the review marker writer
         run: .github/scripts/review-marker.sh --self-check
 
+      - name: Check the complexity report reducer
+        run: node .github/scripts/complexity-report.js --self-check
+
       - name: Install, lint, typecheck, and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
           yarn lint
           yarn typecheck
           yarn build
+
+      # `yarn lint` cannot reach this directory: ESLint 8 ignores dot-directories, and `--no-ignore` on
+      # `eslint .` would drag in `node_modules`. So the scripts get the zero-warning bar of their own.
+      - name: Lint the workflow scripts
+        run: yarn eslint --no-ignore .github/scripts --ext .js --max-warnings=0
 
   deploy-page:
     needs: test
