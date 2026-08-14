@@ -5,7 +5,6 @@ import {
   type DataLakeVariable,
   createDataLakeVariable,
   getAllDataLakeVariablesInfo,
-  getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
 import { ensureCockpitTransformingFunction } from '@/libs/actions/data-lake-transformations'
@@ -37,13 +36,13 @@ import {
 import { settingsManager } from '@/libs/settings-management'
 import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
+import { injectMavlinkPackageIntoDataLake } from '@/libs/vehicle/mavlink/data-lake-injection'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
 import {
   convertGeoFencePlanToMavlink,
   convertMavlinkToGeoFencePlan,
   emptyGeoFencePlan,
 } from '@/libs/vehicle/mavlink/geofence-conversion'
-import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import { downloadMissionItems } from '@/libs/vehicle/mavlink/mission-download'
 import { MissionRefusedError, uploadMissionItems } from '@/libs/vehicle/mavlink/mission-upload'
 import {
@@ -72,7 +71,6 @@ import {
 import type { FenceStorageExpansion, FenceStorageExpansionOutcome, GeoFencePlan } from '@/types/geofence'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
-import { flattenData } from '../common/data-flattener'
 import * as Vehicle from '../vehicle'
 
 export const MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY = 'cockpit-mavlink-message-intervals'
@@ -1748,73 +1746,8 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * @param { Package } mavlinkPackage
    */
   private addPackageVariablesToDataLake(mavlinkPackage: Package): void {
-    const messageType = mavlinkPackage.message.type
-    const { system_id: messageSystemId, component_id: messageComponentId } = mavlinkPackage.header
-    const prefix = `/mavlink/${messageSystemId}/${messageComponentId}`
-    const suffix = `(MAVLink / System: ${messageSystemId} / Component: ${messageComponentId})`
-
-    // Inject variables from the MAVLink messages into the DataLake
-    if (['NAMED_VALUE_FLOAT', 'NAMED_VALUE_INT'].includes(messageType)) {
-      // Special handling for NAMED_VALUE_FLOAT/NAMED_VALUE_INT messages
-      const name = `${(mavlinkPackage.message.name as string[]).join('').replace(/\0/g, '')}`
-      const path = `${prefix}/${messageType}/${name}`
-      if (getDataLakeVariableInfo(path) === undefined) {
-        createDataLakeVariable({ id: path, name: `${name} ${suffix}`, type: 'number' })
-      }
-      setDataLakeVariableData(path, mavlinkPackage.message.value)
-
-      if (
-        this.shouldCreateLegacyDataLakeVariables &&
-        messageSystemId === this.currentSystemId &&
-        messageComponentId === 1
-      ) {
-        // Create duplicated variables for legacy purposes (that was how they were stored in the old generic-variables system)
-        const oldVariablePath = mavlinkPackage.message.name.join('').replaceAll('\x00', '')
-        if (getDataLakeVariableInfo(oldVariablePath) === undefined) {
-          createDataLakeVariable({ id: oldVariablePath, name: `(Legacy) ${oldVariablePath}`, type: 'number' })
-        }
-        setDataLakeVariableData(oldVariablePath, mavlinkPackage.message.value)
-      }
-    } else {
-      // For all other messages, use the flattener
-      const flattened = flattenData(mavlinkPackage.message)
-      flattened.forEach(({ path, field, value }) => {
-        if (value === null) return
-        if (typeof value !== 'string' && typeof value !== 'number') return
-
-        // Looking the unit up walks the whole dialect, so it only happens where a variable is
-        // created, never on the messages that follow.
-        if (
-          this.shouldCreateLegacyDataLakeVariables &&
-          messageSystemId === this.currentSystemId &&
-          messageComponentId === 1
-        ) {
-          // Create the variable in the old style path for legacy purposes (that was how they were stored in the old generic-variables system)
-          const oldStylePath = `${path}`
-          if (getDataLakeVariableInfo(oldStylePath) === undefined) {
-            createDataLakeVariable({
-              id: oldStylePath,
-              name: `(Legacy) ${path}`,
-              type: typeof value === 'string' ? 'string' : 'number',
-              unit: mavlinkDefinition.messageField(messageType, field)?.units,
-            })
-          }
-          setDataLakeVariableData(oldStylePath, value)
-        }
-
-        // Create the variable in the new style path
-        const newStylePath = `${prefix}/${path}`
-        if (getDataLakeVariableInfo(newStylePath) === undefined) {
-          createDataLakeVariable({
-            id: newStylePath,
-            name: `${path} ${suffix}`,
-            type: typeof value === 'string' ? 'string' : 'number',
-            unit: mavlinkDefinition.messageField(messageType, field)?.units,
-          })
-        }
-        setDataLakeVariableData(newStylePath, value)
-      })
-    }
+    const legacySystemId = this.shouldCreateLegacyDataLakeVariables ? this.currentSystemId : undefined
+    injectMavlinkPackageIntoDataLake(mavlinkPackage, legacySystemId)
   }
 
   /**
