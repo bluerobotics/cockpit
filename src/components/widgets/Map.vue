@@ -82,7 +82,7 @@
         :vehicle-position="vehiclePosition"
         :is-vehicle-online="vehicleStore.isVehicleOnline"
         :has-mission-waypoints="hasMissionWaypoints"
-        :activator-style="{ bottom: bottomButtonsDisplacement }"
+        :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
         @center-on-mission="centerOnMission"
       />
       <MapNorthIndicator v-if="showButtons" class="north-indicator" />
