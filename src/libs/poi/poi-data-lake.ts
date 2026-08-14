@@ -65,21 +65,6 @@ const ensureCoordinateFunction = (variableId: string, name: string, source: PoiC
   createTransformingFunction(variableId, name, 'number', expression)
 }
 
-const deleteCoordinateFunction = (variableId: string): void => {
-  const existing = getAllTransformingFunctions().find((func) => func.id === variableId)
-  if (existing) deleteTransformingFunction(existing)
-}
-
-/**
- * Removes the transforming functions backing a POI's coordinates and heading.
- * @param {string} poiId - The POI id
- */
-export const unregisterPoiCoordinateVariables = (poiId: string): void => {
-  deleteCoordinateFunction(poiLatitudeVariableId(poiId))
-  deleteCoordinateFunction(poiLongitudeVariableId(poiId))
-  deleteCoordinateFunction(poiHeadingVariableId(poiId))
-}
-
 /**
  * Keeps the transforming functions backing every POI's coordinates and heading in sync with the given
  * definitions. Creates/updates a function for each current coordinate and prunes those of POIs that
