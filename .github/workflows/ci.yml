@@ -128,6 +128,9 @@ jobs:
       - name: Check the complexity report reducer
         run: node .github/scripts/complexity-report.js --self-check
 
+      - name: Check the complexity report fetcher
+        run: .github/scripts/fetch-complexity-report.sh --self-check
+
       - name: Install, lint, typecheck, and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
