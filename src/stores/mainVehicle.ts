@@ -524,20 +524,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
-   * Set home waypoint on vehicle
-   * @param { [ number, number ] } coordinate of the home waypoint
-   * @param { number } height of the home waypoint
-   * @returns { Promise<void> }
-   */
-  async function setHomeWaypoint(coordinate: [number, number], height: number): Promise<void> {
-    if (!mainVehicle.value) {
-      throw new Error('No vehicle available to set home waypoint.')
-    }
-    await mainVehicle.value.setHomeWaypoint(coordinate, height)
-    missionStore.homeMarkerPosition = coordinate
-  }
-
-  /**
    * Clear all missions that are on the vehicle
    */
   async function clearMissions(): Promise<void> {
@@ -1096,7 +1082,6 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     reachedMissionItemSequences,
     clearReachedMissionItems,
     fetchHomeWaypoint,
-    setHomeWaypoint,
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
     vehicleConnectionTimeoutMs,
