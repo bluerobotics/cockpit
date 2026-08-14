@@ -3,7 +3,13 @@ import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 
 import { flattenData } from '../common/data-flattener'
 
+// A secondary link's message body is remote JSON, and the variable picker splices a chosen id straight into an
+// expression that gets evaluated, so an id is only minted when it holds what a MAVLink path can hold.
+const validVariableIdRegex = /^[\w/=.-]+$/
+
 const setVariable = (id: string, name: string, value: string | number): void => {
+  if (!validVariableIdRegex.test(id)) return
+
   if (getDataLakeVariableInfo(id) === undefined) {
     createDataLakeVariable({ id, name, type: typeof value === 'string' ? 'string' : 'number' })
   }

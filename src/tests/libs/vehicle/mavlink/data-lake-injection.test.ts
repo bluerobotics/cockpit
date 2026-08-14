@@ -33,6 +33,15 @@ test('Legacy unprefixed variables are created only for the system that asked for
   expect(variables().get('VFR_HUD/alt')).toBe(10)
 })
 
+test('A name the remote endpoint chose is not turned into a variable when it could be read as code', () => {
+  const name = 'depth}}+(globalThis.pwned=true)+{{/mavlink/42/1/NAMED_VALUE_FLOAT/depth'
+  injectMavlinkPackageIntoDataLake(mavlinkPackage(42, { type: 'NAMED_VALUE_FLOAT', name: [...name], value: 1 }))
+  injectMavlinkPackageIntoDataLake(mavlinkPackage(42, { type: 'ATTITUDE ', roll: 0.5 }))
+
+  expect([...variables().keys()].filter((id) => /[{}\s]/.test(id))).toEqual([])
+  expect(variables().get('/mavlink/42/1/NAMED_VALUE_FLOAT/depth')).toBe(undefined)
+})
+
 test('A package with no system id does not create legacy variables while they are disabled', () => {
   injectMavlinkPackageIntoDataLake(mavlinkPackage(undefined, { type: 'AHRS2', altitude: 5 }))
 
