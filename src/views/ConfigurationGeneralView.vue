@@ -246,6 +246,51 @@
             </v-form>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Other vehicles (telemetry only)</template>
+          <template #subtitle>{{ secondaryVehicleUris.length }} configured</template>
+          <template #info>
+            <div class="w-full">
+              <p>
+                Receives telemetry from other vehicles on your network, each one on its own address. Their data becomes
+                available as data-lake variables named after the vehicle's system ID, so widgets can read it and a point
+                of interest can follow it on the map. To place one on the map, create a point of interest and use the
+                vehicle's position variables as its coordinates, e.g.
+                <span class="font-mono">{{ exampleSecondaryVehicleCoordinate }}</span>
+              </p>
+              <p class="mt-2">
+                These vehicles cannot be controlled or armed from here, and no command is ever sent to them. Give each
+                one a different system ID, otherwise only the first one to announce each ID is received, and one using
+                the piloted vehicle's ID is ignored entirely. To change it, set the autopilot's SYSID_THISMAV parameter
+                on the vehicle's autopilot parameters page in BlueOS, then reboot the autopilot.
+              </p>
+            </div>
+          </template>
+          <template #content>
+            <ConnectionsList
+              v-model="newSecondaryVehicleUri"
+              :rows="secondaryVehicleRows"
+              empty-message="No other vehicles configured."
+              address-label="Vehicle telemetry address"
+              :address-placeholder="exampleSecondaryVehicleUri"
+              add-button-label="Add vehicle"
+              remove-tooltip="Remove vehicle"
+              @add="addNewSecondaryVehicle"
+              @remove="removeSecondaryVehicle"
+            >
+              <template #warning>
+                <div v-if="secondaryVehicleUsesMainVehicleSystemId" class="text-sm text-yellow-400 mb-4">
+                  A vehicle is using the same system ID as the vehicle you are piloting, so it is not being received.
+                  Change its system ID.
+                </div>
+                <div v-if="duplicatedSecondaryVehicleSystemIds.length > 0" class="text-sm text-yellow-400 mb-4">
+                  More than one vehicle is using system ID {{ duplicatedSecondaryVehicleSystemIds.join(', ') }}, so only
+                  the first one to announce it is being received. Give each vehicle a different system ID.
+                </div>
+              </template>
+            </ConnectionsList>
+          </template>
+        </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Video connection (WebRTC)</template>
           <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
@@ -491,6 +536,7 @@
 </template>
 
 <script setup lang="ts">
+import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
@@ -499,6 +545,15 @@ import ConnectionsList from '@/components/configuration/ConnectionsList.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import {
+  addSecondaryVehicle,
+  duplicatedSecondaryVehicleSystemIds,
+  refreshSecondaryVehicleStates,
+  removeSecondaryVehicle,
+  secondaryVehicleStates,
+  secondaryVehicleUris,
+  secondaryVehicleUsesMainVehicleSystemId,
+} from '@/composables/secondaryVehicles'
 import { useSnackbar } from '@/composables/snackbar'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
@@ -511,6 +566,11 @@ import {
 import { isElectron, isValidNetworkAddress } from '@/libs/utils'
 import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
+import {
+  getSecondaryConnectionState,
+  secondaryConnectionStatus,
+  secondaryConnectionStatusLabel,
+} from '@/libs/vehicle/mavlink/secondary-connections'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -929,6 +989,36 @@ const openExternalFeaturesModal = (): void => {
 watch(customRtcConfiguration, () => tryToPrettifyRtcConfig())
 
 const showDiscoveryDialog = ref(false)
+
+// Other vehicles, connected for telemetry only
+const exampleSecondaryVehicleUri = 'ws://192.168.2.4/mavlink2rest/ws/mavlink'
+const exampleSecondaryVehicleCoordinate = '{{ /mavlink/3/1/GLOBAL_POSITION_INT/lat }} / 1e7'
+const newSecondaryVehicleUri = ref('')
+
+const secondaryVehicleRows = computed(() =>
+  secondaryVehicleUris.value.map((uri) => {
+    const state = secondaryVehicleStates.value[uri] ?? getSecondaryConnectionState(uri)
+    const watchdogTimeoutMs = mainVehicleStore.vehicleConnectionWatchdogTimeoutMs
+    const systemIds = state.systemIds.join(', ')
+    return {
+      key: uri,
+      address: uri,
+      status: secondaryConnectionStatus(state, watchdogTimeoutMs),
+      statusLabel: secondaryConnectionStatusLabel(state, watchdogTimeoutMs),
+      details: systemIds === '' ? undefined : `System ID ${systemIds}`,
+    }
+  })
+)
+
+// The connections keep no reactive state of their own, so their status is polled while this view is open
+// instead of being pushed on every incoming message.
+useIntervalFn(refreshSecondaryVehicleStates, 1000, { immediateCallback: true })
+
+const addNewSecondaryVehicle = (): void => {
+  if (addSecondaryVehicle(newSecondaryVehicleUri.value)) {
+    newSecondaryVehicleUri.value = ''
+  }
+}
 
 // Generic WebSocket connections
 const exampleGenericWebSocketUrl = 'ws://{{ vehicle-address }}:1234'
