@@ -76,7 +76,7 @@ const isDropdownOpen = ref(false)
 const variableFilterTerm = ref('')
 
 // The option the keyboard acts on, `-1` until the user navigates into the list so Enter keeps
-// meaning whatever it meant in the field. Ids are per instance, since the POI dialog renders two.
+// meaning whatever it meant in the field. Ids are per instance, since the POI dialog renders several.
 const highlightedIndex = ref(-1)
 const listboxId = `dl-expression-listbox-${uuid()}`
 const optionId = (index: number): string => `${listboxId}-option-${index}`
@@ -234,7 +234,7 @@ const createEditor = (container: HTMLElement): monaco.editor.IStandaloneCodeEdit
       return
     }
 
-    // Neither field this serves is meant to hold two lines, so Enter takes the active option, or
+    // No field this serves is meant to hold two lines, so Enter takes the active option, or
     // does nothing at all rather than breaking the line.
     if (event.keyCode === monaco.KeyCode.Enter) {
       const activeVariable = isDropdownOpen.value ? filteredVariables.value[highlightedIndex.value] : undefined

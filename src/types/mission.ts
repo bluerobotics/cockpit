@@ -348,7 +348,7 @@ export type PointOfInterestIcon = string
 export type PointOfInterestColor = string
 
 /**
- * Source for one of a POI's coordinates.
+ * Source for one of a POI's data-lake-resolved values: a coordinate or its heading.
  * A `number` is a fixed/static value. A `string` is a data-lake expression (e.g.
  * "{{ mavlink/buoy/latitude }}") that is resolved live into the data lake.
  */
@@ -386,6 +386,12 @@ export interface PointOfInterest {
    */
   fallbackCoordinates: PointOfInterestCoordinates
   /**
+   * Source for the POI heading in degrees clockwise from north: a static number for a fixed feature
+   * or a data-lake expression for something that moves. `null` or absent means the POI has no
+   * heading, in which case no direction is drawn.
+   */
+  heading?: PoiCoordinateSource | null
+  /**
    * Icon representing the POI.
    */
   icon: PointOfInterestIcon
@@ -414,6 +420,11 @@ export interface ResolvedPointOfInterest extends PointOfInterest {
    * Whether live coordinates are currently available (always true for static POIs).
    */
   hasValidPosition: boolean
+  /**
+   * Current heading in degrees clockwise from north, normalized to 0-360 and read from the data
+   * lake. Null when the POI has no heading, or when its live source has no value yet.
+   */
+  resolvedHeading: number | null
   /**
    * Id of the data-lake variable holding the POI's latitude.
    */
@@ -778,7 +789,7 @@ export interface TargetEdgeArrow {
    */
   style: PoiEdgeArrow['style']
   /**
-   * Angle of the arrow in degrees.
+   * Angle of the arrow in degrees clockwise from north.
    */
   angle: number
   /**

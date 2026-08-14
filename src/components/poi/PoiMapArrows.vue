@@ -9,7 +9,7 @@
                 class="poi-pin-shape"
                 :style="{
                   backgroundColor: arrow.color + '80',
-                  transform: `rotate(${arrow.angle - 225}deg)`,
+                  transform: `rotate(${poiPinRotation(arrow.angle)}deg)`,
                 }"
               ></div>
               <i class="mdi poi-pin-icon" :class="arrow.icon"></i>
@@ -26,7 +26,7 @@
               <div
                 class="poi-pin-shape"
                 :style="{
-                  transform: `rotate(${vehicleEdgeArrow.angle - 135}deg)`,
+                  transform: `rotate(${poiPinRotation(vehicleEdgeArrow.angle)}deg)`,
                   backgroundColor: vehicleEdgeArrow.color + '80',
                 }"
               ></div>
@@ -44,7 +44,7 @@
               <div
                 class="poi-pin-shape"
                 :style="{
-                  transform: `rotate(${homeEdgeArrow.angle - 135}deg)`,
+                  transform: `rotate(${poiPinRotation(homeEdgeArrow.angle)}deg)`,
                   backgroundColor: homeEdgeArrow.color + '80',
                 }"
               ></div>
@@ -62,7 +62,7 @@
               <div
                 class="poi-pin-shape"
                 :style="{
-                  transform: `rotate(${baseStationEdgeArrow.angle - 135}deg)`,
+                  transform: `rotate(${poiPinRotation(baseStationEdgeArrow.angle)}deg)`,
                   backgroundColor: baseStationEdgeArrow.color + '80',
                 }"
               ></div>
@@ -84,6 +84,7 @@ import { useMapContext } from '@/composables/map/useMapContext'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
+import { poiPinRotation } from '@/libs/utils-poi'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Edge, EdgeIntersection, PoiEdgeArrow, TargetEdgeArrow, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
@@ -401,7 +402,9 @@ const calculateTargetEdgeArrow = (
 
   return {
     style: getPoiArrowStyle(selectedIntersection.edge, edgeX, edgeY, bottomInset, true),
-    angle,
+    // atan2 measures from the +x axis, so the extra 90° makes this a bearing clockwise from north,
+    // which is what poiPinRotation expects and what the POI arrows below already store.
+    angle: angle + 90,
     tooltipText: `${targetName} - ${distanceText}`,
     color: targetColor,
   }
