@@ -12,7 +12,7 @@
           <v-btn
             v-bind="{ ...activatorProps, ...tooltipProps }"
             class="absolute right-[44px] m-3 rounded-sm shadow-sm bg-slate-50 text-[14px]"
-            :style="[interfaceStore.globalGlassMenuStyles, { zIndex: 1002 }, activatorStyle ?? {}]"
+            :style="[interfaceStore.globalGlassMenuStyles, activatorStyle ?? {}]"
             :color="followerTarget !== undefined ? 'red' : ''"
             elevation="2"
             icon="mdi-crosshairs-gps"
