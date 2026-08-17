@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+import type { OpenCellIdBboxRequest } from '@/types/baseStation'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 import type { TtsDownloadProgress } from '@/types/tts'
@@ -9,6 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkTcpPortOpen: (host: string, port: number, timeoutMs: number) =>
     ipcRenderer.invoke('check-tcp-port-open', host, port, timeoutMs),
   abortTcpPortProbes: () => ipcRenderer.invoke('abort-tcp-port-probes'),
+  fetchNearbyOpenCellIdCells: (bbox: OpenCellIdBboxRequest) =>
+    ipcRenderer.invoke('fetch-nearby-open-cell-id-cells', bbox),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>
     ipcRenderer.on('update-available', (_event, info) => callback(info)),
