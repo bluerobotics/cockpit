@@ -48,7 +48,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[280px] overflow-auto">
+              <div class="flex flex-col items-center h-[200px] overflow-auto">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -162,12 +162,12 @@
                   Connect a joystick to see its visual layout and live input.
                 </div>
                 <div
-                  v-for="[key, joystick] in controllerStore.joysticks"
+                  v-for="[key, joystick] in joysticksEnabledFirst"
                   :key="key"
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
-                  <div class="flex items-center gap-2 -mb-8">
+                  <p class="text-md font-semibold mt-4">{{ joystick.model }} controller</p>
+                  <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
                       :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
@@ -178,7 +178,7 @@
                   </div>
                   <div
                     v-if="showJoystickLayout"
-                    class="flex flex-col items-center justify-center"
+                    class="flex flex-col items-center justify-center -mt-8"
                     :class="interfaceStore.isOnSmallScreen ? 'w-[90%]' : 'w-[80%]'"
                   >
                     <JoystickPS
@@ -284,7 +284,7 @@
                   :key="key"
                   class="w-full flex-centered flex-column"
                 >
-                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <span class="text-md font-semibold w-full text-center">{{ joystick.model }} controller</span>
                   <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
@@ -988,15 +988,33 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
   openSnackbar({ message: `Button ${input.id} remapped to function '${action.name}'.`, variant: 'success' })
 }
 
-// Automatically set the current joystick when it changes for the first time
-watch(controllerStore.joysticks, () => {
-  if (currentJoystick.value === undefined) {
-    if (controllerStore.joysticks.size <= 0) return
-    const firstEntry = controllerStore.joysticks.entries().next().value
-    if (firstEntry) {
-      currentJoystick.value = firstEntry[1]
-    }
-  }
+// Picks the joystick previewed in the table/visual, preferring an enabled one so its live input is actually
+// visible (a disabled joystick has its state events dropped, so it would look frozen).
+const pickPreviewJoystick = (): Joystick | undefined => {
+  const connectedJoysticks = Array.from(controllerStore.joysticks.values())
+  if (connectedJoysticks.length === 0) return undefined
+  return connectedJoysticks.find((j) => !controllerStore.disabledJoysticks.includes(j.model)) ?? connectedJoysticks[0]
+}
+
+// Re-pick when there's no valid selection yet, or the selected joystick got disconnected or disabled.
+watch(
+  [() => controllerStore.joysticks, () => controllerStore.disabledJoysticks],
+  () => {
+    const current = currentJoystick.value
+    const currentIsUsable =
+      current !== undefined &&
+      Array.from(controllerStore.joysticks.values()).includes(current) &&
+      !controllerStore.disabledJoysticks.includes(current.model)
+    if (!currentIsUsable) currentJoystick.value = pickPreviewJoystick()
+  },
+  { immediate: true, deep: true }
+)
+
+// Enabled joysticks first, so the active one is shown at the top of the visual list.
+const joysticksEnabledFirst = computed<[number, Joystick][]>(() => {
+  const disabledScore = (joystick: Joystick): number =>
+    controllerStore.disabledJoysticks.includes(joystick.model) ? 1 : 0
+  return Array.from(controllerStore.joysticks.entries()).sort(([, a], [, b]) => disabledScore(a) - disabledScore(b))
 })
 
 let lastModTabChange = new Date().getTime()

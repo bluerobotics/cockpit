@@ -7,6 +7,7 @@ import { defaultJoystickCalibration } from '@/assets/defaults'
 import { blankMapping } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { closeSnackbar, openSnackbar } from '@/composables/snackbar'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
 import {
   joystickCalibrationOptionsKey,
@@ -109,6 +110,8 @@ export const useControllerStore = defineStore('controller', () => {
 
   const currentMainJoystick = ref<Joystick | undefined>(undefined)
 
+  const multipleJoysticksDialogOpen = ref(false)
+
   // Confirmation per joystick action required currently is only available for cockpit actions
   const actionsJoystickConfirmRequired = useBlueOsStorage(
     'cockpit-actions-joystick-confirm-required',
@@ -176,7 +179,7 @@ export const useControllerStore = defineStore('controller', () => {
 
       if (thereWereJoysticksBefore && enableForwarding.value) {
         console.warn('There are joysticks connected and forwarding already. Skipping joystick conflict check.')
-        return
+        continue
       }
 
       // Check if other GCS is sending MANUAL_CONTROL messages
@@ -242,7 +245,66 @@ export const useControllerStore = defineStore('controller', () => {
         joystickCalibrationOptions.value[currentMainJoystick.value.model] = newCalibration
       }
     }
+
+    promptToSelectActiveJoystickIfNeeded()
   }
+
+  // Cockpit can only use one joystick at a time. When more than one is connected and none has been disabled yet,
+  // ask the user which one to keep and disable the others through the regular per-model disabling mechanism.
+  const promptToSelectActiveJoystickIfNeeded = (): void => {
+    if (multipleJoysticksDialogOpen.value) return
+
+    const connectedJoysticks = Array.from(joysticks.value.values())
+    const noneDisabled = connectedJoysticks.every((j) => !disabledJoysticks.value.includes(j.model))
+    const distinctModels = [...new Set(connectedJoysticks.map((j) => j.model))]
+
+    if (connectedJoysticks.length < 2 || distinctModels.length < 2 || !noneDisabled) return
+
+    multipleJoysticksDialogOpen.value = true
+    logUserAction('Opened the multiple-joysticks selection dialog')
+  }
+
+  // Keep the chosen joystick model active and disable every other connected model, then close the dialog.
+  const selectActiveJoystick = (model: JoystickModel): void => {
+    const distinctModels = [...new Set(Array.from(joysticks.value.values()).map((j) => j.model))]
+    distinctModels
+      .filter((otherModel) => otherModel !== model)
+      .forEach((otherModel) => {
+        if (!disabledJoysticks.value.includes(otherModel)) disabledJoysticks.value.push(otherModel)
+      })
+    logUserAction(`Selected '${model}' as the active joystick and disabled the others`)
+    multipleJoysticksDialogOpen.value = false
+  }
+
+  const dismissMultipleJoysticksDialog = (): void => {
+    logUserAction('Dismissed the multiple-joysticks selection dialog without selecting')
+    multipleJoysticksDialogOpen.value = false
+  }
+
+  // Warn the user when the single connected joystick is disabled, since its input is silently dropped and the
+  // situation is easy to miss (the setting persists and syncs through the vehicle).
+  const singleConnectedJoystickIsDisabled = computed(() => {
+    const connectedJoysticks = Array.from(joysticks.value.values())
+    return connectedJoysticks.length === 1 && disabledJoysticks.value.includes(connectedJoysticks[0].model)
+  })
+
+  let disabledJoystickSnackbarId: number | null = null
+  watch(
+    singleConnectedJoystickIsDisabled,
+    (isDisabled) => {
+      if (isDisabled && disabledJoystickSnackbarId === null) {
+        disabledJoystickSnackbarId = openSnackbar({
+          message: 'A joystick is connected but disabled. Go to the joystick configuration page to enable it back.',
+          variant: 'warning',
+          persistent: true,
+        })
+      } else if (!isDisabled && disabledJoystickSnackbarId !== null) {
+        closeSnackbar(disabledJoystickSnackbarId)
+        disabledJoystickSnackbarId = null
+      }
+    },
+    { immediate: true }
+  )
 
   // Disable joystick forwarding if the window/tab is not visible (except on Electron)
   const windowVisibility = useDocumentVisibility()
@@ -520,6 +582,9 @@ export const useControllerStore = defineStore('controller', () => {
     joystickCalibrationOptions,
     currentMainJoystick,
     disabledJoysticks,
+    multipleJoysticksDialogOpen,
+    selectActiveJoystick,
+    dismissMultipleJoysticksDialog,
     checkForOtherManualControlSources,
   }
 })
