@@ -64,8 +64,9 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { clampPointToCircle, isInsideCircle } from '@/libs/map/minimap-geometry'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
-import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
+import { calculateHaversineDistance, formatMetersShort } from '@/libs/mission/general-estimates'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Edge, EdgeIntersection, PoiEdgeArrow, TargetEdgeArrow, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
@@ -112,13 +113,19 @@ interface Props {
    */
   widget?: Widget
   /**
-   * Target follower instance
+   * Target follower instance. Optional: when absent (e.g. the vehicle-centered minimap, where the
+   * vehicle never leaves the center), the vehicle/home arrow click-to-follow is disabled.
    */
-  targetFollower: TargetFollower
+  targetFollower?: TargetFollower
   /**
    * Force the top and bottom bar-offset compensation on regardless of the widget state.
    */
   forceFullScreen?: boolean
+  /**
+   * Shape of the boundary the PoI arrows clamp to. Defaults to the rectangular container edges; 'circle'
+   * clamps to the largest circle inscribed in the container, for round/faded maps.
+   */
+  boundary?: 'rectangle' | 'circle'
 }
 
 const props = defineProps<Props>()
@@ -255,6 +262,30 @@ const getPoiArrowStyle = (
   return style
 }
 
+/** A pin position on the circular boundary plus the direction from the center to it. */
+interface CircleArrow {
+  /** Absolute-positioning style placing the pin on the boundary. */
+  style: PoiEdgeArrow['style']
+  /** Direction from the circle center to the pin, in degrees (0 = right, 90 = down). */
+  angleDeg: number
+}
+
+// Distance, in pixels, from the circular boundary to the container edge, so pins sit fully inside.
+const circleInset = 24
+
+// Clamp an off-screen target to the circle inscribed in the container. Returns null when the target is
+// visible (inside the circle) or the container is too small to hold one.
+const computeCircularArrow = (targetPoint: L.Point, width: number, height: number): CircleArrow | null => {
+  const center = { x: width / 2, y: height / 2 }
+  const radius = Math.min(width, height) / 2 - circleInset
+  if (radius <= 0 || isInsideCircle(center, targetPoint, radius)) return null
+  const clamped = clampPointToCircle(center, targetPoint, radius)
+  return {
+    style: { left: `${clamped.x}px`, top: `${clamped.y}px`, transform: 'translate(-50%, -50%)' },
+    angleDeg: clamped.angleDeg,
+  }
+}
+
 // Calculate edge arrow for a generic target (vehicle, home waypoint, or a second vehicle).
 const calculateTargetEdgeArrow = (
   targetPosition: WaypointCoordinates | undefined,
@@ -315,8 +346,7 @@ const calculateTargetEdgeArrow = (
   }
 
   const distanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
-  const distanceText =
-    distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+  const distanceText = formatMetersShort(distanceMeters)
 
   const distanceX = targetPoint.x - centerPoint.x
   const distanceY = targetPoint.y - centerPoint.y
@@ -378,7 +408,7 @@ const calculateTargetEdgeArrow = (
 
 // Calculate POI arrow angle and position to be placed on the edges of the map
 const calculatePoiEdgeArrows = (): void => {
-  if (!props.mapReady || !map.value || !(map.value instanceof L.Map)) {
+  if (!props.showPoiArrows || !props.mapReady || !map.value || !(map.value instanceof L.Map)) {
     poiEdgeArrows.value = []
     return
   }
@@ -424,6 +454,22 @@ const calculatePoiEdgeArrows = (): void => {
       return
     }
 
+    if (props.boundary === 'circle') {
+      const circleArrow = computeCircularArrow(poiPoint, width, height)
+      if (!circleArrow) return
+      const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
+      const distanceText = formatMetersShort(distanceMeters)
+      arrows.push({
+        poiId: poi.id,
+        icon: poi.icon,
+        style: circleArrow.style,
+        angle: circleArrow.angleDeg + 90,
+        tooltipText: `${poi.name} - ${distanceText}`,
+        color: poi.color,
+      })
+      return
+    }
+
     // Check if POI marker is visible on screen, accounting for marker extent beyond its anchor.
     const markerHalfWidth = 16
     const markerHeight = 32
@@ -437,8 +483,7 @@ const calculatePoiEdgeArrows = (): void => {
     }
 
     const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
-    const distanceText =
-      distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+    const distanceText = formatMetersShort(distanceMeters)
 
     const distanceX = poiPoint.x - centerPoint.x
     const distanceY = poiPoint.y - centerPoint.y
@@ -524,11 +569,11 @@ const centerMapOnPoi = (poiId: string): void => {
 }
 
 const handleVehicleArrowClick = (): void => {
-  props.targetFollower.goToTarget(WhoToFollow.VEHICLE, true)
+  props.targetFollower?.goToTarget(WhoToFollow.VEHICLE, true)
 }
 
 const handleHomeArrowClick = (): void => {
-  props.targetFollower.goToTarget(WhoToFollow.HOME, true)
+  props.targetFollower?.goToTarget(WhoToFollow.HOME, true)
 }
 
 watch(
@@ -575,6 +620,16 @@ watch(
   }
 )
 
+// Arrow geometry is skipped while the arrows are hidden, so switching them back on has to recompute it.
+watch(
+  () => props.showPoiArrows,
+  (show) => {
+    if (show && props.mapReady && map.value && map.value instanceof L.Map) {
+      debouncedUpdateArrows()
+    }
+  }
+)
+
 // Watch for vehicle and home position changes
 watch(
   [() => props.vehiclePosition, () => props.home, () => props.mapCenter, () => props.zoom],
@@ -594,6 +649,7 @@ watch(
   ([mapInstance, ready]) => {
     if (moveHandler && map.value) {
       map.value.off('move', moveHandler)
+      map.value.off('rotate', moveHandler)
       moveHandler = null
     }
 
@@ -603,6 +659,9 @@ watch(
         throttledUpdateVehicleAndHomeArrows()
       }
       mapInstance.on('move', moveHandler)
+      // leaflet-rotate fires 'rotate' (not 'move') on bearing changes, so a heading-up map needs this to
+      // keep the edge pins positioned around the spinning map.
+      mapInstance.on('rotate', moveHandler)
     }
   },
   { immediate: true }
@@ -612,6 +671,7 @@ watch(
 onBeforeUnmount(() => {
   if (moveHandler && map.value) {
     map.value.off('move', moveHandler)
+    map.value.off('rotate', moveHandler)
   }
 })
 </script>
