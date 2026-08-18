@@ -337,6 +337,10 @@ declare global {
        */
       openSnapshotFolder: () => void
       /**
+       * Open the audio recordings folder in the system file manager
+       */
+      openAudioFolder: () => void
+      /**
        * Open video folder
        */
       openVideoFolder: () => void
