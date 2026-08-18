@@ -12,8 +12,10 @@ import {
   localOldStyleSettingsKey,
   LocalSyncedSettings,
   localSyncedSettingsKey,
+  localSyncIgnoreOnceKey,
   NoVehicleIdErrorName,
   OldCockpitSettingsPackage,
+  PendingResetEntry,
   SettingsListener,
   SettingsListeners,
   SettingsPackage,
@@ -267,6 +269,109 @@ export class SettingsManager {
       await this.sendKeyValueUpdatesToVehicle(userId!, vehicleId!, this.currentVehicleAddress)
 
     }, keyValueUpdateDebounceTime)
+  }
+
+  /**
+   * Deletes a key-value pair from the local settings and marks it to be deleted from the vehicle on the next sync
+   *
+   * The value may still live in the runtime memory of consumers that already read it, so a restart is needed
+   * for the reset to fully take effect. The key is also removed from the vehicle on the next sync, so the reset
+   * is permanent and the value is not pulled back from the vehicle.
+   * @param {string} key - The key of the setting to delete
+   * @param {string} userId - The ID of the user to which the setting belongs
+   * @param {string} vehicleId - The ID of the vehicle to which the setting belongs
+   */
+  public deleteKeyValue = (key: string, userId?: string, vehicleId?: string): void => {
+    if (this.isNullValue(userId)) {
+      userId = this.currentUsername || fallbackUsername
+    }
+    if (this.isNullValue(vehicleId)) {
+      vehicleId = this.currentVehicleId || fallbackVehicleId
+    }
+
+    const localSettings = this.getLocalSettings()
+    if (localSettings[userId!]?.[vehicleId!]?.[key] !== undefined) {
+      delete localSettings[userId!][vehicleId!][key]
+      this.setLocalSettings(localSettings)
+      this.notifyAllListenersAboutSettingsChange()
+    }
+
+    this.addEntryToPendingResetList({ userId: userId!, vehicleId: vehicleId!, key })
+  }
+
+  /**
+   * Returns the settings that were reset locally and are pending a restart to be fully reset
+   * @returns {PendingResetEntry[]} The entries pending reset
+   */
+  public getKeysPendingReset = (): PendingResetEntry[] => {
+    return this.readPendingResetList()
+  }
+
+  /**
+   * Reads the list of settings pending reset (to be deleted from the vehicle on the next sync)
+   * @returns {PendingResetEntry[]} The list of entries pending reset
+   */
+  private readPendingResetList = (): PendingResetEntry[] => {
+    const stored = this.storage.getItem(localSyncIgnoreOnceKey)
+    if (!stored) {
+      return []
+    }
+    try {
+      const parsed = deserialize(stored)
+      if (!Array.isArray(parsed)) {
+        return []
+      }
+      return parsed.filter(
+        (entry): entry is PendingResetEntry =>
+          entry !== null &&
+          typeof entry === 'object' &&
+          typeof entry.userId === 'string' &&
+          typeof entry.vehicleId === 'string' &&
+          typeof entry.key === 'string'
+      )
+    } catch (error) {
+      return []
+    }
+  }
+
+  /**
+   * Adds an entry to the list of settings pending reset
+   * @param {PendingResetEntry} entry - The entry to add to the pending reset list
+   */
+  private addEntryToPendingResetList = (entry: PendingResetEntry): void => {
+    const pendingList = this.readPendingResetList()
+    if (!pendingList.some((e) => this.isSamePendingResetEntry(e, entry))) {
+      pendingList.push(entry)
+      this.storage.setItem(localSyncIgnoreOnceKey, JSON.stringify(pendingList))
+    }
+  }
+
+  /**
+   * Removes the given entries from the list of settings pending reset
+   * @param {PendingResetEntry[]} entries - The entries to remove from the pending reset list
+   */
+  private clearEntriesFromPendingResetList = (entries: PendingResetEntry[]): void => {
+    if (entries.length === 0) {
+      return
+    }
+    const remaining = this.readPendingResetList().filter(
+      (e) => !entries.some((toClear) => this.isSamePendingResetEntry(e, toClear))
+    )
+    if (remaining.length === 0) {
+      this.storage.removeItem(localSyncIgnoreOnceKey)
+    } else {
+      this.storage.setItem(localSyncIgnoreOnceKey, JSON.stringify(remaining))
+    }
+  }
+
+  /**
+   * Checks if two pending-reset entries refer to the same user/vehicle/key
+   * @param {PendingResetEntry} a - The first entry
+   * @param {PendingResetEntry} b - The second entry
+   * @returns {boolean} True if both entries refer to the same setting
+   */
+  private isSamePendingResetEntry = (a: PendingResetEntry, b: PendingResetEntry): boolean => {
+    return a.userId === b.userId && a.vehicleId === b.vehicleId && a.key === b.key
   }
 
   /**
@@ -847,6 +952,10 @@ export class SettingsManager {
     const usersToSync = [...new Set([...usersOnVehicle, ...usersOnLocal])]
     console.debug(`[SettingsManager] Users to sync: ${usersToSync.join(', ')}.`)
 
+    // Entries pending reset are excluded here as a safety net, in case deleting them from the vehicle failed.
+    // The settings are deleted from the vehicle and cleared from this list by deletePendingResetKeysFromVehicle.
+    const entriesPendingReset = this.readPendingResetList()
+
     const mergedSettings: LocalSyncedSettings = {}
 
     for (const user of usersToSync) {
@@ -859,6 +968,11 @@ export class SettingsManager {
       mergedSettings[user][vehicleId] = {}
 
       Object.keys({ ...localUserVehicleSettings, ...vehicleUserSettings }).forEach((key) => {
+        if (entriesPendingReset.some((e) => e.userId === user && e.vehicleId === vehicleId && e.key === key)) {
+          console.debug('[SettingsManager]', `Skipping key '${key}' from merge (it is pending reset).`)
+          return
+        }
+
         console.debug('[SettingsManager]', `Comparing key '${key}'.`)
 
         const vehicleSetting = vehicleUserSettings[key]
@@ -922,6 +1036,49 @@ export class SettingsManager {
     }
 
     return mergedSettings
+  }
+
+  /**
+   * Deletes the settings pending reset from the vehicle, so a locally-reset setting is not pulled back on later syncs.
+   *
+   * Only entries for the given vehicle are processed, and the pending list is only cleared after a successful
+   * vehicle write, so a failed attempt is retried on the next sync.
+   * @param {string} vehicleAddress - The address of the vehicle to delete the settings from
+   * @param {string} vehicleId - The ID of the vehicle whose pending-reset settings should be deleted
+   */
+  private deletePendingResetKeysFromVehicle = async (vehicleAddress: string, vehicleId: string): Promise<void> => {
+    const relevantEntries = this.readPendingResetList().filter((entry) => entry.vehicleId === vehicleId)
+    if (relevantEntries.length === 0) {
+      return
+    }
+
+    let vehicleSettings: VehicleSettings
+    try {
+      vehicleSettings = await this.getValidSettingsFromVehicle(vehicleAddress)
+    } catch (error) {
+      console.error('[SettingsManager] Could not read vehicle settings to delete settings pending reset.', error)
+      return
+    }
+
+    let changedOnVehicle = false
+    for (const entry of relevantEntries) {
+      if (vehicleSettings[entry.userId]?.[entry.key] !== undefined) {
+        delete vehicleSettings[entry.userId][entry.key]
+        changedOnVehicle = true
+      }
+    }
+
+    if (changedOnVehicle) {
+      try {
+        await this.vehicle.setKeyData(vehicleAddress, vehicleNewStyleSettingsKey, vehicleSettings)
+        console.info('[SettingsManager] Deleted settings pending reset from vehicle.')
+      } catch (error) {
+        console.error('[SettingsManager] Failed to delete settings pending reset from vehicle. Will retry next sync.', error)
+        return
+      }
+    }
+
+    this.clearEntriesFromPendingResetList(relevantEntries)
   }
 
   /**
@@ -1165,6 +1322,9 @@ export class SettingsManager {
 
     // Set the local settings for the user/vehicle combination that we found (or the migrated old-style settings)
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, toBeUsedSettings)
+
+    // Delete settings the user reset from the vehicle, before merging, so they are not pulled back from it
+    await this.deletePendingResetKeysFromVehicle(vehicleAddress, this.currentVehicleId)
 
     // Now that we have local settings for the current user and vehicle, we can get the best settings between local and vehicle
     console.log('[SettingsManager]', `Getting best settings between local and vehicle for user '${this.currentUsername}' and vehicle '${this.currentVehicleId}'.`)
