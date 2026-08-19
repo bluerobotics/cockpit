@@ -254,8 +254,8 @@
               <p>
                 Receives telemetry from other vehicles on your network, each one on its own address. Their data becomes
                 available as data-lake variables named after the vehicle's system ID, so widgets can read it and a point
-                of interest can follow it on the map. To place one on the map, create a point of interest and use the
-                vehicle's position variables as its coordinates, e.g.
+                of interest can follow it on the map. Use the map button next to a vehicle to place it on the map, or
+                reference its position variables yourself, e.g.
                 <span class="font-mono">{{ exampleSecondaryVehicleCoordinate }}</span>
               </p>
               <p class="mt-2">
@@ -278,6 +278,18 @@
               @add="addNewSecondaryVehicle"
               @remove="removeSecondaryVehicle"
             >
+              <template #row-actions="{ row }">
+                <v-btn
+                  v-tooltip.bottom="placeOnMapTooltip(row.key)"
+                  :aria-label="placeOnMapTooltip(row.key)"
+                  :class="canPlaceOnMap(row.key) ? '' : '!pointer-events-auto'"
+                  :disabled="!canPlaceOnMap(row.key)"
+                  icon="mdi-map-marker-plus"
+                  size="x-small"
+                  variant="text"
+                  @click="placeSecondaryVehiclesOnMap(secondaryVehicleSystemIds(row.key))"
+                />
+              </template>
               <template #warning>
                 <div v-if="secondaryVehicleUsesMainVehicleSystemId" class="text-sm text-yellow-400 mb-4">
                   A vehicle is using the same system ID as the vehicle you are piloting, so it is not being received.
@@ -547,7 +559,9 @@ import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import {
   addSecondaryVehicle,
+  canPlaceSecondaryVehiclesOnMap,
   duplicatedSecondaryVehicleSystemIds,
+  placeSecondaryVehiclesOnMap,
   refreshSecondaryVehicleStates,
   removeSecondaryVehicle,
   secondaryVehicleStates,
@@ -994,6 +1008,18 @@ const showDiscoveryDialog = ref(false)
 const exampleSecondaryVehicleUri = 'ws://192.168.2.4/mavlink2rest/ws/mavlink'
 const exampleSecondaryVehicleCoordinate = '{{ /mavlink/3/1/GLOBAL_POSITION_INT/lat }} / 1e7'
 const newSecondaryVehicleUri = ref('')
+
+const secondaryVehicleSystemIds = (uri: string): number[] => secondaryVehicleStates.value[uri]?.systemIds ?? []
+
+const canPlaceOnMap = (uri: string): boolean => canPlaceSecondaryVehiclesOnMap(secondaryVehicleSystemIds(uri))
+
+const placeOnMapTooltip = (uri: string): string => {
+  const isPlural = secondaryVehicleSystemIds(uri).length > 1
+  if (canPlaceOnMap(uri)) return isPlural ? 'Place these vehicles on the map' : 'Place this vehicle on the map'
+  return isPlural
+    ? 'Waiting for these vehicles to report their positions'
+    : 'Waiting for this vehicle to report its position'
+}
 
 const secondaryVehicleRows = computed(() =>
   secondaryVehicleUris.value.map((uri) => {

@@ -14,14 +14,17 @@
           <span class="text-xs opacity-60">({{ row.statusLabel }})</span>
           <span v-if="row.details" class="text-xs opacity-60 truncate">{{ row.details }}</span>
         </div>
-        <v-btn
-          v-tooltip.bottom="removeTooltip"
-          :aria-label="removeTooltip"
-          icon="mdi-delete"
-          size="x-small"
-          variant="text"
-          @click="emit('remove', row.key)"
-        />
+        <div class="flex items-center">
+          <slot name="row-actions" :row="row" />
+          <v-btn
+            v-tooltip.bottom="removeTooltip"
+            :aria-label="removeTooltip"
+            icon="mdi-delete"
+            size="x-small"
+            variant="text"
+            @click="emit('remove', row.key)"
+          />
+        </div>
       </div>
     </div>
     <div v-else class="text-sm opacity-60 mb-4">{{ emptyMessage }}</div>
