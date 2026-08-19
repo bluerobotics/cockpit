@@ -1037,6 +1037,30 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     await mainVehicle.value.setCruiseSpeed(speedMps)
   }
 
+  /**
+   * Broadcast a video-capture (recording) start to all cameras over MAVLink
+   * @returns {void}
+   */
+  function sendStartVideoCaptureCommand(): void {
+    mainVehicle.value?.sendStartVideoCaptureCommand()
+  }
+
+  /**
+   * Broadcast a video-capture (recording) stop to all cameras over MAVLink
+   * @returns {void}
+   */
+  function sendStopVideoCaptureCommand(): void {
+    mainVehicle.value?.sendStopVideoCaptureCommand()
+  }
+
+  /**
+   * Broadcast a single image capture to all cameras over MAVLink
+   * @returns {void}
+   */
+  function sendStartImageCaptureCommand(): void {
+    mainVehicle.value?.sendStartImageCaptureCommand()
+  }
+
   return {
     arm,
     takeoff,
@@ -1056,6 +1080,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     returnHome,
     setMissionCurrent,
     setCruiseSpeed,
+    sendStartVideoCaptureCommand,
+    sendStopVideoCaptureCommand,
+    sendStartImageCaptureCommand,
     getCurrentVehicleName,
     mainVehicle,
     globalAddress,
