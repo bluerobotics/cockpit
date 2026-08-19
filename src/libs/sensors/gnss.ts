@@ -535,22 +535,9 @@ const stopDevicesOnPort = async (port: string): Promise<void> => {
   }
 }
 
-/**
- * Probes a serial port at several baud rates and returns the first one that yields valid NMEA sentences.
- *
- * Any device currently reading from the same port is stopped first, since a serial port can only be opened
- * by one reader at a time.
- * @param {string} port - The serial port path to probe.
- * @param {number[]} [candidates] - The baud rates to try, in order.
- * @param {number} [perBaudMs] - How long to listen at each baud rate, in milliseconds.
- * @returns {Promise<number | null>} The detected baud rate, or null when none produced valid data.
- * @throws {Error} When not running in Electron.
- */
-export const autodetectBaud = async (
-  port: string,
-  candidates: number[] = commonBaudRates,
-  perBaudMs = 1500
-): Promise<number | null> => {
+const activeProbes = new Map<string, Promise<number | null>>()
+
+const probePort = async (port: string, candidates: number[], perBaudMs: number): Promise<number | null> => {
   if (!isElectron() || !window.electronAPI) {
     throw new Error('GNSS reading is only available in Cockpit standalone.')
   }
@@ -588,6 +575,33 @@ export const autodetectBaud = async (
   }
 
   return null
+}
+
+/**
+ * Probes a serial port at several baud rates and returns the first one that yields valid NMEA sentences.
+ *
+ * Any device currently reading from the same port is stopped first, since a serial port can only be opened
+ * by one reader at a time. A sweep cannot be aborted, so a second probe of a port already being probed
+ * joins the running one instead of starting a rival sweep that would starve both of sentences.
+ * @param {string} port - The serial port path to probe.
+ * @param {number[]} [candidates] - The baud rates to try, in order.
+ * @param {number} [perBaudMs] - How long to listen at each baud rate, in milliseconds.
+ * @returns {Promise<number | null>} The detected baud rate, or null when none produced valid data.
+ * @throws {Error} When not running in Electron.
+ */
+export const autodetectBaud = (
+  port: string,
+  candidates: number[] = commonBaudRates,
+  perBaudMs = 1500
+): Promise<number | null> => {
+  const running = activeProbes.get(port)
+  if (running) return running
+
+  const probe = probePort(port, candidates, perBaudMs).finally(() => {
+    if (activeProbes.get(port) === probe) activeProbes.delete(port)
+  })
+  activeProbes.set(port, probe)
+  return probe
 }
 
 /**
