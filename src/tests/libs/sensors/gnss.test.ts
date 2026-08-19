@@ -1,7 +1,8 @@
 import { expect, test, vi } from 'vitest'
 
-import { autodetectBaud, deviceUsingPort } from '@/libs/sensors/gnss'
+import { autodetectBaud, deviceUsingPort, startGnssDevice, stopGnssDevice } from '@/libs/sensors/gnss'
 import type { GnssDeviceInfo } from '@/types/gnss'
+import type { SerialPortInfo } from '@/types/serial'
 
 // The GNSS module reaches the settings manager through the data lake, and constructing the real one at
 // import time needs a working localStorage that this environment does not provide.
@@ -9,11 +10,13 @@ vi.mock('@/libs/settings-management', () => ({
   settingsManager: { getKeyValue: () => undefined, setKeyValue: () => undefined },
 }))
 
-// The serial pipeline is Electron-only, and the race below only exists once it is reachable.
+// The serial pipeline is Electron-only, and the races below only exist once it is reachable.
 vi.mock('@/libs/utils', async () => ({
   ...(await vi.importActual<typeof import('@/libs/utils')>('@/libs/utils')),
   isElectron: () => true,
 }))
+
+const flushMicrotasks = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
 const device = (overrides: Partial<GnssDeviceInfo>): GnssDeviceInfo => ({
   id: 'gnss',
@@ -65,4 +68,30 @@ test('autodetectBaud joins a probe already running on the port', async () => {
 
   // Two sweeps of one port would each starve the other of sentences and report a working receiver as dead.
   expect(linkOpen).toHaveBeenCalledTimes(1)
+})
+
+test('stopGnssDevice releases a port whose start is still in flight', async () => {
+  let finishListing = (): void => undefined
+  const serialListPorts = vi.fn(
+    () => new Promise<SerialPortInfo[]>((resolve) => (finishListing = () => resolve([{ path: '/dev/ttyUSB0' }])))
+  )
+  const linkOpen = vi.fn(async () => true)
+  const linkClose = vi.fn(async () => true)
+  window.electronAPI = {
+    serialListPorts,
+    linkOpen,
+    linkClose,
+    onLinkData: () => undefined,
+  } as unknown as typeof window.electronAPI
+
+  const start = startGnssDevice(device({ id: 'racing' }), false)
+  await flushMicrotasks()
+
+  // The start is parked in the port listing, so no runtime exists for the stop to find yet.
+  const stop = stopGnssDevice('racing')
+  finishListing()
+  await Promise.all([start, stop])
+
+  expect(linkOpen).toHaveBeenCalledTimes(1)
+  expect(linkClose).toHaveBeenCalledWith(expect.stringContaining('/dev/ttyUSB0'))
 })
