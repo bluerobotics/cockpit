@@ -443,7 +443,7 @@ export const useVideoStore = defineStore('video', () => {
           const port = await window.electronAPI!.go2rtcGetPort()
           await window.electronAPI!.go2rtcAddStream(streamName, rtspUrl)
 
-          const manager = new Go2RTCManager(port, streamName)
+          const manager = new Go2RTCManager(port, streamName, jitterBufferTarget.value)
           const { mediaStream, connected } = manager.start()
 
           activeStreams.value[streamName] = {
