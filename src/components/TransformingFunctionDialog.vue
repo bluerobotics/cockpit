@@ -69,6 +69,9 @@
                 • Return is optional, but should be included in complex expressions
                 <br />
                 • Remember to set the type accordingly
+                <br />
+                • Each variable enters the expression with its own type, so a text value stays text even when it looks
+                like a number
               </div>
             </v-expand-transition>
             <div
