@@ -114,15 +114,17 @@ the count that the verdict is read against.
 ## Collapsing (IMPORTANT — short for a human, complete for an agent)
 
 The comment has two audiences whose needs pull in opposite directions. A maintainer scrolling the PR
-needs the verdict, what is still open, and what only they can decide. A coding agent picking the
-review up needs every file path, line number and traced call. `<details>` blocks serve both at once:
-the full text stays in the comment body, where anything reading it through the API sees all of it,
-while a human sees one summary line per block until they choose to open it.
+needs the verdict, with what is still open one click behind it. A coding agent picking the review up
+needs every file path, line number and traced call. `<details>` blocks serve both at once: the full
+text stays in the comment body, where anything reading it through the API sees all of it, while a
+human sees one summary line per block until they choose to open it.
 
-- Everything above the first `<details>` is the human summary, and it is the only part most readers will ever see. It holds the verdict and the open findings — nothing else.
+- The whole review goes inside one outer `<details>`, so a PR carrying ten rounds of it stays a conversation someone can scroll. That block's `<summary>` leads with the verdict and names the round after it — `⚠️ <strong>IMPORTANT FIXES REQUIRED</strong> (Automated PR Review — round 3)` — because that line is the only thing the timeline shows, and a collapsed review that does not say whether it blocks the merge has to be opened by everyone just to learn that it does not.
+- The sections below it, their order and their contents are unchanged: opening the outer block gives the human summary at the top and every other block still collapsed inside it. Only the title and the verdict move onto that summary line, and the body opens with the finding counts in the verdict's place.
+- Everything above the first nested `<details>` is the human summary, and it is the only part most readers who open the review will ever see. It holds the counts and the open findings — nothing else.
 - Everything else goes inside a `<details>` block, collapsed by default. The contract below fixes which blocks exist and in what order.
 - Leave a blank line after every `</summary>` and before the closing `</details>`. Without it GitHub renders the markdown inside as literal text, and tables worst of all.
-- Every `<summary>` states what is inside and how much of it, so a reader can skip it without opening it: `1. Correctness & Implementation Bugs — 3 findings`, never `Section 1`.
+- Every nested `<summary>` states what is inside and how much of it, so a reader can skip it without opening it: `1. Correctness & Implementation Bugs — 3 findings`, never `Section 1`. The outer block's line carries the verdict in place of a count, as above.
 - Still perform the full analysis for every section. Only write out the body of a section that holds at least one open finding; each of those gets its own `<details>`.
 - Every open finding is written out in full in its section block, including one carried over from an earlier round that nothing changed this round. Mark those `(carried from round N)` and reprint the body — the file paths, the line numbers, the fix. Each comment has to stand on its own: the agent that implements the fixes reads the newest comment, and a finding that survives several rounds is exactly the one it would otherwise have to reconstruct from the comment history. Only findings that are closed or that changed status this round are left to the since-last-round block.
 - Sections with no findings do not get a block each. Group them into one `<details>` whose summary counts them, with a single line inside per section: the heading, ` — :white_check_mark:`, and one parenthesised clause naming what you checked. Nothing else (no "No findings.", no bullet list). Example: `**5. Performance** — :white_check_mark: (both changed handlers trace to per-frame drag events; added work is O(1) per call)`
@@ -142,31 +144,42 @@ Write out what the investigation established, and establish it before forming an
 - **Entry points** — a table with the columns `Function | Reached from | Frequency`, one row per changed function. Frequency is one of `never`, `one-shot`, `per user action`, `per frame or pointer event`, `per incoming message`. `never` means the walk found no caller at all: record it as such rather than rounding it up to `one-shot`, and raise it as a finding, because the PR is changing code nothing runs.
 - **Invariants** — any rule the change relies on, every site that can violate it, and which of those the PR covers. Omit this bullet when the change establishes no invariant.
 
-### 0. Summary (the human summary — never collapsed, and carries no section heading of its own)
+### 0. Summary (the human summary — never inside a nested `<details>`, and carries no section heading of its own)
 
-This is the top of the comment and the only part you can assume gets read. Write it for a maintainer
-who has thirty seconds, not for the agent that will implement the fixes. It has four parts, in this
-order:
+This is the top of the comment body and the only part you can assume gets read once the outer block
+is open. Write it for a maintainer who has thirty seconds, not for the agent that will implement the
+fixes. It has four parts, in this order:
 
-**The verdict, as a GitHub alert.** Exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`,
+**The verdict and the counts.** The verdict is exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`,
 `IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`. It follows mechanically from the open findings and is
 never a separate judgement: any open `critical` is `DO NOT MERGE`, otherwise any open `major` is
 `IMPORTANT FIXES REQUIRED`, otherwise any open finding at all is `MINOR SUGGESTIONS`, otherwise
 `READY TO MERGE`. A finding disputed by the author is still open for this purpose; `addressed`,
 `obsolete` and `resolved` are the closed ones. Settling a dispute is the human's call, not yours, and
-a reaction on its decision comment, or a `/resolve`, is how they make it. Emit it as the alert type
-that matches, so the colour carries the verdict before anything is read, on one line, followed by the
-open and closed counts. Name the `critical` ids explicitly and count the rest (`2 critical (1.1, 1.2)
-and 6 major`); a line listing eight ids is one nobody reads. On a first review nothing has been closed
-yet, so give the open count alone rather than spending half the line on a zero. This paragraph is the
-only definition of that line: the contract below shows where it sits, not how to word it.
+a reaction on its decision comment, or a `/resolve`, is how they make it. Write it once and only on
+the outer `<summary>` line, in the form the table below gives, ahead of the round number: that line
+is the only thing a reader scrolling the PR sees, and the verdict is what they are scrolling for. The
+body then opens with the open and closed counts alone, as a subtitle to it — never with the verdict
+again, since a second copy is one more line that can end up disagreeing with the first. Name the
+`critical` ids explicitly and count the rest (`2 critical (1.1, 1.2) and 6 major`); a line listing
+eight ids is one nobody reads. On a first review nothing has been closed yet, so give the open count
+alone rather than spending half the line on a zero. This paragraph is the only definition of those
+two lines: the contract below shows where they sit, not how to word them.
 
-| Verdict | Alert | Prefix |
-| --- | --- | --- |
-| `DO NOT MERGE` | `> [!CAUTION]` | `**:no_entry: DO NOT MERGE**` |
-| `IMPORTANT FIXES REQUIRED` | `> [!WARNING]` | `**:warning: IMPORTANT FIXES REQUIRED**` |
-| `MINOR SUGGESTIONS` | `> [!NOTE]` | `**:memo: MINOR SUGGESTIONS**` |
-| `READY TO MERGE` | `> [!TIP]` | `**:white_check_mark: READY TO MERGE**` |
+| Verdict | On the `<summary>` line |
+| --- | --- |
+| `DO NOT MERGE` | `⛔ <strong>DO NOT MERGE</strong>` |
+| `IMPORTANT FIXES REQUIRED` | `⚠️ <strong>IMPORTANT FIXES REQUIRED</strong>` |
+| `MINOR SUGGESTIONS` | `📝 <strong>MINOR SUGGESTIONS</strong>` |
+| `READY TO MERGE` | `✅ <strong>READY TO MERGE</strong>` |
+
+That column is HTML tags because `<summary>` is an HTML block and no markdown inside it is processed:
+`**bold**` there publishes as those literal characters. The emoji is a literal character rather than a
+`:warning:` shortcode, which would also work — shortcodes are substituted after the markup is
+rendered, so they do survive in a `<summary>` — but the literal needs no substitution in either
+context. The counts line below it is markdown, and a plain blockquote rather than a GitHub alert,
+because an alert does not render inside a `<details>` and the whole comment is now inside one: it
+would publish as a blockquote with a literal `[!CAUTION]` line in it.
 
 **One short paragraph on what the PR does.** Plain language, no file paths. Do not reuse the PR
 description — say what the code does, which you established in the Change map.
@@ -321,9 +334,10 @@ apply — never replaced by a placeholder saying they are empty.
 
 ```
 <!-- claude-pr-review-bot:v1 seq=$SEQ sha=$HEAD_SHA -->
-## Automated PR Review — round $SEQ
+<details>
+<summary>[the verdict, in the summary-line form from section 0's table] (Automated PR Review — round $SEQ)</summary>
 
-<the verdict alert, worded exactly as section 0 specifies>
+<the counts line, worded exactly as section 0 specifies>
 
 <one plain-language paragraph on what the PR does>
 
@@ -363,23 +377,26 @@ in section order, plus section 2 whenever the PR touches persisted data, finding
 
 _Generated by Claude. This is advisory; a human reviewer must still approve._
 
+</details>
+
 <!-- claude-pr-review-ledger
 [{"id":"1.1","severity":"critical","status":"open","title":"...","raised_at":"<sha>"}]
 -->
 ```
 
-- The marker on line 1 is parsed by two other workflows and by the maintainers' tooling, so its shape is fixed. The ledger is the last thing in the file, with nothing after it.
+- The marker on line 1 is parsed by two other workflows and by the maintainers' tooling, so its shape is fixed. The ledger is the last thing in the file, with nothing after it, which puts both of them outside the outer block — neither is rendered, and the ledger must stay reachable by a reader that never opens it.
+- The verdict is the one placeholder written in square brackets, because it is the one whose bracket style matters: an unsubstituted `<…>` inside the `<summary>` element is parsed as a tag and dropped, publishing the round line with nothing in front of it, while a `[…]` or a `$SEQ` on that same line publishes visibly. Substitute it or the review says nothing about whether it blocks the merge.
 - The ledger holds every finding the PR has ever had: each entry carried in from the previous round with its new status, plus the ones raised this round. Carry the closed entries — `addressed`, `obsolete` and `resolved` alike — through as well; the ledger is the full history, even though the table above shows only what is open.
 - A finding closed by `/resolve` goes in the since-last-round block naming who resolved it and quoting their reason, so the decision is visible without opening the comment that made it. One closed by a vote on its decision comment goes there too, naming who accepted the argument and linking that comment by its `url`, so the block still asking for a decision is one click from the answer it got. An argument refused by a vote is reported the same way, naming who refused it and linking its comment, because that comment stays on the thread saying the vote is open when it is not.
 - The Change map is rebuilt every round, never carried over.
 
-Two short-circuits. Both still emit the marker, the verdict alert, the footer and the ledger, and
-both skip everything else. The ledger they emit is the one carried in from the previous round,
-unchanged — a short-circuit judges nothing, so it may not restate a status, and `[]` is correct only
-when there is no previous review to carry. Publishing `[]` over an existing ledger would silently
-drop every finding the PR has, which is the loss the last-block extractor exists to prevent. The
-verdict on both paths is the one the carried ledger produces by the usual rule, or `READY TO MERGE`
-when there is nothing carried:
+Two short-circuits. Both still emit the marker, the outer block with the verdict on its summary line,
+the counts line, the footer and the ledger, and both skip everything else. The ledger they emit is
+the one carried in from the previous round, unchanged — a short-circuit judges nothing, so it may
+not restate a status, and `[]` is correct only when there is no previous review to carry. Publishing
+`[]` over an existing ledger would silently drop every finding the PR has, which is the loss the
+last-block extractor exists to prevent. The verdict on both paths is the one the carried ledger
+produces by the usual rule, or `READY TO MERGE` when there is nothing carried:
 
 - If `pr.diff` is empty or missing, say so and stop.
 - If `HEAD_SHA` equals `PREV_SHA`, every resolution in `resolutions.json` is already `resolved` in the carried ledger, and every `accept` and `reject` in `decisions.json` is already reflected there, there are no new commits since the last review: say so and stop. A settlement arrives precisely when nothing has been pushed, so a resolution or a vote you have not applied yet never takes this exit — that is the one case where an unchanged head still has work to do. Only a decided vote counts for that: a `tie`, a `pending`, or a verdict whose `gated` is `false` changes nothing in the ledger, so it can never become "already reflected" and never buys a run of its own — deliberately, since a vote that decides nothing would otherwise buy a full review every time it moved. Report the split on the next review that runs for a reason of its own. Both files are full histories, not deltas, so "it is not empty" is the wrong test: after the first `/resolve` or the first dispute on a PR neither is empty again, and reading them that way would buy a full review every time someone asks for a cheap re-check.
