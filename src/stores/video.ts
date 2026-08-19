@@ -12,7 +12,12 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { WebRTCManager } from '@/composables/webRTC'
-import { type ProcessedStreamInfo, getIpsInformationFromVehicle, getStreamInformationFromVehicle } from '@/libs/blueos'
+import {
+  type ProcessedStreamInfo,
+  getIpsInformationFromVehicle,
+  getStreamInformationFromVehicle,
+  isTetheredInterfaceType,
+} from '@/libs/blueos'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import {
@@ -1140,11 +1145,11 @@ export const useVideoStore = defineStore('video', () => {
           ipsInfo.forEach((ipInfo) => {
             const isIceIp = availableIceIps.value.includes(ipInfo.ipv4Address)
             const alreadyAllowedIp = [...allowedIceIps.value, ...newAllowedIps].includes(ipInfo.ipv4Address)
-            const theteredInterfaceTypes = ['WIRED', 'USB']
-            if (globalAddress === ipInfo.ipv4Address && !theteredInterfaceTypes.includes(ipInfo.interfaceType)) {
+            const isTethered = isTetheredInterfaceType(ipInfo.interfaceType)
+            if (globalAddress === ipInfo.ipv4Address && !isTethered) {
               currentlyOnWirelessConnection = true
             }
-            if (!theteredInterfaceTypes.includes(ipInfo.interfaceType) || alreadyAllowedIp || !isIceIp) return
+            if (!isTethered || alreadyAllowedIp || !isIceIp) return
             console.info(`Adding the wired address '${ipInfo.ipv4Address}' to the list of allowed ICE IPs.`)
             newAllowedIps.push(ipInfo.ipv4Address)
           })
