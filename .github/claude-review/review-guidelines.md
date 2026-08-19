@@ -96,9 +96,10 @@ history. A dropped `resolved` does not fail safe: the finding re-enters the open
 remembers settling, and the maintainer's decision is unrecoverable without retyping it.
 
 `resolved` is the only status you may not choose for yourself: it records that a maintainer settled the
-finding with a `/resolve` command, and the workflow hands it to you already authorized. It exists
-because `disputed` is otherwise a one-way door — an author's argument can never close a finding, so
-without a human exit a contested finding would hold the verdict down for the life of the PR.
+finding, either with a `/resolve` command or by accepting the author's argument on its decision
+comment, and the workflow hands it to you already authorized. It exists because `disputed` is
+otherwise a one-way door — an author's argument can never close a finding, so without a human exit a
+contested finding would hold the verdict down for the life of the PR.
 
 Severity never describes how confident you are that the finding is real. If you are unsure whether
 something is a defect, investigate it — do not downgrade it to hedge. A review made entirely of
@@ -118,7 +119,7 @@ review up needs every file path, line number and traced call. `<details>` blocks
 the full text stays in the comment body, where anything reading it through the API sees all of it,
 while a human sees one summary line per block until they choose to open it.
 
-- Everything above the first `<details>` is the human summary, and it is the only part most readers will ever see. It holds the verdict, the open findings, and the decisions only a human can make — nothing else.
+- Everything above the first `<details>` is the human summary, and it is the only part most readers will ever see. It holds the verdict and the open findings — nothing else.
 - Everything else goes inside a `<details>` block, collapsed by default. The contract below fixes which blocks exist and in what order.
 - Leave a blank line after every `</summary>` and before the closing `</details>`. Without it GitHub renders the markdown inside as literal text, and tables worst of all.
 - Every `<summary>` states what is inside and how much of it, so a reader can skip it without opening it: `1. Correctness & Implementation Bugs — 3 findings`, never `Section 1`.
@@ -153,12 +154,12 @@ never a separate judgement: any open `critical` is `DO NOT MERGE`, otherwise any
 `IMPORTANT FIXES REQUIRED`, otherwise any open finding at all is `MINOR SUGGESTIONS`, otherwise
 `READY TO MERGE`. A finding disputed by the author is still open for this purpose; `addressed`,
 `obsolete` and `resolved` are the closed ones. Settling a dispute is the human's call, not yours, and
-`/resolve` is how they make it. Emit it as the alert type that matches, so the colour carries
-the verdict before anything is read, on one line, followed by the open and closed counts. Name the
-`critical` ids explicitly and count the rest (`2 critical (1.1, 1.2) and 6 major`); a line listing
-eight ids is one nobody reads. On a first review nothing has been closed yet, so give the open count
-alone rather than spending half the line on a zero. This paragraph is the only definition of that
-line: the contract below shows where it sits, not how to word it.
+a reaction on its decision comment, or a `/resolve`, is how they make it. Emit it as the alert type
+that matches, so the colour carries the verdict before anything is read, on one line, followed by the
+open and closed counts. Name the `critical` ids explicitly and count the rest (`2 critical (1.1, 1.2)
+and 6 major`); a line listing eight ids is one nobody reads. On a first review nothing has been closed
+yet, so give the open count alone rather than spending half the line on a zero. This paragraph is the
+only definition of that line: the contract below shows where it sits, not how to word it.
 
 | Verdict | Alert | Prefix |
 | --- | --- | --- |
@@ -182,23 +183,21 @@ description — say what the code does, which you established in the Change map.
 
 When nothing is open, replace the table with one line saying so.
 
-**Decisions for a human**, under the heading `### :raising_hand: Decisions for a human` — the icon is
-what makes the one block addressed to the reader findable while scrolling past the tables. Only when
-findings are disputed, and omitted entirely otherwise. A
-disputed finding cannot be closed by you or by the author's argument, so this block exists to put the
-choice in front of the one person who can make it. For each disputed finding give its id and title,
-the author's argument in one line, and a checkbox per option:
+**Nothing else.** The summary ends with that table, and a disputed finding gets no block of its own
+here. There used to be one, listing each dispute with a checkbox per option, and it never worked: a
+tick records nobody, so no run could act on one, and the block was reprinted every round for the life
+of the PR. The workflow now posts one comment per disputed finding instead, seeded with a `+1` and a
+`-1` reaction, and a maintainer settles it by clicking one — a reaction names who left it, so the
+decision reaches the next round as evidence. Do not write that block, do not point at the comments,
+and do not ask anyone to tick anything: `:speech_balloon:` in the table's Status column is how a
+reader learns a dispute is waiting, and the comment they vote in is already on the thread.
 
-```
-**1.4 — Snapshot filename derives from a settings count**
-Author's argument: the count is stable for a given vehicle, so collisions cannot happen in practice.
-- [ ] Accept the argument and leave the code as it is
-- [ ] Ask for the change anyway
-```
-
-Ticking a box records the maintainers' decision where the next reader can see it; the finding itself
-closes only on `/resolve <id> <reason>`, the one command that settles a dispute without a code change.
-Close the block with a single line saying so — once, not once per finding.
+What you put in a disputed entry's `author_argument` is what those voters are shown, so it has to be
+one plain sentence that stands on its own away from the review. It is also what the vote is keyed on:
+a changed `author_argument` is a new question and gets a comment and a tally of its own. Carry the
+sentence forward verbatim while the argument is the same one, and rewrite it only when the author
+actually makes a different case — reword it for style and you put the same dispute to the same people
+twice.
 
 Reproduce the author's argument as plain prose, never verbatim markup: strip any `<!--` from it, and
 summarise rather than quote when it contains any. The same goes for every other place you echo text
@@ -334,11 +333,6 @@ apply — never replaced by a placeholder saying they are empty.
 | --- | --- | --- | --- | --- |
 | 1.1 | Export crashes the browser build | Clicking Export in the browser version stops the page instead of saving anything. | **critical** | :x: |
 
-<this heading and its block only when a finding is disputed>
-### :raising_hand: Decisions for a human
-
-<one block per disputed finding, as specified in section 0>
-
 <this block only when a previous review exists>
 <details>
 <summary>Since round 2 — 5 closed, comparing abc1234 → def5678</summary>
@@ -376,7 +370,7 @@ _Generated by Claude. This is advisory; a human reviewer must still approve._
 
 - The marker on line 1 is parsed by two other workflows and by the maintainers' tooling, so its shape is fixed. The ledger is the last thing in the file, with nothing after it.
 - The ledger holds every finding the PR has ever had: each entry carried in from the previous round with its new status, plus the ones raised this round. Carry the closed entries — `addressed`, `obsolete` and `resolved` alike — through as well; the ledger is the full history, even though the table above shows only what is open.
-- A finding closed by `/resolve` goes in the since-last-round block naming who resolved it and quoting their reason, so the decision is visible without opening the comment that made it.
+- A finding closed by `/resolve` goes in the since-last-round block naming who resolved it and quoting their reason, so the decision is visible without opening the comment that made it. One closed by a vote on its decision comment goes there too, naming who accepted the argument and linking that comment by its `url`, so the block still asking for a decision is one click from the answer it got. An argument refused by a vote is reported the same way, naming who refused it and linking its comment, because that comment stays on the thread saying the vote is open when it is not.
 - The Change map is rebuilt every round, never carried over.
 
 Two short-circuits. Both still emit the marker, the verdict alert, the footer and the ledger, and
@@ -388,7 +382,7 @@ verdict on both paths is the one the carried ledger produces by the usual rule, 
 when there is nothing carried:
 
 - If `pr.diff` is empty or missing, say so and stop.
-- If `HEAD_SHA` equals `PREV_SHA` and every resolution in `resolutions.json` is already `resolved` in the carried ledger, there are no new commits since the last review: say so and stop. A `/resolve` arrives precisely when nothing has been pushed, so a resolution you have not applied yet never takes this exit — that is the one case where an unchanged head still has work to do. The file is a full history, not a delta, so "it is not empty" is the wrong test: after the first `/resolve` on a PR it never is again, and reading it that way would buy a full review every time someone asks for a cheap re-check.
+- If `HEAD_SHA` equals `PREV_SHA`, every resolution in `resolutions.json` is already `resolved` in the carried ledger, and every `accept` and `reject` in `decisions.json` is already reflected there, there are no new commits since the last review: say so and stop. A settlement arrives precisely when nothing has been pushed, so a resolution or a vote you have not applied yet never takes this exit — that is the one case where an unchanged head still has work to do. Only a decided vote counts for that: a `tie`, a `pending`, or a verdict whose `gated` is `false` changes nothing in the ledger, so it can never become "already reflected" and never buys a run of its own — deliberately, since a vote that decides nothing would otherwise buy a full review every time it moved. Report the split on the next review that runs for a reason of its own. Both files are full histories, not deltas, so "it is not empty" is the wrong test: after the first `/resolve` or the first dispute on a PR neither is empty again, and reading them that way would buy a full review every time someone asks for a cheap re-check.
 
 ## Tone
 
