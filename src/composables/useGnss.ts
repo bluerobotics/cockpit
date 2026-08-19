@@ -16,7 +16,7 @@ import {
   stopGnssDevice,
   subscribeToDeviceState,
 } from '@/libs/sensors/gnss'
-import { isElectron, machinizeString } from '@/libs/utils'
+import { isElectron, machinizeString, uniqueString } from '@/libs/utils'
 import type { GnssDevice, GnssState } from '@/types/gnss'
 import type { SerialPortInfo } from '@/types/serial'
 
@@ -28,13 +28,8 @@ let state: GnssState | undefined
  * @param {string[]} existingIds - Ids already in use, which the result must not collide with.
  * @returns {string} A unique machinized id (falls back to `gnss` when the name has no usable characters).
  */
-const generateDeviceId = (name: string, existingIds: string[]): string => {
-  const base = machinizeString(name) || 'gnss'
-  if (!existingIds.includes(base)) return base
-  let suffix = 2
-  while (existingIds.includes(`${base}-${suffix}`)) suffix++
-  return `${base}-${suffix}`
-}
+const generateDeviceId = (name: string, existingIds: string[]): string =>
+  uniqueString(machinizeString(name) || 'gnss', existingIds, '-')
 
 /**
  * Builds the shared GNSS UI state: persisted devices, an optional in-progress draft, reactive per-device
