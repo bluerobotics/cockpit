@@ -57,6 +57,18 @@ export interface GnssFix {
 }
 
 /**
+ * One labelled row of a formatted {@link GnssFix}, as the GNSS dialogs display it.
+ */
+export interface GnssFixItem {
+  /** Stable row identifier, so a caller can pick the rows it wants without matching on the label. */
+  key: string
+  /** Human-readable field name. */
+  label: string
+  /** Formatted value, or `-` when the receiver does not report the field. */
+  value: string
+}
+
+/**
  * A single parsed NMEA sentence, split into its talker, type and data fields.
  */
 export interface ParsedNmeaSentence {
@@ -188,6 +200,8 @@ export interface GnssState {
   commitCreate: () => Promise<string | null>
   /** Plans the persistent id a device with the given name would get (machinized, de-duplicated). */
   planDeviceId: (name: string) => string
+  /** Makes a display name unique against the existing devices, appending a numeric suffix when taken. */
+  planDeviceName: (name: string) => string
   /** Removes a device, closing its connection and deleting its data-lake variables. */
   removeDevice: (id: string) => Promise<void>
   /** Connects a device using its current port and baud rate. */
