@@ -776,29 +776,22 @@ export const useVideoStore = defineStore('video', () => {
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
     // Common configuration for the not growing dialogs
-    let notGrowingDialogOpen = false
-    const closeNotGrowingDialog = (): void => {
-      notGrowingDialogOpen = false
-      closeDialog()
-    }
     const suppressNotGrowingDialog = (): void => {
       suppressNotGrowingDialogs.value = true
-      closeNotGrowingDialog()
+      closeDialog()
     }
     const notGrowingDialogConfig = {
       variant: 'error',
-      // Persistent so it can only be closed via the actions below, which reset notGrowingDialogOpen. A
-      // backdrop/Escape dismissal would otherwise leave the flag stuck and stop the dialog from ever reappearing.
+      // Persistent so it can only be closed via the actions below. The monitor re-checks every 15 seconds, so the
+      // opt-out action is the only way for the user to stop being told about a problem they already know about.
       persistent: true,
       actions: [
         { text: "Don't show again during this session", size: 'small', action: suppressNotGrowingDialog },
-        { text: 'Close', size: 'small', action: closeNotGrowingDialog },
+        { text: 'Close', size: 'small', action: closeDialog },
       ],
     }
-    // Only show the dialog once at a time, otherwise the timed monitor would re-open it on every tick.
     const showNotGrowingDialog = (message: string): void => {
-      if (suppressNotGrowingDialogs.value || notGrowingDialogOpen) return
-      notGrowingDialogOpen = true
+      if (suppressNotGrowingDialogs.value) return
       showDialog({ ...notGrowingDialogConfig, message })
     }
 
