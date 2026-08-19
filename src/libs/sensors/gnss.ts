@@ -588,6 +588,22 @@ export const resolveDevicePort = async (device: GnssDeviceInfo): Promise<string 
 }
 
 /**
+ * Finds the configured device that would already read from a given serial port, following the same
+ * model-then-path matching {@link resolveDevicePort} uses.
+ *
+ * A serial port takes a single reader, so a second device pointed at the same port can never connect
+ * alongside the first one.
+ * @param {T[]} devices - The configured devices to search.
+ * @param {SerialPortInfo} port - The port to look for a claimant of.
+ * @returns {T | undefined} The device already using the port, or undefined when it is free.
+ */
+export const deviceUsingPort = <T extends GnssDeviceInfo>(devices: T[], port: SerialPortInfo): T | undefined =>
+  devices.find(({ usbMatch }) => {
+    const { vendorId, productId } = usbMatch ?? {}
+    return Boolean(vendorId && productId) && vendorId === port.vendorId && productId === port.productId
+  }) ?? devices.find(({ port: devicePort }) => devicePort === port.path)
+
+/**
  * Boots the GNSS reading pipeline: registers each configured device's data-lake variables and auto-connects
  * the enabled ones. Reads the persisted configuration directly (no Vue), so the data-lake posting works
  * independently of any UI being mounted. No-op outside Electron.
