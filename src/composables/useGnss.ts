@@ -66,6 +66,13 @@ const createState = (): GnssState => {
       devices.value.map((device) => device.id)
     )
 
+  const planDeviceName = (name: string): string =>
+    uniqueString(
+      name,
+      devices.value.map((device) => device.name),
+      ' '
+    )
+
   const refreshPorts = async (): Promise<void> => {
     availablePorts.value = await listSerialPorts()
   }
@@ -93,7 +100,8 @@ const createState = (): GnssState => {
     draft.value = device
     statuses[device.id] = 'disconnected'
     logUserAction('Started GNSS device creation')
-    return device
+    // The ref's proxy, not the raw target: mutations through the returned object have to notify watchers.
+    return draft.value as GnssDevice
   }
 
   const clearDeviceRuntimeState = async (id: string): Promise<void> => {
@@ -188,6 +196,7 @@ const createState = (): GnssState => {
     cancelCreate,
     commitCreate,
     planDeviceId,
+    planDeviceName,
     removeDevice,
     connectDevice,
     disconnectDevice,
