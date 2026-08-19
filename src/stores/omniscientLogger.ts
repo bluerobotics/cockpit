@@ -11,6 +11,7 @@ import {
 } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { isElectron } from '@/libs/utils'
+import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useMainVehicleStore } from './mainVehicle'
@@ -189,21 +190,16 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   // Monitor the active streams to add the connections to the WebRTC statistics
   watch(videoStore.activeStreams, (streams) => {
     Object.keys(streams).forEach((streamName) => {
-      const session = streams[streamName]?.webRtcManager?.session
-      if (!session || !session.peerConnection) return
+      const pcInfo = videoStore.getStreamPeerConnection(streamName)
+      if (!pcInfo) return
 
       if (webrtcStreamStats[streamName] === undefined) {
         webrtcStreamStats[streamName] = new WebRTCStats({ getStatsInterval: 100 })
       }
 
-      if (webrtcStreamStats[streamName].peersToMonitor[session.consumerId]) return
+      if (webrtcStreamStats[streamName].peersToMonitor[pcInfo.peerId]) return
 
-      webrtcStreamStats[streamName].addConnection({
-        pc: session.peerConnection, // RTCPeerConnection instance
-        peerId: session.consumerId, // any string that helps you identify this peer,
-        connectionId: session.id, // optional, an id that you can use to keep track of this connection
-        remote: false, // optional, override the global remote flag
-      })
+      monitorStreamPeerConnection(webrtcStreamStats[streamName], pcInfo)
 
       storedKeys.forEach((key) => {
         if (getDataLakeVariableInfo(streamRateVariableId(streamName, key)) === undefined) {
@@ -222,6 +218,9 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
 
       webrtcStreamStats[streamName].on('stats', (ev: WebRTCStatsEvent) => {
         try {
+          // Stats for a peer we no longer monitor describe a connection that has already been replaced
+          if (!webrtcStreamStats[streamName].peersToMonitor[ev.peerId]) return
+
           const videoData = ev.data.video.inbound[0]
           if (videoData === undefined) return
 
