@@ -1,3 +1,4 @@
+import { v4 as uuid } from 'uuid'
 import { type Ref, ref } from 'vue'
 
 import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
@@ -17,6 +18,8 @@ export class Go2RTCManager {
   public connected = ref(false)
   public signallerStatus: Ref<string> = ref('Disconnected')
   public streamStatus: Ref<string> = ref('Waiting...')
+  // Changes on every (re)connection, so stats consumers can tell a fresh peer connection from the previous one
+  public connectionId = ''
 
   private pc: RTCPeerConnection | null = null
   private ws: WebSocket | null = null
@@ -30,6 +33,14 @@ export class Go2RTCManager {
    * @param {number} jitterBufferTarget - RTP receiver jitter buffer target in milliseconds
    */
   constructor(private go2rtcPort: number, private streamName: string, private jitterBufferTarget: number) {}
+
+  /**
+   * The current peer connection, exposed for stats monitoring
+   * @returns {RTCPeerConnection | null} The active peer connection, or null if there is none
+   */
+  public get peerConnection(): RTCPeerConnection | null {
+    return this.pc
+  }
 
   /**
    * Start the WebRTC connection to go2rtc.
@@ -76,6 +87,7 @@ export class Go2RTCManager {
 
     const pc = new RTCPeerConnection()
     this.pc = pc
+    this.connectionId = uuid()
 
     pc.addTransceiver('video', { direction: 'recvonly' })
 

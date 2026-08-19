@@ -624,6 +624,14 @@ export const useVideoStore = defineStore('video', () => {
     if (session?.peerConnection) {
       return { peerConnection: session.peerConnection, peerId: session.consumerId, sessionId: session.id }
     }
+
+    const go2rtcManager = data?.go2rtcManager
+    if (go2rtcManager?.peerConnection) {
+      // Fresh id per connection, so a reconnect registers the new peer connection and drops the monitor of the old one.
+      const { peerConnection, connectionId } = go2rtcManager
+      return { peerConnection, peerId: connectionId, sessionId: connectionId }
+    }
+
     return undefined
   }
 

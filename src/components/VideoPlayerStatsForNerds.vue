@@ -8,6 +8,7 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
 import { useVideoStore } from '@/stores/video'
 import type { Go2RTCStreamInfo } from '@/types/video'
 import { WebRTCStatsEvent } from '@/types/video'
@@ -30,7 +31,8 @@ const props = defineProps({
   },
   height: {
     type: Number,
-    default: 200,
+    // Tall enough to keep the longest stats list (WebRTC, 12 rows) clear of the plot area at the bottom
+    default: 212,
   },
   updateInterval: {
     type: Number,
@@ -68,6 +70,9 @@ let processingDelayDelta = 0
 let freezes = 0
 let frozenTime = 0
 let framedrops = 0
+let jitterBufferDelay = 0
+let jitterBufferEmittedCount = 0
+let jitterBufferDelayPerFrame = 0
 
 let packetLossPercentage = 0
 let framerate = 0
@@ -144,6 +149,8 @@ function draw(): void {
       { label: 'Bitrate', value: bitrateStr, color: 'rgb(255, 165, 0)' },
       { label: 'Packets', value: ppsStr, color: 'rgb(100, 200, 255)' },
       { label: 'Stalls', value: rtspStallCount, color: rtspStallCount > 0 ? 'rgb(255, 0, 0)' : 'white' },
+      { label: 'Buffer', value: `${jitterBufferDelayPerFrame.toFixed(0)}ms`, color: statusColor },
+      { label: 'Frame drops', value: framedrops, color: statusColor },
     ]
 
     stats.forEach((stat, index) => {
@@ -165,6 +172,7 @@ function draw(): void {
       { label: 'Pli', value: pliCount, color: color },
       { label: 'Fir', value: firCount, color: color },
       { label: 'Processing ', value: `${processingDelayDelta.toFixed(0)}ms`, color: color },
+      { label: 'Buffer', value: `${jitterBufferDelayPerFrame.toFixed(0)}ms`, color: color },
       { label: 'Freezes', value: `${freezes}(${frozenTime.toFixed(1)}s)`, color: color },
       { label: 'Bitrate', value: `${bitrate.toFixed(0)}kbps`, color: 'rgb(255, 165, 0)' },
       { label: 'FPS', value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
@@ -201,12 +209,7 @@ watch(videoStore.activeStreams, (streams): void => {
     const pcInfo = videoStore.getStreamPeerConnection(streamName)
     if (!pcInfo) return
     if (webrtcStats.peersToMonitor[pcInfo.peerId]) return
-    webrtcStats.addConnection({
-      pc: pcInfo.peerConnection,
-      peerId: pcInfo.peerId,
-      connectionId: pcInfo.sessionId,
-      remote: false,
-    })
+    monitorStreamPeerConnection(webrtcStats, pcInfo)
   })
 })
 
@@ -247,6 +250,8 @@ onMounted(() => {
 
   webrtcStats.on('stats', (ev: WebRTCStatsEvent) => {
     try {
+      if (!webrtcStats.peersToMonitor[ev.peerId]) return
+
       const videoData = ev.data.video.inbound[0]
       if (videoData === undefined) return
       connectionLost = videoData.bitrate === 0
@@ -269,6 +274,14 @@ onMounted(() => {
       freezes = videoData.freezeCount
       frozenTime = videoData.totalFreezesDuration
       framedrops = videoData.framesDropped
+      // Both stats are cumulative, so only their deltas tell how much the last frames actually waited in the buffer
+      const jitterBufferDelayDelta = videoData.jitterBufferDelay - jitterBufferDelay
+      const jitterBufferEmittedDelta = videoData.jitterBufferEmittedCount - jitterBufferEmittedCount
+      if (jitterBufferEmittedDelta > 0) {
+        jitterBufferDelayPerFrame = (1000 * jitterBufferDelayDelta) / jitterBufferEmittedDelta
+      }
+      jitterBufferDelay = videoData.jitterBufferDelay
+      jitterBufferEmittedCount = videoData.jitterBufferEmittedCount
       framerate = videoData.framesPerSecond ?? 0
       videoHeight = videoData.frameHeight
     } catch (e) {
