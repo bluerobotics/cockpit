@@ -461,12 +461,18 @@ const handleDeviceBytes = (deviceId: string, bytes: number[]): void => {
   }
 }
 
+const pendingStarts = new Map<string, Promise<void>>()
+
 /**
  * Stops the reader for a device and closes its serial port, if open.
  * @param {string} deviceId - The device id.
  * @returns {Promise<void>} Resolves once the port is closed.
  */
 export const stopGnssDevice = async (deviceId: string): Promise<void> => {
+  // A start registers its runtime only once the port is open, so a stop landing before that would find
+  // nothing to stop and leave the reader it could not see holding the port until the app restarts.
+  await pendingStarts.get(deviceId)?.catch(() => undefined)
+
   const runtime = runtimes.get(deviceId)
   if (runtime) {
     stopWatchdog(runtime)
@@ -477,23 +483,7 @@ export const stopGnssDevice = async (deviceId: string): Promise<void> => {
   setStatus(deviceId, 'disconnected')
 }
 
-/**
- * Starts reading a device's GNSS receiver from its serial port.
- *
- * When `publish` is true (the default) the device's data-lake variables are registered and updated; pass
- * `publish: false` to preview an unsaved draft (parses and surfaces status/fix/serial lines without touching
- * the data lake).
- * @param {GnssDeviceInfo} device - The device to read from.
- * @param {boolean} [publish] - Whether to register/update data-lake variables (false to preview a draft).
- * @returns {Promise<void>} Resolves once the port is open.
- * @throws {Error} When not running in Electron, or when the port cannot be opened.
- */
-export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): Promise<void> => {
-  if (!isElectron() || !window.electronAPI) {
-    throw new Error('GNSS reading is only available in Cockpit standalone.')
-  }
-
-  await stopGnssDevice(device.id)
+const openGnssDevice = async (device: GnssDeviceInfo, publish: boolean): Promise<void> => {
   if (publish) registerDeviceVariables(device)
   ensureLinkListener()
 
@@ -515,7 +505,7 @@ export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): P
   runtimes.set(device.id, runtime)
   setStatus(device.id, 'connecting')
 
-  const opened = await window.electronAPI.linkOpen(path)
+  const opened = await window.electronAPI?.linkOpen(path)
   if (!opened) {
     runtimes.delete(device.id)
     setStatus(device.id, 'disconnected')
@@ -525,6 +515,33 @@ export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): P
   pathHandlers.set(path, (bytes) => handleDeviceBytes(device.id, bytes))
   setStatus(device.id, 'no-data')
   startWatchdog(device.id)
+}
+
+/**
+ * Starts reading a device's GNSS receiver from its serial port.
+ *
+ * When `publish` is true (the default) the device's data-lake variables are registered and updated; pass
+ * `publish: false` to preview an unsaved draft (parses and surfaces status/fix/serial lines without touching
+ * the data lake).
+ * @param {GnssDeviceInfo} device - The device to read from.
+ * @param {boolean} [publish] - Whether to register/update data-lake variables (false to preview a draft).
+ * @returns {Promise<void>} Resolves once the port is open.
+ * @throws {Error} When not running in Electron, or when the port cannot be opened.
+ */
+export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): Promise<void> => {
+  if (!isElectron() || !window.electronAPI) {
+    throw new Error('GNSS reading is only available in Cockpit standalone.')
+  }
+
+  await stopGnssDevice(device.id)
+
+  const start = openGnssDevice(device, publish)
+  pendingStarts.set(device.id, start)
+  try {
+    await start
+  } finally {
+    if (pendingStarts.get(device.id) === start) pendingStarts.delete(device.id)
+  }
 }
 
 const stopDevicesOnPort = async (port: string): Promise<void> => {
