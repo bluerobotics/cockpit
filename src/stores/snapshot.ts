@@ -171,6 +171,11 @@ export const useSnapshotStore = defineStore('snapshot', () => {
       }
     }
 
+    // Best-effort MAVLink broadcast so systems like BlueOS can mirror the snapshot action.
+    if (succeeded.some((name) => streamNames.includes(name))) {
+      videoStore.broadcastSnapshotCapture()
+    }
+
     return { succeeded, failed }
   }
 
