@@ -3,6 +3,7 @@
 import { type Ref, ref, watch } from 'vue'
 
 import * as Connection from '@/libs/connection/connection'
+import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
 import { Session } from '@/libs/webrtc/session'
 import { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
@@ -236,7 +237,9 @@ export class WebRTCManager {
     const [remoteStream] = event.streams
     this.mediaStream.value = remoteStream
 
-    this.session?.setJitterBufferTarget(this.JitterBufferTarget)
+    if (this.session?.peerConnection) {
+      setJitterBufferTarget(this.session.peerConnection, this.JitterBufferTarget)
+    }
 
     // Assign 'motion' contentHint to media stream video tracks, so it performs better on low bandwith situations
     // More on that here: https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrack/contentHint
