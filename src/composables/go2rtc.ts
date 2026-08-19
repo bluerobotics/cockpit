@@ -1,5 +1,7 @@
 import { type Ref, ref } from 'vue'
 
+import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
+
 const RECONNECT_DELAY_MS = 3000
 // Time we give the peer connection to reach 'connected' before assuming go2rtc is stuck waiting for an
 // unavailable source (e.g. camera not yet on the network) and forcing a reconnect.
@@ -25,8 +27,9 @@ export class Go2RTCManager {
   /**
    * @param {number} go2rtcPort - The port go2rtc is listening on
    * @param {string} streamName - The stream name registered in go2rtc
+   * @param {number} jitterBufferTarget - RTP receiver jitter buffer target in milliseconds
    */
-  constructor(private go2rtcPort: number, private streamName: string) {}
+  constructor(private go2rtcPort: number, private streamName: string, private jitterBufferTarget: number) {}
 
   /**
    * Start the WebRTC connection to go2rtc.
@@ -80,6 +83,8 @@ export class Go2RTCManager {
       const [remoteStream] = event.streams
       if (!remoteStream) return
       this.mediaStream.value = remoteStream
+
+      setJitterBufferTarget(pc, this.jitterBufferTarget)
 
       const videoTracks = remoteStream.getVideoTracks()
       videoTracks.forEach((track) => {
