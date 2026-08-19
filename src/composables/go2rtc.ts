@@ -108,7 +108,12 @@ export class Go2RTCManager {
       console.debug(`[go2rtc] Track added for stream '${this.streamName}'`)
     }
 
-    pc.onconnectionstatechange = () => {
+    // A listener rather than the single-slot pc.onconnectionstatechange, which anything else holding the peer
+    // connection (the stats library, for one) can overwrite, silently taking the reconnection with it
+    pc.addEventListener('connectionstatechange', () => {
+      // A superseded connection must not write the status refs, which by then describe the one that replaced it
+      if (this.pc !== pc) return
+
       const state = pc.connectionState
       console.debug(`[go2rtc] Connection state for '${this.streamName}': ${state}`)
       this.streamStatus.value = state
@@ -127,7 +132,7 @@ export class Go2RTCManager {
           this.connected.value = false
           break
       }
-    }
+    })
 
     this.armConnectWatchdog()
 
@@ -266,7 +271,6 @@ export class Go2RTCManager {
 
     if (this.pc) {
       this.pc.ontrack = null
-      this.pc.onconnectionstatechange = null
       this.pc.onicecandidate = null
       this.pc.close()
       this.pc = null
