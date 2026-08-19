@@ -1,6 +1,6 @@
 import { describe, expect, it, test, vi } from 'vitest'
 
-import { createDataLakeVariable } from '@/libs/actions/data-lake'
+import { createDataLakeVariable, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import {
   canUserChangeDataLakeVariable,
   canUserDeleteDataLakeVariable,
@@ -8,6 +8,7 @@ import {
   getSoleDataLakeVariableIdInString,
   isSystemOwnedDataLakeVariable,
   replaceDataLakeInputsInString,
+  replaceDataLakeInputsInStringAsLiterals,
 } from '@/libs/utils-data-lake'
 import { type DataLakeVariable } from '@/types/data-lake'
 
@@ -83,5 +84,110 @@ describe('Data lake input unit systems', () => {
     expect(replaceDataLakeInputsInString('{{ lat : si }}')).toBe('123456789')
     expect(replaceDataLakeInputsInString('{{ lat : }}')).toBe('123456789')
     expect(findDataLakeVariablesIdsInString('{{ lat : si }}')).toEqual(['lat'])
+  })
+})
+
+describe('Data lake inputs substituted as literals', () => {
+  const evaluate = (expression: string): unknown => eval(`(function() { return ${expression} })()`)
+
+  // The form 'evaluateDataLakeExpression' uses for an expression that returns on its own.
+  const evaluateBody = (expression: string): unknown => eval(`(function() { ${expression} })()`)
+
+  const codePayload = '0 })(); globalThis.pwned = true; (function() { return 0'
+
+  // A template substitution needs no quote, brace nor backtick to run, so the escaping that keeps a value
+  // out of syntax in a text position leaves this payload untouched.
+  const templateSubstitutionPayload = '(globalThis.pwned = true)'
+
+  it('substitutes a string value as a literal, so it cannot become code', () => {
+    setDataLakeVariableData('/mavlink/3/1/GLOBAL_POSITION_INT/lat', '0); globalThis.pwned = true; (0')
+
+    const expression = replaceDataLakeInputsInStringAsLiterals('{{ /mavlink/3/1/GLOBAL_POSITION_INT/lat }} / 1e7')
+
+    expect(evaluate(expression)).toBeNaN()
+    expect('pwned' in globalThis).toBe(false)
+  })
+
+  it('still substitutes a number value as a number', () => {
+    setDataLakeVariableData('/mavlink/3/1/GLOBAL_POSITION_INT/lat', -278899760)
+
+    const expression = replaceDataLakeInputsInStringAsLiterals('{{ /mavlink/3/1/GLOBAL_POSITION_INT/lat }} / 1e7')
+
+    expect(evaluate(expression)).toBeCloseTo(-27.889976)
+  })
+
+  it('keeps a number that is not finite as it is, instead of turning it into null', () => {
+    setDataLakeVariableData('/mavlink/3/1/VFR_HUD/heading', NaN)
+    setDataLakeVariableData('/mavlink/3/1/VFR_HUD/alt', -Infinity)
+
+    expect(evaluate(replaceDataLakeInputsInStringAsLiterals('{{ /mavlink/3/1/VFR_HUD/heading }} + 1'))).toBeNaN()
+    expect(evaluate(replaceDataLakeInputsInStringAsLiterals('{{ /mavlink/3/1/VFR_HUD/alt }} / 2'))).toBe(-Infinity)
+  })
+
+  it('converts a value to the unit system the input asks for, and keeps it a number', () => {
+    createDataLakeVariable(variable('literal-lat', { unit: 'degE7' }), 123456789)
+
+    expect(evaluate(replaceDataLakeInputsInStringAsLiterals('{{ literal-lat : metric }} + 1'))).toBeCloseTo(13.3456789)
+  })
+
+  it('keeps a string value inside a string literal as text, so a saved template keeps its meaning', () => {
+    setDataLakeVariableData('/vehicle/mode', 'GUIDED')
+
+    expect(evaluate(replaceDataLakeInputsInStringAsLiterals("'Mode: {{ /vehicle/mode }}'"))).toBe('Mode: GUIDED')
+    expect(evaluate(replaceDataLakeInputsInStringAsLiterals("'{{ /vehicle/mode }}' === 'GUIDED'"))).toBe(true)
+  })
+
+  it('does not let a string value close the literal it is substituted into', () => {
+    setDataLakeVariableData('/vehicle/mode', "'; globalThis.pwned = true; '`${globalThis.pwned = true}`")
+
+    const expression = replaceDataLakeInputsInStringAsLiterals("'{{ /vehicle/mode }}'")
+
+    expect(evaluate(expression)).toBe("'; globalThis.pwned = true; '`${globalThis.pwned = true}`")
+    expect('pwned' in globalThis).toBe(false)
+  })
+
+  it('does not let a quote inside a comment make the value on the next line be read as code', () => {
+    setDataLakeVariableData('/mavlink/3/1/STATUSTEXT/text', codePayload)
+
+    const expression = replaceDataLakeInputsInStringAsLiterals(
+      "// Show the vehicle's last message\nreturn {{ /mavlink/3/1/STATUSTEXT/text }}.length"
+    )
+
+    expect(evaluateBody(expression)).toBe(codePayload.length)
+    expect('pwned' in globalThis).toBe(false)
+  })
+
+  it('quotes every value when the scan leaves a literal open, since it can no longer tell code from text', () => {
+    setDataLakeVariableData('/mavlink/3/1/STATUSTEXT/text', codePayload)
+
+    const expression = replaceDataLakeInputsInStringAsLiterals("/'/.test({{ /mavlink/3/1/STATUSTEXT/text }})")
+
+    expect(evaluate(expression)).toBe(false)
+    expect('pwned' in globalThis).toBe(false)
+  })
+
+  it('treats a value inside a template substitution as a value being read, so it cannot become code', () => {
+    setDataLakeVariableData('/mavlink/3/1/STATUSTEXT/text', templateSubstitutionPayload)
+
+    const expression = replaceDataLakeInputsInStringAsLiterals(
+      '`Depth: ${ {{ /mavlink/3/1/STATUSTEXT/text }} / 1000 } m`'
+    )
+
+    expect(evaluate(expression)).toBe('Depth: NaN m')
+    expect('pwned' in globalThis).toBe(false)
+  })
+
+  it('keeps a value in the text of a template literal as text, even when the same template substitutes one', () => {
+    setDataLakeVariableData('/vehicle/mode', 'GUIDED')
+
+    const expression = replaceDataLakeInputsInStringAsLiterals('`Mode: {{ /vehicle/mode }} (${ 1 + 1 })`')
+
+    expect(evaluate(expression)).toBe('Mode: GUIDED (2)')
+  })
+
+  it('leaves an input whose variable has no value in place for the caller to report', () => {
+    const input = '{{ /mavlink/3/1/NEVER_SENT/lat }} / 1e7'
+
+    expect(replaceDataLakeInputsInStringAsLiterals(input)).toBe(input)
   })
 })
