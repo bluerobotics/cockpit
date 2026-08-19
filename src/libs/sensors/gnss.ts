@@ -17,7 +17,7 @@ import {
   setDataLakeVariableData,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
-import { NmeaAggregator, parseNmeaSentence } from '@/libs/sensors/nmea'
+import { fixQualityLabel, NmeaAggregator, parseNmeaSentence } from '@/libs/sensors/nmea'
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
 import type {
@@ -28,6 +28,7 @@ import type {
   GnssDeviceStateListener,
   GnssField,
   GnssFix,
+  GnssFixItem,
   GnssStatus,
   SerialLineEvent,
 } from '@/types/gnss'
@@ -243,6 +244,40 @@ export const gnssStatusIcon = (status: GnssStatus): string => {
  * @returns {string} The label.
  */
 export const gnssStatusLabel = (status: GnssStatus): string => (status === 'no-data' ? 'connected (no data)' : status)
+
+const formatFixNumber = (value: number | undefined, digits: number): string =>
+  value === undefined ? '-' : value.toFixed(digits)
+
+/**
+ * Formats a fix into the labelled rows the GNSS dialogs display, so every one of them shows the same
+ * values. Callers that only want a few rows pick them by key.
+ * @param {GnssFix} fix - The fix to format.
+ * @returns {GnssFixItem[]} One row per displayed field, in display order.
+ */
+export const gnssFixItems = (fix: GnssFix): GnssFixItem[] => [
+  { key: 'fixQuality', label: 'Fix', value: fix.fixQualityLabel ?? fixQualityLabel(fix.fixQuality ?? 0) },
+  {
+    key: 'fixMode',
+    label: 'Fix mode',
+    value: fix.fixMode === undefined ? '-' : `${fix.fixMode}D`.replace('1D', 'No fix'),
+  },
+  { key: 'latitude', label: 'Latitude', value: formatFixNumber(fix.latitude, 7) },
+  { key: 'longitude', label: 'Longitude', value: formatFixNumber(fix.longitude, 7) },
+  {
+    key: 'altitudeMslM',
+    label: 'Altitude (MSL)',
+    value: fix.altitudeMslM === undefined ? '-' : `${formatFixNumber(fix.altitudeMslM, 1)} m`,
+  },
+  { key: 'satellitesUsed', label: 'Satellites used', value: fix.satellitesUsed?.toString() ?? '-' },
+  { key: 'satellitesInView', label: 'Satellites in view', value: fix.satellitesInView?.toString() ?? '-' },
+  { key: 'hdop', label: 'HDOP', value: formatFixNumber(fix.hdop, 2) },
+  {
+    key: 'speedOverGroundMps',
+    label: 'Speed',
+    value: fix.speedOverGroundMps === undefined ? '-' : `${formatFixNumber(fix.speedOverGroundMps, 2)} m/s`,
+  },
+  { key: 'utcTime', label: 'UTC time', value: fix.utcTime ?? '-' },
+]
 
 const recordSerialLine = (deviceId: string, line: string): void => {
   const msg = line.replace(/\r$/, '').trim()
