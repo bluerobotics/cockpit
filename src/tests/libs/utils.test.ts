@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { serializeForLogging } from '@/libs/utils'
+import { serializeForLogging, uniqueString } from '@/libs/utils'
 
 test('serializeForLogging', () => {
   // The regression this guards: `JSON.stringify(new Error('boom'))` is `'{}'`, which is what the log used to keep.
@@ -17,4 +17,17 @@ test('serializeForLogging', () => {
   circular.self = circular
   expect(serializeForLogging(circular)).toBe('[object Object]')
   expect(serializeForLogging(Object.create(null))).toBe('{}')
+})
+
+test('uniqueString', () => {
+  expect(uniqueString('Base Station', [], ' ')).toBe('Base Station')
+  expect(uniqueString('Base Station', ['Base Station'], ' ')).toBe('Base Station 2')
+  expect(uniqueString('Base Station', ['Base Station', 'Base Station 2'], ' ')).toBe('Base Station 3')
+
+  // Gaps are not filled: the suffix walks up from 2 until it finds a free one.
+  expect(uniqueString('gnss', ['gnss', 'gnss-3'], '-')).toBe('gnss-2')
+  expect(uniqueString('gnss', ['gnss', 'gnss-2'], '-')).toBe('gnss-3')
+
+  // A taken suffix without the bare base taken still yields the base.
+  expect(uniqueString('gnss', ['gnss-2'], '-')).toBe('gnss')
 })
