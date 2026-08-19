@@ -138,6 +138,20 @@ export const alertLevelFromMavSeverity = {
 }
 
 /**
+ * Extra options for sending a COMMAND_LONG
+ */
+export interface SendCommandLongOptions {
+  /**
+   * MAVLink target component id (defaults to the autopilot)
+   */
+  targetComponent?: number
+  /**
+   * Whether to wait for a COMMAND_ACK; set false for fire-and-forget sends (defaults to true)
+   */
+  awaitAck?: boolean
+}
+
+/**
  * Data needed for setting a parameter on a ArduPilot vehicle
  */
 export interface MAVLinkParameterSetData extends VehicleConfigurationSettings {
