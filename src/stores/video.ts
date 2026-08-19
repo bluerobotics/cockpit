@@ -207,24 +207,27 @@ export const useVideoStore = defineStore('video', () => {
     // ponytail: feeds differing only in the URL query still fall back to '[2]'; keep the query here if one shows up
     const feed = pathSegments.filter(Boolean).pop()?.split('?')[0] ?? ''
 
-    // RadCams announce themselves over ONVIF as "UnderwaterCam", which MCM hands us as the source name
+    // Blue Robotics 4K Cams announce themselves over ONVIF as "UnderwaterCam", which MCM hands us as the source name
     const sourceName = streamInformation.value.find((info) => info.rtspSourceUrl === rtspUrl)?.sourceName ?? ''
-    const prefix = sourceName.toLowerCase().includes('underwatercam') ? 'RadCam RTSP' : 'RTSP'
+    const prefix = sourceName.toLowerCase().includes('underwatercam') ? 'BR 4K Cam RTSP' : 'RTSP'
 
     return [prefix, host, feed].filter(Boolean).join(' ')
   }
 
+  // The Blue Robotics 4K Cam's manager extension names its streams '<brand> <host>/<feed>', with 'Blue Robotics 4K Cam' as the brand
+  const isBlueRobotics4kCamStreamName = (name: string): boolean => /^4k cam /.test(name.trim().toLowerCase())
+
   const initializeStreamsCorrespondency = (): void => {
-    // Move already-mapped RadCam WebRTC streams to the ignored list
-    // TODO: This whole logic around auto-ignoring RadCam WebRTC streams should be removed once the MCM stutter problem is fixed
-    const radCamMapped = streamsCorrespondency.value.filter(
+    // Move already-mapped Blue Robotics 4K Cam WebRTC streams to the ignored list
+    // TODO: This whole logic around auto-ignoring Blue Robotics 4K Cam WebRTC streams should be removed once the MCM stutter problem is fixed
+    const fourKCamMapped = streamsCorrespondency.value.filter(
       (corr) =>
         (corr.protocol ?? 'webrtc') === 'webrtc' &&
-        corr.externalId.toLowerCase().includes('radcam') &&
+        isBlueRobotics4kCamStreamName(corr.externalId) &&
         !userRestoredStreamIds.value.includes(corr.externalId)
     )
-    if (radCamMapped.length > 0) {
-      const idsToMove = radCamMapped.map((corr) => corr.externalId)
+    if (fourKCamMapped.length > 0) {
+      const idsToMove = fourKCamMapped.map((corr) => corr.externalId)
       streamsCorrespondency.value = streamsCorrespondency.value.filter((corr) => !idsToMove.includes(corr.externalId))
       const newIgnored = idsToMove.filter((id) => !ignoredStreamExternalIds.value.includes(id))
       if (newIgnored.length > 0) {
@@ -235,19 +238,19 @@ export const useVideoStore = defineStore('video', () => {
     // Get list of external streams that are already mapped
     const alreadyMappedExternalIds = streamsCorrespondency.value.map((corr) => corr.externalId)
 
-    const radCamToIgnore: string[] = []
+    const fourKCamToIgnore: string[] = []
     const unmappedExternalStreams = namesAvailableWebRTCStreams.value.filter((streamName) => {
       if (alreadyMappedExternalIds.includes(streamName)) return false
       if (ignoredStreamExternalIds.value.includes(streamName)) return false
-      if (streamName.toLowerCase().includes('radcam') && !userRestoredStreamIds.value.includes(streamName)) {
-        radCamToIgnore.push(streamName)
+      if (isBlueRobotics4kCamStreamName(streamName) && !userRestoredStreamIds.value.includes(streamName)) {
+        fourKCamToIgnore.push(streamName)
         return false
       }
       return true
     })
 
-    if (radCamToIgnore.length > 0) {
-      ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, ...radCamToIgnore]
+    if (fourKCamToIgnore.length > 0) {
+      ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, ...fourKCamToIgnore]
     }
 
     if (unmappedExternalStreams.length === 0) return
