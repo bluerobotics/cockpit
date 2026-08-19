@@ -54,8 +54,42 @@
                 @blur="onCoordinateBlur"
               />
             </div>
+            <div v-if="!hasLocalGnssSource" class="config-row">
+              <v-btn
+                class="config-serial-gnss-btn bg-[#FFFFFF22] text-white"
+                variant="elevated"
+                size="small"
+                prepend-icon="mdi-usb-port"
+                :disabled="!gnss.isSupported"
+                title="Find a connected GNSS receiver and let it set the base station position"
+                @click="openGnssSetup"
+              >
+                Use serial/USB device
+              </v-btn>
+            </div>
+            <p v-if="!gnss.isSupported" class="px-1 pt-1 text-[10px] leading-tight opacity-70">
+              Serial devices cannot be read from a browser. Install Cockpit Standalone to set the base station position
+              from a connected GNSS receiver.
+            </p>
             <div class="config-row config-gps-row" :class="{ 'config-row-with-source': store.trackByGps }">
-              <p class="config-label">Track by GPS</p>
+              <div class="config-label-with-info">
+                <p class="config-label">Track by GPS</p>
+                <v-tooltip v-if="hasLocalGnssSource" location="top">
+                  <template #activator="{ props }">
+                    <button
+                      type="button"
+                      class="config-info-btn"
+                      title="Set up a serial GNSS receiver"
+                      aria-label="Set up a serial GNSS receiver"
+                      v-bind="props"
+                      @click="openGnssSetup"
+                    >
+                      <v-icon icon="mdi-cog" size="14" />
+                    </button>
+                  </template>
+                  Set up a serial GNSS receiver
+                </v-tooltip>
+              </div>
               <v-checkbox
                 :model-value="store.trackByGps"
                 hide-details
@@ -711,6 +745,8 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <BaseStationGnssSetupDialog v-model="gnssSetupDialogOpen" />
     </div>
   </div>
 </template>
@@ -718,11 +754,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import BaseStationGnssSetupDialog from '@/components/BaseStationGnssSetupDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { useBarsAwarePanelStyle } from '@/composables/useBarsAwarePanelStyle'
+import { useGnss } from '@/composables/useGnss'
 import { bearingBetween, centroidOf, rangeAfterGainChange, rangeAfterTxPowerChange } from '@/libs/baseStation/coverage'
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -733,6 +771,7 @@ import {
   AntennaType,
   BaseStationCommsType,
   BLUE_ROBOTICS_TX_POWER_MW,
+  BROWSER_GEOLOCATION_SOURCE_ID,
   DEFAULT_BASE_STATION_ANTENNA_HEIGHT_METERS,
   DEFAULT_BASE_STATION_CONFIG,
   MOBILE_COVERAGE_FETCH_DROP_MIME,
@@ -761,6 +800,7 @@ const getMarginsFromBarsHeight = useBarsAwarePanelStyle(600)
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
+const gnss = useGnss()
 
 const config = computed(() => store.config)
 
@@ -893,6 +933,14 @@ const onGpsSourceChange = (event: Event): void => {
 
 const onNameBlur = (): void => {
   logUserAction(`Set the base station name to "${config.value.name}"`)
+}
+
+const gnssSetupDialogOpen = ref(false)
+const hasLocalGnssSource = computed(() => store.gpsSource !== BROWSER_GEOLOCATION_SOURCE_ID)
+
+const openGnssSetup = (): void => {
+  logUserAction('Opened the serial GNSS setup from the base station panel')
+  gnssSetupDialogOpen.value = true
 }
 
 const onCoordinateBlur = (): void => {
@@ -1375,15 +1423,18 @@ const snapBearingToMission = (): void => {
   min-height: auto;
 }
 
+/* Labelless row: the button spans the full width instead of sitting in the right-hand control slot. */
+.config-serial-gnss-btn {
+  flex: 1 1 auto;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 /* Fixed height so showing the source select on toggle doesn't shift the rows below, while the inherited
    padding keeps the contents aligned with the other rows. */
 .config-gps-row {
   height: 36px;
-}
-
-/* The source select takes the row's right slot, so the label frees the space it needs. */
-.config-row-with-source .config-label {
-  width: auto;
 }
 
 .config-row-with-source .config-checkbox {
