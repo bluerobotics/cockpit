@@ -54,7 +54,15 @@ export const useVideoStore = defineStore('video', () => {
   const alertStore = useAlertStore()
   const { showDialog, closeDialog } = useInteractionDialog()
 
-  const { globalAddress, rtcConfiguration, webRTCSignallingURI } = useMainVehicleStore()
+  const mainVehicleStore = useMainVehicleStore()
+  const {
+    globalAddress,
+    rtcConfiguration,
+    webRTCSignallingURI,
+    sendStartVideoCaptureCommand,
+    sendStopVideoCaptureCommand,
+    sendStartImageCaptureCommand,
+  } = mainVehicleStore
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
   const streamsCorrespondency = useBlueOsStorage<VideoStreamCorrespondency[]>('cockpit-streams-correspondency', [])
@@ -77,6 +85,10 @@ export const useVideoStore = defineStore('video', () => {
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
   const userRestoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-restored-stream-ids', [])
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
+  const broadcastCameraActionsOverMavlink = useBlueOsStorage('cockpit-broadcast-camera-actions-over-mavlink', false)
+  // Streams whose recording start we mirrored over MAVLink. The broadcast fires only on the 0->1 and 1->0
+  // transitions, so recording several streams at once does not repeat the same commands.
+  const mirroredRecordingStreams = new Set<string>()
   // Keyed by the warning message, so silencing one recording health warning doesn't silence the others.
   const suppressedRecordingHealthMessages = new Set<string>()
   type RecordingHealthWarning = {
@@ -778,6 +790,29 @@ export const useVideoStore = defineStore('video', () => {
     return getStreamData(streamName)?.mediaRecorder?.state === 'recording'
   }
 
+  // Best-effort MAVLink broadcast of recording actions, so systems like BlueOS can mirror the recording state.
+  const broadcastRecordingStart = (streamName: string): void => {
+    if (!broadcastCameraActionsOverMavlink.value) return
+    const alreadyMirroring = mirroredRecordingStreams.size > 0
+    mirroredRecordingStreams.add(streamName)
+    // Recording several streams still means one vehicle-side recording, so broadcast only on the first one.
+    if (alreadyMirroring) return
+    sendStartVideoCaptureCommand()
+  }
+
+  const broadcastRecordingStop = (streamName: string): void => {
+    // Only close a broadcast we actually opened; the toggle gates new broadcasts, not outstanding stops.
+    if (!mirroredRecordingStreams.delete(streamName)) return
+    if (mirroredRecordingStreams.size > 0) return
+    sendStopVideoCaptureCommand()
+  }
+
+  // Best-effort MAVLink broadcast of a snapshot capture, sharing the recording path's broadcast rules.
+  const broadcastSnapshotCapture = (): void => {
+    if (!broadcastCameraActionsOverMavlink.value) return
+    sendStartImageCaptureCommand()
+  }
+
   /**
    * Stop recording the stream
    * @param {string} streamName - Name of the stream
@@ -1090,6 +1125,10 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
+      // Every way a recording ends reaches onstop (Stop button, stream teardown, dropped link), so mirror the stop
+      // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
+      broadcastRecordingStop(streamName)
+
       const info = unprocessedVideos.value[recordingHash]
       if (!info) {
         const errorMessage = `Failed to generate telemetry overlay: recording metadata for '${recordingHash}' not found.`
@@ -1144,6 +1183,10 @@ export const useVideoStore = defineStore('video', () => {
         console.warn(`Stream '${streamName}' was removed during video processing finalization.`)
       }
     }
+
+    // Mirror only after the recorder and its handlers are fully set up, so a start that throws (e.g. live-processing
+    // init failing) never leaves the stream marked as mirrored.
+    broadcastRecordingStart(streamName)
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
   }
@@ -1486,5 +1529,7 @@ export const useVideoStore = defineStore('video', () => {
     addRtspStreamCorrespondency,
     enableLiveProcessing,
     keepRawVideoChunksAsBackup,
+    broadcastCameraActionsOverMavlink,
+    broadcastSnapshotCapture,
   }
 })
