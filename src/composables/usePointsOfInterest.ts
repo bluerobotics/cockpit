@@ -9,7 +9,7 @@ import {
   poiLongitudeVariableId,
   syncPoiCoordinateVariables,
 } from '@/libs/poi/poi-data-lake'
-import { machinizeString } from '@/libs/utils'
+import { machinizeString, uniqueString } from '@/libs/utils'
 import { normalizePoiHeading, poiHasHeading } from '@/libs/utils-poi'
 import type {
   PointOfInterest,
@@ -27,13 +27,8 @@ const pointsOfInterestKey = 'cockpit-points-of-interest'
  * @param {string[]} existingIds - Ids already in use, which the result must not collide with
  * @returns {string} A machinized, unique id (falls back to `poi` when the name has no usable characters)
  */
-export const generatePointOfInterestId = (name: string, existingIds: string[]): string => {
-  const base = machinizeString(name) || 'poi'
-  if (!existingIds.includes(base)) return base
-  let suffix = 2
-  while (existingIds.includes(`${base}-${suffix}`)) suffix++
-  return `${base}-${suffix}`
-}
+export const generatePointOfInterestId = (name: string, existingIds: string[]): string =>
+  uniqueString(machinizeString(name) || 'poi', existingIds, '-')
 
 /**
  * Legacy POI shapes that may exist in persisted storage and need migrating to the current model.

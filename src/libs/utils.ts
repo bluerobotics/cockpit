@@ -290,6 +290,20 @@ export const machinizeString = (str: string): string => {
 }
 
 /**
+ * Makes a string unique against a list of already-taken ones by appending an incrementing suffix.
+ * @param {string} base The desired string.
+ * @param {string[]} taken The strings the result must not collide with.
+ * @param {string} separator What to put between the base and the suffix number.
+ * @returns {string} The base itself when free, otherwise the base with the first free suffix.
+ */
+export const uniqueString = (base: string, taken: string[], separator: string): string => {
+  if (!taken.includes(base)) return base
+  let suffix = 2
+  while (taken.includes(`${base}${separator}${suffix}`)) suffix++
+  return `${base}${separator}${suffix}`
+}
+
+/**
  * Sanitizes a value for use as a filename component on every supported platform.
  * Windows is the strictest target: it forbids `<`, `>`, `:`, `"`, `/`, `\`, `|`, `?`, `*`
  * and control characters, and disallows trailing dots/spaces. Without this, values like

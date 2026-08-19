@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'vitest'
 
-import { isElectron, serializeForLogging } from '@/libs/utils'
+import { isElectron, serializeForLogging, uniqueString } from '@/libs/utils'
 
 test('serializeForLogging', () => {
   // The regression this guards: `JSON.stringify(new Error('boom'))` is `'{}'`, which is what the log used to keep.
@@ -43,4 +43,17 @@ test('isElectron', () => {
 
   setUserAgent(chromeUserAgent)
   expect(isElectron()).toBe(false)
+})
+
+test('uniqueString', () => {
+  expect(uniqueString('Base Station', [], ' ')).toBe('Base Station')
+  expect(uniqueString('Base Station', ['Base Station'], ' ')).toBe('Base Station 2')
+  expect(uniqueString('Base Station', ['Base Station', 'Base Station 2'], ' ')).toBe('Base Station 3')
+
+  // Gaps are not filled: the suffix walks up from 2 until it finds a free one.
+  expect(uniqueString('gnss', ['gnss', 'gnss-3'], '-')).toBe('gnss-2')
+  expect(uniqueString('gnss', ['gnss', 'gnss-2'], '-')).toBe('gnss-3')
+
+  // A taken suffix without the bare base taken still yields the base.
+  expect(uniqueString('gnss', ['gnss-2'], '-')).toBe('gnss')
 })
