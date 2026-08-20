@@ -437,7 +437,7 @@
                         <td class="w-[120px]">
                           <div>
                             <p class="text-center">
-                              {{ currentButtonActions[item.id as JoystickButton]?.action.name }}
+                              {{ getButtonActionName(item.id as JoystickButton) }}
                             </p>
                           </div>
                         </td>
@@ -668,6 +668,7 @@ import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { JoystickModel } from '@/libs/joystick/manager'
+import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
 import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
@@ -774,7 +775,7 @@ const isExtraButtonPressed = (joystick: Joystick, buttonId: number): boolean => 
 
 const getButtonActionName = (buttonId: number): string => {
   const action = currentButtonActions.value[buttonId as JoystickButton]?.action
-  return action?.name ?? 'unassigned'
+  return action === undefined ? 'unassigned' : actionDisplayName(action)
 }
 
 const getAxesNotInSvg = (joystick: Joystick): number[] => {

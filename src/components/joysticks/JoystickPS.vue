@@ -32,6 +32,7 @@ import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { JoystickModel } from '@/libs/joystick/manager'
+import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
 import { scale } from '@/libs/utils'
 import {
   type JoystickButtonActionCorrespondency,
@@ -390,7 +391,7 @@ const updateLabelsState = (): void => {
     if (isNaN(Number(button))) return
     const buttonActionCorrespondency = buttonsActionsCorrespondency.value[button as JoystickButton] || undefined
     const functionName =
-      buttonActionCorrespondency === undefined ? 'unassigned' : buttonActionCorrespondency.action.name
+      buttonActionCorrespondency === undefined ? 'unassigned' : actionDisplayName(buttonActionCorrespondency.action)
     // @ts-ignore: we already check if button is a number and so if button is a valid index
     const labelId = buttonPath[button].replace('path', 'text')
     const overlay = labelOverlays.value.find((l) => l.id === labelId)
