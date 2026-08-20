@@ -16,7 +16,11 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
 
   watch(
     () => vehicleStore.mode,
-    () => alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle mode changed to ${vehicleStore.mode}.`))
+    (newMode) => {
+      if (newMode === undefined) return
+      const modeName = vehicleStore.flightModeDisplayName(newMode)
+      alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle mode changed to ${modeName}.`))
+    }
   )
 
   watch(

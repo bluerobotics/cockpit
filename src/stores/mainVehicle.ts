@@ -30,6 +30,8 @@ import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-m
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
+import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
+import { flightModeName } from '@/libs/vehicle/ardupilot/mode-names'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
 import type { MAVLinkParameterSetData, MessageIntervalOptions } from '@/libs/vehicle/mavlink/types'
 import { MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY } from '@/libs/vehicle/mavlink/vehicle'
@@ -168,6 +170,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const mode = ref<string | undefined>(undefined)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modes = ref<Map<string, any>>()
+
+  const ardupilotVehicleType = computed(() =>
+    vehicleType.value === undefined ? undefined : getVehicleTypeFromMavType(vehicleType.value)
+  )
+
+  /**
+   * Name to show the user for one of the modes of the connected vehicle
+   * @param {string} modeName - Mode name as reported by the vehicle, e.g. 'ALT_HOLD'
+   * @returns {string} The name ArduPilot gives the mode, or the mode name itself
+   */
+  function flightModeDisplayName(modeName: string): string {
+    return flightModeName(modeName, ardupilotVehicleType.value)
+  }
 
   // Store custom message intervals in BlueOS storage
   const mavlinkMessageIntervalOptions = useBlueOsStorage(
@@ -1080,6 +1095,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     statusGPS,
     mode,
     modes,
+    ardupilotVehicleType,
+    flightModeDisplayName,
     isArmed,
     flying,
     isVehicleOnline,

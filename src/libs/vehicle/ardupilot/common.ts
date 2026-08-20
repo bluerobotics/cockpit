@@ -7,6 +7,7 @@ import {
 } from '@/libs/joystick/protocols/cockpit-actions'
 
 import { Type as VehicleType } from '../vehicle'
+import { flightModeName } from './mode-names'
 import { CopterMode, PlaneMode, RoverMode, SubMode } from './types/modes'
 
 type ModeEnum = Record<string, string | number>
@@ -104,10 +105,8 @@ export function getVehicleModeActionId(vehicleType: VehicleType, modeName: strin
 export function createVehicleModeAction(vehicleType: VehicleType, modeName: string): CockpitAction {
   const actionId = getVehicleModeActionId(vehicleType, modeName)
   // TODO: Use the new MAVLink Mode microservice: https://mavlink.io/en/services/standard_modes.html#getting-all-available-modes
-  const displayName = modeName
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
+  // Actions are registered once at startup, so they carry the ArduPilot names and not the ones customized by the user.
+  const displayName = flightModeName(modeName, vehicleType)
   const vehicleDisplayName = vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)
   return new CockpitAction(actionId, `${displayName} Mode (ArduPilot ${vehicleDisplayName})`)
 }
@@ -123,7 +122,7 @@ function getModeName(vehicleType: VehicleType, modeValue: number): string {
   if (modeEnum?.[modeValue]) {
     return (modeEnum[modeValue] as string).toLowerCase()
   }
-  return 'unknown'
+  return 'Unknown'
 }
 
 /**
