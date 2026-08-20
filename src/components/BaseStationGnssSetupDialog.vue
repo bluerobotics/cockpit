@@ -386,7 +386,17 @@ const confirmDevice = async (): Promise<void> => {
 
   const name = deviceName.value.trim()
   draft.name = name
-  const id = await gnss.commitCreate()
+
+  // Saving reopens the port, and tracking must not be turned on for a device that did not come back: it
+  // takes manual coordinate entry away while never reporting a position.
+  let id: string | null
+  try {
+    id = await gnss.commitCreate()
+  } catch (error) {
+    probeError.value = `Added "${name}", but could not connect to it: ${(error as Error).message}`
+    resetToSelection()
+    return
+  }
   if (id === null) return
 
   trackDevice(id, name)
