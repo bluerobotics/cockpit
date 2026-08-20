@@ -1,8 +1,11 @@
 import { expect, test } from 'vitest'
 
+import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
+import { getVehicleModeActionId, renameModeActions } from '@/libs/vehicle/ardupilot/common'
 import { defaultFlightModeNames, flightModeName } from '@/libs/vehicle/ardupilot/mode-names'
 import { CopterMode, PlaneMode, RoverMode, SubMode } from '@/libs/vehicle/ardupilot/types/modes'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
+import { JoystickProtocol } from '@/types/joystick'
 
 const modeEnums = {
   [VehicleType.Sub]: SubMode,
@@ -36,4 +39,20 @@ test('flightModeName', () => {
   expect(flightModeName('SOME_NEW_MODE', VehicleType.Sub)).toBe('SOME_NEW_MODE')
   expect(flightModeName('MANUAL', VehicleType.Blimp)).toBe('MANUAL')
   expect(flightModeName('MANUAL')).toBe('MANUAL')
+})
+
+test('a mapped mode action is named after the current names, not the one persisted with the mapping', () => {
+  const persistedMapping = {
+    protocol: JoystickProtocol.CockpitAction,
+    id: getVehicleModeActionId(VehicleType.Sub, 'alt_hold'),
+    name: 'Alt Hold Mode (ArduPilot Sub)',
+  }
+
+  expect(actionDisplayName(persistedMapping)).toBe('Depth Hold Mode (ArduPilot Sub)')
+
+  renameModeActions({ [VehicleType.Sub]: { ALT_HOLD: 'Hold Depth' } })
+  expect(actionDisplayName(persistedMapping)).toBe('Hold Depth Mode (ArduPilot Sub)')
+
+  renameModeActions({})
+  expect(actionDisplayName(persistedMapping)).toBe('Depth Hold Mode (ArduPilot Sub)')
 })
