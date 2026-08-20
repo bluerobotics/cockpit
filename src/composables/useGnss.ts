@@ -80,7 +80,7 @@ const createState = (): GnssState => {
   const connectDevice = async (id: string): Promise<void> => {
     const isDraft = draft.value?.id === id
     const device = findDeviceOrDraft(id)
-    if (!isSupported || !device || !device.port) return
+    if (!isSupported || !device) return
     device.enabled = true
     // Drafts preview the stream without registering/publishing data-lake variables until saved.
     await startGnssDevice(device, !isDraft)
