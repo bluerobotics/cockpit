@@ -196,7 +196,10 @@ export interface GnssState {
   beginCreate: () => GnssDevice
   /** Discards the current draft, closing any preview connection. */
   cancelCreate: () => Promise<void>
-  /** Persists the current draft as a real device, returning its final id (or null when no draft). */
+  /**
+   * Persists the current draft as a real device, returning its final id (or null when no draft). Rejects when
+   * the device was created but reconnecting it afterwards failed.
+   */
   commitCreate: () => Promise<string | null>
   /** Plans the persistent id a device with the given name would get (machinized, de-duplicated). */
   planDeviceId: (name: string) => string

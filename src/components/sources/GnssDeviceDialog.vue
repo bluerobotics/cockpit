@@ -242,7 +242,16 @@ const onAutodetect = async (): Promise<void> => {
 }
 
 const onAdd = async (): Promise<void> => {
-  await gnss.commitCreate()
+  const name = device.value?.name ?? 'device'
+  try {
+    await gnss.commitCreate()
+  } catch (error) {
+    openSnackbar({
+      variant: 'error',
+      message: `Added "${name}", but could not connect to it: ${(error as Error).message}`,
+      duration: 5000,
+    })
+  }
   emit('update:modelValue', false)
 }
 
