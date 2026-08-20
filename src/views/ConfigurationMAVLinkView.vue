@@ -40,7 +40,7 @@
             </div>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Message intervals</template>
           <template #info>
             <p>
@@ -223,6 +223,53 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Flight mode names</template>
+          <template #info>
+            <p>
+              How each vehicle mode is named throughout Cockpit. The defaults are the names ArduPilot itself uses, and a
+              mode with no name of its own is shown exactly as the vehicle reports it.
+            </p>
+          </template>
+          <template #content>
+            <div class="flex flex-col w-full px-2 pt-3 pb-4">
+              <div class="flex flex-row items-center justify-between w-full mb-4">
+                <v-select
+                  :model-value="selectedVehicleType"
+                  :items="vehicleTypesWithNames"
+                  label="Vehicle"
+                  variant="filled"
+                  density="compact"
+                  hide-details
+                  theme="dark"
+                  class="max-w-[200px]"
+                  @update:model-value="setSelectedVehicleType"
+                />
+                <v-btn variant="text" size="small" :disabled="!hasCustomNames" @click="resetModeNamesToDefault">
+                  Reset names to ArduPilot defaults
+                </v-btn>
+              </div>
+              <div class="grid gap-x-8 gap-y-2" :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'">
+                <div
+                  v-for="modeName in modeNamesToShow"
+                  :key="`${modeName}-${namesRevision}`"
+                  class="flex flex-row items-center"
+                >
+                  <div class="w-[45%] text-sm opacity-70 truncate">{{ modeName }}</div>
+                  <v-text-field
+                    :model-value="displayNameOf(modeName)"
+                    variant="filled"
+                    density="compact"
+                    hide-details
+                    theme="dark"
+                    class="w-[55%]"
+                    @change="(event: Event) => setModeName(modeName, event)"
+                  />
+                </div>
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -233,7 +280,10 @@ import { computed, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { humanizeString } from '@/libs/utils'
+import { defaultFlightModeNames, flightModeName } from '@/libs/vehicle/ardupilot/mode-names'
 import type { MessageIntervalOptions } from '@/libs/vehicle/mavlink/types'
+import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
@@ -242,6 +292,63 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 const interfaceStore = useAppInterfaceStore()
 const mainVehicleStore = useMainVehicleStore()
 const searchTerm = ref('')
+
+const vehicleTypesWithNames = Object.keys(defaultFlightModeNames).map((type) => ({
+  title: humanizeString(type),
+  value: type as VehicleType,
+}))
+
+const selectedVehicleType = ref<VehicleType>(mainVehicleStore.ardupilotVehicleType ?? VehicleType.Sub)
+
+// Bumped on every edit to remount the name fields, which keep their own text and would otherwise stay
+// empty after a cleared field resolves back to the name it already had.
+const namesRevision = ref(0)
+
+const modeNamesToShow = computed(() => Object.keys(defaultFlightModeNames[selectedVehicleType.value] ?? {}))
+
+const customNamesForSelectedVehicle = computed(
+  () => mainVehicleStore.customFlightModeNames[selectedVehicleType.value] ?? {}
+)
+
+const hasCustomNames = computed(() => Object.keys(customNamesForSelectedVehicle.value).length > 0)
+
+const displayNameOf = (modeName: string): string => {
+  return flightModeName(modeName, selectedVehicleType.value, mainVehicleStore.customFlightModeNames)
+}
+
+const saveCustomNames = (customNames: Record<string, string>): void => {
+  const allCustomNames = { ...mainVehicleStore.customFlightModeNames, [selectedVehicleType.value]: customNames }
+  if (Object.keys(customNames).length === 0) delete allCustomNames[selectedVehicleType.value]
+  mainVehicleStore.customFlightModeNames = allCustomNames
+  namesRevision.value += 1
+}
+
+const setSelectedVehicleType = (value: unknown): void => {
+  logUserAction(`Switched the flight mode names to the ones of the ${humanizeString(value as string)}`)
+  selectedVehicleType.value = value as VehicleType
+}
+
+const setModeName = (modeName: string, event: Event): void => {
+  const newName = (event.target as HTMLInputElement).value.trim()
+  const isArdupilotName = newName === '' || newName === defaultFlightModeNames[selectedVehicleType.value]?.[modeName]
+  const customNames = { ...customNamesForSelectedVehicle.value }
+
+  if (isArdupilotName) {
+    delete customNames[modeName]
+    logUserAction(`Reset the name of the '${modeName}' flight mode`)
+  } else {
+    customNames[modeName] = newName
+    logUserAction(`Renamed the '${modeName}' flight mode to '${newName}'`)
+  }
+
+  saveCustomNames(customNames)
+}
+
+const resetModeNamesToDefault = (): void => {
+  const vehicleName = humanizeString(selectedVehicleType.value)
+  logUserAction(`Reset the flight mode names of the ${vehicleName} to the ArduPilot ones`)
+  saveCustomNames({})
+}
 
 const setEnableDatalakeFromOtherSystems = (value: boolean | null): void => {
   const enabled = value ?? false
