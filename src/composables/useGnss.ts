@@ -147,9 +147,9 @@ const createState = (): GnssState => {
     statuses[id] = 'disconnected'
     logUserAction(`Added GNSS device "${device.name}"`)
 
-    if (wasConnected) {
-      connectDevice(id).catch((error) => console.error('[GNSS] Failed to connect after creation:', error))
-    }
+    // Reopening the port right after releasing the preview can fail (busy, or the receiver was unplugged),
+    // and the caller is the only one that can tell the user their brand new device is not reading.
+    if (wasConnected) await connectDevice(id)
     return id
   }
 
