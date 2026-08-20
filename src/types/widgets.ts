@@ -898,7 +898,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.VeryGenericIndicator]: true,
   [MiniWidgetType.JoystickCommIndicator]: true,
   [MiniWidgetType.MiniVideoRecorder]: true,
-  [MiniWidgetType.ModeSelector]: false,
+  [MiniWidgetType.ModeSelector]: true,
   [MiniWidgetType.SatelliteIndicator]: false,
   [MiniWidgetType.ViewSelector]: false,
   [MiniWidgetType.SnapshotTool]: true,
