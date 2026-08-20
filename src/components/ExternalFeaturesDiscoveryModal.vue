@@ -792,6 +792,7 @@ import {
 } from '@/libs/actions/mavlink-message-actions'
 import { getActionsFromBlueOS, getJoystickSuggestionsFromBlueOS } from '@/libs/blueos'
 import { allAvailableButtons } from '@/libs/joystick/protocols'
+import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -995,7 +996,7 @@ const getCurrentActionNameForSuggestion = (suggestion: JoystickMapSuggestion): s
   if (!mapping) return 'No function'
 
   const currentAction = mapping.buttonsCorrespondencies?.[suggestion.modifier]?.[suggestion.button]?.action
-  return currentAction?.name ?? 'No function'
+  return currentAction ? actionDisplayName(currentAction) : 'No function'
 }
 
 /**
