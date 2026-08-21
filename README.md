@@ -104,6 +104,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 |-------------|---------------|----------------|
 | **Joystick Support** | Only when tab and window are in focus  | ✅ Window can be unfocused and in the background |
 | **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
+| **H.265 (HEVC) cameras** | Only on browsers that can receive H.265 (recent Chromium) | ✅ Plays wherever the system can decode H.265 in hardware, and recordings are re-encoded (to H.265, or to H.264 when the machine cannot encode it) so they can be saved, at some cost in image quality |
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
 | **External Serial GNSS** | ❌ Not available (browsers can't access serial devices outside a secure context) | ✅ Read one or more USB/serial NMEA GNSS receivers into the data-lake |
