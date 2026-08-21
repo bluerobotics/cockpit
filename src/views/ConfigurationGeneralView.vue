@@ -246,6 +246,63 @@
             </v-form>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Other vehicles (telemetry only)</template>
+          <template #subtitle>{{ secondaryVehicleUris.length }} configured</template>
+          <template #info>
+            <div class="w-full">
+              <p>
+                Receives telemetry from other vehicles on your network, each one on its own address. Their data becomes
+                available as data-lake variables named after the vehicle's system ID, so widgets can read it and a point
+                of interest can follow it on the map. Use the map button next to a vehicle to place it on the map, or
+                reference its position variables yourself, e.g.
+                <span class="font-mono">{{ exampleSecondaryVehicleCoordinate }}</span>
+              </p>
+              <p class="mt-2">
+                These vehicles cannot be controlled or armed from here, and no command is ever sent to them. Give each
+                one a different system ID, otherwise only the first one to announce each ID is received, and one using
+                the piloted vehicle's ID is ignored entirely. To change it, set the autopilot's SYSID_THISMAV parameter
+                on the vehicle's autopilot parameters page in BlueOS, then reboot the autopilot.
+              </p>
+            </div>
+          </template>
+          <template #content>
+            <ConnectionsList
+              v-model="newSecondaryVehicleUri"
+              :rows="secondaryVehicleRows"
+              empty-message="No other vehicles configured."
+              address-label="Vehicle telemetry address"
+              :address-placeholder="exampleSecondaryVehicleUri"
+              add-button-label="Add vehicle"
+              remove-tooltip="Remove vehicle"
+              @add="addNewSecondaryVehicle"
+              @remove="removeSecondaryVehicle"
+            >
+              <template #row-actions="{ row }">
+                <v-btn
+                  v-tooltip.bottom="placeOnMapTooltip(row.key)"
+                  :aria-label="placeOnMapTooltip(row.key)"
+                  :class="canPlaceOnMap(row.key) ? '' : '!pointer-events-auto'"
+                  :disabled="!canPlaceOnMap(row.key)"
+                  icon="mdi-map-marker-plus"
+                  size="x-small"
+                  variant="text"
+                  @click="placeSecondaryVehiclesOnMap(secondaryVehicleSystemIds(row.key))"
+                />
+              </template>
+              <template #warning>
+                <div v-if="secondaryVehicleUsesMainVehicleSystemId" class="text-sm text-yellow-400 mb-4">
+                  A vehicle is using the same system ID as the vehicle you are piloting, so it is not being received.
+                  Change its system ID.
+                </div>
+                <div v-if="duplicatedSecondaryVehicleSystemIds.length > 0" class="text-sm text-yellow-400 mb-4">
+                  More than one vehicle is using system ID {{ duplicatedSecondaryVehicleSystemIds.join(', ') }}, so only
+                  the first one to announce it is being received. Give each vehicle a different system ID.
+                </div>
+              </template>
+            </ConnectionsList>
+          </template>
+        </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Video connection (WebRTC)</template>
           <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
@@ -371,49 +428,17 @@
             </div>
           </template>
           <template #content>
-            <div class="flex flex-col w-full mt-2 pb-8">
-              <!-- Existing connections list -->
-              <div v-if="Object.keys(genericWebSocketConnections).length > 0" class="mb-4">
-                <div
-                  v-for="(conn, url) in genericWebSocketConnections"
-                  :key="url"
-                  class="flex items-center justify-between py-2 px-3 mb-2 rounded bg-[#FFFFFF11]"
-                >
-                  <div class="flex items-center gap-2 flex-1 min-w-0">
-                    <v-icon :color="getLoadingStatusColor(conn.status)" size="small">
-                      {{ getLoadingStatusIcon(conn.status) }}
-                    </v-icon>
-                    <span class="truncate text-sm" :title="url">{{ replaceDataLakeInputsInString(url) }}</span>
-                    <span class="text-xs opacity-60">({{ conn.status }})</span>
-                  </div>
-                  <v-btn icon="mdi-close" size="x-small" variant="text" @click="removeGenericWebSocket(url)" />
-                </div>
-              </div>
-              <div v-else class="text-sm opacity-60 mb-4">No connections configured.</div>
-
-              <!-- Add new connection -->
-              <div class="flex justify-start items-center">
-                <v-text-field
-                  v-model="newGenericWebSocketUrl"
-                  variant="outlined"
-                  type="input"
-                  density="compact"
-                  :hint="exampleGenericWebSocketUrl"
-                  hide-details
-                  @keyup.enter="addGenericWebSocket"
-                />
-                <v-btn
-                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  :disabled="!newGenericWebSocketUrl.trim()"
-                  class="bg-transparent"
-                  :class="interfaceStore.isOnSmallScreen ? 'ml-1' : 'ml-5'"
-                  variant="text"
-                  @click="addGenericWebSocket"
-                >
-                  Add connection
-                </v-btn>
-              </div>
-            </div>
+            <ConnectionsList
+              v-model="newGenericWebSocketUrl"
+              :rows="genericWebSocketRows"
+              empty-message="No connections configured."
+              address-label="WebSocket address"
+              :address-placeholder="exampleGenericWebSocketUrl"
+              add-button-label="Add connection"
+              remove-tooltip="Remove connection"
+              @add="addGenericWebSocket"
+              @remove="removeGenericWebSocket"
+            />
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
@@ -523,13 +548,26 @@
 </template>
 
 <script setup lang="ts">
+import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
+import ConnectionsList from '@/components/configuration/ConnectionsList.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import {
+  addSecondaryVehicle,
+  canPlaceSecondaryVehiclesOnMap,
+  duplicatedSecondaryVehicleSystemIds,
+  placeSecondaryVehiclesOnMap,
+  refreshSecondaryVehicleStates,
+  removeSecondaryVehicle,
+  secondaryVehicleStates,
+  secondaryVehicleUris,
+  secondaryVehicleUsesMainVehicleSystemId,
+} from '@/composables/secondaryVehicles'
 import { useSnackbar } from '@/composables/snackbar'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
@@ -540,9 +578,13 @@ import {
   removeGenericWebSocketConnection,
 } from '@/libs/generic-websocket'
 import { isElectron, isValidNetworkAddress } from '@/libs/utils'
-import { getLoadingStatusColor, getLoadingStatusIcon } from '@/libs/utils/ui'
 import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
+import {
+  getSecondaryConnectionState,
+  secondaryConnectionStatus,
+  secondaryConnectionStatusLabel,
+} from '@/libs/vehicle/mavlink/secondary-connections'
 import * as Protocol from '@/libs/vehicle/protocol/protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -962,11 +1004,63 @@ watch(customRtcConfiguration, () => tryToPrettifyRtcConfig())
 
 const showDiscoveryDialog = ref(false)
 
+// Other vehicles, connected for telemetry only
+const exampleSecondaryVehicleUri = 'ws://192.168.2.4/mavlink2rest/ws/mavlink'
+const exampleSecondaryVehicleCoordinate = '{{ /mavlink/3/1/GLOBAL_POSITION_INT/lat }} / 1e7'
+const newSecondaryVehicleUri = ref('')
+
+const secondaryVehicleSystemIds = (uri: string): number[] => secondaryVehicleStates.value[uri]?.systemIds ?? []
+
+const canPlaceOnMap = (uri: string): boolean => canPlaceSecondaryVehiclesOnMap(secondaryVehicleSystemIds(uri))
+
+const placeOnMapTooltip = (uri: string): string => {
+  const isPlural = secondaryVehicleSystemIds(uri).length > 1
+  if (canPlaceOnMap(uri)) return isPlural ? 'Place these vehicles on the map' : 'Place this vehicle on the map'
+  return isPlural
+    ? 'Waiting for these vehicles to report their positions'
+    : 'Waiting for this vehicle to report its position'
+}
+
+const secondaryVehicleRows = computed(() =>
+  secondaryVehicleUris.value.map((uri) => {
+    const state = secondaryVehicleStates.value[uri] ?? getSecondaryConnectionState(uri)
+    const watchdogTimeoutMs = mainVehicleStore.vehicleConnectionWatchdogTimeoutMs
+    const systemIds = state.systemIds.join(', ')
+    return {
+      key: uri,
+      address: uri,
+      status: secondaryConnectionStatus(state, watchdogTimeoutMs),
+      statusLabel: secondaryConnectionStatusLabel(state, watchdogTimeoutMs),
+      details: systemIds === '' ? undefined : `System ID ${systemIds}`,
+    }
+  })
+)
+
+// The connections keep no reactive state of their own, so their status is polled while this view is open
+// instead of being pushed on every incoming message.
+useIntervalFn(refreshSecondaryVehicleStates, 1000, { immediateCallback: true })
+
+const addNewSecondaryVehicle = (): void => {
+  if (addSecondaryVehicle(newSecondaryVehicleUri.value)) {
+    newSecondaryVehicleUri.value = ''
+  }
+}
+
 // Generic WebSocket connections
 const exampleGenericWebSocketUrl = 'ws://{{ vehicle-address }}:1234'
 const genericWebSocketConnections = ref<Record<string, GenericWebSocketConnection>>({})
 const newGenericWebSocketUrl = ref(exampleGenericWebSocketUrl)
 let unsubscribeGenericWebSocket: (() => void) | null = null
+
+const genericWebSocketRows = computed(() =>
+  Object.entries(genericWebSocketConnections.value).map(([url, connection]) => ({
+    key: url,
+    address: replaceDataLakeInputsInString(url),
+    title: url,
+    status: connection.status,
+    statusLabel: connection.status,
+  }))
+)
 
 onMounted(() => {
   loadCockpitFolderPath()

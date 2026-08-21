@@ -17,6 +17,7 @@ import { createApp } from 'vue'
 import VueDraggableResizable from 'vue-draggable-resizable'
 import VueVirtualScroller from 'vue-virtual-scroller'
 
+import { initSecondaryVehicleConnections } from '@/composables/secondaryVehicles'
 import { initializeActionAutoRun } from '@/libs/actions/auto-run'
 import { app_version } from '@/libs/cosmos'
 import { dataLakeLogger } from '@/libs/data-lake-logging'
@@ -100,6 +101,9 @@ initializeActionAutoRun()
 
 // Boot the GNSS reading pipeline so configured devices post to the data lake independently of the UI
 initGnss()
+
+// Boot the secondary vehicle connections so their telemetry reaches the data lake independently of the UI
+initSecondaryVehicleConnections()
 
 // Start logging as soon as the app is loaded to always have telemetry for videos
 datalogger.startLogging('cockpit-telemetry-logging')
