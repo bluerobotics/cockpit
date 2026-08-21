@@ -29,6 +29,13 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('enable-speech-dispatcher')
 }
 
+// Enable Chromium features required to decode/encode H.265 (HEVC) streams.
+// `PlatformHEVCDecoderSupport` enables hardware HEVC decoding for HTMLVideoElement, while
+// `WebRtcAllowH265Receive`/`WebRtcAllowH265Send` allow HEVC to be negotiated over WebRTC
+// (used by go2rtc when bridging RTSP streams into the renderer).
+// These switches must be appended before the `ready` event fires.
+app.commandLine.appendSwitch('enable-features', 'PlatformHEVCDecoderSupport,WebRtcAllowH265Receive,WebRtcAllowH265Send')
+
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
 }
