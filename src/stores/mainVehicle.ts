@@ -13,6 +13,7 @@ import { altitude_setpoint } from '@/libs/altitude-slider'
 import {
   getCpusInfo,
   getCpuTempCelsius,
+  getIpsInformationFromVehicle,
   getKeyDataFromCockpitVehicleStorage,
   getNetworkInfo,
   getStatus,
@@ -49,6 +50,7 @@ import type {
 import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
+import { canSuggestCabledLink, createWirelessTrafficWatcher } from '@/libs/wireless-traffic-warning'
 import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
 
 import { useControllerStore } from './controller'
@@ -781,6 +783,41 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     // eslint-disable-next-line jsdoc/require-jsdoc, prettier/prettier
     const previousNetworkReadings: Map<string, { bytesReceived: number; bytesTransmitted: number; timestamp: number }> = new Map()
 
+    const wirelessTrafficWatcher = createWirelessTrafficWatcher()
+    const cabledLinkCheckIntervalMs = 30000
+    let checkingCabledLinkSuggestion = false
+    let lastCabledLinkCheckTimestamp = 0
+
+    // Asking the vehicle which links it can be reached on is a request of its own, so it is only made once the
+    // traffic condition holds, and throttled from there. The answer cannot be kept for the session, as a cable
+    // plugged in or pulled changes it. A failure just waits for the next check, since a saturated wireless link
+    // is exactly what makes this request fail, and that is when the warning is most needed.
+    const suggestCabledLinkIfItMakesSense = async (timestamp: number): Promise<void> => {
+      if (checkingCabledLinkSuggestion) return
+      if (timestamp - lastCabledLinkCheckTimestamp < cabledLinkCheckIntervalMs) return
+      checkingCabledLinkSuggestion = true
+      lastCabledLinkCheckTimestamp = timestamp
+
+      try {
+        const ipsInfo = await getIpsInformationFromVehicle(globalAddress.value)
+        if (!canSuggestCabledLink(ipsInfo, globalAddress.value)) return
+      } catch (error) {
+        console.error(`Failed to get the links the vehicle can be reached on: ${error}`)
+        return
+      } finally {
+        checkingCabledLinkSuggestion = false
+      }
+
+      wirelessTrafficWatcher.registerWarningShown()
+      openSnackbar({
+        message:
+          "A lot of data is going through the vehicle's WiFi connection. Connecting through the cabled network should give you better video quality and less delay.",
+        variant: 'warning',
+        duration: 15000,
+        closeButton: true,
+      })
+    }
+
     const cpusInfos = await getCpusInfo(globalAddress.value)
     cpusInfos.forEach((cpu) => {
       Object.assign(blueOsVariables, {
@@ -871,6 +908,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       try {
         const updatedNetworkInfos = await getNetworkInfo(globalAddress.value)
         const currentTimestamp = Date.now()
+        const uploadMbpsPerInterface: Record<string, number> = {}
 
         updatedNetworkInfos.forEach((networkInterface) => {
           // Convert total bytes to megabytes (MB)
@@ -897,14 +935,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
               const uploadSpeedMbps = (uploadSpeedBytesPerSec * 8) / (1024 * 1024)
 
               // Set speeds (ensure they're not negative due to counter resets)
+              const nonNegativeUploadMbps = Math.max(0, uploadSpeedMbps)
               setDataLakeVariableData(
                 networkDownloadSpeedMbpsVariableId(networkInterface.name),
                 Math.max(0, downloadSpeedMbps)
               )
-              setDataLakeVariableData(
-                networkUploadSpeedMbpsVariableId(networkInterface.name),
-                Math.max(0, uploadSpeedMbps)
-              )
+              setDataLakeVariableData(networkUploadSpeedMbpsVariableId(networkInterface.name), nonNegativeUploadMbps)
+              uploadMbpsPerInterface[networkInterface.name] = nonNegativeUploadMbps
             }
           }
 
@@ -915,6 +952,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
             timestamp: currentTimestamp,
           })
         })
+
+        // Not awaited, so a slow beacon does not hold this round nor report its failure as a data lake one.
+        if (wirelessTrafficWatcher.shouldWarn(uploadMbpsPerInterface, currentTimestamp)) {
+          suggestCabledLinkIfItMakesSense(currentTimestamp)
+        }
       } catch (error) {
         console.error(`Failed to update network information in data lake: ${error}`)
       }
