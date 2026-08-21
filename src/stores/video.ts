@@ -71,7 +71,64 @@ export const useVideoStore = defineStore('video', () => {
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
   const userRestoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-restored-stream-ids', [])
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
-  const suppressNotGrowingDialogs = ref(false)
+  // Keyed by the warning message, so silencing one recording health warning doesn't silence the others.
+  const suppressedRecordingHealthMessages = new Set<string>()
+  type RecordingHealthWarning = {
+    /**
+     * Text of the warning, shown in the dialog and used as the key of the session opt-out.
+     */
+    message: string
+    /**
+     * Whether the warning means the recording may already be lost, which lets it take the surface from a milder one.
+     */
+    meansDataLoss: boolean
+  }
+  // Shared by the monitors of all recording streams, since they all warn through the same single dialog surface.
+  let openRecordingHealthWarning: RecordingHealthWarning | undefined
+
+  const releaseRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
+    // Compared by identity, not by text: closing the dialog leaves its promise pending, so the release can run a
+    // tick later, once a warning with the very same wording has claimed the surface again.
+    if (openRecordingHealthWarning === warning) openRecordingHealthWarning = undefined
+  }
+  const suppressRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
+    logUserAction(`Silenced the recording health warning "${warning.message}" for this session`)
+    suppressedRecordingHealthMessages.add(warning.message)
+    releaseRecordingHealthDialog(warning)
+    closeDialog()
+  }
+  const closeRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
+    logUserAction(`Closed the recording health warning "${warning.message}"`)
+    releaseRecordingHealthDialog(warning)
+    closeDialog()
+  }
+  const showRecordingHealthDialog = (message: string, meansDataLoss = false): void => {
+    if (suppressedRecordingHealthMessages.has(message)) return
+    // The warning on screen owns the single dialog surface until it is settled, be it by the actions below or by an
+    // unrelated dialog replacing it. Nothing but the user settles it, so a warning about a recording that may
+    // already be lost takes the surface from a milder one instead of waiting behind it forever.
+    // ponytail: warnings that mean the same for the recording queue behind whichever showed first, so a second
+    // unhealthy stream can wait as long as the user leaves the first dialog up. Queue the surface if that bites.
+    if (openRecordingHealthWarning && (openRecordingHealthWarning.meansDataLoss || !meansDataLoss)) return
+    const warning = { message, meansDataLoss }
+    openRecordingHealthWarning = warning
+    const release = (): void => releaseRecordingHealthDialog(warning)
+    showDialog({
+      message,
+      variant: 'error',
+      // Persistent so it can only be closed via the actions below. The monitor re-checks every 15 seconds, so the
+      // opt-out action is the only way for the user to stop being told about a problem they already know about.
+      persistent: true,
+      actions: [
+        {
+          text: "Don't show again during this session",
+          size: 'small',
+          action: () => suppressRecordingHealthDialog(warning),
+        },
+        { text: 'Close', size: 'small', action: () => closeRecordingHealthDialog(warning) },
+      ],
+    }).then(release, release)
+  }
 
   const streamInformation = ref<ProcessedStreamInfo[]>([])
   const go2rtcStreamInfo = ref<Record<string, Go2RTCStreamInfo>>({})
@@ -778,39 +835,15 @@ export const useVideoStore = defineStore('video', () => {
     }
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
-    // Common configuration for the not growing dialogs
-    let notGrowingDialogOpen = false
-    const closeNotGrowingDialog = (): void => {
-      notGrowingDialogOpen = false
-      closeDialog()
-    }
-    const suppressNotGrowingDialog = (): void => {
-      suppressNotGrowingDialogs.value = true
-      closeNotGrowingDialog()
-    }
-    const notGrowingDialogConfig = {
-      variant: 'error',
-      // Persistent so it can only be closed via the actions below, which reset notGrowingDialogOpen. A
-      // backdrop/Escape dismissal would otherwise leave the flag stuck and stop the dialog from ever reappearing.
-      persistent: true,
-      actions: [
-        { text: "Don't show again during this session", size: 'small', action: suppressNotGrowingDialog },
-        { text: 'Close', size: 'small', action: closeNotGrowingDialog },
-      ],
-    }
-    // Only show the dialog once at a time, otherwise the timed monitor would re-open it on every tick.
-    const showNotGrowingDialog = (message: string): void => {
-      if (suppressNotGrowingDialogs.value || notGrowingDialogOpen) return
-      notGrowingDialogOpen = true
-      showDialog({ ...notGrowingDialogConfig, message })
-    }
-
     // On Electron, we can get the size of the video output file in real time
     // This is useful to detect if the output file is growing, which is an indication that the recording is still ongoing.
     // On Web, we can only know if the number of chunks is growing, which is an indication that the recording is still ongoing.
     // We also need to clear the interval if it already exists, to avoid multiple intervals running at the same time.
     clearInterval(recordingMonitors[streamName])
     delete recordingMonitors[streamName]
+    // The internal name, since the external id of an RTSP stream is its URL, credentials included, and these warnings
+    // are both shown to the user and written to the logs they share with us.
+    const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
     if (window.electronAPI) {
       console.info(`Starting electron recording monitor for stream '${streamName}'.`)
       recordingMonitors[streamName] = setInterval(async () => {
@@ -824,14 +857,17 @@ export const useVideoStore = defineStore('video', () => {
         }
         const fileStats = await window.electronAPI?.getFileStats(fileName, ['videos'])
         if (!fileStats || !fileStats.exists) {
-          // eslint-disable-next-line
-          const msg = 'Cannot get size of the video output file. Please check if the file exists. This can indicate a problem with the recording.'
-          showDialog({ message: msg, variant: 'error' })
+          showRecordingHealthDialog(
+            `Cockpit cannot find the file for the recording of stream '${streamLabel}', which means the recording may be lost. We recommend stopping it and starting a new one.`,
+            true
+          )
           return
         }
         const lastKnownFileSize = unprocessedVideos.value[recordingHash].lastKnownFileSize
         if (fileStats.size! <= lastKnownFileSize!) {
-          showNotGrowingDialog('The video output file is not growing. This can indicate a problem with the recording.')
+          showRecordingHealthDialog(
+            `The video output file for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
+          )
           return
         }
         unprocessedVideos.value[recordingHash].lastKnownFileSize = fileStats.size
@@ -852,8 +888,8 @@ export const useVideoStore = defineStore('video', () => {
         const numberOfChunks = await tempVideoStorage.localForage.length()
         const lastKnownNumberOfChunks = unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks
         if (numberOfChunks <= lastKnownNumberOfChunks!) {
-          showNotGrowingDialog(
-            'The number of video chunks is not growing. This can indicate a problem with the recording.'
+          showRecordingHealthDialog(
+            `The number of video chunks for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
           )
           return
         }
