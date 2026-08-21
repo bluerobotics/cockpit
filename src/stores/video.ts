@@ -4,7 +4,7 @@ import { differenceInSeconds } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
-import { computed, ref, watch } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
 import { Go2RTCManager } from '@/composables/go2rtc'
@@ -366,8 +366,7 @@ export const useVideoStore = defineStore('video', () => {
       if (!activeStreams.value[streamName]?.webRtcManager) return
 
       // Update the list of available remote ICE Ips with those available for each stream
-      // @ts-ignore: availableICEIPs is not reactive here, for some yet to know reason
-      const newIps = activeStreams.value[streamName].webRtcManager.availableICEIPs.filter(
+      const newIps = activeStreams.value[streamName]!.webRtcManager!.availableICEIPs.value.filter(
         (ip: string) => !availableIceIps.value.includes(ip)
       )
       availableIceIps.value = [...availableIceIps.value, ...newIps]
@@ -448,7 +447,8 @@ export const useVideoStore = defineStore('video', () => {
 
           activeStreams.value[streamName] = {
             stream: undefined,
-            go2rtcManager: manager,
+            // A reactive-proxied manager gets its internal refs unwrapped, breaking its own '.value' writes.
+            go2rtcManager: markRaw(manager),
             // @ts-ignore: This is actually not reactive
             mediaStream: mediaStream,
             // @ts-ignore: This is actually not reactive
@@ -478,7 +478,7 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName] = {
       // @ts-ignore: This is actually not reactive
       stream: stream,
-      webRtcManager: webRtcManager,
+      webRtcManager: markRaw(webRtcManager),
       // @ts-ignore: This is actually not reactive
       mediaStream: mediaStream,
       // @ts-ignore: This is actually not reactive
@@ -499,44 +499,49 @@ export const useVideoStore = defineStore('video', () => {
     const externalStreamData = activeStreams.value[externalId]
     if (!externalStreamData) return
 
-    // Stop recording if it's active
-    if (externalStreamData.mediaRecorder?.state === 'recording') {
-      externalStreamData.mediaRecorder.stop()
-    }
-
-    // Stop all tracks in the media stream
-    if (externalStreamData.mediaStream) {
-      externalStreamData.mediaStream.getTracks().forEach((track) => {
-        track.stop()
-        console.log(`Stopped track: ${track.kind} for external stream '${externalId}'`)
-      })
-    }
-
-    // Close WebRTC connection
-    if (externalStreamData.webRtcManager) {
-      try {
-        const session = externalStreamData.webRtcManager.session
-        if (session?.peerConnection) {
-          session.peerConnection.close()
-        }
-        externalStreamData.webRtcManager.close(reason)
-        console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
-      } catch (error) {
-        console.warn(`Error stopping WebRTC manager for external stream '${externalId}':`, error)
+    // A stream left in the map after a failed teardown is unrecoverable: its manager is already
+    // half-closed, and registerStreamConsumer skips activation for a key that exists.
+    try {
+      // Stop recording if it's active
+      if (externalStreamData.mediaRecorder?.state === 'recording') {
+        externalStreamData.mediaRecorder.stop()
       }
-    }
 
-    if (externalStreamData.go2rtcManager) {
-      externalStreamData.go2rtcManager.close(reason)
-      if (window.electronAPI) {
-        void window.electronAPI.go2rtcRemoveStream(externalId).catch((error) => {
-          console.warn(`Error removing go2rtc stream '${externalId}':`, error)
+      // Stop all tracks in the media stream
+      if (externalStreamData.mediaStream) {
+        externalStreamData.mediaStream.getTracks().forEach((track) => {
+          track.stop()
+          console.log(`Stopped track: ${track.kind} for external stream '${externalId}'`)
         })
       }
-    }
 
-    delete activeStreams.value[externalId]
-    console.log(`Cleaned up all resources for external stream '${externalId}'`)
+      // Close WebRTC connection
+      if (externalStreamData.webRtcManager) {
+        try {
+          externalStreamData.webRtcManager.session?.peerConnection.close()
+          externalStreamData.webRtcManager.close(reason)
+          console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
+        } catch (error) {
+          console.warn(`Error stopping WebRTC manager for external stream '${externalId}':`, error)
+        }
+      }
+
+      if (externalStreamData.go2rtcManager) {
+        try {
+          externalStreamData.go2rtcManager.close(reason)
+        } catch (error) {
+          console.warn(`Error stopping go2rtc manager for external stream '${externalId}':`, error)
+        }
+        if (window.electronAPI) {
+          void window.electronAPI.go2rtcRemoveStream(externalId).catch((error) => {
+            console.warn(`Error removing go2rtc stream '${externalId}':`, error)
+          })
+        }
+      }
+    } finally {
+      delete activeStreams.value[externalId]
+      console.log(`Cleaned up all resources for external stream '${externalId}'`)
+    }
   }
 
   /**
