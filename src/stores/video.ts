@@ -22,6 +22,12 @@ import {
 } from '@/libs/live-video-processor'
 import { datalogger } from '@/libs/sensors-logging'
 import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import {
+  codecNameFromStats,
+  isHevcCodec,
+  negotiatedVideoCodecNames,
+  recordingMimeType,
+} from '@/libs/video-recording-codec'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -627,6 +633,12 @@ export const useVideoStore = defineStore('video', () => {
     if (session?.peerConnection) {
       return { peerConnection: session.peerConnection, peerId: session.consumerId, sessionId: session.id }
     }
+    const go2rtcPeerConnection = data?.go2rtcManager?.peerConnection
+    if (go2rtcPeerConnection) {
+      // go2rtc keeps no consumer or session ids of its own, and holds a single connection per stream,
+      // so the stream name identifies both.
+      return { peerConnection: go2rtcPeerConnection, peerId: streamName, sessionId: streamName }
+    }
     return undefined
   }
 
@@ -719,6 +731,28 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Codec being received for a stream, as reported by the peer connection feeding it
+   * @param {string} streamName - Name of the stream
+   * @returns {Promise<string | undefined>} The codec name, e.g. 'H264', or undefined if it cannot be told
+   */
+  const receivedVideoCodec = async (streamName: string): Promise<string | undefined> => {
+    const peerConnection = getStreamPeerConnection(streamName)?.peerConnection
+    if (!peerConnection) return undefined
+
+    try {
+      const codecInUse = codecNameFromStats(await peerConnection.getStats())
+      if (codecInUse) return codecInUse
+    } catch (error) {
+      console.error(`Could not read the statistics of stream '${streamName}': ${error}`)
+    }
+
+    // Recording can start before the first packet is processed, and until then the statistics name no codec at
+    // all. Whatever was negotiated is what may arrive, so the riskiest of those is what we have to record for.
+    const negotiatedCodecs = negotiatedVideoCodecNames(peerConnection)
+    return negotiatedCodecs.find(isHevcCodec) ?? negotiatedCodecs[0]
+  }
+
+  /**
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
@@ -758,7 +792,38 @@ export const useVideoStore = defineStore('video', () => {
 
     const safeMissionName = sanitizeFilenameComponent(missionStore.missionName) || 'Cockpit'
     const fileName = videoFilename(recordingHash, streamData.timeRecordingStart!, safeMissionName)
-    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
+    const mimeType = recordingMimeType(await receivedVideoCodec(streamName))
+    try {
+      activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(
+        streamData.mediaStream!,
+        mimeType ? { mimeType } : {}
+      )
+    } catch (error) {
+      console.error(`Could not create a recorder for stream '${streamName}': ${error}`)
+      const alternative = isElectron()
+        ? 'Set the camera to H.264 and try again.'
+        : 'Set the camera to H.264, or use the Cockpit desktop app, which records formats browsers cannot.'
+      const msg = `This computer cannot record the video format of stream '${streamName}'. ${alternative}`
+      showDialog({ message: msg, variant: 'error' })
+      alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+      activeStreams.value[streamName]!.timeRecordingStart = undefined
+      return
+    }
+
+    // Registered before starting, as a recorder can fail on the very first frame it is handed
+    activeStreams.value[streamName]!.mediaRecorder!.onerror = (event) => {
+      const error: DOMException | undefined = (event as ErrorEvent).error
+      console.error(`Recorder of stream '${streamName}' failed: ${error?.message ?? 'unknown error'}`)
+      const msg =
+        `Recording of stream '${streamName}' stopped unexpectedly.` +
+        ' If it keeps happening, set the camera to another video format, such as H.264, and try again.'
+      showDialog({ message: msg, variant: 'error' })
+      alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+
+      // The recorder stops itself on error, so the monitor would otherwise nag about a file that stopped growing
+      clearInterval(recordingMonitors[streamName])
+      delete recordingMonitors[streamName]
+    }
 
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
@@ -1046,6 +1111,17 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
+
+    if (mimeType) {
+      const savedFormat = mimeType.includes('hvc1') ? 'H.265' : 'H.264'
+      openSnackbar({
+        message:
+          `Recording of stream '${streamName}' is being re-encoded to ${savedFormat} as it runs, which costs` +
+          ' extra processing. Set the camera to H.264 to record without re-encoding.',
+        variant: 'info',
+        duration: 8000,
+      })
+    }
   }
 
   // Used to discard a file from the video recovery database

@@ -29,6 +29,14 @@ export class Go2RTCManager {
   constructor(private go2rtcPort: number, private streamName: string) {}
 
   /**
+   * The underlying peer connection, named as in WebRTCManager's session so callers can treat both alike
+   * @returns {RTCPeerConnection | null} The connection, or null while the stream is not connected
+   */
+  public get peerConnection(): RTCPeerConnection | null {
+    return this.pc
+  }
+
+  /**
    * Start the WebRTC connection to go2rtc.
    * Returns reactive refs matching the WebRTCManager.startStream() interface.
    * @returns {{ mediaStream: Ref<MediaStream | undefined>, connected: Ref<boolean>, signallerStatus: Ref<string>, streamStatus: Ref<string> }}
