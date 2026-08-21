@@ -58,7 +58,6 @@ export const useMissionStore = defineStore('mission', () => {
     'cockpit-slide-events-categories-required',
     eventCategoriesDefaultMapping
   )
-  const lastMissionName = useStorage('cockpit-last-mission-name', '')
   const missionStartTime = useStorage('cockpit-mission-start-time', new Date())
   const defaultMapCenter = useBlueOsStorage<WaypointCoordinates>('cockpit-default-map-center', DEFAULT_MAP_CENTER)
   const defaultMapZoom = useBlueOsStorage<number>('cockpit-default-map-zoom', DEFAULT_MAP_ZOOM)
@@ -190,11 +189,6 @@ export const useMissionStore = defineStore('mission', () => {
   // Id of the custom provider the user last selected as the map's base layer, so the choice is restored on reload
   // (built-in base maps are tracked separately by `userLastMapTileProvider`). Null when a built-in map is active.
   const userLastCustomMapProviderId = useBlueOsStorage<string | null>('cockpit-user-last-custom-map-provider-id', null)
-
-  // Only remember user-typed names so the mission-name restore button never brings back an automatic name.
-  watch(missionName, () => {
-    if (!missionNameIsAutomatic.value) lastMissionName.value = missionName.value
-  })
 
   const applyMissionName = (
     name: string,
@@ -879,7 +873,6 @@ export const useMissionStore = defineStore('mission', () => {
     missionName,
     missionNameIsAutomatic,
     applyMissionName,
-    lastMissionName,
     missionStartTime,
     currentPlanningWaypoints,
     currentPlanningSurveys,

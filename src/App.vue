@@ -103,6 +103,7 @@
   <BaseStationConfigPanel :is-mission-planning-context="route.name === 'Mission planning'" />
   <BaseStationContextPopup />
   <SnackbarContainer />
+  <BlueOsCloudMissionStartupHost />
   <FloatingWrapper v-model="devStore.showConsole" title="Console">
     <ConsoleViewer
       :disabled="!devStore.enableSystemLogging"
@@ -130,6 +131,7 @@ import { useRoute } from 'vue-router'
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
 import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
 import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
+import BlueOsCloudMissionStartupHost from '@/components/blueos-cloud/BlueOsCloudMissionStartupHost.vue'
 import CameraReplacementDialog from '@/components/CameraReplacementDialog.vue'
 import ConsoleViewer from '@/components/ConsoleViewer.vue'
 import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
