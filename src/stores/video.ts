@@ -674,10 +674,7 @@ export const useVideoStore = defineStore('video', () => {
    * @returns {MediaStream | undefined} MediaStream that is running, if available
    */
   const getMediaStream = (streamName: string): MediaStream | undefined => {
-    if (activeStreams.value[streamName] === undefined) {
-      activateStream(streamName)
-    }
-    return activeStreams.value[streamName]!.mediaStream
+    return getStreamData(streamName)?.mediaStream
   }
 
   /**
@@ -686,12 +683,7 @@ export const useVideoStore = defineStore('video', () => {
    * @returns {boolean}
    */
   const isRecording = (streamName: string): boolean => {
-    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
-
-    return (
-      activeStreams.value[streamName]!.mediaRecorder !== undefined &&
-      activeStreams.value[streamName]!.mediaRecorder!.state === 'recording'
-    )
+    return getStreamData(streamName)?.mediaRecorder?.state === 'recording'
   }
 
   /**
@@ -704,15 +696,17 @@ export const useVideoStore = defineStore('video', () => {
     clearInterval(recordingMonitors[streamName])
     delete recordingMonitors[streamName]
 
-    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
+    const streamData = getStreamData(streamName)
 
-    const timeRecordingStart = activeStreams.value[streamName]?.timeRecordingStart
+    const timeRecordingStart = streamData?.timeRecordingStart
     const durationInSeconds = timeRecordingStart ? differenceInSeconds(new Date(), timeRecordingStart) : undefined
     eventTracker.capture('Video recording stop', { streamName, durationInSeconds })
 
-    activeStreams.value[streamName]!.timeRecordingStart = undefined
+    if (streamData?.mediaRecorder === undefined) return
 
-    activeStreams.value[streamName]!.mediaRecorder!.stop()
+    streamData.timeRecordingStart = undefined
+
+    streamData.mediaRecorder.stop()
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
@@ -729,26 +723,25 @@ export const useVideoStore = defineStore('video', () => {
    */
   const startRecording = async (streamName: string): Promise<void> => {
     eventTracker.capture('Video recording start', { streamName: streamName })
-    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
+    const streamData = getStreamData(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
       showDialog({ message: 'No streams available.', variant: 'error' })
       return
     }
 
-    if (activeStreams.value[streamName]!.mediaStream === undefined) {
+    if (streamData?.mediaStream === undefined) {
       showDialog({ message: 'Media stream not defined.', variant: 'error' })
       return
     }
-    if (!activeStreams.value[streamName]!.mediaStream!.active) {
+    if (!streamData.mediaStream.active) {
       showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
       return
     }
 
     await sleep(100)
 
-    activeStreams.value[streamName]!.timeRecordingStart = new Date()
-    const streamData = activeStreams.value[streamName] as StreamData
+    streamData.timeRecordingStart = new Date()
 
     // Generate a unique recording hash
     let recordingHash = ''
