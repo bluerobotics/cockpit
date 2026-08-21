@@ -810,6 +810,21 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
+    // Registered before starting, as a recorder can fail on the very first frame it is handed
+    activeStreams.value[streamName]!.mediaRecorder!.onerror = (event) => {
+      const error: DOMException | undefined = (event as ErrorEvent).error
+      console.error(`Recorder of stream '${streamName}' failed: ${error?.message ?? 'unknown error'}`)
+      const msg =
+        `Recording of stream '${streamName}' stopped unexpectedly.` +
+        ' If it keeps happening, set the camera to another video format, such as H.264, and try again.'
+      showDialog({ message: msg, variant: 'error' })
+      alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+
+      // The recorder stops itself on error, so the monitor would otherwise nag about a file that stopped growing
+      clearInterval(recordingMonitors[streamName])
+      delete recordingMonitors[streamName]
+    }
+
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
     const vHeight = videoTrack.getSettings().height || 1080
