@@ -29,6 +29,14 @@ import {
 import { datalogger } from '@/libs/sensors-logging'
 import { StreamActivationBackoff } from '@/libs/stream-activation-backoff'
 import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import {
+  codecNameFromStats,
+  isHevcCodec,
+  negotiatedVideoCodecNames,
+  recordingMimeType,
+  recordingVideoBitsPerSecond,
+  videoTrackSettingsWithSize,
+} from '@/libs/video-recording-codec'
 import { telemetryOverlayWindowCandidates } from '@/libs/video-telemetry'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
@@ -79,6 +87,9 @@ export const useVideoStore = defineStore('video', () => {
   // Tracks which consumers (widgets, snapshot captures, etc.) currently need each external stream active, so it
   // can be torn down once nothing references it anymore. Intentionally not reactive/persisted, it's just bookkeeping.
   const streamConsumers = new Map<string, Set<string>>()
+  // A stream only gains its recorder once that recorder is running, so the asynchronous setup leading up to it is
+  // invisible to both the re-entry and the teardown guards. Intentionally not reactive: it is not recording yet.
+  const recordingsBeingSetUp = new Set<string>()
   const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
@@ -684,8 +695,8 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
-   * Tear down an external stream if it has no remaining consumers and no recorder attached to it (i.e. neither
-   * recording nor finalizing a just-stopped recording)
+   * Tear down an external stream if it has no remaining consumers and no recording in flight (i.e. neither
+   * starting, recording, nor finalizing a just-stopped recording)
    * @param {string} externalId - External stream identifier
    */
   const deactivateStreamIfUnused = (externalId: string): void => {
@@ -694,9 +705,10 @@ export const useVideoStore = defineStore('video', () => {
 
     streamConsumers.delete(externalId)
 
-    // Never tear down a stream while a recorder is attached, even if no widget references it: mediaRecorder stays
+    // Never tear down a stream while a recording is in flight, even if no widget references it: mediaRecorder stays
     // set through recording and the async stop() finalizer (telemetry/processing), and onstop clears it when done.
     if (activeStreams.value[externalId]?.mediaRecorder !== undefined) return
+    if (recordingsBeingSetUp.has(externalId)) return
 
     teardownStreamResources(externalId, `External stream '${externalId}' is no longer used by any consumer`)
   }
@@ -948,10 +960,139 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Codec being received for a stream, as reported by the peer connection feeding it
+   * @param {string} streamName - Name of the stream
+   * @returns {Promise<string | undefined>} The codec name, e.g. 'H264', or undefined if it cannot be told
+   */
+  const receivedVideoCodec = async (streamName: string): Promise<string | undefined> => {
+    const peerConnection = getStreamPeerConnection(streamName)?.peerConnection
+    if (!peerConnection) return undefined
+
+    try {
+      const codecInUse = codecNameFromStats(await peerConnection.getStats())
+      if (codecInUse) return codecInUse
+    } catch (error) {
+      const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+      console.error(`Could not read the statistics of stream '${streamLabel}': ${error}`)
+    }
+
+    // Recording can start before the first packet is processed, and until then the statistics name no codec at
+    // all. Whatever was negotiated is what may arrive, so the riskiest of those is what we have to record for.
+    const negotiatedCodecs = negotiatedVideoCodecNames(peerConnection)
+    return negotiatedCodecs.find(isHevcCodec) ?? negotiatedCodecs[0]
+  }
+
+  /**
+   * A recorder built for a stream, with everything the recording it will drive was named from
+   */
+  interface RecorderSetup {
+    /**
+     * The recorder, constructed but not yet started
+     */
+    recorder: MediaRecorder
+    /**
+     * Format it was asked to record in, or undefined when it copies the incoming frames
+     */
+    mimeType: string | undefined
+    /**
+     * Video track being recorded, whose settings the subtitle resolution comes from
+     */
+    videoTrack: MediaStreamTrack
+    /**
+     * Unique id of the recording, free of both the chunk store and the unprocessed registry
+     */
+    recordingHash: string
+    /**
+     * Name the finished file takes
+     */
+    fileName: string
+    /**
+     * When the recording was prepared, which is what its metadata and subtitles are stamped with
+     */
+    timeRecordingStart: Date
+  }
+
+  /**
+   * Everything a recording needs before its recorder can run: a free hash, a filename, the codec the stream
+   * carries and a recorder built for it.
+   *
+   * The stream is marked as having a recording in flight for as long as this takes, since none of it is visible
+   * on the stream itself until the recorder is attached, and the marker is what keeps a second press and the
+   * stream's teardown out of that window.
+   * @param {string} streamName - Name of the stream
+   * @param {StreamData} streamData - Active entry of the stream, whose media stream is recorded
+   * @param {string} streamLabel - Name of the stream as it is shown to the user
+   * @returns {Promise<RecorderSetup | undefined>} The prepared recorder, or undefined if it could not be built
+   */
+  const setUpRecorder = async (
+    streamName: string,
+    streamData: StreamData,
+    streamLabel: string
+  ): Promise<RecorderSetup | undefined> => {
+    recordingsBeingSetUp.add(streamName)
+    let setup: RecorderSetup | undefined
+    try {
+      await sleep(100)
+
+      // Generate a unique recording hash
+      let recordingHash = ''
+      let refreshHash = true
+      const namesCurrentChunksOnDB = await tempVideoStorage.keys()
+      while (refreshHash) {
+        recordingHash = uuid().slice(0, 8)
+        const hashOnDB = namesCurrentChunksOnDB.some((chunkName) => chunkName.includes(recordingHash))
+        const hashOnRegistry = unprocessedVideos.value[recordingHash] !== undefined
+        refreshHash = hashOnDB || hashOnRegistry
+      }
+
+      const safeMissionName = sanitizeFilenameComponent(missionStore.missionName) || 'Cockpit'
+      const timeRecordingStart = new Date()
+      const fileName = videoFilename(recordingHash, timeRecordingStart, safeMissionName)
+
+      const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
+      const mimeType = recordingMimeType(await receivedVideoCodec(streamName), isElectron())
+      // Only the re-encoding path needs a bitrate; copied frames already carry the camera's own.
+      const recorderOptions: MediaRecorderOptions = mimeType
+        ? { mimeType, videoBitsPerSecond: recordingVideoBitsPerSecond(await videoTrackSettingsWithSize(videoTrack)) }
+        : {}
+
+      try {
+        const recorder = new MediaRecorder(streamData.mediaStream!, recorderOptions)
+        setup = { recorder, mimeType, videoTrack, recordingHash, fileName, timeRecordingStart }
+      } catch (error) {
+        console.error(`Could not create a recorder for stream '${streamLabel}': ${error}`)
+        // Only a named format can be the thing this computer cannot record; without one the recorder was
+        // asked for nothing in particular, so blaming the camera's format would send the user after a
+        // setting that is not the problem.
+        const msg = mimeType
+          ? `This computer cannot record the video format of stream '${streamLabel}'. Set the camera to H.264` +
+            ' and try again.'
+          : `Recording of stream '${streamLabel}' could not be started. Try again, and restart Cockpit if it` +
+            ' keeps failing.'
+        showDialog({ message: msg, variant: 'error' })
+        alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+      }
+      return setup
+    } finally {
+      // Released whatever this attempt turned out to be: while it is set it blocks both a retry and the
+      // stream's teardown.
+      recordingsBeingSetUp.delete(streamName)
+      // Only then can the teardown run, since it reads that very marker. The last consumer may have left
+      // while the recorder was being set up, in which case the marker kept the stream alive for a recording
+      // that never started — including when one of the awaits above threw rather than the constructor.
+      if (setup === undefined) deactivateStreamIfUnused(streamName)
+    }
+  }
+
+  /**
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
   const startRecording = async (streamName: string): Promise<void> => {
+    // The internal name, since the external id of an RTSP stream is its URL, credentials included, and these messages
+    // are both shown to the user and written to the logs they share with us.
+    const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+
     eventTracker.capture('Video recording start', { streamName: streamName })
     const streamData = getStreamData(streamName)
 
@@ -969,24 +1110,15 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
-    await sleep(100)
-
-    // Generate a unique recording hash
-    let recordingHash = ''
-    let refreshHash = true
-    const namesCurrentChunksOnDB = await tempVideoStorage.keys()
-    while (refreshHash) {
-      recordingHash = uuid().slice(0, 8)
-      const hashOnDB = namesCurrentChunksOnDB.some((chunkName) => chunkName.includes(recordingHash))
-      const hashOnRegistry = unprocessedVideos.value[recordingHash] !== undefined
-      refreshHash = hashOnDB || hashOnRegistry
+    if (recordingsBeingSetUp.has(streamName)) {
+      console.warn(`Recording of stream '${streamLabel}' is already starting. Ignoring the request.`)
+      return
     }
 
-    const safeMissionName = sanitizeFilenameComponent(missionStore.missionName) || 'Cockpit'
-    const timeRecordingStart = new Date()
-    const fileName = videoFilename(recordingHash, timeRecordingStart, safeMissionName)
+    const setup = await setUpRecorder(streamName, streamData, streamLabel)
+    if (setup === undefined) return
+    const { recorder, mimeType, videoTrack, recordingHash, fileName, timeRecordingStart } = setup
 
-    const recorder = new MediaRecorder(streamData.mediaStream!)
     const recorderIsStillAttached = (): boolean => activeStreams.value[streamName]?.mediaRecorder === recorder
 
     // Registered before starting, as a recorder can fail on the very first frame it is handed
@@ -1009,7 +1141,6 @@ export const useVideoStore = defineStore('video', () => {
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
 
-    const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
     const vHeight = videoTrack.getSettings().height || 1080
 
@@ -1033,9 +1164,6 @@ export const useVideoStore = defineStore('video', () => {
     // We also need to clear the interval if it already exists, to avoid multiple intervals running at the same time.
     clearInterval(recordingMonitors[streamName])
     delete recordingMonitors[streamName]
-    // The internal name, since the external id of an RTSP stream is its URL, credentials included, and these warnings
-    // are both shown to the user and written to the logs they share with us.
-    const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
     if (window.electronAPI) {
       console.info(`Starting electron recording monitor for stream '${streamName}'.`)
       recordingMonitors[streamName] = setInterval(async () => {
@@ -1306,6 +1434,18 @@ export const useVideoStore = defineStore('video', () => {
     broadcastRecordingStart(streamName)
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
+
+    if (mimeType) {
+      const savedFormat = mimeType.includes('hvc1') ? 'H.265' : 'H.264'
+      openSnackbar({
+        message:
+          `Recording of stream '${streamLabel}' is being re-encoded to ${savedFormat} as it runs, which costs` +
+          ' image quality and, on a large picture, can cost frames if this computer cannot keep up. Set the' +
+          ' camera to H.264 to record without re-encoding.',
+        variant: 'info',
+        duration: 8000,
+      })
+    }
   }
 
   // Used to discard a file from the video recovery database
