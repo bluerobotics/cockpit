@@ -1,4 +1,7 @@
+import { v4 as uuid } from 'uuid'
 import { type Ref, ref } from 'vue'
+
+import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
 
 const RECONNECT_DELAY_MS = 3000
 // Time we give the peer connection to reach 'connected' before assuming go2rtc is stuck waiting for an
@@ -15,6 +18,8 @@ export class Go2RTCManager {
   public connected = ref(false)
   public signallerStatus: Ref<string> = ref('Disconnected')
   public streamStatus: Ref<string> = ref('Waiting...')
+  // Changes on every (re)connection, so stats consumers can tell a fresh peer connection from the previous one
+  public connectionId = ''
 
   private pc: RTCPeerConnection | null = null
   private ws: WebSocket | null = null
@@ -25,8 +30,17 @@ export class Go2RTCManager {
   /**
    * @param {number} go2rtcPort - The port go2rtc is listening on
    * @param {string} streamName - The stream name registered in go2rtc
+   * @param {number} jitterBufferTarget - RTP receiver jitter buffer target in milliseconds
    */
-  constructor(private go2rtcPort: number, private streamName: string) {}
+  constructor(private go2rtcPort: number, private streamName: string, private jitterBufferTarget: number) {}
+
+  /**
+   * The current peer connection, exposed for stats monitoring
+   * @returns {RTCPeerConnection | null} The active peer connection, or null if there is none
+   */
+  public get peerConnection(): RTCPeerConnection | null {
+    return this.pc
+  }
 
   /**
    * Start the WebRTC connection to go2rtc.
@@ -73,6 +87,7 @@ export class Go2RTCManager {
 
     const pc = new RTCPeerConnection()
     this.pc = pc
+    this.connectionId = uuid()
 
     pc.addTransceiver('video', { direction: 'recvonly' })
 
@@ -80,6 +95,8 @@ export class Go2RTCManager {
       const [remoteStream] = event.streams
       if (!remoteStream) return
       this.mediaStream.value = remoteStream
+
+      setJitterBufferTarget(pc, this.jitterBufferTarget)
 
       const videoTracks = remoteStream.getVideoTracks()
       videoTracks.forEach((track) => {
@@ -91,7 +108,12 @@ export class Go2RTCManager {
       console.debug(`[go2rtc] Track added for stream '${this.streamName}'`)
     }
 
-    pc.onconnectionstatechange = () => {
+    // A listener rather than the single-slot pc.onconnectionstatechange, which anything else holding the peer
+    // connection (the stats library, for one) can overwrite, silently taking the reconnection with it
+    pc.addEventListener('connectionstatechange', () => {
+      // A superseded connection must not write the status refs, which by then describe the one that replaced it
+      if (this.pc !== pc) return
+
       const state = pc.connectionState
       console.debug(`[go2rtc] Connection state for '${this.streamName}': ${state}`)
       this.streamStatus.value = state
@@ -110,7 +132,7 @@ export class Go2RTCManager {
           this.connected.value = false
           break
       }
-    }
+    })
 
     this.armConnectWatchdog()
 
@@ -249,7 +271,6 @@ export class Go2RTCManager {
 
     if (this.pc) {
       this.pc.ontrack = null
-      this.pc.onconnectionstatechange = null
       this.pc.onicecandidate = null
       this.pc.close()
       this.pc = null
