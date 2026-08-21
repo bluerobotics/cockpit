@@ -113,9 +113,9 @@ export const useMissionStore = defineStore('mission', () => {
   const mapClearRequestRevision = ref(0)
   const mapDownloadRequestRevision = ref(0)
   const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
-  // Home position the user last commanded. Compared against homeMarkerPosition to tell a home the user placed apart
-  // from one that merely came from a mission, so any other writer invalidates it without having to know about this.
-  const userCommandedHomePosition = ref<WaypointCoordinates | undefined>(undefined)
+  // Home of the mission being planned, apart from the displayed homeMarkerPosition because planning only
+  // reaches the vehicle on upload, so the vehicle's home and the plan's are free to differ until then.
+  const plannedHomePosition = ref<WaypointCoordinates | undefined>(undefined)
   // Request for any active map to center on given coordinates. Replaced (new object) on each request.
   const mapCenterOnRequest = ref<{
     /** Coordinates the map should center on */
@@ -963,7 +963,7 @@ export const useMissionStore = defineStore('mission', () => {
     canRedo,
     clearUndoStack,
     homeMarkerPosition,
-    userCommandedHomePosition,
+    plannedHomePosition,
     plannedVehicleType,
     effectiveVehicleType,
     savedMissions,
