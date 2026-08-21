@@ -102,7 +102,7 @@
             <div v-if="fix" class="grid grid-cols-2 gap-2 w-full text-sm mt-2">
               <div
                 v-for="item in statusItems"
-                :key="item.label"
+                :key="item.key"
                 class="flex justify-between px-3 py-1 rounded bg-[#FFFFFF11]"
               >
                 <span class="opacity-70">{{ item.label }}</span>
@@ -161,12 +161,12 @@ import { useGnss } from '@/composables/useGnss'
 import {
   commonBaudRates,
   getRecentSerialLines,
+  gnssFixItems,
   gnssStatusColor,
   gnssStatusIcon,
   gnssStatusLabel,
   subscribeToSerialLines,
 } from '@/libs/sensors/gnss'
-import { fixQualityLabel } from '@/libs/sensors/nmea'
 
 const props = defineProps<{
   /** Whether the dialog is open. */
@@ -210,31 +210,7 @@ const statusLabel = computed(() => gnssStatusLabel(status.value))
 const statusColor = computed(() => gnssStatusColor(status.value))
 const statusIcon = computed(() => gnssStatusIcon(status.value))
 
-const formatNumber = (value: number | undefined, digits: number): string =>
-  value === undefined ? '-' : value.toFixed(digits)
-
-const statusItems = computed(() => {
-  const current = fix.value
-  if (!current) return []
-  return [
-    { label: 'Fix', value: current.fixQualityLabel ?? fixQualityLabel(current.fixQuality ?? 0) },
-    { label: 'Fix mode', value: current.fixMode === undefined ? '-' : `${current.fixMode}D`.replace('1D', 'No fix') },
-    { label: 'Latitude', value: formatNumber(current.latitude, 7) },
-    { label: 'Longitude', value: formatNumber(current.longitude, 7) },
-    {
-      label: 'Altitude (MSL)',
-      value: current.altitudeMslM === undefined ? '-' : `${formatNumber(current.altitudeMslM, 1)} m`,
-    },
-    { label: 'Satellites used', value: current.satellitesUsed?.toString() ?? '-' },
-    { label: 'Satellites in view', value: current.satellitesInView?.toString() ?? '-' },
-    { label: 'HDOP', value: formatNumber(current.hdop, 2) },
-    {
-      label: 'Speed',
-      value: current.speedOverGroundMps === undefined ? '-' : `${formatNumber(current.speedOverGroundMps, 2)} m/s`,
-    },
-    { label: 'UTC time', value: current.utcTime ?? '-' },
-  ]
-})
+const statusItems = computed(() => (fix.value ? gnssFixItems(fix.value) : []))
 
 const onRefreshPorts = (): void => {
   logUserAction('Refreshed GNSS serial port list')
@@ -266,7 +242,16 @@ const onAutodetect = async (): Promise<void> => {
 }
 
 const onAdd = async (): Promise<void> => {
-  await gnss.commitCreate()
+  const name = device.value?.name ?? 'device'
+  try {
+    await gnss.commitCreate()
+  } catch (error) {
+    openSnackbar({
+      variant: 'error',
+      message: `Added "${name}", but could not connect to it: ${(error as Error).message}`,
+      duration: 5000,
+    })
+  }
   emit('update:modelValue', false)
 }
 

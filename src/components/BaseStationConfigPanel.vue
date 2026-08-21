@@ -54,6 +54,23 @@
                 @blur="onCoordinateBlur"
               />
             </div>
+            <div class="config-row">
+              <v-btn
+                class="config-serial-gnss-btn bg-[#FFFFFF22] text-white"
+                variant="elevated"
+                size="small"
+                prepend-icon="mdi-usb-port"
+                :disabled="!gnss.isSupported"
+                title="Find a connected GNSS receiver and let it set the base station position"
+                @click="openGnssSetup"
+              >
+                Use serial/USB device
+              </v-btn>
+            </div>
+            <p v-if="!gnss.isSupported" class="px-1 pt-1 text-[10px] leading-tight opacity-70">
+              Serial devices cannot be read from a browser. Install Cockpit Standalone to set the base station position
+              from a connected GNSS receiver.
+            </p>
             <div class="config-row config-gps-row" :class="{ 'config-row-with-source': store.trackByGps }">
               <p class="config-label">Track by GPS</p>
               <v-checkbox
@@ -711,6 +728,8 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <BaseStationGnssSetupDialog v-model="gnssSetupDialogOpen" />
     </div>
   </div>
 </template>
@@ -718,10 +737,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import BaseStationGnssSetupDialog from '@/components/BaseStationGnssSetupDialog.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBarsAwarePanelStyle } from '@/composables/useBarsAwarePanelStyle'
+import { useGnss } from '@/composables/useGnss'
 import { bearingBetween, centroidOf, rangeAfterGainChange, rangeAfterTxPowerChange } from '@/libs/baseStation/coverage'
 import { isElectron } from '@/libs/utils'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
@@ -759,6 +780,7 @@ const getMarginsFromBarsHeight = useBarsAwarePanelStyle(600)
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
+const gnss = useGnss()
 
 const config = computed(() => store.config)
 
@@ -894,6 +916,13 @@ const onGpsSourceChange = (event: Event): void => {
 
 const onNameBlur = (): void => {
   logUserAction(`Set the base station name to "${config.value.name}"`)
+}
+
+const gnssSetupDialogOpen = ref(false)
+
+const openGnssSetup = (): void => {
+  logUserAction('Opened the serial GNSS setup from the base station panel')
+  gnssSetupDialogOpen.value = true
 }
 
 const onCoordinateBlur = (): void => {
@@ -1374,6 +1403,14 @@ const snapBearingToMission = (): void => {
 .config-checkbox-row {
   padding: 0 0 4px 0;
   min-height: auto;
+}
+
+/* Labelless row: the button spans the full width instead of sitting in the right-hand control slot. */
+.config-serial-gnss-btn {
+  flex: 1 1 auto;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 /* Fixed height so showing the source select on toggle doesn't shift the rows below, while the inherited
