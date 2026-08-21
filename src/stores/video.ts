@@ -766,13 +766,20 @@ export const useVideoStore = defineStore('video', () => {
 
     if (activeStreams.value[streamName] === undefined) activateStream(streamName)
 
+    // A failed recorder detaches itself, so a chunk arriving after that reaches here with nothing left to stop, and
+    // reporting a successful stop would contradict the failure the user was just told about.
+    if (activeStreams.value[streamName]!.mediaRecorder === undefined) {
+      console.debug(`No recorder attached to stream '${streamName}'. Nothing to stop.`)
+      return
+    }
+
     const timeRecordingStart = activeStreams.value[streamName]?.timeRecordingStart
     const durationInSeconds = timeRecordingStart ? differenceInSeconds(new Date(), timeRecordingStart) : undefined
     eventTracker.capture('Video recording stop', { streamName, durationInSeconds })
 
     activeStreams.value[streamName]!.timeRecordingStart = undefined
 
-    activeStreams.value[streamName]!.mediaRecorder!.stop()
+    activeStreams.value[streamName]!.mediaRecorder?.stop()
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
@@ -824,6 +831,28 @@ export const useVideoStore = defineStore('video', () => {
     const safeMissionName = sanitizeFilenameComponent(missionStore.missionName) || 'Cockpit'
     const fileName = videoFilename(recordingHash, streamData.timeRecordingStart!, safeMissionName)
     activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
+    const recorder = activeStreams.value[streamName]!.mediaRecorder!
+    const recorderIsStillAttached = (): boolean => activeStreams.value[streamName]?.mediaRecorder === recorder
+
+    // Registered before starting, as a recorder can fail on the very first frame it is handed
+    activeStreams.value[streamName]!.mediaRecorder!.onerror = (event) => {
+      const error: DOMException | undefined = (event as ErrorEvent).error
+      console.error(`Recorder of stream '${streamName}' failed: ${error?.message ?? 'unknown error'}`)
+      const msg =
+        `Recording of stream '${streamName}' stopped unexpectedly. The video recorded until then was kept and is` +
+        ' available in the Video Library.'
+      showDialog({ message: msg, variant: 'error' })
+      alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+
+      // The recorder stops itself on error, so the monitor would otherwise nag about a file that stopped growing
+      clearInterval(recordingMonitors[streamName])
+      delete recordingMonitors[streamName]
+
+      // Vue does not proxy a MediaRecorder, so its state flipping to 'inactive' dirties nothing: detaching it here is
+      // what drops the interface out of the recording state, instead of it waiting on the finalization in 'onstop'.
+      activeStreams.value[streamName]!.timeRecordingStart = undefined
+      activeStreams.value[streamName]!.mediaRecorder = undefined
+    }
 
     const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
@@ -1009,7 +1038,7 @@ export const useVideoStore = defineStore('video', () => {
               const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
               showDialog({ message: msg, variant: 'error' })
               alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
-              stopRecording(streamName)
+              if (recorderIsStillAttached()) stopRecording(streamName)
             } else throw error
           }
         }
@@ -1018,7 +1047,7 @@ export const useVideoStore = defineStore('video', () => {
           const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
           showDialog({ message: msg, variant: 'error' })
           alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
-          stopRecording(streamName)
+          if (recorderIsStillAttached()) stopRecording(streamName)
         }
 
         sequentialLostChunks++
@@ -1043,7 +1072,7 @@ export const useVideoStore = defineStore('video', () => {
         const errorMessage = `Failed to generate telemetry overlay: recording metadata for '${recordingHash}' not found.`
         openSnackbar({ message: errorMessage, variant: 'error' })
         delete liveProcessors.value[recordingHash]
-        if (activeStreams.value[streamName]) {
+        if (recorderIsStillAttached()) {
           activeStreams.value[streamName]!.mediaRecorder = undefined
         }
         return
@@ -1080,7 +1109,11 @@ export const useVideoStore = defineStore('video', () => {
       }
 
       if (activeStreams.value[streamName]) {
-        activeStreams.value[streamName]!.mediaRecorder = undefined
+        // The error handler detaches a failed recorder right away, so by now the slot can already hold a newer
+        // recorder that is still running. Only the recorder that stopped may clear it.
+        if (recorderIsStillAttached()) {
+          activeStreams.value[streamName]!.mediaRecorder = undefined
+        }
         // The recording guard may have kept this stream alive after its last consumer left (e.g. the recorder
         // widget was unmounted mid-recording); now that recording is done, release it if nothing needs it.
         deactivateStreamIfUnused(streamName)
