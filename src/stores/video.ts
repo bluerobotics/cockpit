@@ -4,7 +4,7 @@ import { differenceInSeconds } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
-import { computed, ref, watch } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
 import { Go2RTCManager } from '@/composables/go2rtc'
@@ -366,8 +366,7 @@ export const useVideoStore = defineStore('video', () => {
       if (!activeStreams.value[streamName]?.webRtcManager) return
 
       // Update the list of available remote ICE Ips with those available for each stream
-      // @ts-ignore: availableICEIPs is not reactive here, for some yet to know reason
-      const newIps = activeStreams.value[streamName].webRtcManager.availableICEIPs.filter(
+      const newIps = activeStreams.value[streamName]!.webRtcManager!.availableICEIPs.value.filter(
         (ip: string) => !availableIceIps.value.includes(ip)
       )
       availableIceIps.value = [...availableIceIps.value, ...newIps]
@@ -448,7 +447,8 @@ export const useVideoStore = defineStore('video', () => {
 
           activeStreams.value[streamName] = {
             stream: undefined,
-            go2rtcManager: manager,
+            // A reactive-proxied manager gets its internal refs unwrapped, breaking its own '.value' writes.
+            go2rtcManager: markRaw(manager),
             // @ts-ignore: This is actually not reactive
             mediaStream: mediaStream,
             // @ts-ignore: This is actually not reactive
@@ -478,7 +478,7 @@ export const useVideoStore = defineStore('video', () => {
     activeStreams.value[streamName] = {
       // @ts-ignore: This is actually not reactive
       stream: stream,
-      webRtcManager: webRtcManager,
+      webRtcManager: markRaw(webRtcManager),
       // @ts-ignore: This is actually not reactive
       mediaStream: mediaStream,
       // @ts-ignore: This is actually not reactive
@@ -499,44 +499,49 @@ export const useVideoStore = defineStore('video', () => {
     const externalStreamData = activeStreams.value[externalId]
     if (!externalStreamData) return
 
-    // Stop recording if it's active
-    if (externalStreamData.mediaRecorder?.state === 'recording') {
-      externalStreamData.mediaRecorder.stop()
-    }
-
-    // Stop all tracks in the media stream
-    if (externalStreamData.mediaStream) {
-      externalStreamData.mediaStream.getTracks().forEach((track) => {
-        track.stop()
-        console.log(`Stopped track: ${track.kind} for external stream '${externalId}'`)
-      })
-    }
-
-    // Close WebRTC connection
-    if (externalStreamData.webRtcManager) {
-      try {
-        const session = externalStreamData.webRtcManager.session
-        if (session?.peerConnection) {
-          session.peerConnection.close()
-        }
-        externalStreamData.webRtcManager.close(reason)
-        console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
-      } catch (error) {
-        console.warn(`Error stopping WebRTC manager for external stream '${externalId}':`, error)
+    // A stream left in the map after a failed teardown is unrecoverable: its manager is already
+    // half-closed, and registerStreamConsumer skips activation for a key that exists.
+    try {
+      // Stop recording if it's active
+      if (externalStreamData.mediaRecorder?.state === 'recording') {
+        externalStreamData.mediaRecorder.stop()
       }
-    }
 
-    if (externalStreamData.go2rtcManager) {
-      externalStreamData.go2rtcManager.close(reason)
-      if (window.electronAPI) {
-        void window.electronAPI.go2rtcRemoveStream(externalId).catch((error) => {
-          console.warn(`Error removing go2rtc stream '${externalId}':`, error)
+      // Stop all tracks in the media stream
+      if (externalStreamData.mediaStream) {
+        externalStreamData.mediaStream.getTracks().forEach((track) => {
+          track.stop()
+          console.log(`Stopped track: ${track.kind} for external stream '${externalId}'`)
         })
       }
-    }
 
-    delete activeStreams.value[externalId]
-    console.log(`Cleaned up all resources for external stream '${externalId}'`)
+      // Close WebRTC connection
+      if (externalStreamData.webRtcManager) {
+        try {
+          externalStreamData.webRtcManager.session?.peerConnection.close()
+          externalStreamData.webRtcManager.close(reason)
+          console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
+        } catch (error) {
+          console.warn(`Error stopping WebRTC manager for external stream '${externalId}':`, error)
+        }
+      }
+
+      if (externalStreamData.go2rtcManager) {
+        try {
+          externalStreamData.go2rtcManager.close(reason)
+        } catch (error) {
+          console.warn(`Error stopping go2rtc manager for external stream '${externalId}':`, error)
+        }
+        if (window.electronAPI) {
+          void window.electronAPI.go2rtcRemoveStream(externalId).catch((error) => {
+            console.warn(`Error removing go2rtc stream '${externalId}':`, error)
+          })
+        }
+      }
+    } finally {
+      delete activeStreams.value[externalId]
+      console.log(`Cleaned up all resources for external stream '${externalId}'`)
+    }
   }
 
   /**
@@ -669,10 +674,7 @@ export const useVideoStore = defineStore('video', () => {
    * @returns {MediaStream | undefined} MediaStream that is running, if available
    */
   const getMediaStream = (streamName: string): MediaStream | undefined => {
-    if (activeStreams.value[streamName] === undefined) {
-      activateStream(streamName)
-    }
-    return activeStreams.value[streamName]!.mediaStream
+    return getStreamData(streamName)?.mediaStream
   }
 
   /**
@@ -681,12 +683,7 @@ export const useVideoStore = defineStore('video', () => {
    * @returns {boolean}
    */
   const isRecording = (streamName: string): boolean => {
-    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
-
-    return (
-      activeStreams.value[streamName]!.mediaRecorder !== undefined &&
-      activeStreams.value[streamName]!.mediaRecorder!.state === 'recording'
-    )
+    return getStreamData(streamName)?.mediaRecorder?.state === 'recording'
   }
 
   /**
@@ -699,15 +696,17 @@ export const useVideoStore = defineStore('video', () => {
     clearInterval(recordingMonitors[streamName])
     delete recordingMonitors[streamName]
 
-    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
+    const streamData = getStreamData(streamName)
 
-    const timeRecordingStart = activeStreams.value[streamName]?.timeRecordingStart
+    const timeRecordingStart = streamData?.timeRecordingStart
     const durationInSeconds = timeRecordingStart ? differenceInSeconds(new Date(), timeRecordingStart) : undefined
     eventTracker.capture('Video recording stop', { streamName, durationInSeconds })
 
-    activeStreams.value[streamName]!.timeRecordingStart = undefined
+    if (streamData?.mediaRecorder === undefined) return
 
-    activeStreams.value[streamName]!.mediaRecorder!.stop()
+    streamData.timeRecordingStart = undefined
+
+    streamData.mediaRecorder.stop()
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
   }
@@ -724,26 +723,25 @@ export const useVideoStore = defineStore('video', () => {
    */
   const startRecording = async (streamName: string): Promise<void> => {
     eventTracker.capture('Video recording start', { streamName: streamName })
-    if (activeStreams.value[streamName] === undefined) activateStream(streamName)
+    const streamData = getStreamData(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
       showDialog({ message: 'No streams available.', variant: 'error' })
       return
     }
 
-    if (activeStreams.value[streamName]!.mediaStream === undefined) {
+    if (streamData?.mediaStream === undefined) {
       showDialog({ message: 'Media stream not defined.', variant: 'error' })
       return
     }
-    if (!activeStreams.value[streamName]!.mediaStream!.active) {
+    if (!streamData.mediaStream.active) {
       showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
       return
     }
 
     await sleep(100)
 
-    activeStreams.value[streamName]!.timeRecordingStart = new Date()
-    const streamData = activeStreams.value[streamName] as StreamData
+    streamData.timeRecordingStart = new Date()
 
     // Generate a unique recording hash
     let recordingHash = ''
