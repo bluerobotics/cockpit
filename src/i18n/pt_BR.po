@@ -8670,6 +8670,22 @@ msgstr "A gravação de '${ 0 }' começa assim que o vídeo chegar..."
 
 #: src/stores/video.ts
 #, javascript-format
+msgid ""
+"Recording of stream '${ 0 }' could not be started. Try again, and restart "
+"Cockpit if it keeps failing."
+msgstr ""
+"Não foi possível iniciar a gravação do stream '${ 0 }'. Tente novamente e "
+"reinicie o Cockpit se continuar falhando."
+
+#: src/stores/video.ts
+#, javascript-format
+msgid "Recording of stream '${ 0 }' is being re-encoded to ${ 1 } as it runs."
+msgstr ""
+"A gravação do stream '${ 0 }' está sendo recodificada para ${ 1 } durante a "
+"gravação."
+
+#: src/stores/video.ts
+#, javascript-format
 msgid "Recording of stream '${ 0 }' stopped unexpectedly. ${ 1 }"
 msgstr "A gravação do stream '${ 0 }' parou inesperadamente. ${ 1 }"
 
@@ -9578,6 +9594,10 @@ msgstr "Mantenha-o em uma altura segura acima do terreno e dos obstáculos locai
 #: src/views/MissionPlanningView.vue
 msgid "Set mission home"
 msgstr "Definir Home da missão"
+
+#: src/stores/video.ts
+msgid "Set the camera to H.264 to record without re-encoding."
+msgstr "Configure a câmera para H.264 para gravar sem recodificar."
 
 #: src/views/ConfigurationMAVLinkView.vue
 msgid "Set the interval for a new message"
@@ -10850,6 +10870,23 @@ msgstr ""
 #: src/stores/video.ts
 msgid "This can happen if you changed your network or the IP of your vehicle."
 msgstr "Isso pode acontecer se você mudou de rede ou o IP do seu veículo."
+
+#: src/stores/video.ts
+#, javascript-format
+msgid ""
+"This computer cannot record the video format of stream '${ 0 }'. Set the "
+"camera to H.264 and try again."
+msgstr ""
+"Este computador não consegue gravar o formato de vídeo do stream '${ 0 }'. "
+"Configure a câmera para H.264 e tente novamente."
+
+#: src/stores/video.ts
+msgid ""
+"This costs image quality and, on a large picture, can cost frames if this "
+"computer cannot keep up."
+msgstr ""
+"Isso custa qualidade de imagem e, em uma imagem grande, pode custar quadros "
+"se este computador não der conta."
 
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
