@@ -129,6 +129,36 @@ export interface CommonVideoInfo {
   vHeight?: number
 }
 
+/**
+ * A recorder built for a stream, with everything the recording it will drive was named from
+ */
+export interface RecorderSetup {
+  /**
+   * The recorder, constructed but not yet started
+   */
+  recorder: MediaRecorder
+  /**
+   * Format it was asked to record in, or undefined when it copies the incoming frames
+   */
+  mimeType: string | undefined
+  /**
+   * Video track being recorded, whose settings the subtitle resolution comes from
+   */
+  videoTrack: MediaStreamTrack
+  /**
+   * Unique id of the recording, free of both the chunk store and the unprocessed registry
+   */
+  recordingHash: string
+  /**
+   * Name the finished file takes
+   */
+  fileName: string
+  /**
+   * When the recording was prepared, which is what its metadata and subtitles are stamped with
+   */
+  timeRecordingStart: Date
+}
+
 /* eslint-disable jsdoc/require-jsdoc  */
 export interface UnprocessedVideoInfo extends CommonVideoInfo {
   dateFinish: Date | undefined

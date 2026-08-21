@@ -8110,6 +8110,18 @@ msgstr "视频到达后即开始录制“${ 0 }”……"
 
 #: src/stores/video.ts
 #, javascript-format
+msgid ""
+"Recording of stream '${ 0 }' could not be started. Try again, and restart "
+"Cockpit if it keeps failing."
+msgstr ""
+
+#: src/stores/video.ts
+#, javascript-format
+msgid "Recording of stream '${ 0 }' is being re-encoded to ${ 1 } as it runs."
+msgstr ""
+
+#: src/stores/video.ts
+#, javascript-format
 msgid "Recording of stream '${ 0 }' stopped unexpectedly. ${ 1 }"
 msgstr "视频流“${ 0 }”的录制意外停止。${ 1 }"
 
@@ -8959,6 +8971,10 @@ msgstr "请将其安全地设置在本地地形和障碍物之上。"
 #: src/views/MissionPlanningView.vue
 msgid "Set mission home"
 msgstr "设置任务原点"
+
+#: src/stores/video.ts
+msgid "Set the camera to H.264 to record without re-encoding."
+msgstr ""
 
 #: src/views/ConfigurationMAVLinkView.vue
 msgid "Set the interval for a new message"
@@ -10095,6 +10111,19 @@ msgstr "如果您更换了设备且新设备的视频流名称与之前不同，
 #: src/stores/video.ts
 msgid "This can happen if you changed your network or the IP of your vehicle."
 msgstr "如果您更改了网络或设备的 IP，可能会出现这种情况。"
+
+#: src/stores/video.ts
+#, javascript-format
+msgid ""
+"This computer cannot record the video format of stream '${ 0 }'. Set the "
+"camera to H.264 and try again."
+msgstr ""
+
+#: src/stores/video.ts
+msgid ""
+"This costs image quality and, on a large picture, can cost frames if this "
+"computer cannot keep up."
+msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
