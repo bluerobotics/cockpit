@@ -172,7 +172,17 @@ export const useVideoStore = defineStore('video', () => {
   const fetchGo2rtcStreamInfo = async (): Promise<void> => {
     if (!window.electronAPI) return
     try {
-      go2rtcStreamInfo.value = await window.electronAPI.go2rtcGetStreamsInfo()
+      const streamsInfo = await window.electronAPI.go2rtcGetStreamsInfo()
+      // go2rtc reads the frame size out of the source's stream description, which only carries it for H.264, so
+      // H.265 sources take theirs from the track the renderer decodes. Filled here so every consumer of this
+      // payload sees it, rather than at each place that displays a resolution.
+      Object.entries(streamsInfo).forEach(([externalId, info]) => {
+        if (info.width !== undefined) return
+        const trackSettings = activeStreams.value[externalId]?.mediaStream?.getVideoTracks()[0]?.getSettings()
+        info.width = trackSettings?.width
+        info.height = trackSettings?.height
+      })
+      go2rtcStreamInfo.value = streamsInfo
     } catch (error) {
       console.error('Failed to fetch go2rtc stream info:', error)
     }
