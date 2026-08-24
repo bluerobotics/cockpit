@@ -24,6 +24,7 @@ import { datalogger } from '@/libs/sensors-logging'
 import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { readableVideoCodecName } from '@/libs/webrtc/video-codec-support'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
@@ -403,6 +404,8 @@ export const useVideoStore = defineStore('video', () => {
 
   const rtspActivating = new Set<string>()
   let rtspUnsupportedWarned = false
+  const unreceivableVideoWarned = new Set<string>()
+  let unreceivableVideoDialogOpened = false
 
   /**
    * Activates a stream by starting it and storing it's variables inside a common object.
@@ -469,6 +472,25 @@ export const useVideoStore = defineStore('video', () => {
 
     const stream = ref()
     const webRtcManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
+
+    webRtcManager.onUnreceivableVideo = (codecs: string[]): void => {
+      // The camera keeps offering the same codec on every reconnection, so warn once per stream.
+      if (unreceivableVideoWarned.has(streamName)) return
+      unreceivableVideoWarned.add(streamName)
+
+      const codecNames = codecs.map(readableVideoCodecName).join(' or ')
+      const message =
+        `Stream '${streamName}' sends video as ${codecNames}, which Cockpit cannot play.` +
+        ' Set the camera to H.264 to watch it.'
+      alertStore.pushAlert(new Alert(AlertLevel.Error, message))
+
+      // A second camera would replace the dialog of the first, leaving only one of the two ever read, so only
+      // the first one opens it. The alerts above keep an entry per stream either way.
+      if (unreceivableVideoDialogOpened) return
+      unreceivableVideoDialogOpened = true
+      showDialog({ message, variant: 'error' })
+    }
+
     const { mediaStream, connected } = webRtcManager.startStream(
       stream,
       allowedIceIps,

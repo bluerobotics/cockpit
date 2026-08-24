@@ -42,6 +42,7 @@ export class WebRTCManager {
   private consumerId: string | undefined
   private streamName: string | undefined
   public session: Session | undefined
+  public onUnreceivableVideo?: (codecs: string[]) => void
   private rtcConfiguration: RTCConfiguration
   private selectedICEIPs: string[] = []
   private selectedICEProtocols: string[] = []
@@ -372,6 +373,8 @@ export class WebRTCManager {
       (_sessionId, reason) => this.onSessionClosed(reason),
       (status: string): void => this.updateStreamStatus(status)
     )
+
+    this.session.onUnreceivableVideo = (codecs: string[]): void => this.onUnreceivableVideo?.(codecs)
 
     // Registers Session callback for the Signaller endSession parser
     this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
