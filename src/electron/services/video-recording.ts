@@ -32,6 +32,20 @@ import { filesystemStorage, getCockpitFolderPath } from './storage'
 
 const activeStreamProcesses = new Map<string, LiveStreamProcess>()
 
+// Matroska names its codec in the Tracks element, near the start of a recording but not necessarily inside the
+// chunk it opens with: MediaRecorder can emit a first chunk of a single byte. Callers therefore pass a head
+// joined from as many leading chunks as it takes, never the first one on its own.
+const hevcMatroskaCodecId = 'V_MPEGH/ISO/HEVC'
+const matroskaHeaderSearchLength = 64 * 1024
+
+/**
+ * Tells whether a recording carries H.265, by looking for its codec id in the head it starts with.
+ * @param {Uint8Array} headData - Head of the recording, long enough to hold the Matroska header
+ * @returns {boolean} True if the recording is H.265
+ */
+const isHevcRecording = (headData: Uint8Array): boolean =>
+  Buffer.from(headData.subarray(0, matroskaHeaderSearchLength)).includes(hevcMatroskaCodecId)
+
 /**
  * Create a temporary directory for live video processing
  * @param {string} prefix - Prefix for the directory name
@@ -68,11 +82,11 @@ const unusedVideoPath = async (dir: string, fileName: string): Promise<string> =
 
 /**
  * Start a live video streaming process with FFmpeg
- * @param {Uint8Array} firstChunkData - The first video chunk data
+ * @param {Uint8Array} headData - Head of the recording: its leading chunks, joined until they carry the header
  * @param {string} fileName - The name of the video file
  * @returns {Promise<LiveConcatProcessResult>} Promise that resolves to the process information
  */
-const startVideoRecording = async (firstChunkData: Uint8Array, fileName: string): Promise<LiveConcatProcessResult> => {
+const startVideoRecording = async (headData: Uint8Array, fileName: string): Promise<LiveConcatProcessResult> => {
   const processId = uuid()
 
   // Get video folder path and construct output path
@@ -91,6 +105,7 @@ const startVideoRecording = async (firstChunkData: Uint8Array, fileName: string)
     '100M', // 100MB to find decoding info
     '-analyzeduration',
     '15M', // 15 seconds to find decoding info
+    // The WebM demuxer also reads the Matroska that H.265 recordings come in.
     '-f',
     'webm', // Input format is WebM
     '-i',
@@ -99,6 +114,9 @@ const startVideoRecording = async (firstChunkData: Uint8Array, fileName: string)
     'copy', // Copy video codec (no re-encoding)
     '-c:a',
     'copy', // Copy audio codec (no re-encoding)
+    // Apple's players only open H.265 under the hvc1 tag, while FFmpeg defaults to hev1 on copy. Only H.265
+    // may carry it, so tagging every recording would make the H.264 ones unplayable instead.
+    ...(isHevcRecording(headData) ? ['-tag:v', 'hvc1'] : []),
     '-movflags',
     'frag_keyframe+empty_moov+default_base_moof', // Fragmented MP4 for crash-safety
     '-fflags',
@@ -138,11 +156,11 @@ const startVideoRecording = async (firstChunkData: Uint8Array, fileName: string)
     activeStreamProcesses.delete(processId)
   })
 
-  // Write first chunk to FFmpeg stdin
+  // Write the head to FFmpeg stdin
   if (ffmpegProcess.stdin) {
-    ffmpegProcess.stdin.write(Buffer.from(firstChunkData), (err) => {
+    ffmpegProcess.stdin.write(Buffer.from(headData), (err) => {
       if (err) {
-        console.error(`Failed to write first chunk to FFmpeg stdin (${processId}):`, err)
+        console.error(`Failed to write the recording head to FFmpeg stdin (${processId}):`, err)
       }
     })
   } else {
@@ -779,9 +797,9 @@ export const setupVideoRecordingService = (): void => {
   /**
    * Start live video streaming with FFmpeg
    */
-  ipcMain.handle('start-video-recording', async (_, firstChunkData: Uint8Array, fileName: string) => {
+  ipcMain.handle('start-video-recording', async (_, headData: Uint8Array, fileName: string) => {
     try {
-      const result = await startVideoRecording(firstChunkData, fileName)
+      const result = await startVideoRecording(headData, fileName)
       return result
     } catch (error) {
       console.error('Error starting live video streaming:', error)
