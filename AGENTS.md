@@ -197,6 +197,7 @@ This applies to any pair of components/views with substantial overlap, not just 
 - Branch names follow `issue-<number>-short-words`, using at most 5 words in the descriptive part.
 - Pick the commit-subject prefix that actually fits the change. Every style in this history is fine: a conventional type (`feat`/`fix`/`refactor`/`docs`/etc.), the area touched (`map:`, `widgets:`, `mission-planning:`, `ci:`), or both together (`fix: widgets: …`), the area form being the most common. What matters is that the prefix describes this change — do not prefix every commit with `fix:`.
 - Do not reference GitHub issues or pull requests in commit messages — not `#N`, not `owner/repo#N`, and not closing keywords (`Fixes`/`Closes`/`Resolves` …). Put those in the PR body instead. A reference in a commit re-fires on the issue timeline every time a fork syncs that commit.
+- Do not leave AI-tool authorship on commits (`Co-authored-by: Cursor`, Claude/Copilot/Codex equivalents). Strip the trailer and re-author before pushing; the commit-finality check will fail the PR otherwise.
 
 ## Data-lake first for vehicle data in widgets
 

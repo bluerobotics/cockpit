@@ -36,8 +36,9 @@ jobs:
         run: |
           set -euo pipefail
           gh pr view "$PR_NUMBER" --repo "$REPO" --json commits \
-            --jq '[.commits[] | {oid: .oid, message: (.messageHeadline + (if (.messageBody // "") == "" then "" else "\n\n" + .messageBody end))}]' \
-            > commits.json
+            --jq '[.commits[] | {oid: .oid, emails: [(.authors // [])[] | .email // ""], names: [(.authors // [])[] | .name // ""], message: (.messageHeadline + (if (.messageBody // "") == "" then "" else "\n\n" + .messageBody end))}]' \
+            > authorship.json
+          jq '[.[] | {oid, message}]' authorship.json > commits.json
           echo "Commits under review:"
           jq -r '.[] | "- \(.oid[0:8]) \(.message | split("\n")[0])"' commits.json
 
@@ -64,6 +65,35 @@ jobs:
             exit 1
           fi
           echo "No GitHub references in commit messages."
+
+      # GitHub copies Co-authored-by trailers into authors, so matching that list
+      # is enough; scanning the message body would fail commits that quote an address.
+      - name: Reject AI authorship
+        run: |
+          set -euo pipefail
+          offenders=$(jq -r '
+            def ai_email: "^(cursoragent@cursor\\.com|noreply@anthropic\\.com|claude-code@anthropic\\.com|noreply@openai\\.com|codex@openai\\.com|copilot@github\\.com|([0-9]+\\+)?(cursoragent|cursor|copilot|claude|claude-code|codex|devin-ai-integration)(\\[bot\\])?@users\\.noreply\\.github\\.com)$";
+            # Claude and Devin are ordinary given names, so the name axis requires
+            # the two-word form; both tools stay covered by their addresses above.
+            def ai_name: "^(cursor( agent)?|github copilot|copilot|claude code|chatgpt( codex)?|codex|devin ai)$";
+            .[]
+            | . as $commit
+            | (
+                ($commit.emails // [] | map(select(test(ai_email; "i"))) | first)
+                // ($commit.names // [] | map(select(test(ai_name; "i"))) | first)
+              ) as $hit
+            | select($hit != null)
+            | "\($commit.oid)\t\($hit)"
+          ' authorship.json)
+          rm -f authorship.json
+          if [ -n "$offenders" ]; then
+            while IFS=$'\t' read -r oid line; do
+              echo "::error::Commit ${oid:0:8} is authored or co-authored by an AI tool: ${line}"
+            done <<< "$offenders"
+            echo "Strip AI Co-authored-by trailers and re-author the commit before merging."
+            exit 1
+          fi
+          echo "No AI-authored or AI-co-authored commits."
 
       - name: Classify commits with Claude
         uses: anthropics/claude-code-base-action@beta
