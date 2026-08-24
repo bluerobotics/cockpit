@@ -1,12 +1,14 @@
 /* eslint-disable jsdoc/no-undefined-types */ // TODO: fix type RTCConfiguration, RTCSessionDescriptionInit, RTCIceCandidateInit and RTCPeerConnectionIceEventInit are undefined
 import type { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { unreceivableVideoCodecs } from '@/libs/webrtc/video-codec-support'
 
 type OnCloseCallback = (sessionId: string, reason: string) => void
 type OnTrackAddedCallback = (event: RTCTrackEvent) => void
 type onNewIceRemoteAddressCallback = (availableICEIPs: string[]) => void
 type OnStatusChangeCallback = (status: string) => void
 type OnPeerConnectedCallback = () => void
+type OnUnreceivableVideoCallback = (codecs: string[]) => void
 
 /**
  * An abstraction for the Mavlink Camera Manager WebRTC Session
@@ -28,6 +30,7 @@ export class Session {
   public onNewIceRemoteAddress?: onNewIceRemoteAddressCallback
   public onClose?: OnCloseCallback
   public onStatusChange?: OnStatusChangeCallback
+  public onUnreceivableVideo?: OnUnreceivableVideoCallback
 
   /**
    * Creates a new Session instance, connecting with a given Stream
@@ -134,6 +137,16 @@ export class Session {
    * @param {RTCSessionDescription} description - The SDP received from the signalling server
    */
   public onIncomingSDP(description: RTCSessionDescription): void {
+    // Checked on the offer rather than on the failure it causes, as a browser that cannot receive the offered
+    // codec answers without video and simply never plays anything, with no error to report.
+    const unreceivableCodecs = unreceivableVideoCodecs(description.sdp)
+    if (unreceivableCodecs.length > 0) {
+      console.warn(
+        `[WebRTC] [Session] None of the offered video codecs can be received: ${unreceivableCodecs.join(', ')}`
+      )
+      this.onUnreceivableVideo?.(unreceivableCodecs)
+    }
+
     this.peerConnection
       .setRemoteDescription(description)
       .then(() => {
