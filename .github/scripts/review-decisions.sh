@@ -129,6 +129,8 @@ post() {
       printf '### :raising_hand: Decision needed — %s\n\n' "$finding"
       printf '**%s**\n\n' "$title"
       printf "The author's argument: %s\n\n" "$argument"
+      # The summary carries the ask rather than naming the box: folded is the default view.
+      printf '<details>\n<summary>How to vote on this dispute</summary>\n\n'
       printf 'React to this comment and the next `/review` applies the answer:\n\n'
       printf -- '- :+1: accept the argument and leave the code as it is — the finding closes\n'
       printf -- '- :-1: ask for the change anyway — the finding stays open\n\n'
@@ -141,6 +143,7 @@ post() {
       printf 'changes nothing. The same goes once the author makes a different case: the argument '
       printf 'above stops being the one in question, and the newest "Decision needed" comment for '
       printf 'this finding is the live vote.\n'
+      printf '\n</details>\n'
     } > "$body"
 
     comment=$(jq -Rs '{body: .}' < "$body" \
