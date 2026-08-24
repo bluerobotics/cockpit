@@ -218,6 +218,13 @@ const fetchRtspInfo = async (): Promise<void> => {
   try {
     const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
     const info = allInfo[props.streamName]
+    if (info && info.width === undefined) {
+      // This payload is fetched here at 10 Hz for the plots below, while the store polls the same endpoint at its
+      // own pace and fills in the size go2rtc cannot report, so the size is taken from that copy.
+      const filledInfo = videoStore.go2rtcStreamInfo[props.streamName]
+      info.width = filledInfo?.width
+      info.height = filledInfo?.height
+    }
     rtspInfo.value = info
     if (info) {
       if (rtspStartTime === 0) rtspStartTime = Date.now()
