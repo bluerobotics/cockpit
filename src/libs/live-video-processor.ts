@@ -1,4 +1,5 @@
 import { isElectron } from '@/libs/utils'
+import { joinRecordingHead, maxRecordingHeadChunks, minimumRecordingHeadBytes } from '@/libs/video-recording-codec'
 import { tempVideoStorage } from '@/libs/videoStorage'
 import type { VideoChunkQueueItem, ZipExtractionResult } from '@/types/video'
 import { videoChunkName, videoSubtitlesFilename } from '@/utils/video'
@@ -53,6 +54,7 @@ export class LiveVideoProcessor {
   private chunkQueue: VideoChunkQueueItem[] = []
   private lastProcessedChunk = -1
   private concatProcess: any = null
+  private pendingHead: VideoChunkQueueItem[] = []
 
   /**
    * Initialize the live video processor
@@ -110,9 +112,11 @@ export class LiveVideoProcessor {
       // Only process if this is the next expected chunk
       if (nextChunk.chunkNumber === this.lastProcessedChunk + 1) {
         this.chunkQueue.shift() // Remove from queue
-        await this.processChunk(nextChunk.blob, nextChunk.chunkNumber)
+        const handedOver = await this.processChunk(nextChunk.blob, nextChunk.chunkNumber)
         this.lastProcessedChunk = nextChunk.chunkNumber
-        await this.deleteChunk(nextChunk.chunkNumber)
+        // Only what FFmpeg has been given is safe to drop: a chunk still held back as part of the head is the
+        // recording's only copy until the output file is started with it.
+        for (const chunkNumber of handedOver) await this.deleteChunk(chunkNumber)
       } else {
         console.warn(`Expected chunk ${this.lastProcessedChunk + 1} but got ${nextChunk.chunkNumber}.`)
 
@@ -131,24 +135,44 @@ export class LiveVideoProcessor {
    * Process a single video chunk
    * @param {Blob} chunkBlob - The video chunk to process
    * @param {number} chunkNumber - Sequential number of this chunk
+   * @returns {Promise<number[]>} The chunks FFmpeg now holds, which are the ones safe to drop
    */
-  private async processChunk(chunkBlob: Blob, chunkNumber: number): Promise<void> {
-    if (chunkNumber === 0) {
-      try {
-        console.log('Initializing output file with the first chunk.')
-        // First chunk - initialize the output file
-        await this.initializeOutputFile(chunkBlob)
-      } catch (error) {
-        throw new LiveVideoProcessorInitializationError(`Failed to initialize output file: ${error}`)
-      }
-    } else {
-      try {
-        // Subsequent chunks - append to existing file
-        await this.appendChunkToOutput(chunkBlob, chunkNumber)
-      } catch (error) {
-        throw new LiveVideoProcessorChunkAppendingError(`Failed to append chunk ${chunkNumber}: ${error}`)
-      }
+  private async processChunk(chunkBlob: Blob, chunkNumber: number): Promise<number[]> {
+    if (this.concatProcess === null) {
+      this.pendingHead.push({ blob: chunkBlob, chunkNumber })
+      // The main process reads the recording's codec out of the Matroska header, and MediaRecorder can emit a
+      // first chunk far too small to carry it — one of a single byte, splitting even the EBML magic — so the
+      // start waits until enough of the head is in hand to be read.
+      const headSize = this.pendingHead.reduce((total, item) => total + item.blob.size, 0)
+      if (headSize < minimumRecordingHeadBytes && this.pendingHead.length < maxRecordingHeadChunks) return []
+
+      return await this.startOutputFileWithHead()
     }
+
+    try {
+      // Subsequent chunks - append to existing file
+      await this.appendChunkToOutput(chunkBlob, chunkNumber)
+    } catch (error) {
+      throw new LiveVideoProcessorChunkAppendingError(`Failed to append chunk ${chunkNumber}: ${error}`)
+    }
+    return [chunkNumber]
+  }
+
+  /**
+   * Start the output file with the head gathered so far
+   * @returns {Promise<number[]>} The chunks the head was made of, now in FFmpeg's hands
+   */
+  private async startOutputFileWithHead(): Promise<number[]> {
+    const head = this.pendingHead
+    try {
+      console.log(`Initializing output file with the first ${head.length} chunk(s).`)
+      await this.initializeOutputFile(new Blob(head.map((item) => item.blob)))
+    } catch (error) {
+      throw new LiveVideoProcessorInitializationError(`Failed to initialize output file: ${error}`)
+    }
+    // Cleared only once FFmpeg has the head, so a failed start leaves the chunks both buffered and stored
+    this.pendingHead = []
+    return head.map((item) => item.chunkNumber)
   }
 
   /**
@@ -210,6 +234,11 @@ export class LiveVideoProcessor {
       // Process any remaining chunks in queue
       await this.processQueuedChunks()
 
+      // A recording stopped before the head reached its threshold still has to be written out
+      if (this.concatProcess === null && this.pendingHead.length > 0) {
+        for (const chunkNumber of await this.startOutputFileWithHead()) await this.deleteChunk(chunkNumber)
+      }
+
       // Close FFmpeg stdin to signal end of input
       // FFmpeg will finish writing the fragmented MP4 and exit cleanly
       if (this.concatProcess) {
@@ -258,11 +287,15 @@ export class LiveVideoProcessor {
       console.log(`Extracted ${chunkPaths.length} chunks from ${zipFilePaths.length} ZIP file(s)`)
       onProgress?.(30, 'Starting video processing...')
 
-      // Read first chunk
-      const firstChunkData = await window.electronAPI.readChunkFile(chunkPaths[0])
-      const firstChunkBlob = new Blob([new Uint8Array(firstChunkData)], { type: 'video/webm' })
+      // Read the head, which is as many leading chunks as it takes to carry the Matroska header
+      const { head: firstChunkBlob, consumed: headChunks } = await joinRecordingHead(async (index) => {
+        if (index >= chunkPaths.length) return undefined
+        return new Blob([new Uint8Array(await window.electronAPI!.readChunkFile(chunkPaths[index]))], {
+          type: 'video/webm',
+        })
+      })
 
-      // Start FFmpeg streaming process with first chunk (no backup needed since ZIP is the backup)
+      // Start FFmpeg streaming process with that head (no backup needed since ZIP is the backup)
       const { id: processId, outputPath } = await window.electronAPI.startVideoRecording(
         firstChunkBlob,
         hash,
@@ -275,7 +308,7 @@ export class LiveVideoProcessor {
       onProgress?.(40, 'Streaming video chunks to FFmpeg...')
 
       // Stream remaining chunks to FFmpeg
-      for (let i = 1; i < chunkPaths.length; i++) {
+      for (let i = headChunks; i < chunkPaths.length; i++) {
         const chunkData = await window.electronAPI.readChunkFile(chunkPaths[i])
         const chunkBlob = new Blob([new Uint8Array(chunkData)], { type: 'video/webm' })
 
