@@ -25,7 +25,10 @@
           @mousedown.prevent="insertVariable(item.id)"
           @mouseenter="highlightedIndex = index"
         >
-          <span class="dl-expression-option-name">{{ item.name }}</span>
+          <span class="dl-expression-option-name">
+            {{ item.name }}
+            <span v-if="item.unit" class="dl-expression-option-unit">{{ item.unit }}</span>
+          </span>
           <span class="dl-expression-option-id">{{ item.id }}</span>
         </div>
         <div v-if="filteredVariables.length === 0" class="dl-expression-empty">{{ emptyDropdownMessage }}</div>
@@ -105,6 +108,7 @@ const filteredVariables = computed(() => {
   const variables = availableVariables.value.map((variable) => ({
     id: variable.id,
     name: variable.name || variable.id,
+    unit: variable.unit,
   }))
   if (!term) return variables
   return variables.filter(
@@ -396,6 +400,11 @@ onUnmounted(() => {
 .dl-expression-option-name {
   font-size: 13px;
   color: #ffffffde;
+}
+
+.dl-expression-option-unit {
+  font-size: 11px;
+  color: #ffffff80;
 }
 
 .dl-expression-option-id {

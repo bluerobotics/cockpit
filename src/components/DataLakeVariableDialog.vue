@@ -53,15 +53,30 @@
               <v-radio class="ml-3 mr-4" label="Boolean" value="boolean" />
             </v-radio-group>
           </div>
-          <v-text-field
-            v-model="initialValue"
-            :label="valueOnlyEditMode ? `Value (${variable.type})` : `Initial Value (${variable.type})`"
-            variant="outlined"
-            :error-messages="valueError"
-            density="compact"
-            hide-details
-            @input="validateValue"
-          />
+          <div class="flex gap-4">
+            <v-text-field
+              v-model="initialValue"
+              :label="valueOnlyEditMode ? `Value (${variable.type})` : `Initial Value (${variable.type})`"
+              variant="outlined"
+              :error-messages="valueError"
+              density="compact"
+              class="flex-1"
+              hide-details
+              @input="validateValue"
+            />
+            <v-text-field
+              v-if="!valueOnlyEditMode"
+              v-model="variable.unit"
+              label="Unit"
+              placeholder="m, m/s, degC"
+              variant="outlined"
+              :disabled="variable.type !== 'number'"
+              :messages="unitWarning"
+              density="compact"
+              class="w-[160px]"
+              hide-details="auto"
+            />
+          </div>
           <v-textarea
             v-if="!valueOnlyEditMode"
             v-model="variable.description"
@@ -111,6 +126,7 @@ import {
   setDataLakeVariableData,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
+import { isReadableUnit } from '@/libs/units'
 import { machinizeString } from '@/libs/utils'
 import { isSystemOwnedDataLakeVariable } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -150,6 +166,7 @@ const variable = reactive<DataLakeVariable>({
   name: '',
   type: 'number',
   description: '',
+  unit: '',
   persistent: true,
   persistValue: true,
 })
@@ -164,6 +181,12 @@ const initialValue = ref<string>('')
  */
 const valueError = ref<string>('')
 
+const unitWarning = computed(() =>
+  variable.unit && !isReadableUnit(variable.unit)
+    ? ['Unit not recognized. The value will be shown exactly as it arrives.']
+    : []
+)
+
 /**
  * Resets the form to its initial state
  */
@@ -172,6 +195,7 @@ const resetForm = (): void => {
   variable.name = ''
   variable.type = 'number'
   variable.description = ''
+  variable.unit = ''
   variable.persistent = true
   variable.persistValue = true
   initialValue.value = ''
@@ -226,6 +250,7 @@ watch(modelValue, (isOpen) => {
       variable.name = variableInfo.name
       variable.type = variableInfo.type
       variable.description = variableInfo.description || ''
+      variable.unit = variableInfo.unit || ''
       variable.persistent = variableInfo.persistent
       variable.persistValue = variableInfo.persistValue
       initialValue.value = currentValue !== undefined ? String(currentValue) : ''
