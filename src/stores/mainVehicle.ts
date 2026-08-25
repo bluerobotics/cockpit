@@ -11,6 +11,7 @@ import { getAllDataLakeVariablesInfo, getDataLakeVariableInfo, setDataLakeVariab
 import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { altitude_setpoint } from '@/libs/altitude-slider'
 import {
+  counterDeltaToMbps,
   getCpusInfo,
   getCpuTempCelsius,
   getIpsInformationFromVehicle,
@@ -732,10 +733,13 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     const networkDownloadSpeedMbpsVariableId = (interfaceName: string): string =>
       `blueos/network/${interfaceName}/downloadSpeedMbps`
 
-    // Store previous network readings for speed calculation
+    // Store the recent network readings of each interface, which the published speeds are measured across
 
     // eslint-disable-next-line jsdoc/require-jsdoc, prettier/prettier
-    const previousNetworkReadings: Map<string, { bytesReceived: number; bytesTransmitted: number; timestamp: number }> = new Map()
+    const networkReadingsHistory: Map<string, { bytesReceived: number; bytesTransmitted: number; timestamp: number }[]> = new Map()
+
+    // Long enough to span several counter refreshes, which is what makes the published speed the real rate.
+    const speedAveragingWindowMs = 10000
 
     const wirelessTrafficWatcher = createWirelessTrafficWatcher()
     const cabledLinkCheckIntervalMs = 30000
@@ -875,38 +879,31 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
           setDataLakeVariableData(networkTotalTransmittedMBVariableId(networkInterface.name), totalTransmittedMB)
 
           // Calculate and update speeds
-          const previousReading = previousNetworkReadings.get(networkInterface.name)
-          if (previousReading) {
-            const timeDeltaSeconds = (currentTimestamp - previousReading.timestamp) / 1000
-            if (timeDeltaSeconds > 0) {
-              // Calculate speed in bytes per second
-              const downloadSpeedBytesPerSec =
-                (networkInterface.total_received_B - previousReading.bytesReceived) / timeDeltaSeconds
-              const uploadSpeedBytesPerSec =
-                (networkInterface.total_transmitted_B - previousReading.bytesTransmitted) / timeDeltaSeconds
-
-              // Convert to megabits per second (Mbps): bytes/s * 8 bits/byte / (1024 * 1024) = Mbps
-              const downloadSpeedMbps = (downloadSpeedBytesPerSec * 8) / (1024 * 1024)
-              const uploadSpeedMbps = (uploadSpeedBytesPerSec * 8) / (1024 * 1024)
-
-              // Set speeds (ensure they're not negative due to counter resets)
-              setDataLakeVariableData(
-                networkDownloadSpeedMbpsVariableId(networkInterface.name),
-                Math.max(0, downloadSpeedMbps)
-              )
-              setDataLakeVariableData(
-                networkUploadSpeedMbpsVariableId(networkInterface.name),
-                Math.max(0, uploadSpeedMbps)
-              )
-            }
+          const windowStart = currentTimestamp - speedAveragingWindowMs
+          const storedReadings = networkReadingsHistory.get(networkInterface.name) ?? []
+          const readings = storedReadings.filter((reading) => reading.timestamp > windowStart)
+          // A gap longer than the window leaves nothing inside it, and publishing nothing would leave the
+          // previous rate standing as if it were current, so the newest reading is measured against instead.
+          const oldestReading = readings[0] ?? storedReadings[storedReadings.length - 1]
+          if (oldestReading) {
+            const spanMs = currentTimestamp - oldestReading.timestamp
+            setDataLakeVariableData(
+              networkDownloadSpeedMbpsVariableId(networkInterface.name),
+              counterDeltaToMbps(networkInterface.total_received_B - oldestReading.bytesReceived, spanMs)
+            )
+            setDataLakeVariableData(
+              networkUploadSpeedMbpsVariableId(networkInterface.name),
+              counterDeltaToMbps(networkInterface.total_transmitted_B - oldestReading.bytesTransmitted, spanMs)
+            )
           }
 
           // Store current reading for next calculation
-          previousNetworkReadings.set(networkInterface.name, {
+          readings.push({
             bytesReceived: networkInterface.total_received_B,
             bytesTransmitted: networkInterface.total_transmitted_B,
             timestamp: currentTimestamp,
           })
+          networkReadingsHistory.set(networkInterface.name, readings)
         })
 
         // Not awaited, so a slow beacon does not hold this round nor report its failure as a data lake one.
