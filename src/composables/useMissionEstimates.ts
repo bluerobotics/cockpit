@@ -6,8 +6,9 @@ import {
   calculateHaversineDistance,
   computeMissionDurationSecondsFromLegs,
   convexHullSquareMeters,
-  formatMetersShort,
+  formatDistanceShort,
 } from '@/libs/mission/general-estimates'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import {
@@ -52,6 +53,7 @@ export const useMissionEstimates = (): {
 } => {
   const missionStore = useMissionStore()
   const vehicleStore = useMainVehicleStore()
+  const interfaceStore = useAppInterfaceStore()
 
   const normalizedVehicleType = computed<MavType>(() => {
     const raw = missionStore.effectiveVehicleType as unknown
@@ -171,8 +173,12 @@ export const useMissionEstimates = (): {
   }
 
   // Basic mission stats - no vehicle-specific estimates
-  const totalMissionLength = computed(() => formatMetersShort(missionLengthMeters.value))
-  const totalMaxDistance = computed(() => formatMetersShort(maxDistanceMeters.value))
+  const totalMissionLength = computed(() =>
+    formatDistanceShort(missionLengthMeters.value, interfaceStore.displayUnitPreferences)
+  )
+  const totalMaxDistance = computed(() =>
+    formatDistanceShort(maxDistanceMeters.value, interfaceStore.displayUnitPreferences)
+  )
   const totalSurveyCoverage = computed(() => formatArea(totalSurveyCoverageSquareMeters.value))
 
   // Mission duration (s), with vehicle-specific estimates if available
