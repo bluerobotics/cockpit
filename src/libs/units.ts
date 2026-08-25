@@ -378,3 +378,62 @@ export const convertValue = (
 
   return { value: convertBetween(scaled, resolved.canonical, target), unit: unitAbbreviation[target] }
 }
+
+/**
+ * Turns a value the user set in the unit they read back into the unit whoever consumes it expects.
+ * The inverse of {@link convertValue}, for the inputs that command the vehicle, which have to be
+ * sent in the unit the vehicle works in no matter what the user is reading.
+ * @param {number} value The value as the user set it
+ * @param {string} rawUnit The unit the value has to end up in
+ * @param {DisplayUnitPreferences} preferences The units picked for each quantity
+ * @returns {number} The value in the raw unit
+ */
+export const convertValueToRawUnit = (value: number, rawUnit: string, preferences: DisplayUnitPreferences): number => {
+  const resolved = resolveUnit(rawUnit)
+  if (resolved?.quantity === undefined) return value
+
+  const source = preferredUnit(resolved.quantity, preferences)
+  if (source === undefined) return value
+
+  return convertBetween(value, source, resolved.canonical) / resolved.scale
+}
+
+const largerDistanceUnits: Record<DistanceDisplayUnit, string> = {
+  [DistanceDisplayUnit.Meters]: 'km',
+  [DistanceDisplayUnit.Feet]: 'mi',
+}
+
+/**
+ * Writes a distance out the way it is read, moving up to kilometers or miles once the number grows.
+ * @param {number} meters The distance in meters
+ * @param {DisplayUnitPreferences} preferences The units picked for each quantity
+ * @returns {string} The distance and its unit, ready to be shown, or a dash when there is none
+ */
+export const formatDistance = (meters: number, preferences: DisplayUnitPreferences): string => {
+  if (!isFinite(meters)) return '—'
+
+  const converted = convertValue(meters, 'm', preferences)
+  const larger = largerDistanceUnits[preferences.distance] ?? largerDistanceUnits[DistanceDisplayUnit.Meters]
+  const inLarger = convertBetween(converted.value, converted.unit, larger)
+
+  if (Math.abs(inLarger) < 1) return `${Math.round(converted.value)} ${converted.unit}`
+  return `${inLarger.toFixed(1)} ${larger}`
+}
+
+/**
+ * Writes a value out the way it is read, in the unit the user picked for it.
+ * @param {number} value The value as it was received
+ * @param {string | undefined} rawUnit The unit the value is stored in, as MAVLink states it
+ * @param {DisplayUnitPreferences} preferences The units picked for each quantity
+ * @param {number} decimals How many decimal places to keep
+ * @returns {string} The value and its unit, ready to be shown
+ */
+export const formatValueWithUnit = (
+  value: number,
+  rawUnit: string | undefined,
+  preferences: DisplayUnitPreferences,
+  decimals = 1
+): string => {
+  const converted = convertValue(value, rawUnit, preferences)
+  return `${converted.value.toFixed(decimals)} ${converted.unit}`.trim()
+}

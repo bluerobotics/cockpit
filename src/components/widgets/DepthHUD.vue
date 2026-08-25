@@ -75,7 +75,6 @@
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
 import gsap from 'gsap'
-import { unit } from 'mathjs'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
@@ -86,7 +85,7 @@ import {
   rawAltitudeToMeters,
 } from '@/libs/data-sources/altitude'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { unitAbbreviation } from '@/libs/units'
+import { convertValue, unitAbbreviation } from '@/libs/units'
 import { range, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -180,14 +179,12 @@ watch(resolvedAltitudeVariableId, () => {
 
 watch([rawAltitude, resolvedAltitudeVariableId], ([newAlt, resolvedId]) => {
   if (resolvedId === undefined || typeof newAlt !== 'number') return
-  const altMeters = rawAltitudeToMeters(resolvedId, newAlt)
-  const newDepth = unit(-altMeters, 'm')
+  const depthInMeters = -rawAltitudeToMeters(resolvedId, newAlt)
 
-  const depthDiff = Math.abs(newDepth.value - (depth.value || 0))
+  const depthDiff = Math.abs(depthInMeters - (depth.value || 0))
   if (depthDiff < 0.1) return
 
-  const depthConverted = newDepth.to(interfaceStore.displayUnitPreferences.distance)
-  passedDepths.value.push(depthConverted.toJSON().value)
+  passedDepths.value.push(convertValue(depthInMeters, 'm', interfaceStore.displayUnitPreferences).value)
 })
 
 // Returns the projected Y position of the depth line for a given distance
