@@ -218,7 +218,7 @@ const previewKeys = ['fixQuality', 'satellitesUsed', 'latitude', 'longitude']
 const previewItems = computed(() => {
   const fix = draftFix.value
   if (!fix) return [{ key: 'data', label: 'Data', value: 'Waiting...' }]
-  const items = gnssFixItems(fix)
+  const items = gnssFixItems(fix, interfaceStore.displayUnitPreferences)
   return previewKeys.flatMap((key) => items.filter((item) => item.key === key))
 })
 
