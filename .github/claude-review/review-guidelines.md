@@ -192,7 +192,7 @@ description — say what the code does, which you established in the Change map.
 - `Problem` is a short noun phrase, not a sentence.
 - `What it means` is one sentence a non-programmer could follow: what breaks, for whom, and when. No jargon, no file paths, no API names — those belong in the finding itself. "Clicking Export does nothing in the browser version" beats "unguarded `electronAPI` call".
 - `Severity` is the word, with `critical` and `major` bolded so blockers stand out.
-- `Status` uses the shortcodes: `:x:` not addressed, `:large_yellow_circle:` partly addressed, `:speech_balloon:` disputed, and for a first review simply `:x:` throughout.
+- `Status` uses the shortcodes: `:x:` not addressed, `:yellow_circle:` partly addressed, `:speech_balloon:` disputed, and for a first review simply `:x:` throughout.
 
 When nothing is open, replace the table with one line saying so.
 
