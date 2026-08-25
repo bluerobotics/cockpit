@@ -19,7 +19,7 @@
       >
         <span ref="valueText" class="inline-block">
           <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
-          <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ miniWidget.options.variableUnit }} </span>
+          <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ shownUnit }} </span>
         </span>
       </div>
       <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
@@ -96,9 +96,20 @@
                 class="-my-2"
               />
 
+              <v-checkbox
+                v-model="miniWidget.options.useVariableUnit"
+                :disabled="miniWidget.options.useStringVariable || valueIsTemplate"
+                label="Use the variable's own unit"
+                density="compact"
+                hide-details
+                class="-my-2"
+                @update:model-value="(v) => logUserAction(`Set the indicator to use the variable's own unit: ${v}`)"
+              />
+
               <div class="flex gap-4">
                 <v-text-field
                   v-model="miniWidget.options.variableUnit"
+                  :disabled="usesVariableUnit"
                   label="Unit"
                   variant="outlined"
                   density="compact"
@@ -107,7 +118,7 @@
                 />
                 <v-text-field
                   v-model="miniWidget.options.variableMultiplier"
-                  :disabled="miniWidget.options.useStringVariable || valueIsTemplate"
+                  :disabled="usesVariableUnit || miniWidget.options.useStringVariable || valueIsTemplate"
                   label="Multiplier"
                   variant="outlined"
                   density="compact"
@@ -332,8 +343,13 @@ onBeforeMount(() => {
       decimalPlaces: null,
       widgetWidth: 136,
       useStringVariable: false,
+      useVariableUnit: true,
     })
   }
+
+  // An indicator set up before the variable carried a unit keeps showing the unit and the multiplier
+  // its user typed, which is what they are reading today.
+  miniWidget.value.options.useVariableUnit ??= false
 
   iconsNames = []
   for (const sheet of document.styleSheets) {
@@ -361,13 +377,31 @@ const valueIsTemplate = computed(() => singleVariableId.value === null && !!mini
 // Keyed on the variable name so that every writer of it — the config dialog, a preset, or a BlueOS
 // profile sync, which patches the widget in place rather than remounting it — resubscribes. A
 // template subscribes to nothing here, as `useResolvedDataLakeTemplate` follows its own references.
-const { value: currentState } = useDataLakeVariable(() => singleVariableId.value ?? undefined)
+const {
+  value: currentState,
+  displayValue,
+  displayUnit,
+} = useDataLakeVariable(() => singleVariableId.value ?? undefined)
 
 const resolvedTemplate = useResolvedDataLakeTemplate(() =>
   valueIsTemplate.value ? miniWidget.value.options.variableName : undefined
 )
 
-const finalValue = computed(() => Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value))
+// The variable states its unit, and the conversion to the unit the user reads already carries the
+// scaling a manual multiplier used to stand in for.
+const usesVariableUnit = computed(
+  () =>
+    miniWidget.value.options.useVariableUnit === true &&
+    !valueIsTemplate.value &&
+    !miniWidget.value.options.useStringVariable
+)
+
+const shownUnit = computed(() => (usesVariableUnit.value ? displayUnit.value : miniWidget.value.options.variableUnit))
+
+const finalValue = computed(() => {
+  if (usesVariableUnit.value) return displayValue.value ?? NaN
+  return Number(miniWidget.value.options.variableMultiplier) * Number(currentState.value)
+})
 
 const parsedState = computed(() => {
   if (valueIsTemplate.value) {
@@ -611,6 +645,7 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
   miniWidget.value.options.variableUnit = template.variableUnit
   miniWidget.value.options.variableMultiplier = template.variableMultiplier
   miniWidget.value.options.decimalPlaces = template.decimalPlaces ?? null
+  miniWidget.value.options.useVariableUnit = template.useVariableUnit ?? false
   // Every preset is numeric, and this flag would bypass both the multiplier and the decimal places.
   miniWidget.value.options.useStringVariable = false
 }
