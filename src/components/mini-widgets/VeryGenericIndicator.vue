@@ -83,7 +83,7 @@
                   </p>
                   <p class="text-sm">
                     Click the field to pick a data-lake variable, and wrap variables in &#123;&#123; &#125;&#125; to
-                    write a template — e.g. Lat &#123;&#123; mavlink/1/1/GLOBAL_POSITION_INT/lat &#125;&#125;.
+                    write a template — e.g. Lat &#123;&#123; /mavlink/1/1/GLOBAL_POSITION_INT/lat &#125;&#125;.
                   </p>
                 </template>
               </DataLakeExpressionInput>
