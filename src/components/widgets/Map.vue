@@ -304,6 +304,7 @@ import {
   WhoToFollow,
 } from '@/libs/map/utils-map'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { formatValueWithUnit } from '@/libs/units'
 import { copyToClipboard, degrees, messageFromError } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -1287,10 +1288,15 @@ watch(followerTarget, (newTarget) => {
 watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed], () => {
   if (vehicleMarker.value === undefined) return
 
+  const unitPreferences = interfaceStore.displayUnitPreferences
+  const groundVelocity = vehicleStore.velocity.ground
+  const velocityText =
+    groundVelocity === undefined ? 'N/A' : formatValueWithUnit(groundVelocity, 'm/s', unitPreferences, 2)
+
   vehicleMarker.value.getTooltip()?.setContent(`
     <p>Coordinates: ${vehiclePosition.value?.[0].toFixed(6)}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
-    <p>Velocity: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
-    <p>Heading: ${vehicleHeading.value.toFixed(2)}°</p>
+    <p>Velocity: ${velocityText}</p>
+    <p>Heading: ${formatValueWithUnit(vehicleHeading.value, 'deg', unitPreferences, 2)}</p>
     <p>${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}</p>
     <p>Last seen: ${timeAgoSeenText.value}</p>
   `)
