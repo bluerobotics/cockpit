@@ -1,7 +1,8 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 
 import { affectedAngleTriples } from '@/libs/map/utils-map'
-import { bearingBetween, formatBearing, formatMetersShort } from '@/libs/mission/general-estimates'
+import { bearingBetween, formatBearing, formatDistanceShort } from '@/libs/mission/general-estimates'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import type { WaypointCoordinates } from '@/types/mission'
 
@@ -27,6 +28,7 @@ export interface UseDragMeasureOverlayReturn {
  */
 export const useDragMeasureOverlay = (angleOverlay: UseVertexAngleOverlayReturn): UseDragMeasureOverlayReturn => {
   const missionStore = useMissionStore()
+  const interfaceStore = useAppInterfaceStore()
 
   let mapRef: LeafletMap | undefined
   let overlayEl: HTMLDivElement | null = null
@@ -90,7 +92,9 @@ export const useDragMeasureOverlay = (angleOverlay: UseVertexAngleOverlayReturn)
       const dist = fromLatLng.distanceTo(toLatLng)
       const bearing = bearingBetween(from, to)
       const pill = pillEls[i]
-      pill.textContent = `${formatMetersShort(dist)} · ${formatBearing(bearing)}`
+      pill.textContent = `${formatDistanceShort(dist, interfaceStore.displayUnitPreferences)} · ${formatBearing(
+        bearing
+      )}`
       pill.style.left = `${(a.x + b.x) / 2}px`
       pill.style.top = `${(a.y + b.y) / 2}px`
       pill.style.display = dist < 1 ? 'none' : 'block'

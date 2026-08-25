@@ -1,5 +1,6 @@
 import { convex, featureCollection, point } from '@turf/turf'
 
+import { type DisplayUnitPreferences, formatDistance } from '@/libs/units'
 import { MissionLeg, WaypointCoordinates } from '@/types/mission'
 
 import { norm360, radians } from '../utils'
@@ -145,10 +146,9 @@ export const deltaBearing = (bearing1: number, bearing2: number): number => {
   return angle
 }
 
-export const formatMetersShort = (distance: number): string => {
+export const formatDistanceShort = (distance: number, preferences: DisplayUnitPreferences): string => {
   if (!isFinite(distance) || distance <= 0) return '—'
-  if (distance < 1000) return `${distance.toFixed(0)} m`
-  return `${(distance / 1000).toFixed(2)} km`
+  return formatDistance(distance, preferences)
 }
 
 export const formatBearing = (bearing: number): string => {
