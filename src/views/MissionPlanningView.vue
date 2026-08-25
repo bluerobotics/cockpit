@@ -793,6 +793,7 @@
     @delete-selected-survey="deleteSelectedSurvey"
     @rotate-survey-entry-point="rotateSurveyEntryPoint"
     @toggle-survey="addSurveyFromContextMenu"
+    @set-survey-shape="startSurveyWithShape"
     @toggle-simple-path="addSimplePathFromContextMenu"
     @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
@@ -973,7 +974,7 @@ import { useMissionInsertion } from '@/composables/map/useMissionInsertion'
 import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
-import { useSurveyRectangleDrawing } from '@/composables/map/useSurveyRectangleDrawing'
+import { type SurveyDrawShape, useSurveyRectangleDrawing } from '@/composables/map/useSurveyRectangleDrawing'
 import { useTouchDrawing } from '@/composables/map/useTouchDrawing'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
@@ -2824,6 +2825,11 @@ const toggleSurvey = (): void => {
   isCreatingSurvey.value = true
   isDrawingSurveyPolygon.value = true
   hideContextMenu()
+}
+
+const startSurveyWithShape = (shape: SurveyDrawShape): void => {
+  setSurveyDrawShape(shape)
+  if (!isCreatingSurvey.value) addSurveyFromContextMenu()
 }
 
 const targetFollower = new TargetFollower(

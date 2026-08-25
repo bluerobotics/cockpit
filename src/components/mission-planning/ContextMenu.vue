@@ -132,6 +132,7 @@
       <div
         class="flex flex-col rounded-md"
         :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
+        @pointerdown="onMapMenuPointerDown"
       >
         <template v-if="canCreateFenceExclusion">
           <v-menu
@@ -216,17 +217,82 @@
           }}</span>
         </v-list-item>
         <v-divider />
-        <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSurvey">
-          <v-icon
-            variant="text"
-            icon="mdi-transit-connection-variant"
-            rounded="full"
-            size="x-small"
-            color="white"
-            class="text-[16px]"
-          ></v-icon>
-          <span class="text-white text-sm ml-4">{{ surveyCreationButtonText }}</span>
-        </v-list-item>
+        <div
+          ref="surveyEntryEl"
+          class="relative"
+          @mouseenter="surveyShapeMenuOpen = true"
+          @mouseleave="surveyShapeMenuOpen = false"
+          @focusin="surveyShapeMenuOpen = true"
+          @focusout="onSurveyEntryFocusOut"
+        >
+          <v-list-item
+            class="items-center pb-2"
+            :aria-haspopup="offersShapeChoice"
+            :aria-expanded="offersShapeChoice && surveyShapeMenuOpen"
+            @click="handleSurveyEntryClick"
+            @pointerdown="startShapeMenuLongPress"
+            @pointerup="cancelShapeMenuLongPress"
+            @pointerleave="cancelShapeMenuLongPress"
+            @pointercancel="cancelShapeMenuLongPress"
+          >
+            <div class="flex items-center w-full">
+              <v-icon
+                variant="text"
+                icon="mdi-transit-connection-variant"
+                rounded="full"
+                size="x-small"
+                color="white"
+                class="text-[16px]"
+              ></v-icon>
+              <span class="text-white text-sm ml-4">{{ surveyCreationButtonText }}</span>
+              <v-icon
+                v-if="offersShapeChoice"
+                variant="text"
+                icon="mdi-menu-right"
+                size="x-small"
+                color="white"
+                class="text-[18px] -mb-[2px] ml-auto -mr-[4px]"
+              ></v-icon>
+            </div>
+          </v-list-item>
+          <div
+            v-if="offersShapeChoice && surveyShapeMenuOpen"
+            class="absolute top-0 flex"
+            :class="shapeMenuOpensLeft ? 'right-full pr-[5px]' : 'left-full pl-[5px]'"
+          >
+            <div
+              class="flex flex-col rounded-md w-max"
+              :style="[
+                interfaceStore.globalGlassMenuStyles,
+                { background: '#333333EE', border: '1px solid #FFFFFF44' },
+              ]"
+            >
+              <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleSetSurveyShape('free-form')">
+                <v-icon
+                  variant="text"
+                  icon="mdi-vector-polygon"
+                  rounded="full"
+                  size="x-small"
+                  color="white"
+                  class="text-[16px]"
+                ></v-icon>
+                <span class="text-white text-sm ml-4">Free form</span>
+              </v-list-item>
+              <v-divider />
+              <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleSetSurveyShape('rectangle')">
+                <v-icon
+                  variant="text"
+                  icon="mdi-rectangle-outline"
+                  rounded="full"
+                  size="x-small"
+                  color="white"
+                  class="text-[16px]"
+                ></v-icon>
+                <span class="text-white text-sm ml-4">Rectangle</span>
+              </v-list-item>
+            </div>
+          </div>
+        </div>
         <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleToggleSimplePath">
           <v-icon
@@ -466,11 +532,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineEmits, defineProps, nextTick, ref, watch } from 'vue'
+import { useWindowSize } from '@vueuse/core'
+import { computed, defineEmits, defineProps, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
+import type { SurveyDrawShape } from '@/composables/map/useSurveyRectangleDrawing'
 import {
   baseStationMenuIcon,
   baseStationPlaceMenuLabel,
@@ -518,6 +586,7 @@ const emit = defineEmits<{
   (event: 'add-waypoint-at-cursor'): void
   (event: 'open-segment-radial-menu', segmentIndex: number): void
   (event: 'toggleSurvey'): void
+  (event: 'setSurveyShape', shape: SurveyDrawShape): void
   (event: 'toggleSimplePath'): void
   (event: 'deleteSelectedSurvey'): void
   (event: 'undoGeneratedWaypoints'): void
@@ -591,6 +660,7 @@ const crosshatchEnabled = computed(
 )
 
 const clampedPosition = ref({ x: 0, y: 0 })
+const menuWidth = ref(0)
 
 watch(
   () => [props.visible, props.position, props.menuType] as const,
@@ -603,6 +673,7 @@ watch(
       if (!el) return
       const margin = 8
       const elW = el.offsetWidth
+      menuWidth.value = elW
       const elH = el.offsetHeight
       const vw = window.innerWidth
       const vh = window.innerHeight
@@ -631,6 +702,83 @@ const surveyCreationButtonText = computed(() => {
   }
   return 'Add survey'
 })
+
+// While a survey is being created the entry closes the tool, so there is no shape left to pick.
+const offersShapeChoice = computed(() => !props.isCreatingSurvey)
+const surveyShapeMenuOpen = ref(false)
+const surveyEntryEl = ref<HTMLElement | null>(null)
+
+// Upper bound for the two fixed entries the submenu holds; measuring it would need it painted on a side first.
+const shapeMenuWidth = 160
+const { width: windowWidth } = useWindowSize()
+
+// The submenu opens to the right, and only folds inward when the window has no room for it there.
+const shapeMenuOpensLeft = computed(
+  () => clampedPosition.value.x + menuWidth.value + shapeMenuWidth > windowWidth.value
+)
+
+// Touch devices have no hover, so holding the entry down is what reveals the submenu there.
+const shapeMenuLongPressDelayMs = 450
+let shapeMenuLongPressTimeout: ReturnType<typeof setTimeout> | null = null
+let shapeMenuOpenedByLongPress = false
+
+const cancelShapeMenuLongPress = (): void => {
+  if (shapeMenuLongPressTimeout === null) return
+  clearTimeout(shapeMenuLongPressTimeout)
+  shapeMenuLongPressTimeout = null
+}
+
+const startShapeMenuLongPress = (event: PointerEvent): void => {
+  // Cleared for a mouse press too, since a finger that opened the submenu and picked from it never reaches the
+  // click that would have consumed the flag, and the next press must not be swallowed by it.
+  shapeMenuOpenedByLongPress = false
+  // A mouse already reveals the submenu by hovering, and treating a slow click as a hold would swallow it.
+  if (!offersShapeChoice.value || event.pointerType === 'mouse') return
+  cancelShapeMenuLongPress()
+  shapeMenuLongPressTimeout = setTimeout(() => {
+    shapeMenuLongPressTimeout = null
+    shapeMenuOpenedByLongPress = true
+    surveyShapeMenuOpen.value = true
+  }, shapeMenuLongPressDelayMs)
+}
+
+// Hovering out is what closes the submenu for a mouse, and neither of the other two ways in has an equivalent:
+// tabbing past the entry fires no mouseleave, and a finger produces none either.
+const onSurveyEntryFocusOut = (event: FocusEvent): void => {
+  if (surveyEntryEl.value?.contains(event.relatedTarget as Node | null)) return
+  surveyShapeMenuOpen.value = false
+}
+
+const onMapMenuPointerDown = (event: PointerEvent): void => {
+  if (surveyEntryEl.value?.contains(event.target as Node)) return
+  surveyShapeMenuOpen.value = false
+}
+
+watch(visible, (isVisible) => {
+  if (isVisible) return
+  cancelShapeMenuLongPress()
+  surveyShapeMenuOpen.value = false
+})
+
+onBeforeUnmount(cancelShapeMenuLongPress)
+
+const handleSurveyEntryClick = (): void => {
+  // The press that opened the submenu must not also pick a format.
+  if (shapeMenuOpenedByLongPress) {
+    shapeMenuOpenedByLongPress = false
+    return
+  }
+  if (!offersShapeChoice.value) {
+    handleToggleSurvey()
+    return
+  }
+  handleSetSurveyShape('free-form')
+}
+
+const handleSetSurveyShape = (shape: SurveyDrawShape): void => {
+  emit('setSurveyShape', shape)
+  emit('close')
+}
 
 const handleAddHereClick = (): void => {
   if (props.nearestSegmentIndex !== null) {
