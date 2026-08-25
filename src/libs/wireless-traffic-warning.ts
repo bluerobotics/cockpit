@@ -1,4 +1,4 @@
-import { type IpInfo, isTetheredInterfaceType, isWirelessInterfaceName } from '@/libs/blueos'
+import { type IpInfo, counterDeltaToMbps, isTetheredInterfaceType, isWirelessInterfaceName } from '@/libs/blueos'
 
 /**
  * Watches the upload rate of the vehicle network interfaces and tells when heavy traffic has been
@@ -38,17 +38,9 @@ const analysisHistoryMs = 4 * analysisWindowMs
 // it, which any cadence up to a third of the history guarantees.
 const minHistorySpanMs = analysisHistoryMs - analysisWindowMs
 
-// The vehicle refreshes these counters slower than we poll them, so the per-poll rate reads zero most of
-// the time and spikes on the polls that catch a refresh, on an idle interface just as much as on a busy
-// one. Taking the rate from how far the counter moved across a stretch instead of from what each poll
-// reported is immune to that, and to readings arriving late or out of order.
-const stretchUploadMbps = (from: CounterSample, to: CounterSample): number => {
-  const uploadedBytes = to.totalUploadedBytes - from.totalUploadedBytes
-  if (uploadedBytes < 0) return 0
-  return (uploadedBytes * 8) / (1024 * 1024) / ((to.timestamp - from.timestamp) / 1000)
-}
-
-// Slowest of the stretches spanning at least a window, so an idle one pulls the verdict down with it.
+// Taking the rate from how far the counter moved across a stretch, instead of from what each poll reported,
+// is also immune to readings arriving late or out of order. The slowest stretch spanning at least a window
+// decides, so an idle one pulls the verdict down with it.
 const slowestSustainedUploadMbps = (samples: CounterSample[]): number => {
   if (samples.length < 2) return 0
   if (samples[samples.length - 1].timestamp - samples[0].timestamp < minHistorySpanMs) return 0
@@ -56,7 +48,7 @@ const slowestSustainedUploadMbps = (samples: CounterSample[]): number => {
     samples
       .slice(fromIndex + 1)
       .filter((to) => to.timestamp - from.timestamp >= analysisWindowMs)
-      .map((to) => stretchUploadMbps(from, to))
+      .map((to) => counterDeltaToMbps(to.totalUploadedBytes - from.totalUploadedBytes, to.timestamp - from.timestamp))
   )
   return Math.min(...rates)
 }
