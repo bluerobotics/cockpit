@@ -5,6 +5,8 @@ import {
   convertValue,
   DistanceDisplayUnit,
   isReadableUnit,
+  preferencesFromSingleDistance,
+  readingLengthsAs,
   SpeedDisplayUnit,
   TemperatureDisplayUnit,
   UnitSystem,
@@ -29,6 +31,26 @@ test('convertValue converts to the picked unit of each quantity', () => {
   expect(convertValue(10, 'm/s', imperial).value).toBeCloseTo(22.3694)
   expect(convertValue(2500, 'cdegC', imperial).value).toBeCloseTo(77)
   expect(convertValue(1013, 'hPa', imperial).value).toBeCloseTo(14.6924)
+})
+
+test('depths and altitudes are read in their own unit rather than the distance one', () => {
+  expect(convertValue(10, 'm', readingLengthsAs({ ...metric, distance: DistanceDisplayUnit.Feet }, 'depth'))).toEqual({
+    value: 10,
+    unit: 'm',
+  })
+  expect(
+    convertValue(10, 'm', readingLengthsAs({ ...metric, altitude: DistanceDisplayUnit.Feet }, 'altitude')).value
+  ).toBeCloseTo(32.8084)
+})
+
+test('preferences stored with one distance setting keep depth and altitude on it', () => {
+  expect(preferencesFromSingleDistance({ distance: DistanceDisplayUnit.Feet })).toEqual({
+    distance: DistanceDisplayUnit.Feet,
+    depth: DistanceDisplayUnit.Feet,
+    altitude: DistanceDisplayUnit.Feet,
+  })
+  expect(preferencesFromSingleDistance({ distance: DistanceDisplayUnit.Meters }).depth).toBe(DistanceDisplayUnit.Meters)
+  expect(preferencesFromSingleDistance({})).toEqual({})
 })
 
 test('convertValue reads angles in degrees, which are not up to the user', () => {

@@ -5,6 +5,7 @@ import { watch } from 'vue'
 import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
+import { type DisplayUnitPreferences, preferencesFromSingleDistance } from '@/libs/units'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -23,7 +24,14 @@ export const useAppInterfaceStore = defineStore('responsive', {
       fontColor: '#FFFFFF',
       blur: 25,
     }),
-    displayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', defaultDisplayUnitPreferences),
+    releasedDisplayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', {
+      distance: defaultDisplayUnitPreferences.distance,
+    } as Partial<DisplayUnitPreferences>),
+    // Kept apart from the key released Cockpits read, which would fail on a distance in nautical miles.
+    storedDisplayUnitPreferences: useBlueOsStorage(
+      'cockpit-display-unit-preferences-v2',
+      {} as Partial<DisplayUnitPreferences>
+    ),
     mainMenuStyleTrigger: useBlueOsStorage('cockpit-main-menu-style', 'center-left'),
     componentToHighlight: 'none',
     isMainMenuVisible: false,
@@ -130,6 +138,14 @@ export const useAppInterfaceStore = defineStore('responsive', {
       animation: 'highlightBackground 0.5s alternate 20',
     }),
     isConfigPanelVisible: (state) => state.configPanelVisible,
+    // A preference stored before a quantity was offered carries no unit for it, and arrives that way
+    // again every time a vehicle running an older Cockpit syncs its settings over. Filling the gaps
+    // here rather than writing them back keeps the stored key exactly as the user left it.
+    displayUnitPreferences: (state): DisplayUnitPreferences => ({
+      ...defaultDisplayUnitPreferences,
+      ...preferencesFromSingleDistance(state.releasedDisplayUnitPreferences),
+      ...state.storedDisplayUnitPreferences,
+    }),
   },
 })
 

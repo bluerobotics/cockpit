@@ -14,6 +14,19 @@ export enum DistanceDisplayUnit {
 }
 
 /**
+ * Possible units for depths and altitudes.
+ */
+export type HeightDisplayUnit = DistanceDisplayUnit.Meters | DistanceDisplayUnit.Feet
+
+/**
+ * Possible area units.
+ */
+export enum AreaDisplayUnit {
+  SquareMeters = 'm^2',
+  SquareFeet = 'ft^2',
+}
+
+/**
  * Possible speed units.
  */
 export enum SpeedDisplayUnit {
@@ -52,6 +65,7 @@ export enum FixedDisplayUnit {
 
 export type DisplayUnit =
   | DistanceDisplayUnit
+  | AreaDisplayUnit
   | SpeedDisplayUnit
   | TemperatureDisplayUnit
   | PressureDisplayUnit
@@ -63,6 +77,7 @@ export type DisplayUnit =
  */
 export enum UnitQuantity {
   Distance = 'distance',
+  Area = 'area',
   Speed = 'speed',
   Temperature = 'temperature',
   Pressure = 'pressure',
@@ -87,9 +102,21 @@ export enum UnitSystem {
  */
 export interface DisplayUnitPreferences {
   /**
-   * Unit for distances, depths and altitudes
+   * Unit for distances
    */
   distance: DistanceDisplayUnit
+  /**
+   * Unit for depths
+   */
+  depth: HeightDisplayUnit
+  /**
+   * Unit for altitudes and heights
+   */
+  altitude: HeightDisplayUnit
+  /**
+   * Unit for areas
+   */
+  area: AreaDisplayUnit
   /**
    * Unit for speeds
    */
@@ -127,6 +154,8 @@ const metricOrNautical = [UnitSystem.Metric, UnitSystem.Nautical]
 const displayUnits: Record<DisplayUnit, DisplayUnitInfo> = {
   [DistanceDisplayUnit.Meters]: { prettyName: 'Meters', abbreviation: 'm', systems: metricOrNautical },
   [DistanceDisplayUnit.Feet]: { prettyName: 'Feet', abbreviation: 'ft', systems: [UnitSystem.Imperial] },
+  [AreaDisplayUnit.SquareMeters]: { prettyName: 'Square meters', abbreviation: 'm²', systems: metricOrNautical },
+  [AreaDisplayUnit.SquareFeet]: { prettyName: 'Square feet', abbreviation: 'ft²', systems: [UnitSystem.Imperial] },
   [SpeedDisplayUnit.MetersPerSecond]: {
     prettyName: 'Meters per second',
     abbreviation: 'm/s',
@@ -165,18 +194,27 @@ export const unitAbbreviation = Object.fromEntries(
 export const unitSystems: Record<Exclude<UnitSystem, UnitSystem.Custom>, DisplayUnitPreferences> = {
   [UnitSystem.Metric]: {
     distance: DistanceDisplayUnit.Meters,
+    depth: DistanceDisplayUnit.Meters,
+    altitude: DistanceDisplayUnit.Meters,
+    area: AreaDisplayUnit.SquareMeters,
     speed: SpeedDisplayUnit.MetersPerSecond,
     temperature: TemperatureDisplayUnit.Celsius,
     pressure: PressureDisplayUnit.HectoPascal,
   },
   [UnitSystem.Imperial]: {
     distance: DistanceDisplayUnit.Feet,
+    depth: DistanceDisplayUnit.Feet,
+    altitude: DistanceDisplayUnit.Feet,
+    area: AreaDisplayUnit.SquareFeet,
     speed: SpeedDisplayUnit.MilesPerHour,
     temperature: TemperatureDisplayUnit.Fahrenheit,
     pressure: PressureDisplayUnit.Psi,
   },
   [UnitSystem.Nautical]: {
     distance: DistanceDisplayUnit.Meters,
+    depth: DistanceDisplayUnit.Meters,
+    altitude: DistanceDisplayUnit.Meters,
+    area: AreaDisplayUnit.SquareMeters,
     speed: SpeedDisplayUnit.Knots,
     temperature: TemperatureDisplayUnit.Celsius,
     pressure: PressureDisplayUnit.HectoPascal,
@@ -194,6 +232,36 @@ export const unitSystemFromPreferences = (preferences: DisplayUnitPreferences): 
   const shared = Object.values(UnitSystem).filter((system) => pickedSystems.every((list) => list.includes(system)))
   return shared[0] ?? UnitSystem.Custom
 }
+
+/**
+ * Reads preferences stored when one distance setting also covered depths and altitudes, so whoever read those in
+ * feet keeps reading them in feet.
+ * @param {Partial<DisplayUnitPreferences>} stored The preferences as they were stored
+ * @returns {Partial<DisplayUnitPreferences>} The same preferences, with depth and altitude following the distance
+ */
+export const preferencesFromSingleDistance = (
+  stored: Partial<DisplayUnitPreferences>
+): Partial<DisplayUnitPreferences> => {
+  if (stored.distance === undefined) return stored
+  const height = stored.distance === DistanceDisplayUnit.Feet ? DistanceDisplayUnit.Feet : DistanceDisplayUnit.Meters
+  return { ...stored, depth: height, altitude: height }
+}
+
+/**
+ * What a length measures when it is not an ordinary distance, and so is read in a unit of its own.
+ */
+export type LengthReading = 'depth' | 'altitude'
+
+/**
+ * Reads lengths as depths or altitudes, which the user picks a unit for apart from other distances.
+ * @param {DisplayUnitPreferences} preferences The units picked for each quantity
+ * @param {LengthReading} reading What the lengths measure
+ * @returns {DisplayUnitPreferences} The same preferences, with distances read in the unit picked for that reading
+ */
+export const readingLengthsAs = (
+  preferences: DisplayUnitPreferences,
+  reading: LengthReading
+): DisplayUnitPreferences => ({ ...preferences, distance: preferences[reading] })
 
 /**
  * What a unit string means, once we know how to read it.
@@ -231,6 +299,7 @@ const rawUnitOverrides: Record<string, UnitDefinition> = {
 
 const quantityReferenceUnits: Record<UnitQuantity, string> = {
   [UnitQuantity.Distance]: 'm',
+  [UnitQuantity.Area]: 'm^2',
   [UnitQuantity.Speed]: 'm/s',
   [UnitQuantity.Temperature]: 'degC',
   [UnitQuantity.Pressure]: 'Pa',

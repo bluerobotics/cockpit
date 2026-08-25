@@ -32,12 +32,12 @@ import { settingsManager } from '@/libs/settings-management'
 import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
-import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import {
   convertGeoFencePlanToMavlink,
   convertMavlinkToGeoFencePlan,
   emptyGeoFencePlan,
 } from '@/libs/vehicle/mavlink/geofence-conversion'
+import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import { downloadMissionItems } from '@/libs/vehicle/mavlink/mission-download'
 import { uploadMissionItems } from '@/libs/vehicle/mavlink/mission-upload'
 import {
