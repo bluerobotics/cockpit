@@ -49,6 +49,7 @@ export const gnssFields: GnssField[] = [
     label: 'Latitude',
     type: 'number',
     description: 'Latitude in decimal degrees.',
+    unit: 'deg',
     read: (f) => f.latitude,
   },
   {
@@ -56,6 +57,7 @@ export const gnssFields: GnssField[] = [
     label: 'Longitude',
     type: 'number',
     description: 'Longitude in decimal degrees.',
+    unit: 'deg',
     read: (f) => f.longitude,
   },
   {
@@ -63,6 +65,7 @@ export const gnssFields: GnssField[] = [
     label: 'Altitude (MSL)',
     type: 'number',
     description: 'Altitude above mean sea level, in meters.',
+    unit: 'm',
     read: (f) => f.altitudeMslM,
   },
   {
@@ -70,6 +73,7 @@ export const gnssFields: GnssField[] = [
     label: 'Geoid separation',
     type: 'number',
     description: 'Geoidal separation, in meters.',
+    unit: 'm',
     read: (f) => f.geoidSeparationM,
   },
   {
@@ -133,6 +137,7 @@ export const gnssFields: GnssField[] = [
     label: 'Speed over ground',
     type: 'number',
     description: 'Speed over ground, in meters per second.',
+    unit: 'm/s',
     read: (f) => f.speedOverGroundMps,
   },
   {
@@ -140,6 +145,7 @@ export const gnssFields: GnssField[] = [
     label: 'Course over ground',
     type: 'number',
     description: 'Course over ground, in degrees.',
+    unit: 'deg',
     read: (f) => f.courseOverGroundDeg,
   },
   {
@@ -323,6 +329,7 @@ export const gnssVariablesForDevice = (device: GnssDeviceInfo): DataLakeVariable
     name: `${device.name} - ${field.label}`,
     type: field.type,
     description: field.description,
+    unit: field.unit,
   }))
 
 /**
