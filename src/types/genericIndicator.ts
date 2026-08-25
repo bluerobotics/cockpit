@@ -27,6 +27,12 @@ export interface VeryGenericIndicatorPreset {
    * Fixed decimal places for the displayed value. When omitted, auto-formatting is used.
    */
   decimalPlaces?: number
+  /**
+   * Whether to read the unit from the variable itself, converting it to the unit the user picked.
+   * The unit and the multiplier above are then what the indicator goes back to if the user turns
+   * this off.
+   */
+  useVariableUnit?: boolean
 }
 
 export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
@@ -50,6 +56,7 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     iconName: 'mdi-thermometer',
     variableUnit: '°C',
     variableMultiplier: 0.01,
+    useVariableUnit: true,
   },
   {
     displayName: 'Tether Turns',
@@ -99,6 +106,7 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     iconName: 'mdi-arrow-collapse-down',
     variableUnit: 'm',
     variableMultiplier: 1,
+    useVariableUnit: true,
   },
   {
     displayName: 'Speed',
@@ -107,6 +115,7 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     variableUnit: 'm/s',
     variableMultiplier: 1,
     decimalPlaces: 1,
+    useVariableUnit: true,
   },
   {
     displayName: 'Celsius 2',
@@ -115,5 +124,6 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     variableUnit: '°C',
     variableMultiplier: 1,
     decimalPlaces: 2,
+    useVariableUnit: true,
   },
 ]
