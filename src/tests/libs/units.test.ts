@@ -81,6 +81,14 @@ test('isReadableUnit tells a unit we convert from one we can only pass through',
   expect(isReadableUnit('')).toBe(false)
 })
 
+test('convertValue reads the units Cockpit states on its own vehicle variables', () => {
+  // The camera tilt, the Celsius 2 reading and the network latency. The latency is the one that has
+  // to stay put: a time unit taken for a quantity we convert would read it in feet.
+  expect(convertValue(45, 'deg', imperial)).toEqual({ value: 45, unit: '°' })
+  expect(convertValue(25, 'degC', imperial).value).toBeCloseTo(77)
+  expect(convertValue(12, 'ms', imperial)).toEqual({ value: 12, unit: 'ms' })
+})
+
 test('the MAVLink definition still states the units we read them from', () => {
   expect(mavlinkDefinition.messageField('ATTITUDE', 'roll')?.units).toBe('rad')
   expect(mavlinkDefinition.messageField('GLOBAL_POSITION_INT', 'lat')?.units).toBe('degE7')
