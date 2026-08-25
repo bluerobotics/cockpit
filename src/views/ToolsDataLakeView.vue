@@ -2,7 +2,7 @@
   <BaseConfigurationView>
     <template #title>Data Lake</template>
     <template #content>
-      <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] max-h-[80vh] w-[1200px]">
+      <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] max-h-[80vh] w-[880px] max-w-[calc(100vw-9rem)]">
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Variables monitor</template>
           <template #info>
@@ -12,14 +12,14 @@
             </p>
           </template>
           <template #content>
-            <div class="flex justify-center flex-col ml-2 mb-8 mt-2 w-full h-full">
-              <div class="mb-4 flex items-center gap-2">
-                <div class="relative flex-1">
+            <div class="flex justify-center flex-col ml-1 mb-4 mt-1 w-full h-full">
+              <div class="mb-2 flex flex-wrap items-center gap-x-1 gap-y-1.5">
+                <div class="relative min-w-[8rem] flex-1">
                   <input
                     v-model="searchQuery"
                     type="text"
                     placeholder="Search variables..."
-                    class="w-full px-3 py-2 bg-[#FFFFFF22] rounded-md text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full px-2 py-1.5 bg-[#FFFFFF22] rounded-md text-xs text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <span
                     v-if="searchQuery"
@@ -27,20 +27,39 @@
                     @click="searchQuery = ''"
                   />
                 </div>
-                <v-btn variant="text" class="rounded-md" @click="openNewVariableDialog">
-                  <v-icon start>mdi-plus</v-icon>
+                <v-btn variant="text" size="small" class="rounded-md text-xs" @click="openNewVariableDialog">
+                  <v-icon start size="16">mdi-plus</v-icon>
                   Add variable
                 </v-btn>
-                <v-btn variant="text" class="rounded-md" @click="openNewFunctionDialog">
-                  <v-icon start>mdi-function-variant</v-icon>
+                <v-btn variant="text" size="small" class="rounded-md text-xs" @click="openNewFunctionDialog">
+                  <v-icon start size="16">mdi-function-variant</v-icon>
                   Add compound variable
                 </v-btn>
+                <v-btn-toggle
+                  :model-value="viewMode"
+                  mandatory
+                  divided
+                  density="compact"
+                  variant="text"
+                  class="bg-transparent shrink-0 elevation-1 border border-[#FFFFFF1A]"
+                  @update:model-value="setViewMode"
+                >
+                  <v-btn
+                    v-for="mode in viewModes"
+                    :key="mode"
+                    :value="mode"
+                    size="x-small"
+                    class="capitalize text-white text-xs px-2"
+                  >
+                    {{ mode }}
+                  </v-btn>
+                </v-btn-toggle>
               </div>
               <v-data-table
                 :items="filteredVariables"
                 items-per-page="10"
                 density="compact"
-                class="rounded-lg bg-[#FFFFFF11] mb-8 elevation-1"
+                class="rounded-lg bg-[#FFFFFF11] mb-2 elevation-1"
                 theme="dark"
                 :style="interfaceStore.globalGlassMenuStyles"
                 :headers="tableHeaders"
@@ -49,12 +68,12 @@
                 @update:current-items="(currentItems) => updateListOfActiveVariables(currentItems)"
               >
                 <template #item="{ item }">
-                  <tr>
+                  <tr :class="{ 'relative z-10': copiedId === item.id }">
                     <td>
-                      <div class="flex items-center justify-left gap-2 rounded-xl m-1">
+                      <div class="flex items-center gap-1 min-w-0">
                         <button
                           :class="[
-                            'transition-colors',
+                            'transition-colors shrink-0 text-sm',
                             'relative',
                             copiedId === item.id
                               ? 'text-green-400 hover:text-green-400'
@@ -74,8 +93,8 @@
 
                         <v-tooltip location="top">
                           <template #activator="{ props: tooltipProps }">
-                            <div v-bind="tooltipProps" class="w-[390px]">
-                              <ScrollingText :text="item.name" max-width="390px" align="left" :pause-on-hover="false" />
+                            <div v-bind="tooltipProps" class="min-w-0 flex-1">
+                              <ScrollingText :text="item.name" max-width="100%" align="left" :pause-on-hover="false" />
                             </div>
                           </template>
                           <span>{{ item.name }}</span>
@@ -83,68 +102,72 @@
                       </div>
                     </td>
                     <td>
-                      <div class="flex items-center justify-center gap-1 rounded-xl mx-1">
-                        <p class="w-[70px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                      <div class="flex items-center justify-center gap-0.5 min-w-0">
+                        <p class="whitespace-nowrap overflow-hidden text-ellipsis">
                           {{ item.type }}
                         </p>
-                        <div class="w-[16px] shrink-0">
+                        <div class="w-3.5 shrink-0">
                           <v-tooltip
                             v-if="isCompoundVariable(item.id)"
                             location="top"
                             text="Compound variable: its value is calculated from an expression"
                           >
                             <template #activator="{ props: tooltipProps }">
-                              <span v-bind="tooltipProps" class="mdi mdi-function-variant text-gray-400" />
+                              <span v-bind="tooltipProps" class="mdi mdi-function-variant text-gray-400 text-sm" />
                             </template>
                           </v-tooltip>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <div class="flex items-center justify-center rounded-xl mx-1">
-                        <p class="w-[115px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
-                          {{ item.source }}
-                        </p>
+                      <p class="whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                        {{ item.source }}
+                      </p>
+                    </td>
+                    <td>
+                      <p class="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
+                        {{ displayedValue(item) }}
+                      </p>
+                    </td>
+                    <td>
+                      <p class="whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                        {{ displayedUnit(item) }}
+                      </p>
+                    </td>
+                    <td>
+                      <div class="grid grid-cols-2 place-items-center">
+                        <div class="flex h-[18px] w-[18px] items-center justify-center">
+                          <button
+                            v-if="isCompoundVariable(item.id) && canEditVariable(item.id)"
+                            class="text-gray-400 hover:text-white text-sm leading-none"
+                            title="Edit"
+                            @click="editCompoundVariable(item.id)"
+                          >
+                            <span class="mdi mdi-pencil" />
+                          </button>
+                          <button
+                            v-else-if="!isCompoundVariable(item.id) && canEditVariable(item.id)"
+                            class="text-gray-400 hover:text-white text-sm leading-none"
+                            title="Edit"
+                            @click="editVariable(item.id)"
+                          >
+                            <span class="mdi mdi-pencil" />
+                          </button>
+                        </div>
+                        <div class="flex h-[18px] w-[18px] items-center justify-center">
+                          <button
+                            v-if="canDeleteVariable(item.id)"
+                            class="text-red-400 hover:text-red-300 text-sm leading-none"
+                            title="Delete"
+                            @click="deleteVariable(item.id)"
+                          >
+                            <span class="mdi mdi-delete" />
+                          </button>
+                        </div>
                       </div>
                     </td>
                     <td>
-                      <div class="flex items-center justify-start rounded-xl mx-1">
-                        <p class="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
-                          {{ parsedCurrentValue(item.id) }}
-                        </p>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="flex items-center justify-end h-[42px] gap-1 -mr-2">
-                        <v-btn
-                          v-if="isCompoundVariable(item.id) && canEditVariable(item.id)"
-                          variant="outlined"
-                          class="rounded-full"
-                          icon="mdi-pencil"
-                          size="x-small"
-                          @click="editCompoundVariable(item.id)"
-                        />
-                        <v-btn
-                          v-if="!isCompoundVariable(item.id) && canEditVariable(item.id)"
-                          variant="outlined"
-                          class="rounded-full"
-                          icon="mdi-pencil"
-                          size="x-small"
-                          @click="editVariable(item.id)"
-                        />
-                        <v-btn
-                          v-if="canDeleteVariable(item.id)"
-                          variant="outlined"
-                          color="error"
-                          class="rounded-full"
-                          icon="mdi-delete"
-                          size="x-small"
-                          @click="deleteVariable(item.id)"
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div class="flex items-center justify-center rounded-xl mx-1">
+                      <div class="flex items-center justify-center">
                         <v-checkbox
                           :model-value="recordedVariableIds.includes(item.id)"
                           density="compact"
@@ -160,7 +183,7 @@
                 </template>
                 <template #no-data>
                   <tr>
-                    <td colspan="6" class="text-center flex items-center justify-center h-[50px] w-full">
+                    <td colspan="7" class="text-center flex items-center justify-center h-[50px] w-full">
                       <p class="text-[16px] ml-[170px] w-full">No data lake variables found</p>
                     </td>
                   </tr>
@@ -212,6 +235,7 @@ import {
   TransformingFunction,
 } from '@/libs/actions/data-lake-transformations'
 import { dataLakeLogger } from '@/libs/data-lake-logging'
+import { type ConvertedValue, convertValue, UnitSystem, unitSystems } from '@/libs/units'
 import { copyToClipboard } from '@/libs/utils'
 import {
   canUserChangeDataLakeVariable,
@@ -237,17 +261,17 @@ interface DataLakeVariableWithSource extends DataLakeVariable {
 }
 
 const tableHeaders = [
-  { title: 'Name', align: 'start', key: 'name', width: '390px', fixed: true, headerProps: { class: 'pl-10' } },
-  { title: 'Type', align: 'center', key: 'type', width: '92px', fixed: true },
-  { title: 'Source', align: 'center', key: 'source', width: '115px', fixed: true },
-  { title: 'Current Value', align: 'start', key: 'value', width: '200px', fixed: true },
-  { title: 'Actions', align: 'end', key: 'actions', width: '70px', fixed: true },
+  { title: 'Name', align: 'start', key: 'name', width: '260px' },
+  { title: 'Type', align: 'center', key: 'type', width: '78px' },
+  { title: 'Source', align: 'center', key: 'source', width: '118px' },
+  { title: 'Value', align: 'start', key: 'value', width: '160px' },
+  { title: 'Unit', align: 'center', key: 'unit', width: '52px' },
+  { title: 'Actions', align: 'end', key: 'actions', width: '56px' },
   {
     title: 'Record',
     align: 'center',
     key: 'record',
-    width: '30px',
-    fixed: true,
+    width: '56px',
     sortable: true,
     value: (item: DataLakeVariableWithSource) => (recordedVariableIds.value.includes(item.id) ? 1 : 0),
   },
@@ -323,6 +347,38 @@ const parsedCurrentValue = (id: string): string => {
   }
 
   return String(currentValues.value[id])
+}
+
+const viewModes = ['raw', UnitSystem.Metric, UnitSystem.Imperial] as const
+
+const viewMode = ref<(typeof viewModes)[number]>('raw')
+
+const setViewMode = (mode: unknown): void => {
+  logUserAction(`Switched the data-lake variables monitor to ${mode} units`)
+  viewMode.value = mode as (typeof viewModes)[number]
+}
+
+// Values are stored as the vehicle sent them, so reading them in another unit is a display-time
+// conversion the table does on what it is about to show.
+const convertedValue = (item: DataLakeVariable): ConvertedValue | undefined => {
+  const value = currentValues.value[item.id]
+  if (viewMode.value === 'raw' || typeof value !== 'number') return undefined
+  return convertValue(value, item.unit, unitSystems[viewMode.value])
+}
+
+const displayedValue = (item: DataLakeVariable): string => {
+  const converted = convertedValue(item)
+  // Conversion is lossless; rounding here is what turned a degE7 latitude into four decimals of a degree.
+  const text =
+    converted === undefined ? parsedCurrentValue(item.id) : Number(converted.value.toPrecision(15)).toString()
+  const value = converted?.value ?? currentValues.value[item.id]
+  // A leading figure-space keeps digits from shifting when the value oscillates around zero.
+  if (typeof value !== 'number' || text === '' || text.startsWith('-')) return text
+  return `\u2007${text}`
+}
+
+const displayedUnit = (item: DataLakeVariable): string => {
+  return convertedValue(item)?.unit ?? item.unit ?? ''
 }
 
 /**
@@ -497,11 +553,33 @@ watch(showNewFunctionDialog, (show) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  font-size: 11px;
+}
+
+:deep(.v-data-table table) {
   table-layout: fixed;
+  width: 100%;
 }
 
 :deep(.v-data-table__wrapper) {
   flex-grow: 1;
+  overflow-x: hidden;
+}
+
+:deep(.v-data-table th),
+:deep(.v-data-table td) {
+  padding: 1px 4px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.v-data-table th:first-child),
+:deep(.v-data-table td:first-child) {
+  padding-left: 16px !important;
+}
+
+:deep(.v-data-table td:first-child) {
+  overflow: visible;
 }
 
 .record-checkbox :deep(.v-selection-control) {
