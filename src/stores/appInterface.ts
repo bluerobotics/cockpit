@@ -4,7 +4,9 @@ import { watch } from 'vue'
 
 import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { createDataLakeVariable, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
+import { unitAbbreviation, unitSystemFromPreferences } from '@/libs/units'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -137,6 +139,32 @@ export const useAppInterfaceStore = defineStore('responsive', {
 watch(windowWidth, () => {
   const store = useAppInterfaceStore()
   store.updateWidth()
+})
+
+// Actions and widgets that show a value themselves have to know how the user reads it, so the
+// choice is published where they can reach it.
+setupPostPiniaConnection(() => {
+  const store = useAppInterfaceStore()
+  watch(
+    () => store.displayUnitPreferences,
+    (units) => {
+      const unitVariables = [
+        { id: 'UNITS/displayPreference', name: 'Unit system in use', value: unitSystemFromPreferences(units) },
+        { id: 'UNITS/distance', name: 'Distance unit in use', value: unitAbbreviation[units.distance] },
+        { id: 'UNITS/speed', name: 'Speed unit in use', value: unitAbbreviation[units.speed] },
+        { id: 'UNITS/temperature', name: 'Temperature unit in use', value: unitAbbreviation[units.temperature] },
+        { id: 'UNITS/pressure', name: 'Pressure unit in use', value: unitAbbreviation[units.pressure] },
+      ]
+
+      unitVariables.forEach(({ id, name, value }) => {
+        if (getDataLakeVariableInfo(id) === undefined) {
+          createDataLakeVariable({ id, name, type: 'string', description: 'The unit values are shown in.' })
+        }
+        setDataLakeVariableData(id, value)
+      })
+    },
+    { immediate: true }
+  )
 })
 
 // Watch for pirate mode changes and trigger skull animation
