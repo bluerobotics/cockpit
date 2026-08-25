@@ -32,6 +32,7 @@ import { settingsManager } from '@/libs/settings-management'
 import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
+import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import {
   convertGeoFencePlanToMavlink,
   convertMavlinkToGeoFencePlan,
@@ -1573,11 +1574,11 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     const vehicleName = `MAVLink / System: ${this.currentSystemId} / Component: 1`
     /* eslint-disable vue/max-len, prettier/prettier, max-len */
     return {
-      cameraTiltLegacy: { id: 'cameraTiltDeg', name: '(Legacy) Camera Tilt Degrees', type: 'number' },
+      cameraTiltLegacy: { id: 'cameraTiltDeg', name: '(Legacy) Camera Tilt Degrees', type: 'number', unit: 'deg' },
       autopilotSystemId: { id: 'autopilotSystemId', name: 'Autopilot System ID', type: 'number' },
-      cameraTilt: { id: `${vehiclePath}/cameraTiltDeg`, name: `Camera Tilt [degrees] (${vehicleName})`, type: 'number' },
-      celsius2Temperature: { id: 'celsius2TemperatureC', name: 'Celsius 2 Temperature [°C]', type: 'number' },
-      networkLatencyMs: { id: `${vehiclePath}/networkLatencyMs`, name: `Network Latency [ms] (${vehicleName})`, type: 'number' },
+      cameraTilt: { id: `${vehiclePath}/cameraTiltDeg`, name: `Camera Tilt [degrees] (${vehicleName})`, type: 'number', unit: 'deg' },
+      celsius2Temperature: { id: 'celsius2TemperatureC', name: 'Celsius 2 Temperature [°C]', type: 'number', unit: 'degC' },
+      networkLatencyMs: { id: `${vehiclePath}/networkLatencyMs`, name: `Network Latency [ms] (${vehicleName})`, type: 'number', unit: 'ms' },
     }
     /* eslint-enable vue/max-len, prettier/prettier, max-len */
   }
@@ -1644,10 +1645,12 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     } else {
       // For all other messages, use the flattener
       const flattened = flattenData(mavlinkPackage.message)
-      flattened.forEach(({ path, value }) => {
+      flattened.forEach(({ path, field, value }) => {
         if (value === null) return
         if (typeof value !== 'string' && typeof value !== 'number') return
 
+        // Looking the unit up walks the whole dialect, so it only happens where a variable is
+        // created, never on the messages that follow.
         if (
           this.shouldCreateLegacyDataLakeVariables &&
           messageSystemId === this.currentSystemId &&
@@ -1660,6 +1663,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
               id: oldStylePath,
               name: `(Legacy) ${path}`,
               type: typeof value === 'string' ? 'string' : 'number',
+              unit: mavlinkDefinition.messageField(messageType, field)?.units,
             })
           }
           setDataLakeVariableData(oldStylePath, value)
@@ -1672,6 +1676,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
             id: newStylePath,
             name: `${path} ${suffix}`,
             type: typeof value === 'string' ? 'string' : 'number',
+            unit: mavlinkDefinition.messageField(messageType, field)?.units,
           })
         }
         setDataLakeVariableData(newStylePath, value)

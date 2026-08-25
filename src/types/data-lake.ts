@@ -24,6 +24,10 @@ export interface DataLakeVariable {
    */
   description?: string
   /**
+   * The unit the value is stored in, as MAVLink states it, so it can be converted for display
+   */
+  unit?: string
+  /**
    * Whether the variable existance should be persisted between boots
    */
   persistent?: boolean
