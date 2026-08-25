@@ -75,6 +75,7 @@
                 v-if="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
                 v-model="miniWidget.options.variableName"
                 label="Variable"
+                ignores-unit-suffix
               >
                 <template #hint>
                   <p class="text-sm mb-2">
