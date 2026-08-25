@@ -330,6 +330,13 @@
         </div>
         <v-divider v-if="!isCreatingSimplePath && !isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
+          <SurveyShapeControls
+            :shape="surveyDrawShape"
+            :dimensions="surveyRectangleDimensions"
+            @update:shape="setSurveyDrawShape"
+            @update:dimensions="applySurveyRectangleDimensions"
+          />
+          <v-divider class="my-1" />
           <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
           <input
             v-model.number="distanceBetweenSurveyLines"
@@ -865,6 +872,7 @@ import HomePositionSettingHelp from '@/components/mission-planning/HomePositionS
 import MeasureExtentInput from '@/components/mission-planning/MeasureExtentInput.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
+import SurveyShapeControls from '@/components/mission-planning/SurveyShapeControls.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import MissionLibraryModal from '@/components/MissionLibraryModal.vue'
@@ -886,6 +894,7 @@ import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelec
 import { useMeasureExtentInput } from '@/composables/map/useMeasureExtentInput'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
+import { useSurveyRectangleDrawing } from '@/composables/map/useSurveyRectangleDrawing'
 import { useTouchDrawing } from '@/composables/map/useTouchDrawing'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
@@ -1239,6 +1248,34 @@ const {
 } = extentInput
 
 const {
+  shape: surveyDrawShape,
+  isSizingRectangle,
+  dimensions: surveyRectangleDimensions,
+  setShape: setSurveyDrawShape,
+  consumeSurveyClick,
+  applyDimensions: applySurveyRectangleDimensions,
+  releaseLinesAngle: releaseSurveyLinesAngle,
+  cancelSizing: cancelSurveyRectangleSizing,
+  initRectangleDrawing,
+} = useSurveyRectangleDrawing({
+  vertices: surveyPolygonVertexesPositions,
+  onRectangleDrawn: (linesAngle) => {
+    isDrawingSurveyPolygon.value = false
+    surveyLinesAngle.value = linesAngle
+    rebuildSurveyPolygonFromPositions()
+  },
+  onRectangleResized: (linesAngle) => {
+    if (linesAngle !== null) surveyLinesAngle.value = linesAngle
+    rebuildSurveyPolygonFromPositions()
+  },
+  onShapeChanged: () => {
+    if (!isDrawingSurveyPolygon.value || surveyPolygonVertexesPositions.value.length === 0) return
+    pushSurveyPolygonSnapshot()
+    clearSurveyPath()
+  },
+})
+
+const {
   isEdgePressed: isPressingSurveyEdge,
   isDraggingEdge: isDraggingSurveyEdge,
   initEdgeDragging,
@@ -1246,7 +1283,8 @@ const {
 } = useSurveyEdgeDragging({
   vertices: surveyPolygonVertexesPositions,
   markers: () => surveyPolygonVertexesMarkers.value,
-  isEditable: () => isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length >= 3,
+  isEditable: () =>
+    isCreatingSurvey.value && !isSizingRectangle.value && surveyPolygonVertexesPositions.value.length >= 3,
   onDragStart: pushSurveyPolygonSnapshot,
   onEdgeMoved: () => {
     updatePolygon()
@@ -1504,7 +1542,7 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
 }
 
 const placeSurveyPolygonPoint = (latlng: L.LatLng): void => {
-  addSurveyPoint(latlng)
+  if (!consumeSurveyClick(latlng)) addSurveyPoint(latlng)
   clearLiveMeasure()
 }
 
@@ -1544,6 +1582,7 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   const measuring =
     !!anchor &&
     !draggingExistingNode &&
+    !isSizingRectangle.value &&
     (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
   if (!measuring) {
     destroyMeasureOverlay(planningMap.value)
@@ -2817,6 +2856,7 @@ const performUndo = (): void => {
     surveyPolygonVertexesPositions.value = removedSurvey.polygonCoordinates.map(([lat, lng]) => L.latLng(lat, lng))
     distanceBetweenSurveyLines.value = removedSurvey.distanceBetweenLines
     surveyLinesAngle.value = removedSurvey.surveyLinesAngle
+    releaseSurveyLinesAngle()
     surveyCrosshatch.value = removedSurvey.crosshatch ?? false
     crosshatchDistanceBetweenLines.value =
       removedSurvey.crosshatchDistanceBetweenLines ?? removedSurvey.distanceBetweenLines
@@ -2908,7 +2948,7 @@ const performRedo = (): void => {
 
 const handleKeyDown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
-    if (isCreatingSurvey.value) {
+    if (isCreatingSurvey.value && !cancelSurveyRectangleSizing()) {
       if (isDrawingSurveyPolygon.value) {
         isDrawingSurveyPolygon.value = false
       }
@@ -3285,11 +3325,13 @@ const surveyLinesAngleDisplay = computed({
     return Number(surveyLinesAngle.value.toFixed(1))
   },
   set(value) {
+    releaseSurveyLinesAngle()
     surveyLinesAngle.value = value
   },
 })
 
 const onSurveyLinesAngleChange = (angle: number): void => {
+  releaseSurveyLinesAngle()
   surveyLinesAngle.value = angle
 }
 
@@ -3345,6 +3387,7 @@ const clearSurveyPathByUser = (): void => {
 }
 
 const clearSurveyPath = (): void => {
+  cancelSurveyRectangleSizing()
   surveyPreviewPath.value = null
   if (surveyPathLayer.value) {
     planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
@@ -4067,6 +4110,7 @@ const undoGenerateWaypoints = (): void => {
   surveyPolygonVertexesPositions.value = survey.polygonCoordinates.map(([lat, lng]) => L.latLng(lat, lng))
   distanceBetweenSurveyLines.value = survey.distanceBetweenLines
   surveyLinesAngle.value = survey.surveyLinesAngle
+  releaseSurveyLinesAngle()
   surveyCrosshatch.value = survey.crosshatch ?? false
   crosshatchDistanceBetweenLines.value = survey.crosshatchDistanceBetweenLines ?? survey.distanceBetweenLines
   surveyDraftEntryCorner.value = survey.entryCorner ?? 0
@@ -4541,6 +4585,7 @@ onMounted(async () => {
   surveyArrowOverlay.initArrowOverlay(planningMap.value!)
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
   initExtentInputs(planningMap.value!)
+  initRectangleDrawing(planningMap.value!)
   initEdgeDragging(planningMap.value!)
   initTouchDrawing(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
