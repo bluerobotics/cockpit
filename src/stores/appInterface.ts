@@ -23,7 +23,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
       fontColor: '#FFFFFF',
       blur: 25,
     }),
-    displayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', defaultDisplayUnitPreferences),
+    storedDisplayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', {
+      ...defaultDisplayUnitPreferences,
+    }),
     mainMenuStyleTrigger: useBlueOsStorage('cockpit-main-menu-style', 'center-left'),
     componentToHighlight: 'none',
     isMainMenuVisible: false,
@@ -122,6 +124,13 @@ export const useAppInterfaceStore = defineStore('responsive', {
       animation: 'highlightBackground 0.5s alternate 20',
     }),
     isConfigPanelVisible: (state) => state.configPanelVisible,
+    // A preference stored before a quantity was offered carries no unit for it, and arrives that way
+    // again every time a vehicle running an older Cockpit syncs its settings over. Filling the gaps
+    // here rather than writing them back keeps the stored key exactly as the user left it.
+    displayUnitPreferences: (state) => ({
+      ...defaultDisplayUnitPreferences,
+      ...state.storedDisplayUnitPreferences,
+    }),
   },
 })
 
