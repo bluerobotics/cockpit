@@ -3,7 +3,9 @@ import { expect, test } from 'vitest'
 import {
   type DisplayUnitPreferences,
   convertValue,
+  convertValueToRawUnit,
   DistanceDisplayUnit,
+  formatDistance,
   isReadableUnit,
   SpeedDisplayUnit,
   TemperatureDisplayUnit,
@@ -87,6 +89,30 @@ test('convertValue reads the units Cockpit states on its own vehicle variables',
   expect(convertValue(45, 'deg', imperial)).toEqual({ value: 45, unit: '°' })
   expect(convertValue(25, 'degC', imperial).value).toBeCloseTo(77)
   expect(convertValue(12, 'ms', imperial)).toEqual({ value: 12, unit: 'ms' })
+})
+
+test('convertValueToRawUnit takes what the user set back to what the vehicle expects', () => {
+  expect(convertValueToRawUnit(328.084, 'm', imperial)).toBeCloseTo(100)
+  expect(convertValueToRawUnit(100, 'm', metric)).toBeCloseTo(100)
+
+  // What a slider commanding an altitude in feet depends on: the round trip has to come back whole.
+  expect(convertValueToRawUnit(convertValue(42, 'm', imperial).value, 'm', imperial)).toBeCloseTo(42)
+})
+
+test('convertValue keeps the offset of an affine conversion out of the scale factor', () => {
+  // Reading the same pair twice is what the cached conversion factor gets wrong if the offset of a
+  // temperature scale is folded into the slope.
+  expect(convertValue(0, 'degC', imperial).value).toBeCloseTo(32)
+  expect(convertValue(100, 'degC', imperial).value).toBeCloseTo(212)
+  expect(convertValueToRawUnit(212, 'degC', imperial)).toBeCloseTo(100)
+})
+
+test('formatDistance moves up to the larger unit once the number grows', () => {
+  expect(formatDistance(940, metric)).toBe('940 m')
+  expect(formatDistance(2500, metric)).toBe('2.5 km')
+  expect(formatDistance(1609.34, imperial)).toBe('5280 ft')
+  expect(formatDistance(3218.68, imperial)).toBe('2.0 mi')
+  expect(formatDistance(NaN, metric)).toBe('—')
 })
 
 test('the MAVLink definition still states the units we read them from', () => {
