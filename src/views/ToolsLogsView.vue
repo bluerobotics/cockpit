@@ -94,7 +94,7 @@
             <div v-if="isLoading" class="flex justify-center items-center py-8">
               <v-progress-circular indeterminate color="white" />
             </div>
-            <div v-else-if="sessions.length === 0" class="text-center py-8 text-gray-400">
+            <div v-else-if="sessions.length === 0" class="text-center py-8 text-white">
               No data sessions found. Select variables to record in the Data Lake table.
             </div>
             <v-data-table
