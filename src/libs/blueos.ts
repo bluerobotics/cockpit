@@ -345,6 +345,22 @@ export const isWirelessInterfaceName = (interfaceName: string): boolean => inter
 
 const isCabledInterfaceName = (interfaceName: string): boolean => interfaceName.includes('eth')
 
+const minCounterSpanMs = 6000
+
+/**
+ * Turns the progress of one of the vehicle's byte counters into a transfer rate.
+ * The vehicle refreshes those counters slower than Cockpit polls them, so the span has to cover several
+ * refreshes to mean anything: a poll-to-poll delta reads zero most of the time and spikes on the polls that
+ * catch a refresh, on an idle interface just as much as on a busy one.
+ * @param {number} deltaBytes How far the counter moved across the span.
+ * @param {number} spanMs Time the span covers, in milliseconds.
+ * @returns {number} The rate in Mbps, and zero for a span too short to cover a refresh or for a counter reset by a vehicle reboot.
+ */
+export const counterDeltaToMbps = (deltaBytes: number, spanMs: number): number => {
+  if (spanMs < minCounterSpanMs || deltaBytes < 0) return 0
+  return (deltaBytes * 8) / (1024 * 1024) / (spanMs / 1000)
+}
+
 export const getNetworkInfo = async (vehicleAddress: string): Promise<RawNetworkInfo[]> => {
   try {
     const url = `${protocol}//${vehicleAddress}/system-information/system/network`
