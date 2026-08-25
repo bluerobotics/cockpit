@@ -8,6 +8,12 @@
         </template>
         <div class="max-w-xs">
           <slot name="hint" />
+          <p v-if="!ignoresUnitSuffix" class="text-sm mt-2">
+            End a variable with ": metric", ": imperial" or ": nautical" — e.g. &#123;&#123;
+            /mavlink/1/1/GLOBAL_POSITION_INT/lat : metric &#125;&#125; — to read it in that unit system, instead of the
+            raw value the vehicle sends. Older Cockpit versions cannot read it, so leave it off if you share this
+            vehicle with one.
+          </p>
         </div>
       </v-tooltip>
     </legend>
@@ -64,6 +70,11 @@ const props = defineProps<{
    * Restricts which data lake variables the dropdown offers. All of them when not given.
    */
   variableFilter?: (variable: DataLakeVariable) => boolean
+  /**
+   * Hides the unit-system suffix help, for a consumer that reads a lone variable reference directly
+   * rather than resolving it as an expression, and so has no way to honour the suffix.
+   */
+  ignoresUnitSuffix?: boolean
 }>()
 
 const emit = defineEmits<{

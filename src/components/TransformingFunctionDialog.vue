@@ -77,6 +77,10 @@
                 <br />
                 • Type <code>&#123;&#123;</code> to access available variables
                 <br />
+                • End a variable with <code>: metric</code>, <code>: imperial</code> or <code>: nautical</code> to read
+                it in that unit system, and set Unit to what the expression then results in. Older Cockpit versions
+                cannot read the suffix, so leave it off if you share this vehicle with one.
+                <br />
                 • Return is optional, but should be included in complex expressions
                 <br />
                 • Remember to set the type accordingly
