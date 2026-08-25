@@ -161,6 +161,20 @@
         @regenerate-survey-waypoints="regenerateSurveyWaypoints"
       />
     </div>
+    <MissionPlacementToolbar
+      v-if="isPlacingMission"
+      v-model:scale-x-percent="placementScaleXPercent"
+      v-model:scale-y-percent="placementScaleYPercent"
+      v-model:rotation-deg="placementRotationDeg"
+      :position-style="placementToolbarStyle"
+      :limits="PLACEMENT_LIMITS"
+      @clamp-scale-x="clampPlacementScaleX"
+      @clamp-scale-y="clampPlacementScaleY"
+      @clamp-rotation="clampPlacementRotation"
+      @confirm="onConfirmPlacement"
+      @reset="onResetPlacement"
+      @cancel="cancelFreePlacement()"
+    />
     <div
       v-show="!interfaceStore.isMainMenuVisible"
       ref="missionToolboxRef"
@@ -494,7 +508,7 @@
                   variant="text"
                   size="24"
                   class="text-[12px]"
-                  @click="openMissionLibrary"
+                  @click="openMissionLibrary()"
                 />
               </template>
             </v-tooltip>
@@ -847,6 +861,9 @@ import MapCenterControl from '@/components/MapCenterControl.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
+import MissionPlacementToolbar, {
+  PLACEMENT_TOOLBAR_FOOTPRINT,
+} from '@/components/mission-planning/MissionPlacementToolbar.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
@@ -866,6 +883,8 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMissionInsertion } from '@/composables/map/useMissionInsertion'
+import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
@@ -1514,8 +1533,10 @@ const segmentRadialMenuPosition = ref({ x: 0, y: 0 })
 const segmentRadialMenuItems: RadialMenuItem[] = [
   { icon: 'mdi-vector-polyline', tooltip: 'Add waypoint' },
   { icon: 'mdi-transit-connection-variant', tooltip: 'Insert survey here' },
+  { icon: 'mdi-bookshelf', tooltip: 'Insert mission from library here' },
 ]
 const segmentSurveyInsertIndex = ref<number | null>(null)
+const pendingSegmentInsertIndex = ref<number | null>(null)
 
 const isCtrlDown = ref(false)
 const isShiftDown = ref(false)
@@ -1930,6 +1951,12 @@ const onSegmentRadialMenuSelect = (index: number): void => {
     }
     dismissSegmentRadialMenu()
     toggleSurvey()
+    return
+  } else if (index === 2) {
+    if (radialMenuSegmentIndex !== null) {
+      openMissionLibrary({ segmentInsertIndex: radialMenuSegmentIndex })
+    }
+    dismissSegmentRadialMenu()
     return
   }
   dismissSegmentRadialMenu()
@@ -2613,6 +2640,12 @@ const performRedo = (): void => {
 }
 
 const handleKeyDown = (event: KeyboardEvent): void => {
+  // Placement owns the whole map while it is live, so Escape backs out of it and the edit
+  // shortcuts below stay off the mission sitting underneath the preview.
+  if (isPlacingMission.value) {
+    if (event.key === 'Escape') cancelFreePlacement()
+    return
+  }
   if (event.key === 'Escape') {
     if (isCreatingSurvey.value) {
       if (isDrawingSurveyPolygon.value) {
@@ -2951,6 +2984,54 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
     })
 
   updateWaypointMarkers()
+}
+
+// Merges a placed/loaded library mission into the current planning (append, segment-insert, or
+// fresh load). The insert-segment intent is carried on `placementInsertSegmentIndex` so both
+// placement outcomes ("Reposition" and "Keep original") route to the requested segment.
+const { insertSegmentIndex: placementInsertSegmentIndex, finalizeMissionPlacement } = useMissionInsertion({
+  cloneCommands: (commands) => cloneCommands(commands),
+  addWaypointMarker: (waypoint) => addWaypointMarker(waypoint),
+  updateWaypointMarkers: () => updateWaypointMarkers(),
+  loadDraftMission: (mission, opts) => loadDraftMission(mission, opts),
+})
+
+// --- Mission free placement (drag/scale/rotate before committing) ---
+const {
+  isPlacingMission,
+  placementScaleXPercent,
+  placementScaleYPercent,
+  placementRotationDeg,
+  PLACEMENT_LIMITS,
+  clampPlacementScaleX,
+  clampPlacementScaleY,
+  clampPlacementRotation,
+  resetPlacementTransform,
+  startFreePlacement,
+  cancelFreePlacement: cancelPlacementInternal,
+  confirmFreePlacement,
+  placementToolbarStyle,
+} = useMissionPlacement(planningMap, {
+  onConfirm: (placedMission) => finalizeMissionPlacement(placedMission, { wasRepositioned: true }),
+  toolbarFootprint: PLACEMENT_TOOLBAR_FOOTPRINT,
+})
+
+// Wrap the composable's cancel so the view-owned segment-insert routing intent is also dropped
+// when the user actively cancels via the toolbar button.
+const cancelFreePlacement = (): void => {
+  logUserAction('Cancelled mission placement')
+  cancelPlacementInternal()
+  placementInsertSegmentIndex.value = null
+}
+
+const onConfirmPlacement = (): void => {
+  logUserAction('Confirmed mission placement on the map')
+  confirmFreePlacement()
+}
+
+const onResetPlacement = (): void => {
+  logUserAction('Reset the mission placement scale and rotation')
+  resetPlacementTransform()
 }
 
 const surveyPolygonVertexesMarkers = shallowRef<L.Marker[]>([])
@@ -3930,12 +4011,20 @@ const tryFetchHome = async (): Promise<void> => {
   }
 }
 
-const loadDraftMission = async (mission: CockpitMission): Promise<void> => {
+const loadDraftMission = async (
+  mission: CockpitMission,
+  options?: {
+    /** Keep the host map's current center/zoom instead of restoring the saved-mission settings. */
+    preserveMapView?: boolean
+  }
+): Promise<void> => {
   clearCurrentMission()
 
   try {
-    mapCenter.value = mission.settings.mapCenter
-    zoom.value = mission.settings.zoom
+    if (!options?.preserveMapView) {
+      mapCenter.value = mission.settings.mapCenter
+      zoom.value = mission.settings.zoom
+    }
     currentWaypointAltitude.value = mission.settings.currentWaypointAltitude
     currentWaypointAltitudeRefType.value = mission.settings.currentWaypointAltitudeRefType
     missionStore.defaultCruiseSpeed = mission.settings.defaultCruiseSpeed
@@ -4000,8 +4089,20 @@ const currentMissionEstimatesSnapshot = computed<MissionEstimatesSnapshot>(() =>
   missionCoverageArea: missionEstimates.missionCoverageAreaSquareMeters.value,
 }))
 
-const openMissionLibrary = (): void => {
-  logUserAction('Opened the mission library')
+const openMissionLibrary = (
+  options: {
+    /** Segment index to splice the loaded mission into; omit for a normal placement. */
+    segmentInsertIndex?: number | null
+  } = {}
+): void => {
+  // Set the segment-insert intent in the same call that opens the library, so callers never have
+  // to poke `pendingSegmentInsertIndex` around the open; a plain toolbar open clears it.
+  pendingSegmentInsertIndex.value = options.segmentInsertIndex ?? null
+  logUserAction(
+    options.segmentInsertIndex != null
+      ? 'Opened the mission library to insert a mission into a segment'
+      : 'Opened the mission library'
+  )
   interfaceStore.missionLibraryVisibility = true
 }
 
@@ -4055,23 +4156,45 @@ const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
     missionStore.plannedVehicleType = mission.vehicleType
   }
 
+  // Move the pending intent into a placement-scoped tracker so it survives the dialog/flow.
+  placementInsertSegmentIndex.value = pendingSegmentInsertIndex.value
+  pendingSegmentInsertIndex.value = null
+  const isInserting = placementInsertSegmentIndex.value !== null
+  // Anything already on the planner is merged with rather than replaced, so the labels have to say
+  // "add" instead of "load" and the message has to name what happens to the existing work.
+  const isMerging = isInserting || canSaveCurrentMissionToLibrary.value
+
   showDialog({
     variant: 'info',
-    title: 'Load mission',
-    message: `Where should "${mission.name}" be placed?`,
+    title: isInserting ? 'Insert mission' : isMerging ? 'Add mission' : 'Load mission',
+    message: isMerging
+      ? `"${mission.name}" will be added to the mission you are already planning. Where should it go?`
+      : `Where should "${mission.name}" be placed?`,
     persistent: false,
     maxWidth: 620,
     actions: [
-      { text: 'Cancel', color: 'white', action: closeDialog },
       {
-        text: 'Keep original location',
-        color: 'white',
+        text: 'Cancel',
+        action: () => {
+          placementInsertSegmentIndex.value = null
+          closeDialog()
+        },
+      },
+      {
+        text: isMerging ? 'At its original location' : 'Keep original location',
         action: () => {
           closeDialog()
           logUserAction(`Loaded mission "${mission.name}" at its original location`)
-          loadDraftMission(mission).catch((err) => {
-            openSnackbar({ variant: 'error', message: `Failed to load mission: ${err}`, duration: 3500 })
-          })
+          finalizeMissionPlacement(mission)
+        },
+      },
+      {
+        text: 'Reposition on map',
+        class: 'bg-[#FFFFFF33]',
+        action: () => {
+          closeDialog()
+          logUserAction(`Started repositioning mission "${mission.name}" on the map`)
+          startFreePlacement(mission)
         },
       },
     ],
@@ -4083,6 +4206,8 @@ onMounted(() => {
 })
 
 const onMapClick = (e: L.LeafletMouseEvent): void => {
+  // Swallow map clicks during placement; confirm/cancel happen via the dedicated overlay buttons.
+  if (isPlacingMission.value) return
   hideContextMenu()
 
   // The dedicated home-setting handler owns this click; bail so we don't also drop a survey vertex or waypoint here.
@@ -4287,6 +4412,7 @@ onMounted(async () => {
 
   planningMap.value.on('contextmenu', (e: LeafletMouseEvent) => {
     if (isCreatingSurvey.value) return
+    if (isPlacingMission.value) return
     selectedWaypoint.value = undefined
     contextMenuType.value = selectedSurveyId.value === '' ? 'map' : contextMenuType.value
     currentCursorGeoCoordinates.value = [e.latlng.lat, e.latlng.lng]
