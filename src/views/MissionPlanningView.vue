@@ -867,6 +867,7 @@ import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
+import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { useSnackbar } from '@/composables/snackbar'
@@ -883,6 +884,7 @@ import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
+import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 import {
   createGridOverlay,
   fitMapToWaypoints,
@@ -1196,6 +1198,28 @@ const clearSurveyPolygonUndoStack = (): void => {
   surveyPolygonUndoStack.length = 0
   surveyPolygonRedoStack.length = 0
 }
+
+const {
+  isEdgePressed: isPressingSurveyEdge,
+  isDraggingEdge: isDraggingSurveyEdge,
+  initEdgeDragging,
+  destroyEdgeDragging,
+} = useSurveyEdgeDragging({
+  vertices: surveyPolygonVertexesPositions,
+  markers: () => surveyPolygonVertexesMarkers.value,
+  isEditable: () => isCreatingSurvey.value && surveyPolygonVertexesPositions.value.length >= 3,
+  onDragStart: pushSurveyPolygonSnapshot,
+  onEdgeMoved: () => {
+    updatePolygon()
+    createSurveyPath()
+    updateConfirmButtonPosition()
+  },
+  onDragEnd: (moved) => {
+    if (!moved) return
+    ignoreNextClick = true
+  },
+})
+
 let ignoreNextClick = false
 const selectedWaypoint = ref<Waypoint | undefined>(undefined)
 const contextMenuType = ref<ContextMenuTypes>('map')
@@ -1363,19 +1387,13 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
   measureTextEl = null
 }
 
-const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
-  const el = evt.originalEvent?.target as HTMLElement | null
-  if (!el) return false
-  return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
-}
-
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   if (!planningMap.value) return
 
   lastMeasureCursor = e
 
   const anchor = currentMeasureAnchor()
-  const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value
+  const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value || isDraggingSurveyEdge.value
   const measuring =
     !!anchor &&
     !draggingExistingNode &&
@@ -1391,7 +1409,7 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
   // NEW: hide/show the live pill when hovering survey nodes/add/delete UI
   if (measureTextEl) {
-    measureTextEl.style.display = isOverSurveyHandle(e) ? 'none' : 'block'
+    measureTextEl.style.display = isOverSurveyHandle(e.originalEvent?.target) ? 'none' : 'block'
   }
 
   const a = map.latLngToContainerPoint(anchor!)
@@ -1408,7 +1426,7 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   const midY = (a.y + b.y) / 2
   const dist = anchor!.distanceTo(e.latlng)
 
-  const hidePill = isOverSurveyHandle(e) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
+  const hidePill = isOverSurveyHandle(e.originalEvent?.target) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
 
   const bearing = bearingBetween([anchor!.lat, anchor!.lng], [e.latlng.lat, e.latlng.lng])
   const text = `${formatMetersShort(dist)} · ${formatBearing(bearing)}`
@@ -2181,6 +2199,9 @@ const isOverLastWaypointMarker = (event: L.LeafletMouseEvent): boolean => {
 }
 
 const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
+  // A press that landed on an edge is reshaping that edge, so the whole polygon must not follow the pointer too.
+  if (isPressingSurveyEdge.value) return
+
   isDraggingPolygon.value = true
   dragStartLatLng = event.latlng
   pushSurveyPolygonSnapshot()
@@ -4314,6 +4335,7 @@ onMounted(async () => {
   angleOverlay.initAngleOverlay(planningMap.value!)
   surveyArrowOverlay.initArrowOverlay(planningMap.value!)
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
+  initEdgeDragging(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
   registerLayerSync(planningMap.value)
@@ -4460,6 +4482,7 @@ onUnmounted(() => {
   dragMeasureOverlay.destroyDragMeasureOverlay()
   angleOverlay.destroyAngleOverlay()
   surveyArrowOverlay.destroyArrowOverlay()
+  destroyEdgeDragging()
 
   detachTileFallbacks.forEach((detach) => detach())
   detachTileFallbacks = []
