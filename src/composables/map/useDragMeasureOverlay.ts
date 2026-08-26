@@ -5,6 +5,7 @@ import { bearingBetween, formatBearing, formatMetersShort } from '@/libs/mission
 import { useMissionStore } from '@/stores/mission'
 import type { WaypointCoordinates } from '@/types/mission'
 
+import { useMeasurePillOverlay } from './useMeasurePillOverlay'
 import type { UseVertexAngleOverlayReturn } from './useVertexAngleOverlay'
 
 /**
@@ -27,36 +28,18 @@ export interface UseDragMeasureOverlayReturn {
  */
 export const useDragMeasureOverlay = (angleOverlay: UseVertexAngleOverlayReturn): UseDragMeasureOverlayReturn => {
   const missionStore = useMissionStore()
-
-  let mapRef: LeafletMap | undefined
-  let overlayEl: HTMLDivElement | null = null
-  let pillEls: HTMLDivElement[] = []
+  const { initMeasurePillOverlay, renderMeasurePills, destroyMeasurePillOverlay } = useMeasurePillOverlay()
 
   const initDragMeasureOverlay = (map: LeafletMap): void => {
-    mapRef = map
-  }
-
-  const ensureOverlay = (map: LeafletMap): void => {
-    if (overlayEl) return
-    overlayEl = document.createElement('div')
-    overlayEl.className = 'measure-overlay'
-    overlayEl.style.pointerEvents = 'none'
-    overlayEl.style.position = 'absolute'
-    overlayEl.style.inset = '0'
-    overlayEl.style.zIndex = '640'
-    map.getContainer().appendChild(overlayEl)
+    initMeasurePillOverlay(map)
   }
 
   const destroyDragMeasureOverlay = (): void => {
-    overlayEl?.remove()
-    overlayEl = null
-    pillEls = []
+    destroyMeasurePillOverlay()
     angleOverlay.clearVertexAngles()
   }
 
   const renderDragMeasurePills = (waypointId: string): void => {
-    if (!mapRef) return
-    const map = mapRef
     const wps = missionStore.currentPlanningWaypoints
     const index = wps.findIndex((w) => w.id === waypointId)
     if (index < 0) {
@@ -72,32 +55,19 @@ export const useDragMeasureOverlay = (angleOverlay: UseVertexAngleOverlayReturn)
       return
     }
 
-    ensureOverlay(map)
-    while (pillEls.length < segments.length) {
-      const pill = document.createElement('div')
-      pill.className = 'live-measure-pill'
-      pill.style.position = 'absolute'
-      pill.style.transform = 'translate(-50%, -50%)'
-      overlayEl!.appendChild(pill)
-      pillEls.push(pill)
-    }
-
-    segments.forEach(([from, to], i) => {
-      const fromLatLng = L.latLng(from[0], from[1])
-      const toLatLng = L.latLng(to[0], to[1])
-      const a = map.latLngToContainerPoint(fromLatLng)
-      const b = map.latLngToContainerPoint(toLatLng)
-      const dist = fromLatLng.distanceTo(toLatLng)
-      const bearing = bearingBetween(from, to)
-      const pill = pillEls[i]
-      pill.textContent = `${formatMetersShort(dist)} · ${formatBearing(bearing)}`
-      pill.style.left = `${(a.x + b.x) / 2}px`
-      pill.style.top = `${(a.y + b.y) / 2}px`
-      pill.style.display = dist < 1 ? 'none' : 'block'
-    })
-    for (let i = segments.length; i < pillEls.length; i++) {
-      pillEls[i].style.display = 'none'
-    }
+    renderMeasurePills(
+      segments.map(([from, to]) => {
+        const fromLatLng = L.latLng(from[0], from[1])
+        const toLatLng = L.latLng(to[0], to[1])
+        const distance = fromLatLng.distanceTo(toLatLng)
+        const bearing = bearingBetween(from, to)
+        return {
+          from: fromLatLng,
+          to: toLatLng,
+          text: distance < 1 ? null : `${formatMetersShort(distance)} · ${formatBearing(bearing)}`,
+        }
+      })
+    )
 
     const triples = affectedAngleTriples(wps, index)
     if (triples.length > 0) {
