@@ -27,7 +27,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 # Set up NVM and Node.js
 ENV NVM_DIR=/usr/local/nvm
-ENV NODE_VERSION=v20.16.0
+ENV NODE_VERSION=v22.13.0
 RUN mkdir -p /usr/local/nvm \
     && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
