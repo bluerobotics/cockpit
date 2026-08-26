@@ -1246,6 +1246,7 @@ const {
   onDragEnd: (moved) => {
     if (!moved) return
     ignoreNextClick = true
+    createSurveyPath()
   },
 })
 
@@ -1256,6 +1257,14 @@ const cursorCoordinates = ref<[number, number] | null>(null)
 const accessingSurveyContextMenu = ref(false)
 const isDraggingPolygon = ref(false)
 const isDraggingMarker = ref(false)
+const isDraggingSurveyVertex = ref(false)
+
+// The live preview is rebuilt on every pointer move of a reshape, so a polygon that is momentarily too thin for
+// its line spacing must not raise the no-valid-path warning until the gesture is released.
+const isReshapingSurveyPolygon = computed(
+  () => isDraggingSurveyVertex.value || isDraggingPolygon.value || isDraggingSurveyEdge.value
+)
+
 const showHomePositionNotSetDialog = ref(false)
 const fetchingMission = ref(false)
 const missionFetchProgress = ref(0)
@@ -2245,6 +2254,8 @@ const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
 }
 
 const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
+  const moved = !!dragStartLatLng && !event.latlng.equals(dragStartLatLng)
+
   isDraggingPolygon.value = false
   dragStartLatLng = null
   polygonLatLngsAtDragStart = []
@@ -2254,6 +2265,8 @@ const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
   planningMap.value?.off('mouseup', onPolygonMouseUp)
 
   ignoreNextClick = true
+  // Every build during the drag was suppressed, so the polygon at rest is the one allowed to warn.
+  if (moved) createSurveyPath()
 
   L.DomEvent.stopPropagation(event.originalEvent)
   L.DomEvent.preventDefault(event.originalEvent)
@@ -3404,11 +3417,13 @@ const createSurveyPath = (): void => {
 
     if (result.path.length === 0) {
       surveyPreviewPath.value = null
-      showDialog({
-        variant: 'error',
-        message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
-        timer: 5000,
-      })
+      if (!isReshapingSurveyPolygon.value) {
+        showDialog({
+          variant: 'error',
+          message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+          timer: 5000,
+        })
+      }
       return
     }
 
@@ -3927,9 +3942,14 @@ const createSurveyVertexMarker = (
     draggable: true,
   })
     .on('dragstart', () => {
+      isDraggingSurveyVertex.value = true
       pushSurveyPolygonSnapshot()
     })
     .on('drag', () => {
+      onDrag()
+    })
+    .on('dragend', () => {
+      isDraggingSurveyVertex.value = false
       onDrag()
     })
     .on('mouseover', (event: L.LeafletEvent) => {
