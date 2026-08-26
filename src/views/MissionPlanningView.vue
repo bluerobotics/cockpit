@@ -3243,6 +3243,9 @@ const removeSurveyCrosshatchPathLayer = (): void => {
 const clearSurveyPathByUser = (): void => {
   logUserAction('Cleared survey path')
   clearSurveyPath()
+  // Clearing the draft is how the user starts over, so vertex adding comes back on even when it had been
+  // switched off.
+  if (isCreatingSurvey.value) isDrawingSurveyPolygon.value = true
 }
 
 const clearSurveyPath = (): void => {
