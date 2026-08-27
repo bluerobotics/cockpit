@@ -67,7 +67,7 @@ export const useVideoStore = defineStore('video', () => {
   console.debug('[WebRTC] Using webrtc-adapter for', adapter.browserDetails)
 
   const streamsCorrespondency = useBlueOsStorage<VideoStreamCorrespondency[]>('cockpit-streams-correspondency', [])
-  const ignoredStreamExternalIds = useBlueOsStorage<string[]>('cockpit-ignored-stream-external-ids', [])
+  const persistedIgnoredStreamExternalIds = useBlueOsStorage<string[]>('cockpit-ignored-stream-external-ids', [])
   const allowedIceIps = useBlueOsStorage<string[]>('cockpit-allowed-stream-ips', [])
   const enableAutoIceIpFetch = useBlueOsStorage('cockpit-enable-auto-ice-ip-fetch', true)
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
@@ -85,6 +85,9 @@ export const useVideoStore = defineStore('video', () => {
   const enableLiveProcessing = useBlueOsStorage('cockpit-enable-live-processing', true)
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
   const userRestoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-restored-stream-ids', [])
+  // The ignored list mixes the streams the user chose to hide with the ones an automatic rule hid for them, so this
+  // records which of those ids the user asked for, letting a client the rule does not apply to disregard the rest.
+  const userIgnoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-ignored-stream-ids', [])
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
   const broadcastCameraActionsOverMavlink = useBlueOsStorage('cockpit-broadcast-camera-actions-over-mavlink', false)
   // Streams whose recording start we mirrored over MAVLink. The broadcast fires only on the 0->1 and 1->0
@@ -293,21 +296,40 @@ export const useVideoStore = defineStore('video', () => {
   // The Blue Robotics 4K Cam's manager extension names its streams '<brand> <host>/<feed>', with 'Blue Robotics 4K Cam' as the brand
   const isBlueRobotics4kCamStreamName = (name: string): boolean => /^4k cam /.test(name.trim().toLowerCase())
 
+  // Dropping the WebRTC feed only makes sense where the camera's direct RTSP one can take its place, and RTSP is
+  // Standalone-only, so on Lite the very same rule leaves the user with no stream at all.
+  const shouldAutoIgnore4kCamStream = (externalId: string): boolean =>
+    isElectron() && isBlueRobotics4kCamStreamName(externalId) && !userRestoredStreamIds.value.includes(externalId)
+
+  // The ignored list is vehicle-synced, so the rule's decision reaches Lite anyway, written by an earlier version or
+  // by a Standalone client of the same vehicle. Honouring it there would leave the camera with no stream at all, so
+  // Lite keeps only what the user asked to ignore.
+  const isDisregarded4kCamIgnore = (id: string): boolean =>
+    isBlueRobotics4kCamStreamName(id) && !userIgnoredStreamIds.value.includes(id)
+
+  const ignoredStreamExternalIds = computed(() =>
+    isElectron()
+      ? persistedIgnoredStreamExternalIds.value
+      : persistedIgnoredStreamExternalIds.value.filter((id) => !isDisregarded4kCamIgnore(id))
+  )
+
+  // The one case where the camera comes back on its own: Lite is disregarding an ignore it cannot attribute to the user
+  const hasDisregarded4kCamIgnore = computed(
+    () => !isElectron() && persistedIgnoredStreamExternalIds.value.some(isDisregarded4kCamIgnore)
+  )
+
   const initializeStreamsCorrespondency = (): void => {
     // Move already-mapped Blue Robotics 4K Cam WebRTC streams to the ignored list
     // TODO: This whole logic around auto-ignoring Blue Robotics 4K Cam WebRTC streams should be removed once the MCM stutter problem is fixed
     const fourKCamMapped = streamsCorrespondency.value.filter(
-      (corr) =>
-        (corr.protocol ?? 'webrtc') === 'webrtc' &&
-        isBlueRobotics4kCamStreamName(corr.externalId) &&
-        !userRestoredStreamIds.value.includes(corr.externalId)
+      (corr) => (corr.protocol ?? 'webrtc') === 'webrtc' && shouldAutoIgnore4kCamStream(corr.externalId)
     )
     if (fourKCamMapped.length > 0) {
       const idsToMove = fourKCamMapped.map((corr) => corr.externalId)
       streamsCorrespondency.value = streamsCorrespondency.value.filter((corr) => !idsToMove.includes(corr.externalId))
-      const newIgnored = idsToMove.filter((id) => !ignoredStreamExternalIds.value.includes(id))
+      const newIgnored = idsToMove.filter((id) => !persistedIgnoredStreamExternalIds.value.includes(id))
       if (newIgnored.length > 0) {
-        ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, ...newIgnored]
+        persistedIgnoredStreamExternalIds.value = [...persistedIgnoredStreamExternalIds.value, ...newIgnored]
       }
     }
 
@@ -318,7 +340,7 @@ export const useVideoStore = defineStore('video', () => {
     const unmappedExternalStreams = namesAvailableWebRTCStreams.value.filter((streamName) => {
       if (alreadyMappedExternalIds.includes(streamName)) return false
       if (ignoredStreamExternalIds.value.includes(streamName)) return false
-      if (isBlueRobotics4kCamStreamName(streamName) && !userRestoredStreamIds.value.includes(streamName)) {
+      if (shouldAutoIgnore4kCamStream(streamName)) {
         fourKCamToIgnore.push(streamName)
         return false
       }
@@ -326,7 +348,7 @@ export const useVideoStore = defineStore('video', () => {
     })
 
     if (fourKCamToIgnore.length > 0) {
-      ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, ...fourKCamToIgnore]
+      persistedIgnoredStreamExternalIds.value = [...persistedIgnoredStreamExternalIds.value, ...fourKCamToIgnore]
     }
 
     if (unmappedExternalStreams.length === 0) return
@@ -1404,8 +1426,11 @@ export const useVideoStore = defineStore('video', () => {
       const stream = streamsCorrespondency.value[streamIndex]
 
       // Add to ignored list and clear user-restored status so auto-ignore can re-apply
-      if (!ignoredStreamExternalIds.value.includes(externalId)) {
-        ignoredStreamExternalIds.value = [...ignoredStreamExternalIds.value, externalId]
+      if (!persistedIgnoredStreamExternalIds.value.includes(externalId)) {
+        persistedIgnoredStreamExternalIds.value = [...persistedIgnoredStreamExternalIds.value, externalId]
+      }
+      if (!userIgnoredStreamIds.value.includes(externalId)) {
+        userIgnoredStreamIds.value = [...userIgnoredStreamIds.value, externalId]
       }
       userRestoredStreamIds.value = userRestoredStreamIds.value.filter((id) => id !== externalId)
 
@@ -1426,11 +1451,12 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const restoreIgnoredStream = (externalId: string): void => {
-    const ignoredIndex = ignoredStreamExternalIds.value.indexOf(externalId)
+    const ignoredIndex = persistedIgnoredStreamExternalIds.value.indexOf(externalId)
 
     if (ignoredIndex !== -1) {
       // Remove from ignored list
-      ignoredStreamExternalIds.value.splice(ignoredIndex, 1)
+      persistedIgnoredStreamExternalIds.value.splice(ignoredIndex, 1)
+      userIgnoredStreamIds.value = userIgnoredStreamIds.value.filter((id) => id !== externalId)
 
       // Track that the user explicitly restored this stream so auto-ignore won't re-ignore it
       if (!userRestoredStreamIds.value.includes(externalId)) {
@@ -1517,6 +1543,8 @@ export const useVideoStore = defineStore('video', () => {
     tempVideoStorage,
     streamsCorrespondency,
     ignoredStreamExternalIds,
+    hasDisregarded4kCamIgnore,
+    isBlueRobotics4kCamStreamName,
     namessAvailableAbstractedStreams,
     externalStreamId,
     internalStreamNameFromExternal,
