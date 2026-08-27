@@ -1,6 +1,21 @@
 <template>
   <div class="mission-planning" :style="glassMenuCssVars">
     <div id="planningMap" ref="planningMap" class="relative" />
+    <MeasureExtentInput
+      v-for="box in extentBoxes"
+      :key="box.id"
+      :label="box.label"
+      :left="box.left"
+      :top="box.top"
+      :value="box.value"
+      :live-value="box.liveValue"
+      :cleared="box.cleared"
+      :autofocus="box.autofocus"
+      :focus-ticket="box.focusTicket"
+      @update:value="(value) => setExtentValue(box.id, value)"
+      @apply="applyExtent(box.id)"
+      @close="closeExtentInputs"
+    />
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
         <div
@@ -846,6 +861,7 @@ import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
+import MeasureExtentInput from '@/components/mission-planning/MeasureExtentInput.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
@@ -866,6 +882,7 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMeasureExtentInput } from '@/composables/map/useMeasureExtentInput'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
@@ -896,6 +913,7 @@ import {
 import { orderedSurveyPath, surveyEndpointEdgeBearing, surveyEntryCornerCount } from '@/libs/map/utils-map'
 import {
   bearingBetween,
+  calculateHaversineDistance,
   centroidLatLng,
   formatBearing,
   formatMetersShort,
@@ -1199,6 +1217,25 @@ const clearSurveyPolygonUndoStack = (): void => {
   surveyPolygonRedoStack.length = 0
 }
 
+const extentInput = useMeasureExtentInput({
+  shortcutFocus: () => (currentMeasureAnchor() ? 'segment' : null),
+  onOpened: () => refreshLiveMeasureOnMapMove(),
+})
+const {
+  extentBoxes,
+  extentInputsOpen,
+  openExtentInputs,
+  focusExtentInput,
+  closeExtentInputs,
+  clearExtentValues,
+  setExtentTarget,
+  setExtentValue,
+  applyExtent,
+  isExtentCleared,
+  projectToLockedExtent,
+  initExtentInputs,
+} = extentInput
+
 const {
   isEdgePressed: isPressingSurveyEdge,
   isDraggingEdge: isDraggingSurveyEdge,
@@ -1289,6 +1326,8 @@ let measureOverlayEl: HTMLDivElement | null = null
 let measureSvgEl: SVGSVGElement | null = null
 let measureLineEl: SVGLineElement | null = null
 let measureTextEl: HTMLDivElement | null = null
+let measureLengthEl: HTMLSpanElement | null = null
+let measureRestEl: HTMLSpanElement | null = null
 // Last cursor event kept so the live measure can be re-rendered while the map pans (no mousemove fires then)
 let lastMeasureCursor: L.LeafletMouseEvent | null = null
 let measureRefreshRafId: number | null = null
@@ -1313,6 +1352,9 @@ const glassMenuCssVars = computed(() => ({
 const clearLiveMeasure = (): void => {
   destroyMeasureOverlay(planningMap.value || undefined)
   angleOverlay.clearVertexAngles()
+  // An extent typed for the segment just drawn does not carry over to the next one, which starts free again.
+  setExtentTarget('segment', null)
+  clearExtentValues()
   lastMeasureCursor = null
 }
 
@@ -1376,13 +1418,45 @@ const ensureMeasureOverlay = (map: L.Map): void => {
 
   measureTextEl = document.createElement('div')
   measureTextEl.className = 'live-measure-pill'
+  measureTextEl.classList.toggle('typing', extentInputsOpen.value)
   measureTextEl.style.position = 'absolute'
   measureTextEl.style.transform = 'translate(-50%, -50%)'
+  measureTextEl.style.pointerEvents = 'auto'
+  measureTextEl.style.cursor = 'pointer'
+  // Tapping the tag is how the field is asked for without a keyboard, so the tag owns its presses the way the
+  // map's own controls do: the map is listening inside its container, and the tag is not a place to draw.
+  L.DomEvent.disableClickPropagation(measureTextEl)
+  // Taken on the press rather than on the click, which the browser aims wherever the tag has moved to by the
+  // time a finger is lifted.
+  measureTextEl.addEventListener('pointerdown', (event) => {
+    event.stopPropagation()
+    if (extentInputsOpen.value) {
+      focusExtentInput('segment')
+      return
+    }
+    logUserAction('Opened the distance field from the measure tag')
+    openExtentInputs('segment')
+    // A touch never moves a cursor, so the field is placed against the measure the tag is already showing.
+    refreshLiveMeasureOnMapMove()
+  })
+  // Mobile browsers only raise their keyboard for a focus asked from the tap itself, which lands here.
+  measureTextEl.addEventListener('click', () => focusExtentInput('segment'))
+
+  // The caret stands right after the digits being typed, so the length and everything trailing it are their own
+  // spans, written on each move instead of rebuilt.
+  measureLengthEl = document.createElement('span')
+  measureLengthEl.className = 'measure-length'
+  measureRestEl = document.createElement('span')
+  const caretEl = document.createElement('span')
+  caretEl.className = 'measure-caret'
+  measureTextEl.append(measureLengthEl, caretEl, measureRestEl)
 
   measureOverlayEl.appendChild(measureSvgEl)
   measureOverlayEl.appendChild(measureTextEl)
   container.appendChild(measureOverlayEl)
 }
+
+watch(extentInputsOpen, (open) => measureTextEl?.classList.toggle('typing', open))
 
 const destroyMeasureOverlay = (map?: L.Map): void => {
   if (!measureOverlayEl) return
@@ -1394,6 +1468,39 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
   measureSvgEl = null
   measureLineEl = null
   measureTextEl = null
+  measureLengthEl = null
+  measureRestEl = null
+}
+
+const placeSurveyPolygonPoint = (latlng: L.LatLng): void => {
+  addSurveyPoint(latlng)
+  clearLiveMeasure()
+}
+
+// Lays a point down wherever the drawing is: a corner of the survey area, or the next waypoint of the path.
+const placeDrawnPoint = (latlng: L.LatLng): boolean => {
+  if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) {
+    placeSurveyPolygonPoint(latlng)
+    return true
+  }
+  if (isCreatingSimplePath.value) {
+    addWaypoint([latlng.lat, latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
+    clearLiveMeasure()
+    return true
+  }
+
+  return false
+}
+
+// Enter takes the typed distance as the point itself, so a segment can be laid down without aiming a click at it.
+const applyTypedSegment = (latlng: L.LatLng): void => {
+  const cursorBeforePlacing = lastMeasureCursor
+  if (!placeDrawnPoint(latlng)) return
+
+  // A key press leaves the pointer where it was, so the cursor the measure was following is handed back and the
+  // next segment is drawn from the point just laid rather than waiting for the mouse to move.
+  lastMeasureCursor = cursorBeforePlacing
+  refreshLiveMeasureOnMapMove()
 }
 
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
@@ -1410,6 +1517,7 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   if (!measuring) {
     destroyMeasureOverlay(planningMap.value)
     angleOverlay.clearVertexAngles()
+    setExtentTarget('segment', null)
     return
   }
 
@@ -1421,8 +1529,10 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
     measureTextEl.style.display = isOverSurveyHandle(e.originalEvent?.target) ? 'none' : 'block'
   }
 
+  // A typed distance holds the segment's length, so only its direction is still read off the cursor.
+  const cursor = projectToLockedExtent('segment', anchor!, e.latlng)
   const a = map.latLngToContainerPoint(anchor!)
-  const b = map.latLngToContainerPoint(e.latlng)
+  const b = map.latLngToContainerPoint(cursor)
 
   if (measureLineEl) {
     measureLineEl.setAttribute('x1', String(a.x))
@@ -1433,25 +1543,45 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
   const midX = (a.x + b.x) / 2
   const midY = (a.y + b.y) / 2
-  const dist = anchor!.distanceTo(e.latlng)
+  // Measured the way the panel and the estimates measure, so a typed extent reads back as the number that was
+  // typed instead of leaflet's 0.1% smaller earth.
+  const dist = calculateHaversineDistance([anchor!.lat, anchor!.lng], [cursor.lat, cursor.lng])
 
-  const hidePill = isOverSurveyHandle(e.originalEvent?.target) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
+  const overSurveyUi = isOverSurveyHandle(e.originalEvent?.target) || isOverLastWaypointMarker(e)
+  const hidePill = overSurveyUi || dist < 1 // hide if closer than 1 meter to last wp on the array
 
-  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [e.latlng.lat, e.latlng.lng])
-  const text = `${formatMetersShort(dist)} · ${formatBearing(bearing)}`
+  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [cursor.lat, cursor.lng])
+  const [length, unit] = formatMetersShort(dist).split(' ')
+  if (measureLengthEl) measureLengthEl.textContent = isExtentCleared('segment') ? '' : length
+  if (measureRestEl) measureRestEl.textContent = `${unit ? ` ${unit}` : ''} · ${formatBearing(bearing)}`
   if (measureTextEl) {
-    measureTextEl.textContent = text
     measureTextEl.style.left = `${midX}px`
     measureTextEl.style.top = `${midY}px`
     measureTextEl.style.display = hidePill ? 'none' : 'block'
   }
+
+  // Only what is drawn over the box takes it off the map: a segment short enough to hide the pill is usually one
+  // shortened by the box itself, which cannot be the reason to remove what is being typed into.
+  setExtentTarget(
+    'segment',
+    overSurveyUi
+      ? null
+      : {
+          label: 'distance',
+          from: anchor!,
+          to: cursor,
+          liveValue: dist,
+          refresh: refreshLiveMeasureOnMapMove,
+          apply: () => applyTypedSegment(cursor),
+        }
+  )
 
   const prevAnchor = currentMeasurePrevAnchor()
   if (prevAnchor && !hidePill) {
     angleOverlay.renderVertexAngle(
       [prevAnchor.lat, prevAnchor.lng],
       [anchor!.lat, anchor!.lng],
-      [e.latlng.lat, e.latlng.lng]
+      [cursor.lat, cursor.lng]
     )
   } else {
     angleOverlay.clearVertexAngles()
@@ -4270,10 +4400,11 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     }
   }
 
-  if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) {
-    addSurveyPoint(e.latlng)
-    clearLiveMeasure()
-  }
+  // A typed distance places the point at that exact distance from the last one, in the direction of the click.
+  const measureAnchor = currentMeasureAnchor()
+  const latlng = measureAnchor ? projectToLockedExtent('segment', measureAnchor, e.latlng) : e.latlng
+
+  if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) placeSurveyPolygonPoint(latlng)
 
   if (planningMap.value) {
     // Check if there is an existing waypoint near the click location
@@ -4300,7 +4431,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       !interfaceStore.configPanelVisible &&
       isCreatingSimplePath.value
     ) {
-      addWaypoint([e.latlng.lat, e.latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
+      addWaypoint([latlng.lat, latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
     }
     clearLiveMeasure()
   }
@@ -4355,6 +4486,7 @@ onMounted(async () => {
   angleOverlay.initAngleOverlay(planningMap.value!)
   surveyArrowOverlay.initArrowOverlay(planningMap.value!)
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
+  initExtentInputs(planningMap.value!)
   initEdgeDragging(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
@@ -4421,7 +4553,13 @@ onMounted(async () => {
 
   planningMap.value.on('drag', updateConfirmButtonPosition)
   planningMap.value.on('drag', refreshLiveMeasureOnMapMove)
-  planningMap.value.on('mousemove', handleMapMouseMove)
+  planningMap.value.on('mousemove', (e: L.LeafletMouseEvent) => {
+    // A tap on the tag is echoed by a mouse move the browser raises over it, which would aim the line at the tag
+    // and take the tag itself out from under the finger before the tap is through.
+    const movedOver = e.originalEvent?.target as HTMLElement | null
+    if (movedOver?.closest?.('.live-measure-pill')) return
+    handleMapMouseMove(e)
+  })
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
   })
@@ -4976,6 +5114,38 @@ watch(
   backdrop-filter: blur(10px);
   white-space: nowrap;
   transform: translate(0, -50%);
+}
+.live-measure-pill.typing {
+  border-color: #3b82f6;
+}
+/* A tag is small for a finger, so it presses from a halo around it without looking any bigger. */
+.live-measure-pill::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+/* A number typed away holds the room it had, so the tag does not collapse around the caret left behind. */
+.measure-length:empty {
+  display: inline-block;
+  min-width: 3ch;
+}
+/* The field over the tag is invisible, so the tag carries the caret that says it is being typed into. */
+.measure-caret {
+  display: none;
+  width: 1px;
+  height: 14px;
+  margin: 0 1px;
+  vertical-align: -2px;
+  background: #fff;
+}
+.live-measure-pill.typing .measure-caret {
+  display: inline-block;
+  animation: measure-caret-blink 1.1s step-end infinite;
+}
+@keyframes measure-caret-blink {
+  50% {
+    opacity: 0;
+  }
 }
 .measure-area-icon {
   transform: translate(-50%, -50%);
