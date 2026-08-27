@@ -2,7 +2,7 @@
   <div class="min-w-[290px] min-h-[95px] flex items-end">
     <div
       class="w-full rounded-lg overflow-hidden -mt-2"
-      :class="[isWrapped ? 'h-[42px]' : 'h-full']"
+      :class="[isWrapped ? 'h-[38px]' : 'h-full']"
       :style="interfaceStore.globalGlassMenuStyles"
     >
       <div class="flex flex-col justify-start items-center h-full pt-2 cursor-pointer">
@@ -20,7 +20,10 @@
           />
         </div>
         <v-divider v-if="!isWrapped" />
-        <div v-show="!isWrapped" class="flex justify-center items-center w-full h-full">
+        <div
+          v-show="!isWrapped"
+          class="flex justify-center items-center w-full h-full bg-[#00000022] shadow-[inset_0_2px_3px_-1px_rgba(0,0,0,0.45)]"
+        >
           <div
             class="flex w-full h-full justify-start items-center overflow-hidden px-1"
             :class="!vehicleStore.isVehicleOnline ? 'active-events-on-disabled' : ''"
@@ -104,17 +107,17 @@
                   />
                 </template>
 
-                <v-list>
+                <v-list class="py-0">
                   <v-list-item
                     :disabled="!vehicleStore.isVehicleOnline"
                     class="cursor-pointer"
                     @click="handleDownloadMissionOnMap"
                   >
-                    <v-list-item-title>Download mission from vehicle</v-list-item-title>
+                    <v-list-item-title class="text-[14px]">Download mission from vehicle</v-list-item-title>
                   </v-list-item>
-
-                  <v-list-item class="cursor-pointer" @click="handleClearMissionOnMap">
-                    <v-list-item-title>Clear mission on map</v-list-item-title>
+                  <v-divider class="opacity-10" />
+                  <v-list-item class="cursor-pointer py-0" @click="handleClearMissionOnMap">
+                    <v-list-item-title class="text-[14px]">Clear mission on map</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
