@@ -69,6 +69,8 @@ export interface UseMeasureExtentInputReturn {
   setExtentValue: (id: string, value: number | null) => void
   /** Takes what was typed for an extent as final. */
   applyExtent: (id: string) => void
+  /** The extent typed for an id, held to the flyable range, or null when nothing was typed. */
+  lockedExtent: (id: string) => number | null
   /** Whether an extent was typed away, so its tag reads blank instead of the measure it was showing. */
   isExtentCleared: (id: string) => boolean
   /** Applies a typed extent to a point still being chosen with the cursor, keeping only its direction. */
@@ -177,7 +179,6 @@ export const useMeasureExtentInput = (options: UseMeasureExtentInputOptions): Us
     targets.value[id]?.apply()
   }
 
-  // The extent typed for an id, held to the flyable range, or null when nothing was typed.
   const lockedExtent = (id: string): number | null => {
     const value = values.value[id]
     return value != null && Number.isFinite(value) ? clampExtent(value, minExtentInMeters) : null
@@ -226,6 +227,7 @@ export const useMeasureExtentInput = (options: UseMeasureExtentInputOptions): Us
     setExtentTarget,
     setExtentValue,
     applyExtent,
+    lockedExtent,
     isExtentCleared,
     projectToLockedExtent,
     initExtentInputs,
