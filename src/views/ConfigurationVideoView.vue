@@ -153,6 +153,13 @@
                   ({{ ignoredStreamExternalIds.length }} ignored)
                 </span>
               </div>
+              <div v-if="show4kCamBrowserNote" class="text-gray-400 text-sm mt-2 mr-2 w-[95%]">
+                The video from your 4K camera may stutter in this browser version of Cockpit. The desktop version plays
+                this camera through its own connection, which is smoother — install it if the stuttering bothers you.
+                <span v-if="videoStore.hasDisregarded4kCamIgnore">
+                  If you had hidden this camera before, it is showing again: hide it once more and it will stay hidden.
+                </span>
+              </div>
               <div v-if="isElectron()" class="mt-4 mr-2 mb-2 w-[95%]">
                 <div class="text-sm text-gray-300 mb-2">Add direct RTSP stream (Standalone)</div>
                 <div class="flex items-end gap-2 w-full">
@@ -500,6 +507,12 @@ const streamsToShow = computed(() => {
       : []),
   ].filter((item) => item.name !== '')
 })
+
+const show4kCamBrowserNote = computed(
+  () =>
+    !isElectron() &&
+    videoStore.streamsCorrespondency.some((corr) => videoStore.isBlueRobotics4kCamStreamName(corr.externalId))
+)
 
 const openEditDialog = (item: VideoStreamCorrespondency): void => {
   editingStream.value = item
