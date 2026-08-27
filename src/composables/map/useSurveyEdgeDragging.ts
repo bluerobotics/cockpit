@@ -5,6 +5,7 @@ import {
   closestPolygonEdge,
   draggedEdgeEndpoints,
   edgeResizeCursor,
+  isOverEdgeAddMarker,
   isOverSurveyHandle,
 } from '@/libs/map/survey-polygon-edges'
 import { isRectangle } from '@/libs/map/survey-rectangle'
@@ -94,7 +95,10 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
 
   const edgeAt = (event: PointerEvent): number | null => {
     if (!mapRef || !isEditable()) return null
-    if (isOverSurveyHandle(event.target)) return null
+    // A finger has no hover to find an edge with, so the "+" standing on the edge's midpoint doubles as its grab
+    // handle: a tap on it still adds a vertex there, and a drag carries the edge.
+    const grabsByAddMarker = event.pointerType !== 'mouse' && isOverEdgeAddMarker(event.target)
+    if (isOverSurveyHandle(event.target) && !grabsByAddMarker) return null
 
     const points = vertices.value.map((latLng) => mapRef!.latLngToContainerPoint(latLng))
     return closestPolygonEdge(points, mapRef.mouseEventToContainerPoint(event), grabToleranceInPixels)
