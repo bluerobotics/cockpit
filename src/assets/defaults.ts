@@ -314,8 +314,8 @@ export const widgetProfiles: Profile[] = [
               y: 0.804823,
             },
             size: {
-              width: 0.134754,
-              height: 0.09353,
+              width: 0.152,
+              height: 0.11,
             },
             options: {},
           },
