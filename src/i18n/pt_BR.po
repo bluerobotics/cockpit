@@ -3751,6 +3751,16 @@ msgstr "Distância"
 msgid "Distance between lines (${ 0 })"
 msgstr "Distância entre linhas (${ 0 })"
 
+#: src/components/widgets/MissionControlPanel.vue
+msgid "Distance traveled during the current mission, since waypoint 1"
+msgstr ""
+
+#: src/components/widgets/MissionControlPanel.vue
+msgid ""
+"Distances are counted once the vehicle reports its identity, which needs "
+"BlueOS running on the vehicle"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Distances under 1 nmi"
 msgstr "Distâncias abaixo de 1 nmi"
@@ -7009,6 +7019,10 @@ msgstr ""
 msgid "Mission was not checked against hazard data"
 msgstr "A missão não foi verificada contra os dados de perigo"
 
+#: src/components/widgets/MissionControlPanel.vue
+msgid "Mission:"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Missions"
 msgstr "Missões"
@@ -8911,6 +8925,7 @@ msgstr "Tipo de requisição"
 #: src/components/development/MAVLinkInspector.vue
 #: src/components/map/CustomTileProvidersManager.vue
 #: src/components/widgets/DoItYourself.vue
+#: src/components/widgets/MissionControlPanel.vue
 msgid "Reset"
 msgstr "Redefinir"
 
@@ -8940,6 +8955,10 @@ msgstr "Redefinir endereço global"
 #: src/views/ConfigurationMAVLinkView.vue
 msgid "Reset intervals to Cockpit defaults"
 msgstr "Redefinir intervalos para os padrões do Cockpit"
+
+#: src/components/widgets/MissionControlPanel.vue
+msgid "Reset mission distance"
+msgstr ""
 
 #: src/components/configuration/FlightModeNamesConfig.vue
 msgid "Reset names to ArduPilot defaults"
@@ -8975,6 +8994,10 @@ msgstr "Redefinir para os padrões"
 #: src/components/widgets/DoItYourself.vue
 msgid "Reset to last saved state using the Reset button"
 msgstr "Volte ao último estado salvo usando o botão Redefinir"
+
+#: src/components/widgets/MissionControlPanel.vue
+msgid "Reset total distance"
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "Reset visible data"
@@ -10587,6 +10610,13 @@ msgstr ""
 msgid "The stream"
 msgstr "O stream"
 
+#: src/components/widgets/MissionControlPanel.vue
+#, javascript-format
+msgid ""
+"The total distance traveled by this vehicle (${ 0 }) will be discarded and "
+"start counting from zero. This cannot be undone."
+msgstr ""
+
 #: src/components/UpdateNotification.vue
 msgid ""
 "The update has been downloaded. Would you like to install it now? The "
@@ -11224,6 +11254,10 @@ msgstr ""
 "Capacidade total das baterias do veículo. Afeta a estimativa de massa e de "
 "potência."
 
+#: src/components/widgets/MissionControlPanel.vue
+msgid "Total distance the vehicle has traveled"
+msgstr ""
+
 #: src/views/ConfigurationLogsView.vue
 msgid "Total stored entries:"
 msgstr "Total de registros armazenados:"
@@ -11233,7 +11267,12 @@ msgstr "Total de registros armazenados:"
 msgid "Total survey coverage"
 msgstr "Cobertura total do levantamento"
 
+#: src/components/widgets/MissionControlPanel.vue
+msgid "Total traveled distance reset"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
+#: src/components/widgets/MissionControlPanel.vue
 msgid "Total:"
 msgstr "Total:"
 
