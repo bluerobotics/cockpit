@@ -901,6 +901,7 @@ import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissio
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
+import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
@@ -945,8 +946,6 @@ import {
   bearingBetween,
   calculateHaversineDistance,
   centroidLatLng,
-  formatBearing,
-  formatMetersShort,
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
@@ -1370,16 +1369,8 @@ let osmSaveBtn: HTMLAnchorElement | undefined
 const nearMissionPathTolerance = 16 // in pixels
 const waypointPickToleranceInPixels = 10
 const measureLayer = shallowRef<L.LayerGroup | null>(null)
-let measureOverlayEl: HTMLDivElement | null = null
-let measureSvgEl: SVGSVGElement | null = null
-let measureLineEl: SVGLineElement | null = null
-let measureEndDotEl: SVGCircleElement | null = null
-let measureTextEl: HTMLDivElement | null = null
-let measureLengthEl: HTMLSpanElement | null = null
-let measureRestEl: HTMLSpanElement | null = null
 // Last cursor event kept so the live measure can be re-rendered while the map pans (no mousemove fires then)
 let lastMeasureCursor: L.LeafletMouseEvent | null = null
-let measureRefreshRafId: number | null = null
 const surveyAreaMarkers = shallowRef<Record<string, L.Marker>>({})
 const liveSurveyAreaMarker = shallowRef<L.Marker | null>(null)
 
@@ -1398,8 +1389,39 @@ const glassMenuCssVars = computed(() => ({
   '--glass-box-shadow': interfaceStore.globalGlassMenuStyles.boxShadow,
 }))
 
+const {
+  initLiveMeasure,
+  renderLiveMeasure,
+  clearLiveMeasure: clearMeasureOverlay,
+  setLiveMeasureAnchor,
+  setLiveMeasureTyping,
+  refreshLiveMeasureOnMapMove,
+  destroyLiveMeasure,
+} = useLiveMeasureOverlay({
+  redraw: (latlng, containerPoint) => {
+    if (lastMeasureCursor) handleMapMouseMove({ ...lastMeasureCursor, latlng, containerPoint })
+  },
+  cursorPosition: () => L.point(cursorLivePositionX.value, cursorLivePositionY.value),
+  heldPoint: () => pendingDrawnPoint.value,
+  onTagPressed: () => {
+    if (extentInputsOpen.value) {
+      focusExtentInput('segment')
+      return
+    }
+    logUserAction('Opened the distance field from the measure tag')
+    openExtentInputs('segment')
+    // A touch never moves a cursor, so the field is placed against the measure the tag is already showing.
+    refreshLiveMeasureOnMapMove()
+  },
+  onTagTapped: () => focusExtentInput('segment'),
+})
+
+watch(extentInputsOpen, (open) => setLiveMeasureTyping(open))
+// A point left waiting is what stands the tag clear of the pointer, so the tag is redrawn as it comes and goes.
+watch(pendingDrawnPoint, () => refreshLiveMeasureOnMapMove())
+
 const clearLiveMeasure = (): void => {
-  destroyMeasureOverlay(planningMap.value || undefined)
+  clearMeasureOverlay()
   angleOverlay.clearVertexAngles()
   clearPendingPoint()
   // An extent typed for the segment just drawn does not carry over to the next one, which starts free again.
@@ -1439,100 +1461,6 @@ const currentMeasurePrevAnchor = (): L.LatLng | null => {
   }
 
   return null
-}
-
-const ensureMeasureOverlay = (map: L.Map): void => {
-  if (measureOverlayEl) return
-  const container = map.getContainer()
-
-  measureOverlayEl = document.createElement('div')
-  measureOverlayEl.className = 'measure-overlay'
-  measureOverlayEl.style.pointerEvents = 'none'
-  measureOverlayEl.style.position = 'absolute'
-  measureOverlayEl.style.top = '0'
-  measureOverlayEl.style.left = '0'
-  measureOverlayEl.style.width = '100%'
-  measureOverlayEl.style.height = '100%'
-  measureOverlayEl.style.zIndex = '640'
-
-  measureSvgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  measureSvgEl.setAttribute('width', '100%')
-  measureSvgEl.setAttribute('height', '100%')
-  measureSvgEl.style.position = 'absolute'
-  measureSvgEl.style.top = '0'
-  measureSvgEl.style.left = '0'
-
-  measureLineEl = document.createElementNS('http://www.w3.org/2000/svg', 'line')
-  measureLineEl.setAttribute('stroke-width', '2')
-  measureLineEl.setAttribute('stroke-dasharray', '10,10')
-  measureLineEl.setAttribute('opacity', '0.9')
-  measureLineEl.setAttribute('stroke', '#2563eb')
-
-  // The loose end of the line is where the next point lands, and a finger dragging it needs to see where that is.
-  measureEndDotEl = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-  measureEndDotEl.setAttribute('r', '5')
-  measureEndDotEl.setAttribute('fill', '#2563eb')
-  measureEndDotEl.setAttribute('stroke', '#FFFFFF')
-  measureEndDotEl.setAttribute('stroke-width', '2')
-
-  measureSvgEl.appendChild(measureLineEl)
-  measureSvgEl.appendChild(measureEndDotEl)
-
-  measureTextEl = document.createElement('div')
-  measureTextEl.className = 'live-measure-pill'
-  measureTextEl.classList.toggle('typing', extentInputsOpen.value)
-  measureTextEl.style.position = 'absolute'
-  measureTextEl.style.transform = 'translate(-50%, -50%)'
-  measureTextEl.style.pointerEvents = 'auto'
-  measureTextEl.style.cursor = 'pointer'
-  // Tapping the tag is how the field is asked for without a keyboard, so the tag owns its presses the way the
-  // map's own controls do: the map is listening inside its container, and the tag is not a place to draw.
-  L.DomEvent.disableClickPropagation(measureTextEl)
-  // Taken on the press rather than on the click, which the browser aims wherever the tag has moved to by the
-  // time a finger is lifted.
-  measureTextEl.addEventListener('pointerdown', (event) => {
-    event.stopPropagation()
-    if (extentInputsOpen.value) {
-      focusExtentInput('segment')
-      return
-    }
-    logUserAction('Opened the distance field from the measure tag')
-    openExtentInputs('segment')
-    // A touch never moves a cursor, so the field is placed against the measure the tag is already showing.
-    refreshLiveMeasureOnMapMove()
-  })
-  // Mobile browsers only raise their keyboard for a focus asked from the tap itself, which lands here.
-  measureTextEl.addEventListener('click', () => focusExtentInput('segment'))
-
-  // The caret stands right after the digits being typed, so the length and everything trailing it are their own
-  // spans, written on each move instead of rebuilt.
-  measureLengthEl = document.createElement('span')
-  measureLengthEl.className = 'measure-length'
-  measureRestEl = document.createElement('span')
-  const caretEl = document.createElement('span')
-  caretEl.className = 'measure-caret'
-  measureTextEl.append(measureLengthEl, caretEl, measureRestEl)
-
-  measureOverlayEl.appendChild(measureSvgEl)
-  measureOverlayEl.appendChild(measureTextEl)
-  container.appendChild(measureOverlayEl)
-}
-
-watch(extentInputsOpen, (open) => measureTextEl?.classList.toggle('typing', open))
-
-const destroyMeasureOverlay = (map?: L.Map): void => {
-  if (!measureOverlayEl) return
-  if (measureOverlayEl) {
-    ;(map?.getContainer() ?? measureOverlayEl.parentElement)?.removeChild(measureOverlayEl)
-  }
-  measureOverlayEl.remove()
-  measureOverlayEl = null
-  measureSvgEl = null
-  measureLineEl = null
-  measureEndDotEl = null
-  measureTextEl = null
-  measureLengthEl = null
-  measureRestEl = null
 }
 
 const placeSurveyPolygonPoint = (latlng: L.LatLng): void => {
@@ -1590,6 +1518,13 @@ const applyTypedSegment = (latlng: L.LatLng): void => {
   refreshLiveMeasureOnMapMove()
 }
 
+const isMeasuringSegment = (): boolean => {
+  const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value || isDraggingSurveyEdge.value
+  if (draggingExistingNode) return false
+
+  return isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value)
+}
+
 // `evt` is optional so callers triggered without a mousemove (e.g. right after a context-menu
 // action) can still draw the line; hover hit-testing (against survey handles or the last
 // waypoint) is skipped in that case.
@@ -1599,62 +1534,37 @@ const renderMeasureOverlay = (cursorLatLng: L.LatLng, evt: L.LeafletMouseEvent |
   if (evt) lastMeasureCursor = evt
 
   const anchor = currentMeasureAnchor()
-  const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value || isDraggingSurveyEdge.value
-  const measuring =
-    !!anchor &&
-    !draggingExistingNode &&
-    (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
-  if (!measuring) {
-    destroyMeasureOverlay(planningMap.value)
+  if (!anchor || !isMeasuringSegment()) {
+    clearMeasureOverlay()
     angleOverlay.clearVertexAngles()
     // No segment is being drawn, so there is nothing left for a typed distance to apply to.
     closeExtentInputs()
     return
   }
 
-  const map = planningMap.value
-  ensureMeasureOverlay(map)
-
-  if (measureTextEl) {
-    measureTextEl.style.display = evt && isOverSurveyHandle(evt.originalEvent?.target) ? 'none' : 'block'
-  }
-
   // A typed distance holds the segment's length, so only its direction is still read off the cursor.
-  const cursor = projectToLockedExtent('segment', anchor!, cursorLatLng)
-  const a = map.latLngToContainerPoint(anchor!)
-  const b = map.latLngToContainerPoint(cursor)
-
-  if (measureLineEl) {
-    measureLineEl.setAttribute('x1', String(a.x))
-    measureLineEl.setAttribute('y1', String(a.y))
-    measureLineEl.setAttribute('x2', String(b.x))
-    measureLineEl.setAttribute('y2', String(b.y))
-  }
-  measureEndDotEl?.setAttribute('cx', String(b.x))
-  measureEndDotEl?.setAttribute('cy', String(b.y))
-
-  const midX = (a.x + b.x) / 2
-  const midY = (a.y + b.y) / 2
+  const cursor = projectToLockedExtent('segment', anchor, cursorLatLng)
   // Measured the way the panel and the estimates measure, so a typed extent reads back as the number that was
   // typed instead of leaflet's 0.1% smaller earth.
-  const dist = calculateHaversineDistance([anchor!.lat, anchor!.lng], [cursor.lat, cursor.lng])
+  const dist = calculateHaversineDistance([anchor.lat, anchor.lng], [cursor.lat, cursor.lng])
 
   const hidePill =
     (evt && (isOverSurveyHandle(evt.originalEvent?.target) || isOverLastWaypointMarker(evt))) || dist < 1 // hide if closer than 1 meter to last wp on the array
 
-  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [cursor.lat, cursor.lng])
-  const [length, unit] = formatMetersShort(dist).split(' ')
-  if (measureLengthEl) measureLengthEl.textContent = isExtentCleared('segment') ? '' : length
-  if (measureRestEl) measureRestEl.textContent = `${unit ? ` ${unit}` : ''} · ${formatBearing(bearing)}`
-  if (measureTextEl) {
-    measureTextEl.style.left = `${midX}px`
-    measureTextEl.style.top = `${midY}px`
-    measureTextEl.style.display = hidePill ? 'none' : 'block'
-  }
+  renderLiveMeasure({
+    from: anchor,
+    to: cursor,
+    distanceInMeters: dist,
+    bearingInDegrees: bearingBetween([anchor.lat, anchor.lng], [cursor.lat, cursor.lng]),
+    hidesTag: hidePill,
+    clearsLength: isExtentCleared('segment'),
+    // Only a point already dragged out and left waiting has the tag standing clear of the pointer that drew it.
+    tagTakesPresses: pendingDrawnPoint.value !== null,
+  })
 
   setExtentTarget('segment', {
     label: 'distance',
-    from: anchor!,
+    from: anchor,
     to: cursor,
     liveValue: dist,
     refresh: refreshLiveMeasureOnMapMove,
@@ -1663,33 +1573,10 @@ const renderMeasureOverlay = (cursorLatLng: L.LatLng, evt: L.LeafletMouseEvent |
 
   const prevAnchor = currentMeasurePrevAnchor()
   if (prevAnchor && !hidePill) {
-    angleOverlay.renderVertexAngle(
-      [prevAnchor.lat, prevAnchor.lng],
-      [anchor!.lat, anchor!.lng],
-      [cursor.lat, cursor.lng]
-    )
+    angleOverlay.renderVertexAngle([prevAnchor.lat, prevAnchor.lng], [anchor.lat, anchor.lng], [cursor.lat, cursor.lng])
   } else {
     angleOverlay.clearVertexAngles()
   }
-}
-
-// Keep the live measure pinned to the cursor while the map pans under it.
-const refreshLiveMeasureOnMapMove = (): void => {
-  if (!planningMap.value || !lastMeasureCursor || measureRefreshRafId !== null) return
-  measureRefreshRafId = requestAnimationFrame(() => {
-    measureRefreshRafId = null
-    if (!planningMap.value || !lastMeasureCursor) return
-    const { containerPoint: cursorPoint, latlng: cursorLatlng } = mapPointerPositionFromClient(
-      planningMap.value,
-      cursorLivePositionX.value,
-      cursorLivePositionY.value
-    )
-    // A finger leaves no cursor behind, so a point it dragged out and left waiting is where the measure ends.
-    const held = pendingDrawnPoint.value
-    const containerPoint = held ? planningMap.value.latLngToContainerPoint(held) : cursorPoint
-    const latlng = held ?? cursorLatlng
-    handleMapMouseMove({ ...lastMeasureCursor, latlng, containerPoint })
-  })
 }
 
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
@@ -1704,6 +1591,7 @@ const onMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
   handleMapMouseMove(e)
 }
+
 const saveEsri = (): void => {
   logUserAction('Saved visible Esri map tiles')
   esriSaveBtn?.click()
@@ -2907,13 +2795,7 @@ const performUndo = (): void => {
   interfaceStore.configPanelVisible = false
 
   const anchor = currentMeasureAnchor()
-  if (anchor && measureLineEl && planningMap.value) {
-    const pt = planningMap.value.latLngToContainerPoint(anchor)
-    measureLineEl.setAttribute('x1', String(pt.x))
-    measureLineEl.setAttribute('y1', String(pt.y))
-  } else {
-    clearLiveMeasure()
-  }
+  if (!anchor || !setLiveMeasureAnchor(anchor)) clearLiveMeasure()
 }
 
 const performRedo = (): void => {
@@ -2949,13 +2831,7 @@ const performRedo = (): void => {
   interfaceStore.configPanelVisible = false
 
   const anchor = currentMeasureAnchor()
-  if (anchor && measureLineEl && planningMap.value) {
-    const pt = planningMap.value.latLngToContainerPoint(anchor)
-    measureLineEl.setAttribute('x1', String(pt.x))
-    measureLineEl.setAttribute('y1', String(pt.y))
-  } else {
-    clearLiveMeasure()
-  }
+  if (!anchor || !setLiveMeasureAnchor(anchor)) clearLiveMeasure()
 }
 
 const handleKeyDown = (event: KeyboardEvent): void => {
@@ -4733,6 +4609,7 @@ onMounted(async () => {
   surveyArrowOverlay.initArrowOverlay(planningMap.value!)
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
   initExtentInputs(planningMap.value!)
+  initLiveMeasure(planningMap.value!)
   initEdgeDragging(planningMap.value!)
   initTouchDrawing(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
@@ -4877,11 +4754,11 @@ onUnmounted(() => {
   }
   planningMap.value?.off('mousemove', onMapMouseMove)
   planningMap.value?.off('drag', refreshLiveMeasureOnMapMove)
-  if (measureRefreshRafId !== null) cancelAnimationFrame(measureRefreshRafId)
   clearLiveMeasure()
   dragMeasureOverlay.destroyDragMeasureOverlay()
   angleOverlay.destroyAngleOverlay()
   surveyArrowOverlay.destroyArrowOverlay()
+  destroyLiveMeasure()
   destroyEdgeDragging()
   destroyTouchDrawing()
 
