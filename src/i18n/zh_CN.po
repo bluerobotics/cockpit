@@ -1303,6 +1303,7 @@ msgstr "轴输入已重新映射。"
 msgid "Axis mapping"
 msgstr "轴映射"
 
+#: src/components/About.vue
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/MainMenu.vue
 msgid "Back"
@@ -2202,6 +2203,12 @@ msgid ""
 "Cockpit has a default joystick mapping for ${ 0 } with ${ 1 } axis "
 "function(s)"
 msgstr "Cockpit 为 ${ 0 } 提供了包含 ${ 1 } 个轴功能的默认摇杆映射"
+
+#: src/components/About.vue
+msgid ""
+"Cockpit includes the software listed below. Each component stays under its "
+"own license and is not relicensed under either arm of Cockpit's license."
+msgstr "Cockpit 包含下列软件。每个组件均保留其自身的许可证，不会以 Cockpit 许可证的任一选项重新授权。"
 
 #: src/views/ToolsDataLakeView.vue
 msgid "Cockpit internal"
@@ -10061,6 +10068,14 @@ msgstr ""
 #: src/views/ConfigurationGeneralView.vue
 msgid "They can also draw GeoJSON overlays on the map:"
 msgstr "它们还可以在地图上绘制 GeoJSON 叠加层："
+
+#: src/components/About.vue
+msgid "Third-party software"
+msgstr "第三方软件"
+
+#: src/components/About.vue
+msgid "Third-party software notices"
+msgstr "第三方软件声明"
 
 #: src/components/ArchitectureWarning.vue
 msgid ""

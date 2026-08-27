@@ -1403,6 +1403,7 @@ msgstr "Entrada de eixo remapeada."
 msgid "Axis mapping"
 msgstr "Mapeamento de eixos"
 
+#: src/components/About.vue
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/MainMenu.vue
 msgid "Back"
@@ -2357,6 +2358,15 @@ msgid ""
 msgstr ""
 "O Cockpit tem um mapeamento de joystick padrão para ${ 0 } com ${ 1 } "
 "função(ões) de eixo"
+
+#: src/components/About.vue
+msgid ""
+"Cockpit includes the software listed below. Each component stays under its "
+"own license and is not relicensed under either arm of Cockpit's license."
+msgstr ""
+"O Cockpit inclui o software listado abaixo. Cada componente permanece sob "
+"sua própria licença e não é relicenciado sob nenhuma das opções de licença "
+"do Cockpit."
 
 #: src/views/ToolsDataLakeView.vue
 msgid "Cockpit internal"
@@ -10784,6 +10794,14 @@ msgstr ""
 #: src/views/ConfigurationGeneralView.vue
 msgid "They can also draw GeoJSON overlays on the map:"
 msgstr "Eles também podem desenhar sobreposições GeoJSON no mapa:"
+
+#: src/components/About.vue
+msgid "Third-party software"
+msgstr "Software de terceiros"
+
+#: src/components/About.vue
+msgid "Third-party software notices"
+msgstr "Avisos de software de terceiros"
 
 #: src/components/ArchitectureWarning.vue
 msgid ""
