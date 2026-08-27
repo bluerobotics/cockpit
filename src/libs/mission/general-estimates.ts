@@ -5,7 +5,7 @@ import { MissionLeg, WaypointCoordinates } from '@/types/mission'
 import { norm360, radians } from '../utils'
 import { BatteryChemistry } from '../vehicle/types'
 
-const earthRadiusMeters = 6_378_137
+export const earthRadiusMeters = 6_378_137
 
 // Haversine distance between two lat/lng coordinates (in meters) to calculate around-a-sphere distance between two points
 // Equation from https://www.movable-type.co.uk/scripts/latlong.html
