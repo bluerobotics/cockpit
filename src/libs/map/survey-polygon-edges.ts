@@ -20,6 +20,14 @@ const handleSelector = '.custom-div-icon, .edge-marker, .delete-popup, .delete-b
 export const isOverSurveyHandle = (target: EventTarget | null): boolean =>
   !!(target as HTMLElement | null)?.closest?.(handleSelector)
 
+/**
+ * Whether an event landed on the "+" an edge carries at its midpoint.
+ * @param {EventTarget | null} target - The element the event was raised on.
+ * @returns {boolean} True when the element is such a marker, or sits inside one.
+ */
+export const isOverEdgeAddMarker = (target: EventTarget | null): boolean =>
+  !!(target as HTMLElement | null)?.closest?.('.edge-marker')
+
 const distanceToSegment = (point: ScreenPoint, start: ScreenPoint, end: ScreenPoint): number => {
   const run = { x: end.x - start.x, y: end.y - start.y }
   const lengthSquared = run.x * run.x + run.y * run.y
