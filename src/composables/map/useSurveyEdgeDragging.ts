@@ -17,14 +17,12 @@ import type { WaypointCoordinates } from '@/types/mission'
 export interface UseSurveyEdgeDraggingOptions {
   /** The draft polygon's vertices, in the order they are drawn. */
   vertices: Ref<L.LatLng[]>
-  /** Reads the draggable markers standing on those vertices, which the moved edge is carried by. */
-  markers: () => L.Marker[]
   /** Whether the polygon can be edited right now. */
   isEditable: () => boolean
   /** Called once per drag, before the first move, so the polygon can be snapshotted for undo. */
   onDragStart: () => void
-  /** Called on every move, once the edge's markers have been carried to their new positions. */
-  onEdgeMoved: () => void
+  /** Called on every move, with the polygon's vertices as the dragged edge has left them. */
+  onEdgeMoved: (vertices: WaypointCoordinates[]) => void
   /** Called when the press is released, saying whether the edge ended up moving. */
   onDragEnd: (moved: boolean) => void
 }
@@ -60,7 +58,7 @@ const dragThresholdInPixels = 4
  * @returns {UseSurveyEdgeDraggingReturn} Drag state plus the methods to bind and unbind the map.
  */
 export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): UseSurveyEdgeDraggingReturn => {
-  const { vertices, markers, isEditable, onDragStart, onEdgeMoved, onDragEnd } = options
+  const { vertices, isEditable, onDragStart, onEdgeMoved, onDragEnd } = options
 
   const isEdgePressed = ref(false)
   const isDraggingEdge = ref(false)
@@ -162,14 +160,14 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
       logUserAction('Dragged a survey polygon edge')
     }
 
-    const edgeMarkers = markers()
-    if (edgeMarkers.length < 3) return
+    const moved = vertices.value.map(asCoordinates)
+    if (moved.length < 3) return
 
     const pointer = asCoordinates(mapRef.containerPointToLatLng(containerPoint))
     const [start, end] = draggedEdgeEndpoints(pressedEdgeEndpoints, [dragOrigin, pointer], holdEdgeSquare)
-    edgeMarkers[pressedEdge].setLatLng(start)
-    edgeMarkers[(pressedEdge + 1) % edgeMarkers.length].setLatLng(end)
-    onEdgeMoved()
+    moved[pressedEdge] = start
+    moved[(pressedEdge + 1) % moved.length] = end
+    onEdgeMoved(moved)
   }
 
   const onPointerUp = (event: PointerEvent): void => {

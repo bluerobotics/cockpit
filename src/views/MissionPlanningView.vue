@@ -1002,6 +1002,7 @@ import { useMeasureExtentInput } from '@/composables/map/useMeasureExtentInput'
 import { useMissionFenceBreaches } from '@/composables/map/useMissionFenceBreaches'
 import { useMissionInsertion } from '@/composables/map/useMissionInsertion'
 import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
+import { useRectangleHandles } from '@/composables/map/useRectangleHandles'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
 import { type SurveyDrawShape, useSurveyRectangleDrawing } from '@/composables/map/useSurveyRectangleDrawing'
@@ -1560,10 +1561,13 @@ const {
 const {
   shape: surveyDrawShape,
   isSizingRectangle,
+  heldRectangleVertices,
+  rectangleHandles,
   dimensions: surveyRectangleDimensions,
   setShape: setSurveyDrawShape,
   consumeSurveyClick,
   applyDimensions: applySurveyRectangleDimensions,
+  freezeSizingRectangle,
   releaseLinesAngle: releaseSurveyLinesAngle,
   cancelSizing: cancelSurveyRectangleSizing,
   initRectangleDrawing,
@@ -1587,22 +1591,34 @@ const {
   },
 })
 
+// A rectangle taken hold of is resized by its edges before it is even fixed, so the shape those edges belong to
+// is the one being placed while there is one, and the draft polygon otherwise.
+const surveyEdgeVertices = computed(() =>
+  isSizingRectangle.value ? heldRectangleVertices.value : surveyPolygonVertexesPositions.value
+)
+
 const {
   isEdgePressed: isPressingSurveyEdge,
   isDraggingEdge: isDraggingSurveyEdge,
   initEdgeDragging,
   destroyEdgeDragging,
 } = useSurveyEdgeDragging({
-  vertices: surveyPolygonVertexesPositions,
-  markers: () => surveyPolygonVertexesMarkers.value,
-  isEditable: () =>
-    isCreatingSurvey.value && !isSizingRectangle.value && surveyPolygonVertexesPositions.value.length >= 3,
-  onDragStart: pushSurveyPolygonSnapshot,
-  onEdgeMoved: () => {
-    updatePolygon()
-    createSurveyPath()
-    updateConfirmButtonPosition()
+  vertices: surveyEdgeVertices,
+  isEditable: () => isCreatingSurvey.value && surveyEdgeVertices.value.length >= 3,
+  onDragStart: () => {
+    if (!isSizingRectangle.value) pushSurveyPolygonSnapshot()
   },
+  onEdgeMoved: (corners) => applyDraftCorners(corners),
+  onDragEnd: (moved) => {
+    if (!moved) return
+    ignoreNextClick = true
+    createSurveyPath()
+  },
+})
+
+const { isDraggingHandle: isDraggingRectangleHandle, initRectangleHandles } = useRectangleHandles({
+  target: rectangleHandles,
+  apply: freezeSizingRectangle,
   onDragEnd: (moved) => {
     if (!moved) return
     ignoreNextClick = true
@@ -1613,7 +1629,10 @@ const {
 // A press that is already dragging one of the map's own handles belongs to that drag, so every gesture bound to the
 // planning map has to stay out of it.
 const isDraggingMapHandle = (): boolean =>
-  isPressingSurveyEdge.value || isDraggingMarker.value || isDraggingSurveyVertex.value
+  isPressingSurveyEdge.value ||
+  isDraggingMarker.value ||
+  isDraggingSurveyVertex.value ||
+  isDraggingRectangleHandle.value
 
 const {
   pendingPoint: pendingDrawnPoint,
@@ -1626,6 +1645,7 @@ const {
   drawsWithOneFinger: () =>
     (isCreatingSurvey.value && isDrawingSurveyPolygon.value) ||
     (isCreatingSimplePath.value && currentMeasureAnchor() !== null),
+  confirmLabel: () => (isSizingRectangle.value ? 'survey size' : 'point'),
   hasAnchor: () => currentMeasureAnchor() !== null,
   isBlocked: isDraggingMapHandle,
   placePoint: (latlng) => placeDrawnPoint(latlng),
@@ -1661,7 +1681,11 @@ const isDraggingSurveyVertex = ref(false)
 // The live preview is rebuilt on every pointer move of a reshape, so a polygon that is momentarily too thin for
 // its line spacing must not raise the no-valid-path warning until the gesture is released.
 const isReshapingSurveyPolygon = computed(
-  () => isDraggingSurveyVertex.value || isDraggingPolygon.value || isDraggingSurveyEdge.value
+  () =>
+    isDraggingSurveyVertex.value ||
+    isDraggingPolygon.value ||
+    isDraggingSurveyEdge.value ||
+    isDraggingRectangleHandle.value
 )
 
 const showHomePositionNotSetDialog = ref(false)
@@ -3868,6 +3892,32 @@ const updatePolygon = (): void => {
   updateSurveyMarkersPositions()
 }
 
+// The rectangle's handles and the polygon's edges both hand over the whole ring they have moved, which lands on
+// the preview while the area is still being swept and on the draft's own markers once it has been fixed.
+const applyDraftCorners = (corners: WaypointCoordinates[]): void => {
+  if (isSizingRectangle.value) {
+    freezeSizingRectangle(corners)
+    return
+  }
+
+  surveyPolygonVertexesMarkers.value.forEach((marker, index) => marker.setLatLng(corners[index]))
+  updatePolygon()
+  createSurveyPath()
+  updateConfirmButtonPosition()
+}
+
+// A rectangle being sized carries a handle on each corner of the edge it was drawn from, so the vertex that edge
+// was started from must come off the map while it lasts: it stands under the handle that has taken it over, and
+// would be left behind the moment the rectangle is carried away from it.
+watch(isSizingRectangle, (sizing) => {
+  const map = planningMap.value
+  if (!map) return
+  surveyPolygonVertexesMarkers.value.forEach((marker) => {
+    if (sizing) marker.remove()
+    else marker.addTo(map)
+  })
+})
+
 const checkAndRemoveSurveyPath = (): void => {
   if (surveyPolygonVertexesPositions.value.length >= 4 || !surveyPathLayer.value) return
   surveyPreviewPath.value = null
@@ -5032,6 +5082,7 @@ onMounted(async () => {
   initExtentInputs(planningMap.value!)
   initLiveMeasure(planningMap.value!)
   initRectangleDrawing(planningMap.value!)
+  initRectangleHandles(planningMap.value!)
   initEdgeDragging(planningMap.value!)
   initTouchDrawing(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
