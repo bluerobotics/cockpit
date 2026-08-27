@@ -234,39 +234,52 @@ export class SettingsManager {
     userId?: string,
     vehicleId?: string
   ): Promise<void> => {
-    if (this.isNullValue(userId)) {
-      userId = this.currentUsername || fallbackUsername
-    }
-    if (this.isNullValue(vehicleId)) {
-      vehicleId = this.currentVehicleId || fallbackVehicleId
-    }
+    const resolvedUserId = this.resolveUserId(userId)
+    const resolvedVehicleId = this.resolveVehicleId(vehicleId)
+    const newEpoch = epochChange !== undefined ? epochChange : Date.now()
 
     if (this.keyValueUpdateTimeouts[key]) {
       clearTimeout(this.keyValueUpdateTimeouts[key])
     }
 
-    this.keyValueUpdateTimeouts[key] = setTimeout(async () => {
-      const newEpoch = epochChange !== undefined ? epochChange : Date.now()
-      console.log(`[SettingsManager] Updating value of key '${key}' for user '${userId}' and vehicle '${vehicleId}'.`)
-      const newSetting = {
-        epochLastChangedLocally: newEpoch,
-        value: value,
-      }
-      const localSettings = this.getLocalSettings()
-      if (!localSettings[userId!]) {
-        localSettings[userId!] = {}
-      }
-      if (!localSettings[userId!][vehicleId!]) {
-        localSettings[userId!][vehicleId!] = {}
-      }
-      localSettings[userId!][vehicleId!][key] = newSetting
-      this.setLocalSettings(localSettings)
-      this.notifyAllListenersAboutSettingsChange()
-
-      this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId!, userId!, key, value, newEpoch)
-      await this.sendKeyValueUpdatesToVehicle(userId!, vehicleId!, this.currentVehicleAddress)
-
+    this.keyValueUpdateTimeouts[key] = setTimeout(() => {
+      this.applyKeyValueUpdate(key, value, newEpoch, resolvedUserId, resolvedVehicleId)
     }, keyValueUpdateDebounceTime)
+  }
+
+  /**
+   * Writes a key-value pair to the local settings and sends it to the vehicle
+   * @param {string} key - The key of the setting to update
+   * @param {SettingValue} value - The new value of the setting
+   * @param {number} epochChange - The epoch time at which the setting was changed
+   * @param {string} userId - The ID of the user to which the setting belongs
+   * @param {string} vehicleId - The ID of the vehicle to which the setting belongs
+   */
+  private applyKeyValueUpdate = async (
+    key: string,
+    value: SettingValue,
+    epochChange: number,
+    userId: string,
+    vehicleId: string
+  ): Promise<void> => {
+    console.log(`[SettingsManager] Updating value of key '${key}' for user '${userId}' and vehicle '${vehicleId}'.`)
+    const newSetting = {
+      epochLastChangedLocally: epochChange,
+      value: value,
+    }
+    const localSettings = this.getLocalSettings()
+    if (!localSettings[userId]) {
+      localSettings[userId] = {}
+    }
+    if (!localSettings[userId][vehicleId]) {
+      localSettings[userId][vehicleId] = {}
+    }
+    localSettings[userId][vehicleId][key] = newSetting
+    this.setLocalSettings(localSettings)
+    this.notifyAllListenersAboutSettingsChange()
+
+    this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId, userId, key, value, epochChange)
+    await this.sendKeyValueUpdatesToVehicle(userId, vehicleId, this.currentVehicleAddress)
   }
 
   /**
@@ -362,6 +375,24 @@ export class SettingsManager {
 
     localSettings[userId][vehicleId] = settings
     this.setLocalSettings(localSettings)
+  }
+
+  /**
+   * Resolves which user a setting belongs to, falling back to the current one
+   * @param {string} [userId] - The ID of the user to which the setting belongs
+   * @returns {string} The resolved user ID
+   */
+  private resolveUserId = (userId?: string): string => {
+    return this.isNullValue(userId) ? this.currentUsername || fallbackUsername : userId!
+  }
+
+  /**
+   * Resolves which vehicle a setting belongs to, falling back to the current one
+   * @param {string} [vehicleId] - The ID of the vehicle to which the setting belongs
+   * @returns {string} The resolved vehicle ID
+   */
+  private resolveVehicleId = (vehicleId?: string): string => {
+    return this.isNullValue(vehicleId) ? this.currentVehicleId || fallbackVehicleId : vehicleId!
   }
 
   /**
