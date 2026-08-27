@@ -53,7 +53,7 @@ application's resources.
 | `jsts`, `@turf/jsts` (via `@turf/turf`) | 2.7.1, 2.7.2 | EDL-1.0 OR EPL-1.0 | Standalone, Lite | [bjornharrtell/jsts](https://github.com/bjornharrtell/jsts) |
 | Monaco Editor | 0.52.2 | MIT | Standalone, Lite | [microsoft/monaco-editor](https://github.com/microsoft/monaco-editor) |
 | `posthog-js` | 1.253.4 | Apache-2.0 | Standalone, Lite | [PostHog/posthog-js](https://github.com/PostHog/posthog-js) |
-| Roboto (loaded at runtime from Google Fonts) | served by Google Fonts | Apache-2.0 | Neither — fetched at runtime, not bundled | [googlefonts/roboto](https://github.com/googlefonts/roboto) |
+| Roboto (self-hosted webfont, via `roboto-fontface`) | 0.10.0 | Apache-2.0 | Standalone, Lite | [googlefonts/roboto](https://github.com/googlefonts/roboto) |
 
 Every other bundled npm package is under a permissive license; see
 [Permissive npm libraries](#permissive-npm-libraries) and
@@ -329,12 +329,15 @@ Apache-2.0 for the icons and the fonts, and MIT for everything else.
 
 ### Roboto
 
-Roboto is **not** bundled. `src/plugins/webfontloader.ts` fetches it from Google Fonts at runtime, so
-Cockpit redistributes no Roboto font files and carries no notice obligation for them. The `roboto-fontface`
-package (0.10.0, Apache-2.0) is declared in `package.json` but not imported by any source file.
+Roboto is bundled and self-hosted. `src/main.ts` imports the webfont CSS from the `roboto-fontface`
+package (0.10.0), so the font files are served from the application itself and neither build contacts
+`fonts.googleapis.com`.
 
-Because the fonts load from `fonts.googleapis.com`, the Lite build reaches a third-party service on
-startup, and the Standalone build falls back to system fonts when offline.
+- License: Apache-2.0
+- Source: <https://github.com/googlefonts/roboto>, packaged by
+  [choffmeister/roboto-fontface-bower](https://github.com/choffmeister/roboto-fontface-bower)
+- Notice: the package's `LICENSE` is the Apache License 2.0, which asks that the notice travel with the
+  redistributed files. This entry is that notice.
 
 ---
 

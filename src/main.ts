@@ -2,6 +2,9 @@
 import { settingsManager } from '@/libs/settings-management'
 
 import 'floating-vue/dist/style.css'
+// Self-hosted so the interface does not reach fonts.googleapis.com on startup, which both leaked every
+// operator's IP to Google and left offline vehicles falling back to system fonts.
+import 'roboto-fontface/css/roboto/roboto-fontface.css'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import '@/libs/system-logging'
 import '@/utils/widget-migrations'
@@ -34,7 +37,6 @@ import { runMigrations } from '@/utils/migrations'
 import App from './App.vue'
 import { contextMenu } from './directives/contextMenu'
 import vuetify from './plugins/vuetify'
-import { loadFonts } from './plugins/webfontloader'
 import router from './router'
 import { useOmniscientLoggerStore } from './stores/omniscientLogger'
 
@@ -42,7 +44,6 @@ import { useOmniscientLoggerStore } from './stores/omniscientLogger'
 runMigrations()
 
 library.add(fas, far)
-loadFonts()
 
 const app = createApp(App)
 
