@@ -21,6 +21,7 @@
     "dev": "vite --host",
     "dev:electron": "cross-env ELECTRON=true vite --host",
     "i18n:extract": "node scripts/extract-i18n.mjs",
+    "licenses:check": "node scripts/license-check.js",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "lint:fix": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "postinstall": "node scripts/download-ffmpeg.js && node scripts/download-go2rtc.js && node scripts/download-piper.js && node scripts/verify-sdl.js",
