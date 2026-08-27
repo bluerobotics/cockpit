@@ -111,6 +111,54 @@ export const rectangleSpec = (corners: WaypointCoordinates[]): SurveyRectangleSp
 }
 
 /**
+ * Carries a rectangle's corners by the ground offset between two positions, each corner moved the same distance
+ * east and north so the shape arrives with the extents it left with.
+ * @param {WaypointCoordinates[]} corners - The rectangle's corners.
+ * @param {WaypointCoordinates} from - Where the drag started.
+ * @param {WaypointCoordinates} to - Where the drag has reached.
+ * @returns {WaypointCoordinates[]} The corners at their new place.
+ */
+export const rectangleTranslatedBy = (
+  corners: WaypointCoordinates[],
+  from: WaypointCoordinates,
+  to: WaypointCoordinates
+): WaypointCoordinates[] => {
+  const offset = localFrame(from).toLocal(to)
+  return corners.map((corner) => localFrame(corner).toCoordinates(offset))
+}
+
+/**
+ * Turns a rectangle about one of its own corners, by the angle a second corner has been dragged through around
+ * it, so the shape spins rigidly and keeps both its extents and its square corners.
+ * @param {WaypointCoordinates[]} corners - The rectangle's corners.
+ * @param {WaypointCoordinates} pivot - The corner held still.
+ * @param {WaypointCoordinates} from - Where the turning corner was.
+ * @param {WaypointCoordinates} to - Where it has been dragged to.
+ * @returns {WaypointCoordinates[]} The turned corners.
+ */
+export const rectangleRotatedAbout = (
+  corners: WaypointCoordinates[],
+  pivot: WaypointCoordinates,
+  from: WaypointCoordinates,
+  to: WaypointCoordinates
+): WaypointCoordinates[] => {
+  const { toLocal, toCoordinates } = localFrame(pivot)
+  const before = toLocal(from)
+  const after = toLocal(to)
+  // A corner dragged onto the pivot itself points nowhere, so there is no angle to turn the rectangle through.
+  if (Math.hypot(before.x, before.y) === 0 || Math.hypot(after.x, after.y) === 0) return corners
+
+  const turn = Math.atan2(after.x, after.y) - Math.atan2(before.x, before.y)
+  const cosTurn = Math.cos(turn)
+  const sinTurn = Math.sin(turn)
+
+  return corners.map((corner) => {
+    const { x, y } = toLocal(corner)
+    return toCoordinates({ x: x * cosTurn + y * sinTurn, y: y * cosTurn - x * sinTurn })
+  })
+}
+
+/**
  * Scan angle that runs the survey lines along a rectangle's longer axis, which is the direction that needs the
  * fewest turnarounds to cover it.
  *
