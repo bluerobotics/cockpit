@@ -332,6 +332,7 @@
         <div v-if="isCreatingSurvey" class="flex flex-col">
           <SurveyShapeControls
             :shape="surveyDrawShape"
+            :locked="surveyPolygonVertexesPositions.length > 0"
             :dimensions="surveyRectangleDimensions"
             @update:shape="setSurveyDrawShape"
             @update:dimensions="applySurveyRectangleDimensions"

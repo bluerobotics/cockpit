@@ -3,23 +3,25 @@
     <div class="flex items-center justify-between mx-5 my-2">
       <p class="overflow-visible text-sm text-slate-200">Survey format</p>
       <div class="flex items-center gap-x-4">
-        <v-tooltip v-for="format in formats" :key="format.value" :text="format.label" location="bottom">
+        <v-tooltip v-for="format in formats" :key="format.value" :text="formatHint(format)" location="bottom">
           <template #activator="{ props: tooltipProps }">
-            <v-btn
-              v-bind="tooltipProps"
-              :icon="format.icon"
-              :aria-pressed="shape === format.value"
-              :class="
-                shape === format.value
-                  ? 'bg-[#3B78A8] hover:bg-[#3B78A8]'
-                  : 'bg-[#FFFFFF22] hover:bg-[#FFFFFF33] active:bg-[#FFFFFF44]'
-              "
-              class="rounded-[6px] text-[16px] elevation-1"
-              theme="dark"
-              size="x-small"
-              variant="text"
-              @click="emit('update:shape', format.value)"
-            />
+            <span v-bind="tooltipProps" class="flex">
+              <v-btn
+                :icon="format.icon"
+                :aria-pressed="shape === format.value"
+                :disabled="locked && shape !== format.value"
+                :class="
+                  shape === format.value
+                    ? 'bg-[#3B78A8] hover:bg-[#3B78A8]'
+                    : 'bg-[#FFFFFF22] hover:bg-[#FFFFFF33] active:bg-[#FFFFFF44]'
+                "
+                class="rounded-[6px] text-[16px] elevation-1"
+                theme="dark"
+                size="x-small"
+                variant="text"
+                @click="emit('update:shape', format.value)"
+              />
+            </span>
           </template>
         </v-tooltip>
       </div>
@@ -57,6 +59,10 @@ const props = defineProps<{
    */
   shape: SurveyDrawShape
   /**
+   * Whether a survey is already being drawn, which holds it to the format it was started in.
+   */
+  locked: boolean
+  /**
    * Extents of the draft rectangle, or null when the draft is not a rectangle.
    */
   dimensions: SurveyRectangleDimensions | null
@@ -81,6 +87,10 @@ const formats: SurveyFormatOption[] = [
   { value: 'free-form', label: 'Free form', icon: 'mdi-vector-polygon' },
   { value: 'rectangle', label: 'Rectangle', icon: 'mdi-rectangle-outline' },
 ]
+
+// A format the draft cannot be switched to says so where the user is already looking for the format's name.
+const formatHint = (format: SurveyFormatOption): string =>
+  props.locked && format.value !== props.shape ? `Clear Path to switch to ${format.label.toLowerCase()}` : format.label
 
 const length = ref<number | null>(null)
 const width = ref<number | null>(null)
