@@ -10,22 +10,34 @@
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
       <span>No video stream selected.</span>
     </div>
-    <div
-      v-else-if="!namesAvailableStreams.isEmpty() && !namesAvailableStreams.includes(nameSelectedStream)"
-      class="no-video-alert"
-    >
-      <p>The selected stream "{{ nameSelectedStream }}" is not available.</p>
-      <p>Available ones are: {{ namesAvailableStreams.map((name) => `"${name}"`).join(', ') }}.</p>
-      <br />
-      <p>
-        This can happen if you changed vehicles and the stream name in the new one is different from the former, or if
-        the source is not available at all.
-      </p>
-      <br />
-      <p>
-        Please open this video player configuration and select a new stream from the ones available, or check your
-        source for issues.
-      </p>
+    <div v-else-if="!namesAvailableStreams.includes(nameSelectedStream)" class="no-video-alert">
+      <template v-if="namesAvailableStreams.isEmpty()">
+        <p>No video streams are available.</p>
+        <br />
+        <p>
+          Cockpit may still be looking for this vehicle's streams, or every stream may have been deleted, ignored or
+          turned off.
+        </p>
+        <br />
+        <p>
+          If this message stays, open the video configuration page to restore a stream from the ignored streams list, or
+          check that the vehicle's cameras are on and streaming.
+        </p>
+      </template>
+      <template v-else>
+        <p>The selected stream "{{ nameSelectedStream }}" is not available.</p>
+        <p>Available ones are: {{ namesAvailableStreams.map((name) => `"${name}"`).join(', ') }}.</p>
+        <br />
+        <p>
+          This can happen if you changed vehicles and the stream name in the new one is different from the former, or if
+          the source is not available at all.
+        </p>
+        <br />
+        <p>
+          Please open this video player configuration and select a new stream from the ones available, or check your
+          source for issues.
+        </p>
+      </template>
     </div>
     <Transition name="loading-complete">
       <div v-if="showLoadingOverlay" class="loading-overlay">
