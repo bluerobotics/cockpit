@@ -769,6 +769,7 @@
   <SideConfigPanel
     v-if="isCreatingSurvey || selectedWaypoint"
     position="right"
+    :reopen-label="isCreatingSurvey ? 'Vertexes' : undefined"
     style="z-index: 600; pointer-events: auto"
     class="w-[320px]"
   >
@@ -885,6 +886,7 @@ import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelec
 import { useMeasureExtentInput } from '@/composables/map/useMeasureExtentInput'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
+import { useTouchDrawing } from '@/composables/map/useTouchDrawing'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { useSnackbar } from '@/composables/snackbar'
@@ -1258,6 +1260,24 @@ const {
   },
 })
 
+const {
+  pendingPoint: pendingDrawnPoint,
+  clearPendingPoint,
+  swallowsClick: touchDrawingSwallowsClick,
+  initTouchDrawing,
+  destroyTouchDrawing,
+} = useTouchDrawing({
+  // An area is drawn with the finger from its very first corner, a path only once it has a waypoint to draw from.
+  drawsWithOneFinger: () =>
+    (isCreatingSurvey.value && isDrawingSurveyPolygon.value) ||
+    (isCreatingSimplePath.value && currentMeasureAnchor() !== null),
+  confirmLabel: () => 'point',
+  hasAnchor: () => currentMeasureAnchor() !== null,
+  isBlocked: () => isPressingSurveyEdge.value || isDraggingMarker.value || isDraggingSurveyVertex.value,
+  placePoint: (latlng) => placeDrawnPoint(latlng),
+  aimAt: (latlng, event) => fireMapMouseMove(latlng, event),
+})
+
 let ignoreNextClick = false
 const selectedWaypoint = ref<Waypoint | undefined>(undefined)
 const contextMenuType = ref<ContextMenuTypes>('map')
@@ -1325,6 +1345,7 @@ const measureLayer = shallowRef<L.LayerGroup | null>(null)
 let measureOverlayEl: HTMLDivElement | null = null
 let measureSvgEl: SVGSVGElement | null = null
 let measureLineEl: SVGLineElement | null = null
+let measureEndDotEl: SVGCircleElement | null = null
 let measureTextEl: HTMLDivElement | null = null
 let measureLengthEl: HTMLSpanElement | null = null
 let measureRestEl: HTMLSpanElement | null = null
@@ -1352,6 +1373,7 @@ const glassMenuCssVars = computed(() => ({
 const clearLiveMeasure = (): void => {
   destroyMeasureOverlay(planningMap.value || undefined)
   angleOverlay.clearVertexAngles()
+  clearPendingPoint()
   // An extent typed for the segment just drawn does not carry over to the next one, which starts free again.
   setExtentTarget('segment', null)
   clearExtentValues()
@@ -1414,7 +1436,15 @@ const ensureMeasureOverlay = (map: L.Map): void => {
   measureLineEl.setAttribute('opacity', '0.9')
   measureLineEl.setAttribute('stroke', '#2563eb')
 
+  // The loose end of the line is where the next point lands, and a finger dragging it needs to see where that is.
+  measureEndDotEl = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+  measureEndDotEl.setAttribute('r', '5')
+  measureEndDotEl.setAttribute('fill', '#2563eb')
+  measureEndDotEl.setAttribute('stroke', '#FFFFFF')
+  measureEndDotEl.setAttribute('stroke-width', '2')
+
   measureSvgEl.appendChild(measureLineEl)
+  measureSvgEl.appendChild(measureEndDotEl)
 
   measureTextEl = document.createElement('div')
   measureTextEl.className = 'live-measure-pill'
@@ -1467,6 +1497,7 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
   measureOverlayEl = null
   measureSvgEl = null
   measureLineEl = null
+  measureEndDotEl = null
   measureTextEl = null
   measureLengthEl = null
   measureRestEl = null
@@ -1540,6 +1571,8 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
     measureLineEl.setAttribute('x2', String(b.x))
     measureLineEl.setAttribute('y2', String(b.y))
   }
+  measureEndDotEl?.setAttribute('cx', String(b.x))
+  measureEndDotEl?.setAttribute('cy', String(b.y))
 
   const midX = (a.x + b.x) / 2
   const midY = (a.y + b.y) / 2
@@ -1596,9 +1629,26 @@ const refreshLiveMeasureOnMapMove = (): void => {
     if (!planningMap.value || !lastMeasureCursor) return
     const map = planningMap.value
     const rect = map.getContainer().getBoundingClientRect()
-    const containerPoint = L.point(cursorLivePositionX.value - rect.left, cursorLivePositionY.value - rect.top)
-    const latlng = map.containerPointToLatLng(containerPoint)
+    const cursorPoint = L.point(cursorLivePositionX.value - rect.left, cursorLivePositionY.value - rect.top)
+    // A finger leaves no cursor behind, so a point it dragged out and left waiting is where the measure ends.
+    const held = pendingDrawnPoint.value
+    const containerPoint = held ? map.latLngToContainerPoint(held) : cursorPoint
+    const latlng = held ?? map.containerPointToLatLng(containerPoint)
     handleMapMouseMove({ ...lastMeasureCursor, latlng, containerPoint })
+  })
+}
+
+// A finger produces no mousemove, so where it drags to is fired as one: the live measure, the rectangle being
+// swept and everything else already following the cursor then follow the finger too.
+const fireMapMouseMove = (latlng: L.LatLng, originalEvent: PointerEvent): void => {
+  const map = planningMap.value
+  if (!map) return
+
+  map.fire('mousemove', {
+    latlng,
+    layerPoint: map.latLngToLayerPoint(latlng),
+    containerPoint: map.latLngToContainerPoint(latlng),
+    originalEvent,
   })
 }
 
@@ -2540,7 +2590,6 @@ const toggleSurvey = (): void => {
   surveyDraftEntryCorner.value = 0
   isCreatingSurvey.value = true
   isDrawingSurveyPolygon.value = true
-  interfaceStore.configPanelVisible = true
   hideContextMenu()
 }
 
@@ -3644,7 +3693,8 @@ watch(isCreatingSurvey, (isCreatingNow) => {
   if (isCreatingNow) {
     existingWaypoints.value = [...missionStore.currentPlanningWaypoints]
     surveyWaypoints.value = []
-    interfaceStore.configPanelVisible = true
+    // The vertex list stays folded away behind its own arrow, since the map is what the area is drawn on.
+    interfaceStore.configPanelVisible = false
   } else {
     clearSurveyPath()
   }
@@ -4343,6 +4393,10 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   // The dedicated home-setting handler owns this click; bail so we don't also drop a survey vertex or waypoint here.
   if (isSettingHomeWaypoint.value) return
 
+  // A drag that aimed the line has already said where the point goes, so a click the browser raises out of that
+  // same gesture is not another point.
+  if (touchDrawingSwallowsClick()) return
+
   const oldWaypoint = selectedWaypoint.value
   if (oldWaypoint) {
     const oldMarker = waypointMarkers.value[oldWaypoint.id]
@@ -4488,6 +4542,7 @@ onMounted(async () => {
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
   initExtentInputs(planningMap.value!)
   initEdgeDragging(planningMap.value!)
+  initTouchDrawing(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
   registerLayerSync(planningMap.value)
@@ -4641,6 +4696,7 @@ onUnmounted(() => {
   angleOverlay.destroyAngleOverlay()
   surveyArrowOverlay.destroyArrowOverlay()
   destroyEdgeDragging()
+  destroyTouchDrawing()
 
   detachTileFallbacks.forEach((detach) => detach())
   detachTileFallbacks = []

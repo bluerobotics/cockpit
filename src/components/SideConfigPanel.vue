@@ -27,14 +27,19 @@
     </div>
     <v-btn
       v-else-if="!hideButton"
-      icon
+      :icon="!reopenLabel"
       size="x-small"
       variant="text"
       class="reopen_btn bg-[#00000066] text-white elevation-2"
-      :class="reopenPositionClass"
+      :class="[reopenPositionClass, { labeled_tab: reopenLabel }]"
       @click="openPanel"
     >
-      <v-icon class="text-[18px]">{{ `mdi-arrow-${oppositePosition}` }}</v-icon>
+      <div class="flex flex-col items-center gap-1">
+        <span v-if="reopenLabel" class="[writing-mode:vertical-rl] rotate-180 text-[11px] leading-none">
+          {{ reopenLabel }}
+        </span>
+        <v-icon class="text-[18px]">{{ `mdi-arrow-${oppositePosition}` }}</v-icon>
+      </div>
     </v-btn>
   </transition>
 </template>
@@ -57,6 +62,10 @@ const props = defineProps<{
    * hide button
    */
   hideButton?: boolean
+  /**
+   * Text written along the tab that reopens the panel
+   */
+  reopenLabel?: string
 }>()
 
 const closePanel = (): void => {
@@ -181,5 +190,14 @@ const panelPositionStyle = computed<Record<string, string>>((): Record<string, s
   z-index: 500;
   position: fixed;
   border-radius: 4px;
+}
+/* Two classes so the tab keeps its own size and casing even when the consumer's width class falls through to it. */
+.reopen_btn.labeled_tab {
+  width: auto;
+  height: auto;
+  min-width: unset;
+  padding: 8px 2px;
+  text-transform: none;
+  letter-spacing: normal;
 }
 </style>
