@@ -193,6 +193,13 @@ export const isElectron = (): boolean => {
 }
 
 /**
+ * Detects if the device is driven by touch, which has neither a hover to reveal things with nor a keyboard to
+ * type into them
+ * @returns {boolean} True when the device's main pointer is a finger
+ */
+export const isTouchDevice = (): boolean => window.matchMedia('(pointer: coarse)').matches
+
+/**
  * Detects the host operating system, named as users know it
  * @returns {'Linux' | 'Windows' | 'macOS' | undefined} The host OS name, or undefined when it cannot be told
  */

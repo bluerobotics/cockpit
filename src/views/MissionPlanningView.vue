@@ -1,6 +1,21 @@
 <template>
   <div class="mission-planning" :style="glassMenuCssVars">
     <div id="planningMap" ref="planningMap" class="relative" />
+    <MeasureExtentInput
+      v-for="box in extentBoxes"
+      :key="box.id"
+      :label="box.label"
+      :left="box.left"
+      :top="box.top"
+      :value="box.value"
+      :live-value="box.liveValue"
+      :cleared="box.cleared"
+      :autofocus="box.autofocus"
+      :focus-ticket="box.focusTicket"
+      @update:value="(value) => setExtentValue(box.id, value)"
+      @apply="applyExtent(box.id)"
+      @close="closeExtentInputs"
+    />
     <v-tooltip location="top" text="Generate waypoints">
       <template #activator="{ props }">
         <div
@@ -315,6 +330,14 @@
         </div>
         <v-divider v-if="!isCreatingSimplePath && !isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
+          <SurveyShapeControls
+            :shape="surveyDrawShape"
+            :locked="surveyPolygonVertexesPositions.length > 0"
+            :dimensions="surveyRectangleDimensions"
+            @update:shape="setSurveyDrawShape"
+            @update:dimensions="applySurveyRectangleDimensions"
+          />
+          <v-divider class="my-1" />
           <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
           <input
             v-model.number="distanceBetweenSurveyLines"
@@ -725,6 +748,7 @@
     @delete-selected-survey="deleteSelectedSurvey"
     @rotate-survey-entry-point="rotateSurveyEntryPoint"
     @toggle-survey="toggleSurvey"
+    @set-survey-shape="startSurveyWithShape"
     @toggle-simple-path="toggleSimplePath"
     @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
@@ -754,6 +778,7 @@
   <SideConfigPanel
     v-if="isCreatingSurvey || selectedWaypoint"
     position="right"
+    :reopen-label="isCreatingSurvey ? 'Vertexes' : undefined"
     style="z-index: 600; pointer-events: auto"
     class="w-[320px]"
   >
@@ -846,8 +871,10 @@ import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
+import MeasureExtentInput from '@/components/mission-planning/MeasureExtentInput.vue'
 import MissionEstimatesPanel from '@/components/mission-planning/MissionEstimates.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
+import SurveyShapeControls from '@/components/mission-planning/SurveyShapeControls.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import MissionLibraryModal from '@/components/MissionLibraryModal.vue'
@@ -866,7 +893,12 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMeasureExtentInput } from '@/composables/map/useMeasureExtentInput'
+import { useRectangleHandles } from '@/composables/map/useRectangleHandles'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
+import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
+import { type SurveyDrawShape, useSurveyRectangleDrawing } from '@/composables/map/useSurveyRectangleDrawing'
+import { useTouchDrawing } from '@/composables/map/useTouchDrawing'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { useSnackbar } from '@/composables/snackbar'
@@ -883,6 +915,7 @@ import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
+import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 import {
   createGridOverlay,
   fitMapToWaypoints,
@@ -894,13 +927,14 @@ import {
 import { orderedSurveyPath, surveyEndpointEdgeBearing, surveyEntryCornerCount } from '@/libs/map/utils-map'
 import {
   bearingBetween,
+  calculateHaversineDistance,
   centroidLatLng,
   formatBearing,
   formatMetersShort,
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
-import { degrees, messageFromError, toPlain } from '@/libs/utils'
+import { degrees, isTouchDevice, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -1196,6 +1230,130 @@ const clearSurveyPolygonUndoStack = (): void => {
   surveyPolygonUndoStack.length = 0
   surveyPolygonRedoStack.length = 0
 }
+
+const extentInput = useMeasureExtentInput({
+  shortcutFocus: () => {
+    if (isSizingRectangle.value) return 'width'
+    return currentMeasureAnchor() ? 'segment' : null
+  },
+  onOpened: () => refreshLiveMeasureOnMapMove(),
+})
+const {
+  extentBoxes,
+  extentInputsOpen,
+  openExtentInputs,
+  focusExtentInput,
+  closeExtentInputs,
+  clearExtentValues,
+  setExtentTarget,
+  setExtentValue,
+  applyExtent,
+  isExtentCleared,
+  projectToLockedExtent,
+  initExtentInputs,
+} = extentInput
+
+const {
+  shape: surveyDrawShape,
+  isSizingRectangle,
+  heldRectangleVertices,
+  rectangleHandles,
+  dimensions: surveyRectangleDimensions,
+  setShape: setSurveyDrawShape,
+  consumeSurveyClick,
+  applyDimensions: applySurveyRectangleDimensions,
+  freezeSizingRectangle,
+  rectangleMovedTo,
+  releaseLinesAngle: releaseSurveyLinesAngle,
+  cancelSizing: cancelSurveyRectangleSizing,
+  initRectangleDrawing,
+} = useSurveyRectangleDrawing({
+  vertices: surveyPolygonVertexesPositions,
+  extentInput,
+  onRectangleDrawn: (linesAngle) => {
+    isDrawingSurveyPolygon.value = false
+    surveyLinesAngle.value = linesAngle
+    rebuildSurveyPolygonFromPositions()
+  },
+  onRectangleResized: (linesAngle) => {
+    if (linesAngle !== null) surveyLinesAngle.value = linesAngle
+    rebuildSurveyPolygonFromPositions()
+  },
+  onShapeChanged: () => {
+    if (!isDrawingSurveyPolygon.value || surveyPolygonVertexesPositions.value.length === 0) return
+    pushSurveyPolygonSnapshot()
+    clearSurveyPath()
+  },
+})
+
+// A rectangle taken hold of is resized by its edges before it is even fixed, so the shape those edges belong to
+// is the one being placed while there is one, and the draft polygon otherwise.
+const surveyEdgeVertices = computed(() =>
+  isSizingRectangle.value ? heldRectangleVertices.value : surveyPolygonVertexesPositions.value
+)
+
+const {
+  isEdgePressed: isPressingSurveyEdge,
+  isDraggingEdge: isDraggingSurveyEdge,
+  initEdgeDragging,
+  destroyEdgeDragging,
+} = useSurveyEdgeDragging({
+  vertices: surveyEdgeVertices,
+  isEditable: () => isCreatingSurvey.value && surveyEdgeVertices.value.length >= 3,
+  onDragStart: () => {
+    if (!isSizingRectangle.value) pushSurveyPolygonSnapshot()
+  },
+  onEdgeMoved: (corners) => applyDraftCorners(corners),
+  onDragEnd: (moved) => {
+    if (!moved) return
+    ignoreNextClick = true
+    createSurveyPath()
+  },
+})
+
+const {
+  isDraggingHandle: isDraggingRectangleHandle,
+  initRectangleHandles,
+  destroyRectangleHandles,
+} = useRectangleHandles({
+  target: rectangleHandles,
+  onDragStart: () => {
+    if (!isSizingRectangle.value) pushSurveyPolygonSnapshot()
+  },
+  apply: (corners) => {
+    const linesAngle = rectangleMovedTo(corners)
+    if (linesAngle !== null) surveyLinesAngle.value = linesAngle
+    applyDraftCorners(corners)
+  },
+  onDragEnd: (moved) => {
+    if (!moved) return
+    ignoreNextClick = true
+    createSurveyPath()
+  },
+})
+
+const {
+  pendingPoint: pendingDrawnPoint,
+  clearPendingPoint,
+  swallowsClick: touchDrawingSwallowsClick,
+  initTouchDrawing,
+  destroyTouchDrawing,
+} = useTouchDrawing({
+  // An area is drawn with the finger from its very first corner, a path only once it has a waypoint to draw from.
+  drawsWithOneFinger: () =>
+    (isCreatingSurvey.value && isDrawingSurveyPolygon.value) ||
+    (isCreatingSimplePath.value && currentMeasureAnchor() !== null),
+  confirmLabel: () => (isSizingRectangle.value ? 'survey size' : 'point'),
+  hasAnchor: () => currentMeasureAnchor() !== null,
+  isBlocked: () =>
+    isPressingSurveyEdge.value ||
+    isDraggingMarker.value ||
+    isDraggingSurveyVertex.value ||
+    isDraggingRectangleHandle.value,
+  placePoint: (latlng) => placeDrawnPoint(latlng),
+  aimAt: (latlng, event) => fireMapMouseMove(latlng, event),
+})
+
 let ignoreNextClick = false
 const selectedWaypoint = ref<Waypoint | undefined>(undefined)
 const contextMenuType = ref<ContextMenuTypes>('map')
@@ -1203,6 +1361,18 @@ const cursorCoordinates = ref<[number, number] | null>(null)
 const accessingSurveyContextMenu = ref(false)
 const isDraggingPolygon = ref(false)
 const isDraggingMarker = ref(false)
+const isDraggingSurveyVertex = ref(false)
+
+// The live preview is rebuilt on every pointer move of a reshape, so a polygon that is momentarily too thin for
+// its line spacing must not raise the no-valid-path warning until the gesture is released.
+const isReshapingSurveyPolygon = computed(
+  () =>
+    isDraggingSurveyVertex.value ||
+    isDraggingPolygon.value ||
+    isDraggingSurveyEdge.value ||
+    isDraggingRectangleHandle.value
+)
+
 const showHomePositionNotSetDialog = ref(false)
 const fetchingMission = ref(false)
 const missionFetchProgress = ref(0)
@@ -1255,7 +1425,10 @@ const measureLayer = shallowRef<L.LayerGroup | null>(null)
 let measureOverlayEl: HTMLDivElement | null = null
 let measureSvgEl: SVGSVGElement | null = null
 let measureLineEl: SVGLineElement | null = null
+let measureEndDotEl: SVGCircleElement | null = null
 let measureTextEl: HTMLDivElement | null = null
+let measureLengthEl: HTMLSpanElement | null = null
+let measureRestEl: HTMLSpanElement | null = null
 // Last cursor event kept so the live measure can be re-rendered while the map pans (no mousemove fires then)
 let lastMeasureCursor: L.LeafletMouseEvent | null = null
 let measureRefreshRafId: number | null = null
@@ -1280,6 +1453,10 @@ const glassMenuCssVars = computed(() => ({
 const clearLiveMeasure = (): void => {
   destroyMeasureOverlay(planningMap.value || undefined)
   angleOverlay.clearVertexAngles()
+  clearPendingPoint()
+  // An extent typed for the segment just drawn does not carry over to the next one, which starts free again.
+  setExtentTarget('segment', null)
+  clearExtentValues()
   lastMeasureCursor = null
 }
 
@@ -1339,17 +1516,57 @@ const ensureMeasureOverlay = (map: L.Map): void => {
   measureLineEl.setAttribute('opacity', '0.9')
   measureLineEl.setAttribute('stroke', '#2563eb')
 
+  // The loose end of the line is where the next point lands, and a finger dragging it needs to see where that is.
+  measureEndDotEl = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+  measureEndDotEl.setAttribute('r', '5')
+  measureEndDotEl.setAttribute('fill', '#2563eb')
+  measureEndDotEl.setAttribute('stroke', '#FFFFFF')
+  measureEndDotEl.setAttribute('stroke-width', '2')
+
   measureSvgEl.appendChild(measureLineEl)
+  measureSvgEl.appendChild(measureEndDotEl)
 
   measureTextEl = document.createElement('div')
   measureTextEl.className = 'live-measure-pill'
+  measureTextEl.classList.toggle('typing', extentInputsOpen.value)
   measureTextEl.style.position = 'absolute'
   measureTextEl.style.transform = 'translate(-50%, -50%)'
+  measureTextEl.style.pointerEvents = 'auto'
+  measureTextEl.style.cursor = 'pointer'
+  // Tapping the tag is how the field is asked for without a keyboard, so the tag owns its presses the way the
+  // map's own controls do: the map is listening inside its container, and the tag is not a place to draw.
+  L.DomEvent.disableClickPropagation(measureTextEl)
+  // Taken on the press rather than on the click, which the browser aims wherever the tag has moved to by the
+  // time a finger is lifted.
+  measureTextEl.addEventListener('pointerdown', (event) => {
+    event.stopPropagation()
+    if (extentInputsOpen.value) {
+      focusExtentInput('segment')
+      return
+    }
+    logUserAction('Opened the distance field from the measure tag')
+    openExtentInputs('segment')
+    // A touch never moves a cursor, so the field is placed against the measure the tag is already showing.
+    refreshLiveMeasureOnMapMove()
+  })
+  // Mobile browsers only raise their keyboard for a focus asked from the tap itself, which lands here.
+  measureTextEl.addEventListener('click', () => focusExtentInput('segment'))
+
+  // The caret stands right after the digits being typed, so the length and everything trailing it are their own
+  // spans, written on each move instead of rebuilt.
+  measureLengthEl = document.createElement('span')
+  measureLengthEl.className = 'measure-length'
+  measureRestEl = document.createElement('span')
+  const caretEl = document.createElement('span')
+  caretEl.className = 'measure-caret'
+  measureTextEl.append(measureLengthEl, caretEl, measureRestEl)
 
   measureOverlayEl.appendChild(measureSvgEl)
   measureOverlayEl.appendChild(measureTextEl)
   container.appendChild(measureOverlayEl)
 }
+
+watch(extentInputsOpen, (open) => measureTextEl?.classList.toggle('typing', open))
 
 const destroyMeasureOverlay = (map?: L.Map): void => {
   if (!measureOverlayEl) return
@@ -1360,13 +1577,45 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
   measureOverlayEl = null
   measureSvgEl = null
   measureLineEl = null
+  measureEndDotEl = null
   measureTextEl = null
+  measureLengthEl = null
+  measureRestEl = null
 }
 
-const isOverSurveyHandle = (evt: L.LeafletMouseEvent): boolean => {
-  const el = evt.originalEvent?.target as HTMLElement | null
-  if (!el) return false
-  return !!el.closest('.custom-div-icon, .edge-marker, .delete-popup, .delete-button')
+const placeSurveyPolygonPoint = (latlng: L.LatLng): void => {
+  if (!consumeSurveyClick(latlng)) addSurveyPoint(latlng)
+  // The rectangle's first corner is down, so the edge it raises can be typed rather than drawn. On touch the box
+  // is left to be asked for by tapping the tag, since it has no keyboard waiting behind it.
+  const offersTyping = !isTouchDevice() && surveyDrawShape.value === 'rectangle'
+  if (offersTyping && !extentInputsOpen.value) openExtentInputs('segment')
+  clearLiveMeasure()
+}
+
+// Lays a point down wherever the drawing is: a corner of the survey area, or the next waypoint of the path.
+const placeDrawnPoint = (latlng: L.LatLng): boolean => {
+  if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) {
+    placeSurveyPolygonPoint(latlng)
+    return true
+  }
+  if (isCreatingSimplePath.value) {
+    addWaypoint([latlng.lat, latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
+    clearLiveMeasure()
+    return true
+  }
+
+  return false
+}
+
+// Enter takes the typed distance as the point itself, so a segment can be laid down without aiming a click at it.
+const applyTypedSegment = (latlng: L.LatLng): void => {
+  const cursorBeforePlacing = lastMeasureCursor
+  if (!placeDrawnPoint(latlng)) return
+
+  // A key press leaves the pointer where it was, so the cursor the measure was following is handed back and the
+  // next segment is drawn from the point just laid rather than waiting for the mouse to move.
+  lastMeasureCursor = cursorBeforePlacing
+  refreshLiveMeasureOnMapMove()
 }
 
 const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
@@ -1375,14 +1624,16 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
   lastMeasureCursor = e
 
   const anchor = currentMeasureAnchor()
-  const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value
+  const draggingExistingNode = isDraggingMarker.value || isDraggingPolygon.value || isDraggingSurveyEdge.value
   const measuring =
     !!anchor &&
     !draggingExistingNode &&
+    !isSizingRectangle.value &&
     (isCreatingSimplePath.value || (isCreatingSurvey.value && isDrawingSurveyPolygon.value))
   if (!measuring) {
     destroyMeasureOverlay(planningMap.value)
     angleOverlay.clearVertexAngles()
+    setExtentTarget('segment', null)
     return
   }
 
@@ -1391,11 +1642,13 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
   // NEW: hide/show the live pill when hovering survey nodes/add/delete UI
   if (measureTextEl) {
-    measureTextEl.style.display = isOverSurveyHandle(e) ? 'none' : 'block'
+    measureTextEl.style.display = isOverSurveyHandle(e.originalEvent?.target) ? 'none' : 'block'
   }
 
+  // A typed distance holds the segment's length, so only its direction is still read off the cursor.
+  const cursor = projectToLockedExtent('segment', anchor!, e.latlng)
   const a = map.latLngToContainerPoint(anchor!)
-  const b = map.latLngToContainerPoint(e.latlng)
+  const b = map.latLngToContainerPoint(cursor)
 
   if (measureLineEl) {
     measureLineEl.setAttribute('x1', String(a.x))
@@ -1403,28 +1656,50 @@ const handleMapMouseMove = (e: L.LeafletMouseEvent): void => {
     measureLineEl.setAttribute('x2', String(b.x))
     measureLineEl.setAttribute('y2', String(b.y))
   }
+  measureEndDotEl?.setAttribute('cx', String(b.x))
+  measureEndDotEl?.setAttribute('cy', String(b.y))
 
   const midX = (a.x + b.x) / 2
   const midY = (a.y + b.y) / 2
-  const dist = anchor!.distanceTo(e.latlng)
+  // Measured the way the panel and the estimates measure, so a typed extent reads back as the number that was
+  // typed instead of leaflet's 0.1% smaller earth.
+  const dist = calculateHaversineDistance([anchor!.lat, anchor!.lng], [cursor.lat, cursor.lng])
 
-  const hidePill = isOverSurveyHandle(e) || isOverLastWaypointMarker(e) || dist < 1 // hide if closer than 1 meter to last wp on the array
+  const overSurveyUi = isOverSurveyHandle(e.originalEvent?.target) || isOverLastWaypointMarker(e)
+  const hidePill = overSurveyUi || dist < 1 // hide if closer than 1 meter to last wp on the array
 
-  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [e.latlng.lat, e.latlng.lng])
-  const text = `${formatMetersShort(dist)} · ${formatBearing(bearing)}`
+  const bearing = bearingBetween([anchor!.lat, anchor!.lng], [cursor.lat, cursor.lng])
+  const [length, unit] = formatMetersShort(dist).split(' ')
+  if (measureLengthEl) measureLengthEl.textContent = isExtentCleared('segment') ? '' : length
+  if (measureRestEl) measureRestEl.textContent = `${unit ? ` ${unit}` : ''} · ${formatBearing(bearing)}`
   if (measureTextEl) {
-    measureTextEl.textContent = text
     measureTextEl.style.left = `${midX}px`
     measureTextEl.style.top = `${midY}px`
     measureTextEl.style.display = hidePill ? 'none' : 'block'
   }
+
+  // Only what is drawn over the box takes it off the map: a segment short enough to hide the pill is usually one
+  // shortened by the box itself, which cannot be the reason to remove what is being typed into.
+  setExtentTarget(
+    'segment',
+    overSurveyUi
+      ? null
+      : {
+          label: 'distance',
+          from: anchor!,
+          to: cursor,
+          liveValue: dist,
+          refresh: refreshLiveMeasureOnMapMove,
+          apply: () => applyTypedSegment(cursor),
+        }
+  )
 
   const prevAnchor = currentMeasurePrevAnchor()
   if (prevAnchor && !hidePill) {
     angleOverlay.renderVertexAngle(
       [prevAnchor.lat, prevAnchor.lng],
       [anchor!.lat, anchor!.lng],
-      [e.latlng.lat, e.latlng.lng]
+      [cursor.lat, cursor.lng]
     )
   } else {
     angleOverlay.clearVertexAngles()
@@ -1439,9 +1714,26 @@ const refreshLiveMeasureOnMapMove = (): void => {
     if (!planningMap.value || !lastMeasureCursor) return
     const map = planningMap.value
     const rect = map.getContainer().getBoundingClientRect()
-    const containerPoint = L.point(cursorLivePositionX.value - rect.left, cursorLivePositionY.value - rect.top)
-    const latlng = map.containerPointToLatLng(containerPoint)
+    const cursorPoint = L.point(cursorLivePositionX.value - rect.left, cursorLivePositionY.value - rect.top)
+    // A finger leaves no cursor behind, so a point it dragged out and left waiting is where the measure ends.
+    const held = pendingDrawnPoint.value
+    const containerPoint = held ? map.latLngToContainerPoint(held) : cursorPoint
+    const latlng = held ?? map.containerPointToLatLng(containerPoint)
     handleMapMouseMove({ ...lastMeasureCursor, latlng, containerPoint })
+  })
+}
+
+// A finger produces no mousemove, so where it drags to is fired as one: the live measure, the rectangle being
+// swept and everything else already following the cursor then follow the finger too.
+const fireMapMouseMove = (latlng: L.LatLng, originalEvent: PointerEvent): void => {
+  const map = planningMap.value
+  if (!map) return
+
+  map.fire('mousemove', {
+    latlng,
+    layerPoint: map.latLngToLayerPoint(latlng),
+    containerPoint: map.latLngToContainerPoint(latlng),
+    originalEvent,
   })
 }
 
@@ -2181,6 +2473,9 @@ const isOverLastWaypointMarker = (event: L.LeafletMouseEvent): boolean => {
 }
 
 const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
+  // A press that landed on an edge is reshaping that edge, so the whole polygon must not follow the pointer too.
+  if (isPressingSurveyEdge.value) return
+
   isDraggingPolygon.value = true
   dragStartLatLng = event.latlng
   pushSurveyPolygonSnapshot()
@@ -2195,6 +2490,8 @@ const onPolygonMouseDown = (event: L.LeafletMouseEvent): void => {
 }
 
 const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
+  const moved = !!dragStartLatLng && !event.latlng.equals(dragStartLatLng)
+
   isDraggingPolygon.value = false
   dragStartLatLng = null
   polygonLatLngsAtDragStart = []
@@ -2204,6 +2501,8 @@ const onPolygonMouseUp = (event: L.LeafletMouseEvent): void => {
   planningMap.value?.off('mouseup', onPolygonMouseUp)
 
   ignoreNextClick = true
+  // Every build during the drag was suppressed, so the polygon at rest is the one allowed to warn.
+  if (moved) createSurveyPath()
 
   L.DomEvent.stopPropagation(event.originalEvent)
   L.DomEvent.preventDefault(event.originalEvent)
@@ -2376,8 +2675,12 @@ const toggleSurvey = (): void => {
   surveyDraftEntryCorner.value = 0
   isCreatingSurvey.value = true
   isDrawingSurveyPolygon.value = true
-  interfaceStore.configPanelVisible = true
   hideContextMenu()
+}
+
+const startSurveyWithShape = (shape: SurveyDrawShape): void => {
+  setSurveyDrawShape(shape)
+  if (!isCreatingSurvey.value) toggleSurvey()
 }
 
 const targetFollower = new TargetFollower(
@@ -2604,6 +2907,7 @@ const performUndo = (): void => {
     surveyPolygonVertexesPositions.value = removedSurvey.polygonCoordinates.map(([lat, lng]) => L.latLng(lat, lng))
     distanceBetweenSurveyLines.value = removedSurvey.distanceBetweenLines
     surveyLinesAngle.value = removedSurvey.surveyLinesAngle
+    releaseSurveyLinesAngle()
     surveyCrosshatch.value = removedSurvey.crosshatch ?? false
     crosshatchDistanceBetweenLines.value =
       removedSurvey.crosshatchDistanceBetweenLines ?? removedSurvey.distanceBetweenLines
@@ -2695,7 +2999,7 @@ const performRedo = (): void => {
 
 const handleKeyDown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
-    if (isCreatingSurvey.value) {
+    if (isCreatingSurvey.value && !cancelSurveyRectangleSizing()) {
       if (isDrawingSurveyPolygon.value) {
         isDrawingSurveyPolygon.value = false
       }
@@ -3072,11 +3376,13 @@ const surveyLinesAngleDisplay = computed({
     return Number(surveyLinesAngle.value.toFixed(1))
   },
   set(value) {
+    releaseSurveyLinesAngle()
     surveyLinesAngle.value = value
   },
 })
 
 const onSurveyLinesAngleChange = (angle: number): void => {
+  releaseSurveyLinesAngle()
   surveyLinesAngle.value = angle
 }
 
@@ -3126,9 +3432,13 @@ const removeSurveyCrosshatchPathLayer = (): void => {
 const clearSurveyPathByUser = (): void => {
   logUserAction('Cleared survey path')
   clearSurveyPath()
+  // Clearing the draft is how the user starts over, so vertex adding comes back on even when it had been
+  // switched off.
+  if (isCreatingSurvey.value) isDrawingSurveyPolygon.value = true
 }
 
 const clearSurveyPath = (): void => {
+  cancelSurveyRectangleSizing()
   surveyPreviewPath.value = null
   if (surveyPathLayer.value) {
     planningMap.value?.removeLayer(surveyPathLayer.value as unknown as L.Layer)
@@ -3228,6 +3538,32 @@ const updatePolygon = (): void => {
   updateSurveyMarkersPositions()
 }
 
+// The rectangle's handles and the polygon's edges both hand over the whole ring they have moved, which lands on
+// the preview while the area is still being swept and on the draft's own markers once it has been fixed.
+const applyDraftCorners = (corners: WaypointCoordinates[]): void => {
+  if (isSizingRectangle.value) {
+    freezeSizingRectangle(corners)
+    return
+  }
+
+  surveyPolygonVertexesMarkers.value.forEach((marker, index) => marker.setLatLng(corners[index]))
+  updatePolygon()
+  createSurveyPath()
+  updateConfirmButtonPosition()
+}
+
+// A rectangle being sized carries a handle on each corner of the edge it was drawn from, so the vertex that edge
+// was started from must come off the map while it lasts: it stands under the handle that has taken it over, and
+// would be left behind the moment the rectangle is carried away from it.
+watch(isSizingRectangle, (sizing) => {
+  const map = planningMap.value
+  if (!map) return
+  surveyPolygonVertexesMarkers.value.forEach((marker) => {
+    if (sizing) marker.remove()
+    else marker.addTo(map)
+  })
+})
+
 const checkAndRemoveSurveyPath = (): void => {
   if (surveyPolygonVertexesPositions.value.length >= 4 || !surveyPathLayer.value) return
   surveyPreviewPath.value = null
@@ -3262,11 +3598,13 @@ const createSurveyPath = (): void => {
 
     if (result.path.length === 0) {
       surveyPreviewPath.value = null
-      showDialog({
-        variant: 'error',
-        message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
-        timer: 5000,
-      })
+      if (!isReshapingSurveyPolygon.value) {
+        showDialog({
+          variant: 'error',
+          message: 'No valid path could be generated. Try adjusting the angle or distance between lines.',
+          timer: 5000,
+        })
+      }
       return
     }
 
@@ -3475,7 +3813,8 @@ watch(isCreatingSurvey, (isCreatingNow) => {
   if (isCreatingNow) {
     existingWaypoints.value = [...missionStore.currentPlanningWaypoints]
     surveyWaypoints.value = []
-    interfaceStore.configPanelVisible = true
+    // The vertex list stays folded away behind its own arrow, since the map is what the area is drawn on.
+    interfaceStore.configPanelVisible = false
   } else {
     clearSurveyPath()
   }
@@ -3766,9 +4105,14 @@ const createSurveyVertexMarker = (
     draggable: true,
   })
     .on('dragstart', () => {
+      isDraggingSurveyVertex.value = true
       pushSurveyPolygonSnapshot()
     })
     .on('drag', () => {
+      onDrag()
+    })
+    .on('dragend', () => {
+      isDraggingSurveyVertex.value = false
       onDrag()
     })
     .on('mouseover', (event: L.LeafletEvent) => {
@@ -3843,6 +4187,7 @@ const undoGenerateWaypoints = (): void => {
   surveyPolygonVertexesPositions.value = survey.polygonCoordinates.map(([lat, lng]) => L.latLng(lat, lng))
   distanceBetweenSurveyLines.value = survey.distanceBetweenLines
   surveyLinesAngle.value = survey.surveyLinesAngle
+  releaseSurveyLinesAngle()
   surveyCrosshatch.value = survey.crosshatch ?? false
   crosshatchDistanceBetweenLines.value = survey.crosshatchDistanceBetweenLines ?? survey.distanceBetweenLines
   surveyDraftEntryCorner.value = survey.entryCorner ?? 0
@@ -4169,6 +4514,10 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   // The dedicated home-setting handler owns this click; bail so we don't also drop a survey vertex or waypoint here.
   if (isSettingHomeWaypoint.value) return
 
+  // A drag that aimed the line has already said where the point goes, so a click the browser raises out of that
+  // same gesture is not another point.
+  if (touchDrawingSwallowsClick()) return
+
   const oldWaypoint = selectedWaypoint.value
   if (oldWaypoint) {
     const oldMarker = waypointMarkers.value[oldWaypoint.id]
@@ -4226,10 +4575,11 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
     }
   }
 
-  if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) {
-    addSurveyPoint(e.latlng)
-    clearLiveMeasure()
-  }
+  // A typed distance places the point at that exact distance from the last one, in the direction of the click.
+  const measureAnchor = currentMeasureAnchor()
+  const latlng = measureAnchor ? projectToLockedExtent('segment', measureAnchor, e.latlng) : e.latlng
+
+  if (isCreatingSurvey.value && isDrawingSurveyPolygon.value) placeSurveyPolygonPoint(latlng)
 
   if (planningMap.value) {
     // Check if there is an existing waypoint near the click location
@@ -4256,7 +4606,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
       !interfaceStore.configPanelVisible &&
       isCreatingSimplePath.value
     ) {
-      addWaypoint([e.latlng.lat, e.latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
+      addWaypoint([latlng.lat, latlng.lng], currentWaypointAltitude.value, currentWaypointAltitudeRefType.value)
     }
     clearLiveMeasure()
   }
@@ -4311,6 +4661,11 @@ onMounted(async () => {
   angleOverlay.initAngleOverlay(planningMap.value!)
   surveyArrowOverlay.initArrowOverlay(planningMap.value!)
   dragMeasureOverlay.initDragMeasureOverlay(planningMap.value!)
+  initExtentInputs(planningMap.value!)
+  initRectangleDrawing(planningMap.value!)
+  initRectangleHandles(planningMap.value!)
+  initEdgeDragging(planningMap.value!)
+  initTouchDrawing(planningMap.value!)
   measureLayer.value = L.layerGroup().addTo(planningMap.value!) as L.LayerGroup
 
   registerLayerSync(planningMap.value)
@@ -4376,7 +4731,13 @@ onMounted(async () => {
 
   planningMap.value.on('drag', updateConfirmButtonPosition)
   planningMap.value.on('drag', refreshLiveMeasureOnMapMove)
-  planningMap.value.on('mousemove', handleMapMouseMove)
+  planningMap.value.on('mousemove', (e: L.LeafletMouseEvent) => {
+    // A tap on the tag is echoed by a mouse move the browser raises over it, which would aim the line at the tag
+    // and take the tag itself out from under the finger before the tap is through.
+    const movedOver = e.originalEvent?.target as HTMLElement | null
+    if (movedOver?.closest?.('.live-measure-pill')) return
+    handleMapMouseMove(e)
+  })
   planningMap.value.on('click', (e: L.LeafletMouseEvent) => {
     onMapClick(e)
   })
@@ -4457,6 +4818,9 @@ onUnmounted(() => {
   dragMeasureOverlay.destroyDragMeasureOverlay()
   angleOverlay.destroyAngleOverlay()
   surveyArrowOverlay.destroyArrowOverlay()
+  destroyRectangleHandles()
+  destroyEdgeDragging()
+  destroyTouchDrawing()
 
   detachTileFallbacks.forEach((detach) => detach())
   detachTileFallbacks = []
@@ -4930,6 +5294,38 @@ watch(
   backdrop-filter: blur(10px);
   white-space: nowrap;
   transform: translate(0, -50%);
+}
+.live-measure-pill.typing {
+  border-color: #3b82f6;
+}
+/* A tag is small for a finger, so it presses from a halo around it without looking any bigger. */
+.live-measure-pill::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+/* A number typed away holds the room it had, so the tag does not collapse around the caret left behind. */
+.measure-length:empty {
+  display: inline-block;
+  min-width: 3ch;
+}
+/* The field over the tag is invisible, so the tag carries the caret that says it is being typed into. */
+.measure-caret {
+  display: none;
+  width: 1px;
+  height: 14px;
+  margin: 0 1px;
+  vertical-align: -2px;
+  background: #fff;
+}
+.live-measure-pill.typing .measure-caret {
+  display: inline-block;
+  animation: measure-caret-blink 1.1s step-end infinite;
+}
+@keyframes measure-caret-blink {
+  50% {
+    opacity: 0;
+  }
 }
 .measure-area-icon {
   transform: translate(-50%, -50%);
