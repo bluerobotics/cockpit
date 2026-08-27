@@ -134,6 +134,11 @@ jobs:
       - name: Check the complexity report fetcher
         run: .github/scripts/fetch-complexity-report.sh --self-check
 
+      # The license policy gate reads npm metadata, which is not always right, so its verdict logic gets
+      # its own check the same way the review scripts above do.
+      - name: Check the license policy logic
+        run: node scripts/license-check.js --self-check
+
       - name: Install, lint, typecheck, and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
@@ -145,6 +150,11 @@ jobs:
       # `eslint .` would drag in `node_modules`. So the scripts get the zero-warning bar of their own.
       - name: Lint the workflow scripts
         run: yarn eslint --no-ignore .github/scripts --ext .js --max-warnings=0
+
+      # Fails when a dependency reaching the application arrives under a copyleft, custom or unrecognized
+      # license that is not yet recorded. The intentional ones are listed in scripts/license-policy.json.
+      - name: Check dependency licenses
+        run: yarn licenses:check
 
   deploy-page:
     needs: test
