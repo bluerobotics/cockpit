@@ -335,10 +335,23 @@ docker-compose -f sim.yml --profile ardusub up
 ## 📄 License
 
 Cockpit is dual-licensed:
-- **AGPL-3.0**: For open-source use
-- **Commercial License**: For proprietary applications
+
+- **AGPL-3.0**: for use under the terms of the GNU Affero General Public License v3.0.
+- **Cockpit Custom License**: a commercial license available by agreement with Blue Robotics. Contact software@bluerobotics.com for more information.
+
+Cockpit distributions may also contain third-party components that are licensed separately. Those components remain subject to their respective licenses.
 
 See [LICENSE.md](LICENSE.md) for details.
+
+### Third-party components
+
+Cockpit distributes third-party components that carry licensing or attribution obligations of their own, including GPL-licensed binaries (FFmpeg, Piper) and icon artwork that requires attribution (Font Awesome). None of them are relicensed under either arm of Cockpit's dual-license offer.
+
+**[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)** lists every one of them with its version, license and source, and carries the required notices. To check the resolved npm dependency tree against the license policy:
+
+```bash
+yarn licenses:check
+```
 
 ---
 
