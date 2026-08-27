@@ -1,6 +1,7 @@
 import L, { type Map as LeafletMap } from 'leaflet'
-import { type ComputedRef, type Ref, computed, onBeforeUnmount, ref } from 'vue'
+import { type ComputedRef, type Ref, computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 
+import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 import {
   type SurveyRectangleSpec,
   rectangleCorners,
@@ -15,6 +16,7 @@ import type { WaypointCoordinates } from '@/types/mission'
 
 import { type UseMeasureExtentInputReturn } from './useMeasureExtentInput'
 import { useMeasurePillOverlay } from './useMeasurePillOverlay'
+import { type RectangleHandlesTarget } from './useRectangleHandles'
 
 /** Shape the draft survey polygon is drawn as. */
 export type SurveyDrawShape = 'free-form' | 'rectangle'
@@ -55,6 +57,10 @@ export interface UseSurveyRectangleDrawingReturn {
   shape: Ref<SurveyDrawShape>
   /** Whether the rectangle is currently being sized against the cursor. */
   isSizingRectangle: ComputedRef<boolean>
+  /** Corners of a rectangle being sized that has been taken hold of, whose edges resize it like a polygon's. */
+  heldRectangleVertices: ComputedRef<L.LatLng[]>
+  /** The rectangle to offer move and turn handles on, being the one under the cursor or the square draft. */
+  rectangleHandles: ComputedRef<RectangleHandlesTarget | null>
   /** Extents of the draft polygon while it is a rectangle; null otherwise. */
   dimensions: ComputedRef<SurveyRectangleDimensions | null>
   /** Switches the draw shape. */
@@ -63,6 +69,10 @@ export interface UseSurveyRectangleDrawingReturn {
   consumeSurveyClick: (latlng: L.LatLng) => boolean
   /** Rebuilds the draft rectangle at the given extents, around the same baseline. */
   applyDimensions: (dimensions: SurveyRectangleDimensions) => void
+  /** Takes the rectangle being sized as a handle or an edge has left it, which the cursor stops sweeping. */
+  freezeSizingRectangle: (corners: WaypointCoordinates[]) => void
+  /** Reports the draft rectangle moved bodily, returning the scan angle to follow, or null to leave it alone. */
+  rectangleMovedTo: (corners: WaypointCoordinates[]) => number | null
   /** Hands the scan angle to the user, so it stops being derived from the longer axis. */
   releaseLinesAngle: () => void
   /** Abandons a rectangle being sized, returning whether there was one. */
@@ -99,6 +109,10 @@ export const useSurveyRectangleDrawing = (
   const shape = ref<SurveyDrawShape>('free-form')
   const phase = ref<'idle' | 'baseline' | 'sizing'>('idle')
   const sizingSpec = ref<SurveyRectangleSpec | null>(null)
+  const sizingAxisIndex = ref<0 | 1>(0)
+  // Set once the rectangle has been taken hold of by a handle or an edge, from when on it is the shape itself
+  // that is being placed rather than one still being swept out.
+  const frozenSpec = shallowRef<SurveyRectangleSpec | null>(null)
 
   let mapRef: LeafletMap | undefined
   let baseline: RectangleBaseline | null = null
@@ -110,6 +124,8 @@ export const useSurveyRectangleDrawing = (
   let derivedCorners: WaypointCoordinates[] | null = null
 
   const asCoordinates = (latLng: L.LatLng): WaypointCoordinates => [latLng.lat, latLng.lng]
+
+  const isSameSpot = (a: WaypointCoordinates, b: WaypointCoordinates): boolean => a[0] === b[0] && a[1] === b[1]
 
   const areSameCorners = (a: WaypointCoordinates[], b: WaypointCoordinates[]): boolean =>
     a.length === b.length && a.every(([lat, lng], index) => b[index][0] === lat && b[index][1] === lng)
@@ -155,7 +171,7 @@ export const useSurveyRectangleDrawing = (
 
   const renderPreview = (cursor?: WaypointCoordinates): void => {
     if (cursor) lastCursor = cursor
-    const drawn = sweptSpec()
+    const drawn = frozenSpec.value ?? sweptSpec()
     if (!drawn || !mapRef) return
 
     // Whichever extent has been typed holds the size the cursor would otherwise sweep, leaving the cursor to
@@ -166,6 +182,9 @@ export const useSurveyRectangleDrawing = (
       width: extentInput.lockedExtent('width') ?? drawn.width,
     }
     sizingSpec.value = spec
+    // The rectangle is walked from whichever end of the drawn edge leaves it on the cursor's side, so the corner
+    // it turns about has to be looked up rather than assumed to lead the ring.
+    if (!frozenSpec.value && baseline) sizingAxisIndex.value = isSameSpot(spec.origin, baseline.start) ? 0 : 1
     const corners = rectangleCorners(spec).map(([lat, lng]) => L.latLng(lat, lng))
     if (previewLayer) {
       previewLayer.setLatLngs(corners)
@@ -177,10 +196,32 @@ export const useSurveyRectangleDrawing = (
     renderExtents(corners, { length: Math.abs(spec.length), width: Math.abs(spec.width) })
   }
 
-  const onSizingMouseMove = (event: L.LeafletMouseEvent): void => renderPreview(asCoordinates(event.latlng))
+  const onSizingMouseMove = (event: L.LeafletMouseEvent): void => {
+    // A rectangle taken hold of is the user's to place, so the cursor is left with nothing to sweep and only the
+    // click that fixes it still counts. A move on one of its handles belongs to that handle, and leaflet reports it
+    // before the drag it starts, so sweeping it would collapse the rectangle onto the corner being grabbed.
+    if (frozenSpec.value || isOverSurveyHandle(event.originalEvent.target)) return
+    renderPreview(asCoordinates(event.latlng))
+  }
 
   // The pills are placed in container pixels, so a pan or zoom has to redraw them against the new viewport.
   const onSizingViewChange = (): void => renderPreview()
+
+  const freezeSizingRectangle = (corners: WaypointCoordinates[]): void => {
+    const spec = specFromCorners(corners)
+    if (spec.length === 0) return
+
+    const axis = corners[sizingAxisIndex.value]
+    frozenSpec.value = spec
+    // Reading the corners back can walk the drawn edge the other way round, which puts the corner the rectangle
+    // turns about at the other end of the ring.
+    sizingAxisIndex.value = isSameSpot(spec.origin, axis) ? 0 : 1
+    // These corners already carry whatever was typed, so the boxes go back to reading the extents out instead of
+    // holding them, leaving the drag free to change them.
+    if (extentInput.lockedExtent('length') !== null) extentInput.setExtentValue('length', null)
+    if (extentInput.lockedExtent('width') !== null) extentInput.setExtentValue('width', null)
+    renderPreview()
+  }
 
   const stopSizing = (): void => {
     mapRef?.off('mousemove', onSizingMouseMove)
@@ -193,6 +234,7 @@ export const useSurveyRectangleDrawing = (
     extentInput.setExtentTarget('width', null)
     extentInput.closeExtentInputs()
     baseline = null
+    frozenSpec.value = null
     sizingSpec.value = null
     phase.value = 'idle'
   }
@@ -270,6 +312,21 @@ export const useSurveyRectangleDrawing = (
     return spec ? { length: spec.length, width: spec.width } : null
   })
 
+  // Empty until the rectangle stands still, since one still being swept has the cursor sitting on the very edge a
+  // press would otherwise grab instead of fixing the area.
+  const heldRectangleVertices = computed<L.LatLng[]>(() =>
+    frozenSpec.value && sizingSpec.value
+      ? rectangleCorners(sizingSpec.value).map(([lat, lng]) => L.latLng(lat, lng))
+      : []
+  )
+
+  const rectangleHandles = computed<RectangleHandlesTarget | null>(() => {
+    const sizing = sizingSpec.value
+    if (sizing) return { corners: rectangleCorners(sizing), axisIndex: sizingAxisIndex.value }
+    // A draft is handled by the corners it already has, whether it was drawn as a rectangle or typed into one.
+    return draftSpec.value ? { corners: vertices.value.map(asCoordinates), axisIndex: 0 } : null
+  })
+
   const applyDimensions = (typed: SurveyRectangleDimensions): void => {
     const spec = draftSpec.value
     if (!spec) return
@@ -284,6 +341,15 @@ export const useSurveyRectangleDrawing = (
     setVertices(corners)
     derivedCorners = follows ? corners : null
     onRectangleResized(follows ? rectangleLinesAngle(corners) : null)
+  }
+
+  const rectangleMovedTo = (corners: WaypointCoordinates[]): number | null => {
+    const follows = !!derivedCorners && areSameCorners(derivedCorners, vertices.value.map(asCoordinates))
+    if (!follows) return null
+
+    // The same rectangle in a new place, so an angle that was following its longer axis keeps doing so.
+    derivedCorners = corners
+    return rectangleLinesAngle(corners)
   }
 
   const releaseLinesAngle = (): void => {
@@ -312,10 +378,14 @@ export const useSurveyRectangleDrawing = (
   return {
     shape,
     isSizingRectangle: computed(() => phase.value === 'sizing'),
+    heldRectangleVertices,
+    rectangleHandles,
     dimensions,
     setShape,
     consumeSurveyClick,
     applyDimensions,
+    freezeSizingRectangle,
+    rectangleMovedTo,
     releaseLinesAngle,
     cancelSizing,
     initRectangleDrawing,
