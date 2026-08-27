@@ -1057,7 +1057,7 @@ import {
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
 import { endpointSplicePosition } from '@/libs/mission/planning-endpoints'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
-import { degrees, escapeHtml, messageFromError, round, toPlain } from '@/libs/utils'
+import { degrees, escapeHtml, isTouchDevice, messageFromError, round, toPlain } from '@/libs/utils'
 import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -1536,7 +1536,10 @@ const clearSurveyPolygonUndoStack = (): void => {
 }
 
 const extentInput = useMeasureExtentInput({
-  shortcutFocus: () => (currentMeasureAnchor() ? 'segment' : null),
+  shortcutFocus: () => {
+    if (isSizingRectangle.value) return 'width'
+    return currentMeasureAnchor() ? 'segment' : null
+  },
   onOpened: () => refreshLiveMeasureOnMapMove(),
 })
 const {
@@ -1566,6 +1569,7 @@ const {
   initRectangleDrawing,
 } = useSurveyRectangleDrawing({
   vertices: surveyPolygonVertexesPositions,
+  extentInput,
   onBeforeVerticesReplaced: pushSurveyPolygonSnapshot,
   onRectangleDrawn: (linesAngle) => {
     isDrawingSurveyPolygon.value = false
@@ -1807,7 +1811,13 @@ const currentMeasurePrevAnchor = (): L.LatLng | null => {
 }
 
 const placeSurveyPolygonPoint = (latlng: L.LatLng): void => {
-  if (!consumeSurveyClick(latlng)) addSurveyPoint(latlng)
+  const consumedByRectangle = consumeSurveyClick(latlng)
+  if (!consumedByRectangle) addSurveyPoint(latlng)
+  // The rectangle's first corner is down, so the edge it raises can be typed rather than drawn. On touch the box
+  // is left to be asked for by tapping the tag, since it has no keyboard waiting behind it.
+  const placedFirstCorner = !consumedByRectangle && surveyPolygonVertexesPositions.value.length === 1
+  const offersTyping = !isTouchDevice() && surveyDrawShape.value === 'rectangle' && placedFirstCorner
+  if (offersTyping && !extentInputsOpen.value) openExtentInputs('segment')
   clearLiveMeasure()
 }
 
