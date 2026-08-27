@@ -8,9 +8,12 @@ import {
   rectangleLinesAngle,
   rectangleSpec,
 } from '@/libs/map/survey-rectangle'
+import { clampExtent } from '@/libs/map/typed-extent'
 import { formatMetersShort } from '@/libs/mission/general-estimates'
+import { isTouchDevice } from '@/libs/utils'
 import type { WaypointCoordinates } from '@/types/mission'
 
+import { type UseMeasureExtentInputReturn } from './useMeasureExtentInput'
 import { useMeasurePillOverlay } from './useMeasurePillOverlay'
 
 /** Shape the draft survey polygon is drawn as. */
@@ -28,6 +31,8 @@ export interface SurveyRectangleDimensions {
 export interface UseSurveyRectangleDrawingOptions {
   /** Draft survey polygon vertices, replaced wholesale whenever a rectangle is built. */
   vertices: Ref<L.LatLng[]>
+  /** The on-map extent boxes, shared with the view so only one stage offers typing at a time. */
+  extentInput: UseMeasureExtentInputReturn
   /** Called once a rectangle has been drawn on the map, with the scan angle along its longer axis. */
   onRectangleDrawn: (linesAngle: number) => void
   /** Called once typed extents have been applied, with the new scan angle, or null once the user owns the angle. */
@@ -66,11 +71,6 @@ export interface UseSurveyRectangleDrawingReturn {
   initRectangleDrawing: (map: LeafletMap) => void
 }
 
-// A mistyped extra digit would otherwise rebuild the polygon at a size the path generator sweeps line by line,
-// so both extents are held to a range a survey can be flown at.
-const minExtentInMeters = 1
-const maxExtentInMeters = 100000
-
 const previewStyle: L.PolylineOptions = {
   color: '#3B82F6',
   fillColor: '#60A5FA',
@@ -92,7 +92,7 @@ const previewStyle: L.PolylineOptions = {
 export const useSurveyRectangleDrawing = (
   options: UseSurveyRectangleDrawingOptions
 ): UseSurveyRectangleDrawingReturn => {
-  const { vertices, onRectangleDrawn, onRectangleResized, onShapeChanged } = options
+  const { vertices, extentInput, onRectangleDrawn, onRectangleResized, onShapeChanged } = options
 
   const { initMeasurePillOverlay, renderMeasurePills, destroyMeasurePillOverlay } = useMeasurePillOverlay()
 
@@ -114,18 +114,57 @@ export const useSurveyRectangleDrawing = (
   const areSameCorners = (a: WaypointCoordinates[], b: WaypointCoordinates[]): boolean =>
     a.length === b.length && a.every(([lat, lng], index) => b[index][0] === lat && b[index][1] === lng)
 
-  const clampExtent = (value: number, fallback: number): number =>
-    Number.isFinite(value) ? Math.min(maxExtentInMeters, Math.max(minExtentInMeters, value)) : fallback
+  // A rectangle read back from its own corners, walking the drawn edge from whichever end leaves the area on its
+  // right, so one grown to the left of that edge is described exactly like one grown to the right instead of
+  // being turned inside out the next time its corners are built from the description.
+  const specFromCorners = (corners: WaypointCoordinates[]): SurveyRectangleSpec =>
+    rectangleFromBaselineAndCursor(corners[0], corners[1], corners[2])
 
   const setVertices = (corners: WaypointCoordinates[]): void => {
     vertices.value = corners.map(([lat, lng]) => L.latLng(lat, lng))
   }
 
-  const renderPreview = (cursor: WaypointCoordinates): void => {
-    if (!baseline || !mapRef) return
+  const sweptSpec = (): SurveyRectangleSpec | null =>
+    baseline && lastCursor ? rectangleFromBaselineAndCursor(baseline.start, baseline.end, lastCursor) : null
 
-    lastCursor = cursor
-    const spec = rectangleFromBaselineAndCursor(baseline.start, baseline.end, cursor)
+  // A pill on the drawn edge and one on the edge across it, so both extents are readable on the map itself
+  // rather than only in the panel the user is not looking at while drawing.
+  const renderExtents = (corners: L.LatLng[], extents: SurveyRectangleDimensions): void => {
+    renderMeasurePills([
+      { from: corners[0], to: corners[1], text: extents.length < 1 ? null : formatMetersShort(extents.length) },
+      { from: corners[1], to: corners[2], text: extents.width < 1 ? null : formatMetersShort(extents.width) },
+    ])
+    extentInput.setExtentTarget('length', {
+      label: 'survey length',
+      from: corners[0],
+      to: corners[1],
+      liveValue: extents.length,
+      refresh: onSizingViewChange,
+      // The width is the extent still open, so a settled length hands the keyboard on to it.
+      apply: () => extentInput.focusExtentInput('width'),
+    })
+    extentInput.setExtentTarget('width', {
+      label: 'survey width',
+      from: corners[1],
+      to: corners[2],
+      liveValue: extents.width,
+      refresh: onSizingViewChange,
+      apply: () => commitSizing(),
+    })
+  }
+
+  const renderPreview = (cursor?: WaypointCoordinates): void => {
+    if (cursor) lastCursor = cursor
+    const drawn = sweptSpec()
+    if (!drawn || !mapRef) return
+
+    // Whichever extent has been typed holds the size the cursor would otherwise sweep, leaving the cursor to
+    // choose the side and the extent that has not.
+    const spec = {
+      ...drawn,
+      length: extentInput.lockedExtent('length') ?? drawn.length,
+      width: extentInput.lockedExtent('width') ?? drawn.width,
+    }
     sizingSpec.value = spec
     const corners = rectangleCorners(spec).map(([lat, lng]) => L.latLng(lat, lng))
     if (previewLayer) {
@@ -133,20 +172,15 @@ export const useSurveyRectangleDrawing = (
     } else {
       previewLayer = L.polygon(corners, previewStyle).addTo(mapRef)
     }
-    // A pill on the drawn edge and one on the edge across it, so both extents are readable on the map itself
-    // rather than only in the panel the user is not looking at while drawing.
-    renderMeasurePills([
-      { from: corners[0], to: corners[1], text: spec.length < 1 ? null : formatMetersShort(spec.length) },
-      { from: corners[1], to: corners[2], text: spec.width < 1 ? null : formatMetersShort(spec.width) },
-    ])
+    // Read as distances, since a negative extent says which side of the baseline to grow to rather than measuring
+    // anything backwards.
+    renderExtents(corners, { length: Math.abs(spec.length), width: Math.abs(spec.width) })
   }
 
   const onSizingMouseMove = (event: L.LeafletMouseEvent): void => renderPreview(asCoordinates(event.latlng))
 
   // The pills are placed in container pixels, so a pan or zoom has to redraw them against the new viewport.
-  const onSizingViewChange = (): void => {
-    if (lastCursor) renderPreview(lastCursor)
-  }
+  const onSizingViewChange = (): void => renderPreview()
 
   const stopSizing = (): void => {
     mapRef?.off('mousemove', onSizingMouseMove)
@@ -155,6 +189,9 @@ export const useSurveyRectangleDrawing = (
     previewLayer?.remove()
     previewLayer = null
     destroyMeasurePillOverlay()
+    extentInput.setExtentTarget('length', null)
+    extentInput.setExtentTarget('width', null)
+    extentInput.closeExtentInputs()
     baseline = null
     sizingSpec.value = null
     phase.value = 'idle'
@@ -169,21 +206,28 @@ export const useSurveyRectangleDrawing = (
     return true
   }
 
+  // A rectangle sized back onto its baseline leaves no area to survey, so a commit of one keeps sizing instead of
+  // fixing a degenerate polygon the survey generator would produce no lines for.
+  const commitSizing = (): void => {
+    const spec = sizingSpec.value
+    if (!spec || spec.width === 0 || spec.length === 0) return
+
+    const extents = `${Math.abs(spec.length).toFixed(1)} m by ${Math.abs(spec.width).toFixed(1)} m`
+    logUserAction(`Drew a survey rectangle of ${extents}`)
+    // Stored as the corners of a rectangle read back from itself, so an area grown to the left of the drawn edge
+    // keeps reading its extents back the way it was drawn.
+    const corners = rectangleCorners(specFromCorners(rectangleCorners(spec)))
+    stopSizing()
+    setVertices(corners)
+    derivedCorners = corners
+    onRectangleDrawn(rectangleLinesAngle(corners))
+  }
+
   const consumeSurveyClick = (latlng: L.LatLng): boolean => {
     if (shape.value !== 'rectangle') return false
 
     if (phase.value === 'sizing') {
-      const spec = sizingSpec.value
-      // A click back on the baseline leaves no area to survey, so keep sizing instead of fixing a degenerate
-      // polygon the survey generator would produce no lines for.
-      if (spec && spec.width > 0 && spec.length > 0) {
-        logUserAction(`Drew a survey rectangle of ${spec.length.toFixed(1)} m by ${spec.width.toFixed(1)} m`)
-        const corners = rectangleCorners(spec)
-        stopSizing()
-        setVertices(corners)
-        derivedCorners = corners
-        onRectangleDrawn(rectangleLinesAngle(corners))
-      }
+      commitSizing()
       return true
     }
 
@@ -201,6 +245,9 @@ export const useSurveyRectangleDrawing = (
       phase.value = 'sizing'
       mapRef?.on('mousemove', onSizingMouseMove)
       mapRef?.on('moveend zoomend', onSizingViewChange)
+      // The width is the extent still to be chosen, so it is the one the keyboard lands on. A finger has no
+      // keyboard to land on it, so there the box is left to be asked for by tapping the pill it belongs to.
+      if (!isTouchDevice()) extentInput.openExtentInputs('width')
       renderPreview(asCoordinates(latlng))
       return true
     }
@@ -211,10 +258,13 @@ export const useSurveyRectangleDrawing = (
     return false
   }
 
-  const draftSpec = computed(() => rectangleSpec(vertices.value.map(asCoordinates)))
+  const draftSpec = computed(() => {
+    const corners = vertices.value.map(asCoordinates)
+    return rectangleSpec(corners) === null ? null : specFromCorners(corners)
+  })
 
-  // Only the finished draft's extents, since the ones being swept by the cursor cannot be typed over: they read
-  // out on the map pills instead.
+  // Only the finished draft's extents, since the ones being swept by the cursor are typed on the map boxes next
+  // to their pills rather than in the panel.
   const dimensions = computed<SurveyRectangleDimensions | null>(() => {
     const spec = draftSpec.value
     return spec ? { length: spec.length, width: spec.width } : null

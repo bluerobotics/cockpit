@@ -932,7 +932,7 @@ import {
   polygonAreaSquareMeters,
 } from '@/libs/mission/general-estimates'
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
-import { degrees, messageFromError, toPlain } from '@/libs/utils'
+import { degrees, isTouchDevice, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -1230,7 +1230,10 @@ const clearSurveyPolygonUndoStack = (): void => {
 }
 
 const extentInput = useMeasureExtentInput({
-  shortcutFocus: () => (currentMeasureAnchor() ? 'segment' : null),
+  shortcutFocus: () => {
+    if (isSizingRectangle.value) return 'width'
+    return currentMeasureAnchor() ? 'segment' : null
+  },
   onOpened: () => refreshLiveMeasureOnMapMove(),
 })
 const {
@@ -1260,6 +1263,7 @@ const {
   initRectangleDrawing,
 } = useSurveyRectangleDrawing({
   vertices: surveyPolygonVertexesPositions,
+  extentInput,
   onRectangleDrawn: (linesAngle) => {
     isDrawingSurveyPolygon.value = false
     surveyLinesAngle.value = linesAngle
@@ -1544,6 +1548,10 @@ const destroyMeasureOverlay = (map?: L.Map): void => {
 
 const placeSurveyPolygonPoint = (latlng: L.LatLng): void => {
   if (!consumeSurveyClick(latlng)) addSurveyPoint(latlng)
+  // The rectangle's first corner is down, so the edge it raises can be typed rather than drawn. On touch the box
+  // is left to be asked for by tapping the tag, since it has no keyboard waiting behind it.
+  const offersTyping = !isTouchDevice() && surveyDrawShape.value === 'rectangle'
+  if (offersTyping && !extentInputsOpen.value) openExtentInputs('segment')
   clearLiveMeasure()
 }
 
