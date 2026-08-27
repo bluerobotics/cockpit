@@ -9,6 +9,10 @@ extension. Components that only run on a developer machine (build tooling, test 
 listed here; they are distributed with neither build, so the policy gate described under
 [The rest of the npm tree](#the-rest-of-the-npm-tree) reports on them but does not fail on them.
 
+This file is distributed with both builds and readable inside the running application, under
+"Third-party software" in the About dialog. Standalone additionally carries it as a file in the
+application's resources.
+
 ## Contents
 
 - [Overview](#overview)
