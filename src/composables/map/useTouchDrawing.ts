@@ -7,6 +7,8 @@ import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 export interface UseTouchDrawingOptions {
   /** Whether a finger on the map is drawing, which is what leaves panning to a second one. */
   drawsWithOneFinger: () => boolean
+  /** Names what a drag is settling right now, as the checkmark reads it out and the log records it. */
+  confirmLabel: () => string
   /** Whether the segment being drawn already has a point to start from. */
   hasAnchor: () => boolean
   /** Whether another handler already took the press, so the map is left to it. */
@@ -35,7 +37,6 @@ const dragThresholdInPixels = 4
 const confirmOffsetInPixels = 26
 // Controls and handles that own their own presses, which a drawing gesture must not take from them.
 const ownPressSelector = '.leaflet-marker-icon, .leaflet-control, .live-measure-pill, .touch-draw-confirm'
-const confirmLabel = 'Confirm the point'
 
 const confirmMarkup = `
   <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
@@ -53,7 +54,7 @@ const confirmMarkup = `
  * @returns {UseTouchDrawingReturn} The point awaiting confirmation plus the methods to bind and unbind the map.
  */
 export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawingReturn => {
-  const { drawsWithOneFinger, hasAnchor, isBlocked, placePoint } = options
+  const { drawsWithOneFinger, confirmLabel, hasAnchor, isBlocked, placePoint } = options
 
   const pendingPoint = shallowRef<L.LatLng | null>(null)
   const drawsNow = computed(drawsWithOneFinger)
@@ -83,7 +84,7 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     const point = pendingPoint.value
     if (!point) return
 
-    logUserAction('Confirmed the point dragged out on the map')
+    logUserAction(`Confirmed the ${confirmLabel()} dragged out on the map`)
     clearPendingPoint()
     placePoint(point)
   }
@@ -94,8 +95,6 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     const el = document.createElement('div')
     el.className = 'touch-draw-confirm'
     el.setAttribute('role', 'button')
-    el.setAttribute('aria-label', confirmLabel)
-    el.title = confirmLabel
     el.tabIndex = 0
     el.innerHTML = confirmMarkup
     el.style.position = 'absolute'
@@ -121,7 +120,11 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     if (!mapRef) return
 
     pendingPoint.value = latlng
-    ensureConfirm(mapRef).style.display = 'block'
+    const el = ensureConfirm(mapRef)
+    const label = `Confirm the ${confirmLabel()}`
+    el.setAttribute('aria-label', label)
+    el.title = label
+    el.style.display = 'block'
     positionConfirm()
   }
 
