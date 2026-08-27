@@ -26,6 +26,7 @@ import {
   LiveVideoProcessorInitializationError,
 } from '@/libs/live-video-processor'
 import { datalogger } from '@/libs/sensors-logging'
+import { StreamActivationBackoff } from '@/libs/stream-activation-backoff'
 import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
@@ -476,6 +477,7 @@ export const useVideoStore = defineStore('video', () => {
   }, 300)
 
   const rtspActivating = new Set<string>()
+  const rtspActivationBackoff = new StreamActivationBackoff()
   let rtspUnsupportedWarned = false
   const unreceivableVideoWarned = new Set<string>()
   let unreceivableVideoDialogOpened = false
@@ -490,10 +492,19 @@ export const useVideoStore = defineStore('video', () => {
     if (getStreamProtocol(streamName) === 'rtsp') {
       if (rtspActivating.has(streamName)) return
       if (activeStreams.value[streamName]?.go2rtcManager) return
+      if (rtspActivationBackoff.isBackingOff(streamName)) return
+
+      // The external id of an RTSP stream is its URL, credentials included, so never show it to the user
+      const displayName = internalStreamNameFromExternal(streamName) ?? streamName
 
       const rtspUrl = getRtspUrl(streamName)
       if (!rtspUrl) {
-        showDialog({ message: `RTSP URL for stream '${streamName}' is missing.`, variant: 'error' })
+        if (rtspActivationBackoff.registerFailure(streamName)) {
+          const msg =
+            `Video stream '${displayName}' has no address configured.` +
+            ' Delete it and add it again in the video configuration page.'
+          showDialog({ message: msg, variant: 'error' })
+        }
         return
       }
       if (!window.electronAPI) {
@@ -533,10 +544,17 @@ export const useVideoStore = defineStore('video', () => {
             mediaRecorder: undefined,
             timeRecordingStart: undefined,
           }
+          rtspActivationBackoff.forget(streamName)
           console.debug(`Activated RTSP stream '${streamName}' via go2rtc.`)
         } catch (error) {
           console.error(`Failed to activate RTSP stream '${streamName}':`, error)
-          showDialog({ message: `Failed to start RTSP stream '${streamName}'.`, variant: 'error' })
+          if (rtspActivationBackoff.registerFailure(streamName)) {
+            // Nothing in the try above reaches the camera, so a failure here is always local to Cockpit
+            const msg =
+              `Could not start video stream '${displayName}'. Cockpit's video service is not responding.` +
+              ' Restart Cockpit and try again.'
+            showDialog({ message: msg, variant: 'error' })
+          }
         } finally {
           rtspActivating.delete(streamName)
         }
@@ -1396,6 +1414,7 @@ export const useVideoStore = defineStore('video', () => {
 
       // Clean up all resources for the stream, and any consumer bookkeeping tied to it
       streamConsumers.delete(externalId)
+      rtspActivationBackoff.forget(externalId)
       if (activeStreams.value[externalId]) {
         teardownStreamResources(externalId, `External stream '${externalId}' was ignored by user`)
       }
