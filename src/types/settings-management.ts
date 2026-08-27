@@ -3,6 +3,7 @@ export const vehicleOldStyleSettingsKey = 'settings'
 export const vehicleOldStyleSettingsBackupKey = 'settings-v1-backup'
 export const vehicleNewStyleSettingsKey = 'settings-v2'
 export const localSyncedSettingsKey = 'cockpit-settings-v2'
+export const localPendingSettingWritesKey = 'cockpit-pending-setting-writes-v1'
 export const cockpitLastConnectedVehicleKey = 'cockpit-last-connected-vehicle-id'
 export const cockpitLastConnectedUserKey = 'cockpit-last-connected-user'
 export const vehicleIdKey = 'cockpit-vehicle-id'
@@ -105,6 +106,33 @@ export interface KeyValueVehicleUpdateQueue {
         epochChange: number
       }
     }
+  }
+}
+
+/**
+ * A journal of setting changes that were requested but have not reached the local settings yet,
+ * because the write is debounced. It is persisted so that a change made moments before Cockpit is
+ * closed is applied on the next boot instead of dying with the debounce timer.
+ * Only the most recent change is kept for each key.
+ */
+export interface PendingSettingWrites {
+  [key: string]: {
+    /**
+     * The new value of the setting
+     */
+    value: any
+    /**
+     * The epoch at which the change was made, so a replay does not present itself as newer than it is
+     */
+    epochChange: number
+    /**
+     * The ID of the user the change was made for
+     */
+    userId: string
+    /**
+     * The ID of the vehicle the change was made for
+     */
+    vehicleId: string
   }
 }
 

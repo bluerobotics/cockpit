@@ -10,10 +10,12 @@ import {
   fallbackVehicleId,
   KeyValueVehicleUpdateQueue,
   localOldStyleSettingsKey,
+  localPendingSettingWritesKey,
   LocalSyncedSettings,
   localSyncedSettingsKey,
   NoVehicleIdErrorName,
   OldCockpitSettingsPackage,
+  PendingSettingWrites,
   SettingsListener,
   SettingsListeners,
   SettingsPackage,
@@ -34,7 +36,19 @@ const nullValue = 'null'
 const possibleNullValues = [fallbackUsername, fallbackVehicleId, nullValue, null, undefined, '']
 const keyValueUpdateDebounceTime = 100
 
+// Upper bound on how often the journal of pending writes is serialized and stored, so that a burst of
+// changes costs one storage write instead of one per change.
+const pendingSettingWritesPersistInterval = 1000
+
 export type SettingValue = string | number | boolean | object | null | undefined
+
+const isValidPendingSettingWrite = (candidate: unknown): candidate is PendingSettingWrites[string] => {
+  const pendingWrite = candidate as PendingSettingWrites[string] | null
+  if (typeof pendingWrite !== 'object' || pendingWrite === null) {
+    return false
+  }
+  return pendingWrite.value !== undefined && typeof pendingWrite.epochChange === 'number' && typeof pendingWrite.userId === 'string' && typeof pendingWrite.vehicleId === 'string'
+}
 
 /**
  * Error thrown when the vehicle ID does not match the expected ID
@@ -200,6 +214,10 @@ export class SettingsManager {
   private lastLocalUserVehicleSettings: SettingsPackage = {}
   private currentVehicleAddress: string = nullValue
   private keyValueVehicleUpdateQueue: KeyValueVehicleUpdateQueue = {}
+  private pendingSettingWrites: PendingSettingWrites = {}
+  private pendingSettingWritesPersistTimeout: ReturnType<typeof setTimeout> | undefined = undefined
+  private lastPendingSettingWritesPersistEpoch = 0
+  private lastKeyJournalingEpochs: Record<string, number> = {}
   private initialLoadingComplete = false
   private cachedSettings: LocalSyncedSettings | null = null
   private storage: StorageAdapter
@@ -214,8 +232,19 @@ export class SettingsManager {
     this.storage = storage || new LocalStorageAdapter()
     this.vehicle = vehicle || new BlueOSVehicleAdapter()
     console.log('[SettingsManager]', 'Initializing settings manager.')
+    this.pendingSettingWrites = this.readPendingSettingWrites()
     this.initLocalSettings()
     this.initialLoadingComplete = true
+    // Only after the local settings are resolved, as `initLocalSettings` replaces the whole settings
+    // package for the current user and vehicle and would otherwise discard the replayed writes.
+    this.applyPendingSettingWrites()
+    // Throttling the journal can leave the newest change waiting on a timer, and closing Cockpit is
+    // precisely the moment that change has to be on disk. Flushing here is what covers a clean quit;
+    // the journal itself is what covers the exits that skip these handlers, like a crash or a mobile
+    // task-kill, which is also why `pagehide` is registered, as mobile browsers do not fire
+    // `beforeunload`.
+    window.addEventListener('beforeunload', this.persistPendingSettingWrites)
+    window.addEventListener('pagehide', this.persistPendingSettingWrites)
     console.log('[SettingsManager]', 'Settings manager initialized.')
   }
 
@@ -237,6 +266,8 @@ export class SettingsManager {
     const resolvedUserId = this.resolveUserId(userId)
     const resolvedVehicleId = this.resolveVehicleId(vehicleId)
     const newEpoch = epochChange !== undefined ? epochChange : Date.now()
+
+    this.savePendingKeyValue(key, value, newEpoch, resolvedUserId, resolvedVehicleId)
 
     if (this.keyValueUpdateTimeouts[key]) {
       clearTimeout(this.keyValueUpdateTimeouts[key])
@@ -276,6 +307,7 @@ export class SettingsManager {
     }
     localSettings[userId][vehicleId][key] = newSetting
     this.setLocalSettings(localSettings)
+    this.removePendingKeyValue(key, epochChange)
     this.notifyAllListenersAboutSettingsChange()
 
     this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId, userId, key, value, epochChange)
@@ -375,6 +407,151 @@ export class SettingsManager {
 
     localSettings[userId][vehicleId] = settings
     this.setLocalSettings(localSettings)
+  }
+
+  /**
+   * Retrieves the journal of setting changes that have not reached the local settings yet
+   * @returns {PendingSettingWrites} The pending setting writes, or an empty journal if none are readable
+   */
+  private readPendingSettingWrites = (): PendingSettingWrites => {
+    const storedPendingWrites = this.storage.getItem(localPendingSettingWritesKey)
+    if (!storedPendingWrites) {
+      return {}
+    }
+    const pendingWrites = deserialize(storedPendingWrites)
+    if (typeof pendingWrites !== 'object' || pendingWrites === null) {
+      console.error('[SettingsManager]', 'Journal of pending setting writes is unreadable. Discarding it.')
+      return {}
+    }
+
+    // The journal is editable by hand through the settings manager UI, and the replay that consumes it
+    // runs from the constructor at module scope, where a malformed record would take the whole app down.
+    const validPendingWrites: PendingSettingWrites = {}
+    Object.entries(pendingWrites).forEach(([key, pendingWrite]) => {
+      if (!isValidPendingSettingWrite(pendingWrite)) {
+        console.error('[SettingsManager]', `Journaled write of key '${key}' is malformed. Discarding it.`)
+        return
+      }
+      validPendingWrites[key] = pendingWrite
+    })
+    return validPendingWrites
+  }
+
+  /**
+   * Requests the journal to be persisted, at most once every `pendingSettingWritesPersistInterval`
+   * @param {boolean} [persistImmediately] - Whether to store the journal right away instead of throttling it
+   */
+  private schedulePendingSettingWritesPersistence = (persistImmediately = false): void => {
+    if (persistImmediately) {
+      this.persistPendingSettingWrites()
+      return
+    }
+    if (this.pendingSettingWritesPersistTimeout !== undefined) {
+      return
+    }
+    const timeSinceLastPersistence = Date.now() - this.lastPendingSettingWritesPersistEpoch
+    if (timeSinceLastPersistence >= pendingSettingWritesPersistInterval) {
+      this.persistPendingSettingWrites()
+      return
+    }
+    this.pendingSettingWritesPersistTimeout = setTimeout(this.persistPendingSettingWrites, pendingSettingWritesPersistInterval - timeSinceLastPersistence)
+  }
+
+  /**
+   * Persists the journal of setting changes that have not reached the local settings yet
+   */
+  private persistPendingSettingWrites = (): void => {
+    clearTimeout(this.pendingSettingWritesPersistTimeout)
+    this.pendingSettingWritesPersistTimeout = undefined
+    this.lastPendingSettingWritesPersistEpoch = Date.now()
+    try {
+      this.storage.setItem(localPendingSettingWritesKey, JSON.stringify(this.pendingSettingWrites))
+    } catch (error) {
+      // The journal only exists to make a change survive a restart, so failing to store it must never
+      // take the change itself down with it.
+      console.error('[SettingsManager]', 'Could not persist the journal of pending setting writes.', error)
+    }
+  }
+
+  /**
+   * Records a setting change in the persisted journal, so that it is applied on the next boot if
+   * Cockpit is closed before the debounced write reaches the local settings
+   * @param {string} key - The key of the setting being changed
+   * @param {T} value - The new value of the setting
+   * @param {number} epochChange - The epoch time at which the setting was changed
+   * @param {string} [userId] - The ID of the user to which the setting belongs
+   * @param {string} [vehicleId] - The ID of the vehicle to which the setting belongs
+   */
+  public savePendingKeyValue = <T extends SettingValue>(
+    key: string,
+    value: T,
+    epochChange: number,
+    userId?: string,
+    vehicleId?: string
+  ): void => {
+    // A zero epoch marks a key being seeded from a default or a migration rather than changed by the
+    // user, and journaling the whole first-boot seeding just to drop it again is not what this is for.
+    if (epochChange === 0) {
+      return
+    }
+
+    // `useBlueOsStorage` journals the change and then hands the very same epoch to `setKeyValue`, which
+    // journals it again, so the repeat is recognized by its epoch instead of being written twice.
+    if (this.pendingSettingWrites[key]?.epochChange === epochChange) {
+      return
+    }
+    this.pendingSettingWrites[key] = {
+      value,
+      epochChange,
+      userId: this.resolveUserId(userId),
+      vehicleId: this.resolveVehicleId(vehicleId),
+    }
+
+    // A change to a key that was quiet is a deliberate one rather than part of a burst, so it is stored
+    // at once instead of waiting out a window opened by whatever else is being journaled meanwhile.
+    const journalingEpoch = Date.now()
+    const lastJournalingEpoch = this.lastKeyJournalingEpochs[key] ?? 0
+    this.lastKeyJournalingEpochs[key] = journalingEpoch
+    this.schedulePendingSettingWritesPersistence(journalingEpoch - lastJournalingEpoch >= pendingSettingWritesPersistInterval)
+  }
+
+  /**
+   * Drops a setting change from the persisted journal once it has reached the local settings
+   * @param {string} key - The key of the setting that was written
+   * @param {number} appliedEpoch - The epoch of the change that was written
+   */
+  private removePendingKeyValue = (key: string, appliedEpoch: number): void => {
+    // A newer change to the same key may have been journaled while this one waited out its debounce,
+    // and dropping it here would lose exactly what the journal exists to protect.
+    if (this.pendingSettingWrites[key]?.epochChange !== appliedEpoch) {
+      return
+    }
+    delete this.pendingSettingWrites[key]
+    this.schedulePendingSettingWritesPersistence()
+  }
+
+  /**
+   * Applies the setting changes the previous session journaled but never got to write
+   */
+  private applyPendingSettingWrites = (): void => {
+    const pendingWrites = Object.entries(this.pendingSettingWrites)
+    if (pendingWrites.length === 0) {
+      return
+    }
+    console.warn('[SettingsManager]', `Applying ${pendingWrites.length} setting write(s) left pending by a previous session.`)
+    pendingWrites.forEach(([key, pendingWrite]) => {
+      const storedSetting = this.getLocalSettings()[pendingWrite.userId]?.[pendingWrite.vehicleId]?.[key]
+
+      // Another tab, or a restored settings backup, can already hold something newer than what was
+      // journaled here, and replaying a change must never walk a newer one back.
+      if (storedSetting !== undefined && storedSetting.epochLastChangedLocally > pendingWrite.epochChange) {
+        console.warn('[SettingsManager]', `Discarding pending write of key '${key}', as a newer value is already stored.`)
+        this.removePendingKeyValue(key, pendingWrite.epochChange)
+        return
+      }
+
+      this.applyKeyValueUpdate(key, pendingWrite.value, pendingWrite.epochChange, pendingWrite.userId, pendingWrite.vehicleId)
+    })
   }
 
   /**
@@ -1004,7 +1181,7 @@ export class SettingsManager {
    */
   private backupCurrentOldStyleSettings = (): void => {
     const oldStyleSettings: OldCockpitSettingsPackage = {}
-    const keysToIgnore = [localSyncedSettingsKey, localOldStyleSettingsKey, cockpitLastConnectedUserKey, cockpitLastConnectedVehicleKey]
+    const keysToIgnore = [localSyncedSettingsKey, localPendingSettingWritesKey, localOldStyleSettingsKey, cockpitLastConnectedUserKey, cockpitLastConnectedVehicleKey]
     const keysToBackup = this.storage.getAllKeys().filter((k) => !keysToIgnore.includes(k))
     for (const key of keysToBackup) {
       const value = this.storage.getItem(key)
