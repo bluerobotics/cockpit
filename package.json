@@ -183,6 +183,18 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "LICENSE.md",
+        "to": "LICENSE.md"
+      },
+      {
+        "from": "LICENSE-agplv3.md",
+        "to": "LICENSE-agplv3.md"
+      },
+      {
+        "from": "THIRD-PARTY-NOTICES.md",
+        "to": "THIRD-PARTY-NOTICES.md"
       }
     ],
     "appId": "org.bluerobotics.cockpit",
@@ -200,7 +212,17 @@
       "icon": "public/icon-mac-512x512.png",
       "hardenedRuntime": true,
       "entitlements": "./src/assets/entitlements.mac.plist",
-      "entitlementsInherit": "./src/assets/entitlements.mac.plist"
+      "entitlementsInherit": "./src/assets/entitlements.mac.plist",
+      "extraResources": [
+        {
+          "from": "node_modules/electron/dist/LICENSE",
+          "to": "LICENSE.electron.txt"
+        },
+        {
+          "from": "node_modules/electron/dist/LICENSES.chromium.html",
+          "to": "LICENSES.chromium.html"
+        }
+      ]
     },
     "afterSign": "scripts/notarize.mjs",
     "win": {
