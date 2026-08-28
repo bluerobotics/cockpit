@@ -172,12 +172,16 @@ export const reloadCockpit = (timeout = 3000): void => {
 
 /**
  * Detects if the application is running in Electron
+ *
+ * In the renderer the user agent alone is not enough: Electron-based embedded browsers, like the preview
+ * panes of Electron-based IDEs, carry the same `Electron/<version>` token but never run our preload
+ * script, so the bridge it exposes is what tells our own shell apart from them.
  * @returns {boolean} True if running in Electron, false otherwise
  */
 export const isElectron = (): boolean => {
   // Check if the userAgent contains 'electron' (for renderer process)
   if (typeof navigator === 'object' && typeof navigator.userAgent === 'string') {
-    return navigator.userAgent.toLowerCase().includes('electron')
+    return navigator.userAgent.toLowerCase().includes('electron') && globalThis.window?.electronAPI !== undefined
   }
 
   // Check if the process object exists and contains 'electron' (for main process)
