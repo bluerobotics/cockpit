@@ -1,0 +1,89 @@
+{
+  "allowed": [
+    "0BSD",
+    "AFL-2.1",
+    "Apache-2.0",
+    "Artistic-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BlueOak-1.0.0",
+    "CC0-1.0",
+    "EDL-1.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "Python-2.0",
+    "Unlicense",
+    "Zlib"
+  ],
+  "review": [
+    "AFL-*",
+    "CC-BY-*",
+    "CDDL-*",
+    "EPL-*",
+    "LGPL-*",
+    "MPL-*",
+    "OFL-*",
+    "OSL-*",
+    "SEE LICENSE*",
+    "UNKNOWN",
+    "WTFPL"
+  ],
+  "blocked": ["AGPL-*", "BUSL-*", "Elastic-*", "GPL-*", "SSPL-*"],
+  "distributed": ["electron", "workbox-*"],
+  "acknowledged": {
+    "@fortawesome/free-regular-svg-icons": {
+      "license": "(CC-BY-4.0 AND MIT)",
+      "reason": "Intentional. Icon artwork is CC-BY-4.0 and needs attribution; attributed in THIRD-PARTY-NOTICES.md."
+    },
+    "@fortawesome/free-solid-svg-icons": {
+      "license": "(CC-BY-4.0 AND MIT)",
+      "reason": "Intentional. Icon artwork is CC-BY-4.0 and needs attribution; attributed in THIRD-PARTY-NOTICES.md."
+    },
+    "caniuse-lite": {
+      "license": "CC-BY-4.0",
+      "reason": "Build-time browser-support data pulled in by autoprefixer. Never reaches the application."
+    },
+    "gsap": {
+      "license": "Standard 'no charge' license: https://gsap.com/standard-license.",
+      "actual": "LicenseRef-GreenSock-Standard",
+      "version": "3.13.0",
+      "reason": "Custom GreenSock license rather than MIT. Cockpit uses only the core module, which the standard license covers. See THIRD-PARTY-NOTICES.md."
+    },
+    "leaflet.offline": {
+      "license": "ISC",
+      "actual": "LGPL-3.0",
+      "version": "3.1.0",
+      "reason": "The npm license field does not match the package's own license file, which is LGPL-3.0 and governs. Used unmodified. See THIRD-PARTY-NOTICES.md."
+    },
+    "marchingsquares": {
+      "license": "AGPL-3.0",
+      "version": "1.3.3",
+      "reason": "Reached through @turf/turf, used unmodified and tree-shaken out of the bundle. Its AGPL section 7 additional permission covers unmodified redistribution. See THIRD-PARTY-NOTICES.md."
+    },
+    "mavlink2rest-wasm": {
+      "license": "UNKNOWN",
+      "reason": "Developed by Blue Robotics, so not third-party software. The npm metadata carries no license field because the package is built by wasm-pack."
+    },
+    "posthog-js": {
+      "license": "SEE LICENSE IN LICENSE",
+      "actual": "Apache-2.0",
+      "version": "1.253.4",
+      "reason": "The npm license field carries no SPDX identifier; the package's LICENSE file is the Apache License 2.0."
+    },
+    "spdx-exceptions": {
+      "license": "CC-BY-3.0",
+      "reason": "Build-time SPDX data used by dependency tooling. Never reaches the application."
+    },
+    "splaytree-ts": {
+      "license": "BDS-3-Clause",
+      "actual": "BSD-3-Clause",
+      "version": "1.0.2",
+      "reason": "The npm license field misspells the identifier; the package's LICENSE file is the BSD 3-Clause License."
+    },
+    "truncate-utf8-bytes": {
+      "license": "WTFPL",
+      "reason": "Build-time dependency of electron-builder. Never reaches the application."
+    }
+  }
+}

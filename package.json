@@ -20,6 +20,7 @@
     "deploy:flatpak": "ELECTRON=true electron-builder --linux flatpak --publish=never -c.extraMetadata.version=${COCKPIT_VERSION:-$(git describe --tags --abbrev=0 | sed 's/^v//')}",
     "dev": "vite --host",
     "dev:electron": "cross-env ELECTRON=true vite --host",
+    "licenses:check": "node scripts/license-check.js",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "lint:fix": "eslint --fix . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore --max-warnings=0",
     "postinstall": "node scripts/download-ffmpeg.js && node scripts/download-go2rtc.js && node scripts/download-piper.js && node scripts/verify-sdl.js",
@@ -81,7 +82,7 @@
     "pmtiles": "^4.4.1",
     "posthog-js": "^1.194.3",
     "pretty-format": "^29.7.0",
-    "roboto-fontface": "*",
+    "roboto-fontface": "^0.10.0",
     "semver": "^7.5.4",
     "serialport": "^13.0.0",
     "slugify": "^1.6.6",
@@ -98,7 +99,6 @@
     "vue-virtual-scroller": "^2.0.0-beta.8",
     "vue3-slider": "^1.9.0",
     "vuetify": "3.7.0",
-    "webfontloader": "^1.0.0",
     "webrtc-adapter": "^8.2.0",
     "yauzl": "^3.2.0",
     "yazl": "^3.3.1",
@@ -116,7 +116,6 @@
     "@types/semver": "^7.5.6",
     "@types/sql.js": "^1.4.11",
     "@types/uuid": "^8.3.4",
-    "@types/webfontloader": "^1.0.0",
     "@vitejs/plugin-vue": "5.0.4",
     "@vue/eslint-config-prettier": "^7.0.0",
     "@vue/eslint-config-typescript": "^10.0.0",
@@ -183,6 +182,18 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "LICENSE.md",
+        "to": "LICENSE.md"
+      },
+      {
+        "from": "LICENSE-agplv3.md",
+        "to": "LICENSE-agplv3.md"
+      },
+      {
+        "from": "THIRD-PARTY-NOTICES.md",
+        "to": "THIRD-PARTY-NOTICES.md"
       }
     ],
     "appId": "org.bluerobotics.cockpit",
@@ -200,7 +211,17 @@
       "icon": "public/icon-mac-512x512.png",
       "hardenedRuntime": true,
       "entitlements": "./src/assets/entitlements.mac.plist",
-      "entitlementsInherit": "./src/assets/entitlements.mac.plist"
+      "entitlementsInherit": "./src/assets/entitlements.mac.plist",
+      "extraResources": [
+        {
+          "from": "node_modules/electron/dist/LICENSE",
+          "to": "LICENSE.electron.txt"
+        },
+        {
+          "from": "node_modules/electron/dist/LICENSES.chromium.html",
+          "to": "LICENSES.chromium.html"
+        }
+      ]
     },
     "afterSign": "scripts/notarize.mjs",
     "win": {
