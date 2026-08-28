@@ -1,37 +1,23 @@
 import L, { type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
 import { watch } from 'vue'
 
-import { openSnackbar } from '@/composables/snackbar'
-import { downloadFileFromVehicle } from '@/libs/blueos-files'
-import { createCachedTileLayer } from '@/libs/map/cached-tile-layer'
-import { type TileArchiveSource, openTileArchive } from '@/libs/map/tile-archive'
-import { archiveTransferTimeout, tileArchiveFileName, tileProviderSubfolder } from '@/libs/map/tile-provider-import'
-import { getCachedTileArchive, setCachedTileArchive } from '@/libs/map/tile-provider-storage'
-import { messageFromError } from '@/libs/utils'
-import { useMainVehicleStore } from '@/stores/mainVehicle'
+import {
+  type CustomTileProviderLayer,
+  customTileProviderSignature,
+  useCustomTileProviderLayer,
+} from '@/composables/map/useCustomTileProviderLayer'
 import { useMissionStore } from '@/stores/mission'
 import type { CustomTileProviderMeta } from '@/types/mission'
 
-// Highest zoom a custom provider is shown at; tiles beyond the archive's native maximum are upscaled (overzoom).
-const CUSTOM_PROVIDER_MAX_ZOOM = 23
-
 /**
- * A materialized provider: its live Leaflet base layer, the signature it was built from, and any backing tile
- * source to release when it is torn down.
+ * A materialized provider: its live Leaflet base layer, any backing tile source to release when it is torn
+ * down, and the signature it was built from.
  */
-interface ProviderEntry {
-  /**
-   * The live Leaflet layer registered as a selectable base layer.
-   */
-  layer: L.Layer
+interface ProviderEntry extends CustomTileProviderLayer {
   /**
    * Snapshot of the metadata fields that require the layer to be rebuilt when they change.
    */
   signature: string
-  /**
-   * Releases the backing tile source (file providers only), if it was ever opened.
-   */
-  close?: () => void
 }
 
 /**
@@ -56,19 +42,6 @@ export interface UseCustomTileProvidersReturn {
   destroy: () => void
 }
 
-// Fields baked into the layer at build time (or into its control label); a change to any requires rebuilding.
-const providerSignature = (meta: CustomTileProviderMeta): string =>
-  JSON.stringify([
-    meta.name,
-    meta.type,
-    meta.urlTemplate,
-    meta.tms,
-    meta.minZoom,
-    meta.maxZoom,
-    meta.attribution,
-    meta.format,
-  ])
-
 /**
  * Registers user-defined custom tile providers as selectable base layers on a single Leaflet map, keeping the
  * layer-control entries in sync with the persisted provider metadata in the mission store. Shared by the
@@ -79,7 +52,7 @@ const providerSignature = (meta: CustomTileProviderMeta): string =>
  */
 export const useCustomTileProviders = (): UseCustomTileProvidersReturn => {
   const missionStore = useMissionStore()
-  const vehicleStore = useMainVehicleStore()
+  const { createLayer } = useCustomTileProviderLayer()
 
   const entries = new Map<string, ProviderEntry>()
   let mapRef: LeafletMap | undefined
@@ -100,70 +73,6 @@ export const useCustomTileProviders = (): UseCustomTileProvidersReturn => {
     })
   }
 
-  // Resolves a file provider's archive: local render cache first, else download from the vehicle (the durable
-  // master copy) and cache it before use. Runs only when the provider is first selected (lazy layer).
-  const loadArchiveSource = async (meta: CustomTileProviderMeta): Promise<TileArchiveSource> => {
-    let archive = await getCachedTileArchive(meta.id)
-    if (!archive) {
-      const vehicleAddress = vehicleStore.globalAddress
-      if (!vehicleAddress) {
-        throw new Error(`"${meta.name}" is not cached locally and no vehicle is connected to fetch it.`)
-      }
-      const fileName = tileArchiveFileName(meta)
-      archive = await downloadFileFromVehicle(vehicleAddress, tileProviderSubfolder, fileName, archiveTransferTimeout)
-      // The vehicle holds the master copy, so a cache write that does not land only costs a re-download.
-      await setCachedTileArchive(meta.id, archive).catch((error) =>
-        console.warn(`Could not cache tile archive ${meta.id} locally:`, error)
-      )
-    }
-    if (!meta.format) throw new Error(`"${meta.name}" has no archive format.`)
-    return openTileArchive(archive, meta.format)
-  }
-
-  const buildUrlLayer = (meta: CustomTileProviderMeta): ProviderEntry => ({
-    layer: L.tileLayer(meta.urlTemplate ?? '', {
-      attribution: meta.attribution,
-      tms: meta.tms ?? false,
-      minZoom: meta.minZoom ?? 0,
-      maxNativeZoom: meta.maxZoom,
-      maxZoom: CUSTOM_PROVIDER_MAX_ZOOM,
-    }),
-    signature: providerSignature(meta),
-  })
-
-  const buildFileLayer = (meta: CustomTileProviderMeta): ProviderEntry => {
-    // ponytail: each map showing this provider opens its own source, so a large archive is held once per map.
-    // Sharing one source across maps needs reference counting, whose failure mode (closing a source another map
-    // still draws from) is worse than the duplication.
-    let sourcePromise: Promise<TileArchiveSource> | undefined
-    let failureReported = false
-    const sourceProvider = (): Promise<TileArchiveSource> => {
-      sourcePromise =
-        sourcePromise ??
-        loadArchiveSource(meta).catch((error) => {
-          // Forget the failure so a later tile retries it, since the usual cause is a vehicle not connected yet.
-          sourcePromise = undefined
-          if (!failureReported) {
-            failureReported = true
-            const reason = messageFromError(error)
-            openSnackbar({ message: `Could not load the "${meta.name}" map: ${reason}`, variant: 'error' })
-          }
-          throw error
-        })
-      return sourcePromise
-    }
-    const layer = createCachedTileLayer({
-      sourceProvider,
-      bounds: meta.bounds ? L.latLngBounds(meta.bounds) : undefined,
-      attribution: meta.attribution,
-      minZoom: meta.minZoom ?? 0,
-      maxNativeZoom: meta.maxZoom,
-      maxZoom: CUSTOM_PROVIDER_MAX_ZOOM,
-    })
-    const close = (): void => void sourcePromise?.then((source) => source.close()).catch(() => undefined)
-    return { layer, signature: providerSignature(meta), close }
-  }
-
   const removeEntry = (id: string): boolean => {
     const entry = entries.get(id)
     if (!entry) return false
@@ -176,7 +85,7 @@ export const useCustomTileProviders = (): UseCustomTileProvidersReturn => {
   }
 
   const addEntry = (meta: CustomTileProviderMeta, selectOnMap: boolean): void => {
-    const entry = meta.type === 'url' ? buildUrlLayer(meta) : buildFileLayer(meta)
+    const entry = { ...createLayer(meta), signature: customTileProviderSignature(meta) }
     entries.set(meta.id, entry)
     controlRef?.addBaseLayer(entry.layer, meta.name)
     // Keep the provider active after a rebuild (e.g. a rename) if it was the map's base layer before.
@@ -204,7 +113,7 @@ export const useCustomTileProviders = (): UseCustomTileProvidersReturn => {
       const entry = entries.get(meta.id)
       if (!entry) {
         addEntry(meta, false)
-      } else if (entry.signature !== providerSignature(meta)) {
+      } else if (entry.signature !== customTileProviderSignature(meta)) {
         const wasActive = removeEntry(meta.id)
         addEntry(meta, wasActive)
       }
