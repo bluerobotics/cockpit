@@ -885,10 +885,12 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { provideMapContext } from '@/composables/map/useMapContext'
+import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
 import { useMissionInsertion } from '@/composables/map/useMissionInsertion'
 import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
@@ -1636,10 +1638,6 @@ const clearCurrentMission = (): void => {
     planningMap.value?.removeLayer(marker)
   })
   waypointMarkers.value = {}
-  if (missionWaypointsPolyline.value) {
-    planningMap.value?.removeLayer(missionWaypointsPolyline.value)
-    missionWaypointsPolyline.value = null
-  }
   removeMissionPathSignalLayer()
   clearSurveyPath()
   selectedSurveyId.value = ''
@@ -2046,7 +2044,7 @@ const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
 }
 
 const handleMapMouseMoveNearMissionPath = (event: L.LeafletMouseEvent): void => {
-  if (!planningMap.value || !missionWaypointsPolyline.value || missionStore.currentPlanningWaypoints.length < 2) {
+  if (!planningMap.value || missionStore.currentPlanningWaypoints.length < 2) {
     hideSegmentAddKnob()
     return
   }
@@ -3062,11 +3060,6 @@ const removeSelectedWaypoint = (): void => {
     delete waypointMarkers.value[waypoint.id]
   } else {
     console.warn(`No marker found for waypoint id: ${waypoint.id}`)
-  }
-
-  if (missionWaypointsPolyline.value) {
-    const newCoordinates = missionStore.currentPlanningWaypoints.map((w) => w.coordinates)
-    missionWaypointsPolyline.value.setLatLngs(newCoordinates)
   }
 
   updateWaypointMarkers()
@@ -4826,12 +4819,20 @@ watch(zoom, () => {
   }
 })
 
-const missionWaypointsPolyline = shallowRef<L.Polyline | null>(null)
-
 const surveyExtraPathLayers = computed(() => [
   ...(surveyCrosshatchPathLayer.value ? [surveyCrosshatchPathLayer.value] : []),
   ...surveyTurnaroundLayers.value,
 ])
+
+const { polyline: missionWaypointsPolyline } = useMapMissionLayer(planningMap, {
+  waypoints: () => missionStore.currentPlanningWaypoints,
+  show: () => missionStore.currentPlanningWaypoints.length > 0,
+  onDblClick: (event) => {
+    L.DomEvent.stopPropagation(event)
+    handleMissionPathDoubleClick(event)
+  },
+  onRedraw: () => renderMissionPathSignal(),
+})
 
 const { renderMissionPathSignal, removeMissionPathSignalLayer } = useMissionPathSignalOverlay(
   planningMap,
@@ -4840,69 +4841,11 @@ const { renderMissionPathSignal, removeMissionPathSignalLayer } = useMissionPath
   surveyExtraPathLayers
 )
 
-const getMissionPathLatLngs = (): L.LatLng[] =>
-  missionStore.currentPlanningWaypoints.map((waypoint) => L.latLng(waypoint.coordinates[0], waypoint.coordinates[1]))
-
-watch(
-  () => missionStore.currentPlanningWaypoints.map((waypoint) => waypoint.coordinates.slice()),
-  () => {
-    if (!planningMap.value) return
-
-    const missionPathLatLngs = getMissionPathLatLngs()
-
-    if (!missionWaypointsPolyline.value) {
-      missionWaypointsPolyline.value = L.polyline(missionPathLatLngs).addTo(planningMap.value)
-
-      missionWaypointsPolyline.value.on('dblclick', (event: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(event)
-        handleMissionPathDoubleClick(event)
-      })
-    } else {
-      missionWaypointsPolyline.value.setLatLngs(missionPathLatLngs)
-    }
-
-    renderMissionPathSignal()
-  },
-  { immediate: true, deep: true }
-)
-
-// Create polyline for the vehicle path using a dedicated Canvas renderer to prevent performance issues
-const vehicleHistoryRenderer = L.canvas()
-const vehicleHistoryPolyline = shallowRef<L.Polyline>()
-let lastDrawnHistoryLen = 0
-watch(
-  () => missionStore.vehiclePositionHistoryRevision,
-  () => {
-    const newPoints = missionStore.vehiclePositionHistory
-
-    if (!planningMap.value || !vehicleMarker.value || !newPoints || newPoints.length === 0) {
-      if (vehicleHistoryPolyline.value) {
-        planningMap.value?.removeLayer(vehicleHistoryPolyline.value)
-        vehicleHistoryPolyline.value = undefined
-      }
-      lastDrawnHistoryLen = 0
-      return
-    }
-
-    if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
-        planningMap.value
-      )
-      lastDrawnHistoryLen = 0
-    }
-
-    if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
-      // Append only the new points — O(1) per fire instead of O(N) full rebuild.
-      for (let i = lastDrawnHistoryLen; i < newPoints.length; i++) {
-        vehicleHistoryPolyline.value.addLatLng(newPoints[i] as L.LatLngExpression)
-      }
-    } else {
-      // First draw, shrink, or unchanged length — fall back to a full rebuild to stay correct.
-      vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
-    }
-    lastDrawnHistoryLen = newPoints.length
-  }
-)
+useMapVehiclePathLayer(planningMap, {
+  path: () => missionStore.vehiclePositionHistory,
+  revision: () => missionStore.vehiclePositionHistoryRevision,
+  show: () => vehicleMarker.value !== undefined,
+})
 
 watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())
 watch(planningMap, () => setMapCursor())

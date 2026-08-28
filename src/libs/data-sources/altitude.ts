@@ -1,3 +1,5 @@
+import { findSourceOptionForVariableId } from '@/libs/data-sources/source-options'
+
 /** Altitude source entry for widgets that read MAVLink altitude fields. */
 export type AltitudeSourceOption = {
   /** User-facing source label shown in widget config menus. */
@@ -38,17 +40,6 @@ export const defaultDepthAltitudeVariableId = altitudeSourceOptions[0].value
 /** Default altitude source for altitude indicators (global_position_int.relative_alt). */
 export const defaultAltitudeIndicatorVariableId = altitudeSourceOptions[3].value
 
-// Captures the suffix from both templated and concrete preset paths.
-const ALTITUDE_PATH_PATTERN = /^\/mavlink\/(?:\d+|\{\{autopilotSystemId\}\})\/\d+\/(.+)$/
-
-const extractAltitudeSuffix = (variableId: string): string | undefined => variableId.match(ALTITUDE_PATH_PATTERN)?.[1]
-
-const findOptionForVariableId = (variableId: string): AltitudeSourceOption | undefined => {
-  const suffix = extractAltitudeSuffix(variableId)
-  if (!suffix) return undefined
-  return altitudeSourceOptions.find((option) => extractAltitudeSuffix(option.value) === suffix)
-}
-
 /**
  * Whether the given variable ID matches a known altitude source preset
  * (templated form or a concrete /mavlink/N/N/SUFFIX path).
@@ -56,7 +47,7 @@ const findOptionForVariableId = (variableId: string): AltitudeSourceOption | und
  * @returns {boolean} True if it matches a preset
  */
 export const isPresetAltitudeVariableId = (altitudeVariableId: string): boolean =>
-  findOptionForVariableId(altitudeVariableId) !== undefined
+  findSourceOptionForVariableId(altitudeSourceOptions, altitudeVariableId) !== undefined
 
 /**
  * Convert a raw altitude value from the selected altitude source to meters.
@@ -67,6 +58,6 @@ export const isPresetAltitudeVariableId = (altitudeVariableId: string): boolean 
  * @returns {number} Altitude in meters
  */
 export const rawAltitudeToMeters = (altitudeVariableId: string, rawAltitude: number): number => {
-  const option = findOptionForVariableId(altitudeVariableId)
+  const option = findSourceOptionForVariableId(altitudeSourceOptions, altitudeVariableId)
   return option ? option.toMeters(rawAltitude) : rawAltitude
 }

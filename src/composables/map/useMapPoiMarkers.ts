@@ -2,6 +2,7 @@ import L, { type LatLngTuple, type LeafletEvent, type LeafletMouseEvent, type Ma
 import { type Ref, type ShallowRef, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { isLeafletMapReady } from '@/libs/map/utils-map'
 import {
   getPoiIconSignature,
   getPoiMarkerColor,
@@ -20,14 +21,19 @@ export interface UseMapPoiMarkersOptions {
    */
   iconClassName: string
   /**
-   * CSS class applied to each marker's tooltip.
+   * CSS class applied to each marker's tooltip. Not needed by surfaces that opt out of tooltips.
    */
-  tooltipClassName: string
+  tooltipClassName?: string
   /**
    * Whether markers can be dragged to move the underlying PoI. Defaults to true. Live-tracked PoIs are
    * never draggable regardless of this flag, since their position is owned by the data lake.
    */
   draggable?: boolean
+  /**
+   * Whether hovering a marker opens its details tooltip. Defaults to true. A rotating map has to turn it
+   * along with the map, which leaves the text unreadable, so those surfaces opt out.
+   */
+  tooltip?: boolean
   /**
    * Called when a marker is left-clicked, with the up-to-date PoI and the originating event.
    */
@@ -36,6 +42,11 @@ export interface UseMapPoiMarkersOptions {
    * Called when a marker is right-clicked, with the up-to-date PoI and the originating event.
    */
   onContextMenu?: (poi: ResolvedPointOfInterest, event: MouseEvent) => void
+  /**
+   * Whether the markers are currently drawn. Defaults to always shown. While false the markers are removed
+   * instead of hidden, so a surface that toggles PoIs off stops paying for their syncing.
+   */
+  show?: () => boolean
 }
 
 /**
@@ -75,6 +86,7 @@ export const useMapPoiMarkers = (
   const markers = shallowRef<Record<string, Marker>>({})
   const gotoTargetId = ref<string | null>(null)
   const draggable = options.draggable ?? true
+  const tooltip = options.tooltip ?? true
 
   // Snapshot of the rendering inputs each marker was last drawn with, keyed by PoI id. Lets syncMarkers skip
   // markers whose data hasn't changed, instead of rebuilding every marker's icon (and Leaflet Draggable
@@ -98,11 +110,6 @@ export const useMapPoiMarkers = (
       poi.isLiveTracked,
       poi.resolvedHeading,
     ])
-
-  // The map ref can momentarily hold a template-ref DOM element before the Leaflet instance is
-  // assigned (consumers reuse the same ref name for the container and the map), so guard on the API.
-  const isMapReady = (instance: Map | undefined): instance is Map =>
-    !!instance && typeof instance.getContainer === 'function' && !!instance.getContainer()
 
   // A POI with a heading grows a white tip, the corner of the same teardrop pin the off-screen edge
   // arrows use, turned to point where the POI faces. The pin sits behind the marker and has the
@@ -166,7 +173,7 @@ export const useMapPoiMarkers = (
   })
 
   const addMarker = (poi: ResolvedPointOfInterest): void => {
-    if (!isMapReady(map.value)) return
+    if (!isLeafletMapReady(map.value)) return
 
     const marker = L.marker(poi.coordinates as LatLngTuple, {
       icon: L.divIcon(poiIconConfig(poi)),
@@ -174,12 +181,14 @@ export const useMapPoiMarkers = (
       opacity: getPoiMarkerOpacity(poi),
     }).addTo(map.value)
 
-    marker.bindTooltip(getPoiTooltipHtml(poi, poi.coordinates), {
-      permanent: false,
-      direction: 'top',
-      offset: [0, -20],
-      className: options.tooltipClassName,
-    })
+    if (tooltip) {
+      marker.bindTooltip(getPoiTooltipHtml(poi, poi.coordinates), {
+        permanent: false,
+        direction: 'top',
+        offset: [0, -20],
+        className: options.tooltipClassName,
+      })
+    }
 
     marker.on('drag', (event: LeafletEvent) => {
       const coords = event.target.getLatLng()
@@ -223,7 +232,7 @@ export const useMapPoiMarkers = (
 
   const updateMarker = (poi: ResolvedPointOfInterest): void => {
     const marker = markers.value[poi.id]
-    if (!isMapReady(map.value) || !marker) return
+    if (!isLeafletMapReady(map.value) || !marker) return
 
     // Skip markers whose data hasn't changed since last render, so editing or moving one PoI doesn't
     // rebuild every other marker's icon and tear down its Leaflet Draggable instance mid-interaction.
@@ -271,7 +280,19 @@ export const useMapPoiMarkers = (
     if (gotoTargetId.value === poiId) gotoTargetId.value = null
   }
 
+  const removeAllMarkers = (): void => {
+    Object.values(markers.value).forEach((marker) => marker.remove())
+    markers.value = {}
+    Object.keys(lastRenderedSignatures).forEach((id) => delete lastRenderedSignatures[id])
+    Object.keys(iconSignatures).forEach((id) => delete iconSignatures[id])
+    Object.keys(lastAppliedHeadings).forEach((id) => delete lastAppliedHeadings[id])
+  }
+
   const syncMarkers = (pois: ResolvedPointOfInterest[]): void => {
+    if (options.show?.() === false) {
+      removeAllMarkers()
+      return
+    }
     const liveIds = new Set(pois.map((p) => p.id))
     Object.keys(markers.value).forEach((id) => {
       if (!liveIds.has(id)) removeMarker(id)
@@ -282,9 +303,9 @@ export const useMapPoiMarkers = (
   watch(
     resolvedPointsOfInterest,
     async (pois) => {
-      if (!isMapReady(map.value)) {
+      if (!isLeafletMapReady(map.value)) {
         await nextTick()
-        if (!isMapReady(map.value)) return
+        if (!isLeafletMapReady(map.value)) return
       }
       syncMarkers(pois)
     },
@@ -295,18 +316,19 @@ export const useMapPoiMarkers = (
   watch(
     map,
     (instance) => {
-      if (isMapReady(instance)) syncMarkers(resolvedPointsOfInterest.value)
+      if (isLeafletMapReady(instance)) syncMarkers(resolvedPointsOfInterest.value)
     },
     { immediate: true }
   )
 
-  onBeforeUnmount(() => {
-    Object.values(markers.value).forEach((marker) => marker.remove())
-    markers.value = {}
-    Object.keys(lastRenderedSignatures).forEach((id) => delete lastRenderedSignatures[id])
-    Object.keys(iconSignatures).forEach((id) => delete iconSignatures[id])
-    Object.keys(lastAppliedHeadings).forEach((id) => delete lastAppliedHeadings[id])
-  })
+  watch(
+    () => options.show?.() ?? true,
+    () => {
+      if (isLeafletMapReady(map.value)) syncMarkers(resolvedPointsOfInterest.value)
+    }
+  )
+
+  onBeforeUnmount(removeAllMarkers)
 
   return { markers, gotoTargetId, setGotoTarget }
 }

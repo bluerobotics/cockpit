@@ -107,7 +107,7 @@
     ref="contextMenuRef"
     :key="contextMenuVersion"
     :visible="contextMenuVisible"
-    :width="'260px'"
+    :min-width="'260px'"
     :menu-items="menuItems"
     @close="hideContextMenuAndMarker"
   >
@@ -255,10 +255,6 @@ import {
 } from 'vue'
 import { useRouter } from 'vue-router'
 
-import copterMarkerImage from '@/assets/arducopter-top-view.avif'
-import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
-import brov2MarkerImage from '@/assets/brov2-marker.avif'
-import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
@@ -273,11 +269,13 @@ import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationO
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { provideMapContext } from '@/composables/map/useMapContext'
+import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
@@ -292,7 +290,7 @@ import {
   removeBaseStationMenuIcon,
   removeBaseStationMenuLabel,
 } from '@/libs/baseStation/menu'
-import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
@@ -306,6 +304,7 @@ import {
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { copyToClipboard, degrees, messageFromError } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
+import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -915,17 +914,6 @@ onMounted(async () => {
     targetFollower.unFollow()
   }
   await refreshMission()
-
-  // Initialize vehicle history polyline if vehicle marker is on screen
-  if (map.value && vehicleMarker.value && missionStore.vehiclePositionHistory.length > 0) {
-    if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
-        map.value
-      )
-    }
-    vehicleHistoryPolyline.value.setLatLngs(missionStore.vehiclePositionHistory as L.LatLngExpression[])
-    lastDrawnHistoryLen = missionStore.vehiclePositionHistory.length
-  }
 })
 
 // React to clear/download requests from any mission-control widget.
@@ -976,7 +964,7 @@ const clearMapDrawing = (): void => {
   const poiMarkerSet = new Set(Object.values(poiMarkers.markers.value))
 
   map.value?.eachLayer((l) => {
-    if (l instanceof L.Marker || (l instanceof L.Polyline && l.options.color === '#358AC3')) {
+    if (l instanceof L.Marker) {
       if (poiMarkerSet.has(l as L.Marker)) return
       map.value!.removeLayer(l)
     }
@@ -985,7 +973,6 @@ const clearMapDrawing = (): void => {
   mapWaypointMarkers.value = []
   mapWaypoints.value = []
 
-  missionWaypointsPolyline.value = undefined
   homeMarker.value = undefined
   gotoMarker.value = undefined
   vehicleMarker.value = undefined
@@ -1232,23 +1219,7 @@ watch(vehicleStore.coordinates, () => {
   if (!map.value || !vehiclePosition.value) return
 
   if (vehicleMarker.value === undefined) {
-    let vehicleIconUrl = genericVehicleMarkerImage
-
-    if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
-      vehicleIconUrl = blueboatMarkerImage
-    } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
-      vehicleIconUrl = brov2MarkerImage
-    } else if (
-      [
-        MavType.MAV_TYPE_QUADROTOR,
-        MavType.MAV_TYPE_HEXAROTOR,
-        MavType.MAV_TYPE_OCTOROTOR,
-        MavType.MAV_TYPE_TRICOPTER,
-        MavType.MAV_TYPE_DODECAROTOR,
-      ].includes(vehicleStore.vehicleType)
-    ) {
-      vehicleIconUrl = copterMarkerImage
-    }
+    const vehicleIconUrl = vehicleMarkerImageUrl(vehicleStore.vehicleType)
 
     const vehicleMarkerIcon = L.divIcon({
       className: 'vehicle-marker',
@@ -1350,15 +1321,9 @@ watch(home, () => {
   }
 })
 
-// Create polyline for the vehicle path
-const missionWaypointsPolyline = shallowRef<L.Polyline>()
+// Draw a marker for each mission waypoint
 watch(mapWaypoints, (newWaypoints) => {
   if (!map.value) return
-
-  if (!missionWaypointsPolyline.value) {
-    missionWaypointsPolyline.value = L.polyline([], { color: '#358AC3', className: 'mission-path' }).addTo(map.value)
-  }
-  missionWaypointsPolyline.value.setLatLngs(newWaypoints.map((w) => w.coordinates))
 
   mapWaypointMarkers.value.forEach((m) => m.remove())
   mapWaypointMarkers.value = []
@@ -1435,43 +1400,18 @@ watch([getReachedWaypointIndices, currentMapWpIndex], () => {
   })
 })
 
-// Create polyline for the vehicle path using a dedicated Canvas renderer to prevent performance issues
-const vehicleHistoryRenderer = L.canvas()
-const vehicleHistoryPolyline = shallowRef<L.Polyline>()
-let lastDrawnHistoryLen = 0
-watch(
-  () => missionStore.vehiclePositionHistoryRevision,
-  () => {
-    const newPoints = missionStore.vehiclePositionHistory
-    if (map.value === undefined || !vehicleMarker.value || !newPoints || newPoints.length === 0) {
-      if (vehicleHistoryPolyline.value && map.value) {
-        map.value.removeLayer(vehicleHistoryPolyline.value)
-        vehicleHistoryPolyline.value = undefined
-      }
-      lastDrawnHistoryLen = 0
-      return
-    }
+useMapMissionLayer(map, {
+  waypoints: () => mapWaypoints.value,
+  show: () => mapWaypoints.value.length > 0,
+  color: '#358AC3',
+  className: 'mission-path',
+})
 
-    if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
-        map.value
-      )
-      lastDrawnHistoryLen = 0
-    }
-
-    if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
-      // Append only the new points — O(1) per fire instead of O(N) full rebuild.
-      for (let i = lastDrawnHistoryLen; i < newPoints.length; i++) {
-        vehicleHistoryPolyline.value.addLatLng(newPoints[i] as L.LatLngExpression)
-      }
-    } else {
-      // First draw, or the history shrank (clear/simplify) / stayed same length (push+shift):
-      // fall back to a full rebuild to stay correct.
-      vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
-    }
-    lastDrawnHistoryLen = newPoints.length
-  }
-)
+useMapVehiclePathLayer(map, {
+  path: () => missionStore.vehiclePositionHistory,
+  revision: () => missionStore.vehiclePositionHistoryRevision,
+  show: () => widget.value.options.showVehiclePath && vehicleMarker.value !== undefined,
+})
 
 // Handle context menu toggling and selection
 const contextMenuVisible = ref(false)
