@@ -894,6 +894,7 @@ import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
+import { goToMenuPage } from '@/composables/menuRouting'
 import { useSnackbar } from '@/composables/snackbar'
 import {
   clearAllSurveyAreas,
@@ -934,7 +935,7 @@ import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { SubMenuComponentName, SubMenuName } from '@/types/general'
+import { SubMenuComponentName } from '@/types/general'
 import {
   type CockpitMission,
   type MissionEstimatesSnapshot,
@@ -1617,10 +1618,7 @@ const goToFlightView = (): void => {
 
 const handleOpenMissionSettings = (): void => {
   logUserAction('Opened mission settings')
-  interfaceStore.isMainMenuVisible = true
-  interfaceStore.mainMenuCurrentStep = 2
-  interfaceStore.currentSubMenuName = SubMenuName.settings
-  interfaceStore.currentSubMenuComponentName = SubMenuComponentName.SettingsMission
+  goToMenuPage(SubMenuComponentName.SettingsMission)
 }
 
 const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)

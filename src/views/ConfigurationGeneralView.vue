@@ -952,9 +952,6 @@ const togglePirateMode = (): void => {
 const openExternalFeaturesModal = (): void => {
   logUserAction('Opened External Features dialog')
   interfaceStore.isMainMenuVisible = false
-  interfaceStore.mainMenuCurrentStep = 1
-  interfaceStore.currentSubMenuName = null
-  interfaceStore.currentSubMenuComponentName = null
   interfaceStore.isExternalFeaturesModalVisible = true
 }
 
