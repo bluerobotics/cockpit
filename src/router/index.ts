@@ -1,7 +1,7 @@
 import { defineComponent } from 'vue'
 import { type RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-router'
 
-import { aboutSlug, menuPages } from '@/libs/menu-pages'
+import { aboutSlug, editModeSlug, menuPages } from '@/libs/menu-pages'
 import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
 import MissionPlanningView from '../views/MissionPlanningView.vue'
@@ -24,6 +24,10 @@ declare module 'vue-router' {
      * Whether the route opens the About dialog.
      */
     about?: true
+    /**
+     * Whether the route puts the interface in edit mode.
+     */
+    editMode?: true
   }
 }
 
@@ -37,7 +41,7 @@ const rendersNothing = defineComponent({ render: () => null })
  * over. The views render no `<router-view>` of their own, so these only deepen the address: matching them leaves the
  * view underneath mounted, and the menu opens the destination they name.
  * @param {string} basePath - Path of the view the routes are nested under, used to name them uniquely.
- * @returns {RouteRecordRaw[]} One route per sub-menu, holding one route per page, plus the About route.
+ * @returns {RouteRecordRaw[]} One route per sub-menu, holding one route per page, plus the About and edit routes.
  */
 const menuRoutes = (basePath: string): RouteRecordRaw[] => {
   const prefix = basePath === '/' ? '' : basePath
@@ -56,7 +60,11 @@ const menuRoutes = (basePath: string): RouteRecordRaw[] => {
       })),
   }))
 
-  return [...subMenuRoutes, { path: aboutSlug, component: rendersNothing, meta: { about: true } }]
+  return [
+    ...subMenuRoutes,
+    { path: aboutSlug, component: rendersNothing, meta: { about: true } },
+    { path: editModeSlug, component: rendersNothing, meta: { editMode: true } },
+  ]
 }
 
 const router = createRouter({

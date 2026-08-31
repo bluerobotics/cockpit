@@ -16,12 +16,17 @@
 </template>
 
 <script setup lang="ts">
+import { goToBaseView, goToEditMode } from '@/composables/menuRouting'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 
 const widgetStore = useWidgetManagerStore()
 
 const toggleEditMode = (): void => {
   logUserAction(`${!widgetStore.editingMode ? 'Entered' : 'Exited'} interface edit mode`)
-  widgetStore.editingMode = !widgetStore.editingMode
+  if (widgetStore.editingMode) {
+    goToBaseView()
+  } else {
+    goToEditMode()
+  }
 }
 </script>

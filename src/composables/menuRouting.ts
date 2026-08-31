@@ -3,9 +3,10 @@ import { type RouteRecordName, useRoute } from 'vue-router'
 
 import { openMainMenuIfSafeOrDesired } from '@/composables/armSafetyDialog'
 import { openSnackbar } from '@/composables/snackbar'
-import { aboutSlug, menuPages } from '@/libs/menu-pages'
+import { aboutSlug, editModeSlug, menuPages } from '@/libs/menu-pages'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
 // The menu follows the address, rather than the other way around: every entry point below pushes a route, and
@@ -60,6 +61,13 @@ export const goToSubMenu = (subMenu: SubMenuName, replace = false): void => {
  */
 export const goToAbout = (): void => {
   navigate(menuPath(aboutSlug), false)
+}
+
+/**
+ * Puts the interface in edit mode, over the view currently being shown.
+ */
+export const goToEditMode = (): void => {
+  navigate(menuPath(editModeSlug), false)
 }
 
 /**
@@ -134,6 +142,7 @@ export const useActiveMenuRoute = (): {
 export const useMenuRouteSync = (): void => {
   const route = useRoute()
   const interfaceStore = useAppInterfaceStore()
+  const widgetStore = useWidgetManagerStore()
 
   // Back and forward reach every destination the helpers do, and are the one way in with no caller to log it. The
   // history's own listener tells them apart, since it is notified on a popped state and on nothing else.
@@ -155,6 +164,8 @@ export const useMenuRouteSync = (): void => {
         })
         return
       }
+
+      widgetStore.editingMode = route.meta.editMode === true
 
       if (route.meta.subMenu === undefined) {
         interfaceStore.mainMenuCurrentStep = 1

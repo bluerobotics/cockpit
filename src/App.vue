@@ -45,7 +45,7 @@
           >
             <template #prepend>
               <button
-                v-if="interfaceStore.mainMenuStyleTrigger === 'burger'"
+                v-if="interfaceStore.mainMenuStyleTrigger === 'burger' && !widgetStore.editingMode"
                 class="flex items-center justify-center h-full mr-2 aspect-square top-bar-hamburger"
                 @click="toggleMainMenu"
               >
@@ -68,7 +68,7 @@
           </div>
           <router-view />
         </div>
-        <EditMenu v-model:edit-mode="widgetStore.editingMode" />
+        <EditMenu :edit-mode="widgetStore.editingMode" @update:edit-mode="setEditMode" />
       </div>
     </v-main>
   </v-app>
@@ -170,7 +170,13 @@ import SplashScreen from './components/SplashScreen.vue'
 import WidgetBar from './components/WidgetBar.vue'
 import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
 import { useCustomTileProviderVehicleSync } from './composables/map/useCustomTileProviderVehicleSync'
-import { closeMenuPage, goToBaseView, useActiveMenuRoute, useMenuRouteSync } from './composables/menuRouting'
+import {
+  closeMenuPage,
+  goToBaseView,
+  goToEditMode,
+  useActiveMenuRoute,
+  useMenuRouteSync,
+} from './composables/menuRouting'
 import { useSnackbar } from './composables/snackbar'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
@@ -205,6 +211,14 @@ const menuPageComponents: Record<SubMenuComponentName, Component> = {
 const activeMenuPagePanel = computed(() =>
   activeMenuPage.value === undefined ? undefined : menuPageComponents[activeMenuPage.value]
 )
+
+const setEditMode = (editMode: boolean): void => {
+  if (editMode) {
+    goToEditMode()
+    return
+  }
+  goToBaseView()
+}
 
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
