@@ -32,6 +32,36 @@ export interface DialogActions {
   disabled?: boolean
 }
 
+/**
+ * Available sub menus names
+ */
+export enum SubMenuName {
+  settings = 'settings',
+  tools = 'tools',
+}
+
+/**
+ * Available sub menus names
+ */
+export enum SubMenuComponentName {
+  SettingsGeneral = 'settings-general',
+  SettingsInterface = 'settings-interface',
+  SettingsJoystick = 'settings-joystick',
+  SettingsVideo = 'settings-video',
+  SettingsTelemetry = 'settings-telemetry',
+  SettingsAlerts = 'settings-alerts',
+  SettingsDev = 'settings-dev',
+  SettingsCloud = 'settings-cloud',
+  SettingsMission = 'settings-mission',
+  SettingsActions = 'settings-actions',
+  SettingsSources = 'settings-sources',
+  SettingsMAVLink = 'settings-mavlink',
+  ToolsMAVLink = 'tools-mavlink',
+  ToolsDataLake = 'tools-datalake',
+  ToolsLogs = 'tools-logs',
+  ToolsMap = 'tools-map',
+}
+
 export type SubMenuComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
 
 export interface StorageDB {

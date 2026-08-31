@@ -930,10 +930,11 @@ import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/librar
 import { endpointSplicePosition } from '@/libs/mission/planning-endpoints'
 import { degrees, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
-import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import { SubMenuComponentName, SubMenuName } from '@/types/general'
 import {
   type CockpitMission,
   type MissionEstimatesSnapshot,

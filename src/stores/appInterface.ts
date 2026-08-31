@@ -5,39 +5,9 @@ import { ref, watch } from 'vue'
 import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
+import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
-
-/**
- * Available sub menus names
- */
-export enum SubMenuName {
-  settings = 'settings',
-  tools = 'tools',
-}
-
-/**
- * Available sub menus names
- */
-export enum SubMenuComponentName {
-  SettingsGeneral = 'settings-general',
-  SettingsInterface = 'settings-interface',
-  SettingsJoystick = 'settings-joystick',
-  SettingsVideo = 'settings-video',
-  SettingsTelemetry = 'settings-telemetry',
-  SettingsAlerts = 'settings-alerts',
-  SettingsDev = 'settings-dev',
-  SettingsCloud = 'settings-cloud',
-  SettingsMission = 'settings-mission',
-  SettingsActions = 'settings-actions',
-  SettingsSources = 'settings-sources',
-  SettingsDataLake = 'settings-datalake',
-  SettingsMAVLink = 'settings-mavlink',
-  ToolsMAVLink = 'tools-mavlink',
-  ToolsDataLake = 'tools-datalake',
-  ToolsLogs = 'tools-logs',
-  ToolsMap = 'tools-map',
-}
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({

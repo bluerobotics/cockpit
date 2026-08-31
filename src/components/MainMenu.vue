@@ -199,9 +199,9 @@ import {
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
-import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { SubMenuComponent } from '@/types/general'
+import { SubMenuComponent, SubMenuComponentName, SubMenuName } from '@/types/general'
 import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
 import ConfigurationCloudView from '@/views/ConfigurationCloudView.vue'
