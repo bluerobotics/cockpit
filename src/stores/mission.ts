@@ -125,7 +125,7 @@ export const useMissionStore = defineStore('mission', () => {
   } | null>(null)
 
   // Fallback vehicle type used by vehicle-specific planning features when no vehicle is connected.
-  const plannedVehicleType = useBlueOsStorage<MavType | undefined>('cockpit-planned-vehicle-type', undefined)
+  const plannedVehicleType = useBlueOsStorage<MavType | null>('cockpit-planned-vehicle-type', null)
   const savedMissions = useBlueOsStorage<SavedMission[]>('cockpit-mission-library', [])
   // Thumbnail bytes live local-first in IndexedDB and sync to the vehicle as real files, so adding many
   // entries never bloats the settings payload the way inlined base64 SVGs would.
@@ -789,7 +789,7 @@ export const useMissionStore = defineStore('mission', () => {
   const effectiveVehicleType = computed<MavType | undefined>(() => {
     return mainVehicleStore.isVehicleOnline
       ? (mainVehicleStore.vehicleType as MavType | undefined)
-      : plannedVehicleType.value
+      : plannedVehicleType.value ?? undefined
   })
 
   // When `payload.id` matches an existing entry that entry is updated in-place; otherwise a new
