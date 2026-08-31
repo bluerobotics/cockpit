@@ -724,7 +724,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBarsAwarePanelStyle } from '@/composables/useBarsAwarePanelStyle'
 import { bearingBetween, centroidOf, rangeAfterGainChange, rangeAfterTxPowerChange } from '@/libs/baseStation/coverage'
 import { isElectron } from '@/libs/utils'
-import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import {
@@ -739,6 +739,7 @@ import {
   MobileCoverageProvider,
   RadioBaseStationKind,
 } from '@/types/baseStation'
+import { SubMenuComponentName, SubMenuName } from '@/types/general'
 import type { WaypointCoordinates } from '@/types/mission'
 
 withDefaults(

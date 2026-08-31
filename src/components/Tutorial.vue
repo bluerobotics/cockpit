@@ -85,8 +85,9 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import CockpitLogo from '@/assets/cockpit-logo-minimal.avif'
 import { useSnackbar } from '@/composables/snackbar'
-import { SubMenuComponentName, SubMenuName, useAppInterfaceStore } from '@/stores/appInterface'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
 import GlassModal from './GlassModal.vue'
 
