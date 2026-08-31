@@ -67,6 +67,7 @@ import {
   setDataLakeVariableData,
   unlistenDataLakeVariable,
 } from '@/libs/actions/data-lake'
+import { isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
 
@@ -118,7 +119,9 @@ const isConnected = computed(() => {
 })
 
 const isInput = computed(() => {
-  return miniWidget.value.options.dataLakeVariable?.allowUserToChangeValue === true
+  const variable = miniWidget.value.options.dataLakeVariable
+  if (variable === undefined) return false
+  return variable.allowUserToChangeValue === true && !isCompoundDataLakeVariable(variable.id)
 })
 
 const isInteractive = computed(() => {

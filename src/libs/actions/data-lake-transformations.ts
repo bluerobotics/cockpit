@@ -293,6 +293,17 @@ export const getAllTransformingFunctions = (): TransformingFunction[] => {
 }
 
 /**
+ * Whether a data lake variable is backed by a transforming function, which computes its value from an expression.
+ * Nobody writes such a variable, so a control that does — a joystick mapping or a widget element — has its write
+ * undone at the next evaluation, and should offer to read it rather than to set it.
+ * @param {string} id - ID of the variable
+ * @returns {boolean} True when a transforming function backs the variable
+ */
+export const isCompoundDataLakeVariable = (id: string): boolean => {
+  return globalTransformingFunctions.some((func) => func.id === id)
+}
+
+/**
  * Updates a transforming function
  * @param {TransformingFunction} func - The function to update
  * @throws {Error} If the id is empty, the expression is not a string, or no stored function has that id
