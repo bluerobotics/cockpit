@@ -11,23 +11,53 @@
     <slot name="prepend" />
     <template v-if="position === 'top'">
       <div class="flex-1">
-        <MiniWidgetContainer :container="containers[0]" :allow-editing="widgetStore.editingMode" align="start" />
+        <MiniWidgetContainer
+          v-if="containers[0]"
+          :container="containers[0]"
+          :allow-editing="widgetStore.editingMode"
+          align="start"
+        />
       </div>
       <div class="grow" />
       <div class="flex-1">
-        <MiniWidgetContainer :container="containers[1]" :allow-editing="widgetStore.editingMode" align="center" />
+        <MiniWidgetContainer
+          v-if="containers[1]"
+          :container="containers[1]"
+          :allow-editing="widgetStore.editingMode"
+          align="center"
+        />
       </div>
       <div class="grow" />
       <div class="flex-1">
-        <MiniWidgetContainer :container="containers[2]" :allow-editing="widgetStore.editingMode" align="end" />
+        <MiniWidgetContainer
+          v-if="containers[2]"
+          :container="containers[2]"
+          :allow-editing="widgetStore.editingMode"
+          align="end"
+        />
       </div>
     </template>
     <template v-else>
-      <MiniWidgetContainer :container="containers[0]" :allow-editing="widgetStore.editingMode" align="start" />
+      <MiniWidgetContainer
+        v-if="containers[0]"
+        :container="containers[0]"
+        :allow-editing="widgetStore.editingMode"
+        align="start"
+      />
       <div />
-      <MiniWidgetContainer :container="containers[1]" :allow-editing="widgetStore.editingMode" align="center" />
+      <MiniWidgetContainer
+        v-if="containers[1]"
+        :container="containers[1]"
+        :allow-editing="widgetStore.editingMode"
+        align="center"
+      />
       <div />
-      <MiniWidgetContainer :container="containers[2]" :allow-editing="widgetStore.editingMode" align="end" />
+      <MiniWidgetContainer
+        v-if="containers[2]"
+        :container="containers[2]"
+        :allow-editing="widgetStore.editingMode"
+        align="end"
+      />
     </template>
     <div
       v-if="isOverflowing && widgetStore.editingMode"
@@ -89,7 +119,7 @@ const { width: windowWidth } = useWindowSize()
 // eslint-disable-next-line jsdoc/require-jsdoc
 interface Props {
   /**
-   * The three mini-widget containers to render (left, center, right)
+   * The up-to-three mini-widget containers to render (left, center, right)
    */
   containers: MiniWidgetContainerType[]
   /**
