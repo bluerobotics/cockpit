@@ -41,11 +41,12 @@
 import { ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
-import { goToBaseView } from '@/composables/menuRouting'
+import { goToBaseView, goToMenuPage } from '@/composables/menuRouting'
 import { useSnackbar } from '@/composables/snackbar'
 import { useAlertStore } from '@/stores/alert'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { SubMenuComponentName } from '@/types/general'
 
 const vehicleStore = useMainVehicleStore()
 const alertStore = useAlertStore()
@@ -91,10 +92,11 @@ const neverAskAgain = (): void => {
   continueAnyway()
 
   openSnackbar({
-    message: 'Armed menu warning disabled. You can re-enable it in the Settings > Alerts menu.',
+    message: 'Armed menu warning disabled. You can re-enable it in the alerts settings.',
     variant: 'info',
     duration: 10000,
     closeButton: true,
+    action: { label: 'Alerts settings', handler: () => goToMenuPage(SubMenuComponentName.SettingsAlerts) },
   })
 }
 

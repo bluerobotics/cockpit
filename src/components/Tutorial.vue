@@ -295,10 +295,11 @@ const dontShowTutorialAgain = (): void => {
   showTutorial.value = false
   currentTutorialStep.value = 1
   openSnackbar({
-    message: 'This guide can be reopened via the Settings > General menu',
+    message: 'This guide can be reopened from the general settings.',
     variant: 'info',
     closeButton: true,
     duration: 5000,
+    action: { label: 'General settings', handler: () => goToMenuPage(SubMenuComponentName.SettingsGeneral) },
   })
 }
 

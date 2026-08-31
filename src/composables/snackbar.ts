@@ -1,6 +1,20 @@
 import { reactive } from 'vue'
 
 /**
+ * Action offered by a snackbar, next to its message.
+ */
+export interface SnackbarAction {
+  /**
+   * Label of the button that triggers the action.
+   */
+  label: string
+  /**
+   * Called when the button is pressed, after the snackbar is dismissed.
+   */
+  handler: () => void
+}
+
+/**
  * Options to configure the snackbar.
  */
 export interface SnackbarOptions {
@@ -26,6 +40,10 @@ export interface SnackbarOptions {
    * Overrides {@link SnackbarOptions.duration} when set.
    */
   persistent?: boolean
+  /**
+   * Action to offer alongside the message, so a warning can take the user where it can be dealt with.
+   */
+  action?: SnackbarAction
 }
 
 type SnackbarType = SnackbarOptions & {
