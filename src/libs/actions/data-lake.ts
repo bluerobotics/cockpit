@@ -49,9 +49,14 @@ const savePersistentVariables = (): void => {
   settingsManager.setKeyValue(persistentVariablesKey, persistentVariables)
 }
 
-// Save persistent values to localStorage
+const getPersistentValues = (): Record<string, string | number | boolean> => {
+  return settingsManager.getKeyValue<Record<string, string | number | boolean>>(persistentValuesKey) ?? {}
+}
+
+// Save persistent values to localStorage. Merges into the stored object instead of rebuilding it, as a call made
+// before every persistValue variable is registered would otherwise drop the values of the missing ones.
 const savePersistentValues = (): void => {
-  const persistentValuesObj: Record<string, string | number | boolean> = {}
+  const persistentValuesObj = getPersistentValues()
 
   Object.entries(dataLakeVariableInfo)
     .filter(([, variable]) => variable?.persistValue)
@@ -77,10 +82,18 @@ export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?
     console.warn(`Cockpit action variable with id '${variable.id}' already exists. Updating it.`)
   }
   dataLakeVariableInfo[variable.id] = variable
-  dataLakeVariableData[variable.id] = initialValue
 
-  // Initialize timestamp if initial value is provided
-  if (initialValue !== undefined) {
+  let valueToSet = initialValue
+  if (variable.persistValue) {
+    const savedValue = getPersistentValues()[variable.id]
+    if (savedValue !== undefined) {
+      valueToSet = savedValue
+    }
+  }
+  dataLakeVariableData[variable.id] = valueToSet
+
+  // Initialize timestamp if a value is being set
+  if (valueToSet !== undefined) {
     dataLakeVariableTimestamps[variable.id] = performance.now()
   }
 
@@ -88,7 +101,7 @@ export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?
     savePersistentVariables()
   }
 
-  if (variable.persistValue && initialValue !== undefined) {
+  if (variable.persistValue && valueToSet !== undefined) {
     savePersistentValues()
   }
 
@@ -151,7 +164,9 @@ export const deleteDataLakeVariable = (id: string): void => {
 
   // If variable had persistValue, update the persisted values
   if (variable && variable?.persistValue) {
-    savePersistentValues()
+    const persistentValues = getPersistentValues()
+    delete persistentValues[id]
+    settingsManager.setKeyValue(persistentValuesKey, persistentValues)
   }
 
   notifyDataLakeVariableInfoListeners()
