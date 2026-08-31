@@ -8,7 +8,7 @@ import {
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
-import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
+import { ensureCockpitTransformingFunction } from '@/libs/actions/data-lake-transformations'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
 import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
@@ -1565,16 +1565,14 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
 
     // read-only clone of autopilotSystemId using old name, for legacy support
     try {
-      const existsAlready = getAllTransformingFunctions().find((f) => f.id === 'ardupilotSystemId')
-      if (!existsAlready) {
-        createTransformingFunction(
-          'ardupilotSystemId',
-          '(Legacy) ArduPilot System ID',
-          'number',
-          '{{autopilotSystemId}}',
-          "A read-only clone of the autopilot's system ID, for legacy support of the old variable name. New applications should use autopilotSystemId instead."
-        )
-      }
+      ensureCockpitTransformingFunction({
+        id: 'ardupilotSystemId',
+        name: '(Legacy) ArduPilot System ID',
+        type: 'number',
+        expression: '{{autopilotSystemId}}',
+        description:
+          "A read-only clone of the autopilot's system ID, for legacy support of the old variable name. New applications should use autopilotSystemId instead.",
+      })
     } catch (error) {
       console.error('Error creating ArduPilot system ID fallback:', error)
     }

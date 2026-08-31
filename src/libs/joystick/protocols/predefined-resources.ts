@@ -1,6 +1,6 @@
 import { getAllActionLinks, saveActionLink } from '@/libs/actions/action-links'
 import { createDataLakeVariable, DataLakeVariableType } from '@/libs/actions/data-lake'
-import { createTransformingFunction, getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
+import { ensureCockpitTransformingFunction } from '@/libs/actions/data-lake-transformations'
 import {
   getAllMavlinkMessageActionConfigs,
   registerMavlinkMessageActionConfig,
@@ -55,38 +55,36 @@ const setupMavlinkCameraResources = (): void => {
 
   // Initialize camera zoom transforming function
   try {
-    const func = getAllTransformingFunctions().find((f) => f.id === 'camera-zoom')
-    if (!func) {
-      createTransformingFunction(
-        'camera-zoom',
-        'Camera Zoom',
-        'number',
-        getUnindentedString(`
-          const zoom = ({{camera-zoom-increase}} - {{camera-zoom-decrease}}) * {{camera-zoom-speed}}
-          return zoom < 0.05 && zoom > -0.05 ? 0 : Math.max(Math.min(1, zoom), -1)
-        `),
-        'Used to control the camera zoom. The value is the difference between {{camera-zoom-increase}} and {{camera-zoom-decrease}}, multiplied by {{camera-zoom-speed}}.'
-      )
-    }
+    ensureCockpitTransformingFunction({
+      id: 'camera-zoom',
+      name: 'Camera Zoom',
+      type: 'number',
+      expression: getUnindentedString(`
+        const zoom = ({{camera-zoom-increase}} - {{camera-zoom-decrease}}) * {{camera-zoom-speed}}
+        return zoom < 0.05 && zoom > -0.05 ? 0 : Math.max(Math.min(1, zoom), -1)
+      `),
+      description:
+        'Used to control the camera zoom. The value is the difference between {{camera-zoom-increase}} and {{camera-zoom-decrease}}, multiplied by {{camera-zoom-speed}}.',
+      allowUserToChangeValue: true,
+    })
   } catch (error) {
     console.error('Error creating camera zoom transforming function:', error)
   }
 
   // Initialize camera focus transforming function
   try {
-    const func = getAllTransformingFunctions().find((f) => f.id === 'camera-focus')
-    if (!func) {
-      createTransformingFunction(
-        'camera-focus',
-        'Camera Focus',
-        'number',
-        getUnindentedString(`
-          const focus = ({{camera-focus-increase}} - {{camera-focus-decrease}}) * {{camera-focus-speed}}
-          return focus < 0.05 && focus > -0.05 ? 0 : Math.max(Math.min(1, focus), -1)
-        `),
-        'Used to control the camera focus. The value is the difference between {{camera-focus-increase}} and {{camera-focus-decrease}}, multiplied by {{camera-focus-speed}}.'
-      )
-    }
+    ensureCockpitTransformingFunction({
+      id: 'camera-focus',
+      name: 'Camera Focus',
+      type: 'number',
+      expression: getUnindentedString(`
+        const focus = ({{camera-focus-increase}} - {{camera-focus-decrease}}) * {{camera-focus-speed}}
+        return focus < 0.05 && focus > -0.05 ? 0 : Math.max(Math.min(1, focus), -1)
+      `),
+      description:
+        'Used to control the camera focus. The value is the difference between {{camera-focus-increase}} and {{camera-focus-decrease}}, multiplied by {{camera-focus-speed}}.',
+      allowUserToChangeValue: true,
+    })
   } catch (error) {
     console.error('Error creating camera focus transforming function:', error)
   }
@@ -163,16 +161,14 @@ const setupJoystickAxesResources = (): void => {
     createDataLakeVariable({ id: axis.inputId, name: axis.name, ...commonVariableConfig }, 0)
 
     try {
-      const existing = getAllTransformingFunctions().find((f) => f.id === axis.outputId)
-      if (!existing) {
-        createTransformingFunction(
-          axis.outputId,
-          `${axis.name} Output`,
-          'number',
-          `{{${axis.inputId}}}`,
-          `Output value for MANUAL_CONTROL ${axis.name}.`
-        )
-      }
+      ensureCockpitTransformingFunction({
+        id: axis.outputId,
+        name: `${axis.name} Output`,
+        type: 'number',
+        expression: `{{${axis.inputId}}}`,
+        description: `Output value for MANUAL_CONTROL ${axis.name}.`,
+        allowUserToChangeValue: true,
+      })
     } catch (error) {
       console.error(`Error creating transforming function for ${axis.name}:`, error)
     }

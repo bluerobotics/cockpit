@@ -32,9 +32,15 @@ export interface DataLakeVariable {
    */
   persistValue?: boolean
   /**
-   * Whether the variable's value should be allowed to be changed by the user
+   * Whether the user may set the variable's value: by hand from the Data Lake page, and, when the variable is not a
+   * compound one, through a joystick mapping or a widget element
    */
   allowUserToChangeValue?: boolean
+  /**
+   * Whether Cockpit created the variable, rather than the user. Cockpit creates almost every variable there is, so
+   * this is assumed when absent, and the few places that create one on the user's behalf set it to false
+   */
+  systemOwned?: boolean
 }
 
 /**
