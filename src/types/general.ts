@@ -1,5 +1,3 @@
-import { DefineComponent } from 'vue'
-
 export type Point2D = {
   /**
    * Horizontal coordinate of the point
@@ -61,8 +59,6 @@ export enum SubMenuComponentName {
   ToolsLogs = 'tools-logs',
   ToolsMap = 'tools-map',
 }
-
-export type SubMenuComponent = DefineComponent<Record<string, never>, Record<string, never>, unknown> | null
 
 export interface StorageDB {
   getItem: (key: string) => Promise<Blob | null | undefined>
