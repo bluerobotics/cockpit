@@ -664,6 +664,12 @@ export class SettingsManager {
     await this.confirmVehicleIdOrThrow(vehicleAddress, vehicleId)
 
     while (Object.keys(this.keyValueVehicleUpdateQueue[vehicleId][userId]).length !== 0) {
+      // A failing key is kept in the queue and retried once per second, so if the vehicle goes away
+      // mid-drain we stop here and leave the rest to the next connection.
+      if (this.currentVehicleAddress !== vehicleAddress) {
+        return
+      }
+
       const updatesForUser = Object.entries(this.keyValueVehicleUpdateQueue[vehicleId][userId])
       for (const [key, update] of updatesForUser) {
         if (vehicleSettings[userId] && vehicleSettings[userId][key]) {
@@ -1115,6 +1121,15 @@ export class SettingsManager {
     }
   }
 
+  /**
+   * Handles a vehicle going offline, so nothing is synced to an address that stopped answering. Changes made
+   * while offline stay in the local settings and in the vehicle queue, and go up when the vehicle is back.
+   */
+  public handleVehicleGettingOffline = (): void => {
+    console.log('[SettingsManager]', 'Handling vehicle getting offline!')
+    this.currentVehicleAddress = nullValue
+  }
+
   private runVehicleGettingOnlinePipeline = async (vehicleAddress: string): Promise<void> => {
     // Before anything else, back up old-style vehicle settings in the vehicle, if needed
     await this.backupOldStyleVehicleSettingsIfNeeded(vehicleAddress)
@@ -1342,6 +1357,14 @@ export const settingsManager = new SettingsManager()
 window.addEventListener('vehicle-online', async (event: VehicleOnlineEvent) => {
   console.log('[SettingsManager]', `Vehicle online event received. Will handle vehicle getting online with address '${event.detail.vehicleAddress}'.`)
   await settingsManager.handleVehicleGettingOnline(event.detail.vehicleAddress)
+})
+
+/**
+ * Event handler for when a vehicle goes offline
+ */
+window.addEventListener('vehicle-offline', () => {
+  console.log('[SettingsManager]', 'Vehicle offline event received. Will stop syncing settings to it.')
+  settingsManager.handleVehicleGettingOffline()
 })
 
 /**

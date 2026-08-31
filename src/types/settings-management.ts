@@ -160,6 +160,11 @@ declare global {
     // eslint-disable-next-line jsdoc/require-jsdoc
     'vehicle-online': VehicleOnlineEvent
     /**
+     * Event triggered when a vehicle goes offline
+     */
+    // eslint-disable-next-line jsdoc/require-jsdoc
+    'vehicle-offline': Event
+    /**
      * Event triggered when vehicle sync completes
      */
     // eslint-disable-next-line jsdoc/require-jsdoc
