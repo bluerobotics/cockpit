@@ -10,6 +10,10 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 import { useSnackbar } from './snackbar'
 
+// The warning is asked for by the menu trigger and by every navigation that opens the menu, so without this a second
+// request while one is up would stack an identical dialog whose dismissal answers only for itself.
+let openDialogMountPoint: HTMLElement | undefined = undefined
+
 export const openMainMenuIfSafeOrDesired = (): void => {
   const vehicleStore = useMainVehicleStore()
   const alertStore = useAlertStore()
@@ -30,17 +34,17 @@ export const openMainMenuIfSafeOrDesired = (): void => {
     return
   }
 
+  if (openDialogMountPoint !== undefined) return
+
   const mountPoint = document.createElement('div')
   mountPoint.id = `arm-safety-dialog-${uuid()}`
   document.body.appendChild(mountPoint)
+  openDialogMountPoint = mountPoint
   const dialogApp = createApp(ArmSafetyDialog, {
-    onConfirmed: () => {
-      dialogApp.unmount()
-      mountPoint.remove()
-    },
     onDismissed: () => {
       dialogApp.unmount()
       mountPoint.remove()
+      openDialogMountPoint = undefined
     },
   })
   dialogApp.use(vuetify)

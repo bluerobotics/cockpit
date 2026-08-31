@@ -22,24 +22,16 @@
           <v-icon class="text-white text-[46px] opacity-80">mdi-menu-right</v-icon>
         </div>
       </div>
-      <MainMenu
-        v-model:currentSubMenuComponent="currentSubMenuComponent"
-        @close-main-menu="closeMainMenu"
-        @open-about-dialog="handleShowAboutDialog"
-      />
+      <MainMenu @close-main-menu="closeMainMenu" />
 
       <teleport to="body">
         <GlassModal
-          :is-visible="
-            currentSubMenuComponent !== null &&
-            interfaceStore.mainMenuCurrentStep === 2 &&
-            interfaceStore.isMainMenuVisible
-          "
+          :is-visible="activeMenuPage !== undefined && interfaceStore.isMainMenuVisible"
           position="menuitem"
           :class="interfaceStore.isVideoLibraryVisible ? 'opacity-0' : 'opacity-100'"
-          @close-modal="closeSubMenuModal"
+          @close-modal="closeMenuPage"
         >
-          <component :is="currentSubMenuComponent"></component>
+          <component :is="activeMenuPagePanel"></component>
         </GlassModal>
       </teleport>
 
@@ -88,7 +80,7 @@
     }"
     aria-hidden="true"
   />
-  <About v-if="showAboutDialog" @update:show-about-dialog="showAboutDialog = $event" />
+  <About v-if="isAboutOpen" @update:show-about-dialog="() => goToBaseView()" />
   <DataPrivacyModal />
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
@@ -100,7 +92,7 @@
   <VehicleDefaultsJoystickImportModal />
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
-  <BaseStationConfigPanel :is-mission-planning-context="route.name === 'Mission planning'" />
+  <BaseStationConfigPanel :is-mission-planning-context="baseRouteName === 'Mission planning'" />
   <BaseStationContextPopup />
   <SnackbarContainer />
   <FloatingWrapper v-model="devStore.showConsole" title="Console">
@@ -124,8 +116,7 @@
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { type Component, computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
 import BaseStationConfigPanel from '@/components/BaseStationConfigPanel.vue'
@@ -152,6 +143,23 @@ import {
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { isElectron, sleep } from '@/libs/utils'
 import { useMissionStore } from '@/stores/mission'
+import { SubMenuComponentName } from '@/types/general'
+import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
+import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
+import ConfigurationCloudView from '@/views/ConfigurationCloudView.vue'
+import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.vue'
+import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
+import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
+import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
+import ConfigurationMAVLinkView from '@/views/ConfigurationMAVLinkView.vue'
+import ConfigurationMissionView from '@/views/ConfigurationMissionView.vue'
+import ConfigurationSourcesView from '@/views/ConfigurationSourcesView.vue'
+import ConfigurationUIView from '@/views/ConfigurationUIView.vue'
+import ConfigurationVideoView from '@/views/ConfigurationVideoView.vue'
+import ToolsDataLakeView from '@/views/ToolsDataLakeView.vue'
+import ToolsLogsView from '@/views/ToolsLogsView.vue'
+import ToolsMapView from '@/views/ToolsMapView.vue'
+import ToolsMAVLinkView from '@/views/ToolsMAVLinkView.vue'
 
 import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
@@ -162,6 +170,7 @@ import SplashScreen from './components/SplashScreen.vue'
 import WidgetBar from './components/WidgetBar.vue'
 import { openMainMenuIfSafeOrDesired } from './composables/armSafetyDialog'
 import { useCustomTileProviderVehicleSync } from './composables/map/useCustomTileProviderVehicleSync'
+import { closeMenuPage, goToBaseView, useActiveMenuRoute, useMenuRouteSync } from './composables/menuRouting'
 import { useSnackbar } from './composables/snackbar'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
@@ -169,11 +178,34 @@ import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
-import { SubMenuComponent } from './types/general'
 const { openSnackbar } = useSnackbar()
 import { useSnapshotStore } from './stores/snapshot'
 
-const route = useRoute()
+const { baseRouteName, activeMenuPage, isAboutOpen } = useActiveMenuRoute()
+
+const menuPageComponents: Record<SubMenuComponentName, Component> = {
+  [SubMenuComponentName.SettingsGeneral]: ConfigurationGeneralView,
+  [SubMenuComponentName.SettingsInterface]: ConfigurationUIView,
+  [SubMenuComponentName.SettingsJoystick]: ConfigurationJoystickView,
+  [SubMenuComponentName.SettingsVideo]: ConfigurationVideoView,
+  [SubMenuComponentName.SettingsTelemetry]: ConfigurationTelemetryView,
+  [SubMenuComponentName.SettingsAlerts]: ConfigurationAlertsView,
+  [SubMenuComponentName.SettingsDev]: ConfigurationDevelopmentView,
+  [SubMenuComponentName.SettingsMission]: ConfigurationMissionView,
+  [SubMenuComponentName.SettingsActions]: ConfigurationActionsView,
+  [SubMenuComponentName.SettingsSources]: ConfigurationSourcesView,
+  [SubMenuComponentName.SettingsMAVLink]: ConfigurationMAVLinkView,
+  [SubMenuComponentName.SettingsCloud]: ConfigurationCloudView,
+  [SubMenuComponentName.ToolsMAVLink]: ToolsMAVLinkView,
+  [SubMenuComponentName.ToolsDataLake]: ToolsDataLakeView,
+  [SubMenuComponentName.ToolsLogs]: ToolsLogsView,
+  [SubMenuComponentName.ToolsMap]: ToolsMapView,
+}
+
+const activeMenuPagePanel = computed(() =>
+  activeMenuPage.value === undefined ? undefined : menuPageComponents[activeMenuPage.value]
+)
+
 const widgetStore = useWidgetManagerStore()
 const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
@@ -190,17 +222,8 @@ useVehicleDefaultsAutoImport()
 // Upload custom map tile archives imported while offline to the vehicle once it comes online.
 useCustomTileProviderVehicleSync()
 
-const showAboutDialog = ref(false)
-const currentSubMenuComponent = ref<SubMenuComponent>(null)
-
-const handleShowAboutDialog = (): void => {
-  showAboutDialog.value = true
-}
-
-const closeSubMenuModal = (): void => {
-  logUserAction(`Closed '${interfaceStore.currentSubMenuComponentName ?? 'settings'}' panel`)
-  currentSubMenuComponent.value = null
-}
+// Keep the main menu and the address showing the same destination.
+useMenuRouteSync()
 
 // Main menu
 const isSlidingOut = ref(false)
@@ -232,15 +255,6 @@ onBeforeMount(async () => {
   interfaceStore.showSplashScreen = false
 })
 
-watch(
-  () => interfaceStore.isConfigModalVisible,
-  (isVisible) => {
-    if (!isVisible) {
-      currentSubMenuComponent.value = null
-    }
-  }
-)
-
 const toggleMainMenu = (): void => {
   if (interfaceStore.isMainMenuVisible) {
     closeMainMenu()
@@ -257,8 +271,6 @@ const closeMainMenu = (): void => {
   setTimeout(() => {
     interfaceStore.isMainMenuVisible = false
     isSlidingOut.value = false
-    interfaceStore.mainMenuCurrentStep = 1
-    currentSubMenuComponent.value = null
   }, 20)
 }
 

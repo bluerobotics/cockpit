@@ -1,5 +1,12 @@
 <template>
-  <InteractionDialog v-model="show" title="Be careful" variant="text-only" max-width="780px" :persistent="false">
+  <InteractionDialog
+    v-model="show"
+    title="Be careful"
+    variant="text-only"
+    max-width="780px"
+    :persistent="false"
+    @after-leave="emit('dismissed')"
+  >
     <template #content>
       <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
         <slot name="help-icon"></slot>
@@ -31,9 +38,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
+import { goToBaseView } from '@/composables/menuRouting'
 import { useSnackbar } from '@/composables/snackbar'
 import { useAlertStore } from '@/stores/alert'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -44,7 +52,21 @@ const alertStore = useAlertStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
 
+// `InteractionDialog` declares `dismissed` itself and would swallow the fallthrough listener, so the closing this
+// component owns has to be announced by the component itself for the caller to tear it down. Announcing it once the
+// dialog has left, rather than as soon as it is asked to close, lets the leave transition play before the unmount.
+const emit = defineEmits<{
+  (event: 'dismissed'): void
+}>()
+
 const show = ref(true)
+
+// A menu that was refused must not leave the address claiming one of its pages is open, whichever way the warning
+// was closed, so the destination a deep link asked for is abandoned along with it.
+watch(show, (isShown) => {
+  if (isShown) return
+  if (!interfaceStore.isMainMenuVisible) goToBaseView(true)
+})
 
 const cancelOpeningMainMenu = (): void => {
   logUserAction('Dismissed armed-vehicle menu warning')

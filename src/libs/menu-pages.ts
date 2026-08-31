@@ -143,6 +143,10 @@ export const menuPages: Record<SubMenuComponentName, MenuPage> = {
   },
 }
 
+// The destinations that are not pages of a sub-menu still need their address held in one place, since the router and
+// the navigation helpers have to agree on it.
+export const aboutSlug = 'about'
+
 const menuPageEntries = Object.entries(menuPages).map(([componentName, page]) => ({
   componentName: componentName as SubMenuComponentName,
   ...page,
