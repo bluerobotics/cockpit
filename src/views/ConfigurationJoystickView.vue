@@ -665,7 +665,7 @@ import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
-import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
+import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
@@ -853,6 +853,7 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
 
 const filteredAndSortedAxisActions = computed((): JoystickAction[] => {
   return controllerStore.availableAxesActions.filter((action: JoystickAction) => {
+    if (isCompoundDataLakeVariable(action.id)) return false
     const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
     if (!dataLakeVariableInfo) return true
     return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type === 'number'
