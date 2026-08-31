@@ -507,31 +507,6 @@ export class SettingsManager {
   }
 
   /**
-   * Merges two settings packages
-   * @param {SettingsPackage} settings1 - The first settings package
-   * @param {SettingsPackage} settings2 - The second settings package
-   * @returns {SettingsPackage} The merged settings package
-   */
-  private getMergedSettings = (settings1: SettingsPackage, settings2: SettingsPackage): SettingsPackage => {
-    const mergedSettings: SettingsPackage = {}
-
-    Object.keys({ ...settings1, ...settings2 }).forEach((key) => {
-      const setting1 = settings1[key]
-      const setting2 = settings2[key]
-
-      if (setting1 && setting2) {
-        mergedSettings[key] = setting1.epochLastChangedLocally > setting2.epochLastChangedLocally ? setting1 : setting2
-      } else if (setting1) {
-        mergedSettings[key] = setting1
-      } else if (setting2) {
-        mergedSettings[key] = setting2
-      }
-    })
-
-    return mergedSettings
-  }
-
-  /**
    * Adds a new key-value update to the vehicle update queue
    * @param {string} vehicleId - The ID of the vehicle to which the update belongs
    * @param {string} userId - The ID of the user to which the update belongs
@@ -679,11 +654,18 @@ export class SettingsManager {
 
       const updatesForUser = Object.entries(this.keyValueVehicleUpdateQueue[vehicleId][userId])
       for (const [key, update] of updatesForUser) {
-        if (vehicleSettings[userId] && vehicleSettings[userId][key]) {
-          const noValue = update.value === undefined
+        // A setting with no value would land on the vehicle as an entry every topside then reads back as a valid
+        // setting, so it is dropped whether or not the key already exists there.
+        if (update.value === undefined) {
+          delete this.keyValueVehicleUpdateQueue[vehicleId][userId][key]
+          continue
+        }
+        // A value-less entry already on the vehicle counts as no setting at all, so its epoch must not win the
+        // comparison below and shield itself from the real value being sent.
+        if (vehicleSettings[userId]?.[key]?.value !== undefined) {
           const sameValue = isEqual(vehicleSettings[userId][key].value, update.value)
           const vehicleSettingIsNewer = vehicleSettings[userId][key].epochLastChangedLocally > update.epochChange
-          if (noValue || sameValue || vehicleSettingIsNewer) {
+          if (sameValue || vehicleSettingIsNewer) {
             delete this.keyValueVehicleUpdateQueue[vehicleId][userId][key]
             continue
           }
@@ -895,7 +877,9 @@ export class SettingsManager {
         const vehicleSetting = vehicleUserSettings[key]
         const localSetting = localUserVehicleSettings[key]
 
-        const hasLocalSetting = localSetting !== undefined
+        // A stored setting can carry no value at all, and preferring one by epoch would serve it back to every
+        // topside, so it counts as absent and gets dropped from the merged package instead.
+        const hasLocalSetting = localSetting?.value !== undefined
         if (hasLocalSetting) {
           console.debug(`[SettingsManager] Has local setting with epoch ${localSetting.epochLastChangedLocally}.`)
           console.debug('[SettingsManager] Local setting value:')
@@ -904,7 +888,7 @@ export class SettingsManager {
           console.debug(`[SettingsManager] No local setting.`)
         }
 
-        const hasVehicleSetting = vehicleSetting !== undefined
+        const hasVehicleSetting = vehicleSetting?.value !== undefined
         if (hasVehicleSetting) {
           console.debug(`[SettingsManager] Has vehicle setting with epoch ${vehicleSetting.epochLastChangedLocally}.`)
           console.debug('[SettingsManager] Vehicle setting value:')
