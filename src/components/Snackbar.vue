@@ -10,8 +10,9 @@
     content-class="bg-[#4f4f4f44] backdrop-filter backdrop-blur-lg text-white"
   >
     {{ message }}
-    <template v-if="closeButton" #actions>
-      <v-btn color="white" variant="text" @click="closeSnackbar">
+    <template v-if="closeButton || action" #actions>
+      <v-btn v-if="action" color="white" variant="text" @click="triggerAction">{{ action.label }}</v-btn>
+      <v-btn v-if="closeButton" color="white" variant="text" aria-label="Dismiss" @click="closeSnackbar">
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </template>
@@ -19,9 +20,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, PropType, ref, watch } from 'vue'
 
-import { closeSnackbar as removeSnackbar } from '@/composables/snackbar'
+import { closeSnackbar as removeSnackbar, SnackbarAction } from '@/composables/snackbar'
 
 const props = defineProps({
   id: { type: Number, default: undefined },
@@ -31,6 +32,7 @@ const props = defineProps({
   duration: { type: Number, default: 3000 },
   variant: { type: String, default: 'info' },
   persistent: { type: Boolean, default: false },
+  action: { type: Object as PropType<SnackbarAction>, default: undefined },
 })
 
 const emits = defineEmits(['update:showSnackbar'])
@@ -70,6 +72,12 @@ const closeSnackbar = (): void => {
   visibility.value = false
   emits('update:showSnackbar', false)
   if (props.id !== undefined) removeSnackbar(props.id)
+}
+
+const triggerAction = (): void => {
+  logUserAction(`Took the '${props.action?.label}' action from a snackbar`)
+  closeSnackbar()
+  props.action?.handler()
 }
 
 watch(

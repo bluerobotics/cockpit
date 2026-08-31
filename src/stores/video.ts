@@ -9,6 +9,7 @@ import adapter from 'webrtc-adapter'
 
 import { Go2RTCManager } from '@/composables/go2rtc'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { goToMenuPage } from '@/composables/menuRouting'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { WebRTCManager } from '@/composables/webRTC'
@@ -34,6 +35,7 @@ import { readableVideoCodecName } from '@/libs/webrtc/video-codec-support'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
+import { SubMenuComponentName } from '@/types/general'
 import {
   type DownloadProgressCallback,
   type Go2RTCStreamInfo,
@@ -1241,6 +1243,24 @@ export const useVideoStore = defineStore('video', () => {
     return false
   }
 
+  const openVideoSettings = (): void => {
+    logUserAction('Opened the video settings from a video streaming warning')
+    closeDialog()
+    goToMenuPage(SubMenuComponentName.SettingsVideo)
+  }
+
+  const dismissVideoStreamingWarning = (): void => {
+    logUserAction('Dismissed a video streaming warning')
+    closeDialog()
+  }
+
+  // The settings the warnings are about are what they exist to offer, so that action carries the committing fill both
+  // of them use.
+  const videoStreamingWarningActions = [
+    { text: 'Close', action: dismissVideoStreamingWarning },
+    { text: 'Open video settings', class: 'bg-[#FFFFFF33] text-white', action: openVideoSettings },
+  ]
+
   const issueSelectedIpNotAvailableWarning = (): void => {
     showDialog({
       maxWidth: 600,
@@ -1249,10 +1269,11 @@ export const useVideoStore = defineStore('video', () => {
         `Cockpit detected that none of the IPs that are streaming video from your server are in the allowed list. This
         will lead to no video being streamed.`,
         'This can happen if you changed your network or the IP of your vehicle.',
-        `To solve this problem, please open the video configuration page (Main-menu > Settings > Video) and clear
-        the selected IPs. Then, select an available IP from the list.`,
+        `To solve this problem, please open the video settings and clear the selected IPs. Then, select an available
+        IP from the list.`,
       ],
       variant: 'warning',
+      actions: videoStreamingWarningActions,
     })
   }
 
@@ -1263,10 +1284,11 @@ export const useVideoStore = defineStore('video', () => {
       message: [
         `Cockpit detected that the video streams are being routed from multiple IPs. This often leads to video
         stuttering, especially if one of the IPs is from a non-wired connection.`,
-        `To prevent issues and achieve an optimal streaming experience, please open the video configuration page
-        (Main-menu > Settings > Video) and select the IP address that should be used for the video streaming.`,
+        `To prevent issues and achieve an optimal streaming experience, please open the video settings and select the
+        IP address that should be used for the video streaming.`,
       ],
       variant: 'warning',
+      actions: videoStreamingWarningActions,
     })
   }
 

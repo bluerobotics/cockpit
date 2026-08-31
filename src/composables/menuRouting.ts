@@ -151,6 +151,7 @@ export const useMenuRouteSync = (): void => {
           message: `'${menuPages[page].title}' is only available with pirate mode on.`,
           variant: 'warning',
           duration: 5000,
+          action: { label: 'General settings', handler: () => goToMenuPage(SubMenuComponentName.SettingsGeneral) },
         })
         return
       }
