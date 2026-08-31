@@ -97,13 +97,19 @@ export function useBlueOsStorage<T>(
         clearTimeout(watchUpdaterTimeout)
       }
 
+      const changeEpoch = Date.now()
+
       if (firstPendingChangeEpoch === undefined) {
-        firstPendingChangeEpoch = Date.now()
+        firstPendingChangeEpoch = changeEpoch
       }
+
+      // Journal the change before waiting out the debounce, so closing Cockpit within the debounce
+      // window defers the write to the next boot instead of dropping it with the timer.
+      settingsManager.savePendingKeyValue(key, newValue, changeEpoch)
 
       // Clamp the debounce so a value that keeps changing is still forced out once it has been
       // pending for `maxWaitMs`, instead of the reset-on-every-change debounce never firing.
-      const remainingMaxWait = Math.max(0, maxWaitMs - (Date.now() - firstPendingChangeEpoch))
+      const remainingMaxWait = Math.max(0, maxWaitMs - (changeEpoch - firstPendingChangeEpoch))
       const writeDelay = Math.min(debounceMs, remainingMaxWait)
 
       watchUpdaterTimeout = setTimeout(() => {
@@ -119,7 +125,7 @@ export function useBlueOsStorage<T>(
           diffToPrint = truncatedDiff
         }
         console.log(`[SettingsSyncer] Key ${key} changed on watch:\n${diffToPrint}.`)
-        settingsManager.setKeyValue(key, newValue)
+        settingsManager.setKeyValue(key, newValue, changeEpoch)
         oldRefedValue = deserialize(JSON.stringify(newValue)) as T
         firstPendingChangeEpoch = undefined
       }, writeDelay)
