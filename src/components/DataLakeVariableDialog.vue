@@ -216,7 +216,7 @@ watch(modelValue, (isOpen) => {
       variable.description = variableInfo.description || ''
       variable.persistent = variableInfo.persistent
       variable.persistValue = variableInfo.persistValue
-      initialValue.value = currentValue ? currentValue.toString() : ''
+      initialValue.value = currentValue !== undefined ? String(currentValue) : ''
     }
   }
 })
