@@ -192,7 +192,14 @@ import MissionPlanningIcon from '@/assets/icons/mission-planning.svg'
 import SettingsIcon from '@/assets/icons/settings.svg'
 import ToolsIcon from '@/assets/icons/tools.svg'
 import GlassButton from '@/components/GlassButton.vue'
-import { goToAbout, goToBaseView, goToSubMenu, toggleMenuPage, useActiveMenuRoute } from '@/composables/menuRouting'
+import {
+  goToAbout,
+  goToBaseView,
+  goToEditMode,
+  goToSubMenu,
+  toggleMenuPage,
+  useActiveMenuRoute,
+} from '@/composables/menuRouting'
 import {
   availableCockpitActions,
   registerActionCallback,
@@ -401,7 +408,11 @@ const openAboutDialog = (): void => {
 
 const toggleEditMode = (): void => {
   logUserAction(`${!widgetStore.editingMode ? 'Entered' : 'Exited'} interface edit mode`)
-  widgetStore.editingMode = !widgetStore.editingMode
+  if (widgetStore.editingMode) {
+    goToBaseView()
+  } else {
+    goToEditMode()
+  }
   handleCloseMainMenu()
 }
 
