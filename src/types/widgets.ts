@@ -981,6 +981,31 @@ export const validateMiniWidget = (maybeMiniWidget: MiniWidget): maybeMiniWidget
   return true
 }
 
+/** The slots, left to right, that every mini-widget bar is rendered with */
+const barSlots = ['left', 'center', 'right']
+
+/**
+ * Fills a bar's stored containers up to the slots the bar is rendered with, keeping the ones already there and
+ * any extras. Profiles migrated or imported from older versions can carry fewer, which leaves the bar rendering
+ * an undefined container. Containers beyond the slots are kept so no mini-widget is ever dropped.
+ * @param {MiniWidgetContainer[]} containers - The containers stored for the bar
+ * @param {'Top' | 'Bottom'} position - The bar the containers belong to, used to name the ones added
+ * @returns {MiniWidgetContainer[]} The containers, or the same array when nothing was missing
+ */
+export const fillMissingBarContainers = (
+  containers: MiniWidgetContainer[],
+  position: 'Top' | 'Bottom'
+): MiniWidgetContainer[] => {
+  if (barSlots.every((_slot, index) => containers[index])) return containers
+
+  const filled = [...containers]
+  barSlots.forEach((slot, index) => {
+    if (!filled[index]) filled[index] = { name: `${position}-${slot} container`, widgets: [] }
+  })
+
+  return filled
+}
+
 export const validateContainer = (maybeContainer: MiniWidgetContainer): maybeContainer is MiniWidgetContainer => {
   if (maybeContainer.name === undefined) throw new Error('View validation failed: property "name" is missing.')
   const checkFails: string[] = []

@@ -39,6 +39,7 @@ import {
   CustomWidgetElement,
   CustomWidgetElementContainer,
   DragState,
+  fillMissingBarContainers,
   InternalWidgetSetupInfo,
   MiniWidgetManagerVars,
   validateProfile,
@@ -76,6 +77,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const migrated = migrateLegacyViewsGroup(vehicleType)
     if (migrated) viewsGroup.value = migrated
   })
+
+  // Both bars are rendered with three containers, but a profile migrated or imported from an older version can
+  // carry fewer, and the stored value can still be replaced after boot by a vehicle sync or by the migration above.
+  const fillBarContainers = (): void => {
+    const topContainers = currentMiniWidgetsProfile.value.containers ?? []
+    currentMiniWidgetsProfile.value.containers = fillMissingBarContainers(topContainers, 'Top')
+    viewsGroup.value.views?.forEach((view) => {
+      view.miniWidgetContainers = fillMissingBarContainers(view.miniWidgetContainers ?? [], 'Bottom')
+    })
+  }
+  watch([currentMiniWidgetsProfile, viewsGroup], fillBarContainers, { immediate: true })
 
   const desiredTopBarHeightPixels = ref(48)
   const desiredBottomBarHeightPixels = ref(48)
@@ -489,6 +501,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         return
       }
       maybeView.hash = uuid4()
+      maybeView.miniWidgetContainers = fillMissingBarContainers(maybeView.miniWidgetContainers ?? [], 'Bottom')
       currentProfile.value.views.unshift(maybeView)
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
@@ -737,10 +750,6 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   // Profile migrations
   // TODO: remove on first stable release
   onBeforeMount(() => {
-    if (currentMiniWidgetsProfile.value.containers.length < 3) {
-      currentMiniWidgetsProfile.value = miniWidgetsProfile
-    }
-
     const alreadyUsedViewHashes: string[] = []
     const alreadyUsedWidgetHashes: string[] = []
     const alreadyUsedMiniWidgetHashes: string[] = []
