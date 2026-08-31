@@ -1,6 +1,38 @@
 import { getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
 
 /**
+ * Whether Cockpit created a data lake variable, rather than the user. Assumed of any variable that does not say
+ * otherwise, since Cockpit creates almost every variable there is; the ones loaded from storage are told apart when
+ * read, as they predate this being recorded.
+ * @param {string} id ID of the variable
+ * @returns {boolean} True when Cockpit created the variable
+ */
+export const isSystemOwnedDataLakeVariable = (id: string): boolean => {
+  return getDataLakeVariableInfo(id)?.systemOwned !== false
+}
+
+/**
+ * Whether the user may change a data lake variable from the Data Lake page. Their own are always theirs to change;
+ * of Cockpit's, only the ones whose value or expression is meant to be set by the user.
+ * @param {string} id ID of the variable
+ * @returns {boolean} True when the variable may be changed by the user
+ */
+export const canUserChangeDataLakeVariable = (id: string): boolean => {
+  const info = getDataLakeVariableInfo(id)
+  if (info === undefined) return false
+  return info.systemOwned === false || info.allowUserToChangeValue === true
+}
+
+/**
+ * Whether the user may delete a data lake variable, which only their own ever are.
+ * @param {string} id ID of the variable
+ * @returns {boolean} True when the variable is the user's own
+ */
+export const canUserDeleteDataLakeVariable = (id: string): boolean => {
+  return getDataLakeVariableInfo(id) !== undefined && !isSystemOwnedDataLakeVariable(id)
+}
+
+/**
  * Guess the type of a string
  * @param {string} str The string to guess the type of
  * @returns {'boolean' | 'number' | 'string'} The guessed type of the string

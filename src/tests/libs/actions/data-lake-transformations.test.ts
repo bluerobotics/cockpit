@@ -65,3 +65,26 @@ test('a function Cockpit has not stored yet is created already recorded as its o
     allowUserToChangeValue: true,
   })
 })
+
+test('what is recorded reaches the data lake variable the page reads, which is what gates the actions', async () => {
+  const { ensureCockpitTransformingFunction, isCompoundDataLakeVariable } = await import(
+    '@/libs/actions/data-lake-transformations'
+  )
+  const { canUserChangeDataLakeVariable, canUserDeleteDataLakeVariable } = await import('@/libs/utils-data-lake')
+
+  const legacySystemId = { id: 'ardupilotSystemId', name: '(Legacy) ArduPilot System ID', type: 'number' as const }
+  ensureCockpitTransformingFunction({ ...legacySystemId, expression: '{{autopilotSystemId}}' })
+  // Claimed here too rather than relying on the first test having run, so this one passes on its own.
+  const cameraZoom = { id: 'camera-zoom', name: 'Camera Zoom', type: 'number' as const, expression: '1' }
+  ensureCockpitTransformingFunction({ ...cameraZoom, allowUserToChangeValue: true })
+
+  // Cockpit's compound variables are never the user's to delete, whether or not it may change them.
+  expect(canUserDeleteDataLakeVariable('ardupilotSystemId')).toBe(false)
+  expect(canUserDeleteDataLakeVariable('camera-zoom')).toBe(false)
+  expect(canUserChangeDataLakeVariable('camera-zoom')).toBe(true)
+  expect(canUserDeleteDataLakeVariable('user/compound/mine')).toBe(true)
+
+  // No control may write to a computed variable, however changeable the page considers it.
+  expect(isCompoundDataLakeVariable('camera-zoom')).toBe(true)
+  expect(isCompoundDataLakeVariable('camera-zoom-speed')).toBe(false)
+})
