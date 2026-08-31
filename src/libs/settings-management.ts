@@ -264,7 +264,14 @@ export class SettingsManager {
       this.notifyAllListenersAboutSettingsChange()
 
       this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId!, userId!, key, value, newEpoch)
-      await this.sendKeyValueUpdatesToVehicle(userId!, vehicleId!, this.currentVehicleAddress)
+
+      // A failed push must not escape this timeout as an unhandled rejection. The updates stay in the
+      // vehicle queue, so whatever drains it next retries them.
+      try {
+        await this.sendKeyValueUpdatesToVehicle(userId!, vehicleId!, this.currentVehicleAddress)
+      } catch (error) {
+        console.error('[SettingsManager]', `Could not send queued settings to vehicle '${vehicleId}'.`, error)
+      }
 
     }, keyValueUpdateDebounceTime)
   }
@@ -547,6 +554,12 @@ export class SettingsManager {
    * @returns {Promise<VehicleSettings>} The settings from the vehicle. If no settings are found, an empty object is returned.
    */
   private getValidSettingsFromVehicle = async (vehicleAddress: string): Promise<VehicleSettings> => {
+    // Before any vehicle has connected there is no address to read from, which for our purposes is the
+    // same as a vehicle with no settings stored on it.
+    if (this.isNullValue(vehicleAddress)) {
+      return {}
+    }
+
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const getSettingsFn = (): Promise<VehicleSettings | undefined> => this.vehicle.getKeyData(vehicleAddress, vehicleNewStyleSettingsKey)
     try {
@@ -633,6 +646,11 @@ export class SettingsManager {
     vehicleId: string,
     vehicleAddress: string
   ): Promise<void> => {
+    // Without an address there is nowhere to send the updates to, and they stay queued until there is one.
+    if (this.isNullValue(vehicleAddress)) {
+      return
+    }
+
     if (
       !this.keyValueVehicleUpdateQueue[vehicleId] ||
       !this.keyValueVehicleUpdateQueue[vehicleId]?.[userId] ||
