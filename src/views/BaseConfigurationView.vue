@@ -9,7 +9,7 @@
         :height="34"
         variant="text"
         class="bg-transparent mt-0.5 -mr-1"
-        @click="closeModal"
+        @click="closeMenuPage"
       >
         <v-icon
           :size="interfaceStore.isOnSmallScreen ? 22 : 26"
@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import { closeMenuPage } from '@/composables/menuRouting'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 const interfaceStore = useAppInterfaceStore()
 
@@ -43,9 +44,4 @@ const props = defineProps<{
 }>()
 
 const hasNoCloseIcon = ref(props.noCloseIcon || false)
-
-const closeModal = (): void => {
-  interfaceStore.configModalVisibility = false
-  interfaceStore.currentSubMenuComponentName = null
-}
 </script>

@@ -2,9 +2,11 @@ import { type Control, type Layer, type LayersControlEvent, type Map as LeafletM
 import { watch } from 'vue'
 
 import type { MapTileLayers } from '@/composables/map/useMapTileLayers'
+import { goToMenuPage } from '@/composables/menuRouting'
 import { createLayersControlWithAction } from '@/libs/map/utils-map'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
+import { SubMenuComponentName } from '@/types/general'
 import type { MapTileProvider } from '@/types/mission'
 
 type OverlayPersistenceFlag = 'userLastMapShowSeamarks' | 'userLastMapShowMarineProfile'
@@ -72,7 +74,8 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
       label: 'Add map provider',
       onClick: () => {
         logUserAction('Opened custom map providers from the map layer selector')
-        interfaceStore.openSettingsSourcesCustomProviders()
+        interfaceStore.sourcesCustomProvidersExpandRequested = true
+        goToMenuPage(SubMenuComponentName.SettingsSources)
       },
     })
 

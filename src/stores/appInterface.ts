@@ -1,11 +1,10 @@
 import { useWindowSize } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 
 import { defaultDisplayUnitPreferences } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
-import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -15,7 +14,6 @@ export const useAppInterfaceStore = defineStore('responsive', {
     showSkullAnimation: false,
     width: windowWidth.value,
     height: windowHeight.value,
-    configModalVisibility: false,
     videoLibraryVisibility: false,
     videoLibraryMode: 'videos',
     missionLibraryVisibility: false,
@@ -30,8 +28,6 @@ export const useAppInterfaceStore = defineStore('responsive', {
     componentToHighlight: 'none',
     isMainMenuVisible: false,
     mainMenuCurrentStep: 1,
-    currentSubMenuName: ref<SubMenuName | null>(null),
-    currentSubMenuComponentName: ref<SubMenuComponentName | null>(null),
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
     isExternalFeaturesModalVisible: false,
@@ -73,13 +69,6 @@ export const useAppInterfaceStore = defineStore('responsive', {
     openVehicleDefaultsJoystickImport(): void {
       this.isVehicleDefaultsJoystickImportModalVisible = true
     },
-    openSettingsSourcesCustomProviders(): void {
-      this.isMainMenuVisible = true
-      this.mainMenuCurrentStep = 2
-      this.currentSubMenuName = SubMenuName.settings
-      this.currentSubMenuComponentName = SubMenuComponentName.SettingsSources
-      this.sourcesCustomProvidersExpandRequested = true
-    },
   },
   getters: {
     isXs: (state) => state.width < 720, // Extra small devices (5-6" mobile screens in landscape)
@@ -111,7 +100,6 @@ export const useAppInterfaceStore = defineStore('responsive', {
       if (state.width >= 1600 && state.width < 1920) return 121
       return 130
     },
-    isConfigModalVisible: (state) => state.configModalVisibility,
     isVideoLibraryVisible: (state) => state.videoLibraryVisibility,
     isMissionLibraryVisible: (state) => state.missionLibraryVisibility,
     getUIGlassEffect: (state) => {
