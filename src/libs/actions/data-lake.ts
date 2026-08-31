@@ -26,7 +26,9 @@ const loadPersistentVariables = (): void => {
 
   if (savedVariables && Array.isArray(savedVariables)) {
     savedVariables.forEach((variable) => {
-      dataLakeVariableInfo[variable.id] = variable
+      // Ownership is assumed to be Cockpit's when unsaid, but only the dialogs that create a variable on the user's
+      // behalf ever store one here, so an entry that predates the flag is theirs rather than Cockpit's.
+      dataLakeVariableInfo[variable.id] = { systemOwned: false, ...variable }
     })
   }
 

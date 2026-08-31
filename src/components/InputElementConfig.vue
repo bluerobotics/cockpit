@@ -520,6 +520,7 @@ const saveOrUpdateParameter = (): void => {
     description: futureDataLakeVariable.value?.description,
     persistent: true,
     allowUserToChangeValue: true,
+    systemOwned: false,
   }
   if (
     currentElement.value &&

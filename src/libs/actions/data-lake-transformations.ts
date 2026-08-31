@@ -56,7 +56,11 @@ const loadTransformingFunctions = (): void => {
   const storedFunctions = transformingFunctions as TransformingFunction[]
   // Stored ids are normalised on the way in too, so an entry a previous version wrote as ' my id ' still
   // matches the trimmed id an update carries, instead of silently saving nothing.
-  globalTransformingFunctions = storedFunctions.filter((func) => isUsableTransformingFunction(func)).map(withTrimmedId)
+  // Ownership is assumed to be Cockpit's when unsaid, but an entry stored before the flag existed cannot be told
+  // apart from one the user wrote, so it is read as theirs and Cockpit reclaims its own through the setup routines.
+  globalTransformingFunctions = storedFunctions
+    .filter((func) => isUsableTransformingFunction(func))
+    .map((func) => ({ systemOwned: false, ...withTrimmedId(func) }))
   unusableTransformingFunctions = storedFunctions.filter((func) => !isUsableTransformingFunction(func))
   const droppedCount = unusableTransformingFunctions.length
   if (droppedCount > 0) {
@@ -259,7 +263,14 @@ export interface TransformingFunction {
   description?: string
   /** JavaScript expression that defines how to calculate the new variable */
   expression: string
+  /** Whether Cockpit created the function, rather than the user. Assumed when absent, as with any variable */
+  systemOwned?: boolean
+  /** Whether the user may change the expression from the Data Lake page, which Cockpit's are otherwise not */
+  allowUserToChangeValue?: boolean
 }
+
+/** Who a function belongs to and what the user may do with it, mirrored onto the data lake variable backing it */
+type TransformingFunctionFlags = Pick<TransformingFunction, 'systemOwned' | 'allowUserToChangeValue'>
 
 /**
  * Creates a new transforming function that listens to its dependencies
@@ -269,6 +280,7 @@ export interface TransformingFunction {
  * @param {'string' | 'number' | 'boolean'} type - Type of the new variable
  * @param {string} expression - Expression to calculate the variable's value
  * @param {string?} description - Description of the new variable
+ * @param {TransformingFunctionFlags?} flags - Who the function belongs to and what the user may do with it
  * @throws {Error} If the id is empty or the expression is not a string
  */
 export const createTransformingFunction = (
@@ -276,11 +288,34 @@ export const createTransformingFunction = (
   name: string,
   type: DataLakeVariableType,
   expression: string,
-  description?: string
+  description?: string,
+  flags?: TransformingFunctionFlags
 ): void => {
-  const transformingFunction = usableTransformingFunctionOrThrow({ name, id, type, expression, description })
+  const transformingFunction = usableTransformingFunctionOrThrow({ name, id, type, expression, description, ...flags })
   globalTransformingFunctions.push(transformingFunction)
-  createDataLakeVariable({ id: transformingFunction.id, name, type, description })
+  createDataLakeVariable({ id: transformingFunction.id, name, type, description, ...flags })
+  saveTransformingFunctions()
+}
+
+/**
+ * Creates a transforming function Cockpit owns, or, when one with that id is already stored, records that it is
+ * Cockpit's. Functions stored by a version that did not track this would otherwise pass as the user's own forever.
+ * The stored expression is left alone, since the user may have tuned it, and the write is idempotent, so the setup
+ * routines can call this on every boot.
+ * @param {TransformingFunction} func - The function Cockpit wants to exist
+ * @throws {Error} If the id is empty or the expression is not a string
+ */
+export const ensureCockpitTransformingFunction = (func: TransformingFunction): void => {
+  const flags = { systemOwned: true, allowUserToChangeValue: func.allowUserToChangeValue === true }
+  const stored = globalTransformingFunctions.find((f) => f.id === func.id)
+
+  if (stored === undefined) {
+    createTransformingFunction(func.id, func.name, func.type, func.expression, func.description, flags)
+    return
+  }
+
+  if (stored.systemOwned === true && stored.allowUserToChangeValue === flags.allowUserToChangeValue) return
+  Object.assign(stored, flags)
   saveTransformingFunctions()
 }
 

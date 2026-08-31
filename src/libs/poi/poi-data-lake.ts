@@ -56,13 +56,17 @@ const ensureCoordinateFunction = (variableId: string, name: string, source: PoiC
   const existing = getAllTransformingFunctions().find((func) => func.id === variableId)
 
   if (existing) {
-    if (existing.expression !== expression || existing.name !== name) {
-      updateTransformingFunction({ ...existing, name, type: 'number', expression })
+    // The Cockpit flag is part of the comparison so POI functions stored before it existed stop passing as the
+    // user's own, which would offer them edit and delete actions the POI manager immediately undoes.
+    if (existing.expression !== expression || existing.name !== name || existing.systemOwned !== true) {
+      updateTransformingFunction({ ...existing, name, type: 'number', expression, systemOwned: true })
     }
     return
   }
 
-  createTransformingFunction(variableId, name, 'number', expression)
+  // Stored explicitly rather than left to the default, so the next boot reads it back as Cockpit's instead of
+  // taking it for a pre-flag entry and rewriting every POI function on startup.
+  createTransformingFunction(variableId, name, 'number', expression, undefined, { systemOwned: true })
 }
 
 /**

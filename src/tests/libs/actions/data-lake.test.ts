@@ -3,8 +3,12 @@ import { expect, test, vi } from 'vitest'
 import { type DataLakeVariable } from '@/types/data-lake'
 
 const persistentValuesKey = 'cockpit-persistent-data-lake-values'
+const persistentVariablesKey = 'cockpit-persistent-data-lake-variables'
 const storage: Record<string, unknown> = {
   [persistentValuesKey]: { 'camera-zoom-speed': 7, 'camera-focus-speed': 5 },
+  // Stored by a Cockpit version that did not record who made a variable. Only the dialogs that create one on the
+  // user's behalf ever write to this key, since Cockpit's own are never `persistent`.
+  [persistentVariablesKey]: [{ id: 'user/custom/legacy', name: 'Legacy', type: 'number', persistent: true }],
 }
 
 vi.mock('@/libs/settings-management', () => ({
@@ -26,6 +30,13 @@ test('a saved value survives the registration of the persistValue variables that
 
   expect(getDataLakeVariableData('camera-zoom-speed')).toBe(7)
   expect(getDataLakeVariableData('camera-focus-speed')).toBe(5)
+})
+
+test("a variable stored before Cockpit recorded who made one is read back as the user's", async () => {
+  const { getDataLakeVariableInfo } = await import('@/libs/actions/data-lake')
+
+  // Assuming Cockpit's ownership, as everywhere else, would take the user's own variables away from them.
+  expect(getDataLakeVariableInfo('user/custom/legacy')?.systemOwned).toBe(false)
 })
 
 test('deleting a persistValue variable drops its stored value and nothing else', async () => {

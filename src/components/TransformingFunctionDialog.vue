@@ -215,8 +215,10 @@ const saveTransformingFunction = (): void => {
   try {
     if (editingExistingFunction.value && props.editFunction) {
       const { ...otherProps } = newFunction.value
+      // The edited function is spread first so the fields the form does not show, the provenance stamp among them,
+      // survive the edit instead of turning a Cockpit-created function into the user's own.
       updateTransformingFunction({
-        id: props.editFunction.id,
+        ...props.editFunction,
         ...otherProps,
       })
     } else {
@@ -225,7 +227,8 @@ const saveTransformingFunction = (): void => {
         newFunction.value.name,
         newFunction.value.type,
         newFunction.value.expression,
-        newFunction.value.description
+        newFunction.value.description,
+        { systemOwned: false }
       )
     }
   } catch (error) {
