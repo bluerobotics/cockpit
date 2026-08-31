@@ -34,7 +34,8 @@ const nullValue = 'null'
 const possibleNullValues = [fallbackUsername, fallbackVehicleId, nullValue, null, undefined, '']
 const keyValueUpdateDebounceTime = 100
 
-export type SettingValue = string | number | boolean | object | null | undefined
+// No `undefined`: a cleared setting is spelled `null`, so writing one with no value at all is a type error.
+export type SettingValue = string | number | boolean | object | null
 
 /**
  * Error thrown when the vehicle ID does not match the expected ID
@@ -248,9 +249,15 @@ export class SettingsManager {
     this.keyValueUpdateTimeouts[key] = setTimeout(async () => {
       const newEpoch = epochChange !== undefined ? epochChange : Date.now()
       console.log(`[SettingsManager] Updating value of key '${key}' for user '${userId}' and vehicle '${vehicleId}'.`)
+      // `undefined` is dropped by JSON.stringify, so it would reach storage and the vehicle as a setting with no value
+      // at all. `null` is how a deliberately cleared setting is spelled, and it survives the round-trip.
+      if (value === undefined) {
+        console.warn(`[SettingsManager] Key '${key}' was written with no value. Storing 'null' instead.`)
+      }
+      const storedValue = value ?? null
       const newSetting = {
         epochLastChangedLocally: newEpoch,
-        value: value,
+        value: storedValue,
       }
       const localSettings = this.getLocalSettings()
       if (!localSettings[userId!]) {
@@ -263,7 +270,7 @@ export class SettingsManager {
       this.setLocalSettings(localSettings)
       this.notifyAllListenersAboutSettingsChange()
 
-      this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId!, userId!, key, value, newEpoch)
+      this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId!, userId!, key, storedValue, newEpoch)
 
       // A failed push must not escape this timeout as an unhandled rejection. The updates stay in the
       // vehicle queue, so whatever drains it next retries them.
