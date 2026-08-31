@@ -591,6 +591,9 @@ const commitChanges = async (item: SettingsRow): Promise<void> => {
   if (saving[item.originalKey]) return
   const editedValue = editedValues[item.originalKey]
   const previousValue = userSettings.value[item.originalKey]
+  // The settings manager persists a value-less setting as `null`, so the wait below and the row have to
+  // expect what it stored rather than what it was handed.
+  const committedValue = item.source === 'v2' ? editedValue ?? null : editedValue
   saving[item.originalKey] = true
   try {
     if (item.source === 'v2' && item.v2SettingKey) {
@@ -602,14 +605,14 @@ const commitChanges = async (item: SettingsRow): Promise<void> => {
         selectedUserId.value,
         selectedVehicleId.value
       )
-      await waitForV2ValueToPersist(item.v2SettingKey, editedValue, selectedUserId.value, selectedVehicleId.value)
+      await waitForV2ValueToPersist(item.v2SettingKey, committedValue, selectedUserId.value, selectedVehicleId.value)
       loadUserSettings()
     } else {
       localStorage.setItem(item.storageKey, localStorageValueToString(editedValue))
       localStorageSnapshot.value[item.storageKey] = editedValue
     }
     editing[item.originalKey] = false
-    userSettings.value[item.originalKey] = editedValue
+    userSettings.value[item.originalKey] = committedValue
     if (!isApplyingImportedConfig) logUserAction(`Changed setting '${displaySettingName(item)}'`)
   } catch (error: any) {
     editedValues[item.originalKey] = previousValue
