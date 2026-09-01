@@ -318,32 +318,11 @@ const parseResolutionFromSdp = (sdp: string): VideoResolution | undefined => {
 }
 
 /**
- * The stats of a stream
- */
-interface StreamStatsSnapshot {
-  /** Cumulative bytes received */
-  bytes: number
-  /** Cumulative packets received */
-  packets: number
-  /** Timestamp of this snapshot in ms */
-  timestamp: number
-}
-
-/**
- * The rates of a stream
- */
-interface StreamRates {
-  /** Ingest bitrate in kbps */
-  bitrateKbps: number
-  /** Ingest packet rate in packets/sec */
-  packetsPerSec: number
-}
-
-const prevStreamStats = new Map<string, StreamStatsSnapshot>()
-const streamRates = new Map<string, StreamRates>()
-
-/**
  * Query go2rtc for parsed info about all registered streams
+ *
+ * Rates are deliberately not derived here: the raw cumulative counters and the sample epoch are
+ * exposed instead, so each consumer differences over its own known window rather than depending on
+ * whichever caller polled last.
  * @returns {Promise<Record<string, Go2RTCStreamInfo>>} Stream name to parsed info map
  */
 const getStreamsInfo = async (): Promise<Record<string, Go2RTCStreamInfo>> => {
@@ -363,30 +342,16 @@ const getStreamsInfo = async (): Promise<Record<string, Go2RTCStreamInfo>> => {
       const resolution = sdp ? parseResolutionFromSdp(sdp) : undefined
 
       const receiver = producer?.receivers?.[0]
-      const bytes: number = receiver?.bytes ?? 0
-      const packets: number = receiver?.packets ?? 0
 
-      const prev = prevStreamStats.get(name)
-      if (prev && prev.timestamp > 0) {
-        const elapsed = (now - prev.timestamp) / 1000
-        if (elapsed > 0) {
-          streamRates.set(name, {
-            bitrateKbps: ((bytes - prev.bytes) * 8) / 1000 / elapsed,
-            packetsPerSec: (packets - prev.packets) / elapsed,
-          })
-        }
-      }
-      prevStreamStats.set(name, { bytes, packets, timestamp: now })
-
-      const rates = streamRates.get(name) ?? { bitrateKbps: 0, packetsPerSec: 0 }
       result[name] = {
         codec,
         width: resolution?.width,
         height: resolution?.height,
         fps: fpsMatch?.[1] ?? '',
         protocol,
-        bitrateKbps: Math.round(rates.bitrateKbps),
-        packetsPerSec: Math.round(rates.packetsPerSec),
+        bytes: receiver?.bytes ?? 0,
+        packets: receiver?.packets ?? 0,
+        sampleEpoch: now,
       }
     }
 
