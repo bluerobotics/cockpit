@@ -204,9 +204,12 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       monitorStreamPeerConnection(webrtcStreamStats[streamName], pcInfo)
 
       storedKeys.forEach((key) => {
-        if (getDataLakeVariableInfo(streamStatVariableId(streamName, key)) === undefined) {
+        const statId = streamStatVariableId(streamName, key)
+        if (statId === undefined) return
+
+        if (getDataLakeVariableInfo(statId) === undefined) {
           const streamVariable = {
-            id: streamStatVariableId(streamName, key),
+            id: statId,
             name: `Stream '${streamName}' - ${key}`,
             type: 'number',
             description: `WebRTC stat '${key}' of the '${streamName}' video stream.`,
@@ -227,7 +230,9 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
           if (videoData === undefined) return
 
           storedKeys.forEach((key) => {
-            setDataLakeVariableData(streamStatVariableId(streamName, key), videoData[key])
+            const statId = streamStatVariableId(streamName, key)
+            if (statId === undefined) return
+            setDataLakeVariableData(statId, videoData[key])
           })
         } catch (error) {
           console.error('Error while logging WebRTC statistics:', error)
