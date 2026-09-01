@@ -3,7 +3,7 @@ import {
   findDataLakeInputsInString,
   findDataLakeVariablesIdsInString,
   getDataLakeVariableIdFromInput,
-  replaceDataLakeInputsInString,
+  replaceDataLakeInputsInStringAsLiterals,
 } from '../utils-data-lake'
 import {
   createDataLakeVariable,
@@ -80,7 +80,7 @@ const saveTransformingFunctions = (): void => {
  * @returns {string | number | boolean} The evaluated value
  */
 export const evaluateDataLakeExpression = (expression: string): string | number | boolean => {
-  const expressionWithValues = replaceDataLakeInputsInString(expression)
+  const expressionWithValues = replaceDataLakeInputsInStringAsLiterals(expression)
 
   // Inputs whose variables have no value yet are left as literal '{{ ... }}' placeholders by the replacement.
   // Bail out with a clear error instead of letting eval fail with a cryptic "Unexpected token '{'" SyntaxError.
