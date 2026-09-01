@@ -323,10 +323,11 @@ const parseResolutionFromSdp = (sdp: string): VideoResolution | undefined => {
  * Rates are deliberately not derived here: the raw cumulative counters and the sample epoch are
  * exposed instead, so each consumer differences over its own known window rather than depending on
  * whichever caller polled last.
- * @returns {Promise<Record<string, Go2RTCStreamInfo>>} Stream name to parsed info map
+ * @returns {Promise<Record<string, Go2RTCStreamInfo> | undefined>} Stream name to parsed info map,
+ * or undefined when the sidecar is not ready or the query failed
  */
-const getStreamsInfo = async (): Promise<Record<string, Go2RTCStreamInfo>> => {
-  if (!go2rtcPort) return {}
+const getStreamsInfo = async (): Promise<Record<string, Go2RTCStreamInfo> | undefined> => {
+  if (!go2rtcPort) return undefined
   try {
     const body = await httpRequest(`http://127.0.0.1:${go2rtcPort}/api/streams`, 'GET')
     const raw = JSON.parse(body) as Record<string, any>
@@ -357,7 +358,7 @@ const getStreamsInfo = async (): Promise<Record<string, Go2RTCStreamInfo>> => {
 
     return result
   } catch {
-    return {}
+    return undefined
   }
 }
 
