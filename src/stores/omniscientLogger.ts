@@ -183,8 +183,10 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const webrtcStreamStats: Record<string, ReturnType<typeof WebRTCStats>> = {}
   const streamsAlreadyTrackingWebRTCStats: string[] = []
 
+  // Persisted artifacts use the internal stream name; the external id is only for display
   const streamRateVariableId = (streamName: string, statKeyName: string): string => {
-    return `stream-${streamName}-${statKeyName}`
+    const internalName = videoStore.internalStreamNameFromExternal(streamName) ?? streamName
+    return `stream-${internalName}-${statKeyName}`
   }
 
   // Monitor the active streams to add the connections to the WebRTC statistics
