@@ -264,6 +264,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   ] // Keys that have cumulative values
   const averageKeys: WebRTCVideoStat[] = [
     'clockRate',
+    'frameHeight',
     'framesAssembledFromMultiplePackets',
     'framesPerSecond',
     'jitter',
