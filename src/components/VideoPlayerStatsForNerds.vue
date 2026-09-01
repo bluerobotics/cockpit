@@ -16,6 +16,8 @@ const videoStore = useVideoStore()
 
 const rtspInfo = ref<Go2RTCStreamInfo | undefined>()
 let rtspInfoInterval: ReturnType<typeof setInterval> | null = null
+const rtspRates = ref({ bitrateKbps: 0, packetsPerSec: 0 })
+let prevRtspSample: Pick<Go2RTCStreamInfo, 'bytes' | 'packets' | 'sampleEpoch'> | undefined
 const rtspBitrateData = ref<number[]>([])
 const rtspPacketRateData = ref<number[]>([])
 const rtspStallData = ref<number[]>([])
@@ -135,10 +137,10 @@ function draw(): void {
     drawPlot(rtspStallData.value, 'rgb(255, 0, 0)', 1)
 
     const info = rtspInfo.value
-    const isStalled = info?.bitrateKbps === 0
+    const isStalled = info !== undefined && rtspRates.value.bitrateKbps === 0
     const statusColor = isStalled ? 'red' : 'white'
-    const bitrateStr = info?.bitrateKbps ? `${info.bitrateKbps}kbps` : '...'
-    const ppsStr = info?.packetsPerSec ? `${info.packetsPerSec}/s` : '...'
+    const bitrateStr = rtspRates.value.bitrateKbps ? `${rtspRates.value.bitrateKbps}kbps` : '...'
+    const ppsStr = rtspRates.value.packetsPerSec ? `${rtspRates.value.packetsPerSec}/s` : '...'
     const stats = [
       { label: 'Stream', value: props.streamName, color: statusColor },
       { label: 'Source', value: 'Direct RTSP', color: statusColor },
@@ -220,13 +222,25 @@ const fetchRtspInfo = async (): Promise<void> => {
     const info = allInfo[props.streamName]
     rtspInfo.value = info
     if (info) {
+      // Rates are derived over this poller's own window, since the raw counters arrive un-differenced
+      if (prevRtspSample) {
+        const elapsed = (info.sampleEpoch - prevRtspSample.sampleEpoch) / 1000
+        if (elapsed > 0) {
+          rtspRates.value = {
+            bitrateKbps: Math.round(((info.bytes - prevRtspSample.bytes) * 8) / 1000 / elapsed),
+            packetsPerSec: Math.round((info.packets - prevRtspSample.packets) / elapsed),
+          }
+        }
+      }
+      prevRtspSample = { bytes: info.bytes, packets: info.packets, sampleEpoch: info.sampleEpoch }
+
       if (rtspStartTime === 0) rtspStartTime = Date.now()
       const warmUp = Date.now() - rtspStartTime < 5000
-      const isStalled = !warmUp && info.bitrateKbps === 0 ? 1 : 0
+      const isStalled = !warmUp && rtspRates.value.bitrateKbps === 0 ? 1 : 0
       if (isStalled) rtspStallCount++
 
-      rtspBitrateData.value.push(info.bitrateKbps)
-      rtspPacketRateData.value.push(info.packetsPerSec)
+      rtspBitrateData.value.push(rtspRates.value.bitrateKbps)
+      rtspPacketRateData.value.push(rtspRates.value.packetsPerSec)
       rtspStallData.value.push(isStalled)
       if (rtspBitrateData.value.length > maxDataPoints) rtspBitrateData.value.shift()
       if (rtspPacketRateData.value.length > maxDataPoints) rtspPacketRateData.value.shift()
