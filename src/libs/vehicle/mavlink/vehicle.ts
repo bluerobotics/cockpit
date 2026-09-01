@@ -1274,12 +1274,16 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * @returns {Promise<Waypoint>} The home waypoint.
    */
   async fetchHomeWaypoint(): Promise<Waypoint> {
-    await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_MESSAGE, getMAVLinkMessageId(MAVLinkType.HOME_POSITION))
     const startTime = new Date().getTime()
+    await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_MESSAGE, getMAVLinkMessageId(MAVLinkType.HOME_POSITION))
     let homePosition: Message.HomePosition | undefined = undefined
     while (!homePosition && new Date().getTime() - startTime < 5000) {
       await sleep(100)
-      homePosition = this._messages.get(MAVLinkType.HOME_POSITION) as Message.HomePosition
+      // Only a reply to this request, so home is not reported from the one cached before it last moved.
+      const lastHomePositionMessage = this._messages.get(MAVLinkType.HOME_POSITION)
+      if (lastHomePositionMessage !== undefined && lastHomePositionMessage.epoch > startTime) {
+        homePosition = lastHomePositionMessage as Message.HomePosition
+      }
     }
     if (!homePosition) {
       throw new Error('Home position not received from vehicle.')

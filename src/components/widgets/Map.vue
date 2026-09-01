@@ -283,6 +283,7 @@ import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { useVehicleHomePosition } from '@/composables/useVehicleHomePosition'
 import {
   baseStationMenuIcon,
   baseStationPlaceMenuLabel,
@@ -378,6 +379,8 @@ const home = computed({
     missionStore.homeMarkerPosition = value
   },
 })
+
+useVehicleHomePosition()
 
 const glassMenuCssVars = computed(() => ({
   '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
@@ -1295,7 +1298,8 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
 
 // Create marker for the home position
 const homeMarker = shallowRef<L.Marker>()
-watch(home, () => {
+// Watches the map too, so a home already known when the widget mounts still gets a marker once the map exists.
+watch([home, map], () => {
   if (map.value === undefined) return
 
   const position = home.value
