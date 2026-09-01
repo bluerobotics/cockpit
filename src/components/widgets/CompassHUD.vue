@@ -148,12 +148,12 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toR
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { useVehicleHomePosition } from '@/composables/useVehicleHomePosition'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type {
   HighlightedPoiMarker,
@@ -167,7 +167,6 @@ import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
-const missionStore = useMissionStore()
 const { resolvedPointsOfInterest } = usePointsOfInterest()
 const baseStationStore = useBaseStation()
 
@@ -334,7 +333,7 @@ const poiData = computed(() => {
   return hudTargets
 })
 
-const homeCoordinates = computed(() => missionStore.homeMarkerPosition)
+const homeCoordinates = useVehicleHomePosition(() => widget.value.options.showHomeOnHUD)
 const homeMarkerId = '__home__'
 
 // Home is rendered as a synthetic pseudo-POI (not a real data-lake-backed one): its position comes
@@ -419,16 +418,6 @@ const hudMarkerData = computed((): HudMarkerEntry[] => {
 
   return entries
 })
-
-const tryFetchHomeForHud = async (): Promise<void> => {
-  if (!widget.value.options.showHomeOnHUD || missionStore.homeMarkerPosition) return
-  if (!store.isVehicleOnline) return
-  try {
-    await store.fetchHomeWaypoint()
-  } catch {
-    return
-  }
-}
 
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
@@ -767,14 +756,6 @@ const stopAnimationLoop = (): void => {
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
 watch([hudMarkerData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
-
-watch(
-  [() => widget.value.options.showHomeOnHUD, () => store.isVehicleOnline],
-  ([showHome]) => {
-    if (showHome) tryFetchHomeForHud()
-  },
-  { immediate: true }
-)
 
 // Start both canvas and POI markers animation loop when widget becomes visible or data changes
 watch([renderVars, canvasSize, widget.value.options], () => {

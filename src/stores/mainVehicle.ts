@@ -530,20 +530,34 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return inflightMissionFetch
   }
 
+  // Prevent multiple home fetches from happening at the same time
+  let inflightHomeFetch: Promise<Waypoint> | undefined
+
   /**
    * Fetch home waypoint from vehicle
    * @returns { Promise<Waypoint> } Home waypoint
    */
   async function fetchHomeWaypoint(): Promise<Waypoint> {
-    if (!mainVehicle.value) {
+    const vehicle = mainVehicle.value
+    if (!vehicle) {
       throw new Error('No vehicle available to fetch home waypoint.')
     }
-    if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
+    if (vehicle.firmware() !== Vehicle.Firmware.ArduPilot) {
       throw new Error('Home waypoint retrieval is only supported for ArduPilot vehicles.')
     }
-    const homeWaypoint = await mainVehicle.value.fetchHomeWaypoint()
-    missionStore.homeMarkerPosition = homeWaypoint.coordinates
-    return homeWaypoint
+    if (inflightHomeFetch) return inflightHomeFetch
+
+    inflightHomeFetch = (async () => {
+      try {
+        const homeWaypoint = await vehicle.fetchHomeWaypoint()
+        missionStore.homeMarkerPosition = homeWaypoint.coordinates
+        return homeWaypoint
+      } finally {
+        inflightHomeFetch = undefined
+      }
+    })()
+
+    return inflightHomeFetch
   }
 
   /**
