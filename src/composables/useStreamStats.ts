@@ -1,5 +1,5 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
-import { effectScope, reactive, watch } from 'vue'
+import { computed, effectScope, reactive, watch } from 'vue'
 
 import {
   createDataLakeVariable,
@@ -7,6 +7,7 @@ import {
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
+import { differenceGo2rtcSamples, Go2rtcIngestCounters, Go2rtcStreamSample } from '@/libs/video/stream-stats'
 import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
 import { useVideoStore } from '@/stores/video'
 import { WebRTCStatsEvent, WebRTCVideoStat, WebRTCVideoStats } from '@/types/video'
@@ -58,17 +59,47 @@ const webRtcStreamStatsSnapshots = reactive<Record<string, WebRTCVideoStats | un
 const collectors: Record<string, ReturnType<typeof WebRTCStats>> = {}
 const streamsAlreadyTrackingWebRTCStats: string[] = []
 
+// Latest go2rtc ingest sample per stream, keyed by external stream id, updated at the sampler's
+// 100 ms cadence. Shared by the stats-for-nerds panel and any other live consumer.
+const go2rtcStreamSamples = reactive<Record<string, Go2rtcStreamSample | undefined>>({})
+
+// The sampler differences over its own fixed window, never over a caller-dependent shared one
+const prevGo2rtcCounters: Record<string, Go2rtcIngestCounters> = {}
+let go2rtcSamplerTimer: ReturnType<typeof setInterval> | null = null
+const go2rtcSampleIntervalMs = 100
+
 let initialized = false
 // Detached scope: the collector watch must live for the app's lifetime, not the first caller's
 const collectorScope = effectScope(true)
 
-const initializeCollectors = (): void => {
+const initialize = (): void => {
   const videoStore = useVideoStore()
 
   // Persisted artifacts use the internal stream name; the external id is only for display
   const streamStatVariableId = (streamName: string, statKeyName: string): string => {
     const internalName = videoStore.internalStreamNameFromExternal(streamName) ?? streamName
     return `stream-${internalName}-${statKeyName}`
+  }
+
+  const sampleGo2rtcStreams = async (): Promise<void> => {
+    if (!window.electronAPI) return
+    try {
+      const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
+      Object.entries(allInfo).forEach(([streamName, info]) => {
+        const previousCounters = prevGo2rtcCounters[streamName]
+        const rates = previousCounters ? differenceGo2rtcSamples(previousCounters, info) : undefined
+        prevGo2rtcCounters[streamName] = { bytes: info.bytes, packets: info.packets, sampleEpoch: info.sampleEpoch }
+
+        const previousSample = go2rtcStreamSamples[streamName]
+        go2rtcStreamSamples[streamName] = {
+          ...info,
+          bitrateKbps: rates?.bitrateKbps ?? previousSample?.bitrateKbps ?? 0,
+          packetsPerSec: rates?.packetsPerSec ?? previousSample?.packetsPerSec ?? 0,
+        }
+      })
+    } catch {
+      // go2rtc may not be running yet
+    }
   }
 
   collectorScope.run(() => {
@@ -123,23 +154,45 @@ const initializeCollectors = (): void => {
         })
       })
     })
+
+    // The go2rtc sampler runs only while at least one RTSP stream is active
+    const hasActiveRtspStreams = computed(() =>
+      Object.values(videoStore.activeStreams).some((data) => data?.go2rtcManager !== undefined)
+    )
+    watch(
+      hasActiveRtspStreams,
+      (hasActive) => {
+        if (hasActive && go2rtcSamplerTimer === null) {
+          void sampleGo2rtcStreams()
+          go2rtcSamplerTimer = setInterval(() => void sampleGo2rtcStreams(), go2rtcSampleIntervalMs)
+        } else if (!hasActive && go2rtcSamplerTimer !== null) {
+          clearInterval(go2rtcSamplerTimer)
+          go2rtcSamplerTimer = null
+        }
+      },
+      { immediate: true }
+    )
   })
 }
 
 /**
  * Access the shared per-stream stats collectors, starting them on first call
- * @returns {object} The latest WebRTC stats snapshot per stream, keyed by external stream id
+ * @returns {object} The latest stats sample per stream, keyed by external stream id
  */
 export const useStreamStats = (): {
   /**
-   * Latest inbound video stats per stream, keyed by external stream id
+   * Latest inbound WebRTC video stats per stream
    */
   webRtcStreamStatsSnapshots: Record<string, WebRTCVideoStats | undefined>
+  /**
+   * Latest go2rtc ingest sample per stream, with rates derived over the sampler's own window
+   */
+  go2rtcStreamSamples: Record<string, Go2rtcStreamSample | undefined>
 } => {
   if (!initialized) {
     initialized = true
-    initializeCollectors()
+    initialize()
   }
 
-  return { webRtcStreamStatsSnapshots }
+  return { webRtcStreamStatsSnapshots, go2rtcStreamSamples }
 }
