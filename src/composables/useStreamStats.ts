@@ -151,11 +151,11 @@ const initialize = (): void => {
     ]
     const oldIds = statIds(oldName)
     const newIds = statIds(newName)
+    const replacements: Record<string, string> = {}
     oldIds.forEach((oldId, index) => {
-      if (!dataLakeLogger.recordedVariableIds.includes(oldId)) return
-      dataLakeLogger.setVariableRecorded(oldId, false)
-      dataLakeLogger.setVariableRecorded(newIds[index], true)
+      if (dataLakeLogger.recordedVariableIds.includes(oldId)) replacements[oldId] = newIds[index]
     })
+    dataLakeLogger.replaceRecordedVariableIds(replacements)
     oldIds.forEach((oldId) => {
       if (getDataLakeVariableInfo(oldId) !== undefined) deleteDataLakeVariable(oldId)
     })
@@ -274,24 +274,26 @@ const initialize = (): void => {
       })
     })
 
-    // Seed the name map, then carry recording over renames, whether made here or synced from
-    // another topside
-    videoStore.streamsCorrespondency.forEach((corr) => {
-      lastInternalNames[corr.externalId] = corr.name
-    })
-    watch(videoStore.streamsCorrespondency, (corrs) => {
-      corrs.forEach((corr) => {
-        const lastName = lastInternalNames[corr.externalId]
-        if (lastName !== undefined && lastName !== corr.name) {
-          carryOverStreamStatRecording(lastName, corr.name)
-        }
-        lastInternalNames[corr.externalId] = corr.name
-      })
-      // A deleted stream's name ends its lineage: a re-added stream starts unarmed
-      Object.keys(lastInternalNames).forEach((externalId) => {
-        if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
-      })
-    })
+    // Seed the name map and carry recording over renames, whether made here or synced from
+    // another topside. Watch the getter so a whole-array replacement (discovery, BlueOS sync)
+    // does not detach the watcher.
+    watch(
+      () => videoStore.streamsCorrespondency,
+      (corrs) => {
+        corrs.forEach((corr) => {
+          const lastName = lastInternalNames[corr.externalId]
+          if (lastName !== undefined && lastName !== corr.name) {
+            carryOverStreamStatRecording(lastName, corr.name)
+          }
+          lastInternalNames[corr.externalId] = corr.name
+        })
+        // A deleted stream's name ends its lineage: a re-added stream starts unarmed
+        Object.keys(lastInternalNames).forEach((externalId) => {
+          if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
+        })
+      },
+      { deep: true, immediate: true }
+    )
 
     // The go2rtc sampler runs only while at least one RTSP stream is active
     const hasActiveRtspStreams = computed(() =>
