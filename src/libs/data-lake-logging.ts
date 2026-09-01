@@ -19,6 +19,18 @@ const defaultLogInterval = 1000
 // high-frequency raw-mode logging from overwhelming IndexedDB; at most this much data is buffered
 // in memory and would be lost on a hard crash/reload.
 const flushIntervalMs = 250
+
+let recordedVariableIdsChangedHandler = (): void => undefined
+
+/**
+ * Register a callback invoked after the recorded-variable selection is persisted, so a consumer can
+ * react to a newly armed recording without polling for it.
+ * @param {() => void} handler - Callback to run after the selection changes
+ */
+export const setRecordedVariableIdsChangedHandler = (handler: () => void): void => {
+  recordedVariableIdsChangedHandler = handler
+}
+
 /**
  * How variable keys are labeled in exported CSV and JSON files
  */
@@ -303,6 +315,7 @@ export class DataLakeLogger {
   set recordedVariableIds(value: string[]) {
     this._recordedVariableIds = value
     settingsManager.setKeyValue(recordedDataLakeVariablesKey, value)
+    recordedVariableIdsChangedHandler()
   }
 
   /**

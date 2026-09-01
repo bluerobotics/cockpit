@@ -5,19 +5,15 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useStreamStats } from '@/composables/useStreamStats'
 import { useVideoStore } from '@/stores/video'
-import type { Go2RTCStreamInfo } from '@/types/video'
 const videoStore = useVideoStore()
 
-const { webRtcStreamStatsSnapshots } = useStreamStats()
+const { webRtcStreamStatsSnapshots, go2rtcStreamSamples, acquireGo2rtcSampling, releaseGo2rtcSampling } =
+  useStreamStats()
 
-const rtspInfo = ref<Go2RTCStreamInfo | undefined>()
-let rtspInfoInterval: ReturnType<typeof setInterval> | null = null
-const rtspRates = ref({ bitrateKbps: 0, packetsPerSec: 0 })
-let prevRtspSample: Pick<Go2RTCStreamInfo, 'bytes' | 'packets' | 'sampleEpoch'> | undefined
 const rtspBitrateData = ref<number[]>([])
 const rtspPacketRateData = ref<number[]>([])
 const rtspStallData = ref<number[]>([])
@@ -50,6 +46,8 @@ const isRtspStream = (): boolean => {
   if (!props.streamName) return false
   return videoStore.getStreamProtocol(props.streamName) === 'rtsp'
 }
+
+const rtspSample = computed(() => go2rtcStreamSamples[props.streamName])
 
 const canvasRef = ref(null)
 const framerateData = ref([])
@@ -136,11 +134,11 @@ function draw(): void {
     drawPlot(rtspPacketRateData.value, 'rgb(100, 200, 255)', maxRtspPacketRate)
     drawPlot(rtspStallData.value, 'rgb(255, 0, 0)', 1)
 
-    const info = rtspInfo.value
-    const isStalled = info !== undefined && rtspRates.value.bitrateKbps === 0
+    const info = rtspSample.value
+    const isStalled = info?.bitrateKbps === 0
     const statusColor = isStalled ? 'red' : 'white'
-    const bitrateStr = rtspRates.value.bitrateKbps ? `${rtspRates.value.bitrateKbps}kbps` : '...'
-    const ppsStr = rtspRates.value.packetsPerSec ? `${rtspRates.value.packetsPerSec}/s` : '...'
+    const bitrateStr = info?.bitrateKbps ? `${info.bitrateKbps}kbps` : '...'
+    const ppsStr = info?.packetsPerSec ? `${info.packetsPerSec}/s` : '...'
     const stats = [
       { label: 'Stream', value: props.streamName, color: statusColor },
       { label: 'Source', value: 'Direct RTSP', color: statusColor },
@@ -244,58 +242,53 @@ watch(
   }
 )
 
-const fetchRtspInfo = async (): Promise<void> => {
-  if (!isRtspStream() || !window.electronAPI) return
-  try {
-    const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
-    const info = allInfo[props.streamName]
-    rtspInfo.value = info
-    if (info) {
-      // Rates are derived over this poller's own window, since the raw counters arrive un-differenced
-      if (prevRtspSample) {
-        const elapsed = (info.sampleEpoch - prevRtspSample.sampleEpoch) / 1000
-        if (elapsed > 0) {
-          rtspRates.value = {
-            bitrateKbps: Math.round(((info.bytes - prevRtspSample.bytes) * 8) / 1000 / elapsed),
-            packetsPerSec: Math.round((info.packets - prevRtspSample.packets) / elapsed),
-          }
-        }
-      }
-      prevRtspSample = { bytes: info.bytes, packets: info.packets, sampleEpoch: info.sampleEpoch }
+watch(rtspSample, (sample): void => {
+  if (!sample) return
 
-      if (rtspStartTime === 0) rtspStartTime = Date.now()
-      const warmUp = Date.now() - rtspStartTime < 5000
-      const isStalled = !warmUp && rtspRates.value.bitrateKbps === 0 ? 1 : 0
-      if (isStalled) rtspStallCount++
+  if (rtspStartTime === 0) rtspStartTime = Date.now()
+  const warmUp = Date.now() - rtspStartTime < 5000
+  const isStalled = !warmUp && sample.bitrateKbps === 0 ? 1 : 0
+  if (isStalled) rtspStallCount++
 
-      rtspBitrateData.value.push(rtspRates.value.bitrateKbps)
-      rtspPacketRateData.value.push(rtspRates.value.packetsPerSec)
-      rtspStallData.value.push(isStalled)
-      if (rtspBitrateData.value.length > maxDataPoints) rtspBitrateData.value.shift()
-      if (rtspPacketRateData.value.length > maxDataPoints) rtspPacketRateData.value.shift()
-      if (rtspStallData.value.length > maxDataPoints) rtspStallData.value.shift()
-      maxRtspBitrate = Math.max(1000, ...rtspBitrateData.value)
-      maxRtspPacketRate = Math.max(100, ...rtspPacketRateData.value)
-    }
-  } catch {
-    // go2rtc may not be running yet
+  rtspBitrateData.value.push(sample.bitrateKbps)
+  rtspPacketRateData.value.push(sample.packetsPerSec)
+  rtspStallData.value.push(isStalled)
+  if (rtspBitrateData.value.length > maxDataPoints) rtspBitrateData.value.shift()
+  if (rtspPacketRateData.value.length > maxDataPoints) rtspPacketRateData.value.shift()
+  if (rtspStallData.value.length > maxDataPoints) rtspStallData.value.shift()
+  maxRtspBitrate = Math.max(1000, ...rtspBitrateData.value)
+  maxRtspPacketRate = Math.max(100, ...rtspPacketRateData.value)
+})
+
+let acquiredGo2rtcSampling = false
+
+const syncGo2rtcSampling = (shouldAcquire: boolean): void => {
+  if (shouldAcquire && !acquiredGo2rtcSampling) {
+    acquireGo2rtcSampling()
+    acquiredGo2rtcSampling = true
+  } else if (!shouldAcquire && acquiredGo2rtcSampling) {
+    releaseGo2rtcSampling()
+    acquiredGo2rtcSampling = false
   }
 }
+
+watch(
+  () => isRtspStream(),
+  (isRtsp) => {
+    syncGo2rtcSampling(isRtsp)
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   intervalId = setInterval(update, props.updateInterval)
   draw()
-
-  if (isRtspStream()) {
-    fetchRtspInfo()
-    rtspInfoInterval = setInterval(fetchRtspInfo, 100)
-  }
 })
 
 onUnmounted(() => {
   clearInterval(intervalId)
-  if (rtspInfoInterval) clearInterval(rtspInfoInterval)
   cancelAnimationFrame(animationFrameId)
+  syncGo2rtcSampling(false)
 })
 </script>
 
