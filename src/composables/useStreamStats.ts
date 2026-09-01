@@ -1,0 +1,145 @@
+import { WebRTCStats } from '@peermetrics/webrtc-stats'
+import { effectScope, reactive, watch } from 'vue'
+
+import {
+  createDataLakeVariable,
+  DataLakeVariable,
+  getDataLakeVariableInfo,
+  setDataLakeVariableData,
+} from '@/libs/actions/data-lake'
+import { monitorStreamPeerConnection, noteStreamBytesReceived, streamStatVariableId } from '@/libs/webrtc/stats'
+import { useVideoStore } from '@/stores/video'
+import { WebRTCStatsEvent, WebRTCVideoStat, WebRTCVideoStats } from '@/types/video'
+
+// Track the WebRTC statistics, warn about changes in cumulative values and log the average values
+const cumulativeKeys: WebRTCVideoStat[] = [
+  'bytesReceived',
+  'firCount',
+  'framesDecoded',
+  'framesDropped',
+  'framesReceived',
+  'freezeCount',
+  'headerBytesReceived',
+  'jitterBufferEmittedCount',
+  'keyFramesDecoded',
+  'lastPacketReceivedTimestamp',
+  'nackCount',
+  'packetsLost',
+  'packetsReceived',
+  'pauseCount',
+  'pliCount',
+  'timestamp',
+  'totalAssemblyTime',
+  'totalDecodeTime',
+  'totalFreezesDuration',
+  'totalInterFrameDelay',
+  'totalPausesDuration',
+  'totalProcessingDelay',
+  'totalSquaredInterFrameDelay',
+] // Keys that have cumulative values
+const averageKeys: WebRTCVideoStat[] = [
+  'clockRate',
+  'framesAssembledFromMultiplePackets',
+  'framesPerSecond',
+  'jitter',
+  'jitterBufferDelay',
+  'jitterBufferMinimumDelay',
+  'jitterBufferTargetDelay',
+  'packetRate',
+] // Keys that have average values
+const storedKeys = [...cumulativeKeys, ...averageKeys] // Keys to store in the history
+
+// Latest inbound video stats per stream, keyed by external stream id, updated at the collector's
+// 100 ms cadence. Shared by the stats-for-nerds panel and any other live consumer.
+const webRtcStreamStatsSnapshots = reactive<Record<string, WebRTCVideoStats | undefined>>({})
+
+// One collector per stream, shared by every consumer so an open panel never doubles the sampling work
+const collectors: Record<string, ReturnType<typeof WebRTCStats>> = {}
+const streamsAlreadyTrackingWebRTCStats: string[] = []
+
+let initialized = false
+// Detached scope: the collector watch must live for the app's lifetime, not the first caller's
+const collectorScope = effectScope(true)
+
+const initializeCollectors = (): void => {
+  const videoStore = useVideoStore()
+
+  collectorScope.run(() => {
+    // Monitor the active streams to add the connections to the WebRTC statistics
+    watch(videoStore.activeStreams, (streams) => {
+      Object.keys(webRtcStreamStatsSnapshots).forEach((name) => {
+        if (streams[name] === undefined) delete webRtcStreamStatsSnapshots[name]
+      })
+
+      Object.keys(streams).forEach((streamName) => {
+        const pcInfo = videoStore.getStreamPeerConnection(streamName)
+        if (!pcInfo) return
+
+        if (collectors[streamName] === undefined) {
+          collectors[streamName] = new WebRTCStats({ getStatsInterval: 100 })
+        }
+
+        if (collectors[streamName].peersToMonitor[pcInfo.peerId]) return
+
+        monitorStreamPeerConnection(collectors[streamName], pcInfo)
+
+        // Persisted artifacts use the internal stream name; an unmapped stream gets no variables, so the
+        // external id (an RTSP URL, credentials included) never reaches a variable name
+        storedKeys.forEach((key) => {
+          const internalName = videoStore.internalStreamNameFromExternal(streamName)
+          if (internalName === undefined) return
+          if (getDataLakeVariableInfo(streamStatVariableId(internalName, key)) === undefined) {
+            const streamVariable = {
+              id: streamStatVariableId(internalName, key),
+              name: `Stream '${internalName}' - ${key}`,
+              type: 'number',
+              description: `WebRTC stat '${key}' of the '${internalName}' video stream.`,
+            } as DataLakeVariable
+            createDataLakeVariable(streamVariable)
+          }
+        })
+
+        if (streamsAlreadyTrackingWebRTCStats.includes(streamName)) return
+        streamsAlreadyTrackingWebRTCStats.push(streamName)
+
+        collectors[streamName].on('stats', (ev: WebRTCStatsEvent) => {
+          try {
+            // Stats for a peer we no longer monitor describe a connection that has already been replaced
+            if (!collectors[streamName].peersToMonitor[ev.peerId]) return
+
+            const videoData = ev.data.video.inbound[0]
+            if (videoData === undefined) return
+
+            webRtcStreamStatsSnapshots[streamName] = videoData
+            noteStreamBytesReceived(streamName, videoData.bytesReceived)
+            const internalName = videoStore.internalStreamNameFromExternal(streamName)
+            if (internalName === undefined) return
+            storedKeys.forEach((key) => {
+              setDataLakeVariableData(streamStatVariableId(internalName, key), videoData[key])
+            })
+          } catch (error) {
+            console.error('Error while logging WebRTC statistics:', error)
+          }
+        })
+      })
+    })
+  })
+}
+
+/**
+ * Access the shared per-stream stats collectors, starting them on first call
+ * @returns {object} The latest WebRTC stats snapshot per stream, keyed by external stream id
+ */
+export const useStreamStats = (): {
+  /**
+   * Latest inbound video stats per stream, keyed by external stream id
+   */
+  webRtcStreamStatsSnapshots: Record<string, WebRTCVideoStats | undefined>
+} => {
+  if (!initialized) {
+    initialized = true
+    initializeCollectors()
+  }
+
+  return { webRtcStreamStatsSnapshots }
+}

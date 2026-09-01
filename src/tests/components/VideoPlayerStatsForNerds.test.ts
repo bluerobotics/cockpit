@@ -1,39 +1,15 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import VideoPlayerStatsForNerds from '@/components/VideoPlayerStatsForNerds.vue'
+import { useStreamStats } from '@/composables/useStreamStats'
+import type { WebRTCVideoStats } from '@/types/video'
 
-vi.mock('@peermetrics/webrtc-stats', () => {
-  /**
-   * Stand-in for the stats library, keeping the last instance so the test can emit its stats events
-   */
-  class WebRTCStats {
-    static lastInstance: WebRTCStats | undefined
-    peersToMonitor: Record<string, unknown> = { peer: {} }
-    listeners: Record<string, (event: unknown) => void> = {}
-    /**
-     * Keeps the instance reachable from the test
-     */
-    constructor() {
-      WebRTCStats.lastInstance = this
-    }
-    /**
-     * Stores the listener for the event
-     * @param {string} event - Name of the event
-     * @param {(event: unknown) => void} listener - Called when the event is emitted
-     */
-    on(event: string, listener: (event: unknown) => void): void {
-      this.listeners[event] = listener
-    }
-    /**
-     * Does nothing, as nothing is monitored
-     */
-    destroy(): void {
-      return
-    }
-  }
-  return { WebRTCStats }
+vi.mock('@/composables/useStreamStats', async () => {
+  const { reactive: makeReactive } = await import('vue')
+  const webRtcStreamStatsSnapshots = makeReactive<Record<string, WebRTCVideoStats | undefined>>({})
+  return { useStreamStats: () => ({ webRtcStreamStatsSnapshots }) }
 })
 vi.mock('@/stores/video', () => ({
   useVideoStore: () => ({
@@ -77,21 +53,11 @@ const inboundVideoSample = (bitrate: number): Record<string, number> => ({
   frameHeight: 720,
 })
 
-/**
- * The mocked stats library class
- */
-interface MockedWebRTCStats {
-  /**
-   * Listeners of the last instance created, by event name
-   */
-  lastInstance: Record<'listeners', Record<string, (event: unknown) => void>>
-}
-
+// Stands in for the shared collector publishing one stats sample of the stream
 const emitStatsAndDraw = async (bitrate: number): Promise<void> => {
-  const { WebRTCStats } = await import('@peermetrics/webrtc-stats')
-  const stats = (WebRTCStats as unknown as MockedWebRTCStats).lastInstance
   vi.advanceTimersByTime(statsIntervalMs)
-  stats.listeners.stats({ peerId: 'peer', data: { video: { inbound: [inboundVideoSample(bitrate)] } } })
+  useStreamStats().webRtcStreamStatsSnapshots.Main = inboundVideoSample(bitrate) as unknown as WebRTCVideoStats
+  await nextTick()
   drawNextFrame?.(performance.now())
 }
 
