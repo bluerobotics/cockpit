@@ -1548,8 +1548,7 @@ const renderMeasureOverlay = (cursorLatLng: L.LatLng, evt: L.LeafletMouseEvent |
   // typed instead of leaflet's 0.1% smaller earth.
   const dist = calculateHaversineDistance([anchor.lat, anchor.lng], [cursor.lat, cursor.lng])
 
-  const hidePill =
-    (evt && (isOverSurveyHandle(evt.originalEvent?.target) || isOverLastWaypointMarker(evt))) || dist < 1 // hide if closer than 1 meter to last wp on the array
+  const hidePill = (evt && (isOverSurveyHandle(evt.originalEvent?.target) || isOverLastWaypointMarker(evt))) || dist < 1 // hide if closer than 1 meter to last wp on the array
 
   renderLiveMeasure({
     from: anchor,
