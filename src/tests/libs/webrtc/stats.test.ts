@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
+import { monitorStreamPeerConnection, setStreamStatPublishedName, streamStatVariableId } from '@/libs/webrtc/stats'
 
 test('Registers the new peer connection before dropping the previous one', () => {
   const calls: string[] = []
@@ -25,6 +25,16 @@ test('Registers the new peer connection before dropping the previous one', () =>
 
   expect(calls).toEqual(['add:new', 'remove:old'])
   expect(Object.keys(peersToMonitor)).toEqual(['new'])
+})
+
+test('Keys a stream stat id by the registered stream name', () => {
+  setStreamStatPublishedName((streamName) => (streamName === 'ext' ? 'internal' : streamName))
+  try {
+    expect(streamStatVariableId('ext', 'bytesReceived')).toBe('stream-internal-bytesReceived')
+    expect(streamStatVariableId('other', 'bytesReceived')).toBe('stream-other-bytesReceived')
+  } finally {
+    setStreamStatPublishedName((streamName) => streamName)
+  }
 })
 
 test('Keeps the peer monitored when the same connection is registered again', () => {

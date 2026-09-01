@@ -32,6 +32,7 @@ import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/ut
 import { telemetryOverlayWindowCandidates } from '@/libs/video-telemetry'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { setStreamStatPublishedName } from '@/libs/webrtc/stats'
 import { readableVideoCodecName } from '@/libs/webrtc/video-codec-support'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -227,6 +228,9 @@ export const useVideoStore = defineStore('video', () => {
     const corr = streamsCorrespondency.value.find((stream) => stream.externalId === externalId)
     return corr ? corr.name : undefined
   }
+
+  // Persisted artifacts use the internal stream name; the external id is only for display
+  setStreamStatPublishedName((externalId) => internalStreamNameFromExternal(externalId) ?? externalId)
 
   const getStreamCorrespondency = (externalId: string): VideoStreamCorrespondency | undefined => {
     return streamsCorrespondency.value.find((stream) => stream.externalId === externalId)
