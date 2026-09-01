@@ -5,14 +5,14 @@
 </template>
 
 <script lang="ts" setup>
-import { WebRTCStats } from '@peermetrics/webrtc-stats'
-import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
+import { useStreamStats } from '@/composables/useStreamStats'
 import { useVideoStore } from '@/stores/video'
 import type { Go2RTCStreamInfo } from '@/types/video'
-import { WebRTCStatsEvent } from '@/types/video'
 const videoStore = useVideoStore()
+
+const { webRtcStreamStatsSnapshots } = useStreamStats()
 
 const rtspInfo = ref<Go2RTCStreamInfo | undefined>()
 let rtspInfoInterval: ReturnType<typeof setInterval> | null = null
@@ -189,8 +189,6 @@ function draw(): void {
   animationFrameId = requestAnimationFrame(draw)
 }
 
-const webrtcStats = new WebRTCStats({ getStatsInterval: 100 })
-
 /**
  * Draws the lines and updates the stats
  */
@@ -205,15 +203,46 @@ function update(): void {
   maxFramerateReceived = Math.min(Math.max(30, ...framerateData.value), absoluteMaxFrameRate)
 }
 
-watch(videoStore.activeStreams, (streams): void => {
-  Object.keys(streams).forEach((streamName) => {
-    if (streamName !== props.streamName) return
-    const pcInfo = videoStore.getStreamPeerConnection(streamName)
-    if (!pcInfo) return
-    if (webrtcStats.peersToMonitor[pcInfo.peerId]) return
-    monitorStreamPeerConnection(webrtcStats, pcInfo)
-  })
-})
+watch(
+  () => webRtcStreamStatsSnapshots[props.streamName],
+  (videoData): void => {
+    if (videoData === undefined) return
+    try {
+      connectionLost = videoData.bitrate === 0
+      if (!isNaN(videoData.bitrate)) {
+        const newBitrate = videoData.bitrate / 1000
+        bitrate = bitrate * 0.8 + newBitrate * 0.2
+      }
+      packetLostDelta = videoData.packetsLost - packetsLost
+      packetsLost = videoData.packetsLost
+      nackCount = videoData.nackCount
+      pliCount = videoData.pliCount
+      firCount = videoData.firCount
+      packetsReceived = videoData.packetsReceived
+      let totalProcessingDelayDelta = videoData.totalProcessingDelay - totalProcessingDelay
+      let framesDelta = videoData.framesReceived - framesReceived
+      processingDelayDelta = (1000 * totalProcessingDelayDelta) / framesDelta
+      framesReceived = videoData.framesReceived
+      totalProcessingDelay = videoData.totalProcessingDelay
+      packetLossPercentage = (packetsLost / (packetsLost + packetsReceived)) * 100
+      freezes = videoData.freezeCount
+      frozenTime = videoData.totalFreezesDuration
+      framedrops = videoData.framesDropped
+      // Both stats are cumulative, so only their deltas tell how much the last frames actually waited in the buffer
+      const jitterBufferDelayDelta = videoData.jitterBufferDelay - jitterBufferDelay
+      const jitterBufferEmittedDelta = videoData.jitterBufferEmittedCount - jitterBufferEmittedCount
+      if (jitterBufferEmittedDelta > 0) {
+        jitterBufferDelayPerFrame = (1000 * jitterBufferDelayDelta) / jitterBufferEmittedDelta
+      }
+      jitterBufferDelay = videoData.jitterBufferDelay
+      jitterBufferEmittedCount = videoData.jitterBufferEmittedCount
+      framerate = videoData.framesPerSecond ?? 0
+      videoHeight = videoData.frameHeight
+    } catch (error) {
+      console.error(error)
+    }
+  }
+)
 
 const fetchRtspInfo = async (): Promise<void> => {
   if (!isRtspStream() || !window.electronAPI) return
@@ -261,57 +290,12 @@ onMounted(() => {
     fetchRtspInfo()
     rtspInfoInterval = setInterval(fetchRtspInfo, 100)
   }
-
-  webrtcStats.on('stats', (ev: WebRTCStatsEvent) => {
-    try {
-      if (!webrtcStats.peersToMonitor[ev.peerId]) return
-
-      const videoData = ev.data.video.inbound[0]
-      if (videoData === undefined) return
-      connectionLost = videoData.bitrate === 0
-      if (!isNaN(videoData.bitrate)) {
-        const newBitrate = videoData.bitrate / 1000
-        bitrate = bitrate * 0.8 + newBitrate * 0.2
-      }
-      packetLostDelta = videoData.packetsLost - packetsLost
-      packetsLost = videoData.packetsLost
-      nackCount = videoData.nackCount
-      pliCount = videoData.pliCount
-      firCount = videoData.firCount
-      packetsReceived = videoData.packetsReceived
-      let totalProcessingDelayDelta = videoData.totalProcessingDelay - totalProcessingDelay
-      let framesDelta = videoData.framesReceived - framesReceived
-      processingDelayDelta = (1000 * totalProcessingDelayDelta) / framesDelta
-      framesReceived = videoData.framesReceived
-      totalProcessingDelay = videoData.totalProcessingDelay
-      packetLossPercentage = (packetsLost / (packetsLost + packetsReceived)) * 100
-      freezes = videoData.freezeCount
-      frozenTime = videoData.totalFreezesDuration
-      framedrops = videoData.framesDropped
-      // Both stats are cumulative, so only their deltas tell how much the last frames actually waited in the buffer
-      const jitterBufferDelayDelta = videoData.jitterBufferDelay - jitterBufferDelay
-      const jitterBufferEmittedDelta = videoData.jitterBufferEmittedCount - jitterBufferEmittedCount
-      if (jitterBufferEmittedDelta > 0) {
-        jitterBufferDelayPerFrame = (1000 * jitterBufferDelayDelta) / jitterBufferEmittedDelta
-      }
-      jitterBufferDelay = videoData.jitterBufferDelay
-      jitterBufferEmittedCount = videoData.jitterBufferEmittedCount
-      framerate = videoData.framesPerSecond ?? 0
-      videoHeight = videoData.frameHeight
-    } catch (e) {
-      console.error(e)
-    }
-  })
 })
 
 onUnmounted(() => {
   clearInterval(intervalId)
   if (rtspInfoInterval) clearInterval(rtspInfoInterval)
   cancelAnimationFrame(animationFrameId)
-})
-
-onBeforeUnmount(() => {
-  webrtcStats.destroy()
 })
 </script>
 
