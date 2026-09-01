@@ -1,7 +1,8 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 
 import { getDataLakeVariableData, getDataLakeVariableLastUpdateTimestamp } from '@/libs/actions/data-lake'
-import { StreamPeerConnectionInfo, WebRTCVideoStat } from '@/types/video'
+import { streamStatVariableId } from '@/libs/video/stream-stats'
+import { StreamPeerConnectionInfo } from '@/types/video'
 
 const maxVideoStatAge = 2000
 
@@ -17,18 +18,6 @@ export const setStreamStatPublishedName = (resolve: (externalId: string) => stri
 }
 
 /**
- * Data-lake variable id under which a stream's inbound-video stat is published
- * @param {string} streamName - Name of the stream the stat belongs to, as the caller holds it
- * @param {WebRTCVideoStat} statName - Stat published under the id
- * @returns {string | undefined} The data-lake variable id, or undefined when the stream has no internal name
- */
-export const streamStatVariableId = (streamName: string, statName: WebRTCVideoStat): string | undefined => {
-  const internalName = publishedStreamName(streamName)
-  if (internalName === undefined) return undefined
-  return `stream-${internalName}-${statName}`
-}
-
-/**
  * Follow how long a stream's video has gone without arriving, going by the bytes its stats report received
  * @param {string} streamName - Name of the stream to follow
  * @param {string} missingStatConsequence - What goes unwatched without the stat, logged once when it is missing
@@ -36,13 +25,19 @@ export const streamStatVariableId = (streamName: string, statName: WebRTCVideoSt
  * is missing or stale
  */
 export const trackVideoArrival = (streamName: string, missingStatConsequence: string): (() => number | undefined) => {
-  let statId = streamStatVariableId(streamName, 'bytesReceived')
+  const bytesReceivedId = (): string | undefined => {
+    const internalName = publishedStreamName(streamName)
+    if (internalName === undefined) return undefined
+    return streamStatVariableId(internalName, 'bytesReceived')
+  }
+
+  let statId = bytesReceivedId()
   let lastBytesReceived: number | undefined
   let lastChangeTime = performance.now()
   let missingStatReported = false
 
   return () => {
-    const nextStatId = streamStatVariableId(streamName, 'bytesReceived')
+    const nextStatId = bytesReceivedId()
     // A renamed stream publishes under a new id; keep following the one being written
     if (nextStatId !== statId) {
       statId = nextStatId

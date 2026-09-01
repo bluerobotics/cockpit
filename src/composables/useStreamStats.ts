@@ -10,69 +10,19 @@ import {
 } from '@/libs/actions/data-lake'
 import { dataLakeLogger, setRecordedVariableIdsChangedHandler } from '@/libs/data-lake-logging'
 import { isElectron } from '@/libs/utils'
-import { differenceGo2rtcSamples, Go2rtcIngestCounters, Go2rtcStreamSample } from '@/libs/video/stream-stats'
+import {
+  differenceGo2rtcSamples,
+  Go2rtcIngestCounters,
+  Go2rtcStreamSample,
+  Go2rtcStreamStatKey,
+  go2rtcStreamStatKeys,
+  go2rtcStreamStatVariableId,
+  streamStatVariableId,
+  webRtcStreamStatKeys,
+} from '@/libs/video/stream-stats'
 import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
 import { useVideoStore } from '@/stores/video'
-import { type Go2RTCStreamInfo, WebRTCStatsEvent, WebRTCVideoStat, WebRTCVideoStats } from '@/types/video'
-
-// Track the WebRTC statistics, warn about changes in cumulative values and log the average values
-const cumulativeKeys: WebRTCVideoStat[] = [
-  'bytesReceived',
-  'firCount',
-  'framesDecoded',
-  'framesDropped',
-  'framesReceived',
-  'freezeCount',
-  'headerBytesReceived',
-  'jitterBufferEmittedCount',
-  'keyFramesDecoded',
-  'lastPacketReceivedTimestamp',
-  'nackCount',
-  'packetsLost',
-  'packetsReceived',
-  'pauseCount',
-  'pliCount',
-  'timestamp',
-  'totalAssemblyTime',
-  'totalDecodeTime',
-  'totalFreezesDuration',
-  'totalInterFrameDelay',
-  'totalPausesDuration',
-  'totalProcessingDelay',
-  'totalSquaredInterFrameDelay',
-] // Keys that have cumulative values
-const averageKeys: WebRTCVideoStat[] = [
-  'clockRate',
-  'framesAssembledFromMultiplePackets',
-  'framesPerSecond',
-  'jitter',
-  'jitterBufferDelay',
-  'jitterBufferMinimumDelay',
-  'jitterBufferTargetDelay',
-  'packetRate',
-] // Keys that have average values
-const webRtcStreamStatKeys = [...cumulativeKeys, ...averageKeys] // Keys to store in the history
-
-const streamStatVariableId = (internalName: string, statKey: string): string => `stream-${internalName}-${statKey}`
-
-// go2rtc ingest stats published to the data lake for every active RTSP stream (Standalone only)
-const go2rtcStreamStatKeys = [
-  'bytes',
-  'packets',
-  'sampleEpoch',
-  'bitrateKbps',
-  'packetsPerSec',
-  'codec',
-  'width',
-  'height',
-  'fps',
-  'protocol',
-] as const
-
-type Go2rtcStreamStatKey = (typeof go2rtcStreamStatKeys)[number]
-
-const go2rtcStreamStatVariableId = (internalName: string, statKey: Go2rtcStreamStatKey): string =>
-  `stream-${internalName}-rtsp-${statKey}`
+import { type Go2RTCStreamInfo, WebRTCStatsEvent, WebRTCVideoStats } from '@/types/video'
 
 // Data lake variable types of the go2rtc ingest stats
 const go2rtcStreamStatTypes: Record<Go2rtcStreamStatKey, 'number' | 'string'> = {
@@ -201,11 +151,11 @@ const initialize = (): void => {
     ]
     const oldIds = statIds(oldName)
     const newIds = statIds(newName)
+    const replacements: Record<string, string> = {}
     oldIds.forEach((oldId, index) => {
-      if (!dataLakeLogger.recordedVariableIds.includes(oldId)) return
-      dataLakeLogger.setVariableRecorded(oldId, false)
-      dataLakeLogger.setVariableRecorded(newIds[index], true)
+      if (dataLakeLogger.recordedVariableIds.includes(oldId)) replacements[oldId] = newIds[index]
     })
+    dataLakeLogger.replaceRecordedVariableIds(replacements)
     oldIds.forEach((oldId) => {
       if (getDataLakeVariableInfo(oldId) !== undefined) deleteDataLakeVariable(oldId)
     })
@@ -324,24 +274,26 @@ const initialize = (): void => {
       })
     })
 
-    // Seed the name map, then carry recording over renames, whether made here or synced from
-    // another topside
-    videoStore.streamsCorrespondency.forEach((corr) => {
-      lastInternalNames[corr.externalId] = corr.name
-    })
-    watch(videoStore.streamsCorrespondency, (corrs) => {
-      corrs.forEach((corr) => {
-        const lastName = lastInternalNames[corr.externalId]
-        if (lastName !== undefined && lastName !== corr.name) {
-          carryOverStreamStatRecording(lastName, corr.name)
-        }
-        lastInternalNames[corr.externalId] = corr.name
-      })
-      // A deleted stream's name ends its lineage: a re-added stream starts unarmed
-      Object.keys(lastInternalNames).forEach((externalId) => {
-        if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
-      })
-    })
+    // Seed the name map and carry recording over renames, whether made here or synced from
+    // another topside. Watch the getter so a whole-array replacement (discovery, BlueOS sync)
+    // does not detach the watcher.
+    watch(
+      () => videoStore.streamsCorrespondency,
+      (corrs) => {
+        corrs.forEach((corr) => {
+          const lastName = lastInternalNames[corr.externalId]
+          if (lastName !== undefined && lastName !== corr.name) {
+            carryOverStreamStatRecording(lastName, corr.name)
+          }
+          lastInternalNames[corr.externalId] = corr.name
+        })
+        // A deleted stream's name ends its lineage: a re-added stream starts unarmed
+        Object.keys(lastInternalNames).forEach((externalId) => {
+          if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
+        })
+      },
+      { deep: true, immediate: true }
+    )
 
     // The go2rtc sampler runs only while at least one RTSP stream is active
     const hasActiveRtspStreams = computed(() =>

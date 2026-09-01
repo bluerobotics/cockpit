@@ -1,12 +1,8 @@
 import { expect, test, vi } from 'vitest'
 
 import { deleteDataLakeVariable, setDataLakeVariableData } from '@/libs/actions/data-lake'
-import {
-  monitorStreamPeerConnection,
-  setStreamStatPublishedName,
-  streamStatVariableId,
-  trackVideoArrival,
-} from '@/libs/webrtc/stats'
+import { streamStatVariableId } from '@/libs/video/stream-stats'
+import { monitorStreamPeerConnection, setStreamStatPublishedName, trackVideoArrival } from '@/libs/webrtc/stats'
 
 test('Registers the new peer connection before dropping the previous one', () => {
   const calls: string[] = []
@@ -42,14 +38,14 @@ test('Follows bytesReceived under the internal stream name, and skips an unmappe
   const writtenIds: string[] = []
 
   try {
-    expect(streamStatVariableId('ext-cam', 'bytesReceived')).toBe('stream-front-bytesReceived')
+    expect(streamStatVariableId('front', 'bytesReceived')).toBe('stream-front-bytesReceived')
     setDataLakeVariableData('stream-front-bytesReceived', 1000)
     writtenIds.push('stream-front-bytesReceived')
     const secondsWithoutVideo = trackVideoArrival('ext-cam', 'a stream whose source is lost will not reconnect')
     expect(secondsWithoutVideo()).toBe(0)
 
     internalByExternal.set('ext-cam', 'front-renamed')
-    expect(streamStatVariableId('ext-cam', 'bytesReceived')).toBe('stream-front-renamed-bytesReceived')
+    expect(streamStatVariableId('front-renamed', 'bytesReceived')).toBe('stream-front-renamed-bytesReceived')
     expect(secondsWithoutVideo()).toBeUndefined()
 
     setDataLakeVariableData('stream-front-renamed-bytesReceived', 1000)
@@ -66,7 +62,6 @@ test('Follows bytesReceived under the internal stream name, and skips an unmappe
     expect(dropWarnings[0].includes('stream-ext-cam-bytesReceived')).toBe(false)
 
     const warningsBefore = warn.mock.calls.length
-    expect(streamStatVariableId(unmappedId, 'bytesReceived')).toBeUndefined()
     const unmappedSeconds = trackVideoArrival(unmappedId, 'a stream whose source is lost will not reconnect')
     expect(unmappedSeconds()).toBeUndefined()
     expect(unmappedSeconds()).toBeUndefined()
