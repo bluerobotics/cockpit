@@ -175,9 +175,9 @@ export const reloadCockpit = (timeout = 3000): void => {
  * @returns {boolean} True if running in Electron, false otherwise
  */
 export const isElectron = (): boolean => {
-  // Check if the userAgent contains 'electron' (for renderer process)
-  if (typeof navigator === 'object' && typeof navigator.userAgent === 'string') {
-    return navigator.userAgent.toLowerCase().includes('electron')
+  // An Electron-hosted webview carries the Electron UA without Cockpit's preload bridge
+  if (typeof window === 'object' && typeof navigator === 'object' && typeof navigator.userAgent === 'string') {
+    return navigator.userAgent.toLowerCase().includes('electron') && window.electronAPI !== undefined
   }
 
   // Check if the process object exists and contains 'electron' (for main process)
