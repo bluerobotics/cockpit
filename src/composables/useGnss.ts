@@ -16,7 +16,7 @@ import {
   stopGnssDevice,
   subscribeToDeviceState,
 } from '@/libs/sensors/gnss'
-import { isElectron, machinizeString } from '@/libs/utils'
+import { isElectron, machinizeString, uniqueString } from '@/libs/utils'
 import type { GnssDevice, GnssState } from '@/types/gnss'
 import type { SerialPortInfo } from '@/types/serial'
 
@@ -28,13 +28,8 @@ let state: GnssState | undefined
  * @param {string[]} existingIds - Ids already in use, which the result must not collide with.
  * @returns {string} A unique machinized id (falls back to `gnss` when the name has no usable characters).
  */
-const generateDeviceId = (name: string, existingIds: string[]): string => {
-  const base = machinizeString(name) || 'gnss'
-  if (!existingIds.includes(base)) return base
-  let suffix = 2
-  while (existingIds.includes(`${base}-${suffix}`)) suffix++
-  return `${base}-${suffix}`
-}
+const generateDeviceId = (name: string, existingIds: string[]): string =>
+  uniqueString(machinizeString(name) || 'gnss', existingIds, '-')
 
 /**
  * Builds the shared GNSS UI state: persisted devices, an optional in-progress draft, reactive per-device
@@ -71,6 +66,13 @@ const createState = (): GnssState => {
       devices.value.map((device) => device.id)
     )
 
+  const planDeviceName = (name: string): string =>
+    uniqueString(
+      name,
+      devices.value.map((device) => device.name),
+      ' '
+    )
+
   const refreshPorts = async (): Promise<void> => {
     availablePorts.value = await listSerialPorts()
   }
@@ -78,7 +80,7 @@ const createState = (): GnssState => {
   const connectDevice = async (id: string): Promise<void> => {
     const isDraft = draft.value?.id === id
     const device = findDeviceOrDraft(id)
-    if (!isSupported || !device || !device.port) return
+    if (!isSupported || !device) return
     device.enabled = true
     // Drafts preview the stream without registering/publishing data-lake variables until saved.
     await startGnssDevice(device, !isDraft)
@@ -98,7 +100,8 @@ const createState = (): GnssState => {
     draft.value = device
     statuses[device.id] = 'disconnected'
     logUserAction('Started GNSS device creation')
-    return device
+    // The ref's proxy, not the raw target: mutations through the returned object have to notify watchers.
+    return draft.value as GnssDevice
   }
 
   const clearDeviceRuntimeState = async (id: string): Promise<void> => {
@@ -144,9 +147,9 @@ const createState = (): GnssState => {
     statuses[id] = 'disconnected'
     logUserAction(`Added GNSS device "${device.name}"`)
 
-    if (wasConnected) {
-      connectDevice(id).catch((error) => console.error('[GNSS] Failed to connect after creation:', error))
-    }
+    // Reopening the port right after releasing the preview can fail (busy, or the receiver was unplugged),
+    // and the caller is the only one that can tell the user their brand new device is not reading.
+    if (wasConnected) await connectDevice(id)
     return id
   }
 
@@ -193,6 +196,7 @@ const createState = (): GnssState => {
     cancelCreate,
     commitCreate,
     planDeviceId,
+    planDeviceName,
     removeDevice,
     connectDevice,
     disconnectDevice,

@@ -17,7 +17,7 @@ import {
   setDataLakeVariableData,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
-import { NmeaAggregator, parseNmeaSentence } from '@/libs/sensors/nmea'
+import { fixQualityLabel, NmeaAggregator, parseNmeaSentence } from '@/libs/sensors/nmea'
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
 import type {
@@ -28,6 +28,7 @@ import type {
   GnssDeviceStateListener,
   GnssField,
   GnssFix,
+  GnssFixItem,
   GnssStatus,
   SerialLineEvent,
 } from '@/types/gnss'
@@ -244,6 +245,40 @@ export const gnssStatusIcon = (status: GnssStatus): string => {
  */
 export const gnssStatusLabel = (status: GnssStatus): string => (status === 'no-data' ? 'connected (no data)' : status)
 
+const formatFixNumber = (value: number | undefined, digits: number): string =>
+  value === undefined ? '-' : value.toFixed(digits)
+
+/**
+ * Formats a fix into the labelled rows the GNSS dialogs display, so every one of them shows the same
+ * values. Callers that only want a few rows pick them by key.
+ * @param {GnssFix} fix - The fix to format.
+ * @returns {GnssFixItem[]} One row per displayed field, in display order.
+ */
+export const gnssFixItems = (fix: GnssFix): GnssFixItem[] => [
+  { key: 'fixQuality', label: 'Fix', value: fix.fixQualityLabel ?? fixQualityLabel(fix.fixQuality ?? 0) },
+  {
+    key: 'fixMode',
+    label: 'Fix mode',
+    value: fix.fixMode === undefined ? '-' : `${fix.fixMode}D`.replace('1D', 'No fix'),
+  },
+  { key: 'latitude', label: 'Latitude', value: formatFixNumber(fix.latitude, 7) },
+  { key: 'longitude', label: 'Longitude', value: formatFixNumber(fix.longitude, 7) },
+  {
+    key: 'altitudeMslM',
+    label: 'Altitude (MSL)',
+    value: fix.altitudeMslM === undefined ? '-' : `${formatFixNumber(fix.altitudeMslM, 1)} m`,
+  },
+  { key: 'satellitesUsed', label: 'Satellites used', value: fix.satellitesUsed?.toString() ?? '-' },
+  { key: 'satellitesInView', label: 'Satellites in view', value: fix.satellitesInView?.toString() ?? '-' },
+  { key: 'hdop', label: 'HDOP', value: formatFixNumber(fix.hdop, 2) },
+  {
+    key: 'speedOverGroundMps',
+    label: 'Speed',
+    value: fix.speedOverGroundMps === undefined ? '-' : `${formatFixNumber(fix.speedOverGroundMps, 2)} m/s`,
+  },
+  { key: 'utcTime', label: 'UTC time', value: fix.utcTime ?? '-' },
+]
+
 const recordSerialLine = (deviceId: string, line: string): void => {
   const msg = line.replace(/\r$/, '').trim()
   if (!msg) return
@@ -426,12 +461,18 @@ const handleDeviceBytes = (deviceId: string, bytes: number[]): void => {
   }
 }
 
+const pendingStarts = new Map<string, Promise<void>>()
+
 /**
  * Stops the reader for a device and closes its serial port, if open.
  * @param {string} deviceId - The device id.
  * @returns {Promise<void>} Resolves once the port is closed.
  */
 export const stopGnssDevice = async (deviceId: string): Promise<void> => {
+  // A start registers its runtime only once the port is open, so a stop landing before that would find
+  // nothing to stop and leave the reader it could not see holding the port until the app restarts.
+  await pendingStarts.get(deviceId)?.catch(() => undefined)
+
   const runtime = runtimes.get(deviceId)
   if (runtime) {
     stopWatchdog(runtime)
@@ -442,23 +483,7 @@ export const stopGnssDevice = async (deviceId: string): Promise<void> => {
   setStatus(deviceId, 'disconnected')
 }
 
-/**
- * Starts reading a device's GNSS receiver from its serial port.
- *
- * When `publish` is true (the default) the device's data-lake variables are registered and updated; pass
- * `publish: false` to preview an unsaved draft (parses and surfaces status/fix/serial lines without touching
- * the data lake).
- * @param {GnssDeviceInfo} device - The device to read from.
- * @param {boolean} [publish] - Whether to register/update data-lake variables (false to preview a draft).
- * @returns {Promise<void>} Resolves once the port is open.
- * @throws {Error} When not running in Electron, or when the port cannot be opened.
- */
-export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): Promise<void> => {
-  if (!isElectron() || !window.electronAPI) {
-    throw new Error('GNSS reading is only available in Cockpit standalone.')
-  }
-
-  await stopGnssDevice(device.id)
+const openGnssDevice = async (device: GnssDeviceInfo, publish: boolean): Promise<void> => {
   if (publish) registerDeviceVariables(device)
   ensureLinkListener()
 
@@ -480,7 +505,7 @@ export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): P
   runtimes.set(device.id, runtime)
   setStatus(device.id, 'connecting')
 
-  const opened = await window.electronAPI.linkOpen(path)
+  const opened = await window.electronAPI?.linkOpen(path)
   if (!opened) {
     runtimes.delete(device.id)
     setStatus(device.id, 'disconnected')
@@ -492,6 +517,33 @@ export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): P
   startWatchdog(device.id)
 }
 
+/**
+ * Starts reading a device's GNSS receiver from its serial port.
+ *
+ * When `publish` is true (the default) the device's data-lake variables are registered and updated; pass
+ * `publish: false` to preview an unsaved draft (parses and surfaces status/fix/serial lines without touching
+ * the data lake).
+ * @param {GnssDeviceInfo} device - The device to read from.
+ * @param {boolean} [publish] - Whether to register/update data-lake variables (false to preview a draft).
+ * @returns {Promise<void>} Resolves once the port is open.
+ * @throws {Error} When not running in Electron, or when the port cannot be opened.
+ */
+export const startGnssDevice = async (device: GnssDeviceInfo, publish = true): Promise<void> => {
+  if (!isElectron() || !window.electronAPI) {
+    throw new Error('GNSS reading is only available in Cockpit standalone.')
+  }
+
+  await stopGnssDevice(device.id)
+
+  const start = openGnssDevice(device, publish)
+  pendingStarts.set(device.id, start)
+  try {
+    await start
+  } finally {
+    if (pendingStarts.get(device.id) === start) pendingStarts.delete(device.id)
+  }
+}
+
 const stopDevicesOnPort = async (port: string): Promise<void> => {
   const portPrefix = buildSerialUri(port, 0).split('?')[0]
   const toStop = [...runtimes.entries()].filter(([, runtime]) => runtime.path.startsWith(portPrefix))
@@ -500,22 +552,9 @@ const stopDevicesOnPort = async (port: string): Promise<void> => {
   }
 }
 
-/**
- * Probes a serial port at several baud rates and returns the first one that yields valid NMEA sentences.
- *
- * Any device currently reading from the same port is stopped first, since a serial port can only be opened
- * by one reader at a time.
- * @param {string} port - The serial port path to probe.
- * @param {number[]} [candidates] - The baud rates to try, in order.
- * @param {number} [perBaudMs] - How long to listen at each baud rate, in milliseconds.
- * @returns {Promise<number | null>} The detected baud rate, or null when none produced valid data.
- * @throws {Error} When not running in Electron.
- */
-export const autodetectBaud = async (
-  port: string,
-  candidates: number[] = commonBaudRates,
-  perBaudMs = 1500
-): Promise<number | null> => {
+const activeProbes = new Map<string, Promise<number | null>>()
+
+const probePort = async (port: string, candidates: number[], perBaudMs: number): Promise<number | null> => {
   if (!isElectron() || !window.electronAPI) {
     throw new Error('GNSS reading is only available in Cockpit standalone.')
   }
@@ -556,6 +595,33 @@ export const autodetectBaud = async (
 }
 
 /**
+ * Probes a serial port at several baud rates and returns the first one that yields valid NMEA sentences.
+ *
+ * Any device currently reading from the same port is stopped first, since a serial port can only be opened
+ * by one reader at a time. A sweep cannot be aborted, so a second probe of a port already being probed
+ * joins the running one instead of starting a rival sweep that would starve both of sentences.
+ * @param {string} port - The serial port path to probe.
+ * @param {number[]} [candidates] - The baud rates to try, in order.
+ * @param {number} [perBaudMs] - How long to listen at each baud rate, in milliseconds.
+ * @returns {Promise<number | null>} The detected baud rate, or null when none produced valid data.
+ * @throws {Error} When not running in Electron.
+ */
+export const autodetectBaud = (
+  port: string,
+  candidates: number[] = commonBaudRates,
+  perBaudMs = 1500
+): Promise<number | null> => {
+  const running = activeProbes.get(port)
+  if (running) return running
+
+  const probe = probePort(port, candidates, perBaudMs).finally(() => {
+    if (activeProbes.get(port) === probe) activeProbes.delete(port)
+  })
+  activeProbes.set(port, probe)
+  return probe
+}
+
+/**
  * Lists the serial ports available on the system, including USB descriptors.
  * @returns {Promise<SerialPortInfo[]>} The available serial ports (empty when not in Electron).
  */
@@ -586,6 +652,22 @@ export const resolveDevicePort = async (device: GnssDeviceInfo): Promise<string 
 
   return ports.find((port) => port.path === device.port)?.path
 }
+
+/**
+ * Finds the configured device that would already read from a given serial port, following the same
+ * model-then-path matching {@link resolveDevicePort} uses.
+ *
+ * A serial port takes a single reader, so a second device pointed at the same port can never connect
+ * alongside the first one.
+ * @param {T[]} devices - The configured devices to search.
+ * @param {SerialPortInfo} port - The port to look for a claimant of.
+ * @returns {T | undefined} The device already using the port, or undefined when it is free.
+ */
+export const deviceUsingPort = <T extends GnssDeviceInfo>(devices: T[], port: SerialPortInfo): T | undefined =>
+  devices.find(({ usbMatch }) => {
+    const { vendorId, productId } = usbMatch ?? {}
+    return Boolean(vendorId && productId) && vendorId === port.vendorId && productId === port.productId
+  }) ?? devices.find(({ port: devicePort }) => devicePort === port.path)
 
 /**
  * Boots the GNSS reading pipeline: registers each configured device's data-lake variables and auto-connects
