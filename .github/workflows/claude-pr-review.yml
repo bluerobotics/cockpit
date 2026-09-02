@@ -136,9 +136,11 @@ jobs:
         continue-on-error: true
         env:
           EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
-          # Derived from the cost line this step prints: 80 turns landed at $3.83-$4.02, so 120 turns
-          # sits near $6. max_turns is what actually caps spend; this only reports.
-          REVIEW_BUDGET_USD: '6.00'
+          # The cost line this step prints put 80 turns at $3.83-$4.02, which extrapolates to about
+          # $6 at the 120-turn cap and so left no headroom at all. $9 is 1.5x that extrapolation,
+          # picked rather than measured; re-derive it from the cost line whenever the cap moves.
+          # max_turns is what actually caps spend; this only reports.
+          REVIEW_BUDGET_USD: '9.00'
         run: .github/scripts/price-agent-run.sh "$EXECUTION_FILE" "$REVIEW_BUDGET_USD" 'PR review'
 
       # Sticky by the seq=1 marker, so a re-run of this workflow replaces its own comment rather
