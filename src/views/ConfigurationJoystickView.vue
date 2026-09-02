@@ -927,7 +927,9 @@ const tableItems = computed(() => {
 })
 
 onUnmounted(() => {
-  controllerStore.enableForwarding = true
+  // Going through the helper so a session where another ground station was detected stays silent until the user
+  // re-enables forwarding by hand, instead of leaving this page bringing the sticks back live.
+  controllerStore.enableJoystickForwardingIfSafe()
 })
 
 watch(inputClickedDialog, () => {
