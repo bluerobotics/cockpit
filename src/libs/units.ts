@@ -489,6 +489,33 @@ export const formatDistance = (meters: number, preferences: DisplayUnitPreferenc
   return `${inLarger.toFixed(1)} ${larger}`
 }
 
+const largerAreaUnits: Record<AreaDisplayUnit, string> = {
+  [AreaDisplayUnit.SquareMeters]: 'km^2',
+  [AreaDisplayUnit.SquareFeet]: 'acre',
+}
+
+const largerAreaUnitAbbreviation: Record<string, string> = {
+  'km^2': 'km²',
+  'acre': 'acres',
+}
+
+/**
+ * Writes an area out the way it is read, moving up to square kilometers or acres once the number grows.
+ * @param {number} squareMeters The area in square meters
+ * @param {DisplayUnitPreferences} preferences The units picked for each quantity
+ * @returns {string} The area and its unit, ready to be shown, or a dash when there is none
+ */
+export const formatArea = (squareMeters: number, preferences: DisplayUnitPreferences): string => {
+  if (squareMeters <= 0 || !isFinite(squareMeters)) return '—'
+
+  const large = largerAreaUnits[preferences.area]
+  const inLarge = convertBetween(squareMeters, 'm^2', large)
+  if (Math.abs(inLarge) >= 1) return `${inLarge.toFixed(3)} ${largerAreaUnitAbbreviation[large]}`
+  // Up to a whole square kilometer the count runs to six digits, which only reads with its thousands grouped.
+  const inSmall = Math.round(convertBetween(squareMeters, 'm^2', preferences.area))
+  return `${inSmall.toLocaleString('en-US')} ${unitAbbreviation[preferences.area]}`
+}
+
 /**
  * Writes a value out the way it is read, in the unit the user picked for it.
  * @param {number} value The value as it was received
