@@ -926,7 +926,9 @@ const axisTableItems = computed(() => tableItems.value.filter((item) => item.typ
 const buttonTableItems = computed(() => tableItems.value.filter((item) => item.type === 'button'))
 
 onUnmounted(() => {
-  controllerStore.enableForwarding = true
+  // Going through the helper so a session where another ground station was detected stays silent until the user
+  // re-enables forwarding by hand, instead of leaving this page bringing the sticks back live.
+  controllerStore.enableJoystickForwardingIfSafe()
 })
 
 watch(inputClickedDialog, () => {
