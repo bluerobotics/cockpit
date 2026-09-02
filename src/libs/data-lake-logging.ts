@@ -8,12 +8,6 @@ import {
 } from './actions/data-lake'
 import { IndexedDbStore } from './indexed-db-store'
 import { settingsManager } from './settings-management'
-import {
-  go2rtcStreamStatKeys,
-  go2rtcStreamStatVariableId,
-  streamStatVariableId,
-  webRtcStreamStatKeys,
-} from './video/stream-stats'
 import { type ZipFileEntry, createZipBlob } from './zip'
 
 export const recordedDataLakeVariablesKey = 'cockpit-data-lake-recorded-variables'
@@ -26,15 +20,15 @@ const defaultLogInterval = 1000
 // in memory and would be lost on a hard crash/reload.
 const flushIntervalMs = 250
 
-let recordedVariableIdsChangedHandler = (): void => undefined
+const recordedVariableIdsChangedHandlers = new Set<() => void>()
 
 /**
  * Register a callback invoked after the recorded-variable selection is persisted, so a consumer can
  * react to a newly armed recording without polling for it.
  * @param {() => void} handler - Callback to run after the selection changes
  */
-export const setRecordedVariableIdsChangedHandler = (handler: () => void): void => {
-  recordedVariableIdsChangedHandler = handler
+export const addRecordedVariableIdsChangedHandler = (handler: () => void): void => {
+  recordedVariableIdsChangedHandlers.add(handler)
 }
 
 /**
@@ -145,62 +139,6 @@ export interface DataLakeSessionRecord {
 }
 
 const sessionGapThresholdMs = 5 * 60 * 1000
-
-const isRtspUrlStreamStatId = (id: string): boolean => /^stream-rtsps?:\/\//i.test(id)
-
-// Peel `stream-<name>` from an id that ends with a minting-function suffix, then remint to confirm.
-// endsWith alone is not enough: one published key can be a suffix of another, and stream names have hyphens.
-const nameBeforeStreamStatSuffix = (id: string, suffix: string): string | undefined => {
-  if (!id.startsWith('stream-') || !id.endsWith(suffix)) return undefined
-  const name = id.slice('stream-'.length, id.length - suffix.length)
-  return name.length > 0 ? name : undefined
-}
-
-const publishedWebRtcStatSuffix = (key: string): string => streamStatVariableId('', key).slice('stream-'.length)
-
-const isWebRtcStreamStatId = (id: string): boolean =>
-  webRtcStreamStatKeys.some((key) => {
-    const publishedSuffix = publishedWebRtcStatSuffix(key)
-    const publishedName = nameBeforeStreamStatSuffix(id, publishedSuffix)
-    if (publishedName !== undefined && streamStatVariableId(publishedName, key) === id) return true
-
-    // When minting remaps a key, also treat stream-<name>-<rawKey> as a stream-stat id so the old form can be pruned.
-    const rawSuffix = `-${key}`
-    if (rawSuffix === publishedSuffix) return false
-    const rawName = nameBeforeStreamStatSuffix(id, rawSuffix)
-    return rawName !== undefined && streamStatVariableId(rawName, key) === `stream-${rawName}${publishedSuffix}`
-  })
-
-const isGo2rtcStreamStatId = (id: string): boolean =>
-  go2rtcStreamStatKeys.some((key) => {
-    const suffix = go2rtcStreamStatVariableId('', key).slice('stream-'.length)
-    const name = nameBeforeStreamStatSuffix(id, suffix)
-    return name !== undefined && go2rtcStreamStatVariableId(name, key) === id
-  })
-
-const isStreamStatVariableId = (id: string): boolean => isWebRtcStreamStatId(id) || isGo2rtcStreamStatId(id)
-
-/**
- * Drop recorded stream-stat IDs that are no longer live: deleted streams, and pre-switch IDs keyed
- * by external id (an RTSP URL may carry credentials into an export header).
- * @param {string[]} recordedIds - Currently recorded data-lake variable IDs
- * @param {string[]} liveInternalNames - Internal stream names currently in the correspondency
- * @returns {string[]} Recorded IDs with stale stream-stat entries removed
- */
-export const pruneStaleStreamStatRecordedIds = (recordedIds: string[], liveInternalNames: string[]): string[] => {
-  const liveIds = new Set(
-    liveInternalNames.flatMap((name) => [
-      ...webRtcStreamStatKeys.map((key) => streamStatVariableId(name, key)),
-      ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
-    ])
-  )
-
-  return recordedIds.filter((id) => {
-    if (isRtspUrlStreamStatId(id)) return false
-    if (!isStreamStatVariableId(id)) return true
-    return liveIds.has(id)
-  })
-}
 
 /**
  * Widen a session's time range to cover a flushed batch, starting a new session when the gap is too
@@ -433,7 +371,7 @@ export class DataLakeLogger {
   set recordedVariableIds(value: string[]) {
     this._recordedVariableIds = value
     settingsManager.setKeyValue(recordedDataLakeVariablesKey, value)
-    recordedVariableIdsChangedHandler()
+    recordedVariableIdsChangedHandlers.forEach((handler) => handler())
   }
 
   /**
@@ -537,12 +475,13 @@ export class DataLakeLogger {
   }
 
   /**
-   * Disarm recorded stream-stat IDs whose stream is no longer in the correspondency, including
-   * pre-switch IDs keyed by external id.
-   * @param {string[]} liveInternalNames - Internal stream names currently in the correspondency
+   * Disarm recorded variable IDs in one write, so the selection is persisted and raw listeners are
+   * rebuilt once however many IDs are dropped.
+   * @param {string[]} variableIds - Data lake variable IDs to stop recording
    */
-  pruneStaleStreamStatIds(liveInternalNames: string[]): void {
-    const nextIds = pruneStaleStreamStatRecordedIds(this.recordedVariableIds, liveInternalNames)
+  removeRecordedVariableIds(variableIds: string[]): void {
+    const dropped = new Set(variableIds)
+    const nextIds = this.recordedVariableIds.filter((id) => !dropped.has(id))
     if (nextIds.length === this.recordedVariableIds.length) return
 
     this.recordedVariableIds = nextIds
