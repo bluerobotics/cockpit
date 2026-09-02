@@ -278,6 +278,7 @@ import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useVehicleHistoryOverlay } from '@/composables/map/useVehicleHistoryOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
@@ -628,6 +629,9 @@ const overlaysDialogOpen = ref(false)
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
+// Draws the vehicle trail and its traveled-distance tooltip
+const { initVehicleHistory, destroyVehicleHistory } = useVehicleHistoryOverlay()
+
 // Replace failed tiles with a procedural noise background sampled by lat/lon
 const getTileFallbackOptions = (): NoiseTileOptions => ({
   baseColor: missionStore.mapFallbackBaseColor,
@@ -916,16 +920,7 @@ onMounted(async () => {
   }
   await refreshMission()
 
-  // Initialize vehicle history polyline if vehicle marker is on screen
-  if (map.value && vehicleMarker.value && missionStore.vehiclePositionHistory.length > 0) {
-    if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
-        map.value
-      )
-    }
-    vehicleHistoryPolyline.value.setLatLngs(missionStore.vehiclePositionHistory as L.LatLngExpression[])
-    lastDrawnHistoryLen = missionStore.vehiclePositionHistory.length
-  }
+  if (map.value) initVehicleHistory(map.value, () => vehicleMarker.value !== undefined)
 })
 
 // React to clear/download requests from any mission-control widget.
@@ -1130,6 +1125,7 @@ onBeforeUnmount(() => {
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
   destroyCustomTileProviders()
+  destroyVehicleHistory()
 
   if (map.value) {
     map.value.off('contextmenu')
@@ -1434,44 +1430,6 @@ watch([getReachedWaypointIndices, currentMapWpIndex], () => {
     }
   })
 })
-
-// Create polyline for the vehicle path using a dedicated Canvas renderer to prevent performance issues
-const vehicleHistoryRenderer = L.canvas()
-const vehicleHistoryPolyline = shallowRef<L.Polyline>()
-let lastDrawnHistoryLen = 0
-watch(
-  () => missionStore.vehiclePositionHistoryRevision,
-  () => {
-    const newPoints = missionStore.vehiclePositionHistory
-    if (map.value === undefined || !vehicleMarker.value || !newPoints || newPoints.length === 0) {
-      if (vehicleHistoryPolyline.value && map.value) {
-        map.value.removeLayer(vehicleHistoryPolyline.value)
-        vehicleHistoryPolyline.value = undefined
-      }
-      lastDrawnHistoryLen = 0
-      return
-    }
-
-    if (vehicleHistoryPolyline.value === undefined) {
-      vehicleHistoryPolyline.value = L.polyline([], { color: '#ffff00', renderer: vehicleHistoryRenderer }).addTo(
-        map.value
-      )
-      lastDrawnHistoryLen = 0
-    }
-
-    if (newPoints.length > lastDrawnHistoryLen && lastDrawnHistoryLen > 0) {
-      // Append only the new points — O(1) per fire instead of O(N) full rebuild.
-      for (let i = lastDrawnHistoryLen; i < newPoints.length; i++) {
-        vehicleHistoryPolyline.value.addLatLng(newPoints[i] as L.LatLngExpression)
-      }
-    } else {
-      // First draw, or the history shrank (clear/simplify) / stayed same length (push+shift):
-      // fall back to a full rebuild to stay correct.
-      vehicleHistoryPolyline.value.setLatLngs(newPoints as L.LatLngExpression[])
-    }
-    lastDrawnHistoryLen = newPoints.length
-  }
-)
 
 // Handle context menu toggling and selection
 const contextMenuVisible = ref(false)
@@ -2037,6 +1995,75 @@ const centerOnMission = (): void => {
 
 :deep(.vehicle-tooltip::before) {
   border-right-color: var(--glass-background) !important;
+}
+
+/* Clicking the trail to pin its tooltip would otherwise leave a focus ring on the canvas. */
+:deep(.leaflet-interactive:focus:not(:focus-visible)) {
+  outline: none;
+}
+
+:deep(.history-polyline-tooltip) {
+  background-color: var(--glass-background) !important;
+  backdrop-filter: var(--glass-filter);
+  border: var(--glass-border) !important;
+  box-shadow: var(--glass-box-shadow);
+  color: theme('colors.odometer');
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  z-index: 100;
+}
+
+:deep(.history-polyline-tooltip::before) {
+  border-top-color: var(--glass-background) !important;
+}
+
+:deep(.history-tooltip-row) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1.4;
+}
+
+:deep(.history-tooltip-label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.8;
+}
+
+:deep(.history-tooltip-value) {
+  font-weight: bold;
+}
+
+:deep(.history-tooltip-row-value-group) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+:deep(.history-tooltip-reset) {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: theme('colors.odometer');
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 0 1px;
+  font-size: 9px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+:deep(.history-tooltip-reset:hover) {
+  opacity: 1;
+  background-color: theme('colors.odometer / 15%');
 }
 
 :deep(.waypoint-tooltip--current-waypoint) {
