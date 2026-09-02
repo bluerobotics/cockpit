@@ -32,10 +32,6 @@ const props = defineProps({
     // Tall enough to keep the longest stats list (WebRTC, 12 rows) clear of the plot area at the bottom
     default: 212,
   },
-  updateInterval: {
-    type: Number,
-    default: 20,
-  },
   streamName: {
     type: String,
     default: '',
@@ -54,7 +50,6 @@ const framerateData = ref([])
 const bitrateData = ref([])
 const packetLostData = ref([])
 let animationFrameId = null
-let intervalId = null
 let bitrate = 0
 // cumulative values
 let packetsLost = 0
@@ -188,7 +183,9 @@ function draw(): void {
 }
 
 /**
- * Draws the lines and updates the stats
+ * Push the current stats into the plot arrays, dropping the oldest points and rescaling.
+ * Called once per stats sample, so the WebRTC plot scrolls at the same cadence as the RTSP one
+ * and both show the same 10-second window
  */
 function update(): void {
   framerateData.value.push(framerate)
@@ -236,6 +233,7 @@ watch(
       jitterBufferEmittedCount = videoData.jitterBufferEmittedCount
       framerate = videoData.framesPerSecond ?? 0
       videoHeight = videoData.frameHeight
+      update()
     } catch (error) {
       console.error(error)
     }
@@ -261,14 +259,12 @@ watch(rtspSample, (sample): void => {
 })
 
 onMounted(() => {
-  intervalId = setInterval(update, props.updateInterval)
   draw()
 
   if (isRtspStream()) acquireGo2rtcSampling()
 })
 
 onUnmounted(() => {
-  clearInterval(intervalId)
   cancelAnimationFrame(animationFrameId)
 
   if (isRtspStream()) releaseGo2rtcSampling()
