@@ -1,6 +1,7 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 import { computed, effectScope, reactive, watch } from 'vue'
 
+import { openSnackbar } from '@/composables/snackbar'
 import {
   createDataLakeVariable,
   DataLakeVariable,
@@ -8,17 +9,21 @@ import {
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
-import { dataLakeLogger, setRecordedVariableIdsChangedHandler } from '@/libs/data-lake-logging'
+import { addRecordedVariableIdsChangedHandler, dataLakeLogger } from '@/libs/data-lake-logging'
 import { isElectron } from '@/libs/utils'
 import {
-  differenceGo2rtcSamples,
+  buildGo2rtcStreamSample,
+  derivedWebRtcStreamStats,
   Go2rtcIngestCounters,
   Go2rtcStreamSample,
   Go2rtcStreamStatKey,
   go2rtcStreamStatKeys,
   go2rtcStreamStatVariableId,
+  staleStreamStatRecordedIds,
+  streamStatDisplayName,
   streamStatVariableId,
   webRtcStreamStatKeys,
+  webRtcStreamStatVariableKeys,
 } from '@/libs/video/stream-stats'
 import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
 import { useVideoStore } from '@/stores/video'
@@ -65,6 +70,25 @@ let go2rtcPanelConsumers = 0
 const go2rtcFastSampleIntervalMs = 100
 // Set by initialize so a live consumer can restart an idle sampler at the fast cadence
 let pokeGo2rtcSampler: () => void = () => undefined
+
+const droppedRecordingsMessage = (count: number): string =>
+  count === 1
+    ? 'Stopped recording 1 video stream statistic that is no longer available. You can select it again in Tools → Data-lake once its stream is back.'
+    : `Stopped recording ${count} video stream statistics that are no longer available. You can select them again in Tools → Data-lake once their streams are back.`
+
+/**
+ * Stop recording the stream statistics of streams that are gone, telling the user how many
+ * selections went so the loss is visible now rather than when an export comes back empty.
+ * @param {string[] | undefined} liveInternalNames - Internal stream names currently in the correspondency,
+ * or undefined while that list cannot be trusted to describe the configured streams
+ */
+export const dropStaleStreamStatRecordings = (liveInternalNames: string[] | undefined): void => {
+  const staleIds = staleStreamStatRecordedIds(dataLakeLogger.recordedVariableIds, liveInternalNames)
+  if (staleIds.length === 0) return
+
+  dataLakeLogger.removeRecordedVariableIds(staleIds)
+  openSnackbar({ message: droppedRecordingsMessage(staleIds.length), variant: 'warning', duration: 10000 })
+}
 
 let initialized = false
 // Detached scope: the collector watch must live for the app's lifetime, not the first caller's
@@ -114,15 +138,9 @@ const initialize = (): void => {
       const internalName = videoStore.internalStreamNameFromExternal(streamName)
       if (internalName === undefined) return
 
-      const previousCounters = prevGo2rtcCounters[streamName]
-      const rates = previousCounters ? differenceGo2rtcSamples(previousCounters, info) : undefined
+      const sample = buildGo2rtcStreamSample(info, prevGo2rtcCounters[streamName])
       prevGo2rtcCounters[streamName] = { bytes: info.bytes, packets: info.packets, sampleEpoch: info.sampleEpoch }
 
-      const sample: Go2rtcStreamSample = {
-        ...info,
-        bitrateKbps: rates?.bitrateKbps ?? 0,
-        packetsPerSec: rates?.packetsPerSec ?? 0,
-      }
       go2rtcStreamSamples[streamName] = sample
       publishGo2rtcSample(internalName, sample)
     })
@@ -146,7 +164,7 @@ const initialize = (): void => {
   // recorded set and drop the dead old variables from the data lake
   const carryOverStreamStatRecording = (oldName: string, newName: string): void => {
     const statIds = (name: string): string[] => [
-      ...webRtcStreamStatKeys.map((key) => streamStatVariableId(name, key)),
+      ...webRtcStreamStatVariableKeys.map((key) => streamStatVariableId(name, key)),
       ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
     ]
     const oldIds = statIds(oldName)
@@ -168,14 +186,15 @@ const initialize = (): void => {
     const internalName = internalStreamName(streamName)
     if (internalName === undefined) return
 
-    webRtcStreamStatKeys.forEach((key) => {
+    webRtcStreamStatVariableKeys.forEach((key) => {
       const variableId = streamStatVariableId(internalName, key)
       if (getDataLakeVariableInfo(variableId) === undefined) {
+        const publishedKey = variableId.slice(`stream-${internalName}-`.length)
         const streamVariable = {
           id: variableId,
-          name: `Stream '${internalName}' - ${key}`,
+          name: streamStatDisplayName(internalName, key),
           type: 'number',
-          description: `WebRTC stat '${key}' of the '${internalName}' video stream.`,
+          description: `WebRTC stat '${publishedKey}' of the '${internalName}' video stream.`,
         } as DataLakeVariable
         createDataLakeVariable(streamVariable)
       }
@@ -220,7 +239,7 @@ const initialize = (): void => {
     go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), 0)
   }
 
-  setRecordedVariableIdsChangedHandler(pokeGo2rtcSampler)
+  addRecordedVariableIdsChangedHandler(pokeGo2rtcSampler)
 
   collectorScope.run(() => {
     // Monitor the active streams to add the connections to the WebRTC statistics
@@ -267,6 +286,9 @@ const initialize = (): void => {
             webRtcStreamStatKeys.forEach((key) => {
               setDataLakeVariableData(streamStatVariableId(internalName, key), videoData[key])
             })
+            Object.entries(derivedWebRtcStreamStats(videoData)).forEach(([key, value]) => {
+              if (value !== undefined) setDataLakeVariableData(streamStatVariableId(internalName, key), value)
+            })
           } catch (error) {
             console.error('Error while logging WebRTC statistics:', error)
           }
@@ -279,7 +301,7 @@ const initialize = (): void => {
     // does not detach the watcher.
     watch(
       () => videoStore.streamsCorrespondency,
-      (corrs) => {
+      (corrs, previousCorrs) => {
         corrs.forEach((corr) => {
           const lastName = lastInternalNames[corr.externalId]
           if (lastName !== undefined && lastName !== corr.name) {
@@ -291,7 +313,9 @@ const initialize = (): void => {
         Object.keys(lastInternalNames).forEach((externalId) => {
           if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
         })
-        dataLakeLogger.pruneStaleStreamStatIds(corrs.map((corr) => corr.name))
+        // The boot pass sees whatever correspondency happens to be loaded, which is not evidence
+        // that a stream was deleted; only a later genuine change is.
+        dropStaleStreamStatRecordings(previousCorrs === undefined ? undefined : corrs.map((corr) => corr.name))
       },
       { deep: true, immediate: true }
     )
