@@ -8,6 +8,12 @@ import {
 } from './actions/data-lake'
 import { IndexedDbStore } from './indexed-db-store'
 import { settingsManager } from './settings-management'
+import {
+  go2rtcStreamStatKeys,
+  go2rtcStreamStatVariableId,
+  streamStatVariableId,
+  webRtcStreamStatKeys,
+} from './video/stream-stats'
 import { type ZipFileEntry, createZipBlob } from './zip'
 
 export const recordedDataLakeVariablesKey = 'cockpit-data-lake-recorded-variables'
@@ -115,7 +121,7 @@ export interface DataLakeSessionInfo {
 /**
  * Lightweight session metadata persisted alongside the raw log points
  */
-interface DataLakeSessionRecord {
+export interface DataLakeSessionRecord {
   /**
    * Unique identifier for the session
    */
@@ -136,6 +142,110 @@ interface DataLakeSessionRecord {
    * Number of data points recorded in the session
    */
   dataPointCount: number
+}
+
+const sessionGapThresholdMs = 5 * 60 * 1000
+
+const isRtspUrlStreamStatId = (id: string): boolean => /^stream-rtsps?:\/\//i.test(id)
+
+// Peel `stream-<name>` from an id that ends with a minting-function suffix, then remint to confirm.
+// endsWith alone is not enough: one published key can be a suffix of another, and stream names have hyphens.
+const nameBeforeStreamStatSuffix = (id: string, suffix: string): string | undefined => {
+  if (!id.startsWith('stream-') || !id.endsWith(suffix)) return undefined
+  const name = id.slice('stream-'.length, id.length - suffix.length)
+  return name.length > 0 ? name : undefined
+}
+
+const publishedWebRtcStatSuffix = (key: string): string => streamStatVariableId('', key).slice('stream-'.length)
+
+const isWebRtcStreamStatId = (id: string): boolean =>
+  webRtcStreamStatKeys.some((key) => {
+    const publishedSuffix = publishedWebRtcStatSuffix(key)
+    const publishedName = nameBeforeStreamStatSuffix(id, publishedSuffix)
+    if (publishedName !== undefined && streamStatVariableId(publishedName, key) === id) return true
+
+    // When minting remaps a key, also treat stream-<name>-<rawKey> as a stream-stat id so the old form can be pruned.
+    const rawSuffix = `-${key}`
+    if (rawSuffix === publishedSuffix) return false
+    const rawName = nameBeforeStreamStatSuffix(id, rawSuffix)
+    return rawName !== undefined && streamStatVariableId(rawName, key) === `stream-${rawName}${publishedSuffix}`
+  })
+
+const isGo2rtcStreamStatId = (id: string): boolean =>
+  go2rtcStreamStatKeys.some((key) => {
+    const suffix = go2rtcStreamStatVariableId('', key).slice('stream-'.length)
+    const name = nameBeforeStreamStatSuffix(id, suffix)
+    return name !== undefined && go2rtcStreamStatVariableId(name, key) === id
+  })
+
+const isStreamStatVariableId = (id: string): boolean => isWebRtcStreamStatId(id) || isGo2rtcStreamStatId(id)
+
+/**
+ * Drop recorded stream-stat IDs that are no longer live: deleted streams, and pre-switch IDs keyed
+ * by external id (an RTSP URL may carry credentials into an export header).
+ * @param {string[]} recordedIds - Currently recorded data-lake variable IDs
+ * @param {string[]} liveInternalNames - Internal stream names currently in the correspondency
+ * @returns {string[]} Recorded IDs with stale stream-stat entries removed
+ */
+export const pruneStaleStreamStatRecordedIds = (recordedIds: string[], liveInternalNames: string[]): string[] => {
+  const liveIds = new Set(
+    liveInternalNames.flatMap((name) => [
+      ...webRtcStreamStatKeys.map((key) => streamStatVariableId(name, key)),
+      ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
+    ])
+  )
+
+  return recordedIds.filter((id) => {
+    if (isRtspUrlStreamStatId(id)) return false
+    if (!isStreamStatVariableId(id)) return true
+    return liveIds.has(id)
+  })
+}
+
+/**
+ * Widen a session's time range to cover a flushed batch, starting a new session when the gap is too
+ * large. Leaves dataPointCount unchanged so the count is credited only after the batch write lands.
+ * @param {DataLakeSessionRecord | null} session - Session currently being written, if any
+ * @param {number} bootId - Identifier of the Cockpit run producing the session
+ * @param {number} firstEpoch - Epoch of the first point in the batch
+ * @param {number} lastEpoch - Epoch of the last point in the batch
+ * @returns {DataLakeSessionRecord} Session covering the batch's range
+ */
+export const sessionRangeCoveringBatch = (
+  session: DataLakeSessionRecord | null,
+  bootId: number,
+  firstEpoch: number,
+  lastEpoch: number
+): DataLakeSessionRecord => {
+  if (!session || firstEpoch - session.endTime > sessionGapThresholdMs) {
+    return {
+      id: `session-${firstEpoch}`,
+      bootId,
+      startTime: firstEpoch,
+      endTime: lastEpoch,
+      dataPointCount: 0,
+    }
+  }
+
+  return { ...session, endTime: lastEpoch }
+}
+
+/**
+ * Credit a landed batch to the session covering it. Returns null when the epoch falls outside the
+ * session, so a late credit after a new session has started is dropped rather than applied to the wrong one.
+ * @param {DataLakeSessionRecord} session - Session that should own the batch
+ * @param {number} epoch - Epoch of the landed batch's first point
+ * @param {number} pointCount - Number of points in the landed batch
+ * @returns {DataLakeSessionRecord | null} Session with the points credited, or null when the epoch is out of range
+ */
+export const sessionWithCreditedPoints = (
+  session: DataLakeSessionRecord,
+  epoch: number,
+  pointCount: number
+): DataLakeSessionRecord | null => {
+  if (epoch < session.startTime || epoch > session.endTime) return null
+
+  return { ...session, dataPointCount: session.dataPointCount + pointCount }
 }
 
 /**
@@ -186,7 +296,7 @@ export class DataLakeLogger {
     description: 'Metadata for recorded data lake sessions (point count and time range).',
   })
 
-  static SESSION_GAP_THRESHOLD_MS = 5 * 60 * 1000
+  static SESSION_GAP_THRESHOLD_MS = sessionGapThresholdMs
 
   // ID of the session the running logger is currently writing to; only this one is "current".
   private static activeSessionId: string | null = null
@@ -427,6 +537,22 @@ export class DataLakeLogger {
   }
 
   /**
+   * Disarm recorded stream-stat IDs whose stream is no longer in the correspondency, including
+   * pre-switch IDs keyed by external id.
+   * @param {string[]} liveInternalNames - Internal stream names currently in the correspondency
+   */
+  pruneStaleStreamStatIds(liveInternalNames: string[]): void {
+    const nextIds = pruneStaleStreamStatRecordedIds(this.recordedVariableIds, liveInternalNames)
+    if (nextIds.length === this.recordedVariableIds.length) return
+
+    this.recordedVariableIds = nextIds
+
+    if (this.shouldBeLogging() && this.logInterval === 'raw') {
+      this.applyLoggingMode()
+    }
+  }
+
+  /**
    * Start recording. Re-reads the recorded selection from settings on each fresh start, so a
    * stop/start cycle applies external changes. No-op when already running.
    */
@@ -456,8 +582,8 @@ export class DataLakeLogger {
   }
 
   /**
-   * Persist all buffered points as a single batched IndexedDB entry and update the session metadata
-   * once. No-op when the buffer is empty.
+   * Persist all buffered points as a single batched IndexedDB entry and widen the session range.
+   * Point count is credited after the write lands. No-op when the buffer is empty.
    */
   private flushPendingPoints(): void {
     if (this.pendingPoints.length === 0) return
@@ -469,34 +595,45 @@ export class DataLakeLogger {
     const lastEpoch = batch[batch.length - 1].epoch
     const key = `boot=${this.bootId};epoch=${firstEpoch};seq=${this.logPointSequence++}`
 
-    DataLakeLogger.logsDB.setItem(key, batch).catch((error) => {
-      console.error('Failed to store data lake log points:', error)
-    })
+    // Advance the session range synchronously so export and deletion can find the batch even on
+    // beforeunload, whose promise callbacks may never run. Count only after the batch write lands.
+    this.updateCurrentSessionRange(firstEpoch, lastEpoch)
 
-    this.updateCurrentSession(firstEpoch, lastEpoch, batch.length)
+    DataLakeLogger.logsDB
+      .setItem(key, batch)
+      .then(() => this.creditSessionPointCount(firstEpoch, batch.length))
+      .catch((error) => {
+        console.error('Failed to store data lake log points:', error)
+      })
   }
 
   /**
-   * Advance the current session's metadata for a freshly flushed batch, starting a new session when
-   * the gap since the last point exceeds the threshold (a restart already starts with no session).
+   * Credit a batch that finished storing to the session covering it, so the session's point count
+   * never overstates what is on disk
+   * @param {number} epoch - Epoch of the landed batch's first point
+   * @param {number} pointCount - Number of points in the landed batch
+   */
+  private creditSessionPointCount(epoch: number, pointCount: number): void {
+    const session = this.currentSession
+    if (!session) return
+
+    const credited = sessionWithCreditedPoints(session, epoch, pointCount)
+    if (credited === null) return
+
+    this.currentSession = credited
+    DataLakeLogger.sessionsDB.setItem(credited.id, { ...credited }).catch((error) => {
+      console.error('Failed to update data lake session record:', error)
+    })
+  }
+
+  /**
+   * Advance the current session's time range for a freshly flushed batch, starting a new session
+   * when the gap since the last point exceeds the threshold (a restart already starts with no session).
    * @param {number} firstEpoch - Epoch of the first point in the batch
    * @param {number} lastEpoch - Epoch of the last point in the batch
-   * @param {number} pointCount - Number of points in the batch
    */
-  private updateCurrentSession(firstEpoch: number, lastEpoch: number, pointCount: number): void {
-    if (!this.currentSession || firstEpoch - this.currentSession.endTime > DataLakeLogger.SESSION_GAP_THRESHOLD_MS) {
-      this.currentSession = {
-        id: `session-${firstEpoch}`,
-        bootId: this.bootId,
-        startTime: firstEpoch,
-        endTime: lastEpoch,
-        dataPointCount: pointCount,
-      }
-    } else {
-      this.currentSession.endTime = lastEpoch
-      this.currentSession.dataPointCount += pointCount
-    }
-
+  private updateCurrentSessionRange(firstEpoch: number, lastEpoch: number): void {
+    this.currentSession = sessionRangeCoveringBatch(this.currentSession, this.bootId, firstEpoch, lastEpoch)
     DataLakeLogger.activeSessionId = this.currentSession.id
     DataLakeLogger.sessionsDB.setItem(this.currentSession.id, { ...this.currentSession }).catch((error) => {
       console.error('Failed to update data lake session record:', error)
