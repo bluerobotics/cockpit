@@ -13,6 +13,7 @@ import {
   unitSystemFromPreferences,
   unitSystems,
 } from '@/libs/units'
+import { round } from '@/libs/utils'
 import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 
 const metric = unitSystems[UnitSystem.Metric]
@@ -97,6 +98,22 @@ test('convertValueToRawUnit takes what the user set back to what the vehicle exp
 
   // What a slider commanding an altitude in feet depends on: the round trip has to come back whole.
   expect(convertValueToRawUnit(convertValue(42, 'm', imperial).value, 'm', imperial)).toBeCloseTo(42)
+})
+
+test('a typed value read back at the precision the fields keep is the very number that was typed', () => {
+  // What every field the user types a distance or a speed into depends on: `useUnitInput` reads the stored value
+  // back rounded to a tenth, and anything short of the number typed would rewrite the field between two keystrokes.
+  const displayedPlaces = 1
+  const typedDistance = 50.5
+  const inMeters = convertValueToRawUnit(typedDistance, 'm', imperial)
+  expect(round(convertValue(inMeters, 'm', imperial).value, displayedPlaces)).toBe(typedDistance)
+
+  const typedSpeed = 12.5
+  const inMetersPerSecond = convertValueToRawUnit(typedSpeed, 'm/s', nautical)
+  expect(round(convertValue(inMetersPerSecond, 'm/s', nautical).value, displayedPlaces)).toBe(typedSpeed)
+
+  // The other half of the same rounding: a stored default nobody typed has to read as a number that fits the box.
+  expect(round(convertValue(10, 'm', imperial).value, displayedPlaces)).toBe(32.8)
 })
 
 test('convertValue keeps the offset of an affine conversion out of the scale factor', () => {

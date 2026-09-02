@@ -21,8 +21,9 @@
 import { computed } from 'vue'
 import slider from 'vue3-slider'
 
+import { useUnitInput } from '@/composables/useUnitInput'
 import { altitude_setpoint, showAltitudeSlider } from '@/libs/altitude-slider'
-import { convertValue, convertValueToRawUnit, formatValueWithUnit } from '@/libs/units'
+import { formatValueWithUnit } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const interfaceStore = useAppInterfaceStore()
@@ -31,17 +32,9 @@ const interfaceStore = useAppInterfaceStore()
 // works in whatever the user reads.
 const highestAltitudeSetpointInMeters = 100
 
-const displayedAltitude = computed({
-  get: () => convertValue(altitude_setpoint.value, 'm', interfaceStore.displayUnitPreferences).value,
-  set: (value: number) => {
-    altitude_setpoint.value = convertValueToRawUnit(value, 'm', interfaceStore.displayUnitPreferences)
-  },
-})
+const { displayedValue: displayedAltitude, toDisplayBound } = useUnitInput(altitude_setpoint, 'm')
 
-const maxDisplayedAltitude = computed(() => {
-  const converted = convertValue(highestAltitudeSetpointInMeters, 'm', interfaceStore.displayUnitPreferences)
-  return Math.round(converted.value)
-})
+const maxDisplayedAltitude = computed(() => toDisplayBound(highestAltitudeSetpointInMeters))
 
 const formattedValue = computed(() =>
   formatValueWithUnit(altitude_setpoint.value, 'm', interfaceStore.displayUnitPreferences)
