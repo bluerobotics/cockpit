@@ -427,11 +427,31 @@ export class DataLakeLogger {
     const lastEpoch = batch[batch.length - 1].epoch
     const key = `boot=${this.bootId};epoch=${firstEpoch};seq=${this.logPointSequence++}`
 
+    // Advance the session synchronously so its key range always covers the batch - export and
+    // deletion are bounded by it - even on the beforeunload path, whose promise callbacks may never run
+    this.updateCurrentSession(firstEpoch, lastEpoch, batch.length)
+
     DataLakeLogger.logsDB.setItem(key, batch).catch((error) => {
       console.error('Failed to store data lake log points:', error)
+      // The batch never landed, so the session must not count it
+      this.rollbackSessionPointCount(firstEpoch, batch.length)
     })
+  }
 
-    this.updateCurrentSession(firstEpoch, lastEpoch, batch.length)
+  /**
+   * Discount a batch that failed to store from the session covering it, so the session's point
+   * count never overstates what is on disk
+   * @param {number} epoch - Epoch of the failed batch's first point
+   * @param {number} pointCount - Number of points in the failed batch
+   */
+  private rollbackSessionPointCount(epoch: number, pointCount: number): void {
+    const session = this.currentSession
+    if (!session || epoch < session.startTime || epoch > session.endTime) return
+
+    session.dataPointCount -= pointCount
+    DataLakeLogger.sessionsDB.setItem(session.id, { ...session }).catch((error) => {
+      console.error('Failed to roll back data lake session record:', error)
+    })
   }
 
   /**
