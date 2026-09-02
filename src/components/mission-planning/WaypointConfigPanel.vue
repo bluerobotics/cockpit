@@ -46,14 +46,14 @@
             <p class="w-[140px] text-start">Altitude:</p>
             <div class="flex w-full pr-2 h-[35px] items-center">
               <v-text-field
-                v-model="waypointOnMissionStore.altitude"
+                v-model.number="displayedAltitude"
                 type="number"
                 density="compact"
                 variant="plain"
                 hide-details
                 class="spaced-number right-aligned-input w-[60px] text-right -mr-3"
               ></v-text-field>
-              <p class="w-[15px] text-center">m</p>
+              <p class="w-[20px] text-center">{{ altitudeUnit }}</p>
             </div>
           </div>
           <v-divider class="border-black w-full" />
@@ -197,6 +197,7 @@ import { computed, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import CommandInputForm from '@/components/mission-planning/CommandInputForm.vue'
+import { useUnitInput } from '@/composables/useUnitInput'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
 import {
@@ -229,6 +230,15 @@ const selectedWaypoint = ref(props.selectedWaypoint)
 const waypointOnMissionStore = computed(() =>
   missionStore.currentPlanningWaypoints.find((waypoint) => waypoint.id === selectedWaypoint.value.id)
 )
+
+// The waypoint is uploaded in meters, so only what the field shows follows the unit the user reads.
+const altitudeInMeters = computed({
+  get: () => waypointOnMissionStore.value?.altitude ?? 0,
+  set: (value: number) => {
+    if (waypointOnMissionStore.value) waypointOnMissionStore.value.altitude = value
+  },
+})
+const { displayedValue: displayedAltitude, unit: altitudeUnit } = useUnitInput(altitudeInMeters, 'm')
 
 const editableLat = ref<string>(selectedWaypoint.value.coordinates[0].toString())
 const editableLng = ref<string>(selectedWaypoint.value.coordinates[1].toString())

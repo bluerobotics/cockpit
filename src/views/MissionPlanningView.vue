@@ -30,7 +30,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Scan spacing">
+    <v-tooltip location="top" :text="`Scan spacing (${distanceUnit})`">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
@@ -40,15 +40,15 @@
           variant="text"
         >
           <input
-            v-model.number="distanceBetweenSurveyLines"
+            v-model.number="displayedDistanceBetweenSurveyLines"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
-            min="1"
+            :min="metersToDisplayUnit(1)"
           />
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Turnaround distance">
+    <v-tooltip location="top" :text="`Turnaround distance (${distanceUnit})`">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
@@ -58,14 +58,14 @@
           variant="text"
         >
           <input
-            v-model.number="turnaroundDistance"
+            v-model.number="displayedTurnaroundDistance"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
           />
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Cruise speed">
+    <v-tooltip location="top" :text="`Cruise speed (${speedUnit})`">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
@@ -75,10 +75,10 @@
           variant="text"
         >
           <input
-            v-model.number="localCruiseSpeed"
+            v-model.number="displayedCruiseSpeed"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
-            min="1"
+            :min="metersPerSecondToDisplayUnit(1)"
             step="0.5"
           />
         </div>
@@ -122,7 +122,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Crosshatch scan spacing">
+    <v-tooltip location="top" :text="`Crosshatch scan spacing (${distanceUnit})`">
       <template #activator="{ props }">
         <div
           v-if="isCreatingSurvey && surveyCrosshatch && surveyPolygonVertexesPositions.length >= 3"
@@ -132,10 +132,10 @@
           variant="text"
         >
           <input
-            v-model.number="crosshatchDistanceBetweenLines"
+            v-model.number="displayedCrosshatchDistanceBetweenLines"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
-            min="1"
+            :min="metersToDisplayUnit(1)"
           />
         </div>
       </template>
@@ -251,14 +251,14 @@
         >
           <p class="text-sm">Cruise speed</p>
           <input
-            v-model.number="localCruiseSpeed"
+            v-model.number="displayedCruiseSpeed"
             class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
             type="number"
             min="0"
             step="0.5"
             @change="cruiseSpeedTouched = true"
           />
-          <p class="text-sm">m/s</p>
+          <p class="text-sm">{{ speedUnit }}</p>
         </div>
         <div
           v-if="showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
@@ -344,12 +344,12 @@
         </div>
         <v-divider v-if="!isCreatingSimplePath && !isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSurvey" class="flex flex-col">
-          <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">Distance between lines ({{ distanceUnit }})</p>
           <input
-            v-model.number="distanceBetweenSurveyLines"
+            v-model.number="displayedDistanceBetweenSurveyLines"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
-            min="1"
+            :min="metersToDisplayUnit(1)"
           />
           <p class="m-1 overflow-visible text-sm text-slate-200">Lines angle (degrees)</p>
           <input
@@ -359,9 +359,9 @@
             min="0"
             max="359"
           />
-          <p class="m-1 overflow-visible text-sm text-slate-200">Turnaround distance (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">Turnaround distance ({{ distanceUnit }})</p>
           <input
-            v-model.number="turnaroundDistance"
+            v-model.number="displayedTurnaroundDistance"
             class="px-2 py-1 mt-1 mb-2 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
           />
@@ -387,12 +387,14 @@
             </v-tooltip>
           </div>
           <template v-if="surveyCrosshatch">
-            <p class="m-1 overflow-visible text-sm text-slate-200">Crosshatch distance between lines (m)</p>
+            <p class="m-1 overflow-visible text-sm text-slate-200">
+              Crosshatch distance between lines ({{ distanceUnit }})
+            </p>
             <input
-              v-model.number="crosshatchDistanceBetweenLines"
+              v-model.number="displayedCrosshatchDistanceBetweenLines"
               class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
               type="number"
-              min="1"
+              :min="metersToDisplayUnit(1)"
             />
           </template>
           <div class="flex items-center justify-between mx-5 my-2">
@@ -408,9 +410,9 @@
             </v-btn>
           </div>
           <v-divider class="mb-1 mt-2" />
-          <p class="m-1 overflow-visible text-sm text-slate-200">Altitude (m)</p>
+          <p class="m-1 overflow-visible text-sm text-slate-200">Altitude ({{ distanceUnit }})</p>
           <input
-            v-model.number="currentWaypointAltitude"
+            v-model.number="displayedWaypointAltitude"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
           />
@@ -459,8 +461,8 @@
         </div>
         <v-divider v-if="isCreatingSurvey" class="my-2" />
         <div v-if="isCreatingSimplePath" class="flex flex-col w-full h-full p-2 -mt-[5px]">
-          <p class="overflow-visible my-1 text-sm text-slate-200">Altitude (m)</p>
-          <input v-model="currentWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
+          <p class="overflow-visible my-1 text-sm text-slate-200">Altitude ({{ distanceUnit }})</p>
+          <input v-model.number="displayedWaypointAltitude" class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]" />
           <p class="overflow-visible mt-2 text-sm text-slate-200">Altitude type:</p>
           <v-select
             v-model="currentWaypointAltitudeRefType"
@@ -925,6 +927,7 @@ import {
 } from '@/composables/useMissionEstimates'
 import { useMissionOperations } from '@/composables/useMissionOperations'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
+import { useUnitConversion, useUnitInput } from '@/composables/useUnitInput'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
@@ -3292,6 +3295,19 @@ const surveyLinesAngleDisplay = computed({
     surveyLinesAngle.value = value
   },
 })
+
+// The survey, the waypoints and the speed command are all built in meters and m/s, so only the fields showing them
+// follow the unit the user reads.
+const { toDisplayUnit: metersToDisplayUnit, unit: distanceUnit } = useUnitConversion('m')
+const { displayedValue: displayedDistanceBetweenSurveyLines } = useUnitInput(distanceBetweenSurveyLines, 'm')
+const { displayedValue: displayedCrosshatchDistanceBetweenLines } = useUnitInput(crosshatchDistanceBetweenLines, 'm')
+const { displayedValue: displayedTurnaroundDistance } = useUnitInput(turnaroundDistance, 'm')
+const { displayedValue: displayedWaypointAltitude } = useUnitInput(currentWaypointAltitude, 'm')
+const {
+  displayedValue: displayedCruiseSpeed,
+  toDisplayUnit: metersPerSecondToDisplayUnit,
+  unit: speedUnit,
+} = useUnitInput(localCruiseSpeed, 'm/s')
 
 const onSurveyLinesAngleChange = (angle: number): void => {
   surveyLinesAngle.value = angle
