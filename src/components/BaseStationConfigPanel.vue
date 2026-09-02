@@ -387,7 +387,7 @@
             </div>
             <div class="config-row">
               <div class="config-label-with-info">
-                <p class="config-label">Antenna height (m)</p>
+                <p class="config-label">Antenna height ({{ distanceUnit }})</p>
                 <v-tooltip location="top" max-width="300">
                   <template #activator="{ props }">
                     <button
@@ -408,11 +408,11 @@
                 </v-tooltip>
               </div>
               <input
-                v-model.number="config.baseStationAntennaHeightMeters"
+                v-model.number="displayedAntennaHeight"
                 type="number"
                 step="0.5"
-                :min="ANTENNA_HEIGHT_LIMITS_M.min"
-                :max="ANTENNA_HEIGHT_LIMITS_M.max"
+                :min="metersToDisplayBound(ANTENNA_HEIGHT_LIMITS_M.min)"
+                :max="metersToDisplayBound(ANTENNA_HEIGHT_LIMITS_M.max)"
                 class="config-input"
                 @blur="onAntennaHeightBlur"
               />
@@ -443,13 +443,13 @@
               />
             </div>
             <div class="config-row">
-              <p class="config-label">Range (m)</p>
+              <p class="config-label">Range ({{ distanceUnit }})</p>
               <input
-                v-model.number="config.antenna.range"
+                v-model.number="displayedAntennaRange"
                 type="number"
                 step="10"
-                :min="ANTENNA_RANGE_LIMITS_M.min"
-                :max="ANTENNA_RANGE_LIMITS_M.max"
+                :min="metersToDisplayBound(ANTENNA_RANGE_LIMITS_M.min)"
+                :max="metersToDisplayBound(ANTENNA_RANGE_LIMITS_M.max)"
                 class="config-input"
                 @blur="onAntennaRangeBlur"
               />
@@ -545,13 +545,13 @@
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
-              <p class="config-label">Length (m)</p>
+              <p class="config-label">Length ({{ distanceUnit }})</p>
               <input
-                v-model.number="config.tetherLengthMeters"
+                v-model.number="displayedTetherLength"
                 type="number"
                 step="1"
-                :min="TETHER_LENGTH_LIMITS_M.min"
-                :max="TETHER_LENGTH_LIMITS_M.max"
+                :min="metersToDisplayBound(TETHER_LENGTH_LIMITS_M.min)"
+                :max="metersToDisplayBound(TETHER_LENGTH_LIMITS_M.max)"
                 class="config-input"
                 @blur="onTetherLengthBlur"
               />
@@ -761,6 +761,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { useBarsAwarePanelStyle } from '@/composables/useBarsAwarePanelStyle'
 import { useGnss } from '@/composables/useGnss'
+import { useUnitConversion, useUnitInput } from '@/composables/useUnitInput'
 import { bearingBetween, centroidOf, rangeAfterGainChange, rangeAfterTxPowerChange } from '@/libs/baseStation/coverage'
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -854,6 +855,34 @@ const TETHER_LENGTH_LIMITS_M = { min: 1, max: 5000 }
 
 const clampFieldValue = (value: number, min: number, max: number, fallback: number): number =>
   Number.isFinite(value) ? Math.min(Math.max(value, min), max) : fallback
+
+// The coverage geometry and the stored config work in meters, so the limits are clamped there and only the fields
+// follow the unit the user reads.
+const { toDisplayBound: metersToDisplayBound, unit: distanceUnit } = useUnitConversion('m')
+
+const { displayedValue: displayedAntennaHeight } = useUnitInput(
+  computed({
+    get: () => config.value.baseStationAntennaHeightMeters,
+    set: (value: number) => (config.value.baseStationAntennaHeightMeters = value),
+  }),
+  'm'
+)
+
+const { displayedValue: displayedAntennaRange } = useUnitInput(
+  computed({
+    get: () => config.value.antenna.range,
+    set: (value: number) => (config.value.antenna.range = value),
+  }),
+  'm'
+)
+
+const { displayedValue: displayedTetherLength } = useUnitInput(
+  computed({
+    get: () => config.value.tetherLengthMeters,
+    set: (value: number) => (config.value.tetherLengthMeters = value),
+  }),
+  'm'
+)
 
 const formatBearing = (bearing: number): string => bearing.toFixed(1)
 const formatGain = (gain: number): string => gain.toFixed(1)
@@ -962,7 +991,7 @@ const onAntennaHeightBlur = (): void => {
     DEFAULT_BASE_STATION_ANTENNA_HEIGHT_METERS
   )
   config.value.baseStationAntennaHeightMeters = height
-  logUserAction(`Set the base station antenna height to ${height} m`)
+  logUserAction(`Set the base station antenna height to ${metersToDisplayBound(height, 1)} ${distanceUnit.value}`)
 }
 
 const onBeamwidthBlur = (): void => {
@@ -984,7 +1013,7 @@ const onAntennaRangeBlur = (): void => {
     ANTENNA_FACTORY_DEFAULTS[config.value.antenna.type].range
   )
   config.value.antenna.range = range
-  logUserAction(`Set the base station antenna range to ${range} m`)
+  logUserAction(`Set the base station antenna range to ${metersToDisplayBound(range, 1)} ${distanceUnit.value}`)
 }
 
 const onTetherLengthBlur = (): void => {
@@ -995,7 +1024,7 @@ const onTetherLengthBlur = (): void => {
     DEFAULT_BASE_STATION_CONFIG.tetherLengthMeters
   )
   config.value.tetherLengthMeters = length
-  logUserAction(`Set the base station tether length to ${length} m`)
+  logUserAction(`Set the base station tether length to ${metersToDisplayBound(length, 1)} ${distanceUnit.value}`)
 }
 
 const onVehicleAntennaMastToggle = (value: boolean | null): void => {

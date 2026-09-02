@@ -52,11 +52,11 @@
 
       <div class="flex items-center gap-2 mb-2">
         <v-text-field
-          v-model.number="altitude"
+          v-model.number="displayedAltitude"
           label="Altitude"
           type="number"
           step="0.1"
-          hint="Altitude in meters (MSL)"
+          :hint="`Altitude in ${altitudeUnit} (MSL)`"
           persistent-hint
           variant="outlined"
           :rules="[
@@ -64,7 +64,7 @@
           ]"
           class="flex-1"
         />
-        <span class="text-white text-lg font-medium mb-6 w-4">m</span>
+        <span class="text-white text-lg font-medium mb-6 w-6">{{ altitudeUnit }}</span>
       </div>
     </template>
   </InteractionDialog>
@@ -75,6 +75,7 @@ import { computed, defineModel, ref, watch } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
 import { useSnackbar } from '@/composables/snackbar'
+import { useUnitInput } from '@/composables/useUnitInput'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
 
 const { openSnackbar } = useSnackbar()
@@ -107,6 +108,9 @@ const latitude = ref<number>(props.initialLatitude)
 const longitude = ref<number>(props.initialLongitude)
 const altitude = ref<number>(0)
 const isSaving = ref(false)
+
+// The origin is commanded in meters, so only what the field shows follows the unit the user reads.
+const { displayedValue: displayedAltitude, unit: altitudeUnit } = useUnitInput(altitude, 'm')
 
 // Watch for changes in props to update the local values
 watch(
