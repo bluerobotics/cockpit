@@ -943,6 +943,11 @@ import {
 } from '@/libs/map/utils-map'
 import { orderedSurveyPath, surveyEndpointEdgeBearing, surveyEntryCornerCount } from '@/libs/map/utils-map'
 import {
+  bindWaypointNumberTooltip,
+  getIconDimensionsFromMarkerSize,
+  waypointNumbersById,
+} from '@/libs/map/waypoint-markers'
+import {
   bearingBetween,
   calculateHaversineDistance,
   centroidLatLng,
@@ -966,9 +971,7 @@ import {
   AltitudeReferenceType,
   ClosestSegmentInfo,
   ContextMenuTypes,
-  IconDimensions,
   instanceOfCockpitMission,
-  MarkerSizes,
   MissionCommand,
   MissionCommandType,
   Survey,
@@ -1210,6 +1213,7 @@ const onPlannedVehicleTypeChange = (value?: MavType): void => {
   logUserAction(`Selected "${vehicleTypeLabel(value)}" as the planning vehicle type`)
 }
 const waypointMarkers = shallowRef<{ [id: string]: Marker }>({})
+const waypointNumbers = computed(() => waypointNumbersById(missionStore.currentPlanningWaypoints))
 const isCreatingSimplePath = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
@@ -3104,28 +3108,16 @@ const addWaypoint = (
     showContextMenu(e)
   })
 
-  const currentMarkerSize = getEffectiveMarkerSize(zoom.value)
-  const iconDimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
-  const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(
+  newMarker.setIcon(
+    createWaypointMarkerIcon(
       waypoint.commands.length,
       false,
       surveyEntryExitWaypointIds.value.has(waypoint.id),
-      isEndpointWaypoint(waypointId)
-    ),
-    className: 'waypoint-marker-icon',
-    iconSize: iconDimensions.iconSize,
-    iconAnchor: iconDimensions.iconAnchor,
-  })
-  newMarker.setIcon(markerIcon)
-  const markerTooltip = L.tooltip({
-    content: '',
-    permanent: true,
-    direction: 'center',
-    className: 'waypoint-tooltip',
-    opacity: currentMarkerSize === 'md' ? 1 : 0,
-  })
-  newMarker.bindTooltip(markerTooltip)
+      isEndpointWaypoint(waypointId),
+      waypointNumbers.value[waypointId]
+    )
+  )
+  applyWaypointNumberTooltip(newMarker, waypointId, false)
   planningMap.value.addLayer(newMarker)
   waypointMarkers.value[waypointId] = newMarker
 
@@ -3797,7 +3789,8 @@ const createWaypointMarkerHtml = (
   commandCount: number,
   isSelected = false,
   isEntryExit = false,
-  isEndpoint = false
+  isEndpoint = false,
+  waypointNumber?: number
 ): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
   const size = getEffectiveMarkerSize(zoom.value)
@@ -3806,12 +3799,14 @@ const createWaypointMarkerHtml = (
   const showCommandCount = size === 'md' && commandCount > 1
   const entryExitClass = isEntryExit ? ' green-marker' : ''
   const endpointClass = isEndpoint ? ' endpoint-marker' : ''
+  const showWaypointNumber = isSelected && waypointNumber !== undefined && (size === 'xs' || size === 'sm')
 
   return `
     <div class="${markerSizeClass}">
       <div class="${baseClass} waypoint-main-marker${entryExitClass}${endpointClass}"></div>
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
+      ${showWaypointNumber ? `<div class="waypoint-number-indicator">${waypointNumber}</div>` : ''}
     </div>
   `
 }
@@ -3822,46 +3817,57 @@ const isEndpointWaypoint = (waypointId: string): boolean => {
   return waypointId === wps[0].id || waypointId === wps[wps.length - 1].id
 }
 
-const updateWaypointMarkers = (): void => {
-  let cumulativeCommandCount = 1 // Start numbering from 1
-  if (!planningMap.value) return
+const createWaypointMarkerIcon = (
+  commandCount: number,
+  isSelected: boolean,
+  isEntryExit: boolean,
+  isEndpoint: boolean,
+  waypointNumber?: number
+): L.DivIcon => {
+  const dimensions = getIconDimensionsFromMarkerSize(getEffectiveMarkerSize(zoom.value))
 
-  const currentZoom = zoom.value
-  const markerSize = getEffectiveMarkerSize(currentZoom)
+  return L.divIcon({
+    html: createWaypointMarkerHtml(commandCount, isSelected, isEntryExit, isEndpoint, waypointNumber),
+    className: 'waypoint-marker-icon',
+    iconSize: dimensions.iconSize,
+    iconAnchor: dimensions.iconAnchor,
+  })
+}
+
+// Binds the number tooltip of a waypoint marker. Small selected markers render their number inside
+// the icon instead, so they get no tooltip.
+const applyWaypointNumberTooltip = (marker: Marker, waypointId: string, isSelected: boolean): void => {
+  const markerSize = getEffectiveMarkerSize(zoom.value)
+
+  bindWaypointNumberTooltip(marker, {
+    label: `${waypointNumbers.value[waypointId] ?? ''}`,
+    size: markerSize,
+    permanentClassName: 'waypoint-tooltip',
+    compactClassName: 'waypoint-hover-tooltip',
+    suppressed: isSelected && markerSize !== 'md',
+  })
+}
+
+const updateWaypointMarkers = (): void => {
+  if (!planningMap.value) return
 
   const wps = missionStore.currentPlanningWaypoints
   wps.forEach((wp, idx) => {
     const marker = waypointMarkers.value[wp.id]
-    if (marker) {
-      // Update marker icon to show command count
-      const isSelected = selectedWaypoint.value?.id === wp.id
-      const isEndpoint = idx === 0 || idx === wps.length - 1
-      const dimensions = getIconDimensionsFromMarkerSize(markerSize)
+    if (!marker) return
 
-      marker.setIcon(
-        L.divIcon({
-          html: createWaypointMarkerHtml(
-            wp.commands.length,
-            isSelected,
-            surveyEntryExitWaypointIds.value.has(wp.id),
-            isEndpoint
-          ),
-          className: 'waypoint-marker-icon',
-          iconSize: dimensions.iconSize,
-          iconAnchor: dimensions.iconAnchor,
-        })
+    const isSelected = selectedWaypoint.value?.id === wp.id
+    const isEndpoint = idx === 0 || idx === wps.length - 1
+    marker.setIcon(
+      createWaypointMarkerIcon(
+        wp.commands.length,
+        isSelected,
+        surveyEntryExitWaypointIds.value.has(wp.id),
+        isEndpoint,
+        waypointNumbers.value[wp.id]
       )
-
-      // Update tooltip visibility and content based on size
-      const tooltip = marker.getTooltip()
-      if (tooltip) {
-        const showNumber = markerSize === 'md'
-        tooltip.setContent(showNumber ? `${cumulativeCommandCount}` : '')
-        tooltip.setOpacity(showNumber ? 1 : 0)
-      }
-
-      cumulativeCommandCount += wp.commands.length
-    }
+    )
+    applyWaypointNumberTooltip(marker, wp.id, isSelected)
   })
 }
 
@@ -4158,30 +4164,16 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     interfaceStore.configPanelVisible = true
   })
 
-  const currentMarkerSize = getEffectiveMarkerSize(zoom.value)
-  const dimensions = getIconDimensionsFromMarkerSize(currentMarkerSize)
-  const markerIcon = L.divIcon({
-    html: createWaypointMarkerHtml(
+  newMarker.setIcon(
+    createWaypointMarkerIcon(
       waypoint.commands.length,
       false,
       surveyEntryExitWaypointIds.value.has(waypoint.id),
-      isEndpointWaypoint(waypoint.id)
-    ),
-    className: 'waypoint-marker-icon',
-    iconSize: dimensions.iconSize,
-    iconAnchor: dimensions.iconAnchor,
-  })
-  newMarker.setIcon(markerIcon)
-
-  const currentMarkerSizeForTooltip = getEffectiveMarkerSize(zoom.value)
-  const markerTooltip = L.tooltip({
-    content: '',
-    permanent: true,
-    direction: 'center',
-    className: 'waypoint-tooltip',
-    opacity: currentMarkerSizeForTooltip === 'md' ? 1 : 0,
-  })
-  newMarker.bindTooltip(markerTooltip)
+      isEndpointWaypoint(waypoint.id),
+      waypointNumbers.value[waypoint.id]
+    )
+  )
+  applyWaypointNumberTooltip(newMarker, waypoint.id, false)
 
   newMarker.addTo(planningMap.value)
   waypointMarkers.value[waypoint.id] = newMarker
@@ -4191,61 +4183,27 @@ const { getEffectiveMarkerSize } = useWaypointMarkerSize(() => {
   if (planningMap.value) updateWaypointMarkers()
 })
 
-const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
-  if (size === 'xs') {
-    return { iconSize: [6, 6], iconAnchor: [3, 3] }
-  }
-  if (size === 'sm') {
-    return { iconSize: [12, 12], iconAnchor: [6, 6] }
-  }
-  return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
+const applyWaypointMarkerSelection = (waypointId: string, isSelected: boolean): void => {
+  const marker = waypointMarkers.value[waypointId]
+  if (!marker) return
+
+  const waypoint = missionStore.currentPlanningWaypoints.find((wp) => wp.id === waypointId)
+  marker.setIcon(
+    createWaypointMarkerIcon(
+      waypoint?.commands.length ?? 0,
+      isSelected,
+      surveyEntryExitWaypointIds.value.has(waypointId),
+      isEndpointWaypoint(waypointId),
+      waypointNumbers.value[waypointId]
+    )
+  )
+  applyWaypointNumberTooltip(marker, waypointId, isSelected)
 }
 
 // single source of truth for selected-marker visuals
 const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId?: string): void => {
-  const markerSize = getEffectiveMarkerSize(zoom.value)
-
-  if (oldWaypointId) {
-    const oldMarker = waypointMarkers.value[oldWaypointId]
-    if (oldMarker) {
-      const oldWp = missionStore.currentPlanningWaypoints.find((w) => w.id === oldWaypointId)
-      const dimensions = getIconDimensionsFromMarkerSize(markerSize)
-      oldMarker.setIcon(
-        L.divIcon({
-          html: createWaypointMarkerHtml(
-            oldWp?.commands.length ?? 0,
-            false,
-            surveyEntryExitWaypointIds.value.has(oldWaypointId),
-            isEndpointWaypoint(oldWaypointId)
-          ),
-          className: 'waypoint-marker-icon',
-          iconSize: dimensions.iconSize,
-          iconAnchor: dimensions.iconAnchor,
-        })
-      )
-    }
-  }
-
-  if (newWaypointId) {
-    const newMarker = waypointMarkers.value[newWaypointId]
-    if (newMarker) {
-      const newWp = missionStore.currentPlanningWaypoints.find((w) => w.id === newWaypointId)
-      const dimensions = getIconDimensionsFromMarkerSize(markerSize)
-      newMarker.setIcon(
-        L.divIcon({
-          html: createWaypointMarkerHtml(
-            newWp?.commands.length ?? 0,
-            true,
-            surveyEntryExitWaypointIds.value.has(newWaypointId),
-            isEndpointWaypoint(newWaypointId)
-          ),
-          className: 'waypoint-marker-icon',
-          iconSize: dimensions.iconSize,
-          iconAnchor: dimensions.iconAnchor,
-        })
-      )
-    }
-  }
+  if (oldWaypointId) applyWaypointMarkerSelection(oldWaypointId, false)
+  if (newWaypointId) applyWaypointMarkerSelection(newWaypointId, true)
 }
 
 let homeRetryTimer: ReturnType<typeof setInterval> | null = null
@@ -4481,26 +4439,7 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
   if (touchDrawingSwallowsClick()) return
 
   const oldWaypoint = selectedWaypoint.value
-  if (oldWaypoint) {
-    const oldMarker = waypointMarkers.value[oldWaypoint.id]
-    if (oldMarker) {
-      const markerSize = getEffectiveMarkerSize(zoom.value)
-      const dimensions = getIconDimensionsFromMarkerSize(markerSize)
-      oldMarker.setIcon(
-        L.divIcon({
-          html: createWaypointMarkerHtml(
-            oldWaypoint.commands.length,
-            false,
-            surveyEntryExitWaypointIds.value.has(oldWaypoint.id),
-            isEndpointWaypoint(oldWaypoint.id)
-          ),
-          className: 'waypoint-marker-icon',
-          iconSize: dimensions.iconSize,
-          iconAnchor: dimensions.iconAnchor,
-        })
-      )
-    }
-  }
+  if (oldWaypoint) applyWaypointMarkerSelection(oldWaypoint.id, false)
 
   if (interfaceStore.configPanelVisible && !isCreatingSurvey.value) {
     selectedWaypoint.value = undefined
@@ -5125,6 +5064,10 @@ watch(
 }
 
 .wp-marker-xs .selected-marker {
+  width: 14px;
+  height: 14px;
+  top: -4px;
+  left: -4px;
   border: 1px solid #ffff0099;
   box-shadow: 0 0 2px 1px rgba(255, 235, 59, 0.2);
   filter: drop-shadow(0 0 2px rgba(255, 235, 59, 0.1));
@@ -5139,6 +5082,10 @@ watch(
 }
 
 .wp-marker-sm .selected-marker {
+  width: 20px;
+  height: 20px;
+  top: -4px;
+  left: -4px;
   border: 1.5px solid #ffff0099;
   box-shadow: 0 0 3px 1.5px rgba(255, 235, 59, 0.2), 0 0 9px 4px rgba(255, 193, 7, 0.12);
   filter: drop-shadow(0 0 3px rgba(255, 235, 59, 0.1));
@@ -5209,6 +5156,24 @@ watch(
   border: 1px solid white;
   top: -2px;
   right: -2px;
+}
+.waypoint-number-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 8px;
+  font-weight: bold;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 300;
+}
+.wp-marker-xs .waypoint-number-indicator {
+  font-size: 8px;
+}
+.wp-marker-sm .waypoint-number-indicator {
+  font-size: 10px;
 }
 .waypoint-tooltip {
   background-color: transparent;
