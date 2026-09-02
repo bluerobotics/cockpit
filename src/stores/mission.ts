@@ -5,6 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { openSnackbar } from '@/composables/snackbar'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import {
@@ -65,7 +66,32 @@ export const useMissionStore = defineStore('mission', () => {
 
   const mainVehicleStore = useMainVehicleStore()
 
-  const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
+  const storedPointsOfInterest = useBlueOsStorage<PointOfInterest[]>('cockpit-points-of-interest', [])
+
+  const hasReadableCoordinates = (poi: PointOfInterest): boolean =>
+    Array.isArray(poi?.coordinates) && Number.isFinite(poi.coordinates[0]) && Number.isFinite(poi.coordinates[1])
+
+  // A POI persisted by a version that stores coordinates differently is unplottable here, so it is hidden
+  // rather than deleted, keeping it intact for whichever version wrote it.
+  const pointsOfInterest = computed<readonly PointOfInterest[]>(() =>
+    Array.isArray(storedPointsOfInterest.value) ? storedPointsOfInterest.value.filter(hasReadableCoordinates) : []
+  )
+
+  let hiddenPointsOfInterestReported = false
+  watch(
+    storedPointsOfInterest,
+    (pois) => {
+      const storedCount = Array.isArray(pois) ? pois.length : 0
+      const hidden = storedCount - pointsOfInterest.value.length
+      if (hidden < 1 || hiddenPointsOfInterestReported) return
+      hiddenPointsOfInterestReported = true
+      const noun = hidden > 1 ? 'points' : 'point'
+      const verb = hidden > 1 ? 'were' : 'was'
+      const message = `${hidden} ${noun} of interest ${verb} saved by a newer version of Cockpit and cannot be shown here. Nothing was deleted.`
+      openSnackbar({ message, variant: 'warning', closeButton: true })
+    },
+    { immediate: true }
+  )
 
   watch(missionName, () => (lastMissionName.value = missionName.value))
 
@@ -210,25 +236,29 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   const addPointOfInterest = (poi: PointOfInterest): void => {
-    pointsOfInterest.value.push(poi)
+    storedPointsOfInterest.value.push(poi)
   }
 
   const updatePointOfInterest = (id: string, poiUpdate: Partial<PointOfInterest>): void => {
-    const index = pointsOfInterest.value.findIndex((p) => p.id === id)
+    const index = storedPointsOfInterest.value.findIndex((p) => p.id === id)
     if (index !== -1) {
-      pointsOfInterest.value[index] = { ...pointsOfInterest.value[index], ...poiUpdate, timestamp: Date.now() }
+      storedPointsOfInterest.value[index] = {
+        ...storedPointsOfInterest.value[index],
+        ...poiUpdate,
+        timestamp: Date.now(),
+      }
     }
   }
 
   const removePointOfInterest = (id: string): void => {
-    const index = pointsOfInterest.value.findIndex((p) => p.id === id)
+    const index = storedPointsOfInterest.value.findIndex((p) => p.id === id)
     if (index !== -1) {
-      pointsOfInterest.value.splice(index, 1)
+      storedPointsOfInterest.value.splice(index, 1)
     }
   }
 
   const movePointOfInterest = (id: string, newCoordinates: PointOfInterestCoordinates): void => {
-    const poi = pointsOfInterest.value.find((p) => p.id === id)
+    const poi = storedPointsOfInterest.value.find((p) => p.id === id)
     if (poi === undefined) {
       throw Error(`Could not move Point of Interest. No POI with id ${id} was found.`)
     }
