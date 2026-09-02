@@ -152,6 +152,14 @@ export class DataLakeLogger {
   // Metadata of the session currently being written, kept in memory and mirrored to sessionsDB.
   private currentSession: DataLakeSessionRecord | null = null
 
+  /**
+   * Create a logger that flushes whatever is still buffered before the window goes away, so the
+   * last points aren't lost
+   */
+  constructor() {
+    window.addEventListener('beforeunload', () => this.flushPendingPoints())
+  }
+
   static logsDB = new IndexedDbStore({
     name: 'Cockpit - Data Lake Logs',
     storeName: 'cockpit-data-lake-logs-db',
