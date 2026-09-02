@@ -333,7 +333,9 @@ const poiData = computed(() => {
   return hudTargets
 })
 
-const homeCoordinates = useVehicleHomePosition(() => widget.value.options.showHomeOnHUD)
+const { coordinates: homeCoordinates, isConfirmedByVehicle: isHomeConfirmedByVehicle } = useVehicleHomePosition(
+  () => widget.value.options.showHomeOnHUD
+)
 const homeMarkerId = '__home__'
 
 // Home is rendered as a synthetic pseudo-POI (not a real data-lake-backed one): its position comes
@@ -342,7 +344,7 @@ const homeMarkerId = '__home__'
 // backing variables.
 const buildHomeHudPoi = (coords: PointOfInterestCoordinates): ResolvedPointOfInterest => ({
   id: homeMarkerId,
-  name: 'Home',
+  name: isHomeConfirmedByVehicle.value ? 'Home' : 'Home (unconfirmed)',
   description: '',
   latitude: coords[0],
   longitude: coords[1],
@@ -353,7 +355,9 @@ const buildHomeHudPoi = (coords: PointOfInterestCoordinates): ResolvedPointOfInt
   resolvedHeading: null,
   latitudeVariableId: `${homeMarkerId}/latitude`,
   longitudeVariableId: `${homeMarkerId}/longitude`,
-  icon: 'mdi-home',
+  // Signed when the vehicle has not confirmed this home, so a mission's first item or a last known one is not read as
+  // the position the vehicle would actually return to.
+  icon: isHomeConfirmedByVehicle.value ? 'mdi-home' : 'mdi-home-alert',
   color: '#1E88E5',
   timestamp: 0,
 })

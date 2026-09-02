@@ -54,7 +54,7 @@ import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { canSuggestCabledLink, createWirelessTrafficWatcher } from '@/libs/wireless-traffic-warning'
-import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
+import type { MissionLoadingCallback, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useControllerStore } from './controller'
 import { useMissionStore } from './mission'
@@ -264,8 +264,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       return
     }
     dispatchEvent(new CustomEvent('vehicle-offline'))
-    currentlyConnectedVehicleId.value = undefined
     isArmed.value = undefined
+    // A fetch that started on the old link must not write home after this. The vehicle id stays: it is stable
+    // for the process (a new address reloads), and isVehicleOnline is what says the link is down.
+    homeMarkerWriteGeneration++
   })
 
   watch(enableDatalakeVariablesFromOtherSystems, (newValue) => {
@@ -532,12 +534,21 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   // Prevent multiple home fetches from happening at the same time
   let inflightHomeFetch: Promise<Waypoint> | undefined
+  // Bumped when a newer claim about home lands (a set-home ack, or the link dropping) so a fetch that started
+  // before that cannot write the position it was asking about over the newer one.
+  let homeMarkerWriteGeneration = 0
 
   /**
    * Fetch home waypoint from vehicle
+   * @param { object } options Options for the fetch
+   * @param { boolean } options.fresh Whether to require an answer to a request sent after this call, rather than
+   * accepting one already in flight, which a caller that just moved home needs
    * @returns { Promise<Waypoint> } Home waypoint
    */
-  async function fetchHomeWaypoint(): Promise<Waypoint> {
+  async function fetchHomeWaypoint(options?: {
+    /** Whether to require an answer to a request sent after this call */
+    fresh?: boolean
+  }): Promise<Waypoint> {
     const vehicle = mainVehicle.value
     if (!vehicle) {
       throw new Error('No vehicle available to fetch home waypoint.')
@@ -545,12 +556,18 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     if (vehicle.firmware() !== Vehicle.Firmware.ArduPilot) {
       throw new Error('Home waypoint retrieval is only supported for ArduPilot vehicles.')
     }
+    // A caller that just moved home needs the answer to its own request. One already in flight may have been sent
+    // before the move, and would happily report the position home held back then.
+    if (options?.fresh && inflightHomeFetch) await inflightHomeFetch.catch(() => undefined)
     if (inflightHomeFetch) return inflightHomeFetch
 
+    const startedAt = homeMarkerWriteGeneration
     inflightHomeFetch = (async () => {
       try {
         const homeWaypoint = await vehicle.fetchHomeWaypoint()
-        missionStore.homeMarkerPosition = homeWaypoint.coordinates
+        if (startedAt === homeMarkerWriteGeneration) {
+          missionStore.setHomeMarker(homeWaypoint.coordinates, 'vehicle')
+        }
         return homeWaypoint
       } finally {
         inflightHomeFetch = undefined
@@ -571,7 +588,27 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('No vehicle available to set home waypoint.')
     }
     await mainVehicle.value.setHomeWaypoint(coordinate, height)
-    missionStore.homeMarkerPosition = coordinate
+    homeMarkerWriteGeneration++
+    missionStore.setHomeMarker(coordinate, 'operator')
+    // Read back where the vehicle settled home, which is also what lets the marker stop being signed as unconfirmed.
+    // Not awaited, as the command is already acknowledged and callers should not wait on the reply to that read.
+    fetchHomeWaypoint({ fresh: true }).catch(() => undefined)
+  }
+
+  /**
+   * Take the home position from the first item of a mission read off the vehicle. Only ArduPilot reports home there,
+   * so on any other firmware the item is a plain waypoint and is offered to the stored-mission writer, which leaves
+   * a home the operator just set alone.
+   * @param { WaypointCoordinates } firstItemCoordinates Coordinates of the mission's first item
+   * @returns { void }
+   */
+  function setHomeFromVehicleMission(firstItemCoordinates: WaypointCoordinates): void {
+    if (mainVehicle.value?.firmware() === Vehicle.Firmware.ArduPilot) {
+      missionStore.setHomeMarker(firstItemCoordinates, 'vehicle')
+      return
+    }
+    // Item 0 is a plain waypoint on any other firmware, so it has the same claim as a mission restored from storage.
+    missionStore.setHomeFromStoredMission(firstItemCoordinates)
   }
 
   /**
@@ -1202,6 +1239,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     clearReachedMissionItems,
     fetchHomeWaypoint,
     setHomeWaypoint,
+    setHomeFromVehicleMission,
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
     vehicleConnectionTimeoutMs,
