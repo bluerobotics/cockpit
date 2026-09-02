@@ -36,12 +36,12 @@ const fallbackResolution = { width: 1920, height: 1080 }
  * a reconstruction, only as good as the clock that wrote them, and a chunk whose timestamp is unknown
  * reads as the epoch, so it is left out.
  * @param {UnprocessedVideoInfo | undefined} recording - Metadata of the recording, while still known
- * @param {Date[]} chunkTimestamps - Timestamps of the recording's chunks, in any order
+ * @param {Date[]} [chunkTimestamps] - Timestamps of the recording's chunks, in any order
  * @returns {TelemetryOverlayWindow[]} Candidate windows, in the order they should be tried
  */
 export const telemetryOverlayWindowCandidates = (
   recording: UnprocessedVideoInfo | undefined,
-  chunkTimestamps: Date[]
+  chunkTimestamps: Date[] = []
 ): TelemetryOverlayWindow[] => {
   const candidates: TelemetryOverlayWindow[] = []
 

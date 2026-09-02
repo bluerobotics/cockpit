@@ -29,6 +29,7 @@ import {
 import { datalogger } from '@/libs/sensors-logging'
 import { StreamActivationBackoff } from '@/libs/stream-activation-backoff'
 import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import { telemetryOverlayWindowCandidates } from '@/libs/video-telemetry'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { readableVideoCodecName } from '@/libs/webrtc/video-codec-support'
@@ -794,14 +795,19 @@ export const useVideoStore = defineStore('video', () => {
 
       console.info(`Generating telemetry overlay for recording '${recordingHash}'...`)
 
-      const telemetryLog = await datalogger.generateLog(recordingData.dateStart!, recordingData.dateFinish!)
+      const [overlayWindow] = telemetryOverlayWindowCandidates(recordingData)
+      if (!overlayWindow) {
+        throw new Error(`Recording '${recordingHash}' has no known start and finish times.`)
+      }
+
+      const telemetryLog = await datalogger.generateLog(overlayWindow.start, overlayWindow.end)
 
       if (telemetryLog !== undefined) {
         const assLog = datalogger.toAssOverlay(
           telemetryLog,
-          recordingData.vWidth!,
-          recordingData.vHeight!,
-          recordingData.dateStart!.getTime()
+          overlayWindow.width,
+          overlayWindow.height,
+          overlayWindow.start.getTime()
         )
         const logBlob = new Blob([assLog], { type: 'text/plain' })
 
