@@ -165,10 +165,12 @@ export class DataLakeLogger {
   private currentSession: DataLakeSessionRecord | null = null
 
   /**
-   * Create a logger that reacts when a settings sync (e.g. a vehicle switch) replaces the recorded
-   * selection as it does when the selection is edited here
+   * Create a logger that flushes whatever is still buffered before the window goes away, so the
+   * last points aren't lost, and that reacts when a settings sync (e.g. a vehicle switch) replaces
+   * the recorded selection as it does when the selection is edited here
    */
   constructor() {
+    window.addEventListener('beforeunload', () => this.flushPendingPoints())
     settingsManager.registerListener(recordedDataLakeVariablesKey, () => {
       recordedVariableIdsChangedHandlers.forEach((handler) => handler())
       if (this.shouldBeLogging() && this.logInterval === 'raw') {
