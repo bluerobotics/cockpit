@@ -304,9 +304,9 @@
               </template>
               <div class="text-sm pa-1">
                 <p class="mb-1 text-center"><strong>Tested BlueBoat speeds:</strong></p>
-                <p class="mb-[3px]">Safe: 1 to 1.5 m/s</p>
-                <p class="mb-[3px]">Average: 2 m/s</p>
-                <p>Max: 3 m/s (heavily depends on wind, waves and stream)</p>
+                <p class="mb-[3px]">Safe: {{ testedSpeed(1) }} to {{ testedSpeed(1.5) }} {{ speedUnit }}</p>
+                <p class="mb-[3px]">Average: {{ testedSpeed(2) }} {{ speedUnit }}</p>
+                <p>Max: {{ testedSpeed(3) }} {{ speedUnit }} (heavily depends on wind, waves and stream)</p>
               </div>
             </v-tooltip>
           </div>
@@ -3309,6 +3309,9 @@ const {
   toDisplayBound: metersPerSecondToDisplayBound,
   unit: speedUnit,
 } = useUnitInput(localCruiseSpeed, 'm/s')
+
+// The tested speeds are quoted in m/s, so they are read out in whatever the cruise-speed field beside them takes.
+const testedSpeed = (metersPerSecond: number): number => metersPerSecondToDisplayBound(metersPerSecond, 1)
 
 const onSurveyLinesAngleChange = (angle: number): void => {
   surveyLinesAngle.value = angle

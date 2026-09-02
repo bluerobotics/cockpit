@@ -420,6 +420,41 @@ export const formatDistance = (meters: number, preferences: DisplayUnitPreferenc
   return `${inLarger.toFixed(1)} ${larger}`
 }
 
+// Area has no preference of its own: an operator reading distances in feet expects an area in feet too.
+const areaUnits: Record<DistanceDisplayUnit, string> = {
+  [DistanceDisplayUnit.Meters]: 'm^2',
+  [DistanceDisplayUnit.Feet]: 'ft^2',
+}
+
+const largerAreaUnits: Record<DistanceDisplayUnit, string> = {
+  [DistanceDisplayUnit.Meters]: 'km^2',
+  [DistanceDisplayUnit.Feet]: 'acre',
+}
+
+const areaUnitAbbreviation: Record<string, string> = {
+  'm^2': 'm²',
+  'km^2': 'km²',
+  'ft^2': 'ft²',
+  'acre': 'acres',
+}
+
+/**
+ * Writes an area out the way it is read, moving up to the larger unit once the number grows.
+ * @param {number} squareMeters The area in square meters
+ * @param {DisplayUnitPreferences} preferences The units picked for each quantity
+ * @returns {string} The area and its unit, ready to be shown, or a dash when there is none
+ */
+export const formatArea = (squareMeters: number, preferences: DisplayUnitPreferences): string => {
+  if (squareMeters <= 0 || !isFinite(squareMeters)) return '—'
+
+  const larger = largerAreaUnits[preferences.distance] ?? largerAreaUnits[DistanceDisplayUnit.Meters]
+  const inLarger = convertBetween(squareMeters, 'm^2', larger)
+  if (Math.abs(inLarger) >= 1) return `${inLarger.toFixed(3)} ${areaUnitAbbreviation[larger]}`
+
+  const smaller = areaUnits[preferences.distance] ?? areaUnits[DistanceDisplayUnit.Meters]
+  return `${convertBetween(squareMeters, 'm^2', smaller).toFixed(0)} ${areaUnitAbbreviation[smaller]}`
+}
+
 /**
  * Writes a value out the way it is read, in the unit the user picked for it.
  * @param {number} value The value as it was received
