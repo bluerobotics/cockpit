@@ -291,6 +291,7 @@ const initialize = (): void => {
         Object.keys(lastInternalNames).forEach((externalId) => {
           if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
         })
+        dataLakeLogger.pruneStaleStreamStatIds(corrs.map((corr) => corr.name))
       },
       { deep: true, immediate: true }
     )
