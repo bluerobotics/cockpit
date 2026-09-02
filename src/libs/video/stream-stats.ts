@@ -74,6 +74,7 @@ const webRtcCumulativeStatKeys: WebRTCVideoStat[] = [
   'totalSquaredInterFrameDelay',
 ] // Keys that have cumulative values
 const webRtcAverageStatKeys: WebRTCVideoStat[] = [
+  'bitrate',
   'clockRate',
   'frameHeight',
   'framesAssembledFromMultiplePackets',
