@@ -66,6 +66,16 @@ export const useControllerStore = defineStore('controller', () => {
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
   const preventJoystickForwarding = ref(false)
+  // The other-GCS conflict check runs at most once per session. Neither of the calls it awaits can reject, so there
+  // is no failure path that would have to reset this back to 'pending'.
+  let otherSourcesCheck: 'pending' | 'running' | 'done' = 'pending'
+  // Every other writer of enableForwarding is one of Cockpit's own lifecycle hooks, so the conflict check can only
+  // tell a deliberate choice from an internal toggle if the gesture is stamped here, where the user actually makes it.
+  let userChangedForwarding = false
+  const setForwardingByUser = (value: boolean): void => {
+    userChangedForwarding = true
+    enableForwarding.value = value
+  }
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
 
   // Self-heal: if we booted with a blank mapping but legacy data is reachable now (e.g. from raw localStorage or
@@ -165,28 +175,37 @@ export const useControllerStore = defineStore('controller', () => {
 
     // Add new joysticks
     for (const [index, joystick] of newMap) {
-      // Check if there were joysticks connected before this one
-      const thereWereJoysticksBefore = joysticks.value.size > 0
-
       if (joysticks.value.has(index)) continue
       joystick.model = joystickManager.getModel(joystick.gamepad.id)
       const { product_id, vendor_id } = joystickManager.getVidPid(joystick.gamepad.id)
       joysticks.value.set(index, joystick)
       console.info(`Joystick ${index} connected. Model: ${joystick.model} // VID: ${vendor_id} // PID: ${product_id}`)
 
-      if (thereWereJoysticksBefore && enableForwarding.value) {
-        console.warn('There are joysticks connected and forwarding already. Skipping joystick conflict check.')
-        return
+      // The conflict check is only meaningful for the first joystick that takes control. Re-running it on every
+      // (re)connection made the warning dialog pop up repeatedly and kept disabling forwarding, stealing control
+      // from the joystick already in use (issue #2798). Once it has run, a reconnection only restores forwarding,
+      // which the helper refuses if the check did find another source.
+      if (otherSourcesCheck === 'done') {
+        enableJoystickForwardingIfSafe()
+        continue
       }
+      // While it is still waiting on the vehicle we know nothing yet, so a second joystick just waits it out.
+      if (otherSourcesCheck === 'running') continue
+      otherSourcesCheck = 'running'
+      userChangedForwarding = false
 
       // Check if other GCS is sending MANUAL_CONTROL messages
       const vehicleAddress = await mainVehicleStore.getVehicleAddress()
       const otherSourceDetected = await checkForOtherManualControlSources(vehicleAddress)
+      otherSourcesCheck = 'done'
 
+      // The wait above is unbounded, so the user may have moved the forwarding switch by hand in the meantime. That's
+      // a deliberate action, and a check that only now came back should not undo it — but the warning is still worth
+      // showing, and a detected conflict still blocks the automatic re-enables, which the user did not ask for.
       if (otherSourceDetected) {
-        console.warn('Other GCS sending MANUAL_CONTROL messages detected. Disabling joystick forwarding.')
-        enableForwarding.value = false
+        console.warn('Other GCS sending MANUAL_CONTROL messages detected.')
         preventJoystickForwarding.value = true
+        if (!userChangedForwarding) enableForwarding.value = false
 
         showDialog({
           title: 'Multiple joystick controllers detected',
@@ -200,7 +219,7 @@ export const useControllerStore = defineStore('controller', () => {
           maxWidth: 720,
           persistent: false,
         })
-      } else {
+      } else if (!userChangedForwarding) {
         console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
         enableForwarding.value = true
       }
@@ -506,6 +525,8 @@ export const useControllerStore = defineStore('controller', () => {
   return {
     registerControllerUpdateCallback,
     enableForwarding,
+    setForwardingByUser,
+    enableJoystickForwardingIfSafe,
     holdLastInputWhenWindowHidden,
     joysticks,
     protocolMapping,
