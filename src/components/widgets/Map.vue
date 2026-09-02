@@ -1089,7 +1089,7 @@ const checkIfMissionChanged = async (): Promise<void> => {
       })
       clearMapDrawing()
       rebuildMissionSeqMapping(downloadedMission)
-      drawMission(downloadedMission)
+      drawMission(downloadedMission, { fromVehicle: true })
     } else {
       lastKnownVehicleMissionSignature = storedSig
     }
@@ -1298,8 +1298,21 @@ watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isAr
 
 // Create marker for the home position
 const homeMarker = shallowRef<L.Marker>()
+
+// An unconfirmed home is a mission's first item or a last known one, so it is signed rather than presented as the
+// position the vehicle would actually return to.
+const homeMarkerContent = computed(() => {
+  const icon = missionStore.isHomeConfirmedByVehicle ? 'mdi-home-map-marker' : 'mdi-home-alert'
+  return `<i class="mdi ${icon} text-[18px] "></i>`
+})
+
+// Carried by the marker rather than by its tooltip, which is not interactive and so never sees the pointer.
+const homeMarkerTitle = computed(() =>
+  missionStore.isHomeConfirmedByVehicle ? '' : 'The vehicle has not reported this home position'
+)
+
 // Watches the map too, so a home already known when the widget mounts still gets a marker once the map exists.
-watch([home, map], () => {
+watch([home, map, () => missionStore.isHomeConfirmedByVehicle], () => {
   if (map.value === undefined) return
 
   const position = home.value
@@ -1308,9 +1321,10 @@ watch([home, map], () => {
   if (!homeMarker.value) {
     homeMarker.value = L.marker(position as LatLngTuple, {
       icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }),
+      title: homeMarkerTitle.value,
     })
     const homeMarkerTooltip = L.tooltip({
-      content: '<i class="mdi mdi-home-map-marker text-[18px] "></i>',
+      content: homeMarkerContent.value,
       permanent: true,
       direction: 'center',
       className: 'waypoint-tooltip waypoint-tooltip--icon',
@@ -1320,6 +1334,8 @@ watch([home, map], () => {
     map.value.addLayer(homeMarker.value)
   } else {
     homeMarker.value.setLatLng(position as LatLngTuple)
+    homeMarker.value.getTooltip()?.setContent(homeMarkerContent.value)
+    homeMarker.value.getElement()?.setAttribute('title', homeMarkerTitle.value)
   }
 })
 
@@ -1796,13 +1812,24 @@ const onKeydown = (event: KeyboardEvent): void => {
   }
 }
 
-const drawMission = (missionItems: Waypoint[]): void => {
+const drawMission = (
+  missionItems: Waypoint[],
+  options?: {
+    /** Whether the vehicle just sent this mission, making its first item the home the vehicle holds. */
+    fromVehicle?: boolean
+  }
+): void => {
   const drawn: Waypoint[] = []
   missionItems.forEach((wp, idx) => {
     if (idx === 0) {
       // Only moves the marker. Echoing this back as a set-home command would overwrite the vehicle's home with a
-      // possibly stale one, as missions are restored from persistent storage on startup.
-      home.value = wp.coordinates
+      // possibly stale one, as missions are restored from persistent storage on startup. Which is also why a stored
+      // mission's first item must not replace a home the vehicle reported, while one just downloaded may be that home.
+      if (options?.fromVehicle) {
+        vehicleStore.setHomeFromVehicleMission(wp.coordinates)
+      } else if (!missionStore.isHomeConfirmedByVehicle) {
+        home.value = wp.coordinates
+      }
     } else {
       drawn.push(wp)
     }
@@ -1845,7 +1872,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
   try {
     missionItemsInVehicle.value = await vehicleStore.fetchMission(loadingCallback)
     rebuildMissionSeqMapping(missionItemsInVehicle.value as Waypoint[])
-    drawMission(missionItemsInVehicle.value as Waypoint[])
+    drawMission(missionItemsInVehicle.value as Waypoint[], { fromVehicle: true })
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {

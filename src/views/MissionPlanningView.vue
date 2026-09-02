@@ -1089,6 +1089,9 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
+    // The vehicle takes its home from the mission's first item, so read it back to learn what it now holds. Not
+    // awaited, as the upload is done either way and the map only needs the answer whenever it arrives.
+    vehicleStore.fetchHomeWaypoint().catch(() => undefined)
     // Keep the uploaded mission on the planner (draft) and store a restorable snapshot so quick edits
     // don't require re-downloading it from the vehicle.
     missionStore.setLastUploadedMission(buildCurrentMissionSnapshot())

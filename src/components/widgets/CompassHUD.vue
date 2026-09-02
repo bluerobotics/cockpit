@@ -154,6 +154,7 @@ import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type {
   HighlightedPoiMarker,
@@ -167,6 +168,7 @@ import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
+const missionStore = useMissionStore()
 const { resolvedPointsOfInterest } = usePointsOfInterest()
 const baseStationStore = useBaseStation()
 
@@ -342,7 +344,7 @@ const homeMarkerId = '__home__'
 // backing variables.
 const buildHomeHudPoi = (coords: PointOfInterestCoordinates): ResolvedPointOfInterest => ({
   id: homeMarkerId,
-  name: 'Home',
+  name: missionStore.isHomeConfirmedByVehicle ? 'Home' : 'Home (unconfirmed)',
   description: '',
   latitude: coords[0],
   longitude: coords[1],
@@ -353,7 +355,9 @@ const buildHomeHudPoi = (coords: PointOfInterestCoordinates): ResolvedPointOfInt
   resolvedHeading: null,
   latitudeVariableId: `${homeMarkerId}/latitude`,
   longitudeVariableId: `${homeMarkerId}/longitude`,
-  icon: 'mdi-home',
+  // Signed when the vehicle has not confirmed this home, so a mission's first item or a last known one is not read as
+  // the position the vehicle would actually return to.
+  icon: missionStore.isHomeConfirmedByVehicle ? 'mdi-home' : 'mdi-home-alert',
   color: '#1E88E5',
   timestamp: 0,
 })

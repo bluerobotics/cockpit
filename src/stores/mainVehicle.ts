@@ -54,7 +54,7 @@ import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { canSuggestCabledLink, createWirelessTrafficWatcher } from '@/libs/wireless-traffic-warning'
-import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
+import type { MissionLoadingCallback, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useControllerStore } from './controller'
 import { useMissionStore } from './mission'
@@ -266,6 +266,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     dispatchEvent(new CustomEvent('vehicle-offline'))
     currentlyConnectedVehicleId.value = undefined
     isArmed.value = undefined
+    // The last known home stays on the map, as it is still the best guess of where the vehicle would return to, but it
+    // is no longer something the vehicle is confirming.
+    missionStore.isHomeConfirmedByVehicle = false
   })
 
   watch(enableDatalakeVariablesFromOtherSystems, (newValue) => {
@@ -551,6 +554,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       try {
         const homeWaypoint = await vehicle.fetchHomeWaypoint()
         missionStore.homeMarkerPosition = homeWaypoint.coordinates
+        missionStore.isHomeConfirmedByVehicle = true
         return homeWaypoint
       } finally {
         inflightHomeFetch = undefined
@@ -558,6 +562,17 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     })()
 
     return inflightHomeFetch
+  }
+
+  /**
+   * Take the home position from the first item of a mission read off the vehicle. Only ArduPilot reports home there,
+   * so on any other firmware the position is displayed without counting as one the vehicle confirmed.
+   * @param { WaypointCoordinates } firstItemCoordinates Coordinates of the mission's first item
+   * @returns { void }
+   */
+  function setHomeFromVehicleMission(firstItemCoordinates: WaypointCoordinates): void {
+    missionStore.homeMarkerPosition = firstItemCoordinates
+    missionStore.isHomeConfirmedByVehicle = mainVehicle.value?.firmware() === Vehicle.Firmware.ArduPilot
   }
 
   /**
@@ -1187,6 +1202,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     reachedMissionItemSequences,
     clearReachedMissionItems,
     fetchHomeWaypoint,
+    setHomeFromVehicleMission,
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
     vehicleConnectionTimeoutMs,
