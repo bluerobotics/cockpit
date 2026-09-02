@@ -526,6 +526,7 @@ export const useControllerStore = defineStore('controller', () => {
     registerControllerUpdateCallback,
     enableForwarding,
     setForwardingByUser,
+    enableJoystickForwardingIfSafe,
     holdLastInputWhenWindowHidden,
     joysticks,
     protocolMapping,
