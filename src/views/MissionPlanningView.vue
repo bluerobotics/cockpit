@@ -47,7 +47,7 @@
             v-model.number="displayedDistanceBetweenSurveyLines"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
-            :min="metersToDisplayUnit(1)"
+            :min="metersToDisplayBound(1)"
           />
         </div>
       </template>
@@ -82,7 +82,7 @@
             v-model.number="displayedCruiseSpeed"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
-            :min="metersPerSecondToDisplayUnit(1)"
+            :min="metersPerSecondToDisplayBound(1)"
             step="0.5"
           />
         </div>
@@ -139,7 +139,7 @@
             v-model.number="displayedCrosshatchDistanceBetweenLines"
             class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
             type="number"
-            :min="metersToDisplayUnit(1)"
+            :min="metersToDisplayBound(1)"
           />
         </div>
       </template>
@@ -378,7 +378,7 @@
             v-model.number="displayedDistanceBetweenSurveyLines"
             class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
             type="number"
-            :min="metersToDisplayUnit(1)"
+            :min="metersToDisplayBound(1)"
           />
           <p class="m-1 overflow-visible text-sm text-slate-200">Lines angle (degrees)</p>
           <input
@@ -423,7 +423,7 @@
               v-model.number="displayedCrosshatchDistanceBetweenLines"
               class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
               type="number"
-              :min="metersToDisplayUnit(1)"
+              :min="metersToDisplayBound(1)"
             />
           </template>
           <div class="flex items-center justify-between mx-5 my-2">
@@ -988,6 +988,7 @@ import {
   WhoToFollow,
 } from '@/libs/map/utils-map'
 import { orderedSurveyPath, surveyEndpointEdgeBearing, surveyEntryCornerCount } from '@/libs/map/utils-map'
+import { vehicleTooltipContent } from '@/libs/map/vehicle-tooltip'
 import {
   bearingBetween,
   calculateHaversineDistance,
@@ -3480,14 +3481,14 @@ const surveyLinesAngleDisplay = computed({
 
 // The survey, the waypoints and the speed command are all built in meters and m/s, so only the fields showing them
 // follow the unit the user reads.
-const { toDisplayUnit: metersToDisplayUnit, unit: distanceUnit } = useUnitConversion('m')
+const { toDisplayBound: metersToDisplayBound, unit: distanceUnit } = useUnitConversion('m')
 const { displayedValue: displayedDistanceBetweenSurveyLines } = useUnitInput(distanceBetweenSurveyLines, 'm')
 const { displayedValue: displayedCrosshatchDistanceBetweenLines } = useUnitInput(crosshatchDistanceBetweenLines, 'm')
 const { displayedValue: displayedTurnaroundDistance } = useUnitInput(turnaroundDistance, 'm')
 const { displayedValue: displayedWaypointAltitude } = useUnitInput(currentWaypointAltitude, 'm')
 const {
   displayedValue: displayedCruiseSpeed,
-  toDisplayUnit: metersPerSecondToDisplayUnit,
+  toDisplayBound: metersPerSecondToDisplayBound,
   unit: speedUnit,
 } = useUnitInput(localCruiseSpeed, 'm/s')
 
@@ -5011,13 +5012,17 @@ const timeAgoSeenText = computed(() => {
 watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed], () => {
   if (vehicleMarker.value === undefined) return
 
-  vehicleMarker.value.getTooltip()?.setContent(`
-    <p>Coordinates: ${vehiclePosition.value?.[0].toFixed(6)}, ${vehiclePosition.value?.[1].toFixed(6)}</p>
-    <p>Velocity: ${vehicleStore.velocity.ground?.toFixed(2) ?? 'N/A'} m/s</p>
-    <p>Heading: ${vehicleHeading.value.toFixed(2)}°</p>
-    <p>${vehicleStore.isArmed ? 'Armed' : 'Disarmed'}</p>
-    <p>Last seen: ${timeAgoSeenText.value}</p>
-  `)
+  const content = vehicleTooltipContent(
+    {
+      coordinates: vehiclePosition.value,
+      groundVelocityInMetersPerSecond: vehicleStore.velocity.ground,
+      headingInDegrees: vehicleHeading.value,
+      isArmed: vehicleStore.isArmed,
+      timeAgoSeenText: timeAgoSeenText.value,
+    },
+    interfaceStore.displayUnitPreferences
+  )
+  vehicleMarker.value.getTooltip()?.setContent(content)
 
   // Update the rotation
   const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
