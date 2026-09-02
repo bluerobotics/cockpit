@@ -5,16 +5,22 @@ import { useMissionStore } from '@/stores/mission'
 import type { WaypointCoordinates } from '@/types/mission'
 
 /**
- * The vehicle's own home position, asked for once it is online, so surfaces that only display home do not each have to
- * fetch it. Cockpit never commands home, so this is whatever the autopilot decided, which for a planned mission is its
- * first item. What is already displayed is no answer to whether the vehicle has been asked, since a mission restored
- * from storage draws its own first item as home, so each connection is tracked instead.
+ * The home position to display, asked of the vehicle once it is online so surfaces that only show home do not each
+ * have to fetch it. What is already displayed is no answer to whether the vehicle has been asked, since a mission
+ * restored from storage draws its own first item as home, so each connection is tracked instead.
  * @param {() => boolean} isNeeded - Whether the caller currently displays home, to skip the request while it does not.
- * @returns {ComputedRef<WaypointCoordinates | undefined>} Home position, or undefined while the vehicle reports none.
+ * @returns {{ coordinates: ComputedRef<WaypointCoordinates | undefined>, isConfirmedByVehicle: ComputedRef<boolean> }}
+ * The displayed home, and whether the vehicle currently connected is the one that reported it rather than it being a
+ * mission's first item, a point the operator commanded, or one left over from another connection.
  */
 export const useVehicleHomePosition = (
   isNeeded: () => boolean = () => true
-): ComputedRef<WaypointCoordinates | undefined> => {
+): {
+  /** The home position being displayed, or undefined while none is known */
+  coordinates: ComputedRef<WaypointCoordinates | undefined>
+  /** Whether the vehicle currently connected is the one that reported this home */
+  isConfirmedByVehicle: ComputedRef<boolean>
+} => {
   const vehicleStore = useMainVehicleStore()
   const missionStore = useMissionStore()
 
@@ -45,5 +51,14 @@ export const useVehicleHomePosition = (
     { immediate: true }
   )
 
-  return computed(() => missionStore.homeMarkerPosition)
+  return {
+    coordinates: computed(() => missionStore.homeMarkerPosition),
+    isConfirmedByVehicle: computed(
+      () =>
+        missionStore.homeMarkerSource === 'vehicle' &&
+        vehicleStore.isVehicleOnline &&
+        missionStore.homeMarkerVehicleId != null &&
+        missionStore.homeMarkerVehicleId === vehicleStore.currentlyConnectedVehicleId
+    ),
+  }
 }
