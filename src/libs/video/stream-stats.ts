@@ -1,4 +1,4 @@
-import type { Go2RTCStreamInfo, WebRTCVideoStat } from '@/types/video'
+import type { Go2RTCStreamInfo, WebRTCVideoStat, WebRTCVideoStats } from '@/types/video'
 
 /**
  * The raw cumulative ingest counters of a go2rtc stream and the epoch they were sampled at
@@ -21,9 +21,9 @@ export interface Go2rtcIngestRates {
 
 /**
  * A go2rtc stream sample as fanned out to consumers: the raw stream info plus the rates the
- * sampler derived over its own window
+ * sampler derived over its own window, absent while no window is derivable
  */
-export type Go2rtcStreamSample = Go2RTCStreamInfo & Go2rtcIngestRates
+export type Go2rtcStreamSample = Go2RTCStreamInfo & Partial<Go2rtcIngestRates>
 
 /**
  * Difference two counter samples into rates over the window between them
@@ -47,8 +47,24 @@ export const differenceGo2rtcSamples = (
   }
 }
 
+/**
+ * Assemble the sample published for one go2rtc poll. The rate keys are left out whenever no window
+ * is derivable, so a rate that is merely not known yet is never published as the zero that means a
+ * stalled stream.
+ * @param {Go2RTCStreamInfo} info - Latest counters and stream info from go2rtc
+ * @param {Go2rtcIngestCounters | undefined} previous - Counters of this stream's previous sample, if any
+ * @returns {Go2rtcStreamSample} Sample to fan out to consumers
+ */
+export const buildGo2rtcStreamSample = (
+  info: Go2RTCStreamInfo,
+  previous: Go2rtcIngestCounters | undefined
+): Go2rtcStreamSample => ({
+  ...info,
+  ...(previous === undefined ? undefined : differenceGo2rtcSamples(previous, info)),
+})
+
 // WebRTC stats published to the data lake for every monitored stream
-const webRtcCumulativeStatKeys: WebRTCVideoStat[] = [
+export const webRtcStreamStatKeys: WebRTCVideoStat[] = [
   'bytesReceived',
   'firCount',
   'framesDecoded',
@@ -72,8 +88,7 @@ const webRtcCumulativeStatKeys: WebRTCVideoStat[] = [
   'totalPausesDuration',
   'totalProcessingDelay',
   'totalSquaredInterFrameDelay',
-] // Keys that have cumulative values
-const webRtcAverageStatKeys: WebRTCVideoStat[] = [
+  'bitrate',
   'clockRate',
   'frameHeight',
   'framesAssembledFromMultiplePackets',
@@ -83,8 +98,28 @@ const webRtcAverageStatKeys: WebRTCVideoStat[] = [
   'jitterBufferMinimumDelay',
   'jitterBufferTargetDelay',
   'packetRate',
-] // Keys that have average values
-export const webRtcStreamStatKeys = [...webRtcCumulativeStatKeys, ...webRtcAverageStatKeys]
+]
+
+// Published alongside them, but computed here rather than reported by the WebRTC library
+const derivedWebRtcStreamStatKeys = ['bitrateKbps'] as const
+
+type DerivedWebRtcStreamStatKey = (typeof derivedWebRtcStreamStatKeys)[number]
+
+// Every WebRTC stat variable a stream gets: one per reported key, plus one per derived stat
+export const webRtcStreamStatVariableKeys: string[] = [...webRtcStreamStatKeys, ...derivedWebRtcStreamStatKeys]
+
+/**
+ * Derive the WebRTC stats the library does not report. A stat whose source is missing or not finite
+ * is left out, so a rate that is merely not known is never published as the zero that means a
+ * stalled stream.
+ * @param {WebRTCVideoStats} stats - Latest inbound video stats of a stream
+ * @returns {Partial<Record<DerivedWebRtcStreamStatKey, number>>} Derived stats that are known
+ */
+export const derivedWebRtcStreamStats = (
+  stats: WebRTCVideoStats
+): Partial<Record<DerivedWebRtcStreamStatKey, number>> =>
+  // Whole kbps like the go2rtc series this one exists to be plotted against; bitrateBps keeps the full resolution
+  Number.isFinite(stats.bitrate) ? { bitrateKbps: Math.round(stats.bitrate / 1000) } : {}
 
 // go2rtc ingest stats published to the data lake for every active RTSP stream (Standalone only)
 export const go2rtcStreamStatKeys = [
@@ -105,6 +140,10 @@ export const go2rtcStreamStatKeys = [
  */
 export type Go2rtcStreamStatKey = (typeof go2rtcStreamStatKeys)[number]
 
+// The WebRTC library reports bitrate in bits/sec; the published name carries that unit so it cannot
+// be plotted against the go2rtc bitrateKbps series as if they shared a scale
+const publishedWebRtcStatKey = (statKey: string): string => (statKey === 'bitrate' ? 'bitrateBps' : statKey)
+
 /**
  * Build the data lake variable id of a stream's WebRTC stat
  * @param {string} internalName - Internal stream name (persisted artifacts never use the external id)
@@ -112,7 +151,16 @@ export type Go2rtcStreamStatKey = (typeof go2rtcStreamStatKeys)[number]
  * @returns {string} Data lake variable id
  */
 export const streamStatVariableId = (internalName: string, statKey: string): string =>
-  `stream-${internalName}-${statKey}`
+  `stream-${internalName}-${publishedWebRtcStatKey(statKey)}`
+
+/**
+ * Build the data lake display name of a stream's WebRTC stat
+ * @param {string} internalName - Internal stream name (persisted artifacts never use the external id)
+ * @param {string} statKey - WebRTC stat key
+ * @returns {string} Data lake variable display name
+ */
+export const streamStatDisplayName = (internalName: string, statKey: string): string =>
+  `Stream '${internalName}' - ${publishedWebRtcStatKey(statKey)}`
 
 /**
  * Build the data lake variable id of a stream's go2rtc ingest stat. The 'rtsp' infix keeps the two
@@ -123,3 +171,68 @@ export const streamStatVariableId = (internalName: string, statKey: string): str
  */
 export const go2rtcStreamStatVariableId = (internalName: string, statKey: Go2rtcStreamStatKey): string =>
   `stream-${internalName}-rtsp-${statKey}`
+
+const isRtspUrlStreamStatId = (id: string): boolean => /^stream-rtsps?:\/\//i.test(id)
+
+// Peel `stream-<name>` from an id that ends with a minting-function suffix, then remint to confirm.
+// endsWith alone is not enough: one published key can be a suffix of another, and stream names have hyphens.
+const nameBeforeStreamStatSuffix = (id: string, suffix: string): string | undefined => {
+  if (!id.startsWith('stream-') || !id.endsWith(suffix)) return undefined
+  const name = id.slice('stream-'.length, id.length - suffix.length)
+  return name.length > 0 ? name : undefined
+}
+
+const publishedWebRtcStatSuffix = (key: string): string => streamStatVariableId('', key).slice('stream-'.length)
+
+const isWebRtcStreamStatId = (id: string): boolean =>
+  webRtcStreamStatVariableKeys.some((key) => {
+    const publishedSuffix = publishedWebRtcStatSuffix(key)
+    const publishedName = nameBeforeStreamStatSuffix(id, publishedSuffix)
+    if (publishedName !== undefined && streamStatVariableId(publishedName, key) === id) return true
+
+    // When minting remaps a key, also treat stream-<name>-<rawKey> as a stream-stat id so the old form can be pruned.
+    const rawSuffix = `-${key}`
+    if (rawSuffix === publishedSuffix) return false
+    const rawName = nameBeforeStreamStatSuffix(id, rawSuffix)
+    return rawName !== undefined && streamStatVariableId(rawName, key) === `stream-${rawName}${publishedSuffix}`
+  })
+
+const isGo2rtcStreamStatId = (id: string): boolean =>
+  go2rtcStreamStatKeys.some((key) => {
+    const suffix = go2rtcStreamStatVariableId('', key).slice('stream-'.length)
+    const name = nameBeforeStreamStatSuffix(id, suffix)
+    return name !== undefined && go2rtcStreamStatVariableId(name, key) === id
+  })
+
+const isStreamStatVariableId = (id: string): boolean => isWebRtcStreamStatId(id) || isGo2rtcStreamStatId(id)
+
+/**
+ * Pick the recorded stream-stat IDs that are no longer worth recording: those of deleted streams,
+ * and pre-switch IDs keyed by external id (an RTSP URL may carry credentials into an export header).
+ * @param {string[]} recordedIds - Currently recorded data-lake variable IDs
+ * @param {string[] | undefined} liveInternalNames - Internal stream names currently in the correspondency,
+ * or undefined while that list cannot be trusted to describe the configured streams
+ * @returns {string[]} Recorded IDs that should be dropped
+ */
+export const staleStreamStatRecordedIds = (
+  recordedIds: string[],
+  liveInternalNames: string[] | undefined
+): string[] => {
+  // An empty or not-yet-loaded correspondency is not evidence that a stream is gone, so it only ever
+  // drops the credential-bearing ids, which must not persist whichever streams are live.
+  if (liveInternalNames === undefined || liveInternalNames.length === 0) {
+    return recordedIds.filter(isRtspUrlStreamStatId)
+  }
+
+  const liveIds = new Set(
+    liveInternalNames.flatMap((name) => [
+      ...webRtcStreamStatVariableKeys.map((key) => streamStatVariableId(name, key)),
+      ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
+    ])
+  )
+
+  return recordedIds.filter((id) => {
+    if (isRtspUrlStreamStatId(id)) return true
+    return isStreamStatVariableId(id) && !liveIds.has(id)
+  })
+}

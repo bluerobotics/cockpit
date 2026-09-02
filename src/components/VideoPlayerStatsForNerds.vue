@@ -242,6 +242,9 @@ watch(rtspSample, (sample): void => {
   if (!sample) return
 
   if (rtspStartTime === 0) rtspStartTime = Date.now()
+  // A rate the sampler could not derive yet is neither a stall nor a point worth plotting
+  if (sample.bitrateKbps === undefined || sample.packetsPerSec === undefined) return
+
   const warmUp = Date.now() - rtspStartTime < 5000
   const isStalled = !warmUp && sample.bitrateKbps === 0 ? 1 : 0
   if (isStalled) rtspStallCount++
