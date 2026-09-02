@@ -124,6 +124,8 @@ export interface GnssField {
   type: DataLakeVariableType
   /** Variable description. */
   description: string
+  /** Unit the field is read in, for the fields that measure something. */
+  unit?: string
   /** Extracts the field value from a consolidated fix. */
   read: (fix: GnssFix) => string | number | undefined
 }

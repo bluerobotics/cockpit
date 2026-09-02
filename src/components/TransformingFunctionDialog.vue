@@ -48,6 +48,17 @@
               <v-radio class="ml-3 mr-4" label="Number" value="number" />
               <v-radio class="ml-3 mr-4" label="Boolean" value="boolean" />
             </v-radio-group>
+            <v-text-field
+              v-model="newFunction.unit"
+              label="Unit"
+              placeholder="m, m/s, degC"
+              variant="outlined"
+              :disabled="newFunction.type !== 'number'"
+              :messages="unitWarning"
+              density="compact"
+              class="w-[160px]"
+              hide-details="auto"
+            />
           </div>
           <div class="flex flex-col gap-2">
             <div class="flex justify-between items-center">
@@ -65,6 +76,10 @@
                 Create complex transformations by combining existing Data Lake variables using JavaScript expressions.
                 <br />
                 • Type <code>&#123;&#123;</code> to access available variables
+                <br />
+                • End a variable with <code>: metric</code>, <code>: imperial</code> or <code>: nautical</code> to read
+                it in that unit system, and set Unit to what the expression then results in. Older Cockpit versions
+                cannot read the suffix, so leave it off if you share this vehicle with one.
                 <br />
                 • Return is optional, but should be included in complex expressions
                 <br />
@@ -108,6 +123,7 @@ import {
   updateTransformingFunction,
 } from '@/libs/actions/data-lake-transformations'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
+import { isReadableUnit } from '@/libs/units'
 import { machinizeString } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -152,9 +168,17 @@ const defaultValues = {
   type: 'number' as 'string' | 'number' | 'boolean',
   expression: expressionPlaceholder,
   description: '',
+  unit: '',
 }
 
 const newFunction = ref(defaultValues)
+
+const unitWarning = computed(() =>
+  newFunction.value.unit && !isReadableUnit(newFunction.value.unit)
+    ? ['Unit not recognized. The value will be shown exactly as it arrives.']
+    : []
+)
+
 // Auto-update ID from name when name changes (if manual ID editing is not enabled)
 watch(
   () => newFunction.value.name,
@@ -176,6 +200,7 @@ watch(
         type: func.type,
         expression: func.expression,
         description: func.description || '',
+        unit: func.unit || '',
       }
     } else {
       newFunction.value = { ...defaultValues }
@@ -228,7 +253,7 @@ const saveTransformingFunction = (): void => {
         newFunction.value.type,
         newFunction.value.expression,
         newFunction.value.description,
-        { systemOwned: false }
+        { systemOwned: false, unit: newFunction.value.unit }
       )
     }
   } catch (error) {

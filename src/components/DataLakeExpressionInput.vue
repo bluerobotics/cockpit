@@ -8,6 +8,12 @@
         </template>
         <div class="max-w-xs">
           <slot name="hint" />
+          <p v-if="!ignoresUnitSuffix" class="text-sm mt-2">
+            End a variable with ": metric", ": imperial" or ": nautical" — e.g. &#123;&#123;
+            /mavlink/1/1/GLOBAL_POSITION_INT/lat : metric &#125;&#125; — to read it in that unit system, instead of the
+            raw value the vehicle sends. Older Cockpit versions cannot read it, so leave it off if you share this
+            vehicle with one.
+          </p>
         </div>
       </v-tooltip>
     </legend>
@@ -25,7 +31,10 @@
           @mousedown.prevent="insertVariable(item.id)"
           @mouseenter="highlightedIndex = index"
         >
-          <span class="dl-expression-option-name">{{ item.name }}</span>
+          <span class="dl-expression-option-name">
+            {{ item.name }}
+            <span v-if="item.unit" class="dl-expression-option-unit">{{ item.unit }}</span>
+          </span>
           <span class="dl-expression-option-id">{{ item.id }}</span>
         </div>
         <div v-if="filteredVariables.length === 0" class="dl-expression-empty">{{ emptyDropdownMessage }}</div>
@@ -61,6 +70,11 @@ const props = defineProps<{
    * Restricts which data lake variables the dropdown offers. All of them when not given.
    */
   variableFilter?: (variable: DataLakeVariable) => boolean
+  /**
+   * Hides the unit-system suffix help, for a consumer that reads a lone variable reference directly
+   * rather than resolving it as an expression, and so has no way to honour the suffix.
+   */
+  ignoresUnitSuffix?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -105,6 +119,7 @@ const filteredVariables = computed(() => {
   const variables = availableVariables.value.map((variable) => ({
     id: variable.id,
     name: variable.name || variable.id,
+    unit: variable.unit,
   }))
   if (!term) return variables
   return variables.filter(
@@ -396,6 +411,11 @@ onUnmounted(() => {
 .dl-expression-option-name {
   font-size: 13px;
   color: #ffffffde;
+}
+
+.dl-expression-option-unit {
+  font-size: 11px;
+  color: #ffffff80;
 }
 
 .dl-expression-option-id {

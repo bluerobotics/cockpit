@@ -35,6 +35,19 @@
                   <v-icon start>mdi-function-variant</v-icon>
                   Add compound variable
                 </v-btn>
+                <v-btn-toggle
+                  :model-value="viewMode"
+                  mandatory
+                  divided
+                  density="compact"
+                  variant="text"
+                  class="bg-transparent shrink-0 elevation-1 border border-[#FFFFFF1A]"
+                  @update:model-value="setViewMode"
+                >
+                  <v-btn v-for="mode in viewModes" :key="mode" :value="mode" size="small" class="capitalize text-white">
+                    {{ mode }}
+                  </v-btn>
+                </v-btn-toggle>
               </div>
               <v-data-table
                 :items="filteredVariables"
@@ -110,7 +123,14 @@
                     <td>
                       <div class="flex items-center justify-start rounded-xl mx-1">
                         <p class="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
-                          {{ parsedCurrentValue(item.id) }}
+                          {{ displayedValue(item) }}
+                        </p>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-center rounded-xl mx-1">
+                        <p class="w-[60px] whitespace-nowrap overflow-hidden text-ellipsis text-center">
+                          {{ displayedUnit(item) }}
                         </p>
                       </div>
                     </td>
@@ -160,7 +180,7 @@
                 </template>
                 <template #no-data>
                   <tr>
-                    <td colspan="6" class="text-center flex items-center justify-center h-[50px] w-full">
+                    <td colspan="7" class="text-center flex items-center justify-center h-[50px] w-full">
                       <p class="text-[16px] ml-[170px] w-full">No data lake variables found</p>
                     </td>
                   </tr>
@@ -212,7 +232,8 @@ import {
   TransformingFunction,
 } from '@/libs/actions/data-lake-transformations'
 import { dataLakeLogger } from '@/libs/data-lake-logging'
-import { copyToClipboard } from '@/libs/utils'
+import { type ConvertedValue, convertValue, UnitSystem, unitSystems } from '@/libs/units'
+import { copyToClipboard, round } from '@/libs/utils'
 import {
   canUserChangeDataLakeVariable,
   canUserDeleteDataLakeVariable,
@@ -241,6 +262,7 @@ const tableHeaders = [
   { title: 'Type', align: 'center', key: 'type', width: '92px', fixed: true },
   { title: 'Source', align: 'center', key: 'source', width: '115px', fixed: true },
   { title: 'Current Value', align: 'start', key: 'value', width: '200px', fixed: true },
+  { title: 'Unit', align: 'center', key: 'unit', width: '60px', fixed: true },
   { title: 'Actions', align: 'end', key: 'actions', width: '70px', fixed: true },
   {
     title: 'Record',
@@ -323,6 +345,32 @@ const parsedCurrentValue = (id: string): string => {
   }
 
   return String(currentValues.value[id])
+}
+
+const viewModes = ['raw', UnitSystem.Metric, UnitSystem.Imperial] as const
+
+const viewMode = ref<(typeof viewModes)[number]>('raw')
+
+const setViewMode = (mode: unknown): void => {
+  logUserAction(`Switched the data-lake variables monitor to ${mode} units`)
+  viewMode.value = mode as (typeof viewModes)[number]
+}
+
+// Values are stored as the vehicle sent them, so reading them in another unit is a display-time
+// conversion the table does on what it is about to show.
+const convertedValue = (item: DataLakeVariable): ConvertedValue | undefined => {
+  const value = currentValues.value[item.id]
+  if (viewMode.value === 'raw' || typeof value !== 'number') return undefined
+  return convertValue(value, item.unit, unitSystems[viewMode.value])
+}
+
+const displayedValue = (item: DataLakeVariable): string => {
+  const converted = convertedValue(item)
+  return converted === undefined ? parsedCurrentValue(item.id) : String(round(converted.value, 4))
+}
+
+const displayedUnit = (item: DataLakeVariable): string => {
+  return convertedValue(item)?.unit ?? item.unit ?? ''
 }
 
 /**

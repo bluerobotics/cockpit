@@ -4,9 +4,7 @@
     <div class="flex flex-col items-start justify-center ml-1 min-w-[4rem] max-w-[6rem] select-none">
       <div>
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
-        <span class="text-xl font-semibold leading-6 w-fit">
-          {{ String.fromCharCode(0x20) }} {{ unitAbbreviation[displayUnitPreferences.distance] }}
-        </span>
+        <span class="text-xl font-semibold leading-6 w-fit"> {{ String.fromCharCode(0x20) }} {{ altitudeUnit }} </span>
       </div>
       <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">Alt (Rel)</span>
     </div>
@@ -68,7 +66,6 @@
 </template>
 
 <script setup lang="ts">
-import { unit } from 'mathjs'
 import { computed, onBeforeMount, toRefs } from 'vue'
 
 import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
@@ -78,7 +75,7 @@ import {
   defaultAltitudeIndicatorVariableId,
   rawAltitudeToMeters,
 } from '@/libs/data-sources/altitude'
-import { unitAbbreviation } from '@/libs/units'
+import { convertValue, unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
@@ -93,7 +90,6 @@ const miniWidget = toRefs(props).miniWidget
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
-const { displayUnitPreferences } = interfaceStore
 
 const defaultOptions = {
   altitudeVariableId: defaultAltitudeIndicatorVariableId,
@@ -122,8 +118,10 @@ const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
 const currentAltitude = computed<number | undefined>(() => {
   if (resolvedAltitudeVariableId.value === undefined || typeof rawAltitude.value !== 'number') return undefined
   const altMeters = rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
-  return unit(altMeters, 'm').to(displayUnitPreferences.distance).toJSON().value as number
+  return convertValue(altMeters, 'm', interfaceStore.displayUnitPreferences).value
 })
+
+const altitudeUnit = computed(() => unitAbbreviation[interfaceStore.displayUnitPreferences.distance])
 
 const parsedState = computed(() => {
   const altitude = currentAltitude.value

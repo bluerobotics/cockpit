@@ -261,6 +261,8 @@ export interface TransformingFunction {
   type: 'string' | 'number' | 'boolean'
   /** Description of the new variable */
   description?: string
+  /** Unit the expression results in, so the value can be converted for display */
+  unit?: string
   /** JavaScript expression that defines how to calculate the new variable */
   expression: string
   /** Whether Cockpit created the function, rather than the user. Assumed when absent, as with any variable */
@@ -269,8 +271,8 @@ export interface TransformingFunction {
   allowUserToChangeValue?: boolean
 }
 
-/** Who a function belongs to and what the user may do with it, mirrored onto the data lake variable backing it */
-type TransformingFunctionFlags = Pick<TransformingFunction, 'systemOwned' | 'allowUserToChangeValue'>
+/** The fields beyond the expression itself, mirrored onto the data lake variable backing the function */
+type TransformingFunctionOptions = Pick<TransformingFunction, 'systemOwned' | 'allowUserToChangeValue' | 'unit'>
 
 /**
  * Creates a new transforming function that listens to its dependencies
@@ -280,7 +282,8 @@ type TransformingFunctionFlags = Pick<TransformingFunction, 'systemOwned' | 'all
  * @param {'string' | 'number' | 'boolean'} type - Type of the new variable
  * @param {string} expression - Expression to calculate the variable's value
  * @param {string?} description - Description of the new variable
- * @param {TransformingFunctionFlags?} flags - Who the function belongs to and what the user may do with it
+ * @param {TransformingFunctionOptions?} options - Who the function belongs to, what the user may do with it, and
+ * the unit its expression results in
  * @throws {Error} If the id is empty or the expression is not a string
  */
 export const createTransformingFunction = (
@@ -289,11 +292,18 @@ export const createTransformingFunction = (
   type: DataLakeVariableType,
   expression: string,
   description?: string,
-  flags?: TransformingFunctionFlags
+  options?: TransformingFunctionOptions
 ): void => {
-  const transformingFunction = usableTransformingFunctionOrThrow({ name, id, type, expression, description, ...flags })
+  const transformingFunction = usableTransformingFunctionOrThrow({
+    name,
+    id,
+    type,
+    expression,
+    description,
+    ...options,
+  })
   globalTransformingFunctions.push(transformingFunction)
-  createDataLakeVariable({ id: transformingFunction.id, name, type, description, ...flags })
+  createDataLakeVariable({ id: transformingFunction.id, name, type, description, ...options })
   saveTransformingFunctions()
 }
 

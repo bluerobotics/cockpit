@@ -4,9 +4,7 @@
     <div class="absolute left-[3rem] h-full select-none font-semibold scroll-container w-full">
       <div class="w-full">
         <span class="font-mono text-xl leading-6">{{ parsedState }}</span>
-        <span class="text-xl leading-6">
-          {{ String.fromCharCode(0x20) }} {{ unitAbbreviation[displayUnitPreferences.distance] }}
-        </span>
+        <span class="text-xl leading-6"> {{ String.fromCharCode(0x20) }} {{ depthUnit }} </span>
       </div>
       <span class="w-full text-sm absolute bottom-[0.5rem] whitespace-nowrap text-ellipsis overflow-x-hidden">
         Depth
@@ -70,7 +68,6 @@
 </template>
 
 <script setup lang="ts">
-import { unit } from 'mathjs'
 import { computed, onBeforeMount, toRefs } from 'vue'
 
 import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
@@ -81,7 +78,7 @@ import {
   rawAltitudeToMeters,
 } from '@/libs/data-sources/altitude'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { unitAbbreviation } from '@/libs/units'
+import { convertValue, unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
@@ -96,7 +93,6 @@ const miniWidget = toRefs(props).miniWidget
 
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
-const { displayUnitPreferences } = interfaceStore
 datalogger.registerUsage(DatalogVariable.depth)
 
 const defaultOptions = {
@@ -125,11 +121,12 @@ const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 const currentDepth = computed<number | undefined>(() => {
   if (resolvedAltitudeVariableId.value === undefined || typeof rawAltitude.value !== 'number') return undefined
-  const altMeters = rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
-  const depth = unit(-altMeters, 'm')
-  if (depth.value < 0.01) return 0
-  return depth.to(displayUnitPreferences.distance).toJSON().value as number
+  const depthInMeters = -rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
+  if (depthInMeters < 0.01) return 0
+  return convertValue(depthInMeters, 'm', interfaceStore.displayUnitPreferences).value
 })
+
+const depthUnit = computed(() => unitAbbreviation[interfaceStore.displayUnitPreferences.distance])
 
 const parsedState = computed(() => {
   const fDepth = currentDepth.value

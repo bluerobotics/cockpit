@@ -1,6 +1,6 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OverlayGrid } from '@/libs/sensors-logging'
-import { DistanceDisplayUnit } from '@/libs/units'
+import { type DisplayUnitPreferences, UnitSystem, unitSystems } from '@/libs/units'
 import { BatteryLevel, BatteryLevelThresholds } from '@/types/general'
 import { JoystickCalibration } from '@/types/joystick'
 import {
@@ -933,9 +933,7 @@ export const defaultSensorDataloggerProfile: OverlayGrid = {
   RightBottom: ['Battery voltage', 'Battery current'],
 }
 
-export const defaultDisplayUnitPreferences = {
-  distance: DistanceDisplayUnit.Meters,
-}
+export const defaultDisplayUnitPreferences: DisplayUnitPreferences = { ...unitSystems[UnitSystem.Metric] }
 
 export const defaultJoystickCalibration: JoystickCalibration = {
   deadband: {

@@ -167,6 +167,8 @@ import {
   subscribeToSerialLines,
 } from '@/libs/sensors/gnss'
 import { fixQualityLabel } from '@/libs/sensors/nmea'
+import { formatValueWithUnit } from '@/libs/units'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const props = defineProps<{
   /** Whether the dialog is open. */
@@ -192,6 +194,8 @@ const activeId = computed(() => device.value?.id ?? '')
 const plannedId = computed(() => gnss.planDeviceId(device.value?.name ?? ''))
 const displayId = computed(() => (props.create ? plannedId.value : activeId.value))
 const dialogTitle = computed(() => (props.create ? 'Add GNSS device' : `Configure ${device.value?.name ?? 'device'}`))
+
+const interfaceStore = useAppInterfaceStore()
 
 const status = computed(() => gnss.statuses[activeId.value] ?? 'disconnected')
 const fix = computed(() => gnss.latestFixes[activeId.value])
@@ -223,14 +227,20 @@ const statusItems = computed(() => {
     { label: 'Longitude', value: formatNumber(current.longitude, 7) },
     {
       label: 'Altitude (MSL)',
-      value: current.altitudeMslM === undefined ? '-' : `${formatNumber(current.altitudeMslM, 1)} m`,
+      value:
+        current.altitudeMslM === undefined
+          ? '-'
+          : formatValueWithUnit(current.altitudeMslM, 'm', interfaceStore.displayUnitPreferences, 1),
     },
     { label: 'Satellites used', value: current.satellitesUsed?.toString() ?? '-' },
     { label: 'Satellites in view', value: current.satellitesInView?.toString() ?? '-' },
     { label: 'HDOP', value: formatNumber(current.hdop, 2) },
     {
       label: 'Speed',
-      value: current.speedOverGroundMps === undefined ? '-' : `${formatNumber(current.speedOverGroundMps, 2)} m/s`,
+      value:
+        current.speedOverGroundMps === undefined
+          ? '-'
+          : formatValueWithUnit(current.speedOverGroundMps, 'm/s', interfaceStore.displayUnitPreferences, 2),
     },
     { label: 'UTC time', value: current.utcTime ?? '-' },
   ]

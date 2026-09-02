@@ -1,14 +1,14 @@
 <template>
   <input
     ref="inputEl"
-    :aria-label="`${label} in meters`"
+    :aria-label="`${label} in ${unit}`"
     class="absolute z-[641] w-[110px] h-[30px] -translate-x-1/2 -translate-y-1/2 bg-transparent text-transparent caret-transparent outline-none pointer-events-none"
     :style="{ left: `${left}px`, top: `${top}px` }"
     type="number"
     inputmode="numeric"
     step="1"
-    :min="-maxExtentInMeters"
-    :max="maxExtentInMeters"
+    :min="-maxDisplayedExtent"
+    :max="maxDisplayedExtent"
     @input="onInput"
     @change="onChange"
     @keydown="onKeyDown"
@@ -16,8 +16,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+import { useUnitConversion } from '@/composables/useUnitInput'
 import { maxExtentInMeters } from '@/libs/map/typed-extent'
 
 const props = defineProps<{
@@ -63,8 +64,13 @@ const emit = defineEmits<{
 
 const inputEl = ref<HTMLInputElement | null>(null)
 
+// The extent is applied in meters, so the field converts what is typed on its way out and what it is handed back.
+const { toDisplayUnit, toDisplayBound, toRawUnit, unit } = useUnitConversion('m')
+
+const maxDisplayedExtent = computed(() => toDisplayBound(maxExtentInMeters))
+
 onMounted(() => {
-  if (props.value !== null) inputEl.value!.value = String(props.value)
+  if (props.value !== null) inputEl.value!.value = String(toDisplayUnit(props.value))
   if (props.autofocus) inputEl.value?.focus()
 })
 
@@ -83,18 +89,20 @@ watch(
     const field = inputEl.value
     if (!field) return
 
-    const shown = field.value === '' ? null : Number(field.value)
-    if (shown !== value) field.value = value === null ? '' : String(value)
+    const shown = field.value === '' ? null : toRawUnit(Number(field.value))
+    if (shown !== value) field.value = value === null ? '' : String(toDisplayUnit(value))
   }
 )
 
 const onInput = (event: Event): void => {
   const typed = (event.target as HTMLInputElement).value
-  emit('update:value', typed === '' ? null : Number(typed))
+  emit('update:value', typed === '' ? null : toRawUnit(Number(typed)))
 }
 
 const onChange = (): void => {
-  if (props.value !== null) logUserAction(`Typed ${props.value} m for the ${props.label}`)
+  if (props.value === null) return
+  const typed = toDisplayUnit(props.value)
+  logUserAction(`Typed ${typed} ${unit.value} for the ${props.label}`)
 }
 
 // Keys a number is typed, corrected and settled with, which are the ones this field answers for itself.
@@ -121,9 +129,9 @@ const onKeyDown = (event: KeyboardEvent): void => {
   // had been typed in. Once the number is gone the field is empty for good, as any other field would be.
   if (event.key === 'Backspace' && !props.cleared && inputEl.value?.value === '') {
     event.preventDefault()
-    const kept = String(Math.round(props.liveValue)).slice(0, -1)
+    const kept = String(Math.round(toDisplayUnit(props.liveValue))).slice(0, -1)
     inputEl.value.value = kept
-    emit('update:value', kept === '' ? null : Number(kept))
+    emit('update:value', kept === '' ? null : toRawUnit(Number(kept)))
   }
 }
 </script>

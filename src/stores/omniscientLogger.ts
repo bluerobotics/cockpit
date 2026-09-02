@@ -27,6 +27,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     name: 'Cockpit Memory Usage',
     type: 'number',
     description: 'The memory usage of the Cockpit application in MB. This value is updated every 100ms.',
+    unit: 'MB',
   } as DataLakeVariable
   createDataLakeVariable(cockpitMemoryUsageVariable)
 
@@ -44,6 +45,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       type: 'number',
       description:
         'The memory usage of the main process, in MB. This value is updated every 100ms. Only available in standalone application.',
+      unit: 'MB',
     } as DataLakeVariable
     createDataLakeVariable(cockpitMainMemoryVariable)
 
@@ -53,6 +55,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       type: 'number',
       description:
         'The total memory usage of the renderer processes, in MB. This value is updated every 100ms. Only available in standalone application.',
+      unit: 'MB',
     } as DataLakeVariable
     createDataLakeVariable(cockpitRenderersMemoryVariable)
 
@@ -62,6 +65,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       type: 'number',
       description:
         'The memory usage of the GPU, in MB. This value is updated every 100ms. Only available in standalone application.',
+      unit: 'MB',
     } as DataLakeVariable
     createDataLakeVariable(cockpitGpuMemoryVariable)
 
@@ -72,6 +76,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       type: 'number',
       description:
         'The CPU usage of Cockpit as a percentage. This value is updated every 100ms. Only available in standalone application.',
+      unit: '%',
     } as DataLakeVariable
     createDataLakeVariable(cockpitCpuUsageVariable)
   }
@@ -157,6 +162,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
     name: 'Cockpit App Frame Rate',
     type: 'number',
     description: 'The framerate of the Cockpit application rendering in fps. This value is updated every 100ms.',
+    unit: 'fps',
   } as DataLakeVariable
   createDataLakeVariable(cockpitAppFrameRateVariable)
 

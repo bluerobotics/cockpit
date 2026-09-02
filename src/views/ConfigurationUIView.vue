@@ -125,22 +125,46 @@
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-5">
                 <div class="flex flex-row justify-start items-center w-full mb-[35px]">
-                  <div class="flex w-[33%]">Distance</div>
-                  <div class="flex w-[66%]">
+                  <div class="flex w-[33%]">System</div>
+                  <div class="flex w-[66%] items-center">
                     <v-radio-group
-                      :model-value="interfaceStore.displayUnitPreferences.distance"
+                      :model-value="currentUnitSystem"
                       inline
                       hide-details
-                      @update:model-value="setDistanceUnit"
+                      @update:model-value="setUnitSystem"
                     >
                       <v-radio
-                        :label="unitPrettyName[DistanceDisplayUnit.Meters]"
-                        :value="DistanceDisplayUnit.Meters"
+                        v-for="system in selectableUnitSystems"
+                        :key="system"
+                        :label="system"
+                        :value="system"
+                        class="capitalize mr-6"
                       />
+                    </v-radio-group>
+                    <span v-if="currentUnitSystem === UnitSystem.Custom" class="text-sm opacity-60">
+                      Mixed — pick a system, or set each quantity below
+                    </span>
+                  </div>
+                </div>
+                <div
+                  v-for="choice in unitChoices"
+                  :key="choice.quantity"
+                  class="flex flex-row justify-start items-center w-full mb-[35px]"
+                >
+                  <div class="flex w-[33%]">{{ choice.label }}</div>
+                  <div class="flex w-[66%]">
+                    <v-radio-group
+                      :model-value="interfaceStore.displayUnitPreferences[choice.quantity]"
+                      inline
+                      hide-details
+                      @update:model-value="(value: unknown) => setDisplayUnit(choice, value)"
+                    >
                       <v-radio
-                        :label="unitPrettyName[DistanceDisplayUnit.Feet]"
-                        :value="DistanceDisplayUnit.Feet"
-                        class="ml-6"
+                        v-for="choiceUnit in choice.units"
+                        :key="choiceUnit"
+                        :label="unitPrettyName[choiceUnit]"
+                        :value="choiceUnit"
+                        class="mr-6"
                       />
                     </v-radio-group>
                   </div>
@@ -155,14 +179,36 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { defaultUIGlassColor } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { DistanceDisplayUnit, unitPrettyName } from '@/libs/units'
+import {
+  DistanceDisplayUnit,
+  PressureDisplayUnit,
+  SpeedDisplayUnit,
+  TemperatureDisplayUnit,
+  unitPrettyName,
+  UnitSystem,
+  unitSystemFromPreferences,
+  unitSystems,
+} from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
+
+const unitChoices = [
+  { quantity: 'distance', label: 'Distance', units: Object.values(DistanceDisplayUnit) },
+  { quantity: 'speed', label: 'Speed', units: Object.values(SpeedDisplayUnit) },
+  { quantity: 'temperature', label: 'Temperature', units: Object.values(TemperatureDisplayUnit) },
+  { quantity: 'pressure', label: 'Pressure', units: Object.values(PressureDisplayUnit) },
+] as const
+
+const selectableUnitSystems = Object.keys(unitSystems) as (keyof typeof unitSystems)[]
+
+const currentUnitSystem = computed(() => unitSystemFromPreferences(interfaceStore.displayUnitPreferences))
 
 const updateOpacity = (value: number): void => {
   logUserAction(`Set glass effect opacity to ${value}`)
@@ -179,8 +225,15 @@ const setMainMenuTrigger = (value: unknown): void => {
   interfaceStore.mainMenuStyleTrigger = value as typeof interfaceStore.mainMenuStyleTrigger
 }
 
-const setDistanceUnit = (value: unknown): void => {
-  logUserAction(`Set distance display unit to '${value}'`)
-  interfaceStore.displayUnitPreferences.distance = value as DistanceDisplayUnit
+// Written into rather than replaced, so picking one quantity leaves the others as they were.
+const setDisplayUnit = (choice: (typeof unitChoices)[number], value: unknown): void => {
+  logUserAction(`Set ${choice.quantity} display unit to '${value}'`)
+  Object.assign(interfaceStore.storedDisplayUnitPreferences, { [choice.quantity]: value })
+}
+
+const setUnitSystem = (value: unknown): void => {
+  if (value === undefined) return
+  logUserAction(`Set display units to the ${value} system`)
+  Object.assign(interfaceStore.storedDisplayUnitPreferences, unitSystems[value as keyof typeof unitSystems])
 }
 </script>
