@@ -5,6 +5,7 @@ import {
   convertValue,
   convertValueToRawUnit,
   DistanceDisplayUnit,
+  formatArea,
   formatDistance,
   isReadableUnit,
   SpeedDisplayUnit,
@@ -130,6 +131,14 @@ test('formatDistance moves up to the larger unit once the number grows', () => {
   expect(formatDistance(1609.34, imperial)).toBe('5280 ft')
   expect(formatDistance(3218.68, imperial)).toBe('2.0 mi')
   expect(formatDistance(NaN, metric)).toBe('—')
+})
+
+test('formatArea follows the distance preference and moves up to the larger unit', () => {
+  expect(formatArea(940, metric)).toBe('940 m²')
+  expect(formatArea(2.5e6, metric)).toBe('2.500 km²')
+  expect(formatArea(100, imperial)).toBe('1076 ft²')
+  expect(formatArea(10000, imperial)).toBe('2.471 acres')
+  expect(formatArea(0, metric)).toBe('—')
 })
 
 test('the MAVLink definition still states the units we read them from', () => {
