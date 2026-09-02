@@ -33,10 +33,6 @@ const props = defineProps({
     // Tall enough to keep the longest stats list (WebRTC, 12 rows) clear of the plot area at the bottom
     default: 212,
   },
-  updateInterval: {
-    type: Number,
-    default: 20,
-  },
   streamName: {
     type: String,
     default: '',
@@ -55,7 +51,6 @@ const framerateData = ref<number[]>([])
 const bitrateData = ref<number[]>([])
 const packetLostData = ref<number[]>([])
 let animationFrameId = 0
-let intervalId: ReturnType<typeof setInterval> | undefined
 let bitrate = 0
 // cumulative values
 let packetsLost = 0
@@ -243,6 +238,7 @@ watch(
       jitterBufferEmittedCount = videoData.jitterBufferEmittedCount
       framerate = videoData.framesPerSecond ?? 0
       videoHeight = videoData.frameHeight
+      update()
     } catch (error) {
       console.error(error)
     }
@@ -291,12 +287,10 @@ watch(
 )
 
 onMounted(() => {
-  intervalId = setInterval(update, props.updateInterval)
   draw()
 })
 
 onUnmounted(() => {
-  clearInterval(intervalId)
   cancelAnimationFrame(animationFrameId)
   syncGo2rtcSampling(false)
 })
