@@ -8,6 +8,7 @@ import {
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
+import { dataLakeLogger } from '@/libs/data-lake-logging'
 import { isElectron } from '@/libs/utils'
 import {
   differenceGo2rtcSamples,
@@ -55,8 +56,14 @@ const lastInternalNames: Record<string, string> = {}
 
 // The sampler differences over its own fixed window, never over a caller-dependent shared one
 const prevGo2rtcCounters: Record<string, Go2rtcIngestCounters> = {}
-let go2rtcSamplerTimer: ReturnType<typeof setInterval> | null = null
-const go2rtcSampleIntervalMs = 100
+let go2rtcSamplerTimer: ReturnType<typeof setTimeout> | null = null
+let go2rtcPanelConsumers = 0
+// 10 Hz while a panel or an armed recording consumes the samples; the video store's 5 s background
+// cadence otherwise, so nobody pays for a fast poll they never look at
+const go2rtcFastSampleIntervalMs = 100
+const go2rtcIdleSampleIntervalMs = 5000
+// Set by initialize so a live consumer can restart an idle sampler at the fast cadence
+let pokeGo2rtcSampler: () => void = () => undefined
 
 let initialized = false
 // Detached scope: the collector watch must live for the app's lifetime, not the first caller's
@@ -166,6 +173,31 @@ const initialize = (): void => {
     })
   }
 
+  // Recording is the other demanding consumer: any recorded rtsp-* variable of an active RTSP stream
+  const isAnyActiveRtspStreamArmed = (): boolean =>
+    Object.keys(videoStore.activeStreams).some((streamName) => {
+      if (videoStore.activeStreams[streamName]?.go2rtcManager === undefined) return false
+      const internalName = videoStore.internalStreamNameFromExternal(streamName)
+      if (internalName === undefined) return false
+      return go2rtcStreamStatKeys.some((key) =>
+        dataLakeLogger.recordedVariableIds.includes(go2rtcStreamStatVariableId(internalName, key))
+      )
+    })
+
+  const runGo2rtcSampler = async (): Promise<void> => {
+    await sampleGo2rtcStreams()
+    if (go2rtcSamplerTimer === null) return
+    const intervalMs =
+      go2rtcPanelConsumers > 0 || isAnyActiveRtspStreamArmed() ? go2rtcFastSampleIntervalMs : go2rtcIdleSampleIntervalMs
+    go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), intervalMs)
+  }
+
+  pokeGo2rtcSampler = (): void => {
+    if (go2rtcSamplerTimer === null) return
+    clearTimeout(go2rtcSamplerTimer)
+    go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), 0)
+  }
+
   collectorScope.run(() => {
     // Monitor the active streams to add the connections to the WebRTC statistics
     watch(videoStore.activeStreams, (streams) => {
@@ -239,10 +271,9 @@ const initialize = (): void => {
       hasActiveRtspStreams,
       (hasActive) => {
         if (hasActive && go2rtcSamplerTimer === null) {
-          void sampleGo2rtcStreams()
-          go2rtcSamplerTimer = setInterval(() => void sampleGo2rtcStreams(), go2rtcSampleIntervalMs)
+          go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), 0)
         } else if (!hasActive && go2rtcSamplerTimer !== null) {
-          clearInterval(go2rtcSamplerTimer)
+          clearTimeout(go2rtcSamplerTimer)
           go2rtcSamplerTimer = null
         }
       },
@@ -251,9 +282,19 @@ const initialize = (): void => {
   })
 }
 
+const acquireGo2rtcSampling = (): void => {
+  go2rtcPanelConsumers += 1
+  pokeGo2rtcSampler()
+}
+
+const releaseGo2rtcSampling = (): void => {
+  go2rtcPanelConsumers = Math.max(0, go2rtcPanelConsumers - 1)
+}
+
 /**
  * Access the shared per-stream stats collectors, starting them on first call
- * @returns {object} The latest stats sample per stream, keyed by external stream id
+ * @returns {object} The latest stats sample per stream, keyed by external stream id, and the
+ * acquire/release pair live consumers of go2rtc samples use to keep the sampler at its fast cadence
  */
 export const useStreamStats = (): {
   /**
@@ -264,11 +305,20 @@ export const useStreamStats = (): {
    * Latest go2rtc ingest sample per stream, with rates derived over the sampler's own window
    */
   go2rtcStreamSamples: Record<string, Go2rtcStreamSample | undefined>
+  /**
+   * Register a live consumer of go2rtc samples (e.g. an open stats-for-nerds panel), switching the
+   * sampler to its fast cadence immediately
+   */
+  acquireGo2rtcSampling: () => void
+  /**
+   * Unregister a live consumer of go2rtc samples
+   */
+  releaseGo2rtcSampling: () => void
 } => {
   if (!initialized) {
     initialized = true
     initialize()
   }
 
-  return { webRtcStreamStatsSnapshots, go2rtcStreamSamples }
+  return { webRtcStreamStatsSnapshots, go2rtcStreamSamples, acquireGo2rtcSampling, releaseGo2rtcSampling }
 }

@@ -11,7 +11,8 @@ import { useStreamStats } from '@/composables/useStreamStats'
 import { useVideoStore } from '@/stores/video'
 const videoStore = useVideoStore()
 
-const { webRtcStreamStatsSnapshots, go2rtcStreamSamples } = useStreamStats()
+const { webRtcStreamStatsSnapshots, go2rtcStreamSamples, acquireGo2rtcSampling, releaseGo2rtcSampling } =
+  useStreamStats()
 
 const rtspBitrateData = ref<number[]>([])
 const rtspPacketRateData = ref<number[]>([])
@@ -262,11 +263,15 @@ watch(rtspSample, (sample): void => {
 onMounted(() => {
   intervalId = setInterval(update, props.updateInterval)
   draw()
+
+  if (isRtspStream()) acquireGo2rtcSampling()
 })
 
 onUnmounted(() => {
   clearInterval(intervalId)
   cancelAnimationFrame(animationFrameId)
+
+  if (isRtspStream()) releaseGo2rtcSampling()
 })
 </script>
 
