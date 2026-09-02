@@ -32,12 +32,12 @@ import { settingsManager } from '@/libs/settings-management'
 import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
-import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import {
   convertGeoFencePlanToMavlink,
   convertMavlinkToGeoFencePlan,
   emptyGeoFencePlan,
 } from '@/libs/vehicle/mavlink/geofence-conversion'
+import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import { downloadMissionItems } from '@/libs/vehicle/mavlink/mission-download'
 import { uploadMissionItems } from '@/libs/vehicle/mavlink/mission-upload'
 import {
@@ -1293,9 +1293,9 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   setGlobalOrigin(coordinates: [number, number], altitude: number): void {
     sendMavlinkMessage({
       type: MAVLinkType.SET_GPS_GLOBAL_ORIGIN,
-      latitude: coordinates[0],
-      longitude: coordinates[1],
-      altitude: altitude,
+      latitude: Math.round(coordinates[0] * 1e7),
+      longitude: Math.round(coordinates[1] * 1e7),
+      altitude: Math.round(altitude * 1e3),
     })
   }
 
