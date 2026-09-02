@@ -59,5 +59,6 @@ describe('telemetryOverlayWindowCandidates', () => {
   it('has no window to offer for a recording with neither metadata nor timed chunks', () => {
     expect(telemetryOverlayWindowCandidates(undefined, [new Date(0)])).toEqual([])
     expect(telemetryOverlayWindowCandidates(buildRecording({ dateFinish: undefined }), [])).toEqual([])
+    expect(telemetryOverlayWindowCandidates(undefined)).toEqual([])
   })
 })
