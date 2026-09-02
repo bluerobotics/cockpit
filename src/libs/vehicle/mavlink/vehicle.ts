@@ -1272,9 +1272,9 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   setGlobalOrigin(coordinates: [number, number], altitude: number): void {
     sendMavlinkMessage({
       type: MAVLinkType.SET_GPS_GLOBAL_ORIGIN,
-      latitude: coordinates[0],
-      longitude: coordinates[1],
-      altitude: altitude,
+      latitude: Math.round(coordinates[0] * 1e7),
+      longitude: Math.round(coordinates[1] * 1e7),
+      altitude: Math.round(altitude * 1e3),
     })
   }
 
