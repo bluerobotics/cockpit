@@ -69,11 +69,16 @@ jobs:
           echo "$command"
 
       # Fails closed: anything other than a definite admin/write answer is a refusal.
+      # A failed Actions job does not show on the PR thread — this event is `issue_comment`,
+      # not a check on the head — so the refusal is also posted as a comment. Without that,
+      # an org member with read-only access (still `MEMBER` above) types `/review` and sees
+      # nothing happen.
       - name: Require write access
         if: steps.command.outputs.command != 'none'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
           ACTOR: ${{ github.event.comment.user.login }}
           COMMAND: /${{ steps.command.outputs.command }}
         run: |
@@ -84,8 +89,27 @@ jobs:
           echo "$ACTOR has '$level' permission on $REPO"
           case "$level" in
             admin | write) ;;
+            unknown)
+              echo "::error::$COMMAND: could not determine $ACTOR's permission on $REPO."
+              {
+                printf '<!-- claude-pr-review-notice:v1 -->\n'
+                printf 'Could not check whether @%s can run `%s`. Comment `%s` again.\n' \
+                  "$ACTOR" "$COMMAND" "$COMMAND"
+              } > refuse.md
+              gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file refuse.md \
+                || echo "::warning::could not post the refusal"
+              exit 1
+              ;;
             *)
               echo "::error::$COMMAND requires write access to $REPO. $ACTOR has '$level'."
+              {
+                printf '<!-- claude-pr-review-notice:v1 -->\n'
+                printf '%s requires write access to this repository. @%s has `%s`.\n' \
+                  "$COMMAND" "$ACTOR" "$level"
+                printf 'A maintainer can comment `%s` to run it.\n' "$COMMAND"
+              } > refuse.md
+              gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file refuse.md \
+                || echo "::warning::could not post the refusal"
               exit 1
               ;;
           esac
@@ -267,7 +291,8 @@ jobs:
 
           # Human/reviewer discussion since the last review (general PR comments and
           # inline code-review comments), so the agent can factor it into the new
-          # review. The bot's own review comments (the marker) are excluded.
+          # review. The bot's own review, resolution, decision and notice comments
+          # (the markers) are excluded.
           jq -c '{kind:"comment", author:.user.login, created_at:.created_at, path:null, body:.body, url:.html_url}' \
             all-comments.ndjson > issue_comments.ndjson || : > issue_comments.ndjson
           gh api "repos/$REPO/pulls/$PR_NUMBER/comments" --paginate \
@@ -278,6 +303,7 @@ jobs:
                 map(select(.body | startswith("<!-- claude-pr-review-bot:v1") | not))
                 | map(select(.body | startswith("<!-- claude-pr-review-resolution:v1") | not))
                 | map(select(.body | startswith("<!-- claude-pr-review-decision:v1") | not))
+                | map(select(.body | startswith("<!-- claude-pr-review-notice:v1") | not))
                 | map(select($since == "" or .created_at > $since))
                 | sort_by(.created_at)
               ' > new-comments.json
