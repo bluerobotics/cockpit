@@ -3,9 +3,11 @@ name: Claude PR Review
 on:
   pull_request_target:
     # `ready_for_review` as well as `opened`, because a PR opened as a draft is skipped by the
-    # guard below and would otherwise never get a full-PR review at all. `synchronize` stays off:
-    # the `review-is-current` status already asks for a `/review` when the head moves, without
-    # paying for a run on every push.
+    # guard below and would otherwise never get a full-PR review at all. A later `ready_for_review`
+    # on a PR that was already reviewed (ready → draft → ready) must not run again: the publish
+    # step overwrites the seq=1 comment in place and wipes the ledger a `/review` counts from.
+    # `synchronize` stays off: the `review-is-current` status already asks for a `/review` when
+    # the head moves, without paying for a run on every push.
     types: [opened, ready_for_review]
 
 concurrency:
@@ -13,10 +15,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  review:
-    name: Claude PR Review
+  # Cheap: no model. Sparse-checkouts the lookup script. Exists so a draft cycle cannot pay
+  # for a second "first" review that replaces the real one. `opened` always proceeds;
+  # `ready_for_review` proceeds only when this workflow has never posted. A stale head is
+  # already a red `review-is-current` check, so this job does not also comment.
+  needed:
+    name: First review needed
     runs-on: ubuntu-latest
     if: ${{ !github.event.pull_request.draft }}
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - name: Checkout the review lookup (trusted)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Skip ready_for_review when a review already exists
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+          if [ "$ACTION" != ready_for_review ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Lookup failure must fail the step: a green skip here is a draft-opened PR
+          # that never gets its only automated review, and nobody is told.
+          reviewed=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' \
+            | .github/scripts/review-latest.sh) \
+            || { echo "::error::could not list comments; not starting a first review that might overwrite"; exit 1; }
+          if [ -z "$reviewed" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "run=false" >> "$GITHUB_OUTPUT"
+          if [ "$reviewed" = '?' ]; then
+            echo "A review exists but its marker has no sha; not overwriting seq=1."
+          else
+            echo "Already reviewed at ${reviewed:0:7}; not overwriting seq=1."
+          fi
+
+  review:
+    name: Claude PR Review
+    needs: needed
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft && needs.needed.outputs.run == 'true' }}
     permissions:
       contents: read
       pull-requests: write
