@@ -109,6 +109,12 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
+app.on('ready', () => {
+  protocol.registerFileProtocol('file', (i, o) => {
+    o({ path: i.url.substring('file://'.length) })
+  })
+})
+
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'file',
