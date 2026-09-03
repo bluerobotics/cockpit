@@ -57,8 +57,8 @@
             to { transform: rotate(360deg); }
         }
     </style>
-  <script type="module" crossorigin src="./assets/index-BFEZWeJp.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DHXcQ6-p.css">
+  <script type="module" crossorigin src="./assets/index-DRQhqrsW.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DFnbRIiN.css">
 <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body>
@@ -106,7 +106,7 @@
 
     <script>
         // Start console capture
-        const __indexUtils = import('./assets/index-utils-DkixyVRO.js');
+        const __indexUtils = import('./assets/index-utils-B-_zn4O6.js');
 
         let __appLoaded = false;
         const __fallbackTimeout = setTimeout(function() {
@@ -139,19 +139,20 @@
                 nonAppMain.appendChild(fallbackContent);
 
                 document.getElementById('backup-settings-btn').addEventListener('click', function() {
-                    utils.backupSettings().then(function(r) { if (!r.success) utils.showFallbackAlert(r.message); });
+                    utils.backupSettings().then(function(r) { if (!r.success) alert(r.message); });
                 });
                 document.getElementById('import-settings-btn').addEventListener('click', function() {
                     utils.importSettings().then(function(r) {
-                        if (!r.success && !r.message.includes('cancelled')) utils.showFallbackAlert(r.message);
+                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
+                        location.reload();
                     });
                 });
                 document.getElementById('download-logs-btn').addEventListener('click', function() {
-                    utils.downloadLogs().then(function(r) { utils.showFallbackAlert(r.message); });
+                    utils.downloadLogs().then(function(r) { alert(r.message); });
                 });
                 document.getElementById('clear-settings-btn').addEventListener('click', function() {
                     utils.resetSettings().then(function(r) {
-                        if (!r.success && !r.message.includes('cancelled')) utils.showFallbackAlert(r.message);
+                        if (!r.success && !r.message.includes('cancelled')) alert(r.message);
                     });
                 });
             });
