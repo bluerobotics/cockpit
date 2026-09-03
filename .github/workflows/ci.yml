@@ -119,6 +119,9 @@ jobs:
       - name: Check the review command parser
         run: .github/scripts/review-command.sh --self-check
 
+      - name: Check the review leftover quota
+        run: .github/scripts/review-quota.sh --self-check
+
       - name: Check the review ledger reader
         run: .github/scripts/review-ledger.sh --self-check
 
