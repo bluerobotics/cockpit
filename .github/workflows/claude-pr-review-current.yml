@@ -16,13 +16,22 @@ jobs:
     name: Review is current
     runs-on: ubuntu-latest
     if: ${{ !github.event.pull_request.draft }}
-    # SECURITY: this job checks out nothing, runs no model, and reads only the PR's own comments,
-    # so `pull_request_target` never brings PR code near anything. It needs the elevated token
-    # because the read-only one a fork PR gets cannot post a commit status.
+    # SECURITY: this job sparse-checkouts only `.github/scripts` from the base ref, runs
+    # no model, and reads only the PR's own comments, so `pull_request_target` never brings PR
+    # code near anything. It needs the elevated token because the read-only one a fork PR gets
+    # cannot post a commit status.
     permissions:
+      contents: read
       pull-requests: read
       statuses: write
     steps:
+      - name: Checkout the review lookup (trusted)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
       - name: Compare the latest review against the head commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,16 +41,9 @@ jobs:
         run: |
           set -euo pipefail
           # Newest review by seq, then the sha it recorded reviewing. Empty when the bot has not
-          # commented yet, which is the `pending` case rather than the stale one.
-          # Author-filtered: the marker is a label anyone can type, and this status is the only
-          # automated signal that a rebase shipped code no review has seen. Without the filter a
-          # commenter can post a high-seq marker naming the head sha and turn the gate green.
-          # Streamed and slurped because `--paginate` runs `--jq` per page.
+          # commented yet (`pending`). `?` when a review exists but its marker has no readable sha.
           reviewed=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' \
-            | jq -rs '[.[] | select(.user.login == "github-actions[bot]" and .user.type == "Bot"
-                                    and (.body | startswith("<!-- claude-pr-review-bot:v1")))]
-                      | sort_by((.body | capture("seq=(?<n>[0-9]+)").n | tonumber) // 0)
-                      | (last.body // "" | capture("sha=(?<s>[0-9a-fA-F]+)").s) // ""')
+            | .github/scripts/review-latest.sh)
 
           if [ "$reviewed" = "$HEAD_SHA" ]; then
             state=success
@@ -49,6 +51,9 @@ jobs:
           elif [ -z "$reviewed" ]; then
             state=pending
             description="No automated review yet."
+          elif [ "$reviewed" = '?' ]; then
+            state=failure
+            description="Last review marker has no commit. Comment /review."
           else
             state=failure
             description="Last review was ${reviewed:0:7}, head is ${HEAD_SHA:0:7}. Comment /review."
