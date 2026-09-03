@@ -10,8 +10,8 @@
 # Reads COMMENT_BODY, COMMENT_AUTHOR and COMMENT_URL from the environment rather than taking the body
 # as an argument, so a comment can never reach a shell as code.
 #
-# Usage: review-command.sh --command          # prints `command=review|resolve|none` for GITHUB_OUTPUT
-#        review-command.sh <output-file>      # writes the /resolve payload, or `{}`
+# Usage: review-command.sh --command          # prints `command=review|resolve|allow-extra-reviews|none`
+#        review-command.sh <output-file>      # writes the /resolve or /allow-extra-reviews payload, or `{}`
 #        review-command.sh --self-check
 
 set -euo pipefail
@@ -38,10 +38,25 @@ parse() {
       }'
 }
 
+# Bare command → 3. A leading non-negative integer is taken even when it is 0 or less than 3.
+# A token that is not a non-negative integer is invalid, not a silent 3.
+parse_grant() {
+  jq -n --arg l "$1" --arg by "${2-}" --arg url "${3-}" '
+    (($l | capture("^/allow-extra-reviews(?:$|\\s+)(?<rest>.*)$") | .rest) // ""
+      | sub("^\\s+";"") | sub("\\s+$";"")) as $rest
+    | if $rest == "" then {valid:true, n:3, by:$by, url:$url}
+      elif ($rest | test("^[0-9]+(?:\\s|$)")) then
+        {valid:true, n:($rest | capture("^(?<n>[0-9]+)") | .n | tonumber), by:$by, url:$url}
+      else {valid:false, by:$by, url:$url}
+      end
+  '
+}
+
 command_of() {
   case $(first_line_of "${1-}") in
     '/review' | '/review '*) echo review ;;
     '/resolve' | '/resolve '*) echo resolve ;;
+    '/allow-extra-reviews' | '/allow-extra-reviews '*) echo allow-extra-reviews ;;
     *) echo none ;;
   esac
 }
@@ -78,6 +93,20 @@ self_check() {
     fi
   }
 
+  check_grant() {
+    local body=$1 expected=$2 got
+    COMMENT_BODY=$body COMMENT_AUTHOR=u COMMENT_URL=U "$0" "$tmp" > /dev/null
+    got=$(jq -c 'if has("valid") then (if .valid then {valid,n} else {valid} end) else . end' "$tmp")
+    if [ "$got" = "$expected" ]; then
+      echo "  ok    [grant]   ${body//$'\n'/\\n}"
+    else
+      echo "  FAIL  [grant]   ${body//$'\n'/\\n}"
+      echo "        expected $expected"
+      echo "        got      $got"
+      failures=$((failures + 1))
+    fi
+  }
+
   # A command is the first token of the first line. The bodies that broke when this lived in the
   # workflow `if:` — trailing newline, and command-then-context — are the first two here.
   check_command '/review' review
@@ -89,6 +118,11 @@ self_check() {
   check_command $'/resolve\n' resolve
   check_command '/reviewing this now' none
   check_command '/resolved 6.1 yesterday' none
+  check_command '/allow-extra-reviews' allow-extra-reviews
+  check_command $'/allow-extra-reviews\n' allow-extra-reviews
+  check_command '/allow-extra-reviews 5' allow-extra-reviews
+  check_command '/allow-extra-reviews 0' allow-extra-reviews
+  check_command '/allow-extra-reviews-please' none
   check_command 'just a normal comment' none
   check_command '' none
 
@@ -107,6 +141,14 @@ self_check() {
     '{"ids":["1.1"],"reason":"fine"}'
   check_resolve '/resolved 6.1 yesterday, see below' '{}'
   check_resolve '/review' '{}'
+  check_grant '/allow-extra-reviews' '{"valid":true,"n":3}'
+  check_grant $'/allow-extra-reviews\nfoo' '{"valid":true,"n":3}'
+  check_grant '/allow-extra-reviews 5' '{"valid":true,"n":5}'
+  check_grant '/allow-extra-reviews 0' '{"valid":true,"n":0}'
+  check_grant '/allow-extra-reviews 2 please' '{"valid":true,"n":2}'
+  check_grant '/allow-extra-reviews foo' '{"valid":false}'
+  check_grant '/allow-extra-reviews -1' '{"valid":false}'
+  check_grant '/review' '{}'
   # Shell metacharacters stay data: the body never reaches a shell, only jq --arg.
   check_resolve '/resolve 1.1 $(whoami) `id` && rm -rf /' \
     '{"ids":["1.1"],"reason":"$(whoami) `id` && rm -rf /"}'
@@ -132,11 +174,17 @@ case "${1:-}" in
   *)
     output=$1
     first_line=$(first_line_of "${COMMENT_BODY-}")
-    if [ "$(command_of "${COMMENT_BODY-}")" = resolve ]; then
-      parse "$first_line" "${COMMENT_AUTHOR-}" "${COMMENT_URL-}" > "$output"
-    else
-      echo '{}' > "$output"
-    fi
+    case "$(command_of "${COMMENT_BODY-}")" in
+      resolve)
+        parse "$first_line" "${COMMENT_AUTHOR-}" "${COMMENT_URL-}" > "$output"
+        ;;
+      allow-extra-reviews)
+        parse_grant "$first_line" "${COMMENT_AUTHOR-}" "${COMMENT_URL-}" > "$output"
+        ;;
+      *)
+        echo '{}' > "$output"
+        ;;
+    esac
     jq -c . "$output"
     ;;
 esac

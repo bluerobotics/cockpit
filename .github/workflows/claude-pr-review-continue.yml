@@ -11,33 +11,46 @@ on:
 # superseded run now costs a duplicate run rather than a destroyed one.
 
 jobs:
-  # Only run when: the comment is on a PR, looks like one of our commands, is not from a bot, and the
-  # commenter can push here. The `if:` below is a cheap first pass that keeps the job from being
-  # scheduled for outsiders, and it stays deliberately loose: an expression cannot see past the first
-  # line of a body, so anchoring the command here rejected `/review` followed by a newline — silently,
-  # since an unscheduled job posts nothing at all. `command` below is the real answer, read off the
-  # first line by a script that is unit-checked, and `/reviewing this now` stops there having spent
-  # only this job. `author_association` is likewise only a first pass: an org member with read-only
-  # access to this repository still reports MEMBER, so the permission lookup is the real decision. It
-  # lives in its own job on purpose: the job that runs the model reads an untrusted diff and an
-  # untrusted comments file, and the gate that decides who may command this pipeline must not sit
-  # beside them. Only `.github/scripts` is checked out here, and without credentials. The endpoint
-  # asks an installation token for `metadata: read`, which every job here has; the wider scope below
-  # is kept because the older docs claimed push access and a gate that fails closed takes `/resolve`
-  # with it, and it costs nothing in a job that runs no untrusted input.
+  # Only run when: the comment is on an open PR, looks like one of our commands, and is not from a
+  # bot. Closed and merged PRs are ignored so the leftover cannot be spent on the archive.
+  # The `if:` below is a cheap first pass, and it stays deliberately loose: an expression cannot
+  # see past the first line of a body, so anchoring the command here rejected `/review` followed
+  # by a newline — silently, since an unscheduled job posts nothing at all. `command` below is the
+  # real answer, read off the first line by a script that is unit-checked, and `/reviewing this now`
+  # stops there having spent only this job. There is no `author_association` filter: a leftover
+  # `/review` is the same for every non-writer, org member or not. The permission lookup is the
+  # real decision for `/resolve` and `/allow-extra-reviews` (write only). A `/review` from someone
+  # without write spends a leftover on this PR (they start with one). The leftover is a comment
+  # this job posts, same as a resolution, so it outlives the run. The gate lives in its own job on
+  # purpose: the job that runs the model reads an untrusted diff and an untrusted comments file,
+  # and the gate that decides who may command this pipeline must not sit beside them. Only
+  # `.github/scripts` is checked out here, and without credentials. The endpoint asks an
+  # installation token for `metadata: read`, which every job here has; the wider scope below is
+  # kept because the older docs claimed push access and a gate that fails closed takes `/resolve`
+  # with it. The leftover path reads every comment body on the thread; those bodies reach `jq`
+  # as data and never a shell.
   #
-  # This job is also where a `/resolve` is made durable. It records the authorized resolution as a
-  # comment of its own and does not run the model: a `/review` later picks the resolution up. The
-  # acknowledging reaction lives here so a command waiting behind a 25-minute re-review still gets
-  # an immediate reply.
+  # This job is also where a `/resolve` is made durable, and where leftover `/review` spends and
+  # grants are banked. It records those as comments of its own and does not run the model: a
+  # `/review` later picks a resolution up. The acknowledging reaction lives here so a command
+  # waiting behind a 25-minute re-review still gets an immediate reply.
   authorize:
     name: Authorize
     runs-on: ubuntu-latest
     if: >
       github.event.issue.pull_request &&
-      (startsWith(github.event.comment.body, '/review') || startsWith(github.event.comment.body, '/resolve')) &&
-      github.event.comment.user.type != 'Bot' &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      github.event.issue.state == 'open' &&
+      (startsWith(github.event.comment.body, '/review') ||
+       startsWith(github.event.comment.body, '/resolve') ||
+       startsWith(github.event.comment.body, '/allow-extra-reviews')) &&
+      github.event.comment.user.type != 'Bot'
+    # Leftover spend is a read-then-write of the comment ledger. Two `/review`s in flight would both
+    # see one left and both spend it. Queueing makes the second read what the first posted.
+    # Grants and `/resolve` are append-only, so they must not sit in that one-pending slot. Anything
+    # that is not a leftover `/review` gets its own group keyed on the comment id.
+    concurrency:
+      group: ${{ startsWith(github.event.comment.body, '/review') && format('claude-pr-authorize-quota-{0}', github.event.issue.number) || format('claude-pr-authorize-once-{0}', github.event.comment.id) }}
+      cancel-in-progress: false
     permissions:
       contents: write
       issues: write
@@ -46,7 +59,7 @@ jobs:
       # the first `/resolve` a maintainer ever types is the worst place to be proved wrong.
       pull-requests: write
     outputs:
-      command: ${{ steps.command.outputs.command }}
+      command: ${{ steps.gate.outputs.command }}
     steps:
       - name: Checkout the command parser (trusted)
         uses: actions/checkout@v4
@@ -68,54 +81,131 @@ jobs:
           echo "$command" >> "$GITHUB_OUTPUT"
           echo "$command"
 
-      # Fails closed: anything other than a definite admin/write answer is a refusal.
-      # A failed Actions job does not show on the PR thread — this event is `issue_comment`,
-      # not a check on the head — so the refusal is also posted as a comment. Without that,
-      # an org member with read-only access (still `MEMBER` above) types `/review` and sees
-      # nothing happen.
-      - name: Require write access
+      # Fails closed for `/resolve` and `/allow-extra-reviews`: anything other than a definite
+      # admin/write answer is a refusal. `/review` is the exception — a leftover on this PR is
+      # enough. Write-required refusals get a `-1` on the command, not a comment: a comment
+      # there is how a stranger turns `/resolve` into unbounded watcher mail. Leftover spends,
+      # an exhausted leftover (once, as a notice so the consume's "0 left" does not hide it;
+      # later ones get a `-1`),
+      # and a failed permission lookup still comment, because those are the cases a real
+      # contributor would otherwise see as the bot ignoring them.
+      # An exhausted leftover is not a failure: the notice is the answer, and the job succeeds with
+      # `command=none` so the model does not run.
+      - name: Authorize the command
+        id: gate
         if: steps.command.outputs.command != 'none'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.issue.number }}
           ACTOR: ${{ github.event.comment.user.login }}
-          COMMAND: /${{ steps.command.outputs.command }}
+          PARSED: ${{ steps.command.outputs.command }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          COMMENT_ID: ${{ github.event.comment.id }}
         run: |
           set -euo pipefail
+          command="/$PARSED"
           # Assign, then override on failure: `$(... || echo unknown)` would append to whatever
           # error body gh printed on stdout instead of replacing it.
           level=$(gh api "repos/$REPO/collaborators/$ACTOR/permission" --jq '.permission' 2>/dev/null) || level='unknown'
           echo "$ACTOR has '$level' permission on $REPO"
+
+          fetch_comments() {
+            gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[]' > all-comments.ndjson \
+              || {
+                printf 'Could not read the comments on this PR. Comment `%s` again.\n' "$command" \
+                  | post_notice
+                exit 1
+              }
+          }
+
+          leftover() {
+            .github/scripts/review-quota.sh remaining < all-comments.ndjson \
+              || {
+                printf 'Could not read how many `/review` requests are left. Comment `%s` again.\n' \
+                  "$command" | post_notice
+                exit 1
+              }
+          }
+
+          post_notice() {
+            {
+              printf '<!-- claude-pr-review-notice:v1 -->\n'
+              cat
+            } > notice.md
+            gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file notice.md \
+              || echo "::warning::could not post the notice"
+          }
+
           case "$level" in
-            admin | write) ;;
+            admin | write)
+              if [ "$PARSED" = allow-extra-reviews ]; then
+                .github/scripts/review-command.sh grant.json
+                if [ "$(jq -r '.valid' grant.json)" != true ]; then
+                  printf 'Could not read a count from that `/allow-extra-reviews`. Use `/allow-extra-reviews` or `/allow-extra-reviews N`.\n' \
+                    | post_notice
+                  echo "command=none" >> "$GITHUB_OUTPUT"
+                  exit 0
+                fi
+                n=$(jq -r '.n' grant.json)
+                fetch_comments
+                after=$(( $(leftover) + n ))
+                {
+                  .github/scripts/review-quota.sh record grant "$n"
+                  printf 'Granted %s extra. This PR has %s left.\n' "$n" "$after"
+                } > grant.md
+                gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file grant.md \
+                  || { echo "::error::could not record the grant"; exit 1; }
+              fi
+              echo "command=$PARSED" >> "$GITHUB_OUTPUT"
+              ;;
             unknown)
-              echo "::error::$COMMAND: could not determine $ACTOR's permission on $REPO."
-              {
-                printf '<!-- claude-pr-review-notice:v1 -->\n'
-                printf 'Could not check whether @%s can run `%s`. Comment `%s` again.\n' \
-                  "$ACTOR" "$COMMAND" "$COMMAND"
-              } > refuse.md
-              gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file refuse.md \
-                || echo "::warning::could not post the refusal"
+              echo "::error::$command: could not determine $ACTOR's permission on $REPO."
+              printf 'Could not check whether @%s can run `%s`. Comment `%s` again.\n' \
+                "$ACTOR" "$command" "$command" | post_notice
               exit 1
               ;;
             *)
-              echo "::error::$COMMAND requires write access to $REPO. $ACTOR has '$level'."
+              if [ "$PARSED" != review ]; then
+                echo "::error::$command requires write access to $REPO. $ACTOR has '$level'."
+                gh api -X POST "repos/$REPO/issues/comments/$COMMENT_ID/reactions" -f content='-1' || true
+                exit 1
+              fi
+              fetch_comments
+              left=$(leftover)
+              if [ "$left" -le 0 ]; then
+                if ! jq -se '[.[] | select(.user.login == "github-actions[bot]" and .user.type == "Bot"
+                      and (.body | startswith("<!-- claude-pr-review-notice:v1"))
+                      and (.body | contains("This PR has 0 left")))] | length > 0' \
+                    all-comments.ndjson >/dev/null; then
+                  {
+                    printf 'This PR has 0 left. '
+                    printf 'A maintainer can comment `/allow-extra-reviews` to grant more (default 3).\n'
+                  } | post_notice
+                else
+                  gh api -X POST "repos/$REPO/issues/comments/$COMMENT_ID/reactions" -f content='-1' || true
+                fi
+                echo "command=none" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              after=$(( left - 1 ))
+              # ponytail: leftover is banked here before rereview; a queued rereview GitHub
+              # drops (one pending slot) burns it. Refund the consume if that starts happening.
               {
-                printf '<!-- claude-pr-review-notice:v1 -->\n'
-                printf '%s requires write access to this repository. @%s has `%s`.\n' \
-                  "$COMMAND" "$ACTOR" "$level"
-                printf 'A maintainer can comment `%s` to run it.\n' "$COMMAND"
-              } > refuse.md
-              gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file refuse.md \
-                || echo "::warning::could not post the refusal"
-              exit 1
+                .github/scripts/review-quota.sh record consume
+                printf 'This PR has %s left. ' "$after"
+                printf 'A maintainer can comment `/allow-extra-reviews` to grant more (default 3).\n'
+              } > consume.md
+              gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file consume.md \
+                || { echo "::error::could not record the leftover spend"; exit 1; }
+              echo "command=review" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
       - name: Acknowledge the command
-        if: steps.command.outputs.command != 'none'
+        if: steps.gate.conclusion == 'success' && steps.gate.outputs.command != 'none'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -128,7 +218,7 @@ jobs:
       # record is a comment rather than a run artifact so it outlives this workflow: the next
       # `/review` reads every resolution posted since the last one.
       - name: Record the resolution
-        if: steps.command.outputs.command == 'resolve'
+        if: steps.gate.outputs.command == 'resolve'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -171,14 +261,16 @@ jobs:
     # second run read what the first published.
     #
     # A group holds one running entry and one pending entry, so a third command cancels whatever is
-    # queued. That is now only a lost run, not lost data: resolutions are banked by `authorize`
-    # before this job is ever scheduled, and the next review applies them.
+    # queued. Resolutions are banked by `authorize` before this job is scheduled, so a dropped
+    # rereview is only a lost run for those. A leftover `/review` is spent in `authorize`, so the
+    # same drop can burn the PR's leftover (see the spend-site ponytail).
     concurrency:
       group: claude-pr-rereview-serial-${{ github.event.issue.number }}
       cancel-in-progress: false
     # We intentionally do NOT allow the PR author by login alone, since an external fork author
     # could otherwise spend Anthropic credits by repeatedly commenting `/review` on their own PR.
-    # A maintainer can trigger a re-review on a contributor's behalf.
+    # A leftover `/review` is one spend, banked above; more needs `/allow-extra-reviews` from
+    # someone with write.
     permissions:
       contents: read
       pull-requests: write
@@ -291,8 +383,8 @@ jobs:
 
           # Human/reviewer discussion since the last review (general PR comments and
           # inline code-review comments), so the agent can factor it into the new
-          # review. The bot's own review, resolution, decision and notice comments
-          # (the markers) are excluded.
+          # review. The bot's own review, resolution, decision, leftover and notice
+          # comments (the markers) are excluded.
           jq -c '{kind:"comment", author:.user.login, created_at:.created_at, path:null, body:.body, url:.html_url}' \
             all-comments.ndjson > issue_comments.ndjson || : > issue_comments.ndjson
           gh api "repos/$REPO/pulls/$PR_NUMBER/comments" --paginate \
@@ -304,6 +396,7 @@ jobs:
                 | map(select(.body | startswith("<!-- claude-pr-review-resolution:v1") | not))
                 | map(select(.body | startswith("<!-- claude-pr-review-decision:v1") | not))
                 | map(select(.body | startswith("<!-- claude-pr-review-notice:v1") | not))
+                | map(select(.body | startswith("<!-- claude-pr-review-quota:v1") | not))
                 | map(select($since == "" or .created_at > $since))
                 | sort_by(.created_at)
               ' > new-comments.json
