@@ -1,6 +1,8 @@
 import { app, BrowserWindow, powerSaveBlocker, protocol, screen } from 'electron'
 import { join } from 'path'
 
+// Must stay ahead of config-store/storage: both resolve userData at import time.
+import { logChromiumProfileIsolation } from './isolate-chromium-profile'
 import { setupAutoUpdater } from './services/auto-update'
 import store from './services/config-store'
 import { setupElectronLogService } from './services/electron-log'
@@ -19,6 +21,7 @@ import { setupWorkspaceService } from './services/workspace'
 
 // Setup the logger service as soon as possible to avoid different behaviors across runtime
 setupElectronLogService()
+logChromiumProfileIsolation()
 
 export const ROOT_PATH = {
   dist: join(__dirname, '..'),
