@@ -357,7 +357,7 @@
                             v-if="item.type === 'axis'"
                             v-model="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].action"
                             :items="filteredAndSortedAxisActions"
-                            item-title="name"
+                            :item-title="axisActionTitle"
                             hide-details
                             class="mb-2"
                             density="compact"
@@ -622,7 +622,7 @@
             <v-select
               v-model="selectedProfileAxesCorrespondencies[input.id].action"
               :items="filteredAndSortedAxisActions"
-              item-title="name"
+              :item-title="axisActionTitle"
               hide-details
               density="compact"
               variant="outlined"
@@ -666,6 +666,7 @@ import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { JoystickModel } from '@/libs/joystick/manager'
+import { manualControlAxisDisplayName } from '@/libs/joystick/protocols/manual-control-axis-id'
 import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
@@ -780,9 +781,14 @@ const getAxesNotInSvg = (joystick: Joystick): number[] => {
   return joystick.state.axes.map((_, index) => index).filter((axisId) => !svgAxes.has(axisId as JoystickAxis))
 }
 
+const axisActionTitle = (action: JoystickAction): string => {
+  return manualControlAxisDisplayName(action as ProtocolAction) ?? action.name
+}
+
 const getAxisActionName = (axisId: number): string => {
   const action = selectedProfileAxesCorrespondencies.value[axisId as JoystickAxis]?.action
-  return action?.name ?? 'unassigned'
+  if (!action) return 'unassigned'
+  return axisActionTitle(action)
 }
 
 const shiftFunction = {

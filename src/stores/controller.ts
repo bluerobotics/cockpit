@@ -17,6 +17,7 @@ import {
 } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons, performJoystickMappingMigrations } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
+import { manualControlAxisId } from '@/libs/joystick/protocols/manual-control-axis-id'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
@@ -333,13 +334,15 @@ export const useControllerStore = defineStore('controller', () => {
       // Check if there's any duplicated axis actions. If so, unmap (set to no_function) the axes that use to have the same action
       const oldMapping = structuredClone(toRaw(lastValidProtocolMapping))
       const newMapping = protocolMapping.value
-      const mappedAxisActions = Object.values(newMapping.axesCorrespondencies).map((v) => v.action.id)
+      const mappedAxisActions = Object.values(newMapping.axesCorrespondencies).map(
+        (v) => manualControlAxisId(v.action) ?? v.action.id
+      )
       const duplicateAxisActions = mappedAxisActions
         .filter((item, index) => mappedAxisActions.indexOf(item) !== index)
         .filter((v) => v !== otherAvailableActions.no_function.id)
       if (!duplicateAxisActions.isEmpty()) {
         Object.entries(newMapping.axesCorrespondencies).forEach(([axis, mapping]) => {
-          const isDuplicated = duplicateAxisActions.includes(mapping.action.id)
+          const isDuplicated = duplicateAxisActions.includes(manualControlAxisId(mapping.action) ?? mapping.action.id)
           const oldMappingId = oldMapping.axesCorrespondencies[axis as unknown as JoystickAxis]?.action?.id
           const wasMapped = oldMappingId === mapping.action.id
           if (isDuplicated && wasMapped) {
