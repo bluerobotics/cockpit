@@ -39,6 +39,27 @@ let appSuspensionPowerSaveBlockerId: number | undefined
 let displaySleepPowerSaveBlockerId: number | undefined
 
 /**
+ * Stamps this userData folder with the Chromium and Cockpit versions that opened it.
+ *
+ * Neither Chromium nor Electron leaves a version marker behind, so an older build has no way to tell that the profile
+ * it is about to open was written by a newer one - a downgrade Chromium answers by dropping the affected stores.
+ * config.json is plain JSON at the userData root, so a future build can read it before Chromium touches the profile.
+ *
+ * Runs once the renderer has loaded, so the stamp reflects a profile Chromium really opened rather than a launch that
+ * died on the way there, and so it stays below the module scope where a guard would have to read the previous value.
+ * @returns {void}
+ */
+const recordProfileOpenerVersions = (): void => {
+  try {
+    if (store.get('chromeVersion') !== process.versions.chrome) store.set('chromeVersion', process.versions.chrome)
+    if (store.get('cockpitVersion') !== app.getVersion()) store.set('cockpitVersion', app.getVersion())
+  } catch (error) {
+    // A marker nothing reads yet must never be the reason the app fails to start
+    console.error('Could not record the Chromium and Cockpit versions in the config file.', error)
+  }
+}
+
+/**
  * Create electron window
  */
 function createWindow(): void {
@@ -94,6 +115,7 @@ function createWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.setTitle(`Cockpit (${app.getVersion()})`)
+    recordProfileOpenerVersions()
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {
