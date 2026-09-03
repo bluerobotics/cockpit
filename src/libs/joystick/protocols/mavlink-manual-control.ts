@@ -6,6 +6,7 @@ import { capitalize } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { sendManualControl } from '@/libs/communication/mavlink'
+import { manualControlAxisId } from '@/libs/joystick/protocols/manual-control-axis-id'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { round, scale } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
@@ -501,12 +502,12 @@ export class MavlinkManualControlManager {
     }
 
     // Calculate axes values
-    const xCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_x.id)
-    const yCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_y.id)
-    const zCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_z.id)
-    const rCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_r.id)
-    const sCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_s.id)
-    const tCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => entry[1].action.protocol === JoystickProtocol.MAVLinkManualControl && entry[1].action.id === mavlinkManualControlAxes.axis_t.id)
+    const xCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => manualControlAxisId(entry[1].action) === mavlinkManualControlAxes.axis_x.id)
+    const yCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => manualControlAxisId(entry[1].action) === mavlinkManualControlAxes.axis_y.id)
+    const zCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => manualControlAxisId(entry[1].action) === mavlinkManualControlAxes.axis_z.id)
+    const rCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => manualControlAxisId(entry[1].action) === mavlinkManualControlAxes.axis_r.id)
+    const sCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => manualControlAxisId(entry[1].action) === mavlinkManualControlAxes.axis_s.id)
+    const tCorrespondency = Object.entries(this.currentActionsMapping.axesCorrespondencies).find((entry) => manualControlAxisId(entry[1].action) === mavlinkManualControlAxes.axis_t.id)
 
     // Populate MAVLink Manual Control state of axes and buttons
     this.manualControlState.x = xCorrespondency === undefined ? 0 : round(scale(this.joystickState.axes[xCorrespondency[0] as unknown as JoystickAxis] ?? 0, -1, 1, xCorrespondency[1].min, xCorrespondency[1].max), 0)
