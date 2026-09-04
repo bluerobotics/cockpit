@@ -54,7 +54,7 @@ import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { canSuggestCabledLink, createWirelessTrafficWatcher } from '@/libs/wireless-traffic-warning'
-import type { MissionLoadingCallback, Waypoint } from '@/types/mission'
+import type { MissionLoadingCallback, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useControllerStore } from './controller'
 import { useMissionStore } from './mission'
@@ -266,6 +266,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     dispatchEvent(new CustomEvent('vehicle-offline'))
     currentlyConnectedVehicleId.value = undefined
     isArmed.value = undefined
+    // The last known home stays on the map, as it is still the best guess of where the vehicle would return to, but it
+    // is no longer something the vehicle is confirming.
+    missionStore.isHomeConfirmedByVehicle = false
   })
 
   watch(enableDatalakeVariablesFromOtherSystems, (newValue) => {
@@ -530,34 +533,46 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return inflightMissionFetch
   }
 
+  // Prevent multiple home fetches from happening at the same time
+  let inflightHomeFetch: Promise<Waypoint> | undefined
+
   /**
    * Fetch home waypoint from vehicle
    * @returns { Promise<Waypoint> } Home waypoint
    */
   async function fetchHomeWaypoint(): Promise<Waypoint> {
-    if (!mainVehicle.value) {
+    const vehicle = mainVehicle.value
+    if (!vehicle) {
       throw new Error('No vehicle available to fetch home waypoint.')
     }
-    if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
+    if (vehicle.firmware() !== Vehicle.Firmware.ArduPilot) {
       throw new Error('Home waypoint retrieval is only supported for ArduPilot vehicles.')
     }
-    const homeWaypoint = await mainVehicle.value.fetchHomeWaypoint()
-    missionStore.homeMarkerPosition = homeWaypoint.coordinates
-    return homeWaypoint
+    if (inflightHomeFetch) return inflightHomeFetch
+
+    inflightHomeFetch = (async () => {
+      try {
+        const homeWaypoint = await vehicle.fetchHomeWaypoint()
+        missionStore.homeMarkerPosition = homeWaypoint.coordinates
+        missionStore.isHomeConfirmedByVehicle = true
+        return homeWaypoint
+      } finally {
+        inflightHomeFetch = undefined
+      }
+    })()
+
+    return inflightHomeFetch
   }
 
   /**
-   * Set home waypoint on vehicle
-   * @param { [ number, number ] } coordinate of the home waypoint
-   * @param { number } height of the home waypoint
-   * @returns { Promise<void> }
+   * Take the home position from the first item of a mission read off the vehicle. Only ArduPilot reports home there,
+   * so on any other firmware the position is displayed without counting as one the vehicle confirmed.
+   * @param { WaypointCoordinates } firstItemCoordinates Coordinates of the mission's first item
+   * @returns { void }
    */
-  async function setHomeWaypoint(coordinate: [number, number], height: number): Promise<void> {
-    if (!mainVehicle.value) {
-      throw new Error('No vehicle available to set home waypoint.')
-    }
-    await mainVehicle.value.setHomeWaypoint(coordinate, height)
-    missionStore.homeMarkerPosition = coordinate
+  function setHomeFromVehicleMission(firstItemCoordinates: WaypointCoordinates): void {
+    missionStore.homeMarkerPosition = firstItemCoordinates
+    missionStore.isHomeConfirmedByVehicle = mainVehicle.value?.firmware() === Vehicle.Firmware.ArduPilot
   }
 
   /**
@@ -1187,7 +1202,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     reachedMissionItemSequences,
     clearReachedMissionItems,
     fetchHomeWaypoint,
-    setHomeWaypoint,
+    setHomeFromVehicleMission,
     vehiclePayloadParameters,
     vehiclePositionMaxSampleRate,
     vehicleConnectionTimeoutMs,

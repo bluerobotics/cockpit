@@ -275,7 +275,7 @@
             <v-icon v-if="home === undefined" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
             <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
             <p :class="{ 'cursor-pointer hover:underline': home === undefined }" @click="handleAddHomeWaypointByClick">
-              Set home waypoint
+              Set mission home
             </p>
           </div>
           <div class="text-sm flex justify-start items-center">
@@ -338,7 +338,7 @@
           <p
             class="text-sm flex justify-start items-center bg-[#1e498f] rounded-full pl-3 pr-1 py-1 border-[1px] border-[#FFFFFF44] elevation-2 cursor-pointer"
           >
-            <span>Set home waypoint</span>
+            <span>Set mission home</span>
             <v-icon class="text-md ml-2">mdi-home-circle</v-icon>
           </p>
         </div>
@@ -902,6 +902,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
+import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
@@ -1088,6 +1089,9 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
+    // The vehicle takes its home from the mission's first item, so read it back to learn what it now holds. Not
+    // awaited, as the upload is done either way and the map only needs the answer whenever it arrives.
+    vehicleStore.fetchHomeWaypoint().catch(() => undefined)
     // Keep the uploaded mission on the planner (draft) and store a restorable snapshot so quick edits
     // don't require re-downloading it from the vehicle.
     missionStore.setLastUploadedMission(buildCurrentMissionSnapshot())
@@ -1156,8 +1160,6 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     missionItemsInVehicle.forEach((wp: Waypoint, index) => {
       if (index === 0) {
         home.value = wp.coordinates
-        currentCursorGeoCoordinates.value = wp.coordinates
-        setHomePosition()
       }
       if (index > 0) {
         missionStore.currentPlanningWaypoints.push(wp)
@@ -1375,9 +1377,9 @@ const surveyAreaMarkers = shallowRef<Record<string, L.Marker>>({})
 const liveSurveyAreaMarker = shallowRef<L.Marker | null>(null)
 
 const home = computed({
-  get: () => missionStore.homeMarkerPosition,
+  get: () => missionStore.plannedHomePosition,
   set: (value: WaypointCoordinates | undefined) => {
-    missionStore.homeMarkerPosition = value
+    missionStore.plannedHomePosition = value
   },
 })
 
@@ -1708,11 +1710,11 @@ const handleDoNotShowTipsAgain = (): void => {
 
 const handleAddHomeWaypointByClick = (): void => {
   if (home.value !== undefined) return
-  logUserAction('Started setting mission home waypoint')
+  logUserAction('Started setting the mission home')
   isSettingHomeWaypoint.value = true
   openSnackbar({
     variant: 'info',
-    message: 'Click anywhere on the map to set the home position',
+    message: 'Click anywhere on the map to set the mission home',
     duration: 5000,
   })
 }
@@ -2465,9 +2467,9 @@ const clearVehiclePathHistory = (): void => {
   openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
 }
 
-const setHomePositionFromContextMenu = async (): Promise<void> => {
+const setHomePositionFromContextMenu = (): void => {
   logUserAction('Set mission home position from context menu')
-  await setHomePosition()
+  setHomePosition()
 }
 
 const placeBaseStationFromContextMenu = (): void => {
@@ -2484,22 +2486,16 @@ const placeBaseStationFromContextMenu = (): void => {
   logUserAction('Placed the base station via the mission-planning context menu')
 }
 
-const setHomePosition = async (): Promise<void> => {
+// Planning never commands the vehicle. The home point reaches it as the mission's first item on upload.
+const setHomePosition = (): void => {
   if (!currentCursorGeoCoordinates.value) return
   const newHome: [number, number] = [currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1]]
-  try {
-    home.value = newHome
-    await vehicleStore.setHomeWaypoint(newHome, 0)
-    openSnackbar({
-      variant: 'success',
-      message: `Home position set to ${newHome[0].toFixed(2)}, ${newHome[1].toFixed(2)}`,
-    })
-  } catch (error) {
-    openSnackbar({
-      variant: 'error',
-      message: `Failed to set home position: ${error}`,
-    })
-  }
+  home.value = newHome
+  const coordinates = `${newHome[0].toFixed(5)}, ${newHome[1].toFixed(5)}`
+  openSnackbar({
+    variant: 'success',
+    message: `Mission home set to ${coordinates}. Upload the mission for the change to take effect.`,
+  })
 }
 
 const toggleSimplePath = (): void => {
@@ -4248,24 +4244,6 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
   }
 }
 
-let homeRetryTimer: ReturnType<typeof setInterval> | null = null
-const tryFetchHome = async (): Promise<void> => {
-  const MAX_ATTEMPTS = 30
-  let attempts = 0
-  if (vehicleStore.isVehicleOnline) {
-    try {
-      const wp = await vehicleStore.fetchHomeWaypoint()
-      home.value = [...wp.coordinates] as [number, number]
-      clearInterval(homeRetryTimer!)
-    } catch (err) {
-      console.warn('HOME fetch failed, will retry…', err)
-    }
-  }
-  if (++attempts >= MAX_ATTEMPTS) {
-    clearInterval(homeRetryTimer!)
-  }
-}
-
 const loadDraftMission = async (
   mission: CockpitMission,
   options?: {
@@ -4290,10 +4268,6 @@ const loadDraftMission = async (
       missionStore.currentPlanningSurveys.push(...mission.surveys)
     }
 
-    if (!home.value) {
-      await tryFetchHome()
-      homeRetryTimer = setInterval(tryFetchHome, 1000)
-    }
     openSnackbar({ variant: 'success', message: 'Draft mission loaded.', duration: 2000 })
   } catch (error) {
     openSnackbar({ variant: 'error', message: `Failed to load draft mission: ${error}`, duration: 3000 })
@@ -4715,8 +4689,6 @@ onMounted(async () => {
   } else {
     targetFollower.unFollow()
   }
-  await nextTick()
-  await tryFetchHome()
 })
 
 watch(followerTarget, (newTarget) => {
@@ -4726,17 +4698,6 @@ watch(followerTarget, (newTarget) => {
     missionStore.followVehicleOnMap = false
   }
 })
-
-// Fetch home position when vehicle comes online
-watch(
-  () => vehicleStore.isVehicleOnline,
-  async (isOnline) => {
-    if (!isOnline) return
-    await nextTick()
-    await tryFetchHome()
-  },
-  { immediate: true }
-)
 
 onUnmounted(() => {
   // Debounced saves may still be pending; write the live view now so Flight Mode mounts with it.
@@ -5001,16 +4962,7 @@ watch(
 watch([isCtrlDown, isShiftDown, isCreatingSurvey, isCreatingSimplePath, isSettingHomeWaypoint], () => setMapCursor())
 watch(planningMap, () => setMapCursor())
 
-// Try to update map center position based on browser geolocation
-navigator?.geolocation?.watchPosition(
-  (position) => {
-    if (!home.value && !vehiclePosition.value) {
-      mapCenter.value = [position.coords.latitude, position.coords.longitude]
-    }
-  },
-  (error) => console.error(`Failed to get position: (${error.code}) ${error.message}`),
-  { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-)
+useMapCenterFromUserLocation(mapCenter, () => Boolean(home.value || vehiclePosition.value))
 
 watch(
   () => interfaceStore.mainMenuCurrentStep,

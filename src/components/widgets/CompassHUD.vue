@@ -148,6 +148,7 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toR
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
+import { useVehicleHomePosition } from '@/composables/useVehicleHomePosition'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
@@ -334,7 +335,7 @@ const poiData = computed(() => {
   return hudTargets
 })
 
-const homeCoordinates = computed(() => missionStore.homeMarkerPosition)
+const homeCoordinates = useVehicleHomePosition(() => widget.value.options.showHomeOnHUD)
 const homeMarkerId = '__home__'
 
 // Home is rendered as a synthetic pseudo-POI (not a real data-lake-backed one): its position comes
@@ -343,7 +344,7 @@ const homeMarkerId = '__home__'
 // backing variables.
 const buildHomeHudPoi = (coords: PointOfInterestCoordinates): ResolvedPointOfInterest => ({
   id: homeMarkerId,
-  name: 'Home',
+  name: missionStore.isHomeConfirmedByVehicle ? 'Home' : 'Home (unconfirmed)',
   description: '',
   latitude: coords[0],
   longitude: coords[1],
@@ -354,7 +355,9 @@ const buildHomeHudPoi = (coords: PointOfInterestCoordinates): ResolvedPointOfInt
   resolvedHeading: null,
   latitudeVariableId: `${homeMarkerId}/latitude`,
   longitudeVariableId: `${homeMarkerId}/longitude`,
-  icon: 'mdi-home',
+  // Signed when the vehicle has not confirmed this home, so a mission's first item or a last known one is not read as
+  // the position the vehicle would actually return to.
+  icon: missionStore.isHomeConfirmedByVehicle ? 'mdi-home' : 'mdi-home-alert',
   color: '#1E88E5',
   timestamp: 0,
 })
@@ -419,16 +422,6 @@ const hudMarkerData = computed((): HudMarkerEntry[] => {
 
   return entries
 })
-
-const tryFetchHomeForHud = async (): Promise<void> => {
-  if (!widget.value.options.showHomeOnHUD || missionStore.homeMarkerPosition) return
-  if (!store.isVehicleOnline) return
-  try {
-    await store.fetchHomeWaypoint()
-  } catch {
-    return
-  }
-}
 
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
@@ -767,14 +760,6 @@ const stopAnimationLoop = (): void => {
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
 watch([hudMarkerData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
-
-watch(
-  [() => widget.value.options.showHomeOnHUD, () => store.isVehicleOnline],
-  ([showHome]) => {
-    if (showHome) tryFetchHomeForHud()
-  },
-  { immediate: true }
-)
 
 // Start both canvas and POI markers animation loop when widget becomes visible or data changes
 watch([renderVars, canvasSize, widget.value.options], () => {
