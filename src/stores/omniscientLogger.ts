@@ -1,24 +1,14 @@
-import { WebRTCStats } from '@peermetrics/webrtc-stats'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
-import { watch } from 'vue'
 
-import {
-  createDataLakeVariable,
-  DataLakeVariable,
-  getDataLakeVariableInfo,
-  setDataLakeVariableData,
-} from '@/libs/actions/data-lake'
+import { useStreamStats } from '@/composables/useStreamStats'
+import { createDataLakeVariable, DataLakeVariable, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { isElectron } from '@/libs/utils'
-import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
-import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useMainVehicleStore } from './mainVehicle'
-import { useVideoStore } from './video'
 
 export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
-  const videoStore = useVideoStore()
   const mainVehicleStore = useMainVehicleStore()
 
   // Routine to log the memory usage of the application
@@ -179,98 +169,9 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   }
   fpsMeter()
 
-  // Routine to log the WebRTC statistics
-  const webrtcStreamStats: Record<string, ReturnType<typeof WebRTCStats>> = {}
-  const streamsAlreadyTrackingWebRTCStats: string[] = []
-
-  const streamRateVariableId = (streamName: string, statKeyName: string): string => {
-    return `stream-${streamName}-${statKeyName}`
-  }
-
-  // Monitor the active streams to add the connections to the WebRTC statistics
-  watch(videoStore.activeStreams, (streams) => {
-    Object.keys(streams).forEach((streamName) => {
-      const pcInfo = videoStore.getStreamPeerConnection(streamName)
-      if (!pcInfo) return
-
-      if (webrtcStreamStats[streamName] === undefined) {
-        webrtcStreamStats[streamName] = new WebRTCStats({ getStatsInterval: 100 })
-      }
-
-      if (webrtcStreamStats[streamName].peersToMonitor[pcInfo.peerId]) return
-
-      monitorStreamPeerConnection(webrtcStreamStats[streamName], pcInfo)
-
-      storedKeys.forEach((key) => {
-        if (getDataLakeVariableInfo(streamRateVariableId(streamName, key)) === undefined) {
-          const streamVariable = {
-            id: streamRateVariableId(streamName, key),
-            name: `Stream '${streamName}' - ${key}`,
-            type: 'number',
-            description: `WebRTC stat '${key}' of the '${streamName}' video stream.`,
-          } as DataLakeVariable
-          createDataLakeVariable(streamVariable)
-        }
-      })
-
-      if (streamsAlreadyTrackingWebRTCStats.includes(streamName)) return
-      streamsAlreadyTrackingWebRTCStats.push(streamName)
-
-      webrtcStreamStats[streamName].on('stats', (ev: WebRTCStatsEvent) => {
-        try {
-          // Stats for a peer we no longer monitor describe a connection that has already been replaced
-          if (!webrtcStreamStats[streamName].peersToMonitor[ev.peerId]) return
-
-          const videoData = ev.data.video.inbound[0]
-          if (videoData === undefined) return
-
-          storedKeys.forEach((key) => {
-            setDataLakeVariableData(streamRateVariableId(streamName, key), videoData[key])
-          })
-        } catch (error) {
-          console.error('Error while logging WebRTC statistics:', error)
-        }
-      })
-    })
-  })
-
-  // Track the WebRTC statistics, warn about changes in cumulative values and log the average values
-  const cumulativeKeys: WebRTCVideoStat[] = [
-    'bytesReceived',
-    'firCount',
-    'framesDecoded',
-    'framesDropped',
-    'framesReceived',
-    'freezeCount',
-    'headerBytesReceived',
-    'jitterBufferEmittedCount',
-    'keyFramesDecoded',
-    'lastPacketReceivedTimestamp',
-    'nackCount',
-    'packetsLost',
-    'packetsReceived',
-    'pauseCount',
-    'pliCount',
-    'timestamp',
-    'totalAssemblyTime',
-    'totalDecodeTime',
-    'totalFreezesDuration',
-    'totalInterFrameDelay',
-    'totalPausesDuration',
-    'totalProcessingDelay',
-    'totalSquaredInterFrameDelay',
-  ] // Keys that have cumulative values
-  const averageKeys: WebRTCVideoStat[] = [
-    'clockRate',
-    'framesAssembledFromMultiplePackets',
-    'framesPerSecond',
-    'jitter',
-    'jitterBufferDelay',
-    'jitterBufferMinimumDelay',
-    'jitterBufferTargetDelay',
-    'packetRate',
-  ] // Keys that have average values
-  const storedKeys = [...cumulativeKeys, ...averageKeys] // Keys to store in the history
+  // Start the shared stream stats collectors so WebRTC stats keep reaching the data lake even with
+  // no stats-for-nerds panel open
+  useStreamStats()
 
   // Routine to send a ping event to the event tracking system every 5 minutes
 

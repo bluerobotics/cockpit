@@ -152,6 +152,14 @@ export class DataLakeLogger {
   // Metadata of the session currently being written, kept in memory and mirrored to sessionsDB.
   private currentSession: DataLakeSessionRecord | null = null
 
+  /**
+   * Create a logger that flushes whatever is still buffered before the window goes away, so the
+   * last points aren't lost
+   */
+  constructor() {
+    window.addEventListener('beforeunload', () => this.flushPendingPoints())
+  }
+
   static logsDB = new IndexedDbStore({
     name: 'Cockpit - Data Lake Logs',
     storeName: 'cockpit-data-lake-logs-db',
@@ -377,6 +385,35 @@ export class DataLakeLogger {
   }
 
   /**
+   * Swap recorded variable IDs in one write. Used when a stream rename moves armed stats onto the
+   * new ids, so the selection is persisted and raw listeners are rebuilt once.
+   * @param {Record<string, string>} replacements - Map of old variable id to new variable id
+   */
+  replaceRecordedVariableIds(replacements: Record<string, string>): void {
+    if (Object.keys(replacements).length === 0) return
+
+    const nextIds: string[] = []
+    const seen = new Set<string>()
+    let changed = false
+
+    this.recordedVariableIds.forEach((id) => {
+      const next = replacements[id] ?? id
+      if (next !== id) changed = true
+      if (seen.has(next)) return
+      seen.add(next)
+      nextIds.push(next)
+    })
+
+    if (!changed) return
+
+    this.recordedVariableIds = nextIds
+
+    if (this.shouldBeLogging() && this.logInterval === 'raw') {
+      this.applyLoggingMode()
+    }
+  }
+
+  /**
    * Start recording. Re-reads the recorded selection from settings on each fresh start, so a
    * stop/start cycle applies external changes. No-op when already running.
    */
@@ -419,11 +456,31 @@ export class DataLakeLogger {
     const lastEpoch = batch[batch.length - 1].epoch
     const key = `boot=${this.bootId};epoch=${firstEpoch};seq=${this.logPointSequence++}`
 
+    // Advance the session synchronously so its key range always covers the batch - export and
+    // deletion are bounded by it - even on the beforeunload path, whose promise callbacks may never run
+    this.updateCurrentSession(firstEpoch, lastEpoch, batch.length)
+
     DataLakeLogger.logsDB.setItem(key, batch).catch((error) => {
       console.error('Failed to store data lake log points:', error)
+      // The batch never landed, so the session must not count it
+      this.rollbackSessionPointCount(firstEpoch, batch.length)
     })
+  }
 
-    this.updateCurrentSession(firstEpoch, lastEpoch, batch.length)
+  /**
+   * Discount a batch that failed to store from the session covering it, so the session's point
+   * count never overstates what is on disk
+   * @param {number} epoch - Epoch of the failed batch's first point
+   * @param {number} pointCount - Number of points in the failed batch
+   */
+  private rollbackSessionPointCount(epoch: number, pointCount: number): void {
+    const session = this.currentSession
+    if (!session || epoch < session.startTime || epoch > session.endTime) return
+
+    session.dataPointCount -= pointCount
+    DataLakeLogger.sessionsDB.setItem(session.id, { ...session }).catch((error) => {
+      console.error('Failed to roll back data lake session record:', error)
+    })
   }
 
   /**
