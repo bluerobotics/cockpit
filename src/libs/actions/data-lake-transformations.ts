@@ -210,7 +210,10 @@ export const createTransformingFunction = (
 }
 
 /**
- * Returns all transforming functions
+ * Returns all transforming functions.
+ *
+ * The array and its entries are live. `migrateCameraSpeedFactorRemoval` mutates expressions at boot;
+ * do not copy the array or its objects here.
  * @returns {TransformingFunction[]} All transforming functions
  */
 export const getAllTransformingFunctions = (): TransformingFunction[] => {

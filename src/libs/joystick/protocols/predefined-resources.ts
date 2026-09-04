@@ -18,12 +18,10 @@ export const setupMavlinkCameraResources = (): void => {
   // Initialize camera zoom variables
   createDataLakeVariable({ id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease', ...commonVariableConfig }, 0)
   createDataLakeVariable({ id: 'camera-zoom-increase', name: 'Camera Zoom Increase', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-zoom-speed', name: 'Camera Zoom Speed', ...commonVariableConfig }, 3)
 
   // Initialize camera focus variables
   createDataLakeVariable({ id: 'camera-focus-decrease', name: 'Camera Focus Decrease', ...commonVariableConfig }, 0)
   createDataLakeVariable({ id: 'camera-focus-increase', name: 'Camera Focus Increase', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-focus-speed', name: 'Camera Focus Speed', ...commonVariableConfig }, 3)
 
   // Initialize camera zoom transforming function
   try {
@@ -34,10 +32,10 @@ export const setupMavlinkCameraResources = (): void => {
         'Camera Zoom',
         'number',
         getUnindentedString(`
-          const zoom = ({{camera-zoom-increase}} - {{camera-zoom-decrease}}) * {{camera-zoom-speed}}
+          const zoom = {{camera-zoom-increase}} - {{camera-zoom-decrease}}
           return zoom < 0.05 && zoom > -0.05 ? 0 : Math.max(Math.min(1, zoom), -1)
         `),
-        'Used to control the camera zoom. The value is the difference between {{camera-zoom-increase}} and {{camera-zoom-decrease}}, multiplied by {{camera-zoom-speed}}.'
+        'Used to control the camera zoom. The value is the difference between {{camera-zoom-increase}} and {{camera-zoom-decrease}}.'
       )
     }
   } catch (error) {
@@ -53,10 +51,10 @@ export const setupMavlinkCameraResources = (): void => {
         'Camera Focus',
         'number',
         getUnindentedString(`
-          const focus = ({{camera-focus-increase}} - {{camera-focus-decrease}}) * {{camera-focus-speed}}
+          const focus = {{camera-focus-increase}} - {{camera-focus-decrease}}
           return focus < 0.05 && focus > -0.05 ? 0 : Math.max(Math.min(1, focus), -1)
         `),
-        'Used to control the camera focus. The value is the difference between {{camera-focus-increase}} and {{camera-focus-decrease}}, multiplied by {{camera-focus-speed}}.'
+        'Used to control the camera focus. The value is the difference between {{camera-focus-increase}} and {{camera-focus-decrease}}.'
       )
     }
   } catch (error) {
