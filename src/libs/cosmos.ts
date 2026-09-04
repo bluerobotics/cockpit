@@ -574,9 +574,10 @@ declare global {
       go2rtcRemoveStream: (name: string) => Promise<void>
       /**
        * Query go2rtc for parsed info about all registered streams
-       * @returns {Promise<Record<string, Go2RTCStreamInfo>>} Stream name to info map
+       * @returns {Promise<Record<string, Go2RTCStreamInfo> | undefined>} Stream name to info map, or
+       * undefined when the sidecar is not ready or the query failed
        */
-      go2rtcGetStreamsInfo: () => Promise<Record<string, Go2RTCStreamInfo>>
+      go2rtcGetStreamsInfo: () => Promise<Record<string, Go2RTCStreamInfo> | undefined>
       /**
        * Get the port the go2rtc sidecar is listening on, starting it if necessary
        * @returns {Promise<number>} The port number

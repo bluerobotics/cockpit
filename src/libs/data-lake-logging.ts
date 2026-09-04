@@ -385,6 +385,35 @@ export class DataLakeLogger {
   }
 
   /**
+   * Swap recorded variable IDs in one write. Used when a stream rename moves armed stats onto the
+   * new ids, so the selection is persisted and raw listeners are rebuilt once.
+   * @param {Record<string, string>} replacements - Map of old variable id to new variable id
+   */
+  replaceRecordedVariableIds(replacements: Record<string, string>): void {
+    if (Object.keys(replacements).length === 0) return
+
+    const nextIds: string[] = []
+    const seen = new Set<string>()
+    let changed = false
+
+    this.recordedVariableIds.forEach((id) => {
+      const next = replacements[id] ?? id
+      if (next !== id) changed = true
+      if (seen.has(next)) return
+      seen.add(next)
+      nextIds.push(next)
+    })
+
+    if (!changed) return
+
+    this.recordedVariableIds = nextIds
+
+    if (this.shouldBeLogging() && this.logInterval === 'raw') {
+      this.applyLoggingMode()
+    }
+  }
+
+  /**
    * Start recording. Re-reads the recorded selection from settings on each fresh start, so a
    * stop/start cycle applies external changes. No-op when already running.
    */

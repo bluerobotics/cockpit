@@ -258,16 +258,33 @@ watch(rtspSample, (sample): void => {
   maxRtspPacketRate = Math.max(100, ...rtspPacketRateData.value)
 })
 
+let acquiredGo2rtcSampling = false
+
+const syncGo2rtcSampling = (shouldAcquire: boolean): void => {
+  if (shouldAcquire && !acquiredGo2rtcSampling) {
+    acquireGo2rtcSampling()
+    acquiredGo2rtcSampling = true
+  } else if (!shouldAcquire && acquiredGo2rtcSampling) {
+    releaseGo2rtcSampling()
+    acquiredGo2rtcSampling = false
+  }
+}
+
+watch(
+  () => isRtspStream(),
+  (isRtsp) => {
+    syncGo2rtcSampling(isRtsp)
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
   draw()
-
-  if (isRtspStream()) acquireGo2rtcSampling()
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(animationFrameId)
-
-  if (isRtspStream()) releaseGo2rtcSampling()
+  syncGo2rtcSampling(false)
 })
 </script>
 

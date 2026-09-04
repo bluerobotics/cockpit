@@ -57,9 +57,11 @@ const lastInternalNames: Record<string, string> = {}
 // The sampler differences over its own fixed window, never over a caller-dependent shared one
 const prevGo2rtcCounters: Record<string, Go2rtcIngestCounters> = {}
 let go2rtcSamplerTimer: ReturnType<typeof setTimeout> | null = null
+let go2rtcSamplerEnabled = false
+let go2rtcSamplerRunning = false
 let go2rtcPanelConsumers = 0
-// 10 Hz while a panel or an armed recording consumes the samples; the video store's 5 s background
-// cadence otherwise, so nobody pays for a fast poll they never look at
+// 10 Hz while a panel or an armed recording consumes the samples; 5 s otherwise, so nobody pays
+// for a fast poll they never look at
 const go2rtcFastSampleIntervalMs = 100
 const go2rtcIdleSampleIntervalMs = 5000
 // Set by initialize so a live consumer can restart an idle sampler at the fast cadence
@@ -72,9 +74,10 @@ const collectorScope = effectScope(true)
 const initialize = (): void => {
   const videoStore = useVideoStore()
 
-  // Persisted artifacts use the internal stream name; the external id is only for display
-  const internalStreamName = (streamName: string): string =>
-    videoStore.internalStreamNameFromExternal(streamName) ?? streamName
+  // Persisted artifacts use the internal stream name; skip unmapped streams so the external id
+  // (an RTSP URL, credentials included) never reaches a variable name
+  const internalStreamName = (streamName: string): string | undefined =>
+    videoStore.internalStreamNameFromExternal(streamName)
 
   // Publish one go2rtc sample to the data lake, creating the stream's variables on first sight. The
   // raw counters are exact, so any rate over any window is derivable offline; the derived rates are
@@ -100,6 +103,9 @@ const initialize = (): void => {
     if (!isElectron() || !window.electronAPI) return
     try {
       const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
+      // A failed or not-yet-ready query is not "no streams" - skip the tick so counters and
+      // published rates stay at the last good sample instead of a fabricated stall
+      if (allInfo === undefined) return
 
       // Drop counters and samples of streams that left, so a returning stream starts a fresh window
       // and consumers stop seeing the last sample of a departed one
@@ -142,11 +148,11 @@ const initialize = (): void => {
     ]
     const oldIds = statIds(oldName)
     const newIds = statIds(newName)
+    const replacements: Record<string, string> = {}
     oldIds.forEach((oldId, index) => {
-      if (!dataLakeLogger.recordedVariableIds.includes(oldId)) return
-      dataLakeLogger.setVariableRecorded(oldId, false)
-      dataLakeLogger.setVariableRecorded(newIds[index], true)
+      if (dataLakeLogger.recordedVariableIds.includes(oldId)) replacements[oldId] = newIds[index]
     })
+    dataLakeLogger.replaceRecordedVariableIds(replacements)
     oldIds.forEach((oldId) => {
       if (getDataLakeVariableInfo(oldId) !== undefined) deleteDataLakeVariable(oldId)
     })
@@ -156,10 +162,10 @@ const initialize = (): void => {
   // activation, so a rename (here or synced from another topside) re-registers under the new ids
   // instead of publishing into the void
   const ensureWebRtcStatVariables = (streamName: string): void => {
+    const internalName = internalStreamName(streamName)
+    if (internalName === undefined) return
+
     webRtcStreamStatKeys.forEach((key) => {
-      // The external id of an RTSP stream is its URL, credentials included, so the user-facing
-      // name and description use the internal name, like the persisted id
-      const internalName = internalStreamName(streamName)
       const variableId = streamStatVariableId(internalName, key)
       if (getDataLakeVariableInfo(variableId) === undefined) {
         const streamVariable = {
@@ -185,14 +191,22 @@ const initialize = (): void => {
     })
 
   const runGo2rtcSampler = async (): Promise<void> => {
-    await sampleGo2rtcStreams()
-    if (go2rtcSamplerTimer === null) return
+    go2rtcSamplerTimer = null
+    go2rtcSamplerRunning = true
+    try {
+      await sampleGo2rtcStreams()
+    } finally {
+      go2rtcSamplerRunning = false
+    }
+    if (!go2rtcSamplerEnabled) return
     const intervalMs =
       go2rtcPanelConsumers > 0 || isAnyActiveRtspStreamArmed() ? go2rtcFastSampleIntervalMs : go2rtcIdleSampleIntervalMs
     go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), intervalMs)
   }
 
   pokeGo2rtcSampler = (): void => {
+    if (!go2rtcSamplerEnabled) return
+    // An in-flight tick already has the updated consumer count; its reschedule will use it
     if (go2rtcSamplerTimer === null) return
     clearTimeout(go2rtcSamplerTimer)
     go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), 0)
@@ -204,6 +218,9 @@ const initialize = (): void => {
       // Drop samples of streams that are no longer active, so consumers don't see stale data
       Object.keys(go2rtcStreamSamples).forEach((name) => {
         if (streams[name]?.go2rtcManager === undefined) delete go2rtcStreamSamples[name]
+      })
+      Object.keys(webRtcStreamStatsSnapshots).forEach((name) => {
+        if (streams[name] === undefined) delete webRtcStreamStatsSnapshots[name]
       })
 
       Object.keys(streams).forEach((streamName) => {
@@ -233,9 +250,12 @@ const initialize = (): void => {
 
             webRtcStreamStatsSnapshots[streamName] = videoData
 
+            const internalName = internalStreamName(streamName)
+            if (internalName === undefined) return
+
             ensureWebRtcStatVariables(streamName)
             webRtcStreamStatKeys.forEach((key) => {
-              setDataLakeVariableData(streamStatVariableId(internalStreamName(streamName), key), videoData[key])
+              setDataLakeVariableData(streamStatVariableId(internalName, key), videoData[key])
             })
           } catch (error) {
             console.error('Error while logging WebRTC statistics:', error)
@@ -244,24 +264,26 @@ const initialize = (): void => {
       })
     })
 
-    // Seed the name map, then carry recording over renames, whether made here or synced from
-    // another topside
-    videoStore.streamsCorrespondency.forEach((corr) => {
-      lastInternalNames[corr.externalId] = corr.name
-    })
-    watch(videoStore.streamsCorrespondency, (corrs) => {
-      corrs.forEach((corr) => {
-        const lastName = lastInternalNames[corr.externalId]
-        if (lastName !== undefined && lastName !== corr.name) {
-          carryOverStreamStatRecording(lastName, corr.name)
-        }
-        lastInternalNames[corr.externalId] = corr.name
-      })
-      // A deleted stream's name ends its lineage: a re-added stream starts unarmed
-      Object.keys(lastInternalNames).forEach((externalId) => {
-        if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
-      })
-    })
+    // Seed the name map and carry recording over renames, whether made here or synced from
+    // another topside. Watch the getter so a whole-array replacement (discovery, BlueOS sync)
+    // does not detach the watcher.
+    watch(
+      () => videoStore.streamsCorrespondency,
+      (corrs) => {
+        corrs.forEach((corr) => {
+          const lastName = lastInternalNames[corr.externalId]
+          if (lastName !== undefined && lastName !== corr.name) {
+            carryOverStreamStatRecording(lastName, corr.name)
+          }
+          lastInternalNames[corr.externalId] = corr.name
+        })
+        // A deleted stream's name ends its lineage: a re-added stream starts unarmed
+        Object.keys(lastInternalNames).forEach((externalId) => {
+          if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
+        })
+      },
+      { deep: true, immediate: true }
+    )
 
     // The go2rtc sampler runs only while at least one RTSP stream is active
     const hasActiveRtspStreams = computed(() =>
@@ -270,9 +292,12 @@ const initialize = (): void => {
     watch(
       hasActiveRtspStreams,
       (hasActive) => {
-        if (hasActive && go2rtcSamplerTimer === null) {
-          go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), 0)
-        } else if (!hasActive && go2rtcSamplerTimer !== null) {
+        go2rtcSamplerEnabled = hasActive
+        if (hasActive) {
+          if (go2rtcSamplerTimer === null && !go2rtcSamplerRunning) {
+            go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), 0)
+          }
+        } else if (go2rtcSamplerTimer !== null) {
           clearTimeout(go2rtcSamplerTimer)
           go2rtcSamplerTimer = null
         }
