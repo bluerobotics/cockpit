@@ -396,7 +396,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') && success()
         # Upload to version-less file, to provide static URLs for the latest stable release build
         run: |
-          aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }} s3://br-www-docs/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.uploadExtension }}
+          aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }} s3://bcloud-public/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.uploadExtension }}
 
   deploy-flatpak:
     needs: test
@@ -492,7 +492,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') && success()
         # Upload to version-less file, to provide static URLs for the latest stable release build
         run: |
-          aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }} s3://br-www-docs/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.extension }}
+          aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }} s3://bcloud-public/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.extension }}
 
   deploy-blueos-extension:
     needs: test
