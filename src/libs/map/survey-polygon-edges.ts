@@ -10,7 +10,8 @@ export interface ScreenPoint {
   y: number
 }
 
-const handleSelector = '.custom-div-icon, .edge-marker, .delete-popup, .delete-button'
+const handleSelector =
+  '.custom-div-icon, .edge-marker, .delete-popup, .delete-button, .fence-vertex-div-icon, .fence-edge-marker'
 
 /**
  * Whether an event landed on one of the survey polygon's own handles rather than on the map under it.
