@@ -204,7 +204,7 @@
                   @keyup="logContentZoom"
                 >
                   <template #append>
-                    <span class="text-sm w-[48px] text-right">{{ contentZoomPercent }}%</span>
+                    <span class="text-sm w-12 text-right">{{ contentZoomPercent }}%</span>
                   </template>
                 </v-slider>
               </div>
@@ -241,8 +241,7 @@ import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariab
 import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import type { Widget } from '@/types/widgets'
-import { widgetDefaultSizes, WidgetType } from '@/types/widgets'
+import { type Widget, widgetDefaultSizes, WidgetType } from '@/types/widgets'
 
 import ExpansiblePanel from '../ExpansiblePanel.vue'
 const interfaceStore = useAppInterfaceStore()
