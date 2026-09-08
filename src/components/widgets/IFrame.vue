@@ -199,6 +199,8 @@
                   :min="sliderMinPercent"
                   :max="sliderMaxPercent"
                   :step="5"
+                  :hint="contentZoomHint"
+                  persistent-hint
                   thumb-label
                   @end="logContentZoom"
                   @keyup="logContentZoom"
@@ -580,6 +582,14 @@ const logContentZoom = (): void => {
  */
 const effectiveZoom = computed<number>(() =>
   Math.min(maxContentZoom, Math.max(minContentZoom, contentZoom.value * effectiveAutoScale.value))
+)
+
+const effectiveZoomPercent = computed<number>(() => Math.round(effectiveZoom.value * 100))
+
+const contentZoomHint = computed<string>(() =>
+  widget.value.options.scaleContentWithWidget
+    ? `Rendering at ${effectiveZoomPercent.value}% at the current widget size`
+    : `Rendering at ${effectiveZoomPercent.value}%, independent of the widget size`
 )
 
 /**
