@@ -198,6 +198,8 @@
                   :max="sliderMaxPercent"
                   :step="5"
                   thumb-label
+                  @end="logContentZoom"
+                  @keyup="logContentZoom"
                 >
                   <template #append>
                     <span class="text-sm w-[48px] text-right">{{ contentZoomPercent }}%</span>
@@ -554,6 +556,16 @@ const effectiveAutoScale = computed<number>(() => {
 const sliderMinPercent = computed<number>(() => (minContentZoom / effectiveAutoScale.value) * 100)
 const sliderMaxPercent = computed<number>(() => (maxContentZoom / effectiveAutoScale.value) * 100)
 
+let lastLoggedZoomPercent: number | undefined
+
+// Bound to drag end and key release rather than the model so an adjustment logs once, with the
+// comparison dropping the key releases that leave the value alone.
+const logContentZoom = (): void => {
+  if (contentZoomPercent.value === lastLoggedZoomPercent) return
+  lastLoggedZoomPercent = contentZoomPercent.value
+  logUserAction(`Set the iframe content zoom to ${contentZoomPercent.value}%`)
+}
+
 /**
  * Effective scale applied to the iframe content. The manual content zoom is the base, held to the
  * manual range so the layout box below, which is the widget's area divided by this, stays a small
@@ -570,6 +582,7 @@ const effectiveZoom = computed<number>(() =>
  * @param {boolean | null} enabled The new toggle state.
  */
 const handleScaleContentToggle = (enabled: boolean | null): void => {
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} scaling the iframe content with the widget size`)
   const autoScale = widget.value.size.width / referenceWidth
   if (autoScale <= 0) return
   widget.value.options.contentZoom = clampZoom(enabled ? contentZoom.value / autoScale : contentZoom.value * autoScale)
