@@ -648,13 +648,17 @@ let vehicleAddressListenerId: string | undefined
 onBeforeMount((): void => {
   window.addEventListener('message', apiEventCallback, true)
 
+  // A widget persisted before content scaling existed has to keep rendering at the size its user
+  // last saw, so the seeded zoom cancels the width-derived auto scale.
+  const autoScaleFromWidth = widget.value.size.width > 0 ? widget.value.size.width / referenceWidth : 1
+
   const defaultOptions = {
     source: 'http://' + defaultBlueOsAddress,
     useVehicleAddressAsBase: false,
     startCollapsed: false,
     containerName: 'iframe',
     expandDirection: 'auto' as 'auto' | 'up' | 'down',
-    contentZoom: 1,
+    contentZoom: 1 / autoScaleFromWidth,
     scaleContentWithWidget: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
