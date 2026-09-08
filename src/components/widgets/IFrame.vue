@@ -561,6 +561,7 @@ const handleScaleContentToggle = (enabled: boolean | null): void => {
 
 /**
  * Builds the CSS that scales the iframe inside the given content-area box.
+ * Uses zoom so the iframe is rasterized at the target scale instead of upsampling a bitmap.
  * @param {number} areaWidth Content-area width in pixels.
  * @param {number} areaHeight Content-area height in pixels.
  * @returns {string} The CSS declarations positioning and scaling the iframe.
@@ -569,7 +570,7 @@ const buildContentStyle = (areaWidth: number, areaHeight: number): string => {
   const zoom = effectiveZoom.value
   const width = areaWidth / zoom
   const height = areaHeight / zoom
-  return `position: absolute; top: 0; left: 0; width: ${width}px; height: ${height}px; transform: scale(${zoom}); transform-origin: top left;`
+  return `position: absolute; top: 0; left: 0; width: ${width}px; height: ${height}px; zoom: ${zoom};`
 }
 
 const validateURL = (url: string): true | string => {
@@ -738,6 +739,13 @@ iframe {
   margin: 0;
   padding: 0;
   opacity: calc(v-bind('iframeOpacity'));
+}
+
+@supports not (zoom: 2) {
+  iframe {
+    transform: scale(v-bind('effectiveZoom'));
+    transform-origin: top left;
+  }
 }
 
 .iframe-status-overlay {
