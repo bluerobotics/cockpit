@@ -196,8 +196,8 @@
                   v-model="contentZoomPercent"
                   label="Content zoom"
                   color="white"
-                  :min="minContentZoom * 100"
-                  :max="maxContentZoom * 100"
+                  :min="sliderMinPercent"
+                  :max="sliderMaxPercent"
                   :step="5"
                   thumb-label
                 >
@@ -524,11 +524,19 @@ const minContentZoom = 0.25
 const maxContentZoom = 3
 // Reference width used when scaling content with the widget.
 const referenceWidth = widgetDefaultSizes[WidgetType.IFrame]?.width ?? 0.4
+// WidgetHugger constrains a widget's width to [0.01, 1] window widths, which bounds the auto scale.
+const minAutoScale = 0.01 / referenceWidth
+const maxAutoScale = 1 / referenceWidth
+// The scaling toggle folds that auto scale into the stored base, so the base has to hold the
+// manual range divided by any auto scale a width can produce, or the toggle would clamp and drop
+// the zoom that was set.
+const minStoredZoom = minContentZoom / maxAutoScale
+const maxStoredZoom = maxContentZoom / minAutoScale
 
 const contentBox = ref<HTMLElement>()
 const { width: contentBoxWidth, height: contentBoxHeight } = useElementSize(contentBox)
 
-const clampZoom = (zoom: number): number => Math.min(maxContentZoom, Math.max(minContentZoom, zoom))
+const clampZoom = (zoom: number): number => Math.min(maxStoredZoom, Math.max(minStoredZoom, zoom))
 
 const contentZoom = computed<number>(() => clampZoom(widget.value.options.contentZoom ?? 1))
 
@@ -539,14 +547,28 @@ const contentZoomPercent = computed<number>({
   },
 })
 
+// The widget-derived scale as actually applied, which is 1 while the content does not scale with
+// the widget, and never zero so the box the iframe is laid out in stays finite.
+const effectiveAutoScale = computed<number>(() => {
+  const widthScale = widget.value.size.width / referenceWidth
+  return widget.value.options.scaleContentWithWidget && widthScale > 0 ? widthScale : 1
+})
+
+// The track spans the bases that render within the manual zoom range at the current width. Bounding
+// it by the widget rather than by the value it sets keeps it still under the pointer and keeps every
+// base the seed and the toggle produce reachable on it.
+const sliderMinPercent = computed<number>(() => (minContentZoom / effectiveAutoScale.value) * 100)
+const sliderMaxPercent = computed<number>(() => (maxContentZoom / effectiveAutoScale.value) * 100)
+
 /**
- * Effective scale applied to the iframe content. The manual content zoom is the base.
+ * Effective scale applied to the iframe content. The manual content zoom is the base, held to the
+ * manual range so the layout box below, which is the widget's area divided by this, stays a small
+ * multiple of the widget however the widget is resized after the zoom was set.
  * @returns {number} The scale factor applied to the iframe.
  */
-const effectiveZoom = computed<number>(() => {
-  const autoScale = widget.value.options.scaleContentWithWidget ? widget.value.size.width / referenceWidth : 1
-  return contentZoom.value * autoScale
-})
+const effectiveZoom = computed<number>(() =>
+  Math.min(maxContentZoom, Math.max(minContentZoom, contentZoom.value * effectiveAutoScale.value))
+)
 
 /**
  * Compensates the manual content zoom when toggling "scale content with widget" so the effective
