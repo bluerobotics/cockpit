@@ -706,9 +706,12 @@ const widgetRectStyle = computed<string>(() => {
   newStyle = newStyle.concat(' ', `top: ${widget.value.position.y * windowHeight.value}px;`)
   newStyle = newStyle.concat(' ', `width: ${widget.value.size.width * windowWidth.value}px;`)
   newStyle = newStyle.concat(' ', `height: ${widget.value.size.height * windowHeight.value}px;`)
+  // Click-through so the status overlay cannot block widgets underneath, which leaves the iframe
+  // to re-enable pointer events for itself.
+  newStyle = newStyle.concat(' ', 'pointer-events:none;')
 
   if (widgetStore.editingMode) {
-    newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
+    newStyle = newStyle.concat(' ', 'border:0;')
   }
   if (!widgetStore.isWidgetVisible(widget.value)) {
     newStyle = newStyle.concat(' ', 'display: none;')
@@ -717,7 +720,11 @@ const widgetRectStyle = computed<string>(() => {
 })
 
 const iframeStyle = computed<string>(() => {
-  return buildContentStyle(widget.value.size.width * windowWidth.value, widget.value.size.height * windowHeight.value)
+  const contentStyle = buildContentStyle(
+    widget.value.size.width * windowWidth.value,
+    widget.value.size.height * windowHeight.value
+  )
+  return widgetStore.editingMode ? contentStyle : `${contentStyle} pointer-events: auto;`
 })
 
 const iframeOpacity = computed<number>(() => {
