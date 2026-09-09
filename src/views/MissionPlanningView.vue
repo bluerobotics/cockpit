@@ -935,10 +935,12 @@ import { positionPanelNearBounds, screenBounds } from '@/libs/map/screen-placeme
 import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
 import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 import {
+  applyFollowZoomMode,
   createGridOverlay,
   fitMapToWaypoints,
   mapPointerPositionFromClient,
   persistLiveMapView,
+  recenterMapOnFollowTarget,
   singleStepZoomMapOptions,
   TargetFollower,
   WhoToFollow,
@@ -3053,7 +3055,8 @@ watch(
 
 watch(zoom, (newZoom, oldZoom) => {
   if (newZoom === oldZoom) return
-  planningMap.value?.setZoom(zoom.value)
+  if (!planningMap.value) return
+  recenterMapOnFollowTarget(planningMap.value, zoom.value, targetFollower.currentCoordinates())
 })
 
 const addWaypoint = (
@@ -4727,6 +4730,7 @@ onMounted(async () => {
   } else {
     targetFollower.unFollow()
   }
+  if (planningMap.value) applyFollowZoomMode(planningMap.value, !!followerTarget.value)
   await nextTick()
   await tryFetchHome()
 })
@@ -4737,6 +4741,7 @@ watch(followerTarget, (newTarget) => {
   } else {
     missionStore.followVehicleOnMap = false
   }
+  if (planningMap.value) applyFollowZoomMode(planningMap.value, !!newTarget)
 })
 
 // Fetch home position when vehicle comes online
