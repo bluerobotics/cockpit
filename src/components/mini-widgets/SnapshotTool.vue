@@ -189,7 +189,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
 import { isElectron } from '@/libs/utils'
@@ -404,6 +404,20 @@ const fireTimedSnapshot = async (): Promise<void> => {
   handleSnapshotResult(result, true)
 }
 
+const stopTimedSnapshotIntervals = (): boolean => {
+  const wasRunning = shotInterval !== null || progressInterval !== null
+  if (shotInterval) {
+    clearInterval(shotInterval)
+    shotInterval = null
+  }
+  if (progressInterval) {
+    clearInterval(progressInterval)
+    progressInterval = null
+  }
+  timerProgress.value = 0
+  return wasRunning
+}
+
 watch(isTakingTimedSnapshot, (newValue) => {
   if (newValue) {
     timedFlashCounter = 0
@@ -430,15 +444,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
     return
   }
   openSnackbar({ message: 'Timed snapshot stopped.', variant: 'info', duration: 2000 })
-  if (shotInterval) {
-    clearInterval(shotInterval)
-    shotInterval = null
-  }
-  if (progressInterval) {
-    clearInterval(progressInterval)
-    progressInterval = null
-  }
-  timerProgress.value = 0
+  stopTimedSnapshotIntervals()
 })
 
 const migrateSelectedStreamsToInternalNames = (): void => {
@@ -465,6 +471,12 @@ onBeforeMount(() => {
 onMounted(() => {
   if (!isElectronEnv) {
     miniWidget.value.options.captureWorkspace = false
+  }
+})
+
+onBeforeUnmount(() => {
+  if (stopTimedSnapshotIntervals()) {
+    openSnackbar({ message: 'Timed snapshot stopped.', variant: 'info', duration: 2000 })
   }
 })
 </script>
