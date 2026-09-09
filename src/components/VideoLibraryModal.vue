@@ -253,7 +253,7 @@
                                 :class="
                                   video.isProcessed
                                     ? 'text-green-500'
-                                    : isRecordingOngoing()
+                                    : isRecordingOngoing() || isFinalizingRecording()
                                     ? 'text-yellow-300 animate-pulse'
                                     : 'text-orange-500'
                                 "
@@ -265,6 +265,8 @@
                                     ? 'Processed'
                                     : isRecordingOngoing()
                                     ? 'Recording ongoing'
+                                    : isFinalizingRecording()
+                                    ? 'Finishing up'
                                     : 'Raw format'
                                 }}
                               </span>
@@ -1008,6 +1010,16 @@ const parseDateFromTitle = (title: string): string => {
 const isRecordingOngoing = (): boolean => {
   return Object.keys(videoStore.activeStreams).some((streamName) => {
     return videoStore.isRecording(streamName)
+  })
+}
+
+/**
+ * Check if any stream has a stopped recording still being written and processed
+ * @returns {boolean} True if a recording is being finalized
+ */
+const isFinalizingRecording = (): boolean => {
+  return Object.keys(videoStore.activeStreams).some((streamName) => {
+    return videoStore.isFinalizingRecording(streamName)
   })
 }
 
