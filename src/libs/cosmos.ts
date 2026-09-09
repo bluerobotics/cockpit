@@ -551,12 +551,6 @@ declare global {
        */
       appendChunkToVideoRecording: (processId: string, chunk: Blob, chunkNumber: number) => Promise<void>
       /**
-       * Delete chunk
-       * @param hash - The hash of the video chunk to delete
-       * @param chunkNumber - The number of the video chunk to delete
-       */
-      deleteChunk: (hash: string, chunkNumber: number) => Promise<void>
-      /**
        * Finalize live video streaming by closing FFmpeg stdin
        * @param processId - The ID of the streaming process
        */
