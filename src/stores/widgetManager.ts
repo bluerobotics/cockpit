@@ -22,7 +22,6 @@ import {
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
-import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { settingsManager } from '@/libs/settings-management'
 import { isEqual, sequentialArray } from '@/libs/utils'
 import { isViewsGroupBlank } from '@/migration/default-profile-importer'
@@ -572,13 +571,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     if (container) {
       const index = container.widgets.indexOf(miniWidget)
       container.widgets.splice(index, 1)
-      // Remove miniWidget variable from the list of currently logged variables
-      CurrentlyLoggedVariables.removeVariable(miniWidget.options.displayName)
       return
     }
     if (customWidgetContainer) {
       removeElementFromCustomWidget(miniWidget.hash)
-      CurrentlyLoggedVariables.removeVariable(miniWidget.options.displayName)
       return
     }
 

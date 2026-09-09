@@ -69,7 +69,6 @@ import { onBeforeMount, ref, toRefs } from 'vue'
 import { computed } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
-import { CurrentlyLoggedVariables } from '@/libs/sensors-logging'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { DraggableEvent, MiniWidget, MiniWidgetContainer } from '@/types/widgets'
 
@@ -155,8 +154,6 @@ const handleDeleteWidget = (event: DraggableEvent): void => {
   const widgetData = container.value.widgets.find((w) => w.hash === event.item.dataset.widgetHash)
   if (widgetData) {
     logUserAction(`Deleted mini-widget '${widgetData.component}' via trash`)
-    // Remove miniWidget variableName from Logged variables list
-    CurrentlyLoggedVariables.removeVariable(widgetData.options.displayName)
   }
   widgetStore.elementToShowOnDrawer = undefined
   trashList.value = []

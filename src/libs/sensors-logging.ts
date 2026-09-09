@@ -229,6 +229,7 @@ class DataLogger {
   datetimeLastLogPoint: Date | null = null
   variablesBeingUsed: DatalogVariable[] = []
   veryGenericIndicators: VeryGenericData[] = []
+  private veryGenericOwners = new Map<string, number>()
   private _telemetryDisplayData?: OverlayGrid
   private _telemetryDisplayOptions?: OverlayOptions
   private _logInterval?: number
@@ -499,6 +500,31 @@ class DataLogger {
     } else {
       this.veryGenericIndicators.push(data)
     }
+  }
+
+  /**
+   * Note that one more widget is feeding this display name.
+   * @param {string} displayName - Display name of the indicator
+   * @returns {void}
+   */
+  retainVeryGenericData(displayName: string): void {
+    this.veryGenericOwners.set(displayName, (this.veryGenericOwners.get(displayName) ?? 0) + 1)
+  }
+
+  /**
+   * Note that one less widget is feeding this display name, dropping the indicator once none is
+   * left, so its last value is not kept in later log points.
+   * @param {string} displayName - Display name of the indicator to release
+   * @returns {void}
+   */
+  releaseVeryGenericData(displayName: string): void {
+    const left = (this.veryGenericOwners.get(displayName) ?? 1) - 1
+    if (left > 0) {
+      this.veryGenericOwners.set(displayName, left)
+      return
+    }
+    this.veryGenericOwners.delete(displayName)
+    this.veryGenericIndicators = this.veryGenericIndicators.filter((ind) => ind.displayName !== displayName)
   }
 
   /**
