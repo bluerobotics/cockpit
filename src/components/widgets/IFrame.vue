@@ -646,14 +646,19 @@ const handleBaseUrlToggle = (useBaseUrl: boolean): void => {
   updateURL()
 }
 
+// Listener ids of the data lake variables the embedded content subscribed to, by variable
+const apiListenerIds = new Map<string, string>()
+
 const apiEventCallback = (event: MessageEvent): void => {
   if (event.data.type !== 'cockpit:listenToDatalakeVariables') {
     return
   }
   const { variable } = event.data
-  listenDataLakeVariable(variable, (value) => {
+  if (apiListenerIds.has(variable)) return
+  const listenerId = listenDataLakeVariable(variable, (value) => {
     iframe.value?.contentWindow?.postMessage({ type: 'cockpit:datalakeVariable', variable, value }, '*')
   })
+  apiListenerIds.set(variable, listenerId)
 }
 
 // Re-run the URL check whenever the composed iframe URL changes (user-edited source, vehicle
@@ -713,6 +718,8 @@ onBeforeMount((): void => {
 
 onBeforeUnmount((): void => {
   window.removeEventListener('message', apiEventCallback, true)
+  apiListenerIds.forEach((listenerId, variable) => unlistenDataLakeVariable(variable, listenerId))
+  apiListenerIds.clear()
   if (vehicleAddressListenerId) {
     unlistenDataLakeVariable('vehicle-address', vehicleAddressListenerId)
   }
