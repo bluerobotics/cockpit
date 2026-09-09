@@ -1,7 +1,7 @@
 import { useStorage } from '@vueuse/core'
 import { watch } from 'vue'
 
-import { widgetProfiles } from '@/assets/defaults'
+import { missionControlPanelSetupInfo } from '@/libs/mission-control-panel'
 import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -21,12 +21,9 @@ const performMapMissionControlPanelMigration = (username: string): void => {
 
   const widgetStore = useWidgetManagerStore()
 
-  const missionControlPanelTemplate = widgetProfiles
-    .flatMap((profile) => profile.views)
-    .flatMap((view) => view.widgets)
-    .find((widget) => widget.component === WidgetType.MissionControlPanel)
+  const missionControlPanelSetup = missionControlPanelSetupInfo()
 
-  if (!missionControlPanelTemplate) return
+  if (!missionControlPanelSetup) return
 
   let hasChanges = false
   const profile = widgetStore.currentProfile
@@ -35,20 +32,7 @@ const performMapMissionControlPanelMigration = (username: string): void => {
     const hasMissionCP = view.widgets.some((w) => w.component === WidgetType.MissionControlPanel)
 
     if (hasMap && !hasMissionCP) {
-      widgetStore.addWidget(
-        {
-          component: missionControlPanelTemplate.component,
-          name: missionControlPanelTemplate.name,
-          options: missionControlPanelTemplate.options,
-          icon: '',
-        },
-        view
-      )
-      const addedWidget = view.widgets[0]
-      if (addedWidget?.component === WidgetType.MissionControlPanel) {
-        addedWidget.position = missionControlPanelTemplate.position
-        addedWidget.size = missionControlPanelTemplate.size
-      }
+      widgetStore.addWidget(missionControlPanelSetup, view)
       hasChanges = true
     }
   })

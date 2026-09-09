@@ -303,6 +303,7 @@ import {
   TargetFollower,
   WhoToFollow,
 } from '@/libs/map/utils-map'
+import { missionControlPanelSetupInfo } from '@/libs/mission-control-panel'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { copyToClipboard, degrees, messageFromError } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
@@ -317,7 +318,7 @@ import type {
   Waypoint,
   WaypointCoordinates,
 } from '@/types/mission'
-import type { Widget } from '@/types/widgets'
+import { type Widget, WidgetType } from '@/types/widgets'
 
 import ContextMenu from '../ContextMenu.vue'
 
@@ -1541,12 +1542,39 @@ const baseStationMenuEntries = computed(() => {
   return entries
 })
 
-const menuItems = reactive([...staticTopMenuItems, ...baseStationMenuEntries.value, ...staticBottomMenuItems])
+const missionControlPanelSetup = missionControlPanelSetupInfo()
+
+const missionControlPanelMenuEntries = computed(() => {
+  if (!missionControlPanelSetup) return []
+  const hasPanel = widgetStore.currentView.widgets.some((w) => w.component === WidgetType.MissionControlPanel)
+  if (hasPanel) return []
+  return [
+    {
+      item: 'Add mission control panel',
+      action: () => onMenuOptionSelect('add-mission-control-panel'),
+      icon: 'mdi-plus-box',
+    },
+  ]
+})
+
+const menuItems = reactive([
+  ...staticTopMenuItems,
+  ...baseStationMenuEntries.value,
+  ...missionControlPanelMenuEntries.value,
+  ...staticBottomMenuItems,
+])
 
 // The base-station entries change label/visibility with the store; rebuild the fixed segments
 // around them so the reactive array handed to the context menu keeps its identity.
-watch(baseStationMenuEntries, (entries) => {
-  menuItems.splice(0, menuItems.length, ...staticTopMenuItems, ...entries, ...staticBottomMenuItems)
+watch([baseStationMenuEntries, missionControlPanelMenuEntries], ([baseStationEntries, mcpEntries]) => {
+  menuItems.splice(
+    0,
+    menuItems.length,
+    ...staticTopMenuItems,
+    ...baseStationEntries,
+    ...mcpEntries,
+    ...staticBottomMenuItems
+  )
   // The waypoint entry is appended after construction, so the rebuild has to put it back.
   updateSkipToWpMenu()
 })
@@ -1780,6 +1808,15 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
     case 'toggle-base-station-signal-visibility':
       baseStationStore.toggleSignalVisibility()
       break
+
+    case 'add-mission-control-panel': {
+      if (!missionControlPanelSetup) break
+      const added = widgetStore.addWidget(missionControlPanelSetup, widgetStore.currentView)
+      widgetStore.allowMovingAndResizing(added.hash, widgetStore.editingMode)
+      logUserAction('Added a mission control panel from the map context menu')
+      openSnackbar({ message: 'Mission control panel added to this view', variant: 'success' })
+      break
+    }
 
     default:
       console.warn('Unknown menu option selected:', option)

@@ -513,8 +513,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { WidgetType } widget - Type of the widget
    * @param { View } view - View
    * @param { Point2D } dropPosition - Optional position where the widget was dropped by the user
+   * @returns { Widget } The created widget
    */
-  function addWidget(widget: InternalWidgetSetupInfo, view: View, dropPosition?: Point2D): void {
+  function addWidget(widget: InternalWidgetSetupInfo, view: View, dropPosition?: Point2D): Widget {
     const widgetHash = uuid4()
 
     const newWidget: Widget = {
@@ -539,10 +540,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
 
     view.widgets.unshift(newWidget)
+    const addedWidget = view.widgets[0]
     Object.assign(widgetManagerVars(newWidget.hash), {
       ...defaultWidgetManagerVars,
       ...{ allowMoving: true },
     })
+
+    return addedWidget
   }
 
   /**
