@@ -164,6 +164,13 @@ const migrateCameraSpeedFactorRemoval = (): void => {
 }
 
 /**
+ * Drop the user list left behind by the mission control panel widget migration, which no longer exists.
+ */
+const removeMissionControlPanelMigrationUserList = (): void => {
+  localStorage.removeItem('cockpit-users-migrated-mission-control-panel')
+}
+
+/**
  * Run all migrations
  */
 export function runMigrations(): void {
@@ -171,4 +178,5 @@ export function runMigrations(): void {
   migrateLegacyTelemetryOptOutToHardwareSharing()
   migrateRecordedVariablesFromOverlay()
   migrateCameraSpeedFactorRemoval()
+  removeMissionControlPanelMigrationUserList()
 }

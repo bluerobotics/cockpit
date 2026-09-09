@@ -127,7 +127,7 @@ After running the lint and typecheck commands, check whether they auto-fixed (mo
 - Avoid automatic user-data migrations. They are the riskiest thing we ship, so treat them as a last resort rather than the normal way to reshape a key.
 - Prefer the non-destructive route: introduce a new versioned key (e.g. `cockpit-foo-v2`) and read the old key only as a fallback, leaving the user's original data untouched. Do not reuse the old key with a new schema.
 - Write an automatic migration only when you fully understand the transformation, it is provably idempotent, and it cannot lose data. Once the new key has been written, re-running the migration on a later launch must never overwrite user data.
-- Migration logic for `cockpit-*` keys lives in `src/utils/migrations.ts` / `src/utils/widget-migrations.ts` (or a sibling under `src/utils/`), not inside Pinia stores. Stores call the migration helpers; they never embed the migration body.
+- Migration logic for `cockpit-*` keys lives in `src/utils/migrations.ts` (or a sibling under `src/utils/`), not inside Pinia stores. Stores call the migration helpers; they never embed the migration body.
 - Do not write migration code for keys that were never released to users. Just change the schema.
 - When a change to a default or to existing behavior leaves already-configured users on the old value, decide explicitly whether to carry them over or to leave them alone — and when you leave them, tell the user what changed.
 
