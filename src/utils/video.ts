@@ -45,3 +45,13 @@ export const videoThumbnailFilename = (videoFileName: string): string => {
 export const videoSubtitlesFilename = (videoFileName: string): string => {
   return `${videoFilenameWithoutExtension(videoFileName)}.ass`
 }
+
+/**
+ * Storage key for one raw recording chunk in temp video storage.
+ * @param {string} hash - The recording session hash
+ * @param {number} chunkNumber - Sequential number of the chunk
+ * @returns {string} The temp-storage key
+ */
+export const videoChunkName = (hash: string, chunkNumber: number): string => {
+  return `${hash}_${chunkNumber}`
+}

@@ -1,6 +1,7 @@
 import { isElectron } from '@/libs/utils'
+import { tempVideoStorage } from '@/libs/videoStorage'
 import type { VideoChunkQueueItem, ZipExtractionResult } from '@/types/video'
-import { videoSubtitlesFilename } from '@/utils/video'
+import { videoChunkName, videoSubtitlesFilename } from '@/utils/video'
 
 /**
  * Error class for LiveVideoProcessor initialization errors
@@ -111,15 +112,14 @@ export class LiveVideoProcessor {
         this.chunkQueue.shift() // Remove from queue
         await this.processChunk(nextChunk.blob, nextChunk.chunkNumber)
         this.lastProcessedChunk = nextChunk.chunkNumber
-        if (!this.keepRawVideoChunksAsBackup) {
-          await this.deleteChunk(nextChunk.chunkNumber)
-        }
+        await this.deleteChunk(nextChunk.chunkNumber)
       } else {
         console.warn(`Expected chunk ${this.lastProcessedChunk + 1} but got ${nextChunk.chunkNumber}.`)
 
         if (this.chunkQueue.length > 5) {
           console.warn('Too many chunks in queue, skipping ahead to the next expected chunk.')
           this.lastProcessedChunk = this.lastProcessedChunk + 1
+          await this.deleteChunk(this.lastProcessedChunk)
         }
 
         break
@@ -156,7 +156,13 @@ export class LiveVideoProcessor {
    * @param {number} chunkNumber - The number of the video chunk to delete
    */
   private async deleteChunk(chunkNumber: number): Promise<void> {
-    await window.electronAPI?.deleteChunk(this.recordingHash, chunkNumber)
+    if (this.keepRawVideoChunksAsBackup) return
+    try {
+      await tempVideoStorage.removeItem(videoChunkName(this.recordingHash, chunkNumber))
+    } catch (error) {
+      // The processed file is already written; failing to drop the raw chunk must not abort recording.
+      console.warn(`Failed to delete raw chunk ${chunkNumber} after processing:`, error)
+    }
   }
 
   /**

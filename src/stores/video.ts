@@ -47,7 +47,7 @@ import {
   VideoExtensionContainer,
   VideoStreamCorrespondency,
 } from '@/types/video'
-import { videoFilename, videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
+import { videoChunkName, videoFilename, videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
 
 import { useAlertStore } from './alert'
 const { openSnackbar } = useSnackbar()
@@ -1109,39 +1109,17 @@ export const useVideoStore = defineStore('video', () => {
     let sequentialLostChunks = 0
     let totalChunks = 0
     let totalLostChunks = 0
+    let unexpectedProcessorErrorWarned = false
 
     let chunksCount = -1
     activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
       chunksCount++
       totalChunks++
-      const chunkName = `${recordingHash}_${chunksCount}`
+      const chunkName = videoChunkName(recordingHash, chunksCount)
 
       try {
         await tempVideoStorage.setItem(chunkName, e.data)
         sequentialLostChunks = 0
-
-        // Send chunk to live processor if active
-        const processor = liveProcessors.value[recordingHash]
-        if (processor && e.data.size > 0) {
-          try {
-            await processor.addChunk(e.data, chunksCount)
-          } catch (error) {
-            if (error instanceof LiveVideoProcessorChunkAppendingError) {
-              if (!isRecording(streamName)) {
-                // eslint-disable-next-line
-                console.warn(`Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
-                return
-              }
-              const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
-              openSnackbar({ message: msg, variant: 'error' })
-            } else if (error instanceof LiveVideoProcessorInitializationError) {
-              const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
-              showDialog({ message: msg, variant: 'error' })
-              alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
-              if (recorderIsStillAttached()) stopRecording(streamName)
-            } else throw error
-          }
-        }
       } catch {
         if (chunksCount === 0) {
           const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
@@ -1155,6 +1133,39 @@ export const useVideoStore = defineStore('video', () => {
 
         warnAboutChunkLoss()
         return
+      }
+
+      // Send chunk to live processor if active
+      const processor = liveProcessors.value[recordingHash]
+      if (processor && e.data.size > 0) {
+        try {
+          await processor.addChunk(e.data, chunksCount)
+        } catch (error) {
+          if (error instanceof LiveVideoProcessorChunkAppendingError) {
+            if (!isRecording(streamName)) {
+              // eslint-disable-next-line
+              console.warn(`Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
+              return
+            }
+            const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
+            openSnackbar({ message: msg, variant: 'error' })
+          } else if (error instanceof LiveVideoProcessorInitializationError) {
+            const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
+            showDialog({ message: msg, variant: 'error' })
+            alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+            if (recorderIsStillAttached()) stopRecording(streamName)
+          } else {
+            console.warn(`Unexpected live-processor error on chunk ${chunksCount} for stream ${streamName}:`, error)
+            if (!unexpectedProcessorErrorWarned) {
+              unexpectedProcessorErrorWarned = true
+              openSnackbar({
+                message:
+                  'Something went wrong while assembling the recorded video. Recording is still running; the saved file may be incomplete.',
+                variant: 'error',
+              })
+            }
+          }
+        }
       }
 
       const updatedInfo = unprocessedVideos.value[recordingHash]
