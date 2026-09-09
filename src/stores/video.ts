@@ -474,6 +474,13 @@ export const useVideoStore = defineStore('video', () => {
       const oldStream = activeStreams.value[streamName]!.stream
       const updatedStream = mainWebRTCManager.availableStreams.value.find((s) => s.name === streamName)
 
+      // A stream this routine never bound yet still holds the manager activateStream just created, so hand the
+      // stream over to it. The recreation below would drop that manager without closing it and start over.
+      if (oldStream === undefined && updatedStream !== undefined) {
+        activeStreams.value[streamName]!.stream = updatedStream
+        return
+      }
+
       // If the stream configuration has not changed, skip the update
       if (!hasStreamConfigChanged(oldStream, updatedStream)) return
 
