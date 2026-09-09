@@ -296,9 +296,11 @@ import { MavCmd, MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enu
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
+  applyFollowZoomMode,
   createGridOverlay,
   fitMapToWaypoints,
   persistLiveMapView,
+  recenterMapOnFollowTarget,
   singleStepZoomMapOptions,
   TargetFollower,
   WhoToFollow,
@@ -915,6 +917,7 @@ onMounted(async () => {
   } else {
     targetFollower.unFollow()
   }
+  if (map.value) applyFollowZoomMode(map.value, !!followerTarget.value)
   await refreshMission()
 
   // Initialize vehicle history polyline if vehicle marker is on screen
@@ -1164,7 +1167,8 @@ watch(map, (newMap, oldMap) => {
 watch(zoom, (newZoom, oldZoom) => {
   if (newZoom === oldZoom) return
   contextMenuVisible.value = false
-  map.value?.setZoom(zoom.value)
+  if (!map.value) return
+  recenterMapOnFollowTarget(map.value, zoom.value, targetFollower.currentCoordinates())
 })
 
 // Watch for zoom level changes to update waypoint marker sizes
@@ -1282,6 +1286,7 @@ watch(followerTarget, (newTarget) => {
   } else {
     missionStore.followVehicleOnMap = false
   }
+  if (map.value) applyFollowZoomMode(map.value, !!newTarget)
 })
 
 // Dinamically update data of the vehicle tooltip

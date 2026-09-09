@@ -264,6 +264,51 @@ export class TargetFollower {
   public getCurrentTarget(): string | undefined {
     return this.target
   }
+
+  /**
+   * Current follow-target coordinates, if a target is set and has a fix.
+   * @returns {WaypointCoordinates | undefined} Lat/lng of the followed target.
+   */
+  public currentCoordinates(): WaypointCoordinates | undefined {
+    if (!this.target) return undefined
+    return this.trackables[this.target]?.()
+  }
+}
+
+/**
+ * Whether a lat/lng tuple has two finite numbers.
+ * @param {WaypointCoordinates | undefined} pos Candidate coordinate
+ * @returns {pos is WaypointCoordinates} True when both components are finite
+ */
+export const isFiniteLatLng = (pos: WaypointCoordinates | undefined): pos is WaypointCoordinates =>
+  Array.isArray(pos) && Number.isFinite(pos[0]) && Number.isFinite(pos[1])
+
+/**
+ * Tell Leaflet's built-in handlers to zoom about the view center while following.
+ * Unfollowed maps keep zoom-around-cursor.
+ * @param {L.Map} map Leaflet map
+ * @param {boolean} following Whether a follow target is locked
+ * @returns {void}
+ */
+export const applyFollowZoomMode = (map: L.Map, following: boolean): void => {
+  map.options.scrollWheelZoom = following ? 'center' : true
+  map.options.doubleClickZoom = following ? 'center' : true
+  map.options.touchZoom = following ? 'center' : true
+}
+
+/**
+ * Keep the follow target under the view when zoom changes, otherwise apply a plain zoom.
+ * @param {L.Map} map Leaflet map
+ * @param {number} zoom Target zoom
+ * @param {WaypointCoordinates | undefined} pos Follow coordinate, if any
+ * @returns {void}
+ */
+export const recenterMapOnFollowTarget = (map: L.Map, zoom: number, pos: WaypointCoordinates | undefined): void => {
+  if (isFiniteLatLng(pos)) {
+    map.setView(pos, zoom, { animate: false })
+    return
+  }
+  map.setZoom(zoom)
 }
 
 /**
@@ -281,9 +326,7 @@ export const fitMapToWaypoints = (
   coordinates: WaypointCoordinates[],
   options?: L.FitBoundsOptions
 ): boolean => {
-  const validCoordinates = coordinates.filter(
-    (coord) => Array.isArray(coord) && Number.isFinite(coord[0]) && Number.isFinite(coord[1])
-  )
+  const validCoordinates = coordinates.filter(isFiniteLatLng)
   if (validCoordinates.length === 0) return false
 
   const bounds = L.latLngBounds(validCoordinates.map((coord) => L.latLng(coord[0], coord[1])))
