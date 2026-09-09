@@ -659,6 +659,20 @@ export const widgetProfiles: Profile[] = [
         visible: true,
         widgets: [
           {
+            hash: '5743c0fb-559d-489a-bbfd-6bff8cd36855',
+            name: 'MissionControlPanel',
+            component: WidgetType.MissionControlPanel,
+            position: {
+              x: 0.837604,
+              y: 0.804823,
+            },
+            size: {
+              width: 0.134754,
+              height: 0.09353,
+            },
+            options: {},
+          },
+          {
             hash: '2f32cbb5-7031-42a1-b26e-8c110f5cfc0b',
             name: 'VirtualHorizon',
             component: WidgetType.VirtualHorizon,
@@ -767,6 +781,20 @@ export const widgetProfiles: Profile[] = [
         showBottomBarOnBoot: true,
         visible: true,
         widgets: [
+          {
+            hash: '1e81f49e-63bb-433b-bb2b-69ef959c251b',
+            name: 'MissionControlPanel',
+            component: WidgetType.MissionControlPanel,
+            position: {
+              x: 0.837604,
+              y: 0.804823,
+            },
+            size: {
+              width: 0.134754,
+              height: 0.09353,
+            },
+            options: {},
+          },
           {
             hash: '80e785e1-31e2-4bfe-85d4-99fee6ca3f76',
             name: 'VirtualHorizon',
