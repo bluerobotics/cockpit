@@ -372,6 +372,11 @@ const isRecording = computed(() => {
   return videoStore.isRecording(selectedExternalId.value)
 })
 
+const isFinalizingRecording = computed(() => {
+  if (!selectedExternalId.value) return false
+  return videoStore.isFinalizingRecording(selectedExternalId.value)
+})
+
 const timePassedString = computed(() => {
   if (externalStreamId.value === undefined) return '00:00:00'
   const timeRecordingStart = videoStore.getStreamData(externalStreamId.value)?.timeRecordingStart
@@ -462,16 +467,22 @@ watch(
 )
 
 // Try to prevent user from closing Cockpit when a stream is being recorded
-watch(isRecording, () => {
-  if (!isRecording.value) {
+watch([isRecording, isFinalizingRecording], () => {
+  if (!isRecording.value && !isFinalizingRecording.value) {
     window.onbeforeunload = null
     return
   }
-  window.onbeforeunload = () => {
-    const alertMsg = `
+  // A stopped recording is still being written and processed for a while, and closing Cockpit loses it just the same
+  const alertMsg = isRecording.value
+    ? `
       You have a video recording ongoing.
       Remember to stop it before closing Cockpit, or the record will be lost.
     `
+    : `
+      Your last video recording is still being saved.
+      Wait for it to finish before closing Cockpit, or the record will be lost.
+    `
+  window.onbeforeunload = () => {
     showDialog({ message: alertMsg, variant: 'warning' })
     return 'I hope the user does not click on the leave button.'
   }

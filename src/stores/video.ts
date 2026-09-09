@@ -829,7 +829,18 @@ export const useVideoStore = defineStore('video', () => {
    * @returns {boolean}
    */
   const isRecording = (streamName: string): boolean => {
-    return getStreamData(streamName)?.mediaRecorder?.state === 'recording'
+    // Not 'mediaRecorder.state': Vue does not proxy a MediaRecorder, so its flip to 'inactive' dirties nothing
+    return getStreamData(streamName)?.timeRecordingStart !== undefined
+  }
+
+  /**
+   * Whether or not the stream's last recording has stopped but is still being written and processed
+   * @param {string} streamName - Name of the stream
+   * @returns {boolean}
+   */
+  const isFinalizingRecording = (streamName: string): boolean => {
+    const streamData = getStreamData(streamName)
+    return streamData?.mediaRecorder !== undefined && streamData.timeRecordingStart === undefined
   }
 
   // Best-effort MAVLink broadcast of recording actions, so systems like BlueOS can mirror the recording state.
@@ -880,6 +891,13 @@ export const useVideoStore = defineStore('video', () => {
 
     streamData.timeRecordingStart = undefined
 
+    // A recorder that already stopped itself, on a dropped stream or a failed chunk, throws on a second stop, and
+    // nothing here stopped the recording it is finishing, so no success is reported for it either.
+    if (streamData.mediaRecorder.state === 'inactive') {
+      console.debug(`Recorder of stream '${streamName}' had already stopped on its own. Nothing to stop.`)
+      return
+    }
+
     streamData.mediaRecorder.stop()
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
@@ -915,8 +933,6 @@ export const useVideoStore = defineStore('video', () => {
 
     await sleep(100)
 
-    streamData.timeRecordingStart = new Date()
-
     // Generate a unique recording hash
     let recordingHash = ''
     let refreshHash = true
@@ -929,13 +945,14 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     const safeMissionName = sanitizeFilenameComponent(missionStore.missionName) || 'Cockpit'
-    const fileName = videoFilename(recordingHash, streamData.timeRecordingStart!, safeMissionName)
-    activeStreams.value[streamName]!.mediaRecorder = new MediaRecorder(streamData.mediaStream!)
-    const recorder = activeStreams.value[streamName]!.mediaRecorder!
+    const timeRecordingStart = new Date()
+    const fileName = videoFilename(recordingHash, timeRecordingStart, safeMissionName)
+
+    const recorder = new MediaRecorder(streamData.mediaStream!)
     const recorderIsStillAttached = (): boolean => activeStreams.value[streamName]?.mediaRecorder === recorder
 
     // Registered before starting, as a recorder can fail on the very first frame it is handed
-    activeStreams.value[streamName]!.mediaRecorder!.onerror = (event) => {
+    recorder.onerror = (event) => {
       const error: DOMException | undefined = (event as ErrorEvent).error
       console.error(`Recorder of stream '${streamName}' failed: ${error?.message ?? 'unknown error'}`)
       const msg =
@@ -948,8 +965,8 @@ export const useVideoStore = defineStore('video', () => {
       clearInterval(recordingMonitors[streamName])
       delete recordingMonitors[streamName]
 
-      // Vue does not proxy a MediaRecorder, so its state flipping to 'inactive' dirties nothing: detaching it here is
-      // what drops the interface out of the recording state, instead of it waiting on the finalization in 'onstop'.
+      // Vue does not proxy a MediaRecorder, so clearing the start time here is what drops the interface out of the
+      // recording state, and detaching the recorder is what drops it out of the finalizing one.
       activeStreams.value[streamName]!.timeRecordingStart = undefined
       activeStreams.value[streamName]!.mediaRecorder = undefined
     }
@@ -960,8 +977,8 @@ export const useVideoStore = defineStore('video', () => {
 
     // Register the video as unprocessed so we can recover latter if needed
     const videoInfo: UnprocessedVideoInfo = {
-      dateStart: streamData.timeRecordingStart!,
-      dateLastRecordingUpdate: streamData.timeRecordingStart!,
+      dateStart: timeRecordingStart,
+      dateLastRecordingUpdate: timeRecordingStart,
       dateFinish: undefined,
       dateLastProcessingUpdate: undefined,
       fileName,
@@ -1035,7 +1052,12 @@ export const useVideoStore = defineStore('video', () => {
       }, 15000)
     }
 
-    activeStreams.value[streamName]!.mediaRecorder!.start(1000)
+    recorder.start(1000)
+
+    // The stream becomes busy at this single point, with a recorder already running, so nothing that throws on the way
+    // here can leave it marked as recording or as still being saved.
+    activeStreams.value[streamName]!.mediaRecorder = recorder
+    activeStreams.value[streamName]!.timeRecordingStart = timeRecordingStart
 
     // Initialize live processor if enabled and on Electron
     if (enableLiveProcessing.value && window.electronAPI) {
@@ -1111,7 +1133,7 @@ export const useVideoStore = defineStore('video', () => {
     let totalLostChunks = 0
 
     let chunksCount = -1
-    activeStreams.value[streamName]!.mediaRecorder!.ondataavailable = async (e) => {
+    recorder.ondataavailable = async (e) => {
       chunksCount++
       totalChunks++
       const chunkName = `${recordingHash}_${chunksCount}`
@@ -1166,10 +1188,14 @@ export const useVideoStore = defineStore('video', () => {
       delete unsavedChunkAlerts[chunkName]
     }
 
-    activeStreams.value[streamName]!.mediaRecorder!.onstop = async () => {
+    recorder.onstop = async () => {
       // Every way a recording ends reaches onstop (Stop button, stream teardown, dropped link), so mirror the stop
       // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
       broadcastRecordingStop(streamName)
+
+      // A recording that ended on its own leaves the recording state here, so no consumer waits on the finalization
+      // below, which takes as long as the video processing and the telemetry overlay need.
+      if (recorderIsStillAttached()) activeStreams.value[streamName]!.timeRecordingStart = undefined
 
       const info = unprocessedVideos.value[recordingHash]
       if (!info) {
@@ -1584,6 +1610,7 @@ export const useVideoStore = defineStore('video', () => {
     getStreamStatus,
     getStreamPeerConnection,
     isRecording,
+    isFinalizingRecording,
     stopRecording,
     startRecording,
     unprocessedVideos,
