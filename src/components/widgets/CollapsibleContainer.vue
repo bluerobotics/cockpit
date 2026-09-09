@@ -257,7 +257,7 @@ import { useWindowSize } from '@vueuse/core'
 import saveAs from 'file-saver'
 import type SortableEvent from 'sortablejs'
 import { v4 as uuid } from 'uuid'
-import { computed, nextTick, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import { useSnackbar } from '@/composables/snackbar'
@@ -533,6 +533,8 @@ onMounted(() => {
   loadWidgetFromStore()
   disableMovingOnDrag()
 })
+
+onBeforeUnmount(() => window.removeEventListener('resize', updateWrapDirection))
 </script>
 
 <style scoped>
