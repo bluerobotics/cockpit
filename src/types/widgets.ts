@@ -907,7 +907,7 @@ export const isMiniWidgetConfigurable: Record<MiniWidgetType, boolean> = {
   [MiniWidgetType.MiniVideoRecorder]: true,
   [MiniWidgetType.ModeSelector]: true,
   [MiniWidgetType.SatelliteIndicator]: false,
-  [MiniWidgetType.ViewSelector]: false,
+  [MiniWidgetType.ViewSelector]: true,
   [MiniWidgetType.SnapshotTool]: true,
   [MiniWidgetType.MiniMissionControlPanel]: false,
 }
@@ -1013,6 +1013,26 @@ export const fillMissingBarContainers = (
   })
 
   return filled
+}
+
+/**
+ * Views that should be mounted, with the current view last so it stacks on top.
+ * @param {View[]} views - The profile's views
+ * @param {number} currentIndex - Index of the view on screen
+ * @param {boolean} unmountHidden - When true, mount only the current view
+ * @returns {View[]} The views to mount
+ */
+export const selectViewsToShow = (views: View[], currentIndex: number, unmountHidden: boolean): View[] => {
+  if (views.length === 0) return []
+  const index = Math.max(0, Math.min(currentIndex, views.length - 1))
+  if (unmountHidden) {
+    const current = views[index]
+    return current.visible ? [current] : []
+  }
+  const viewsOnShowOrder = views.slice()
+  viewsOnShowOrder.splice(index, 1)
+  viewsOnShowOrder.push(views[index])
+  return viewsOnShowOrder.filter((v) => v.visible)
 }
 
 export const validateContainer = (maybeContainer: MiniWidgetContainer): maybeContainer is MiniWidgetContainer => {
