@@ -902,6 +902,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
+import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
@@ -1288,6 +1289,11 @@ const {
   },
 })
 
+// A press that is already dragging one of the map's own handles belongs to that drag, so every gesture bound to the
+// planning map has to stay out of it.
+const isDraggingMapHandle = (): boolean =>
+  isPressingSurveyEdge.value || isDraggingMarker.value || isDraggingSurveyVertex.value
+
 const {
   pendingPoint: pendingDrawnPoint,
   clearPendingPoint,
@@ -1300,8 +1306,18 @@ const {
     (isCreatingSurvey.value && isDrawingSurveyPolygon.value) ||
     (isCreatingSimplePath.value && currentMeasureAnchor() !== null),
   hasAnchor: () => currentMeasureAnchor() !== null,
-  isBlocked: () => isPressingSurveyEdge.value || isDraggingMarker.value || isDraggingSurveyVertex.value,
+  isBlocked: isDraggingMapHandle,
   placePoint: (latlng) => placeDrawnPoint(latlng),
+})
+
+const { initMapBoxZoom } = useMapBoxZoom({
+  onBoxCommit: () => targetFollower.unFollow(),
+  isBlocked: () =>
+    isDraggingMapHandle() ||
+    isCreatingSimplePath.value ||
+    isCreatingSurvey.value ||
+    isPlacingMission.value ||
+    isDraggingPolygon.value,
 })
 
 let ignoreNextClick = false
@@ -4701,6 +4717,7 @@ onMounted(async () => {
 
   targetFollower.enableAutoUpdate()
   stopUnFollowOnUserDrag = targetFollower.unFollowOnUserDrag(planningMap.value)
+  initMapBoxZoom(planningMap.value)
   missionStore.clearMission()
   clearAllSurveyAreas()
 

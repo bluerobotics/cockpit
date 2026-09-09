@@ -272,6 +272,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
@@ -363,6 +364,15 @@ const mapWaypoints = ref<Waypoint[]>([])
 const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
 const contextMenuRef = ref()
 const isDragging = ref(false)
+const { initMapBoxZoom } = useMapBoxZoom({
+  onBoxStart: () => {
+    isDragging.value = true
+  },
+  onBoxEnd: () => {
+    isDragging.value = false
+  },
+  onBoxCommit: () => targetFollower.unFollow(),
+})
 const isPinching = ref(false)
 const isMissionChecklistOpen = ref(false)
 let esriSaveBtn: HTMLAnchorElement | undefined
@@ -874,6 +884,7 @@ onMounted(async () => {
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
   stopUnFollowOnUserDrag = targetFollower.unFollowOnUserDrag(map.value)
+  initMapBoxZoom(map.value)
 
   window.addEventListener('keydown', onKeydown)
 
