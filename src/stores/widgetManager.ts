@@ -1,6 +1,6 @@
 import '@/libs/cosmos'
 
-import { useWindowSize } from '@vueuse/core'
+import { useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid4 } from 'uuid'
@@ -42,6 +42,7 @@ import {
   fillMissingBarContainers,
   InternalWidgetSetupInfo,
   MiniWidgetManagerVars,
+  selectViewsToShow,
   validateProfile,
   validateView,
   WidgetManagerVars,
@@ -61,6 +62,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const currentMiniWidgetsProfile = useBlueOsStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
   const viewsGroup = useBlueOsStorage<Profile>(viewsGroupKey, migrateLegacyViewsGroup() ?? blankViewsGroup)
   const currentViewIndex = useBlueOsStorage<number>('cockpit-current-view-index-v1', 0)
+  const unmountHiddenViews = useStorage('cockpit-unmount-hidden-views', false)
 
   // Self-heal: if we booted with a blank ViewsGroup but legacy data is reachable now (e.g. from raw localStorage or
   // from a late settings-manager import), migrate it in place so the user doesn't have to lose their profile.
@@ -304,11 +306,18 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   })
 
   const viewsToShow = computed((): View[] => {
-    const viewsOnShowOrder = currentProfile.value.views.slice()
-    viewsOnShowOrder.splice(currentViewIndex.value, 1)
-    viewsOnShowOrder.push(currentProfile.value.views[currentViewIndex.value])
-    return viewsOnShowOrder.filter((v) => v.visible)
+    return selectViewsToShow(currentProfile.value.views, currentViewIndex.value, unmountHiddenViews.value)
   })
+
+  /**
+   * Turn unloading of off-screen views on or off.
+   * @param { unknown } value - Switch value; coerced to boolean.
+   */
+  const setUnmountHiddenViews = (value: unknown): void => {
+    const enabled = Boolean(value)
+    logUserAction(`${enabled ? 'Enabled' : 'Disabled'} unloading of hidden views`)
+    unmountHiddenViews.value = enabled
+  }
 
   const miniWidgetContainersInCurrentView = computed(() => {
     const fixedBarContainers = currentMiniWidgetsProfile.value.containers
@@ -820,6 +829,8 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentProfile,
     currentView,
     viewsToShow,
+    unmountHiddenViews,
+    setUnmountHiddenViews,
     miniWidgetContainersInCurrentView,
     currentMiniWidgetsProfile,
     viewsGroup,
