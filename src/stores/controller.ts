@@ -17,6 +17,7 @@ import {
 } from '@/libs/joystick/manager'
 import { allAvailableAxes, allAvailableButtons, performJoystickMappingMigrations } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
+import { updateDataLakeFromJoystick } from '@/libs/joystick/protocols/data-lake'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
@@ -451,6 +452,8 @@ export const useControllerStore = defineStore('controller', () => {
   // Track previous button states to detect rising edges (button press transitions)
   // Format: Map<actionId, wasActive>
   const previousActionStates = ref<Map<string, boolean>>(new Map())
+
+  registerControllerUpdateCallback(updateDataLakeFromJoystick)
 
   registerControllerUpdateCallback(async (joystickState, actionsMapping, activeActions, actionsConfirmRequired) => {
     if (!joystickState || !actionsMapping || !activeActions || !actionsConfirmRequired) {

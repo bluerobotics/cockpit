@@ -1,8 +1,12 @@
 import { type DataLakeVariable, getAllDataLakeVariablesInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
-import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
 import { scale } from '@/libs/utils'
-import { useControllerStore } from '@/stores/controller'
-import { type ProtocolAction, CockpitModifierKeyOption, JoystickProtocol } from '@/types/joystick'
+import {
+  type JoystickProtocolActionsMapping,
+  type JoystickState,
+  type ProtocolAction,
+  CockpitModifierKeyOption,
+  JoystickProtocol,
+} from '@/types/joystick'
 
 import { modifierKeyActions } from './other'
 
@@ -43,49 +47,55 @@ export const availableDataLakeActions = (): Record<string, DataLakeVariableActio
   return actions
 }
 
-// Update data lake variables when joystick buttons or axes are used
-setupPostPiniaConnection(() => {
-  const controllerStore = useControllerStore()
-  controllerStore.registerControllerUpdateCallback((joystickState, actionsMapping, activeActions) => {
-    if (!joystickState || !actionsMapping) return
+/**
+ * Write mapped joystick button and axis values into their data-lake variables.
+ * @param {JoystickState} joystickState Current joystick buttons and axes
+ * @param {JoystickProtocolActionsMapping} actionsMapping Active protocol mapping
+ * @param {ProtocolAction[]} activeActions Actions currently held, including modifier keys
+ */
+export const updateDataLakeFromJoystick = (
+  joystickState: JoystickState,
+  actionsMapping: JoystickProtocolActionsMapping,
+  activeActions: ProtocolAction[]
+): void => {
+  if (!joystickState || !actionsMapping) return
 
-    const useShift = activeActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
+  const useShift = activeActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
 
-    // Handle button mappings
-    joystickState.buttons
-      .map((btnState, idx) => ({ id: idx, value: btnState }))
-      .forEach((btn) => {
-        // Check both regular and shift mappings
-        const regularMapping = actionsMapping.buttonsCorrespondencies[CockpitModifierKeyOption.regular][btn.id]
-        const shiftMapping = actionsMapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift][btn.id]
+  // Handle button mappings
+  joystickState.buttons
+    .map((btnState, idx) => ({ id: idx, value: btnState }))
+    .forEach((btn) => {
+      // Check both regular and shift mappings
+      const regularMapping = actionsMapping.buttonsCorrespondencies[CockpitModifierKeyOption.regular][btn.id]
+      const shiftMapping = actionsMapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift][btn.id]
 
-        // Handle regular button press
-        if (regularMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
-          const shouldBeActive = btn.value && !useShift
-          setDataLakeVariableData(regularMapping.action.id, shouldBeActive ? Number(btn.value) : 0)
-        }
+      // Handle regular button press
+      if (regularMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
+        const shouldBeActive = btn.value && !useShift
+        setDataLakeVariableData(regularMapping.action.id, shouldBeActive ? Number(btn.value) : 0)
+      }
 
-        // Handle shift+button press
-        if (shiftMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
-          const shouldBeActive = btn.value && useShift
-          setDataLakeVariableData(shiftMapping.action.id, shouldBeActive ? Number(btn.value) : 0)
-        }
-      })
+      // Handle shift+button press
+      if (shiftMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
+        const shouldBeActive = btn.value && useShift
+        setDataLakeVariableData(shiftMapping.action.id, shouldBeActive ? Number(btn.value) : 0)
+      }
+    })
 
-    // Handle axes mappings
-    joystickState.axes
-      .map((axisState, idx) => ({ id: idx, value: axisState }))
-      .forEach((axis) => {
-        if (axis.value === undefined) return
+  // Handle axes mappings
+  joystickState.axes
+    .map((axisState, idx) => ({ id: idx, value: axisState }))
+    .forEach((axis) => {
+      if (axis.value === undefined) return
 
-        const axisMapping = actionsMapping.axesCorrespondencies[axis.id]
+      const axisMapping = actionsMapping.axesCorrespondencies[axis.id]
 
-        // Handle axis mapped to data lake variable
-        if (axisMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
-          // Scale the axis value from [-1, 1] to the configured [min, max] range
-          const scaledValue = scale(axis.value, -1, 1, axisMapping.min, axisMapping.max)
-          setDataLakeVariableData(axisMapping.action.id, scaledValue)
-        }
-      })
-  })
-})
+      // Handle axis mapped to data lake variable
+      if (axisMapping?.action?.protocol === JoystickProtocol.DataLakeVariable) {
+        // Scale the axis value from [-1, 1] to the configured [min, max] range
+        const scaledValue = scale(axis.value, -1, 1, axisMapping.min, axisMapping.max)
+        setDataLakeVariableData(axisMapping.action.id, scaledValue)
+      }
+    })
+}
