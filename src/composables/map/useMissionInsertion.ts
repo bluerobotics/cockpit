@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid'
 import { type Ref, ref } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
+import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { useMissionStore } from '@/stores/mission'
 import type { CockpitMission, MissionCommand, Survey, Waypoint, WaypointCoordinates } from '@/types/mission'
 
@@ -172,9 +173,7 @@ export const useMissionInsertion = (
       return
     }
 
-    const hasExistingPlanning =
-      missionStore.currentPlanningWaypoints.length > 0 || missionStore.currentPlanningSurveys.length > 0
-    if (hasExistingPlanning) {
+    if (hasLivePlanningMission(missionStore.currentPlanningWaypoints, missionStore.currentPlanningSurveys)) {
       appendMissionToPlanning(mission)
     } else {
       // A repositioned mission was just dropped on the visible map, so restoring the saved

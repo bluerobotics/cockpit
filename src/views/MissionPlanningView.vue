@@ -952,6 +952,7 @@ import {
 } from '@/libs/mission/general-estimates'
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
 import { endpointSplicePosition } from '@/libs/mission/planning-endpoints'
+import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { degrees, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -1736,8 +1737,13 @@ useMapPoiMarkers(planningMap, {
   onClick: (poi) => poiManagerRef.value?.openDialog(undefined, poi),
 })
 
-const clearCurrentMission = (): void => {
-  missionStore.clearMission()
+const clearCurrentMission = (options?: {
+  /**
+   * Whether to assign a new automatic name and reset the mission start time. Defaults to true.
+   */
+  startNewMission?: boolean
+}): void => {
+  missionStore.clearMission(options)
   missionStore.clearUndoStack()
   Object.values(waypointMarkers.value).forEach((marker) => {
     planningMap.value?.removeLayer(marker)
@@ -3187,8 +3193,8 @@ const drawMissionOnTheMap = (waypoints: Waypoint[]): void => {
 // When true, the next mount of `MissionLibraryModal` opens its "Save current mission" dialog.
 const missionLibraryOpenSaveOnMount = ref(false)
 
-const canSaveCurrentMissionToLibrary = computed(
-  () => missionStore.currentPlanningWaypoints.length > 0 || missionStore.currentPlanningSurveys.length > 0
+const canSaveCurrentMissionToLibrary = computed(() =>
+  hasLivePlanningMission(missionStore.currentPlanningWaypoints, missionStore.currentPlanningSurveys)
 )
 
 const openMissionLibraryWithSaveDialog = (): void => {
@@ -4264,9 +4270,13 @@ const loadDraftMission = async (
   options?: {
     /** Keep the host map's current center/zoom instead of restoring the saved-mission settings. */
     preserveMapView?: boolean
+    /**
+     * Whether to assign a new automatic name and reset the mission start time. Defaults to true.
+     */
+    startNewMission?: boolean
   }
 ): Promise<void> => {
-  clearCurrentMission()
+  clearCurrentMission({ startNewMission: options?.startNewMission })
 
   try {
     if (!options?.preserveMapView) {
@@ -4694,11 +4704,20 @@ onMounted(async () => {
 
   targetFollower.enableAutoUpdate()
   stopUnFollowOnUserDrag = targetFollower.unFollowOnUserDrag(planningMap.value)
-  missionStore.clearMission()
   clearAllSurveyAreas()
 
-  if (instanceOfCockpitMission(missionStore.draftMission)) {
-    loadDraftMission(missionStore.draftMission)
+  // Live Pinia arrays survive the route change; only an empty planner loads the BlueOS draft.
+  if (hasLivePlanningMission(missionStore.currentPlanningWaypoints, missionStore.currentPlanningSurveys)) {
+    const firstWaypoint = missionStore.currentPlanningWaypoints[0]
+    if (firstWaypoint) {
+      currentWaypointAltitude.value = firstWaypoint.altitude
+      currentWaypointAltitudeRefType.value = firstWaypoint.altitudeReferenceType
+    }
+    missionStore.currentPlanningWaypoints.forEach((wp) => addWaypointMarker(wp))
+    updateWaypointMarkers()
+    missionStore.currentPlanningSurveys.forEach((survey) => addSurveyPolygonToMap(survey))
+  } else if (instanceOfCockpitMission(missionStore.draftMission)) {
+    loadDraftMission(missionStore.draftMission, { startNewMission: false })
   }
 
   missionStore.clearUndoStack()

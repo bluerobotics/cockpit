@@ -17,6 +17,7 @@ import {
   shouldRenewAutomaticMissionName,
 } from '@/libs/mission/automatic-name'
 import { generateMissionThumbnailSvg } from '@/libs/mission/library'
+import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { toPlain } from '@/libs/utils'
 import {
@@ -383,10 +384,17 @@ export const useMissionStore = defineStore('mission', () => {
     )
   }
 
-  const clearMission = (): void => {
+  const clearMission = (options?: {
+    /**
+     * Whether to assign a new automatic name and reset the mission start time. Defaults to true.
+     */
+    startNewMission?: boolean
+  }): void => {
     currentPlanningWaypoints.splice(0)
     currentPlanningSurveys.splice(0)
-    cycleAutomaticMissionName({ startNewMission: true })
+    if (options?.startNewMission !== false) {
+      cycleAutomaticMissionName({ startNewMission: true })
+    }
   }
 
   const changeUsername = async (): Promise<void> => {
@@ -447,7 +455,15 @@ export const useMissionStore = defineStore('mission', () => {
     return waypointIndex !== -1 ? waypointIndex + 1 : ''
   }
 
+  const clearDraft = (): void => {
+    draftMission.value = {}
+  }
+
   const persistDraft = (waypoints: Waypoint[]): void => {
+    if (!hasLivePlanningMission(waypoints, currentPlanningSurveys)) {
+      clearDraft()
+      return
+    }
     draftMission.value = {
       version: 0,
       settings: {
@@ -460,10 +476,6 @@ export const useMissionStore = defineStore('mission', () => {
       waypoints,
       surveys: [...currentPlanningSurveys],
     }
-  }
-
-  const clearDraft = (): void => {
-    draftMission.value = {}
   }
 
   const setLastUploadedMission = (mission: CockpitMission): void => {
