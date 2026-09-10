@@ -31,6 +31,18 @@ import { filesystemStorage, getCockpitFolderPath } from './storage'
 
 const activeStreamProcesses = new Map<string, LiveStreamProcess>()
 
+// Matroska names its codec in the Tracks element, which the first chunk of a recording always carries.
+const hevcMatroskaCodecId = 'V_MPEGH/ISO/HEVC'
+const matroskaHeaderSearchLength = 64 * 1024
+
+/**
+ * Tells whether a recording carries H.265, by looking for its codec id in the first chunk's header.
+ * @param {Uint8Array} firstChunkData - First chunk of the recording, which holds the Matroska header
+ * @returns {boolean} True if the recording is H.265
+ */
+const isHevcRecording = (firstChunkData: Uint8Array): boolean =>
+  Buffer.from(firstChunkData.subarray(0, matroskaHeaderSearchLength)).includes(hevcMatroskaCodecId)
+
 /**
  * Create a temporary directory for live video processing
  * @param {string} prefix - Prefix for the directory name
@@ -87,6 +99,7 @@ const startVideoRecording = async (
     '100M', // 100MB to find decoding info
     '-analyzeduration',
     '15M', // 15 seconds to find decoding info
+    // The WebM demuxer also reads the Matroska that H.265 recordings come in.
     '-f',
     'webm', // Input format is WebM
     '-i',
@@ -95,6 +108,9 @@ const startVideoRecording = async (
     'copy', // Copy video codec (no re-encoding)
     '-c:a',
     'copy', // Copy audio codec (no re-encoding)
+    // Apple's players only open H.265 under the hvc1 tag, while FFmpeg defaults to hev1 on copy. Only H.265
+    // may carry it, so tagging every recording would make the H.264 ones unplayable instead.
+    ...(isHevcRecording(firstChunkData) ? ['-tag:v', 'hvc1'] : []),
     '-movflags',
     'frag_keyframe+empty_moov+default_base_moof', // Fragmented MP4 for crash-safety
     '-fflags',
