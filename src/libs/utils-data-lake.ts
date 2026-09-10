@@ -1,4 +1,5 @@
 import { getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
+import { convertValue, UnitSystem, unitSystems } from './units'
 
 /**
  * Whether Cockpit created a data lake variable, rather than the user. Assumed of any variable that does not say
@@ -50,12 +51,27 @@ export const guessedTypeFromString = (str: string): 'boolean' | 'number' | 'stri
   return 'string'
 }
 
+// An input may end with the unit system it wants to be read in, as in '{{ variable/id : metric }}',
+// which is why a colon is reserved and an id cannot contain one. Any word is taken as the system,
+// known or not, so a typo still reads as an input instead of reaching eval as a literal brace.
+const dataLakeInputPattern = String.raw`{{\s*([^{}\s:]+)\s*(?::\s*([^{}\s]*))?\s*}}`
+
 /**
  * Regex to find all data lake inputs in a string.
  * The inputs include the {{ and }}, so they can be used to replace the input in original string.
  * @type {RegExp}
  */
-export const dataLakeInputRegex = /{{\s*([^{}\s]+)\s*}}/g
+export const dataLakeInputRegex = new RegExp(dataLakeInputPattern, 'g')
+
+const singleDataLakeInputRegex = new RegExp(dataLakeInputPattern)
+
+// Named after the settings page rather than after SI, which the metric preset is not: it reads hPa
+// and °C, where SI proper would be Pa and K.
+const inputUnitSystems = new Map<string, Exclude<UnitSystem, UnitSystem.Custom>>([
+  ['metric', UnitSystem.Metric],
+  ['imperial', UnitSystem.Imperial],
+  ['nautical', UnitSystem.Nautical],
+])
 
 /**
  * Find all data lake inputs in a string.
@@ -74,9 +90,29 @@ export const findDataLakeInputsInString = (input: string): string[] => {
  * @returns {string | null} The id of the data lake variable or null if no id is found
  */
 export const getDataLakeVariableIdFromInput = (input: string): string | null => {
-  const match = input.match(dataLakeInputRegex)
-  if (!match) return null
-  return match[0].replace('{{', '').replace('}}', '').trim()
+  return input.match(singleDataLakeInputRegex)?.[1] ?? null
+}
+
+/**
+ * Read the value of a data lake input, converted to the unit system the input asks for, if it asks
+ * for a known one. Without a unit system, or with one nobody recognises, the value is left exactly
+ * as the data lake holds it — a mistyped system costs the conversion, never the whole expression.
+ * @param {string} input A single data lake input, braces included
+ * @returns {string | undefined} The value as text, or undefined when the input names no known variable
+ */
+const dataLakeInputValue = (input: string): string | undefined => {
+  const match = input.match(singleDataLakeInputRegex)
+  const variableId = match?.[1]
+  if (variableId === undefined) return undefined
+
+  const value = getDataLakeVariableData(variableId)
+  if (value === undefined) return undefined
+
+  const system = inputUnitSystems.get(match?.[2] ?? '')
+  if (system === undefined || typeof value !== 'number') return value.toString()
+
+  const rawUnit = getDataLakeVariableInfo(variableId)?.unit
+  return convertValue(value, rawUnit, unitSystems[system]).value.toString()
 }
 
 /**
@@ -89,13 +125,7 @@ export const getDataLakeVariableIdFromInput = (input: string): string | null => 
 export const replaceDataLakeInputsInString = (input: string, replaceFunction?: (match: string) => string): string => {
   if (typeof input !== 'string') return input
 
-  const defaultReplaceFunction = (match: string): string => {
-    const variableId = getDataLakeVariableIdFromInput(match)
-    if (!variableId) return match
-    const variableData = getDataLakeVariableData(variableId)
-    if (variableData === undefined) return match
-    return variableData.toString()
-  }
+  const defaultReplaceFunction = (match: string): string => dataLakeInputValue(match) ?? match
 
   const replaceFunctionToUse = replaceFunction || defaultReplaceFunction
 
@@ -136,16 +166,16 @@ export const replaceDataLakeInputsInJsonString = (jsonString: string): string =>
     const variableId = getDataLakeVariableIdFromInput(input)
     if (!variableId) return input
     const variableInfo = getDataLakeVariableInfo(variableId)
-    const variableData = getDataLakeVariableData(variableId)
+    const variableData = dataLakeInputValue(input)
     if (variableInfo === undefined || variableData === undefined) return input
 
     // Determine type either from variable info or by parsing the value
-    const type = variableInfo.type || guessedTypeFromString(variableData?.toString() || '')
+    const type = variableInfo.type || guessedTypeFromString(variableData)
 
     if (type === 'string') {
-      parsedJson = parsedJson.replace(input, variableData.toString())
+      parsedJson = parsedJson.replace(input, variableData)
     } else if (type === 'number' || type === 'boolean') {
-      parsedJson = parsedJson.replace(`"${input}"`, variableData.toString())
+      parsedJson = parsedJson.replace(`"${input}"`, variableData)
     } else {
       return input
     }

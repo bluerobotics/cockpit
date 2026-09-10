@@ -1,7 +1,8 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 import { onBeforeUnmount } from 'vue'
 
-import { formatBearing, formatMetersShort } from '@/libs/mission/general-estimates'
+import { formatBearing, formatDistanceShort } from '@/libs/mission/general-estimates'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
 /** The segment the live measure draws, as the view resolved it for the pointer's current position. */
 export interface LiveMeasureSegment {
@@ -83,6 +84,7 @@ const tagLabel = 'Type the distance'
  */
 export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): UseLiveMeasureOverlayReturn => {
   const { redraw, cursorPosition, heldPoint, onTagPressed, onTagTapped } = options
+  const interfaceStore = useAppInterfaceStore()
 
   let mapRef: LeafletMap | undefined
   let elements: LiveMeasureElements | null = null
@@ -187,8 +189,9 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
     endDot.setAttribute('cx', String(to.x))
     endDot.setAttribute('cy', String(to.y))
 
-    const [meters, unit] = formatMetersShort(segment.distanceInMeters).split(' ')
-    length.textContent = segment.clearsLength ? '' : meters
+    const measure = formatDistanceShort(segment.distanceInMeters, interfaceStore.displayUnitPreferences)
+    const [distance, unit] = measure.split(' ')
+    length.textContent = segment.clearsLength ? '' : distance
     rest.textContent = `${unit ? ` ${unit}` : ''} · ${formatBearing(segment.bearingInDegrees)}`
 
     tag.style.left = `${(from.x + to.x) / 2}px`

@@ -84,7 +84,9 @@ import { useMapContext } from '@/composables/map/useMapContext'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
+import { formatDistance } from '@/libs/units'
 import { poiPinRotation } from '@/libs/utils-poi'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Edge, EdgeIntersection, PoiEdgeArrow, TargetEdgeArrow, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
@@ -156,6 +158,7 @@ const props = defineProps<Props>()
 
 const { resolvedPointsOfInterest } = usePointsOfInterest()
 const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
 
 // Get map instance from composable
 const { map: mapLayer } = useMapContext()
@@ -347,8 +350,7 @@ const calculateTargetEdgeArrow = (
   }
 
   const distanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
-  const distanceText =
-    distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+  const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
 
   const distanceX = targetPoint.x - centerPoint.x
   const distanceY = targetPoint.y - centerPoint.y
@@ -471,8 +473,7 @@ const calculatePoiEdgeArrows = (): void => {
     }
 
     const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
-    const distanceText =
-      distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(2)} km` : `${distanceMeters.toFixed(0)} m`
+    const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
 
     const distanceX = poiPoint.x - centerPoint.x
     const distanceY = poiPoint.y - centerPoint.y

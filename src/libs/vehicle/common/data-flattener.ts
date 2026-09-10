@@ -44,6 +44,11 @@ export type FlattenedPair = {
    */
   path: string
   /**
+   * Name of the message field the data came from, before instance ids and array indexes were added
+   * to the path, so it can be looked up in the MAVLink definition
+   */
+  field: string
+  /**
    * The actual value of the field after flattening
    * - Primitive values are kept as-is
    * - String arrays are joined
@@ -91,6 +96,7 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
     return [
       {
         path: `${messagePathWithId}/${name}`,
+        field: 'value',
         type: 'number',
         value: data.value as number,
       },
@@ -98,6 +104,7 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
         .filter(([key]) => !['name', 'value', 'type'].includes(key))
         .map(([key, value]) => ({
           path: `${messagePathWithId}/${key}`,
+          field: key,
           type: typeof value as 'string' | 'number' | 'boolean',
           value: value as string | number | boolean,
         })),
@@ -112,6 +119,7 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
         return [
           {
             path: `${messagePathWithId}/${key}`,
+            field: key,
             type: typeof value as 'string' | 'number' | 'boolean',
             value,
           },
@@ -121,6 +129,7 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
         return [
           {
             path: `${messagePathWithId}/${key}`,
+            field: key,
             type: typeof (value as any).bits as 'number',
             value: (value as any).bits,
           },
@@ -130,6 +139,7 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
         return [
           {
             path: `${messagePathWithId}/${key}`,
+            field: key,
             type: 'string',
             value: (value as any).type as string,
           },
@@ -140,6 +150,7 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
         if (isNumberArray(value)) {
           return value.map((item, index) => ({
             path: `${messagePathWithId}/${key}/${index}`,
+            field: key,
             type: 'number',
             value: item,
           }))
@@ -148,6 +159,7 @@ export function flattenData(data: Record<string, unknown>): FlattenedPair[] {
           return [
             {
               path: `${messagePathWithId}/${key}`,
+              field: key,
               type: 'string',
               value: value.join(''),
             },

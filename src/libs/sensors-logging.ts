@@ -10,8 +10,7 @@ import { useMissionStore } from '@/stores/mission'
 import { getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
 import { IndexedDbStore } from './indexed-db-store'
 import { settingsManager } from './settings-management'
-import { unitAbbreviation } from './units'
-import { degrees } from './utils'
+import { convertValue, formatValueWithUnit } from './units'
 import { findDataLakeInputsInString, replaceDataLakeInputsInString } from './utils-data-lake'
 
 /**
@@ -327,15 +326,16 @@ class DataLogger {
 
       const unitPrefs = interfaceStore.displayUnitPreferences
 
-      const depthValue = (-vehicleStore.altitude.msl?.to(unitPrefs.distance).toJSON().value).toPrecision(4)
-      const depthUnit = unitAbbreviation[unitPrefs.distance]
+      const depth = convertValue(-vehicleStore.altitude.msl?.toJSON().value, 'm', unitPrefs)
+      const depthValue = depth.value.toPrecision(4)
+      const angle = (radians: number): string => formatValueWithUnit(radians, 'rad', unitPrefs)
 
       /* eslint-disable vue/max-len, prettier/prettier, max-len */
       let variablesData: ExtendedVariablesData = {
-        [DatalogVariable.roll]: { displayName: DatalogVariable.roll, value: `${degrees(vehicleStore.attitude.roll)?.toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.pitch]: { displayName: DatalogVariable.pitch, value: `${degrees(vehicleStore.attitude.pitch)?.toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.heading]: { displayName: DatalogVariable.heading, value: `${degrees(vehicleStore.attitude.yaw)?.toFixed(1)} °`, ...timeNowObj },
-        [DatalogVariable.depth]: { displayName: DatalogVariable.depth, value: `${depthValue} ${depthUnit}`, ...timeNowObj },
+        [DatalogVariable.roll]: { displayName: DatalogVariable.roll, value: angle(vehicleStore.attitude.roll), ...timeNowObj },
+        [DatalogVariable.pitch]: { displayName: DatalogVariable.pitch, value: angle(vehicleStore.attitude.pitch), ...timeNowObj },
+        [DatalogVariable.heading]: { displayName: DatalogVariable.heading, value: angle(vehicleStore.attitude.yaw), ...timeNowObj },
+        [DatalogVariable.depth]: { displayName: DatalogVariable.depth, value: `${depthValue} ${depth.unit}`, ...timeNowObj },
         [DatalogVariable.mode]: { displayName: DatalogVariable.mode, value: vehicleStore.mode || 'Unknown', ...timeNowObj },
         [DatalogVariable.batteryVoltage]: { displayName: DatalogVariable.batteryVoltage, value: `${vehicleStore.powerSupply.voltage?.toFixed(2)} V` || 'Unknown', ...timeNowObj },
         [DatalogVariable.batteryCurrent]: { displayName: DatalogVariable.batteryCurrent, value: `${vehicleStore.powerSupply.current?.toFixed(2)} A` || 'Unknown', ...timeNowObj },

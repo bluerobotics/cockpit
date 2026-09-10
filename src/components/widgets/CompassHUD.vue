@@ -150,6 +150,7 @@ import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { formatDistance } from '@/libs/units'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -297,7 +298,7 @@ const calculateBearing = (vehicleLat: number, vehicleLng: number, poiLat: number
 const BASE_STATION_POI_ID = 'base-station'
 
 const formatHudDistanceText = (distance: number, isReached: boolean): string =>
-  isReached ? 'Reached' : distance >= 2000 ? `${(distance / 1000).toFixed(1)}km` : `${Math.round(distance)}m`
+  isReached ? 'Reached' : formatDistance(distance, interfaceStore.displayUnitPreferences)
 
 // Get POI data with bearing and distance relative to vehicle
 const poiData = computed(() => {
@@ -695,12 +696,7 @@ const updatePoiMarkers = (): void => {
           )
           highlightedPoiMarker.value = {
             name: fallbackName,
-            distanceText:
-              distance <= 1
-                ? 'Reached'
-                : distance >= 2000
-                ? `${(distance / 1000).toFixed(1)}km`
-                : `${Math.round(distance)}m`,
+            distanceText: formatHudDistanceText(distance, distance <= 1),
             isReached: distance <= 1,
           }
           lastCardShownAt = now

@@ -19,6 +19,7 @@ import {
 } from '@/libs/actions/data-lake'
 import { fixQualityLabel, NmeaAggregator, parseNmeaSentence } from '@/libs/sensors/nmea'
 import { settingsManager } from '@/libs/settings-management'
+import { type DisplayUnitPreferences, formatValueWithUnit } from '@/libs/units'
 import { isElectron } from '@/libs/utils'
 import type {
   GnssDevice,
@@ -50,6 +51,7 @@ export const gnssFields: GnssField[] = [
     label: 'Latitude',
     type: 'number',
     description: 'Latitude in decimal degrees.',
+    unit: 'deg',
     read: (f) => f.latitude,
   },
   {
@@ -57,6 +59,7 @@ export const gnssFields: GnssField[] = [
     label: 'Longitude',
     type: 'number',
     description: 'Longitude in decimal degrees.',
+    unit: 'deg',
     read: (f) => f.longitude,
   },
   {
@@ -64,6 +67,7 @@ export const gnssFields: GnssField[] = [
     label: 'Altitude (MSL)',
     type: 'number',
     description: 'Altitude above mean sea level, in meters.',
+    unit: 'm',
     read: (f) => f.altitudeMslM,
   },
   {
@@ -71,6 +75,7 @@ export const gnssFields: GnssField[] = [
     label: 'Geoid separation',
     type: 'number',
     description: 'Geoidal separation, in meters.',
+    unit: 'm',
     read: (f) => f.geoidSeparationM,
   },
   {
@@ -134,6 +139,7 @@ export const gnssFields: GnssField[] = [
     label: 'Speed over ground',
     type: 'number',
     description: 'Speed over ground, in meters per second.',
+    unit: 'm/s',
     read: (f) => f.speedOverGroundMps,
   },
   {
@@ -141,6 +147,7 @@ export const gnssFields: GnssField[] = [
     label: 'Course over ground',
     type: 'number',
     description: 'Course over ground, in degrees.',
+    unit: 'deg',
     read: (f) => f.courseOverGroundDeg,
   },
   {
@@ -252,9 +259,10 @@ const formatFixNumber = (value: number | undefined, digits: number): string =>
  * Formats a fix into the labelled rows the GNSS dialogs display, so every one of them shows the same
  * values. Callers that only want a few rows pick them by key.
  * @param {GnssFix} fix - The fix to format.
+ * @param {DisplayUnitPreferences} preferences - The units the user picked for distances and speeds.
  * @returns {GnssFixItem[]} One row per displayed field, in display order.
  */
-export const gnssFixItems = (fix: GnssFix): GnssFixItem[] => [
+export const gnssFixItems = (fix: GnssFix, preferences: DisplayUnitPreferences): GnssFixItem[] => [
   { key: 'fixQuality', label: 'Fix', value: fix.fixQualityLabel ?? fixQualityLabel(fix.fixQuality ?? 0) },
   {
     key: 'fixMode',
@@ -266,7 +274,7 @@ export const gnssFixItems = (fix: GnssFix): GnssFixItem[] => [
   {
     key: 'altitudeMslM',
     label: 'Altitude (MSL)',
-    value: fix.altitudeMslM === undefined ? '-' : `${formatFixNumber(fix.altitudeMslM, 1)} m`,
+    value: fix.altitudeMslM === undefined ? '-' : formatValueWithUnit(fix.altitudeMslM, 'm', preferences, 1),
   },
   { key: 'satellitesUsed', label: 'Satellites used', value: fix.satellitesUsed?.toString() ?? '-' },
   { key: 'satellitesInView', label: 'Satellites in view', value: fix.satellitesInView?.toString() ?? '-' },
@@ -274,7 +282,8 @@ export const gnssFixItems = (fix: GnssFix): GnssFixItem[] => [
   {
     key: 'speedOverGroundMps',
     label: 'Speed',
-    value: fix.speedOverGroundMps === undefined ? '-' : `${formatFixNumber(fix.speedOverGroundMps, 2)} m/s`,
+    value:
+      fix.speedOverGroundMps === undefined ? '-' : formatValueWithUnit(fix.speedOverGroundMps, 'm/s', preferences, 2),
   },
   { key: 'utcTime', label: 'UTC time', value: fix.utcTime ?? '-' },
 ]
@@ -358,6 +367,7 @@ export const gnssVariablesForDevice = (device: GnssDeviceInfo): DataLakeVariable
     name: `${device.name} - ${field.label}`,
     type: field.type,
     description: field.description,
+    unit: field.unit,
   }))
 
 /**
