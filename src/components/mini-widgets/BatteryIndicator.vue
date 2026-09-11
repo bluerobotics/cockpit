@@ -362,8 +362,8 @@ onBeforeMount(() => {
 })
 
 onUnmounted(() => {
-  if (toggleIntervaler.value !== undefined) return
   clearInterval(toggleIntervaler.value)
+  clearTimeout(errorMessageTimeout.value)
 })
 </script>
 
