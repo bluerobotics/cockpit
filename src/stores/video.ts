@@ -169,7 +169,9 @@ export const useVideoStore = defineStore('video', () => {
   const fetchGo2rtcStreamInfo = async (): Promise<void> => {
     if (!window.electronAPI) return
     try {
-      go2rtcStreamInfo.value = await window.electronAPI.go2rtcGetStreamsInfo()
+      const info = await window.electronAPI.go2rtcGetStreamsInfo()
+      if (info === undefined) return
+      go2rtcStreamInfo.value = info
     } catch (error) {
       console.error('Failed to fetch go2rtc stream info:', error)
     }

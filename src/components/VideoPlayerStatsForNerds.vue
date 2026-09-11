@@ -5,17 +5,15 @@
 </template>
 
 <script lang="ts" setup>
-import { WebRTCStats } from '@peermetrics/webrtc-stats'
-import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
+import { useStreamStats } from '@/composables/useStreamStats'
 import { useVideoStore } from '@/stores/video'
-import type { Go2RTCStreamInfo } from '@/types/video'
-import { WebRTCStatsEvent } from '@/types/video'
 const videoStore = useVideoStore()
 
-const rtspInfo = ref<Go2RTCStreamInfo | undefined>()
-let rtspInfoInterval: ReturnType<typeof setInterval> | null = null
+const { webRtcStreamStatsSnapshots, go2rtcStreamSamples, acquireGo2rtcSampling, releaseGo2rtcSampling } =
+  useStreamStats()
+
 const rtspBitrateData = ref<number[]>([])
 const rtspPacketRateData = ref<number[]>([])
 const rtspStallData = ref<number[]>([])
@@ -34,10 +32,6 @@ const props = defineProps({
     // Tall enough to keep the longest stats list (WebRTC, 12 rows) clear of the plot area at the bottom
     default: 212,
   },
-  updateInterval: {
-    type: Number,
-    default: 20,
-  },
   streamName: {
     type: String,
     default: '',
@@ -49,12 +43,13 @@ const isRtspStream = (): boolean => {
   return videoStore.getStreamProtocol(props.streamName) === 'rtsp'
 }
 
+const rtspSample = computed(() => go2rtcStreamSamples[props.streamName])
+
 const canvasRef = ref(null)
 const framerateData = ref([])
 const bitrateData = ref([])
 const packetLostData = ref([])
 let animationFrameId = null
-let intervalId = null
 let bitrate = 0
 // cumulative values
 let packetsLost = 0
@@ -134,7 +129,7 @@ function draw(): void {
     drawPlot(rtspPacketRateData.value, 'rgb(100, 200, 255)', maxRtspPacketRate)
     drawPlot(rtspStallData.value, 'rgb(255, 0, 0)', 1)
 
-    const info = rtspInfo.value
+    const info = rtspSample.value
     const isStalled = info?.bitrateKbps === 0
     const statusColor = isStalled ? 'red' : 'white'
     const bitrateStr = info?.bitrateKbps ? `${info.bitrateKbps}kbps` : '...'
@@ -187,10 +182,10 @@ function draw(): void {
   animationFrameId = requestAnimationFrame(draw)
 }
 
-const webrtcStats = new WebRTCStats({ getStatsInterval: 100 })
-
 /**
- * Draws the lines and updates the stats
+ * Push the current stats into the plot arrays, dropping the oldest points and rescaling.
+ * Called once per stats sample, so the WebRTC plot scrolls at the same cadence as the RTSP one
+ * and both show the same 10-second window
  */
 function update(): void {
   framerateData.value.push(framerate)
@@ -203,57 +198,11 @@ function update(): void {
   maxFramerateReceived = Math.min(Math.max(30, ...framerateData.value), absoluteMaxFrameRate)
 }
 
-watch(videoStore.activeStreams, (streams): void => {
-  Object.keys(streams).forEach((streamName) => {
-    if (streamName !== props.streamName) return
-    const pcInfo = videoStore.getStreamPeerConnection(streamName)
-    if (!pcInfo) return
-    if (webrtcStats.peersToMonitor[pcInfo.peerId]) return
-    monitorStreamPeerConnection(webrtcStats, pcInfo)
-  })
-})
-
-const fetchRtspInfo = async (): Promise<void> => {
-  if (!isRtspStream() || !window.electronAPI) return
-  try {
-    const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
-    const info = allInfo[props.streamName]
-    rtspInfo.value = info
-    if (info) {
-      if (rtspStartTime === 0) rtspStartTime = Date.now()
-      const warmUp = Date.now() - rtspStartTime < 5000
-      const isStalled = !warmUp && info.bitrateKbps === 0 ? 1 : 0
-      if (isStalled) rtspStallCount++
-
-      rtspBitrateData.value.push(info.bitrateKbps)
-      rtspPacketRateData.value.push(info.packetsPerSec)
-      rtspStallData.value.push(isStalled)
-      if (rtspBitrateData.value.length > maxDataPoints) rtspBitrateData.value.shift()
-      if (rtspPacketRateData.value.length > maxDataPoints) rtspPacketRateData.value.shift()
-      if (rtspStallData.value.length > maxDataPoints) rtspStallData.value.shift()
-      maxRtspBitrate = Math.max(1000, ...rtspBitrateData.value)
-      maxRtspPacketRate = Math.max(100, ...rtspPacketRateData.value)
-    }
-  } catch {
-    // go2rtc may not be running yet
-  }
-}
-
-onMounted(() => {
-  intervalId = setInterval(update, props.updateInterval)
-  draw()
-
-  if (isRtspStream()) {
-    fetchRtspInfo()
-    rtspInfoInterval = setInterval(fetchRtspInfo, 100)
-  }
-
-  webrtcStats.on('stats', (ev: WebRTCStatsEvent) => {
+watch(
+  () => webRtcStreamStatsSnapshots[props.streamName],
+  (videoData): void => {
+    if (videoData === undefined) return
     try {
-      if (!webrtcStats.peersToMonitor[ev.peerId]) return
-
-      const videoData = ev.data.video.inbound[0]
-      if (videoData === undefined) return
       connectionLost = videoData.bitrate === 0
       if (!isNaN(videoData.bitrate)) {
         const newBitrate = videoData.bitrate / 1000
@@ -284,20 +233,58 @@ onMounted(() => {
       jitterBufferEmittedCount = videoData.jitterBufferEmittedCount
       framerate = videoData.framesPerSecond ?? 0
       videoHeight = videoData.frameHeight
-    } catch (e) {
-      console.error(e)
+      update()
+    } catch (error) {
+      console.error(error)
     }
-  })
+  }
+)
+
+watch(rtspSample, (sample): void => {
+  if (!sample) return
+
+  if (rtspStartTime === 0) rtspStartTime = Date.now()
+  const warmUp = Date.now() - rtspStartTime < 5000
+  const isStalled = !warmUp && sample.bitrateKbps === 0 ? 1 : 0
+  if (isStalled) rtspStallCount++
+
+  rtspBitrateData.value.push(sample.bitrateKbps)
+  rtspPacketRateData.value.push(sample.packetsPerSec)
+  rtspStallData.value.push(isStalled)
+  if (rtspBitrateData.value.length > maxDataPoints) rtspBitrateData.value.shift()
+  if (rtspPacketRateData.value.length > maxDataPoints) rtspPacketRateData.value.shift()
+  if (rtspStallData.value.length > maxDataPoints) rtspStallData.value.shift()
+  maxRtspBitrate = Math.max(1000, ...rtspBitrateData.value)
+  maxRtspPacketRate = Math.max(100, ...rtspPacketRateData.value)
+})
+
+let acquiredGo2rtcSampling = false
+
+const syncGo2rtcSampling = (shouldAcquire: boolean): void => {
+  if (shouldAcquire && !acquiredGo2rtcSampling) {
+    acquireGo2rtcSampling()
+    acquiredGo2rtcSampling = true
+  } else if (!shouldAcquire && acquiredGo2rtcSampling) {
+    releaseGo2rtcSampling()
+    acquiredGo2rtcSampling = false
+  }
+}
+
+watch(
+  () => isRtspStream(),
+  (isRtsp) => {
+    syncGo2rtcSampling(isRtsp)
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  draw()
 })
 
 onUnmounted(() => {
-  clearInterval(intervalId)
-  if (rtspInfoInterval) clearInterval(rtspInfoInterval)
   cancelAnimationFrame(animationFrameId)
-})
-
-onBeforeUnmount(() => {
-  webrtcStats.destroy()
+  syncGo2rtcSampling(false)
 })
 </script>
 
