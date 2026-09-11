@@ -121,7 +121,7 @@ export const useMissionEstimates = (): {
   })
 
   // Reference point the max distance is measured from (home or, if available, the base station)
-  const maxDistanceReferencePoint = computed<WaypointCoordinates | undefined>(() => missionStore.homeMarkerPosition)
+  const maxDistanceReferencePoint = computed<WaypointCoordinates | undefined>(() => missionStore.plannedHomePosition)
   const maxDistanceReferenceLabel = computed<string>(() => 'home')
 
   // Farthest mission waypoint from the reference point, indicating the maximum telemetry range needed

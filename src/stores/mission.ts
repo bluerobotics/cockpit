@@ -24,6 +24,7 @@ import {
   CockpitMission,
   countNavWaypointCommands,
   CustomTileProviderMeta,
+  HomeMarkerSource,
   isNavWaypointCommand,
   MapOverlayMeta,
   MapTileProvider,
@@ -113,9 +114,13 @@ export const useMissionStore = defineStore('mission', () => {
   const mapClearRequestRevision = ref(0)
   const mapDownloadRequestRevision = ref(0)
   const homeMarkerPosition = ref<WaypointCoordinates | undefined>(undefined)
-  // Home position the user last commanded. Compared against homeMarkerPosition to tell a home the user placed apart
-  // from one that merely came from a mission, so any other writer invalidates it without having to know about this.
-  const userCommandedHomePosition = ref<WaypointCoordinates | undefined>(undefined)
+  // Where homeMarkerPosition came from, which decides whether the operator may drag it and whether a mission redraw
+  // may replace it. Paired with homeMarkerVehicleId so a leftover claim cannot speak for a different vehicle.
+  const homeMarkerSource = ref<HomeMarkerSource | undefined>(undefined)
+  const homeMarkerVehicleId = ref<string | undefined>(undefined)
+  // Home of the mission being planned, apart from the displayed homeMarkerPosition because planning only
+  // reaches the vehicle on upload, so the vehicle's home and the plan's are free to differ until then.
+  const plannedHomePosition = ref<WaypointCoordinates | undefined>(undefined)
   // Request for any active map to center on given coordinates. Replaced (new object) on each request.
   const mapCenterOnRequest = ref<{
     /** Coordinates the map should center on */
@@ -423,6 +428,13 @@ export const useMissionStore = defineStore('mission', () => {
     () => mainVehicleStore.currentlyConnectedVehicleId,
     async (newVehicleId) => {
       if (newVehicleId) {
+        // Home can be written before the bag service answers with this id, so stamp it onto a claim that still has none.
+        if (
+          !homeMarkerVehicleId.value &&
+          (homeMarkerSource.value === 'vehicle' || homeMarkerSource.value === 'operator')
+        ) {
+          homeMarkerVehicleId.value = newVehicleId
+        }
         // If there's a username saved, assign it as the last connected user
         localStorage.setItem('cockpit-last-connected-user', username.value)
         if (username.value) {
@@ -473,6 +485,33 @@ export const useMissionStore = defineStore('mission', () => {
   const bumpVehicleMissionRevision = (wps: Waypoint[]): void => {
     vehicleMission.value = wps
     vehicleMissionRevision.value += 1
+  }
+
+  /**
+   * Record the displayed home and which vehicle that claim is about.
+   * @param { WaypointCoordinates } position Coordinates to show on the home marker
+   * @param { HomeMarkerSource } source Where this position came from
+   * @returns { void }
+   */
+  const setHomeMarker = (position: WaypointCoordinates, source: HomeMarkerSource): void => {
+    homeMarkerPosition.value = position
+    homeMarkerSource.value = source
+    homeMarkerVehicleId.value = mainVehicleStore.currentlyConnectedVehicleId
+  }
+
+  /**
+   * Draw the home marker from the first item of a mission restored from storage. Left alone if the displayed home came
+   * from the connected vehicle or from the operator on that same vehicle. A claim about a different vehicle does not
+   * block, so switching vehicles cannot leave the previous home stuck on the map.
+   * @param { WaypointCoordinates } firstItemCoordinates Coordinates of the mission's first item
+   * @returns { void }
+   */
+  const setHomeFromStoredMission = (firstItemCoordinates: WaypointCoordinates): void => {
+    if (homeMarkerSource.value === 'vehicle' || homeMarkerSource.value === 'operator') {
+      const connectedId = mainVehicleStore.currentlyConnectedVehicleId
+      if (!connectedId || !homeMarkerVehicleId.value || homeMarkerVehicleId.value === connectedId) return
+    }
+    setHomeMarker(firstItemCoordinates, 'mission')
   }
 
   const addCommandToWaypoint = (waypointId: string, command: MissionCommand): void => {
@@ -963,7 +1002,11 @@ export const useMissionStore = defineStore('mission', () => {
     canRedo,
     clearUndoStack,
     homeMarkerPosition,
-    userCommandedHomePosition,
+    homeMarkerSource,
+    homeMarkerVehicleId,
+    setHomeMarker,
+    setHomeFromStoredMission,
+    plannedHomePosition,
     plannedVehicleType,
     effectiveVehicleType,
     savedMissions,

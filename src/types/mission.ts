@@ -104,6 +104,9 @@ export enum AltitudeReferenceType {
 
 export type WaypointCoordinates = [number, number]
 
+/** Where the home position shown on the map came from, which is a different question from whether it is current */
+export type HomeMarkerSource = 'vehicle' | 'operator' | 'mission'
+
 export type ContextMenuTypes = 'survey' | 'waypoint' | 'map'
 
 export type Waypoint = {
