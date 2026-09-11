@@ -97,3 +97,63 @@ export interface TokenResponse {
    */
   expires_in: number
 }
+
+/**
+ * Mission representation as returned by the BlueOS Cloud API.
+ */
+export interface BlueOsCloudMission {
+  /**
+   * Unique mission identifier.
+   */
+  id: string
+  /**
+   * Mission title shown on the cloud UI.
+   */
+  title: string
+  /**
+   * Optional mission description.
+   */
+  description: string
+  /**
+   * ISO timestamp of when the mission started.
+   */
+  start_time: string | null
+  /**
+   * ISO timestamp of when the mission ended.
+   */
+  end_time: string | null
+  /**
+   * Identifier of the user that created the mission.
+   */
+  created_by: number | null
+  /**
+   * Decimal latitude of the mission start (string to preserve precision).
+   */
+  start_latitude: string | null
+  /**
+   * Decimal longitude of the mission start (string to preserve precision).
+   */
+  start_longitude: string | null
+}
+
+/**
+ * Generic paginated payload used by the BlueOS Cloud API.
+ */
+export interface BlueOsCloudPaginatedResponse<T> {
+  /**
+   * Total number of items across all pages.
+   */
+  count: number
+  /**
+   * URL of the next page, or `null` when there are no more pages.
+   */
+  next: string | null
+  /**
+   * URL of the previous page, or `null` when on the first page.
+   */
+  previous: string | null
+  /**
+   * Items contained in the current page.
+   */
+  results: T[]
+}
