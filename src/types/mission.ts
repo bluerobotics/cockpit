@@ -750,6 +750,14 @@ export interface CustomTileProviderMeta {
    */
   tms?: boolean
   /**
+   * Brightness multiplier applied to the provider's tiles. Defaults to 1 (unadjusted).
+   */
+  brightness?: number
+  /**
+   * Contrast multiplier applied to the provider's tiles. Defaults to 1 (unadjusted).
+   */
+  contrast?: number
+  /**
    * Archive container format (`file` providers only).
    */
   format?: CustomTileArchiveFormat
