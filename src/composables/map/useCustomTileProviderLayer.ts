@@ -1,4 +1,5 @@
 import L from 'leaflet'
+import { watchEffect } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
 import { downloadFileFromVehicle } from '@/libs/blueos-files'
@@ -8,10 +9,41 @@ import { archiveTransferTimeout, tileArchiveFileName, tileProviderSubfolder } fr
 import { getCachedTileArchive, setCachedTileArchive } from '@/libs/map/tile-provider-storage'
 import { messageFromError } from '@/libs/utils'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 import type { CustomTileProviderMeta } from '@/types/mission'
 
 // Highest zoom a custom provider is shown at; tiles beyond the archive's native maximum are upscaled (overzoom).
 const CUSTOM_PROVIDER_MAX_ZOOM = 23
+
+/**
+ * Range the brightness and contrast multipliers of a custom provider are limited to, 1 being unadjusted.
+ */
+export const tileDisplayAdjustmentRange = { min: 0.2, max: 2 }
+
+const clampDisplayAdjustment = (value = 1): number =>
+  Number.isFinite(value) ? Math.min(Math.max(value, tileDisplayAdjustmentRange.min), tileDisplayAdjustmentRange.max) : 1
+
+// Leaflet has no tile-styling API, so brightness and contrast are a CSS filter on the layer's container, which
+// only exists while the layer is on a map. A neutral adjustment clears the filter rather than writing an
+// identity one, which would still make the tile pane a stacking context and containing block. The metadata is
+// resolved on each run because a settings sync replaces the whole provider array, so an entry captured once
+// would be an orphan the sliders no longer write to.
+const bindDisplayAdjustments = (layer: L.GridLayer, resolveMeta: () => CustomTileProviderMeta): (() => void) => {
+  const paint = (): void => {
+    const meta = resolveMeta()
+    const brightness = clampDisplayAdjustment(meta.brightness)
+    const contrast = clampDisplayAdjustment(meta.contrast)
+    const filter = brightness === 1 && contrast === 1 ? '' : `brightness(${brightness}) contrast(${contrast})`
+    const container = layer.getContainer()
+    if (container) container.style.filter = filter
+  }
+  layer.on('add', paint)
+  const stopWatch = watchEffect(paint)
+  return () => {
+    layer.off('add', paint)
+    stopWatch()
+  }
+}
 
 // Fields baked into the layer at build time (or into its control label); a change to any requires rebuilding.
 export const customTileProviderSignature = (meta: CustomTileProviderMeta): string =>
@@ -33,9 +65,9 @@ export interface CustomTileProviderLayer {
   /**
    * The live Leaflet layer drawing the provider's tiles.
    */
-  layer: L.Layer
+  layer: L.GridLayer
   /**
-   * Releases the backing tile source (file providers only), if it was ever opened.
+   * Releases the layer's display-adjustment binding and, for file providers, the backing tile source.
    */
   close?: () => void
 }
@@ -59,6 +91,7 @@ export interface UseCustomTileProviderLayerReturn {
  */
 export const useCustomTileProviderLayer = (): UseCustomTileProviderLayerReturn => {
   const vehicleStore = useMainVehicleStore()
+  const missionStore = useMissionStore()
 
   // Resolves a file provider's archive: local render cache first, else download from the vehicle (the durable
   // master copy) and cache it before use. Runs only when the provider is first selected (lazy layer).
@@ -123,8 +156,19 @@ export const useCustomTileProviderLayer = (): UseCustomTileProviderLayerReturn =
     return { layer, close }
   }
 
-  const createLayer = (meta: CustomTileProviderMeta): CustomTileProviderLayer =>
-    meta.type === 'url' ? buildUrlLayer(meta) : buildFileLayer(meta)
+  const createLayer = (meta: CustomTileProviderMeta): CustomTileProviderLayer => {
+    const built = meta.type === 'url' ? buildUrlLayer(meta) : buildFileLayer(meta)
+    const liveMeta = (): CustomTileProviderMeta =>
+      missionStore.customTileProviders.find((provider) => provider.id === meta.id) ?? meta
+    const unbindDisplayAdjustments = bindDisplayAdjustments(built.layer, liveMeta)
+    return {
+      layer: built.layer,
+      close: () => {
+        unbindDisplayAdjustments()
+        built.close?.()
+      },
+    }
+  }
 
   return { createLayer }
 }

@@ -110,7 +110,7 @@
         <span class="flex-1">Name</span>
         <span class="w-[30%] text-center">Type</span>
         <span class="w-[24%] text-center">Max zoom</span>
-        <span class="w-[56px]" />
+        <span class="w-[84px]" />
       </div>
       <div
         v-for="provider in missionStore.customTileProviders"
@@ -149,7 +149,75 @@
         <span class="w-[24%] truncate text-xs opacity-80 text-center">{{
           provider.maxZoom != null ? provider.maxZoom : '—'
         }}</span>
-        <div class="flex items-center w-[56px] justify-end">
+        <div class="flex items-center w-[84px] justify-end">
+          <v-menu
+            :close-on-content-click="false"
+            location="bottom end"
+            theme="dark"
+            @update:model-value="logDisplayMenuToggle"
+          >
+            <template #activator="{ props: displayProps }">
+              <v-tooltip location="top" open-delay="300" text="Brightness and contrast">
+                <template #activator="{ props: displayTooltipProps }">
+                  <v-btn
+                    v-bind="{ ...displayProps, ...displayTooltipProps }"
+                    icon="mdi-brightness-6"
+                    variant="text"
+                    size="x-small"
+                    aria-label="Brightness and contrast"
+                  />
+                </template>
+              </v-tooltip>
+            </template>
+            <div
+              class="flex flex-col p-3 rounded-lg w-[290px] text-white"
+              :style="interfaceStore.globalGlassMenuStyles"
+            >
+              <v-slider
+                :model-value="provider.brightness ?? 1"
+                label="Brightness"
+                :min="tileDisplayAdjustmentRange.min"
+                :max="tileDisplayAdjustmentRange.max"
+                :step="0.05"
+                color="white"
+                density="compact"
+                hide-details
+                @update:model-value="missionStore.updateCustomTileProvider(provider.id, { brightness: $event })"
+                @end="logAdjustment('brightness', provider)"
+                @keyup="logAdjustment('brightness', provider)"
+              >
+                <template #append>
+                  <span class="text-xs w-10 text-right">{{ adjustmentLabel(provider.brightness) }}</span>
+                </template>
+              </v-slider>
+              <v-slider
+                :model-value="provider.contrast ?? 1"
+                label="Contrast"
+                :min="tileDisplayAdjustmentRange.min"
+                :max="tileDisplayAdjustmentRange.max"
+                :step="0.05"
+                color="white"
+                density="compact"
+                hide-details
+                @update:model-value="missionStore.updateCustomTileProvider(provider.id, { contrast: $event })"
+                @end="logAdjustment('contrast', provider)"
+                @keyup="logAdjustment('contrast', provider)"
+              >
+                <template #append>
+                  <span class="text-xs w-10 text-right">{{ adjustmentLabel(provider.contrast) }}</span>
+                </template>
+              </v-slider>
+              <v-btn
+                variant="text"
+                size="x-small"
+                class="self-end mt-1"
+                :disabled="!isDisplayAdjusted(provider)"
+                @click="resetDisplayAdjustments(provider)"
+              >
+                Reset
+              </v-btn>
+            </div>
+          </v-menu>
           <v-tooltip location="top" open-delay="300" text="Edit">
             <template #activator="{ props: editProps }">
               <v-btn
@@ -184,6 +252,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { tileDisplayAdjustmentRange } from '@/composables/map/useCustomTileProviderLayer'
 import { openSnackbar } from '@/composables/snackbar'
 import {
   buildUrlTileProvider,
@@ -196,12 +265,14 @@ import {
 } from '@/libs/map/tile-provider-import'
 import { cachedTileArchiveIds } from '@/libs/map/tile-provider-storage'
 import { messageFromError } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import type { CustomTileProviderMeta } from '@/types/mission'
 
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
+const interfaceStore = useAppInterfaceStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 
 const vehicleOnline = computed(() => vehicleStore.isVehicleOnline)
@@ -268,6 +339,35 @@ const pendingSyncHint = (provider: CustomTileProviderMeta): string =>
 const providerTypeLabel = (provider: CustomTileProviderMeta): string => {
   if (provider.type === 'url') return 'URL'
   return provider.format?.toUpperCase() ?? 'ARCHIVE'
+}
+
+const adjustmentLabel = (value = 1): string => `${Math.round(value * 100)}%`
+
+const isDisplayAdjusted = (provider: CustomTileProviderMeta): boolean =>
+  (provider.brightness ?? 1) !== 1 || (provider.contrast ?? 1) !== 1
+
+// Release covers a drag and key-up covers the arrow keys, so the last logged value is kept to stop an
+// adjustment that fires both from being logged twice.
+const lastLoggedAdjustments: Record<string, number> = {}
+
+const adjustmentLogKey = (id: string, property: 'brightness' | 'contrast'): string => `${id}:${property}`
+
+const logAdjustment = (property: 'brightness' | 'contrast', provider: CustomTileProviderMeta): void => {
+  const value = provider[property] ?? 1
+  const entryKey = adjustmentLogKey(provider.id, property)
+  if (lastLoggedAdjustments[entryKey] === value) return
+  lastLoggedAdjustments[entryKey] = value
+  logUserAction(`Set the ${property} of a custom map provider to ${adjustmentLabel(value)}`)
+}
+
+const logDisplayMenuToggle = (open: boolean): void =>
+  logUserAction(`${open ? 'Opened' : 'Closed'} the brightness and contrast controls of a custom map provider`)
+
+const resetDisplayAdjustments = (provider: CustomTileProviderMeta): void => {
+  missionStore.updateCustomTileProvider(provider.id, { brightness: 1, contrast: 1 })
+  lastLoggedAdjustments[adjustmentLogKey(provider.id, 'brightness')] = 1
+  lastLoggedAdjustments[adjustmentLogKey(provider.id, 'contrast')] = 1
+  logUserAction('Reset the brightness and contrast of a custom map provider')
 }
 
 const clearUrlForm = (): void => {

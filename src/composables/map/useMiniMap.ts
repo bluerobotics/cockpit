@@ -260,7 +260,8 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   watch(() => options.edgeFadeAmount(), applyFadeMask)
   watch(() => options.tileProvider(), applyTileProvider)
   // Editing or deleting the selected custom provider in Settings > Sources has to reach the layer too. The
-  // provider list is only written on commit (never per keystroke), and unchanged metadata is a no-op here.
+  // provider list is written on commit for text edits and live while a display slider is dragged, and
+  // unchanged metadata is a no-op here.
   watch(() => missionStore.customTileProviders, applyTileProvider, { deep: true })
   watch(
     () => options.vehicleOnline(),
