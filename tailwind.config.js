@@ -6,6 +6,7 @@ module.exports = {
     extend: {
       colors: {
         critical: '#7F34CF',
+        odometer: '#ffb85b',
       },
       transitionProperty: {
         height: 'height',

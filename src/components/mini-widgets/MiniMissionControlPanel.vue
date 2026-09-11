@@ -65,26 +65,84 @@
         </template>
       </v-tooltip>
       <v-divider vertical class="h-[25px] mt-[5px]" />
-      <div class="flex flex-col justify-between w-[46px] h-[33px] text-[8px] ml-1 mt-[4px]">
-        <div class="w-full text-nowrap text-center">Current WP</div>
-        <div class="mb-1 text-[12px] font-bold">{{ currentWaypointOnMission }}</div>
-      </div>
+      <v-menu
+        v-model="areDistancesVisible"
+        :open-on-hover="true"
+        :open-on-click="true"
+        :close-on-content-click="false"
+        location="top"
+        offset="6"
+        theme="dark"
+      >
+        <template #activator="{ props: wpProps }">
+          <div
+            v-bind="wpProps"
+            role="button"
+            tabindex="0"
+            aria-haspopup="true"
+            :aria-expanded="areDistancesVisible"
+            class="flex flex-col justify-between w-[46px] h-[33px] text-[8px] ml-1 mt-[4px] cursor-pointer"
+            @keydown.enter.prevent="areDistancesVisible = !areDistancesVisible"
+            @keydown.space.prevent="areDistancesVisible = !areDistancesVisible"
+          >
+            <div class="w-full text-nowrap text-center">Current WP</div>
+            <div class="mb-1 text-[12px] font-bold">{{ currentWaypointOnMission }}</div>
+          </div>
+        </template>
+        <div
+          class="flex flex-col gap-1 px-3 py-2 rounded-md text-[11px] tabular-nums select-none"
+          :style="interfaceStore.globalGlassMenuStyles"
+        >
+          <div class="flex items-center justify-between gap-3 text-odometer">
+            <div class="flex items-center gap-1">
+              <v-icon size="14" class="opacity-80">mdi-counter</v-icon>
+              <span class="opacity-80">Total:</span>
+            </div>
+            <span class="font-bold">{{ formattedTotalDistance }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-3 text-odometer">
+            <span class="opacity-80">Mission:</span>
+            <div class="flex items-center gap-[3px]">
+              <v-tooltip location="top" open-delay="600" text="Reset mission distance">
+                <template #activator="{ props: resetProps }">
+                  <v-btn
+                    v-bind="resetProps"
+                    variant="text"
+                    density="compact"
+                    aria-label="Reset mission distance"
+                    class="w-[16px] h-[16px] min-w-0 opacity-70 hover:opacity-100"
+                    @click.stop="missionStore.resetMissionDistance()"
+                  >
+                    <v-icon size="11">mdi-restore</v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+              <span class="font-bold">{{ formattedMissionDistance }}</span>
+            </div>
+          </div>
+        </div>
+      </v-menu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import CruiseSpeedControl from '@/components/mission-planning/CruiseSpeedControl.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { useTraveledDistances } from '@/composables/useTraveledDistances'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
 const { showDialog, closeDialog } = useInteractionDialog()
+const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
+
+const areDistancesVisible = ref(false)
 
 const currentWaypointOnMission = computed<string>((): string => {
   const wpIndex = missionStore.currentWaypointOnMission
@@ -100,6 +158,8 @@ const skipToNextWaypoint = (): void => {
   logUserAction('Skipped to next mission waypoint')
   missionStore.skipToWaypoint(1)
 }
+
+const { formattedTotalDistance, formattedMissionDistance } = useTraveledDistances()
 
 const handleReturnHome = (): void => {
   showDialog({
