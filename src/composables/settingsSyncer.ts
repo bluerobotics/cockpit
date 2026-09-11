@@ -138,6 +138,10 @@ export function useBlueOsStorage<T>(
     if (isEqual(newValue, refedValue.value)) {
       return
     }
+    // A pending local write has not reached the store yet; applying its old value would bounce the UI back.
+    if (firstPendingChangeEpoch !== undefined && isEqual(newValue, oldRefedValue)) {
+      return
+    }
 
     refedValue.value = newValue as T
     oldRefedValue = deserialize(JSON.stringify(refedValue.value)) as T

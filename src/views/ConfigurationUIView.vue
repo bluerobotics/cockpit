@@ -119,7 +119,7 @@
             </div>
           </template>
         </ExpansiblePanel>
-        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Display units</template>
           <template #content>
             <div class="flex w-full">
@@ -149,6 +149,28 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>Performance</template>
+          <template #info>
+            When enabled, only the view you are looking at stays loaded. Widgets on other views start again when you
+            switch to them. Turn this on if this computer slows down with several views.
+          </template>
+          <template #content>
+            <div class="flex w-full">
+              <div class="flex flex-col w-full px-4 pt-5">
+                <v-switch
+                  :model-value="widgetStore.unmountHiddenViews"
+                  label="Unload hidden views"
+                  color="white"
+                  hide-details
+                  base-color="#FFFFFF33"
+                  class="-mb-2 ml-3"
+                  @update:model-value="widgetStore.setUnmountHiddenViews"
+                />
+              </div>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -159,10 +181,12 @@ import { defaultUIGlassColor } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { DistanceDisplayUnit, unitPrettyName } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
+const widgetStore = useWidgetManagerStore()
 
 const updateOpacity = (value: number): void => {
   logUserAction(`Set glass effect opacity to ${value}`)

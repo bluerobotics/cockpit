@@ -293,7 +293,7 @@
 <script setup lang="ts">
 import { useElementSize, watchThrottled } from '@vueuse/core'
 import Fuse from 'fuse.js'
-import { computed, onBeforeMount, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import DataLakeExpressionInput from '@/components/DataLakeExpressionInput.vue'
 import VgiIcon from '@/components/mini-widgets/VgiIcon.vue'
@@ -421,6 +421,10 @@ const valueIsOverflowing = computed(() => valueOverflow.value > 0)
 const loggedMiniWidgets = ref(Array.from(CurrentlyLoggedVariables.getAllVariables()))
 const lastWidgetName = ref('')
 
+// The display name is editable while the widget is mounted, so the log entry has to be released
+// under the name it was retained with, not under whatever the name happens to be at unmount.
+const retainedLogName = ref(props.miniWidget.options.displayName ?? '')
+
 const updateLoggedMiniWidgets = (): void => {
   loggedMiniWidgets.value = Array.from(CurrentlyLoggedVariables.getAllVariables())
 }
@@ -493,6 +497,16 @@ watch(
   },
   { deep: true }
 )
+
+watch(
+  () => miniWidget.value.options.displayName ?? '',
+  (newName) => {
+    datalogger.releaseVeryGenericData(retainedLogName.value)
+    datalogger.retainVeryGenericData(newName)
+    retainedLogName.value = newName
+  }
+)
+
 onMounted(() => {
   // Update old variables naming to new pattern
   // TODO: Remove this before 1.0.0 release
@@ -510,6 +524,15 @@ onMounted(() => {
   }
 
   lastWidgetName.value = miniWidget.value.options.displayName
+  datalogger.retainVeryGenericData(retainedLogName.value)
+})
+
+onBeforeUnmount(() => {
+  const displayName = miniWidget.value.options.displayName ?? ''
+  datalogger.releaseVeryGenericData(retainedLogName.value)
+  if (displayName && widgetStore.editingMode === false) {
+    CurrentlyLoggedVariables.removeVariable(displayName)
+  }
 })
 
 const fuseOptions = { includeScore: true, ignoreLocation: true, threshold: 0.3 }
