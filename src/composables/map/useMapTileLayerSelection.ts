@@ -74,8 +74,8 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
       label: 'Add map provider',
       onClick: () => {
         logUserAction('Opened custom map providers from the map layer selector')
-        interfaceStore.sourcesCustomProvidersExpandRequested = true
-        goToMenuPage(SubMenuComponentName.SettingsSources)
+        interfaceStore.mapCustomProvidersExpandRequested = true
+        goToMenuPage(SubMenuComponentName.ToolsMap)
       },
     })
 
