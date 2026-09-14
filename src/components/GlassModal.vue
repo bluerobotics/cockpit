@@ -12,6 +12,9 @@
     @click="bringModalUp"
     @mousedown="startDragging"
   >
+    <teleport v-if="frostedBackdrop" to="body">
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" :style="{ zIndex: modalZIndex - 1 }" />
+    </teleport>
     <slot></slot>
   </div>
 </template>
@@ -59,6 +62,11 @@ const props = defineProps<{
    * The storage key to save the modal position in localStorage.
    */
   storageKey?: string
+  /**
+   * If true, a darkened and slightly blurred backdrop is drawn behind the modal, so it stays readable over a
+   * cluttered background. It also swallows clicks meant for whatever is underneath.
+   */
+  frostedBackdrop?: boolean
 }>()
 
 // eslint-disable-next-line
@@ -120,8 +128,13 @@ const onMouseUp = (): void => {
 }
 
 const bringModalUp = (): void => {
+  if (isAlwaysOnTop.value) return
   zIndexToggle.value = 2000
 }
+
+// A frosted modal takes a band above the ceiling its siblings share, so its backdrop can cover them while
+// staying under the modal that owns it.
+const modalZIndex = computed(() => (props.frostedBackdrop ? zIndexToggle.value + 2 : zIndexToggle.value))
 
 watch(
   () => interfaceStore.isGlassModalAlwaysOnTop,
@@ -142,7 +155,7 @@ const modalPositionStyle = computed(() => {
       top: `${customPosition.value.top}px`,
       left: `${customPosition.value.left}px`,
       transform: 'none',
-      zIndex: zIndexToggle.value,
+      zIndex: modalZIndex.value,
     }
   }
 
@@ -152,7 +165,7 @@ const modalPositionStyle = computed(() => {
         top: '50%',
         left: '0%',
         transform: 'translateY(-50%)',
-        zIndex: zIndexToggle.value,
+        zIndex: modalZIndex.value,
       }
     case 'menuitem':
       return {
@@ -161,7 +174,7 @@ const modalPositionStyle = computed(() => {
           ? `${interfaceStore.mainMenuWidth - 20}px`
           : `${interfaceStore.mainMenuWidth + 30}px`,
         transform: 'translateY(-50%)',
-        zIndex: zIndexToggle.value,
+        zIndex: modalZIndex.value,
       }
     case 'center':
     default:
@@ -169,7 +182,7 @@ const modalPositionStyle = computed(() => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        zIndex: zIndexToggle.value,
+        zIndex: modalZIndex.value,
       }
   }
 })
