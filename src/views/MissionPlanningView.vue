@@ -201,22 +201,6 @@
       ]"
     >
       <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
-        <button
-          v-if="!isCreatingSimplePath && !isCreatingSurvey"
-          :class="{ ' elevation-4': isCreatingSurvey }"
-          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          @click="toggleSurvey"
-        >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SURVEY' : 'CREATE SURVEY' }}
-        </button>
-        <button
-          v-if="!isCreatingSurvey && !isCreatingSimplePath"
-          :class="{ ' elevation-4': isCreatingSimplePath }"
-          class="h-auto py-2 px-2 m-2 font-medium text-md rounded-md elevation-1 bg-[#FFFFFF33] hover:bg-[#FFFFFF44] transition-colors duration-200"
-          @click="toggleSimplePath"
-        >
-          {{ missionStore.currentPlanningWaypoints.length > 0 ? 'ADD SIMPLE PATH' : 'CREATE SIMPLE PATH' }}
-        </button>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath && !vehicleStore.isVehicleOnline"
           class="flex flex-col mx-4 my-2 gap-y-1"
@@ -247,18 +231,58 @@
         </div>
         <div
           v-if="!isCreatingSurvey && !isCreatingSimplePath"
-          class="flex flex-row justify-center items-center gap-x-2 mx-4 my-1"
+          class="flex flex-row items-center justify-between m-2 gap-x-2"
         >
-          <p class="text-sm">Cruise speed</p>
-          <input
-            v-model.number="localCruiseSpeed"
-            class="w-[60px] px-2 py-1 rounded-sm bg-[#FFFFFF22]"
-            type="number"
-            min="0"
-            step="0.5"
-            @change="cruiseSpeedTouched = true"
-          />
-          <p class="text-sm">m/s</p>
+          <div class="flex flex-row items-center gap-x-1 w-[130px] -ml-1">
+            <p class="text-xs">Cruise speed</p>
+            <input
+              v-model.number="localCruiseSpeed"
+              class="w-[55px] px-1 py-0 rounded-sm bg-[#FFFFFF22] text-sm"
+              type="number"
+              min="0"
+              step="0.5"
+              @change="cruiseSpeedTouched = true"
+            />
+            <p class="text-xs">m/s</p>
+          </div>
+          <v-divider vertical class="opacity-30 mx-1 h-5 self-center" />
+          <div class="flex flex-row items-center gap-x-2">
+            <span class="text-sm font-medium mr-1">
+              {{ missionStore.currentPlanningWaypoints.length > 0 ? 'Add:' : 'New:' }}
+            </span>
+            <v-tooltip
+              location="top"
+              :text="missionStore.currentPlanningWaypoints.length > 0 ? 'Add survey area' : 'Create survey area'"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  icon="mdi-grid"
+                  variant="elevated"
+                  color="#3B78A8"
+                  size="x-small"
+                  class="rounded-md"
+                  @click="toggleSurvey"
+                />
+              </template>
+            </v-tooltip>
+            <v-tooltip
+              location="top"
+              :text="missionStore.currentPlanningWaypoints.length > 0 ? 'Add simple path' : 'Create simple path'"
+            >
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  icon="mdi-vector-polyline"
+                  variant="elevated"
+                  color="#3B78A8"
+                  size="x-small"
+                  class="rounded-md"
+                  @click="toggleSimplePath"
+                />
+              </template>
+            </v-tooltip>
+          </div>
         </div>
         <div
           v-if="showMissionCreationTips && !isCreatingSurvey && !isCreatingSimplePath"
