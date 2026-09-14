@@ -90,6 +90,7 @@
   <VehicleDefaultsAutoImportModal />
   <VehicleDefaultsViewsImportModal />
   <VehicleDefaultsJoystickImportModal />
+  <StickModeSelector />
   <UpdateNotification v-if="isElectron()" />
   <ArchitectureWarning v-if="isElectron()" />
   <BaseStationConfigPanel :is-mission-planning-context="baseRouteName === 'Mission planning'" />
@@ -127,6 +128,7 @@ import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import FloatingWrapper from '@/components/FloatingWrapper.vue'
 import GlassModal from '@/components/GlassModal.vue'
+import StickModeSelector from '@/components/joysticks/StickModeSelector.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'

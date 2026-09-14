@@ -166,7 +166,13 @@
                   :key="key"
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
+                  <div class="flex w-full items-center justify-between -mt-8">
+                    <div class="flex-1" />
+                    <p class="text-md font-semibold">{{ joystick.model }} controller</p>
+                    <div class="flex flex-1 justify-end">
+                      <StickModeButton />
+                    </div>
+                  </div>
                   <div class="flex items-center gap-2 -mb-8">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
@@ -284,7 +290,13 @@
                   :key="key"
                   class="w-full flex-centered flex-column"
                 >
-                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <div class="flex w-[93%] items-center justify-between -mt-8">
+                    <div class="flex-1" />
+                    <span class="text-md font-semibold">{{ joystick.model }} controller</span>
+                    <div class="flex flex-1 justify-end">
+                      <StickModeButton />
+                    </div>
+                  </div>
                   <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
@@ -663,6 +675,7 @@ import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
+import StickModeButton from '@/components/joysticks/StickModeButton.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
