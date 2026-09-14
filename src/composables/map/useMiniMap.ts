@@ -3,6 +3,7 @@ import L, { type LatLngTuple } from 'leaflet'
 import { type ComputedRef, type Ref, type ShallowRef, computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { customTileProviderSignature, useCustomTileProviderLayer } from '@/composables/map/useCustomTileProviderLayer'
+import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { buildRadialFadeMask } from '@/libs/map/minimap-geometry'
@@ -78,8 +79,8 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   let currentBaseLayer: L.Layer | undefined
   let closeCurrentBaseLayer: (() => void) | undefined
   let currentBaseLayerSignature: string | undefined
-  let resizeObserver: ResizeObserver | undefined
   let disposed = false
+  const { observe: observeMapResize, stop: stopObservingMapResize } = useMapAutoResize(() => recenter())
 
   // A custom provider's layer is built from its metadata, so the signature (rather than the plain selection)
   // is what tells us to rebuild it after an edit. Built-in layers are prebuilt, so their name is enough.
@@ -227,19 +228,14 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
 
     // Widgets resize by viewport fraction without firing a window resize, so observe the element and let
     // Leaflet recompute its size (and recenter) whenever the container changes.
-    resizeObserver = new ResizeObserver(() => {
-      instance.invalidateSize({ animate: false })
-      recenter()
-    })
-    resizeObserver.observe(element)
+    observeMapResize(instance)
   }
 
   const destroy = (): void => {
     disposed = true
     if (bearingRaf) cancelAnimationFrame(bearingRaf)
     bearingRaf = undefined
-    resizeObserver?.disconnect()
-    resizeObserver = undefined
+    stopObservingMapResize()
     if (map.value) {
       map.value.remove()
       map.value = undefined
