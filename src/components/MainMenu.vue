@@ -4,7 +4,7 @@
       v-if="interfaceStore.isMainMenuVisible"
       ref="mainMenu"
       class="left-menu slide-in"
-      :style="[glassMenuStyles, simplifiedMainMenu ? { width: '45px', borderRadius: '0 10px 10px 0' } : mainMenuWidth]"
+      :style="[glassMenuStyles, mainMenuWidth]"
     >
       <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full">
         <v-window-item :value="1" class="h-full">
@@ -235,7 +235,7 @@ const originalBarWidth = 1800
 const LOWER_RATIO = 1.4
 const UPPER_RATIO = 1.2
 
-const simplifiedMainMenu = ref(false)
+const simplifiedMainMenu = computed(() => interfaceStore.isMainMenuSimplified)
 
 const mainMenuHasOverflow = computed(() => {
   let height
@@ -301,9 +301,9 @@ const shouldSimplifyMainMEnu = computed(() => {
 watchEffect(() => {
   const ratio = (activeContainerRect.value.height * 2) / maxScreenHeightPixelsThatFitsLargeMenu.value
   if (!shouldSimplifyMainMEnu.value && ratio > LOWER_RATIO) {
-    simplifiedMainMenu.value = true
+    interfaceStore.isMainMenuSimplified = true
   } else if (shouldSimplifyMainMEnu.value && ratio * 0.8 < UPPER_RATIO) {
-    simplifiedMainMenu.value = false
+    interfaceStore.isMainMenuSimplified = false
   }
 })
 
@@ -317,13 +317,10 @@ const closeSubMenu = (): void => {
   goToBaseView()
 }
 
-const mainMenuWidth = computed(() => {
-  const width =
-    interfaceStore.isOnSmallScreen && interfaceStore.mainMenuCurrentStep === 2
-      ? '60px'
-      : `${interfaceStore.mainMenuWidth}px`
-  return { width }
-})
+const mainMenuWidth = computed(() => ({
+  width: `${interfaceStore.mainMenuRenderedWidth}px`,
+  ...(simplifiedMainMenu.value ? { borderRadius: '0 10px 10px 0' } : {}),
+}))
 
 const buttonSize = computed(() => {
   if (interfaceStore.is2xl) return 72
