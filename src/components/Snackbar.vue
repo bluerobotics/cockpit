@@ -118,5 +118,6 @@ onMounted((): void => {
 
 ::v-deep .v-snackbar__wrapper {
   max-width: 1200px !important;
+  pointer-events: auto;
 }
 </style>
