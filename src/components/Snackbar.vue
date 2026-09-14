@@ -3,7 +3,6 @@
     v-model="visibility"
     attach="#snackbar-container"
     class="stacked-snackbar"
-    elevation="4"
     rounded="lg"
     :color="selectedVariantColor"
     :timeout="messageDuration"
@@ -118,6 +117,7 @@ onMounted((): void => {
 
 ::v-deep .v-snackbar__wrapper {
   max-width: 1200px !important;
+  box-shadow: 0px 5px 6px 0px rgba(0, 0, 0, 0.21), 0px 10px 16px 8px rgba(0, 0, 0, 0.105);
   pointer-events: auto;
 }
 </style>
