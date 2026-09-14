@@ -936,6 +936,7 @@ import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
+import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -1269,6 +1270,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 const planningMap = shallowRef<Map | undefined>()
 const mapContext = provideMapContext()
 const { mapReady } = mapContext
+const { observe: observeMapResize } = useMapAutoResize()
 
 // Syncs user-loaded GeoTIFF overlays (sonar/bathymetry surveys) onto the planning map
 const mapOverlays = useMapOverlays()
@@ -4747,6 +4749,8 @@ onMounted(async () => {
   // Expose the Leaflet instance to descendant components via the map context
   mapContext.map.value = planningMap.value
   mapContext.mapReady.value = true
+
+  observeMapResize(planningMap.value)
 
   extraOsm?.addTo(planningMap.value)
   planningMap.value.zoomControl.setPosition('bottomright')

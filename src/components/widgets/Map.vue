@@ -276,6 +276,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -358,6 +359,7 @@ const router = useRouter()
 const { removePointOfInterest } = usePointsOfInterest()
 
 const mapContext = provideMapContext()
+const { observe: observeMapResize } = useMapAutoResize()
 
 // Declare the general variables
 const map = shallowRef<Map | undefined>()
@@ -795,6 +797,8 @@ onMounted(async () => {
   mapContext.map.value = map.value
   mapContext.mapReady.value = true
 
+  observeMapResize(map.value)
+
   registerLayerSync(map.value)
 
   // Remove default zoom control
@@ -1181,11 +1185,6 @@ watch(zoom, () => {
   if (map.value) {
     refreshReachedWaypointMarkerStyles()
   }
-})
-
-// Re-render the map when the widget changes
-watch(props.widget, () => {
-  map.value?.invalidateSize()
 })
 
 // Allow following a given target
