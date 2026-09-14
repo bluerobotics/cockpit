@@ -196,6 +196,46 @@ function update(): void {
   maxFramerateReceived = Math.min(Math.max(30, ...framerateData.value), absoluteMaxFrameRate)
 }
 
+/**
+ * Clear plot series and counters so a stream or protocol switch starts a fresh graph
+ */
+function resetPlotState(): void {
+  rtspBitrateData.value = []
+  rtspPacketRateData.value = []
+  rtspStallData.value = []
+  maxRtspBitrate = 1000
+  maxRtspPacketRate = 100
+  rtspStallCount = 0
+  rtspStartTime = 0
+
+  framerateData.value = []
+  bitrateData.value = []
+  packetLostData.value = []
+  bitrate = 0
+  packetsLost = 0
+  packetsReceived = 0
+  totalProcessingDelay = 0
+  nackCount = 0
+  pliCount = 0
+  firCount = 0
+  framesReceived = 0
+  connectionLost = false
+  processingDelayDelta = 0
+  freezes = 0
+  frozenTime = 0
+  framedrops = 0
+  jitterBufferDelay = 0
+  jitterBufferEmittedCount = 0
+  jitterBufferDelayPerFrame = 0
+  packetLossPercentage = 0
+  framerate = 0
+  packetLostDelta = 0
+  videoHeight = 0
+  maxBitrateReceived = 1000
+  maxFramerateReceived = 30
+  maxPacketLost = 10
+}
+
 watch(
   () => webRtcStreamStatsSnapshots[props.streamName],
   (videoData): void => {
@@ -278,6 +318,9 @@ watch(
   },
   { immediate: true }
 )
+
+// Leftover series from the previous stream look like a jump instead of a new plot
+watch([() => props.streamName, () => videoStore.getStreamProtocol(props.streamName)], resetPlotState)
 
 onMounted(() => {
   draw()
