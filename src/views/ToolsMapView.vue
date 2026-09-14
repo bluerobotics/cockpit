@@ -2,7 +2,10 @@
   <BaseConfigurationView>
     <template #title>Map</template>
     <template #content>
-      <div class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px]">
+      <div
+        class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px]"
+        :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw]' : 'max-w-[60vw]'"
+      >
         <ExpansiblePanel v-model:is-expanded="poisExpanded" no-top-divider>
           <template #title>Points of Interest</template>
           <template #info>
@@ -10,11 +13,11 @@
             <li>Static POIs have fixed coordinates, while live POIs follow data-lake variables.</li>
           </template>
           <template #content>
-            <div class="flex justify-center flex-col ml-2 pr-4 mb-8 mt-2 w-full">
+            <div class="flex justify-center flex-col ml-2 pr-4 mb-5 mt-2 w-full">
               <v-data-table
                 :items="pois"
                 items-per-page="10"
-                class="elevation-1 bg-transparent rounded-lg mb-8"
+                class="elevation-1 bg-transparent rounded-lg"
                 theme="dark"
                 :headers="headers"
                 :style="interfaceStore.globalGlassMenuStyles"
@@ -22,7 +25,7 @@
                 <template #item="{ item }">
                   <tr>
                     <td>
-                      <div class="flex items-center gap-3 mx-1 w-[240px]">
+                      <div class="flex items-center gap-3 mx-1 max-w-[240px]">
                         <div class="poi-marker-container" :style="{ opacity: getPoiMarkerOpacity(item) }">
                           <div
                             class="poi-marker-background"
@@ -42,7 +45,7 @@
                       </div>
                     </td>
                     <td>
-                      <div class="flex items-center justify-center mx-1 w-[110px]">
+                      <div class="flex items-center justify-center mx-1">
                         <v-chip
                           size="small"
                           :color="poiStatusColor(item)"
@@ -55,14 +58,14 @@
                       </div>
                     </td>
                     <td>
-                      <div class="flex items-center justify-center mx-1 w-[200px]">
+                      <div class="flex items-center justify-center mx-1">
                         <p class="whitespace-nowrap overflow-hidden truncate font-mono text-xs">
                           {{ poiCoordinatesText(item) }}
                         </p>
                       </div>
                     </td>
-                    <td class="w-[160px] text-right">
-                      <div class="flex items-center justify-center">
+                    <td>
+                      <div class="flex items-center justify-end">
                         <v-btn
                           variant="outlined"
                           class="rounded-full mx-1"
