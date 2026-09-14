@@ -57,6 +57,7 @@ type CellIdHeatLayerInternal = L.Layer & {
   _canvas?: HTMLCanvasElement
   _heatOptions: CellIdHeatLayerOptions
   _frame?: number
+  _throttledReset?: () => void
   _reset: () => void
   _scheduleRedraw: () => void
   _redraw: () => void
@@ -80,7 +81,11 @@ const CellIdHeatLayer = L.Layer.extend({
     canvas.style.opacity = String(this._heatOptions.opacity)
     this._canvas = canvas
     mapInstance.getPanes().overlayPane.appendChild(canvas)
-    mapInstance.on('moveend resize viewreset zoomend', this._reset, this)
+    // A container resize arrives once per frame while the map widget is being dragged to a new size,
+    // so that one event is throttled instead of sweeping the whole canvas on every frame.
+    this._throttledReset = L.Util.throttle(this._reset, 200, this)
+    mapInstance.on('moveend viewreset zoomend', this._reset, this)
+    mapInstance.on('resize', this._throttledReset, this)
     this._reset()
     return this
   },
@@ -90,7 +95,9 @@ const CellIdHeatLayer = L.Layer.extend({
       this._frame = undefined
     }
     mapInstance.getPanes().overlayPane.removeChild(this._canvas!)
-    mapInstance.off('moveend resize viewreset zoomend', this._reset, this)
+    mapInstance.off('moveend viewreset zoomend', this._reset, this)
+    if (this._throttledReset) mapInstance.off('resize', this._throttledReset, this)
+    this._throttledReset = undefined
     this._canvas = undefined
     return this
   },

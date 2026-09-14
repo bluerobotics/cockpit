@@ -1,5 +1,6 @@
 import '@/styles/baseStationOverlay.css'
 
+import { useDebounceFn } from '@vueuse/core'
 import L from 'leaflet'
 import { type Ref, type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
@@ -592,8 +593,10 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     const mapInstance = map.value
     let panPixelOrigin: L.Point | null = null
     let zooming = false
+    let unbound = false
 
     const rebuild = (): void => {
+      if (unbound) return
       panPixelOrigin = null
       zooming = false
       if (osmLabelOverlayEl) {
@@ -617,15 +620,22 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       if (osmLabelOverlayEl) osmLabelOverlayEl.style.visibility = 'hidden'
     }
 
+    // A container resize arrives once per frame while the map widget is being dragged to a new size,
+    // so the rebuild it triggers is coalesced to the end of the gesture.
+    const debouncedRebuild = useDebounceFn(rebuild, 200)
+
     mapInstance.on('movestart', onMoveStart)
     mapInstance.on('move', onMove)
     mapInstance.on('zoomstart', onZoomStart)
-    mapInstance.on('moveend resize', rebuild)
+    mapInstance.on('moveend', rebuild)
+    mapInstance.on('resize', debouncedRebuild)
     osmLabelCleanup = () => {
+      unbound = true
       mapInstance.off('movestart', onMoveStart)
       mapInstance.off('move', onMove)
       mapInstance.off('zoomstart', onZoomStart)
-      mapInstance.off('moveend resize', rebuild)
+      mapInstance.off('moveend', rebuild)
+      mapInstance.off('resize', debouncedRebuild)
     }
   }
 
