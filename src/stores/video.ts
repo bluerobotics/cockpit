@@ -849,6 +849,38 @@ export const useVideoStore = defineStore('video', () => {
     return streamData?.mediaRecorder !== undefined && streamData.timeRecordingStart === undefined
   }
 
+  // Recording outlives the recorder widget, so the close warning has to live here rather than on it.
+  watch(
+    () => {
+      // Read the map directly: getStreamData would activate blanked streams.
+      const streams = Object.values(activeStreams.value)
+      if (streams.some((s) => s?.timeRecordingStart !== undefined)) return 'recording'
+      // Closing while the last chunk is still being written loses the file just the same.
+      if (streams.some((s) => s?.mediaRecorder !== undefined)) return 'finalizing'
+      return 'idle'
+    },
+    (state) => {
+      if (state === 'idle') {
+        window.onbeforeunload = null
+        return
+      }
+      const alertMsg =
+        state === 'recording'
+          ? `
+      You have a video recording ongoing.
+      Remember to stop it before closing Cockpit, or the record will be lost.
+    `
+          : `
+      Your last video recording is still being saved.
+      Wait for it to finish before closing Cockpit, or the record will be lost.
+    `
+      window.onbeforeunload = () => {
+        showDialog({ message: alertMsg, variant: 'warning' })
+        return 'I hope the user does not click on the leave button.'
+      }
+    }
+  )
+
   // Best-effort MAVLink broadcast of recording actions, so systems like BlueOS can mirror the recording state.
   const broadcastRecordingStart = (streamName: string): void => {
     if (!broadcastCameraActionsOverMavlink.value) return
