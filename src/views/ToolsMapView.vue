@@ -3,7 +3,7 @@
     <template #title>Map</template>
     <template #content>
       <div class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px]">
-        <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+        <ExpansiblePanel v-model:is-expanded="poisExpanded" no-top-divider>
           <template #title>Points of Interest</template>
           <template #info>
             <li>View, edit and remove the points of interest shown on the map.</li>
@@ -109,6 +109,27 @@
             </div>
           </template>
         </ExpansiblePanel>
+
+        <ExpansiblePanel v-model:is-expanded="customProvidersExpanded" no-top-divider no-bottom-divider>
+          <template #title>Custom map providers</template>
+          <template #info>
+            <div class="w-full">
+              <p>
+                Add your own map tile sources via an XYZ URL (remote or hosted on your vehicle) or an imported archive
+                (ZIP of {z}/{x}/{y} tiles, MBTiles or PMTiles).
+              </p>
+              <p class="mt-2">
+                For URL providers, the tile URL must contain the {z}, {x} and {y} placeholders. Imported archives are
+                cached on this computer for offline rendering and uploaded to the vehicle, which keeps the durable copy,
+                as soon as it is online. Each provider appears as a selectable base map under "Esri World Imagery" in
+                the map's layer selector.
+              </p>
+            </div>
+          </template>
+          <template #content>
+            <CustomTileProvidersManager />
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
@@ -117,9 +138,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import CustomTileProvidersManager from '@/components/map/CustomTileProvidersManager.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { closeMenuPage } from '@/composables/menuRouting'
@@ -137,6 +159,23 @@ const { showDialog, closeDialog } = useInteractionDialog()
 const { resolvedPointsOfInterest: pois, removePointOfInterest } = usePointsOfInterest()
 
 const poiManagerRef = ref<InstanceType<typeof PoiManager> | null>(null)
+
+const poisExpanded = ref(!interfaceStore.isOnPhoneScreen)
+const customProvidersExpanded = ref(!interfaceStore.isOnPhoneScreen)
+
+// Reaching this page via the map layer selector's "Add map provider" shortcut expands the providers panel and
+// collapses the points of interest one, so the requested panel is not pushed below the fold by a long POI table.
+// Immediate so a request raised before this view mounts is still consumed.
+watch(
+  () => interfaceStore.mapCustomProvidersExpandRequested,
+  (requested) => {
+    if (!requested) return
+    customProvidersExpanded.value = true
+    poisExpanded.value = false
+    interfaceStore.mapCustomProvidersExpandRequested = false
+  },
+  { immediate: true }
+)
 
 const headers = [
   { title: 'Name', key: 'name', align: 'start', sortable: true },

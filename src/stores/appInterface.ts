@@ -38,9 +38,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
     showSplashScreen: true,
-    // One-shot request (consumed on mount) asking the Sources config view to expand its "Custom map providers"
+    // One-shot request (consumed on mount) asking the Map tools view to expand its "Custom map providers"
     // panel, e.g. when reached via the map layer selector's "Add map provider" action.
-    sourcesCustomProvidersExpandRequested: false,
+    mapCustomProvidersExpandRequested: false,
   }),
   actions: {
     updateWidth() {
