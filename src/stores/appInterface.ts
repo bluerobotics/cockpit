@@ -27,6 +27,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     mainMenuStyleTrigger: useBlueOsStorage('cockpit-main-menu-style', 'center-left'),
     componentToHighlight: 'none',
     isMainMenuVisible: false,
+    isMainMenuSimplified: false,
     mainMenuCurrentStep: 1,
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
@@ -99,6 +100,13 @@ export const useAppInterfaceStore = defineStore('responsive', {
       if (state.width >= 1280 && state.width < 1600) return 102
       if (state.width >= 1600 && state.width < 1920) return 121
       return 130
+    },
+    // Width the main menu actually renders, which narrows to icons only when the buttons stop fitting the
+    // visible height, and to a single column for the submenu on small screens.
+    mainMenuRenderedWidth(state): number {
+      if (state.isMainMenuSimplified) return 45
+      if (this.isOnSmallScreen && state.mainMenuCurrentStep === 2) return 60
+      return this.mainMenuWidth
     },
     isVideoLibraryVisible: (state) => state.videoLibraryVisibility,
     isMissionLibraryVisible: (state) => state.missionLibraryVisibility,
