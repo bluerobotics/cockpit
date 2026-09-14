@@ -48,7 +48,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[280px] overflow-auto">
+              <div class="flex flex-col items-center h-[250px] overflow-auto">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
