@@ -19,6 +19,8 @@ const { snackbars } = useSnackbar()
   display: flex;
   flex-direction: column;
   gap: 35px;
-  z-index: 800;
+  pointer-events: none;
+  /* Stays above the tallest surface in the app, the tutorial overlay at 1000000. */
+  z-index: 1000001;
 }
 </style>
