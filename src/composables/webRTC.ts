@@ -405,6 +405,11 @@ export class WebRTCManager {
    * @param {string} reason
    */
   private stopSession(reason: string): void {
+    // The media stream no longer carries video, so drop it instead of leaving consumers with its last frame, or a
+    // black screen, as if it were live
+    this.connected.value = false
+    this.mediaStream.value = undefined
+
     if (this.session === undefined) {
       console.debug('[WebRTC] Stopping an undefined session, probably it was already stopped?')
       return
