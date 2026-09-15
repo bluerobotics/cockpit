@@ -657,7 +657,6 @@ export const useVideoStore = defineStore('video', () => {
       // Close WebRTC connection
       if (externalStreamData.webRtcManager) {
         try {
-          externalStreamData.webRtcManager.session?.peerConnection.close()
           externalStreamData.webRtcManager.close(reason)
           console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
         } catch (error) {
