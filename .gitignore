@@ -9,5 +9,6 @@ cypress/videos/
 cypress/screenshots/
 
 *.log
+*.tsbuildinfo
 
 .DS_Store
