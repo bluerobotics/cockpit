@@ -1,13 +1,8 @@
 import { watch } from 'vue'
 
+import { getMarkerSizeFromZoom } from '@/libs/map/waypoint-markers'
 import { useMissionStore } from '@/stores/mission'
 import type { MarkerSizes } from '@/types/mission'
-
-const getMarkerSizeFromZoom = (zoomLevel: number): MarkerSizes => {
-  if (zoomLevel <= 17) return 'xs'
-  if (zoomLevel > 17 && zoomLevel <= 19) return 'sm'
-  return 'md'
-}
 
 /**
  * Return type of {@link useWaypointMarkerSize}.
