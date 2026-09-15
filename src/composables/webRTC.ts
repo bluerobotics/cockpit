@@ -310,7 +310,8 @@ export class WebRTCManager {
       })
       if (stream === undefined) {
         const error = `Failed to start a new Session with "${this.streamName}". Reason: not available`
-        console.error('[WebRTC] ' + error)
+        // Retried once a second for as long as the stream is gone, so not worth an error entry per second
+        console.debug('[WebRTC] ' + error)
         this.updateStreamStatus(error)
 
         this.waitingForSessionStart = false
