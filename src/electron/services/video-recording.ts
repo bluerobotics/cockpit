@@ -20,16 +20,19 @@ import { filesystemStorage, getCockpitFolderPath } from './storage'
  *
  * This service provides real-time video processing by streaming WebM chunks directly into FFmpeg
  * during recording. FFmpeg outputs a fragmented MP4 file that is always playable, even if the
- * process crashes mid-recording. This eliminates the need for post-processing finalization.
+ * process crashes mid-recording. This eliminates the need to reassemble the recording from chunks once it ends.
  *
  * Key features:
  * - Chunks are piped to FFmpeg stdin as they arrive
  * - Fragmented MP4 output (frag_keyframe + empty_moov) for crash-safety
  * - No re-encoding (copy codec only)
  * - File is playable at any point during recording
+ * - Converted to a regular non-fragmented MP4 on finalize, so HTTP playback needs 2 range requests
  */
 
 const activeStreamProcesses = new Map<string, LiveStreamProcess>()
+
+const remuxTempSuffix = '.remuxing.tmp'
 
 /**
  * Create a temporary directory for live video processing
@@ -217,6 +220,59 @@ const appendChunkToVideoRecording = async (
 }
 
 /**
+ * Remux a finished recording into a regular MP4, so players can seek it over HTTP without range-requesting
+ * every fragment. The fragmented layout that keeps the recording crash-safe leaves no index a player can
+ * use cheaply, costing one seek per fragment.
+ *
+ * Writes to a sibling temp file and renames over the original only once FFmpeg succeeds, so an interruption
+ * at any point leaves the original recording intact rather than a half-rewritten one.
+ * @param {string} videoPath - Path to the finished fragmented MP4
+ * @returns {Promise<void>} Promise that resolves once the recording has been replaced by the remuxed one
+ */
+const remuxToSeekableMp4 = async (videoPath: string): Promise<void> => {
+  const tempPath = `${videoPath}${remuxTempSuffix}`
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeoutMs = 600000 // 10 minutes timeout for the remux
+      const ffmpegProcess = spawn(getFFmpegPath(), ['-i', videoPath, '-c', 'copy', '-f', 'mp4', '-y', tempPath])
+
+      // FFmpeg writes a progress line to stderr about twice a second, so leaving the pipe undrained wedges the
+      // remux once the OS buffer fills. Keeping the tail also makes a non-zero exit diagnosable.
+      let stderrTail = ''
+      ffmpegProcess.stderr?.on('data', (data) => {
+        stderrTail = (stderrTail + data.toString()).slice(-1000)
+      })
+
+      const timeout = setTimeout(() => {
+        ffmpegProcess.kill('SIGKILL')
+        reject(new Error('Remux timed out'))
+      }, timeoutMs)
+
+      ffmpegProcess.on('error', (error) => {
+        clearTimeout(timeout)
+        reject(error)
+      })
+
+      ffmpegProcess.on('close', (code) => {
+        clearTimeout(timeout)
+        if (code === 0) {
+          resolve()
+        } else {
+          reject(new Error(`FFmpeg remux exited with code ${code}: ${stderrTail.trim()}`))
+        }
+      })
+    })
+
+    await fs.rename(tempPath, videoPath)
+  } catch (error) {
+    // A temp the dying child still holds open cannot be removed on Windows, and that must not mask the real error.
+    await fs.rm(tempPath, { force: true }).catch(() => undefined)
+    throw error
+  }
+}
+
+/**
  * Finalize a live video streaming process by closing FFmpeg stdin
  * @param {string} processId - ID of the streaming process to finalize
  */
@@ -263,6 +319,14 @@ const finalizeVideoRecording = async (processId: string): Promise<void> => {
 
         if (code === 0) {
           console.log(`FFmpeg process ${processId} completed successfully`)
+
+          try {
+            await remuxToSeekableMp4(process.outputPath)
+            console.log(`Remuxed ${basename(process.outputPath)} into a seekable MP4`)
+          } catch (remuxError) {
+            // The fragmented recording plays fine locally, so keep it rather than failing the recording.
+            console.warn(`Failed to remux ${processId} into a seekable MP4:`, remuxError)
+          }
 
           // Generate thumbnail from the final MP4 file
           try {
@@ -778,9 +842,31 @@ const createVideoChunksZip = async (hash: string): Promise<string> => {
 }
 
 /**
+ * Delete remux temp files left behind by a quit, crash or power loss mid-remux. They are as large as the
+ * recording and never show up in the video library, so nothing else would ever remove them. Startup is the
+ * right moment to sweep, since no remux of this process can be in flight yet.
+ * @returns {Promise<void>} Promise that resolves once the videos folder has been swept
+ */
+const removeOrphanRemuxTempFiles = async (): Promise<void> => {
+  const videosPath = join(getCockpitFolderPath(), 'videos')
+  try {
+    const fileNames = await filesystemStorage.keys(['videos'])
+    const orphans = fileNames.filter((fileName) => fileName.endsWith(remuxTempSuffix))
+    await Promise.all(orphans.map((fileName) => fs.rm(join(videosPath, fileName), { force: true })))
+    if (orphans.length > 0) {
+      console.log(`Removed ${orphans.length} leftover remux temporary file(s).`)
+    }
+  } catch (error) {
+    console.warn('Failed to remove leftover remux temporary files:', error)
+  }
+}
+
+/**
  * Setup live video IPC handlers for Electron main process
  */
 export const setupVideoRecordingService = (): void => {
+  removeOrphanRemuxTempFiles()
+
   /**
    * Start live video streaming with FFmpeg
    */
