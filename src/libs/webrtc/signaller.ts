@@ -23,6 +23,7 @@ export class Signaller {
     keyof WebSocketEventMap,
     Map<(type: WebSocketEventMap[keyof WebSocketEventMap]) => void, boolean | AddEventListenerOptions | undefined>
   >
+  private sessionListeners: Map<string, Array<(event: MessageEvent) => void>>
   private shouldReconnect: boolean
   private boundOnOpen: (event: Event) => void
   private boundOnError: (event: Event) => void
@@ -38,6 +39,7 @@ export class Signaller {
     this.onOpen = onOpen
     this.onStatusChange = onStatusChange
     this.listeners = new Map()
+    this.sessionListeners = new Map()
     this.shouldReconnect = shouldReconnect
     this.url = url
     this.boundOnOpen = this.onOpenCallback.bind(this)
@@ -124,6 +126,26 @@ export class Signaller {
     if (removeFromListeners) {
       this.listeners.delete(type)
     }
+  }
+
+  /**
+   * Registers a "message" listener on behalf of a session, so it can be dropped when that session is over
+   * @param {string} sessionId - Unique ID of the session, given by the signalling server
+   * @param {(event: MessageEvent) => void} listener - The listener to register
+   */
+  private addSessionListener(sessionId: string, listener: (event: MessageEvent) => void): void {
+    this.addEventListener('message', listener)
+    this.sessionListeners.set(sessionId, [...(this.sessionListeners.get(sessionId) ?? []), listener])
+  }
+
+  /**
+   * Drops the listeners registered for a session, which a renewed session would otherwise leave behind parsing
+   * every message that arrives, one set per renewal
+   * @param {string} sessionId - Unique ID of the session, given by the signalling server
+   */
+  public removeSessionListeners(sessionId: string): void {
+    this.sessionListeners.get(sessionId)?.forEach((listener) => this.removeEventListener('message', listener))
+    this.sessionListeners.delete(sessionId)
   }
 
   /**
@@ -360,7 +382,7 @@ export class Signaller {
     )
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const signaller = this
-    this.addEventListener('message', function endSessionListener(ev: MessageEvent): void {
+    this.addSessionListener(sessionId, function endSessionListener(ev: MessageEvent): void {
       try {
         const message: Message = JSON.parse(ev.data)
         if (message.type !== 'question') {
@@ -380,8 +402,6 @@ export class Signaller {
         ) {
           return
         }
-
-        signaller.removeEventListener('message', endSessionListener)
 
         const reason = endSessionQuestion.reason
         signaller.onStatusChange?.('EndSession arrived')
@@ -416,7 +436,7 @@ export class Signaller {
         `Producer "${producerId}", ` +
         `Session "${sessionId}", `
     )
-    this.addEventListener('message', (ev: MessageEvent): void => {
+    this.addSessionListener(sessionId, (ev: MessageEvent): void => {
       try {
         const message: Message = JSON.parse(ev.data)
 
