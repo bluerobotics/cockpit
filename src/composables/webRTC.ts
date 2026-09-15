@@ -49,7 +49,7 @@ export class WebRTCManager {
   private selectedICEProtocols: string[] = []
   private JitterBufferTarget = 0
 
-  private hasEnded = false
+  private isClosed = false
   private signaller: Signaller
   private waitingForAvailableStreamsAnswer = false
   private waitingForSessionStart = false
@@ -77,7 +77,7 @@ export class WebRTCManager {
    * @param {string} reason
    */
   public close(reason: string): void {
-    this.hasEnded = true
+    this.isClosed = true
     this.signaller.onOpen = undefined
     this.stopSession(reason)
     this.signaller.end(reason)
@@ -185,9 +185,8 @@ export class WebRTCManager {
    *
    */
   private startConsumer(): void {
-    if (this.hasEnded) return
+    if (this.isClosed) return
 
-    this.hasEnded = false
     // Requests a new consumer ID
     if (this.consumerId === undefined) {
       this.signaller.requestConsumerId((newConsumerId: string): void => {
@@ -207,7 +206,7 @@ export class WebRTCManager {
       this.signaller.requestStreams()
       return
     }
-    if (this.hasEnded) {
+    if (this.isClosed) {
       this.waitingForAvailableStreamsAnswer = false
       return
     }
@@ -288,22 +287,20 @@ export class WebRTCManager {
     this.signaller.requestSessionId(consumerId, stream.id, (receivedSessionId: string): void => {
       this.onSessionIdReceived(stream, stream.id, receivedSessionId)
     })
-
-    this.hasEnded = false
   }
 
   /**
    *
    */
   private startSession(): void {
-    if (this.hasEnded) return
+    if (this.isClosed) return
     if (this.waitingForSessionStart) {
       return
     }
     this.waitingForSessionStart = true
 
     window.setTimeout(() => {
-      if (!this.waitingForSessionStart || this.hasEnded) {
+      if (!this.waitingForSessionStart || this.isClosed) {
         this.waitingForSessionStart = false
         return
       }
@@ -382,8 +379,7 @@ export class WebRTCManager {
     // Registers Session callback for the Signaller endSession parser
     this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
       console.debug(`[WebRTC] Session ${sessionId} ended. Reason: ${reason}`)
-      this.session = undefined
-      this.hasEnded = true
+      this.onSessionClosed(reason)
     })
 
     // Registers Session callbacks for the Signaller Negotiation parser
@@ -415,6 +411,5 @@ export class WebRTCManager {
 
     this.session.end()
     this.session = undefined
-    this.hasEnded = true
   }
 }
