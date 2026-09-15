@@ -995,15 +995,7 @@ export const useVideoStore = defineStore('video', () => {
     recorder.onerror = (event) => {
       const error: DOMException | undefined = (event as ErrorEvent).error
       console.error(`Recorder of stream '${streamName}' failed: ${error?.message ?? 'unknown error'}`)
-      const msg =
-        `Recording of stream '${streamName}' stopped unexpectedly. The video recorded until then was kept and is` +
-        ' available in the Video Library.'
-      showDialog({ message: msg, variant: 'error' })
-      alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
-
-      // The recorder stops itself on error, so the monitor would otherwise nag about a file that stopped growing
-      clearInterval(recordingMonitors[streamName])
-      delete recordingMonitors[streamName]
+      reportUnexpectedStop()
 
       // Vue does not proxy a MediaRecorder, so clearing the start time here is what drops the interface out of the
       // recording state, and detaching the recorder is what drops it out of the finalizing one.
@@ -1038,6 +1030,23 @@ export const useVideoStore = defineStore('video', () => {
     // The internal name, since the external id of an RTSP stream is its URL, credentials included, and these warnings
     // are both shown to the user and written to the logs they share with us.
     const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+
+    // Shared by the two ways a recording ends without anyone asking, a failed recorder and a lost video connection
+    const reportUnexpectedStop = (): void => {
+      const footageKept = 'The video recorded until then was kept and is available in the Video Library.'
+      alertStore.pushAlert(
+        new Alert(AlertLevel.Error, `Recording of stream '${streamLabel}' stopped unexpectedly. ${footageKept}`)
+      )
+
+      // One lost link stops every recording it was serving, and a dialog naming a stream would replace the dialog of
+      // the stream before it, so the streams are named in the alerts above and the dialog stays the same for all
+      showDialog({ message: `A recording stopped unexpectedly. ${footageKept}`, variant: 'error' })
+
+      // The recording is over, so the monitor would otherwise nag about a file that stopped growing
+      clearInterval(recordingMonitors[streamName])
+      delete recordingMonitors[streamName]
+    }
+
     if (window.electronAPI) {
       console.info(`Starting electron recording monitor for stream '${streamName}'.`)
       recordingMonitors[streamName] = setInterval(async () => {
@@ -1243,6 +1252,12 @@ export const useVideoStore = defineStore('video', () => {
       // Every way a recording ends reaches onstop (Stop button, stream teardown, dropped link), so mirror the stop
       // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
       broadcastRecordingStop(streamName)
+
+      // Only a stop nobody asked for still has its start time set, as both the Stop button and the error handler
+      // clear it before the recorder gets here
+      if (recorderIsStillAttached() && activeStreams.value[streamName]!.timeRecordingStart !== undefined) {
+        reportUnexpectedStop()
+      }
 
       // A recording that ended on its own leaves the recording state here, so no consumer waits on the finalization
       // below, which takes as long as the video processing and the telemetry overlay need.
