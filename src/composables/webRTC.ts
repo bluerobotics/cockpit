@@ -379,6 +379,8 @@ export class WebRTCManager {
     // Registers Session callback for the Signaller endSession parser
     this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
       console.debug(`[WebRTC] Session ${sessionId} ended. Reason: ${reason}`)
+      // A late arrival for a session already dropped must not tear down the one that replaced it
+      if (this.session?.id !== sessionId) return
       this.onSessionClosed(reason)
     })
 
