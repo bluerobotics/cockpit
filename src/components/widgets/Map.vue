@@ -277,6 +277,7 @@ import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationO
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
+import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
@@ -384,6 +385,20 @@ const mapWaypoints = ref<Waypoint[]>([])
 const reachedWaypoints = shallowRef<Record<number, L.Marker>>({})
 const contextMenuRef = ref()
 const isDragging = ref(false)
+const isBoxPress = ref(false)
+const { initMapBoxZoom } = useMapBoxZoom({
+  onBoxStart: () => {
+    isBoxPress.value = true
+    targetFollower.setBoxPress(true)
+    if (contextMenuVisible.value) hideContextMenuAndMarker()
+  },
+  onBoxEnd: () => {
+    isBoxPress.value = false
+    targetFollower.setBoxPress(false)
+  },
+  onBoxCommit: () => targetFollower.unFollow(),
+  isBlocked: () => contextMenuVisible.value,
+})
 const isPinching = ref(false)
 const isMissionChecklistOpen = ref(false)
 let esriSaveBtn: HTMLAnchorElement | undefined
@@ -897,6 +912,7 @@ onMounted(async () => {
   // Enable auto update for target follower
   targetFollower.enableAutoUpdate()
   stopUnFollowOnUserDrag = targetFollower.unFollowOnUserDrag(map.value)
+  initMapBoxZoom(map.value)
 
   window.addEventListener('keydown', onKeydown)
 
@@ -971,7 +987,7 @@ watch(
 )
 const handleContextMenu = {
   open: async (event: MouseEvent): Promise<void> => {
-    if (!map.value || isPinching.value || isDragging.value) return
+    if (!map.value || isPinching.value || isDragging.value || isBoxPress.value) return
     event.preventDefault()
     event.stopPropagation()
 

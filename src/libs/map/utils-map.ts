@@ -118,6 +118,8 @@ export class TargetFollower {
 
   // Whether the user is currently dragging the map, used to pause re-centering so the periodic update doesn't fight the drag.
   private isUserDragging = false
+  // Box-zoom press pause, separate from Leaflet drag so clearing it cannot un-pause a pan already in progress.
+  private isBoxPress = false
 
   /**
    * Constructor for the TargetFollower class.
@@ -184,8 +186,17 @@ export class TargetFollower {
    * @returns {void}
    */
   public update(): void {
-    if (this.isUserDragging) return
+    if (this.isUserDragging || this.isBoxPress) return
     this.setCenter(this.target)
+  }
+
+  /**
+   * Pause or resume the periodic re-center while a box-zoom press owns the map.
+   * @param {boolean} active Whether a box-zoom press currently owns the map.
+   * @returns {void}
+   */
+  public setBoxPress(active: boolean): void {
+    this.isBoxPress = active
   }
 
   /**
