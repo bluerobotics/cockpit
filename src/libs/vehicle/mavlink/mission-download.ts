@@ -1,11 +1,10 @@
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
-import { MAVLinkType, MavMissionType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { type MavMissionType, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import type { SignalTyped } from '@/libs/signal'
+import { fail, MISSION, waitPulse } from '@/libs/vehicle/mavlink/mission-transfer'
 import { isFromMissionType } from '@/libs/vehicle/mavlink/types'
 import { type MissionLoadingCallback, defaultLoadingCallback } from '@/types/mission'
-
-const MISSION = MavMissionType.MAV_MISSION_TYPE_MISSION
 
 // ponytail: idle backoff grows on silence and does not reset when an item lands, so a
 // slow link does not re-burst the window per waypoint. IN_FLIGHT=64 caps a hostile
@@ -48,30 +47,6 @@ export type MissionDownloadPort = {
    * Incoming MAVLink stream used to collect MISSION_COUNT / MISSION_ITEM_INT.
    */
   onIncomingMAVLinkMessage: SignalTyped
-}
-
-/**
- * Wait until `pulse` is called or `ms` elapses.
- * @param {number} ms Idle timeout
- * @param {(cb: (() => void) | null) => void} setPulse Register or clear the current waiter
- * @returns {Promise<void>} Resolves on pulse, rejects with `idle` on timeout
- */
-const waitPulse = (ms: number, setPulse: (cb: (() => void) | null) => void): Promise<void> =>
-  new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      setPulse(null)
-      reject(new Error('idle'))
-    }, ms)
-    setPulse(() => {
-      clearTimeout(timer)
-      setPulse(null)
-      resolve()
-    })
-  })
-
-const fail = (log: string, user: string): never => {
-  console.error(log)
-  throw new Error(user)
 }
 
 /**

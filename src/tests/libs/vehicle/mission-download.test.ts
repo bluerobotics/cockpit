@@ -1,16 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import { SignalTyped } from '@/libs/signal'
 import { type MissionDownloadPort, downloadMissionItems } from '@/libs/vehicle/mavlink/mission-download'
 
-const pack = (message: object): Package =>
-  ({ header: { system_id: 1, component_id: 1, sequence: 0 }, message } as Package)
-
-const itemInt = (seq: number): Message.MissionItemInt =>
-  ({ type: MAVLinkType.MISSION_ITEM_INT, seq, x: seq, y: seq } as Message.MissionItemInt)
+import { drain, flushUntil, itemInt, pack } from './mission-helpers'
 
 const fakeVehicle = (requested: number[], acks: boolean[]): MissionDownloadPort => ({
   requestMissionItemsList: (): void => undefined,
@@ -22,22 +16,6 @@ const fakeVehicle = (requested: number[], acks: boolean[]): MissionDownloadPort 
   },
   onIncomingMAVLinkMessage: new SignalTyped(),
 })
-
-const drain = async (): Promise<void> => {
-  for (let i = 0; i < 20; i++) {
-    vi.advanceTimersByTime(0)
-    await Promise.resolve()
-  }
-}
-
-const flushUntil = async (ready: () => boolean): Promise<void> => {
-  for (let i = 0; i < 20; i++) {
-    vi.advanceTimersByTime(0)
-    await Promise.resolve()
-    if (ready()) return
-  }
-  throw new Error('flushUntil timed out')
-}
 
 describe('downloadMissionItems', () => {
   afterEach(() => {
