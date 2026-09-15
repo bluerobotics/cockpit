@@ -419,6 +419,7 @@ export class WebRTCManager {
     this.updateStreamStatus(msg)
     console.debug('[WebRTC] ' + msg)
 
+    this.signaller.removeSessionListeners(this.session.id)
     this.session.end()
     this.session = undefined
   }
