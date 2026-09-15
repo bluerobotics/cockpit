@@ -329,6 +329,8 @@ export class WebRTCManager {
         console.error('[WebRTC] ' + error)
         this.updateStreamStatus(error)
 
+        // The retry below is taken for the start already in flight unless this is cleared first
+        this.waitingForSessionStart = false
         this.startConsumer()
         this.startSession()
         return
