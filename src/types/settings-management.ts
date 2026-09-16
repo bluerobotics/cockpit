@@ -3,6 +3,7 @@ export const vehicleOldStyleSettingsKey = 'settings'
 export const vehicleOldStyleSettingsBackupKey = 'settings-v1-backup'
 export const vehicleNewStyleSettingsKey = 'settings-v2'
 export const localSyncedSettingsKey = 'cockpit-settings-v2'
+export const localSyncIgnoreOnceKey = 'cockpit-settings-sync-ignore-once'
 export const cockpitLastConnectedVehicleKey = 'cockpit-last-connected-vehicle-id'
 export const cockpitLastConnectedUserKey = 'cockpit-last-connected-user'
 export const vehicleIdKey = 'cockpit-vehicle-id'
@@ -25,6 +26,25 @@ export type CockpitSetting = {
 }
 
 export type SettingsPackage = Record<string, CockpitSetting>
+
+/**
+ * An entry in the list of settings pending reset, to be deleted from the vehicle on the next sync.
+ * Scoped by user and vehicle so a reset only affects the settings it was performed on.
+ */
+export type PendingResetEntry = {
+  /**
+   * The ID of the user the setting belongs to
+   */
+  userId: string
+  /**
+   * The ID of the vehicle the setting belongs to
+   */
+  vehicleId: string
+  /**
+   * The key of the setting to reset
+   */
+  key: string
+}
 
 /**
  * UserSettings is a map with the settings of different vehicles for a single user.
