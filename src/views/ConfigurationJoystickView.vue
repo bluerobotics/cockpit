@@ -299,7 +299,7 @@
                 <div class="w-full flex-centered flex-column">
                   <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
                   <v-data-table
-                    :items="tableItems"
+                    :items="axisTableItems"
                     class="elevation-1 bg-transparent rounded-lg mb-[20px]"
                     theme="dark"
                     no-data-text=""
@@ -314,12 +314,12 @@
                         <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
                         <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
                       </tr>
-                      <p v-if="tableItems.length === 0" class="fixed top-[67%] left-[40%]">
+                      <p v-if="axisTableItems.length === 0" class="fixed top-[67%] left-[40%]">
                         Press a key or move an axis
                       </p>
                     </template>
                     <template #item="{ item }">
-                      <tr v-if="item.type === 'axis'">
+                      <tr>
                         <td class="w-[100px] text-center">
                           <div class="flex items-center justify-center gap-x-4">
                             <p>{{ item.type }}</p>
@@ -328,14 +328,14 @@
                         </td>
                         <td class="w-[120px] text-center">
                           <AxisVisualization
-                            v-if="item.type === 'axis' && currentJoystick && currentJoystick.state.axes"
+                            v-if="currentJoystick"
                             :raw-value="currentJoystick.state.axes[item.id as JoystickAxis] || 0"
                             :processed-value="scaledAxisValue(currentJoystick, item.id as JoystickAxis)"
                           />
                           <span v-else class="text-xs opacity-50">—</span>
                         </td>
                         <td class="w-[50px] text-center">
-                          <v-icon v-if="item.type === 'axis'">
+                          <v-icon>
                             {{
                               [JoystickAxis.A0, JoystickAxis.A2].includes(Number(item.id))
                                 ? 'mdi-pan-horizontal'
@@ -345,7 +345,6 @@
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            v-if="item.type === 'axis'"
                             v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].min"
                             type="number"
                             density="compact"
@@ -356,7 +355,6 @@
                         </td>
                         <td class="w-[120px] text-center">
                           <v-select
-                            v-if="item.type === 'axis'"
                             v-model="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].action"
                             :items="filteredAndSortedAxisActions"
                             item-title="name"
@@ -370,7 +368,6 @@
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            v-if="item.type === 'axis'"
                             v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].max"
                             type="number"
                             density="compact"
@@ -397,7 +394,7 @@
                   <p class="text-start text-sm font-bold w-[93%] mb-1">Buttons</p>
                   <v-data-table
                     :headers="headers"
-                    :items="tableItems"
+                    :items="buttonTableItems"
                     :items-per-page="128"
                     class="elevation-1 bg-transparent rounded-lg mt-2 mb-10"
                     theme="dark"
@@ -422,13 +419,11 @@
                       </tr>
                     </template>
                     <template #item="{ item }">
-                      <tr v-if="item.type === 'button'">
+                      <tr>
                         <td class="w-[120px]">
                           <div
                             class="flex items-center justify-center gap-x-4 rounded-xl"
-                            :class="
-                                item.type === 'button' && isButtonPressed(item.id as JoystickButton) ? 'bg-[#2c99ce]' : 'bg-transparent'
-                              "
+                            :class="isButtonPressed(item.id as JoystickButton) ? 'bg-[#2c99ce]' : 'bg-transparent'"
                           >
                             <p>{{ item.type }}</p>
                             <p>{{ item.id }}</p>
@@ -925,6 +920,10 @@ const tableItems = computed(() => {
 
   return items
 })
+
+// Each table only iterates its own rows, so neither pays for the other's items
+const axisTableItems = computed(() => tableItems.value.filter((item) => item.type === 'axis'))
+const buttonTableItems = computed(() => tableItems.value.filter((item) => item.type === 'button'))
 
 onUnmounted(() => {
   controllerStore.enableForwarding = true
