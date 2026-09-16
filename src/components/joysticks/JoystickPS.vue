@@ -1,6 +1,12 @@
 <template>
   <div ref="wrapperRef" class="relative" :class="{ 'opacity-50': disabled }">
-    <object :class="component_name" type="image/svg+xml" :data="joystick_svg_path" class="w-full block" />
+    <object
+      :class="component_name"
+      type="image/svg+xml"
+      :data="joystick_svg_path"
+      class="w-full block"
+      :style="{ aspectRatio: svgAspectRatio }"
+    />
     <div
       v-for="label in labelOverlays"
       :key="label.id"
@@ -70,6 +76,16 @@ const joystickSvgModel = computed(() => {
       return SVGModel.PS4
   }
 })
+
+// Matches the box each file renders at, so it keeps its height while the SVG is still being fetched
+const svgAspectRatios: { [key in SVGModel]: string } = {
+  [SVGModel.PS4]: '1250 / 650',
+  [SVGModel.PS5]: '1033.048 / 545.441',
+  [SVGModel.LogitechExtreme3DPro]: '800 / 800',
+  [SVGModel.IPEGAPG9023]: '1250 / 650',
+}
+
+const svgAspectRatio = computed(() => svgAspectRatios[joystickSvgModel.value])
 
 const buttonPath: { [key in JoystickButton]: string } = {
   [JoystickButton.B0]: 'path_b0',
