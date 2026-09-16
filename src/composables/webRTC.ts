@@ -7,6 +7,9 @@ import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
 import { Session } from '@/libs/webrtc/session'
 import { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { trackVideoArrival } from '@/libs/webrtc/stats'
+
+const secondsWithoutVideoToSessionLoss = 10
 
 /**
  *
@@ -53,6 +56,7 @@ export class WebRTCManager {
   private signaller: Signaller
   private waitingForAvailableStreamsAnswer = false
   private waitingForSessionStart = false
+  private videoWatchdog: number | undefined
 
   /**
    *
@@ -257,6 +261,38 @@ export class WebRTCManager {
     console.debug('Settings:', event.track.getSettings?.())
     console.debug('Constraints:', event.track.getConstraints?.())
     console.debug('Capabilities:', event.track.getCapabilities?.())
+
+    this.startVideoWatchdog()
+  }
+
+  /**
+   * Starts watching the video actually arriving on the current session, so what decides a session is over is the
+   * media itself, rather than the signalling link, which RTP does not need once ICE has settled
+   */
+  private startVideoWatchdog(): void {
+    this.stopVideoWatchdog()
+
+    let secondsWithoutVideo: (() => number | undefined) | undefined
+
+    this.videoWatchdog = window.setInterval(() => {
+      if (this.streamName === undefined) return
+
+      secondsWithoutVideo ??= trackVideoArrival(
+        this.streamName,
+        'a stream that stops arriving will not renew its session'
+      )
+      if ((secondsWithoutVideo() ?? 0) < secondsWithoutVideoToSessionLoss) return
+
+      this.onSessionClosed(`No video received for ${secondsWithoutVideoToSessionLoss} seconds`)
+    }, 1000)
+  }
+
+  /**
+   * Stops watching the video arrival, so the watchdog of a session that is over cannot renew its replacement
+   */
+  private stopVideoWatchdog(): void {
+    window.clearInterval(this.videoWatchdog)
+    this.videoWatchdog = undefined
   }
 
   /**
@@ -397,6 +433,8 @@ export class WebRTCManager {
    * @param {string} reason
    */
   private stopSession(reason: string): void {
+    this.stopVideoWatchdog()
+
     // The media stream no longer carries video, so drop it instead of leaving consumers with its last frame, or a
     // black screen, as if it were live
     this.connected.value = false

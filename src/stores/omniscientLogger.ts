@@ -11,7 +11,7 @@ import {
 } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { isElectron } from '@/libs/utils'
-import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
+import { monitorStreamPeerConnection, streamStatVariableId } from '@/libs/webrtc/stats'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useMainVehicleStore } from './mainVehicle'
@@ -183,10 +183,6 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
   const webrtcStreamStats: Record<string, ReturnType<typeof WebRTCStats>> = {}
   const streamsAlreadyTrackingWebRTCStats: string[] = []
 
-  const streamRateVariableId = (streamName: string, statKeyName: string): string => {
-    return `stream-${streamName}-${statKeyName}`
-  }
-
   // Monitor the active streams to add the connections to the WebRTC statistics
   watch(videoStore.activeStreams, (streams) => {
     Object.keys(streams).forEach((streamName) => {
@@ -202,9 +198,9 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       monitorStreamPeerConnection(webrtcStreamStats[streamName], pcInfo)
 
       storedKeys.forEach((key) => {
-        if (getDataLakeVariableInfo(streamRateVariableId(streamName, key)) === undefined) {
+        if (getDataLakeVariableInfo(streamStatVariableId(streamName, key)) === undefined) {
           const streamVariable = {
-            id: streamRateVariableId(streamName, key),
+            id: streamStatVariableId(streamName, key),
             name: `Stream '${streamName}' - ${key}`,
             type: 'number',
             description: `WebRTC stat '${key}' of the '${streamName}' video stream.`,
@@ -225,7 +221,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
           if (videoData === undefined) return
 
           storedKeys.forEach((key) => {
-            setDataLakeVariableData(streamRateVariableId(streamName, key), videoData[key])
+            setDataLakeVariableData(streamStatVariableId(streamName, key), videoData[key])
           })
         } catch (error) {
           console.error('Error while logging WebRTC statistics:', error)
