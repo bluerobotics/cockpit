@@ -287,6 +287,10 @@ class JoystickManager {
     const { vendor_id, product_id } = this.getVidPid(gamepadId)
 
     if (vendor_id == undefined || product_id == undefined) {
+      // Xbox controllers connected through XInput on Windows are exposed by the browser without VID/PID
+      // (e.g. "Xbox 360 Controller (XInput STANDARD GAMEPAD)"), so match them by name instead of falling
+      // back to the generic Unknown model.
+      if (/xinput|xbox/i.test(gamepadId)) return JoystickModel.XboxController_XInput
       return JoystickModel.Unknown
     }
     return JoystickMapVidPid.get(`${vendor_id}:${product_id}`) ?? JoystickModel.Unknown
