@@ -989,16 +989,16 @@ const updateButtonAction = (input: JoystickButtonInput, action: ProtocolAction):
   openSnackbar({ message: `Button ${input.id} remapped to function '${action.name}'.`, variant: 'success' })
 }
 
-// Automatically set the current joystick when it changes for the first time
-watch(controllerStore.joysticks, () => {
-  if (currentJoystick.value === undefined) {
-    if (controllerStore.joysticks.size <= 0) return
-    const firstEntry = controllerStore.joysticks.entries().next().value
-    if (firstEntry) {
-      currentJoystick.value = firstEntry[1]
-    }
+// Automatically set the current joystick when it changes for the first time.
+// Watches the size rather than the map itself, since the store reassigns each joystick's gamepad on
+// every poll and a watcher on the map would deep-traverse it at that rate.
+watch(
+  () => controllerStore.joysticks.size,
+  () => {
+    if (currentJoystick.value !== undefined) return
+    currentJoystick.value = controllerStore.joysticks.values().next().value
   }
-})
+)
 
 let lastModTabChange = new Date().getTime()
 const changeModifierKeyTab = (modKeyOption: CockpitModifierKeyOption): void => {
