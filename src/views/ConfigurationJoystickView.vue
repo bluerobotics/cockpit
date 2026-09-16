@@ -712,7 +712,11 @@ watch(
   () => (controllerStore.enableForwarding = false)
 )
 
-const currentJoystick = ref<Joystick>()
+// A visual layout only exists for recognized models, so anything else belongs on the mapping table
+const tabViewForModel = (model?: JoystickModel): string =>
+  model === undefined || model === JoystickModel.Unknown ? 'table' : 'svg'
+
+const currentJoystick = ref<Joystick | undefined>(controllerStore.joysticks.values().next().value)
 const currentButtonInputs = ref<JoystickButtonInput[]>([])
 const currentAxisInputs = ref<JoystickAxisInput[]>([])
 const remappingAxisInput = ref<false | JoystickAxis>(false)
@@ -724,7 +728,7 @@ const inputClickedDialog = ref(false)
 const currentModifierKey: Ref<ProtocolAction> = ref(modifierKeyActions.regular)
 const availableModifierKeys: ProtocolAction[] = Object.values(modifierKeyActions)
 const showJoystickLayout = ref(true)
-const currentTabVIew = ref('table')
+const currentTabVIew = ref(tabViewForModel(currentJoystick.value?.model))
 const maxVisibleInputs = 64
 
 // Track buttons and axes that are represented in the SVG joystick layouts
@@ -803,13 +807,7 @@ const idsExcludedJoystickActions = [
 
 watch(
   () => currentJoystick.value?.model,
-  (newModel) => {
-    if (newModel === JoystickModel.Unknown) {
-      currentTabVIew.value = 'table'
-      return
-    }
-    currentTabVIew.value = 'svg'
-  }
+  (newModel) => (currentTabVIew.value = tabViewForModel(newModel))
 )
 
 const setTabView = (view: unknown): void => {
@@ -881,17 +879,18 @@ const tableItemsCache = ref<{
 } | null>(null)
 
 /**
- * Optimized table items with memoization to reduce object creation. When a joystick is connected
- * we use its actual axes/buttons counts; otherwise we fall back to the protocol mapping's known
- * axes/buttons so the mapping editor still renders and is editable without a joystick.
+ * Optimized table items with memoization to reduce object creation. When a connected joystick has
+ * reported its state we use its actual axes/buttons counts; otherwise we fall back to the protocol
+ * mapping's known axes/buttons so the mapping editor still renders and is editable without a joystick.
  */
 const tableItems = computed(() => {
   let axesLength: number
   let buttonsLength: number
 
-  if (currentJoystick.value) {
-    axesLength = currentJoystick.value.state.axes.length
-    buttonsLength = currentJoystick.value.state.buttons.length
+  const joystickState = currentJoystick.value?.state
+  if (joystickState?.axes.length) {
+    axesLength = joystickState.axes.length
+    buttonsLength = joystickState.buttons.length
   } else {
     axesLength = Object.keys(selectedProfileAxesCorrespondencies.value).length
     const buttons =
