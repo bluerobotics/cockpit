@@ -36,6 +36,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     isVehicleDefaultsAutoImportModalVisible: false,
     isVehicleDefaultsViewsImportModalVisible: false,
     isVehicleDefaultsJoystickImportModalVisible: false,
+    isJoystickStickModeModalVisible: false,
     userHasSeenTutorial: useBlueOsStorage('cockpit-has-seen-tutorial', false),
     configPanelVisible: false,
     showSplashScreen: true,
