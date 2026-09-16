@@ -134,12 +134,21 @@ const snapshotsIndexedDB: StorageDB = new LocalForageStorage(
   'Cockpit snapshots taken from video streams or workspace.'
 )
 
+const audioRecordingsIndexedDB: StorageDB = new LocalForageStorage(
+  'Cockpit - Audio Recordings',
+  'cockpit-audio-recordings-db',
+  1.0,
+  'Cockpit voice/audio recordings captured from the local microphone.'
+)
+
 const electronVideoStorage = new ElectronStorage(['videos'])
 const temporaryElectronVideoStorage = new ElectronStorage(['videos', 'temporary-video-chunks'])
 const electronSnapshotStorage = new ElectronStorage(['snapshots'])
 const snapshotThumbnailsStorage = new ElectronStorage(['snapshots', 'thumbs'])
+const electronAudioStorage = new ElectronStorage(['audio'])
 
 export const videoStorage = isElectron() ? electronVideoStorage : videoStoringIndexedDB
 export const tempVideoStorage = isElectron() ? temporaryElectronVideoStorage : tempVideoChunksIndexdedDB
 export const snapshotStorage = isElectron() ? electronSnapshotStorage : snapshotsIndexedDB
 export const snapshotThumbStorage = isElectron() ? snapshotThumbnailsStorage : snapshotThumbnailsIndexedDB
+export const audioStorage = isElectron() ? electronAudioStorage : audioRecordingsIndexedDB
