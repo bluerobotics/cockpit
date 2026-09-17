@@ -63,18 +63,44 @@
                     </p>
                   </div>
 
-                  <div v-if="availableModifierKeys" class="flex flex-row items-center mt-2 mb-3">
+                  <div v-if="availableModifierKeys" class="flex flex-row items-center mb-3">
                     <v-switch
                       :model-value="controllerStore.holdLastInputWhenWindowHidden"
                       label="Hold last joystick input when window is hidden (tab changed or window minimized)"
-                      class="scale-[85%] -mb-4"
+                      class="scale-[85%] -mb-6 -mt-2"
                       @update:model-value="setHoldLastInputWhenWindowHidden"
                     />
                   </div>
-                  <div class="flex w-full justify-center mb-2">
-                    <span class="text-lg font-medium" :class="{ 'text-sm': interfaceStore.isOnSmallScreen }">
-                      {{ controllerStore.protocolMapping.name }}
+                  <div class="flex w-full items-center gap-x-3 mb-2">
+                    <span class="font-medium" :class="interfaceStore.isOnSmallScreen ? 'text-sm' : 'text-md'">
+                      Profile:
                     </span>
+                    <v-select
+                      :model-value="controllerStore.activeProfileHash"
+                      :items="controllerStore.joystickProfileOptions"
+                      theme="dark"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      class="max-w-[300px]"
+                      aria-label="Active joystick profile"
+                      @update:model-value="setActiveJoystickProfile"
+                    />
+                    <v-tooltip location="top" :text="deleteProfileTooltip">
+                      <template #activator="{ props }">
+                        <div v-bind="props">
+                          <v-btn
+                            icon="mdi-trash-can"
+                            variant="text"
+                            size="28"
+                            class="text-[16px] -ml-1"
+                            aria-label="Delete the active joystick profile"
+                            :disabled="controllerStore.joystickProfiles.length <= 1"
+                            @click="confirmJoystickProfileDeletion"
+                          />
+                        </div>
+                      </template>
+                    </v-tooltip>
                   </div>
                 </div>
                 <div class="flex w-full h-[47px]">
@@ -663,6 +689,7 @@ import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
@@ -696,6 +723,7 @@ const controllerStore = useControllerStore()
 const { globalAddress } = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
+const { showDialog, closeDialog } = useInteractionDialog()
 
 const showJoystickWarningMessage = ref(false)
 const searchText = ref('')
@@ -1056,6 +1084,50 @@ const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
 const openVehicleDefaultsImportModal = (): void => {
   logUserAction('Opened vehicle defaults joystick import modal')
   interfaceStore.openVehicleDefaultsJoystickImport()
+}
+
+const deleteProfileTooltip = computed(() =>
+  controllerStore.joystickProfiles.length <= 1
+    ? 'The only profile cannot be deleted. Create another one first.'
+    : 'Delete this profile'
+)
+
+const setActiveJoystickProfile = (hash: string): void => {
+  const name = controllerStore.joystickProfileName(hash)
+  logUserAction(`Switched the joystick profile to "${name}"`)
+  controllerStore.selectJoystickProfile(hash)
+  openSnackbar({ variant: 'success', message: `"${name}" is now your joystick profile.`, duration: 4000 })
+}
+
+const confirmJoystickProfileDeletion = (): void => {
+  const { name, hash } = controllerStore.protocolMapping
+  logUserAction(`Opened the confirmation to delete the "${name}" joystick profile`)
+  showDialog({
+    title: 'Delete this joystick profile?',
+    variant: 'warning',
+    maxWidth: 520,
+    backdrop: true,
+    message: `"${name}" and every input mapped in it are removed. This cannot be undone.`,
+    actions: [
+      {
+        text: 'Cancel',
+        action: () => {
+          logUserAction('Cancelled deleting the joystick profile')
+          closeDialog()
+        },
+      },
+      {
+        text: 'Delete profile',
+        class: 'bg-[#FFFFFF33] text-white',
+        action: () => {
+          closeDialog()
+          controllerStore.deleteJoystickProfile(hash)
+          logUserAction(`Deleted the "${name}" joystick profile`)
+          openSnackbar({ variant: 'success', message: `"${name}" was deleted.`, duration: 4000 })
+        },
+      },
+    ],
+  })
 }
 
 const handleExportFunctionsMapping = (): void => {
