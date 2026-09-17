@@ -101,6 +101,23 @@
                         </div>
                       </template>
                     </v-tooltip>
+                    <v-spacer />
+                    <v-tooltip location="top" :text="wizardTooltip" :disabled="!isWizardUnavailable">
+                      <template #activator="{ props }">
+                        <div v-bind="props">
+                          <v-btn
+                            variant="flat"
+                            size="small"
+                            prepend-icon="mdi-auto-fix"
+                            class="bg-[#FFFFFF22] text-white elevation-1 disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50"
+                            :disabled="isWizardUnavailable"
+                            @click="openJoystickWizard"
+                          >
+                            Configuration wizard
+                          </v-btn>
+                        </div>
+                      </template>
+                    </v-tooltip>
                   </div>
                 </div>
                 <div class="flex w-full h-[47px]">
@@ -1084,6 +1101,15 @@ const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
 const openVehicleDefaultsImportModal = (): void => {
   logUserAction('Opened vehicle defaults joystick import modal')
   interfaceStore.openVehicleDefaultsJoystickImport()
+}
+
+// The wizard maps what the user presses and moves, so it has nothing to read without a controller
+const isWizardUnavailable = computed(() => controllerStore.joysticks.size === 0)
+const wizardTooltip = 'Connect a controller to run the wizard'
+
+const openJoystickWizard = (): void => {
+  logUserAction('Opened the joystick configuration wizard')
+  interfaceStore.isJoystickWizardVisible = true
 }
 
 const deleteProfileTooltip = computed(() =>

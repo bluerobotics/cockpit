@@ -31,6 +31,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     mainMenuCurrentStep: 1,
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
+    isJoystickWizardVisible: false,
     isExternalFeaturesModalVisible: false,
     isDataPrivacyModalVisible: false,
     isVehicleDefaultsAutoImportModalVisible: false,
