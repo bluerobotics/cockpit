@@ -45,6 +45,15 @@ export const distanceInMeters = (from: WaypointCoordinates, to: WaypointCoordina
   L.latLng(from[0], from[1]).distanceTo(L.latLng(to[0], to[1]))
 
 /**
+ * Ground distance covered by one screen pixel on a Web Mercator map.
+ * @param {number} latitude - Latitude of the point, in decimal degrees.
+ * @param {number} zoom - Map zoom level.
+ * @returns {number} The ground distance of one pixel, in meters.
+ */
+export const metersPerPixel = (latitude: number, zoom: number): number =>
+  (40075016.686 * Math.cos((latitude * Math.PI) / 180)) / Math.pow(2, zoom + 8)
+
+/**
  * A pointer position expressed both in a map container's pixel space and as a geographic coordinate.
  */
 export type MapPointerPosition = {
@@ -777,14 +786,9 @@ export const getGridSpacingFromScale = (map: L.Map): number => {
   const center = map.getCenter()
   const zoom = map.getZoom()
 
-  // Calculate meters per pixel at current zoom level
-  const earthCircumference = 40075017 // meters
-  const latRad = (center.lat * Math.PI) / 180
-  const metersPerPixel = (earthCircumference * Math.cos(latRad)) / Math.pow(2, zoom + 8)
-
   // Standard scale control width in pixels (Leaflet default is 100px max)
   const maxWidth = 100
-  const maxDistanceMeters = metersPerPixel * maxWidth
+  const maxDistanceMeters = metersPerPixel(center.lat, zoom) * maxWidth
 
   // Round to nice numbers like Leaflet scale control does
   const niceDistances = [

@@ -35,6 +35,7 @@ export enum EventCategory {
   ALT_CHANGE = 'Altitude Change',
   LAND = 'Land',
   GOTO = 'Goto',
+  SET_POSITION = 'Set Position',
 }
 
 /**

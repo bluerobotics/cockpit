@@ -712,6 +712,29 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Send an occasional external position estimate for dead-reckoning.
+   * Altitude is sent as NaN; ArduPilot currently rejects any other z value.
+   * @param {number} latitude Latitude in decimal degrees.
+   * @param {number} longitude Longitude in decimal degrees.
+   * @param {number} accuracy Estimated one-standard-deviation accuracy of the measurement, in meters.
+   * @returns {Promise<void>}
+   */
+  async sendExternalPositionEstimate(latitude: number, longitude: number, accuracy: number): Promise<void> {
+    // ponytail: the generated mavlink2rest enum has not caught up with this command yet; bump the m2r submodule
+    // and use MavCmd.MAV_CMD_EXTERNAL_POSITION_ESTIMATE once it has.
+    await this.sendCommandInt(
+      'MAV_CMD_EXTERNAL_POSITION_ESTIMATE' as MavCmd,
+      performance.now() / 1000,
+      0,
+      accuracy,
+      0,
+      latitude,
+      longitude,
+      Number.NaN
+    )
+  }
+
+  /**
    * Get the date of the last heartbeat
    * @returns {Date}
    */

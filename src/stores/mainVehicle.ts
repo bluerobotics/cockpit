@@ -475,6 +475,38 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Send an occasional external position estimate for dead-reckoning, after the user confirms it.
+   * @param {number} latitude Latitude in decimal degrees.
+   * @param {number} longitude Longitude in decimal degrees.
+   * @param {number} accuracy Estimated one-standard-deviation accuracy of the position, in meters.
+   * @returns {Promise<void>}
+   */
+  async function sendExternalPositionEstimate(latitude: number, longitude: number, accuracy: number): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to send a position estimate.')
+    }
+
+    if (mainVehicle.value.firmware() !== Vehicle.Firmware.ArduPilot) {
+      throw new Error('Setting the vehicle position is not supported by this vehicle.')
+    }
+
+    const command = 'Set Position'
+    try {
+      await slideToConfirm({ command }, canByPassCategory(EventCategory.SET_POSITION))
+    } catch (error) {
+      throw new Error(`${command} command ignored or cancelled by the user.`)
+    }
+
+    openSnackbar({ message: 'Sending the new position to the vehicle...', variant: 'info' })
+    try {
+      await mainVehicle.value.sendExternalPositionEstimate(latitude, longitude, accuracy)
+    } catch (error) {
+      console.error('External position estimate failed:', error)
+      throw new Error('the vehicle did not accept the new position. Check the connection and try again.')
+    }
+  }
+
+  /**
    * Configure the vehicle somehow
    * @param { VehicleConfigurationSettings } settings Configuration data
    */
@@ -1234,6 +1266,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     land,
     disarm,
     goTo,
+    sendExternalPositionEstimate,
     modesAvailable,
     setFlightMode,
     sendGcsHeartbeat,

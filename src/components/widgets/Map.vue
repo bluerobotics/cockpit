@@ -309,6 +309,7 @@ import {
   applyFollowZoomMode,
   createGridOverlay,
   fitMapToWaypoints,
+  metersPerPixel,
   persistLiveMapView,
   recenterMapOnFollowTarget,
   singleStepZoomMapOptions,
@@ -1481,6 +1482,7 @@ const staticTopMenuItems = [
 
 const staticBottomMenuItems = [
   { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
+  { item: 'Set vehicle position', action: () => onMenuOptionSelect('set-position'), icon: 'mdi-map-marker-check' },
   {
     item: 'Set default map position',
     action: () => onMenuOptionSelect('set-default-map-position'),
@@ -1609,6 +1611,9 @@ const openContextMenuAt = async (mouseEv: MouseEvent, wpIndex: number | null): P
 
 const gotoMarker = ref<L.Marker>()
 
+// ponytail: fixed guess of how far a right-click lands from the intended spot; a drag-to-refine marker would measure it.
+const clickUncertaintyPixels = 5
+
 const setDefaultMapPosition = async (): Promise<void> => {
   if (!map.value || !clickedLocation.value) return
 
@@ -1696,6 +1701,19 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       poiGoTo.clearTarget()
       placeGotoMarker(clickedLocation.value)
       await issueGoto(clickedLocation.value)
+      break
+    }
+
+    case 'set-position': {
+      if (!clickedLocation.value) break
+      const [latitude, longitude] = clickedLocation.value
+      const accuracy = metersPerPixel(latitude, zoom.value) * clickUncertaintyPixels
+      try {
+        await vehicleStore.sendExternalPositionEstimate(latitude, longitude, accuracy)
+        openSnackbar({ message: 'Vehicle position updated.', variant: 'success' })
+      } catch (error) {
+        openSnackbar({ message: `Could not set the vehicle position: ${(error as Error).message}`, variant: 'error' })
+      }
       break
     }
 
