@@ -67,6 +67,11 @@ export const useControllerStore = defineStore('controller', () => {
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
   const preventJoystickForwarding = ref(false)
+  // Raised while a surface is reading the controller to bind it, so the inputs the user is naming cannot also fire
+  // whatever they are already bound to. It is separate from enableForwarding because several places write that flag,
+  // and the last of them to run would otherwise decide whether the binding surface is heard.
+  const isCapturingInputsForMapping = ref(false)
+  const isForwardingActive = computed(() => enableForwarding.value && !isCapturingInputsForMapping.value)
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
 
   // Self-heal: if we booted with a blank mapping but legacy data is reachable now (e.g. from raw localStorage or
@@ -277,7 +282,7 @@ export const useControllerStore = defineStore('controller', () => {
     }
 
     // If joystick forwarding is disabled, disable the callback processing
-    if (!enableForwarding.value) return
+    if (!isForwardingActive.value) return
 
     for (const callback of updateCallbacks.value) {
       try {
@@ -496,7 +501,7 @@ export const useControllerStore = defineStore('controller', () => {
       }
     })
 
-    if (enableForwarding.value) {
+    if (isForwardingActive.value) {
       actionsToCallFromJoystick.value.forEach((a) => executeActionCallback(a as CockpitActionsFunction))
     }
   })
@@ -509,6 +514,8 @@ export const useControllerStore = defineStore('controller', () => {
   return {
     registerControllerUpdateCallback,
     enableForwarding,
+    isCapturingInputsForMapping,
+    isForwardingActive,
     holdLastInputWhenWindowHidden,
     joysticks,
     protocolMapping,
