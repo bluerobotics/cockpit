@@ -7,7 +7,7 @@
         :style="`transform: scaleX(${rawValue * -1})`"
       />
     </div>
-    <div class="flex flex-col w-[50px] -mt-2">
+    <div class="flex flex-col w-[50px] -mt-2 text-center">
       <p>{{ rawValue.toFixed(2) }}</p>
       <p class="text-[10px]">{{ processedValue.toFixed(2) }}</p>
     </div>
