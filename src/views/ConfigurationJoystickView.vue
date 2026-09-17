@@ -141,14 +141,14 @@
                           </template>
                         </v-tooltip>
                         <v-divider vertical />
-                        <v-tooltip location="top" text="Import default mapping for this vehicle">
+                        <v-tooltip location="top" text="Restore default mapping for this vehicle">
                           <template #activator="{ props }">
                             <v-btn
                               v-bind="props"
-                              icon="mdi-import"
+                              icon="mdi-refresh"
                               variant="text"
                               size="24"
-                              class="text-[12px] mx-3 mt-[2px] mb-[1px]"
+                              class="text-[12px] mx-3 mt-[2px] mb-[1px] scale-x-[-1]"
                               @click="openVehicleDefaultsImportModal"
                           /></template>
                         </v-tooltip>
