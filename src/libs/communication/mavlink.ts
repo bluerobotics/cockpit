@@ -7,6 +7,16 @@ import { MavlinkManualControlState } from '../joystick/protocols/mavlink-manual-
 
 let lastTimeLoggedConnectionError = new Date(0)
 
+// MAVLink needs a NaN on the wire for unset float fields (e.g. unused COMMAND_INT.z) and JSON.stringify
+// turns those into null, so emit the bare NaN/Infinity literals that mavlink2rest's JSON5 parser accepts.
+const serializeMavlinkJson5 = (pack: Package): string => {
+  // Random per call so a string field in the payload cannot forge it
+  const token = `__cockpit_${Math.random().toString(36).slice(2)}__`
+  return JSON.stringify(pack, (_key, value) =>
+    typeof value === 'number' && !Number.isFinite(value) ? `${token}${value}` : value
+  ).replace(new RegExp(`"${token}(NaN|-?Infinity)"`, 'g'), '$1')
+}
+
 /**
  * Send a mavlink message
  * @param {MavMessage} message
@@ -22,7 +32,7 @@ export const sendMavlinkMessage = (message: MavMessage): void => {
   }
   const textEncoder = new TextEncoder()
   try {
-    ConnectionManager.write(textEncoder.encode(JSON.stringify(pack)))
+    ConnectionManager.write(textEncoder.encode(serializeMavlinkJson5(pack)))
   } catch (error) {
     // Don't log the error if it's too frequent
     if (Date.now() < lastTimeLoggedConnectionError.getTime() + 10000) return
