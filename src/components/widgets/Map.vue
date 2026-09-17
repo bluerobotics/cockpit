@@ -1481,6 +1481,7 @@ const staticTopMenuItems = [
 
 const staticBottomMenuItems = [
   { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
+  { item: 'Set Position', action: () => onMenuOptionSelect('set-position'), icon: 'mdi-map-marker-check' },
   {
     item: 'Set default map position',
     action: () => onMenuOptionSelect('set-default-map-position'),
@@ -1696,6 +1697,20 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       poiGoTo.clearTarget()
       placeGotoMarker(clickedLocation.value)
       await issueGoto(clickedLocation.value)
+      break
+    }
+
+    case 'set-position': {
+      if (!clickedLocation.value) break
+      try {
+        await vehicleStore.sendExternalPositionEstimate(clickedLocation.value[0], clickedLocation.value[1])
+        openSnackbar({ message: 'Position estimate sent to the vehicle.', variant: 'success' })
+      } catch (error) {
+        openSnackbar({
+          message: `Could not send the position estimate: ${(error as Error).message}`,
+          variant: 'error',
+        })
+      }
       break
     }
 
