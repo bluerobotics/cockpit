@@ -1938,12 +1938,10 @@ const setHomePosition = async (homePosition: [number, number]): Promise<void> =>
 // Allow executing missions
 const executeMissionOnVehicle = async (): Promise<void> => {
   logUserAction('Started mission from map')
-  try {
-    await vehicleStore.startMission()
-  } catch (error) {
+  const started = await missionStore.executeMissionOnVehicle()
+  if (!started) {
     openSnackbar({ message: 'Failed to start mission.', variant: 'error' })
   }
-  return
 }
 
 // Set dynamic styles for correct displacement of the bottom buttons when the widget is below the bottom bar
