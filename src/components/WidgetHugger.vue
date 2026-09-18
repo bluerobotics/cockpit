@@ -4,6 +4,20 @@
     class="widgetOverlay"
     :class="{ allowMoving, draggingWidget, hoveringWidgetOrOverlay, highlighted }"
   />
+  <div v-if="showingAlignmentGuides" class="absolute inset-x-0 pointer-events-none z-40" :style="guidesBandStyle">
+    <div
+      v-for="guide in activeAlignmentGuides.x"
+      :key="`vertical-${guide}`"
+      class="absolute top-0 h-full w-0.5 bg-[#3B7B62]"
+      :style="{ left: `${100 * guide}%` }"
+    />
+    <div
+      v-for="guide in activeAlignmentGuides.y"
+      :key="`horizontal-${guide}`"
+      class="absolute left-0 w-full h-0.5 bg-[#3B7B62]"
+      :style="{ top: `${guideOffsetInBand(guide)}%` }"
+    />
+  </div>
   <div ref="outerWidgetRef" class="outerWidget">
     <div
       v-if="widgetHasOwnContextMenu[widget.component as WidgetType]"
@@ -63,6 +77,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } fr
 
 import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
 import { constrain, snapToInterval } from '@/libs/utils'
+import {
+  type MovedEdge,
+  alignmentSnapDelta,
+  alignmentSnapTolerancePixels,
+  alignResizedSpan,
+  matchedAlignmentLines,
+  widgetAlignmentLines,
+} from '@/libs/widget-alignment'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import { type Widget, isWidgetConfigurable, widgetHasOwnContextMenu, WidgetType } from '@/types/widgets'
@@ -192,12 +214,74 @@ const initialMousePos = ref<Point2D | undefined>(undefined)
 const initialWidgetPos = ref({ ...props.widget.position })
 const initialWidgetSize = ref({ ...props.widget.size })
 
+/**
+ * Normalized coordinates of a set of alignment lines, one entry per axis.
+ */
+type AxisAlignmentLines = {
+  /**
+   * Lines running vertically, at these horizontal coordinates
+   */
+  x: number[]
+  /**
+   * Lines running horizontally, at these vertical coordinates
+   */
+  y: number[]
+}
+
+const availableAlignmentLines = ref<AxisAlignmentLines>({ x: [], y: [] })
+const activeAlignmentGuides = ref<AxisAlignmentLines>({ x: [], y: [] })
+
+const barInsetsNormalized = computed(() => ({
+  top: widgetStore.currentTopBarHeightPixels / windowHeight.value,
+  bottom: widgetStore.currentBottomBarHeightPixels / windowHeight.value,
+}))
+
+// Taken once per gesture from what is on screen, since the other widgets cannot move while this one is being dragged.
+const collectAlignmentLines = (): void => {
+  availableAlignmentLines.value = { x: [], y: [] }
+  // MiniMap grants itself allowMoving for the duration of a drag outside edit mode, and editor guides have no business
+  // on the flight screen.
+  if (!widgetStore.editingMode) return
+
+  const viewRect = widgetView.value?.getBoundingClientRect()
+  if (!viewRect || viewRect.width === 0 || viewRect.height === 0) return
+
+  const x = [0.5]
+  const y = [(barInsetsNormalized.value.top + 1 - barInsetsNormalized.value.bottom) / 2]
+
+  for (const element of Array.from(widgetView.value?.getElementsByClassName('outerWidget') ?? [])) {
+    if (element === outerWidgetRef.value) continue
+    const rect = element.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) continue
+    const start = { x: (rect.left - viewRect.left) / viewRect.width, y: (rect.top - viewRect.top) / viewRect.height }
+    const length = { x: rect.width / viewRect.width, y: rect.height / viewRect.height }
+    x.push(...widgetAlignmentLines({ start: start.x, length: length.x }))
+    y.push(...widgetAlignmentLines({ start: start.y, length: length.y }))
+  }
+
+  availableAlignmentLines.value = { x, y }
+}
+
+const updateAlignmentGuides = (): void => {
+  activeAlignmentGuides.value = {
+    x: matchedAlignmentLines(
+      widgetAlignmentLines({ start: position.value.x, length: size.value.width }),
+      availableAlignmentLines.value.x
+    ),
+    y: matchedAlignmentLines(
+      widgetAlignmentLines({ start: position.value.y, length: size.value.height }),
+      availableAlignmentLines.value.y
+    ),
+  }
+}
+
 const handleDragStart = (event: MouseEvent): void => {
   const storeAllowMoving = widgetStore.widgetManagerVars(widget.value.hash).allowMoving
   if ((!allowMoving.value && !storeAllowMoving) || isResizing.value || !outerWidgetRef.value) return
   draggingWidget.value = true
   initialMousePos.value = { x: event.clientX, y: event.clientY }
   initialWidgetPos.value = { x: position.value.x, y: position.value.y }
+  collectAlignmentLines()
   outerWidgetRef.value.style.cursor = 'grabbing'
   document.documentElement.classList.add('widget-dragging')
   event.stopPropagation()
@@ -211,6 +295,7 @@ const handleResizeStart = (event: MouseEvent): void => {
   initialMousePos.value = { x: event.clientX, y: event.clientY }
   initialWidgetPos.value = { x: position.value.x, y: position.value.y }
   initialWidgetSize.value = { width: size.value.width, height: size.value.height }
+  collectAlignmentLines()
   event.stopPropagation()
   event.preventDefault()
 }
@@ -224,8 +309,7 @@ const handleResizeStart = (event: MouseEvent): void => {
  * @returns {Point2D} The position clamped to the valid range
  */
 const clampPositionToValidArea = (desiredPos: Point2D, widgetSize: SizeRect2D): Point2D => {
-  const topBarNormalized = widgetStore.currentTopBarHeightPixels / windowHeight.value
-  const bottomBarNormalized = widgetStore.currentBottomBarHeightPixels / windowHeight.value
+  const { top: topBarNormalized, bottom: bottomBarNormalized } = barInsetsNormalized.value
   const visibleAreaHeight = 1 - topBarNormalized - bottomBarNormalized
 
   const widgetTallerThanVisibleArea = widgetSize.height >= visibleAreaHeight
@@ -245,6 +329,25 @@ const snapCoordinateToGrid = (coordinate: number): number => {
   return snapToInterval(coordinate, widgetStore.gridInterval)
 }
 
+// Alignment wins over the grid, otherwise the grid would pull the widget back off the line it just glued to.
+const alignDraggedPosition = (desiredPos: Point2D, viewSize: ReturnType<typeof getViewSize>): Point2D => {
+  const deltaX = alignmentSnapDelta(
+    widgetAlignmentLines({ start: desiredPos.x, length: size.value.width }),
+    availableAlignmentLines.value.x,
+    alignmentSnapTolerancePixels / viewSize.width
+  )
+  const deltaY = alignmentSnapDelta(
+    widgetAlignmentLines({ start: desiredPos.y, length: size.value.height }),
+    availableAlignmentLines.value.y,
+    alignmentSnapTolerancePixels / viewSize.height
+  )
+
+  return {
+    x: deltaX === undefined ? snapCoordinateToGrid(desiredPos.x) : desiredPos.x + deltaX,
+    y: deltaY === undefined ? snapCoordinateToGrid(desiredPos.y) : desiredPos.y + deltaY,
+  }
+}
+
 const handleDrag = (event: MouseEvent): void => {
   if (!draggingWidget.value || !initialMousePos.value) return
 
@@ -252,13 +355,9 @@ const handleDrag = (event: MouseEvent): void => {
   const dx = (event.clientX - initialMousePos.value.x) / viewSize.width
   const dy = (event.clientY - initialMousePos.value.y) / viewSize.height
 
-  position.value = clampPositionToValidArea(
-    {
-      x: snapCoordinateToGrid(initialWidgetPos.value.x + dx),
-      y: snapCoordinateToGrid(initialWidgetPos.value.y + dy),
-    },
-    size.value
-  )
+  const desiredPos = { x: initialWidgetPos.value.x + dx, y: initialWidgetPos.value.y + dy }
+  position.value = clampPositionToValidArea(alignDraggedPosition(desiredPos, viewSize), size.value)
+  updateAlignmentGuides()
 }
 
 const handleResize = (event: MouseEvent): void => {
@@ -272,47 +371,82 @@ const handleResize = (event: MouseEvent): void => {
   let newTop = initialWidgetPos.value.y
   let newWidth = initialWidgetSize.value.width
   let newHeight = initialWidgetSize.value.height
+  let movedEdgeX: MovedEdge = 'none'
+  let movedEdgeY: MovedEdge = 'none'
 
-  if ((resizeHandle.value as HTMLElement).classList.contains('top-left')) {
+  const handleClasses = (resizeHandle.value as HTMLElement).classList
+  if (handleClasses.contains('top-left')) {
     newWidth -= dx
     newHeight -= dy
     newLeft += dx
     newTop += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('top-right')) {
+    movedEdgeX = 'start'
+    movedEdgeY = 'start'
+  } else if (handleClasses.contains('top-right')) {
     newWidth += dx
     newHeight -= dy
     newTop += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom-left')) {
+    movedEdgeX = 'end'
+    movedEdgeY = 'start'
+  } else if (handleClasses.contains('bottom-left')) {
     newWidth -= dx
     newHeight += dy
     newLeft += dx
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom-right')) {
+    movedEdgeX = 'start'
+    movedEdgeY = 'end'
+  } else if (handleClasses.contains('bottom-right')) {
     newWidth += dx
     newHeight += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('left')) {
+    movedEdgeX = 'end'
+    movedEdgeY = 'end'
+  } else if (handleClasses.contains('left')) {
     newWidth -= dx
     newLeft += dx
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('right')) {
+    movedEdgeX = 'start'
+  } else if (handleClasses.contains('right')) {
     newWidth += dx
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('top')) {
+    movedEdgeX = 'end'
+  } else if (handleClasses.contains('top')) {
     newHeight -= dy
     newTop += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom')) {
+    movedEdgeY = 'start'
+  } else if (handleClasses.contains('bottom')) {
     newHeight += dy
+    movedEdgeY = 'end'
   }
+
+  const gridInterval = widgetStore.snapToGrid ? widgetStore.gridInterval : undefined
+  const alignedX = alignResizedSpan(
+    { start: newLeft, length: newWidth },
+    movedEdgeX,
+    availableAlignmentLines.value.x,
+    alignmentSnapTolerancePixels / viewSize.width,
+    gridInterval
+  )
+  const alignedY = alignResizedSpan(
+    { start: newTop, length: newHeight },
+    movedEdgeY,
+    availableAlignmentLines.value.y,
+    alignmentSnapTolerancePixels / viewSize.height,
+    gridInterval
+  )
 
   position.value = {
-    x: constrain(newLeft, 0, 1 - size.value.width),
-    y: constrain(newTop, 0, 1 - size.value.height),
+    x: constrain(alignedX.start, 0, 1 - size.value.width),
+    y: constrain(alignedY.start, 0, 1 - size.value.height),
   }
   size.value = {
-    width: constrain(newWidth, 0.01, 1),
-    height: constrain(newHeight, 0.01, 1),
+    width: constrain(alignedX.length, 0.01, 1),
+    height: constrain(alignedY.length, 0.01, 1),
   }
+  updateAlignmentGuides()
 }
 
 const handleEnd = (): void => {
   if (!outerWidgetRef.value) return
+  if (draggingWidget.value || isResizing.value) {
+    activeAlignmentGuides.value = { x: [], y: [] }
+  }
   if (draggingWidget.value) {
     const x = position.value.x.toFixed(3)
     const y = position.value.y.toFixed(3)
@@ -438,6 +572,23 @@ const handleBottomOffset = computed(() =>
 const handleSideOffset = computed(() => (isWidgetFullScreen.value ? '5px' : '-5px'))
 
 const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.hash).highlighted)
+
+// The overlay spans only the band between the bars, since a widget cannot be placed under them and a full-bleed line
+// would paint across both. Horizontal guides therefore carry view coordinates that have to be restated in band ones.
+const guidesBandStyle = computed(() => ({
+  top: `${100 * barInsetsNormalized.value.top}%`,
+  bottom: `${100 * barInsetsNormalized.value.bottom}%`,
+}))
+
+const guideOffsetInBand = (guide: number): number => {
+  const bandHeight = 1 - barInsetsNormalized.value.top - barInsetsNormalized.value.bottom
+  if (bandHeight <= 0) return 0
+  return (100 * (guide - barInsetsNormalized.value.top)) / bandHeight
+}
+
+const showingAlignmentGuides = computed(
+  () => activeAlignmentGuides.value.x.length > 0 || activeAlignmentGuides.value.y.length > 0
+)
 </script>
 
 <style>
