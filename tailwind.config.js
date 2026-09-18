@@ -19,6 +19,12 @@ module.exports = {
         'xl': { min: '1600px', max: '1919px' }, // Extra large devices (HD+ desktop/laptop screens in landscape)
         '2xl': { min: '1920px' }, // FullHD and above - Extra extra large devices
       },
+      // Top of the app's stacking order, stated here because no single component can see the whole ladder:
+      // notifications clear every panel, and the startup screen clears the notifications.
+      zIndex: {
+        'notification': '1000001',
+        'splash-screen': '1000002',
+      },
     },
   },
   plugins: [require('tailwind-scrollbar-hide'), require('flowbite/plugin')],
