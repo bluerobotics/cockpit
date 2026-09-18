@@ -1,6 +1,16 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 
-import { StreamPeerConnectionInfo } from '@/types/video'
+import { StreamPeerConnectionInfo, WebRTCVideoStat } from '@/types/video'
+
+/**
+ * Data-lake variable id under which a stream's inbound-video stat is published
+ * @param {string} streamName - Name of the stream the stat belongs to
+ * @param {WebRTCVideoStat} statName - Stat published under the id
+ * @returns {string} The data-lake variable id
+ */
+export const streamStatVariableId = (streamName: string, statName: WebRTCVideoStat): string => {
+  return `stream-${streamName}-${statName}`
+}
 
 /**
  * Register a stream's current peer connection for stats monitoring, dropping the monitors of the previous ones
