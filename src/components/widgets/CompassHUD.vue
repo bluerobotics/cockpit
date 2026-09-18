@@ -559,6 +559,7 @@ const renderCanvas = (): void => {
 }
 
 const updatePoiMarkers = (): void => {
+  if (!widgetStore.isWidgetVisible(widget.value)) return
   if (
     (!widget.value.options.poi?.showPoiOnHUD && !widget.value.options.showHomeOnHUD) ||
     !store.coordinates.latitude ||
@@ -759,7 +760,10 @@ const stopAnimationLoop = (): void => {
 }
 
 const debouncedUpdatePoiMarkers = useDebounceFn(updatePoiMarkers, 16)
-watch([hudMarkerData, store.coordinates, canvasSize, yaw], debouncedUpdatePoiMarkers)
+watch(
+  [hudMarkerData, store.coordinates, canvasSize, yaw, () => widgetStore.isWidgetVisible(widget.value)],
+  debouncedUpdatePoiMarkers
+)
 
 // Start both canvas and POI markers animation loop when widget becomes visible or data changes
 watch([renderVars, canvasSize, widget.value.options], () => {

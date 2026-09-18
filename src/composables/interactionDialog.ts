@@ -1,10 +1,21 @@
-import { onUnmounted, reactive } from 'vue'
-import { App, createApp } from 'vue'
+import {
+  type InjectionKey,
+  type Ref,
+  App,
+  createApp,
+  getCurrentInstance,
+  inject,
+  onUnmounted,
+  reactive,
+  watch,
+} from 'vue'
 
 import InteractionDialogComponent from '@/components/InteractionDialog.vue'
 import vuetify from '@/plugins/vuetify'
 import router from '@/router'
 import { DialogActions } from '@/types/general'
+
+export const flightHiddenKey: InjectionKey<Ref<boolean>> = Symbol('flightHidden')
 
 /**
  * Options to configure the interaction dialog.
@@ -178,6 +189,16 @@ export function useInteractionDialog(): {
   onUnmounted(() => {
     unmountDialog()
   })
+
+  // Flight stays mounted on Plan, so onUnmounted no longer removes body-mounted dialogs from that view.
+  if (getCurrentInstance()) {
+    const flightHidden = inject(flightHiddenKey, null)
+    if (flightHidden) {
+      watch(flightHidden, (hidden) => {
+        if (hidden) closeDialog()
+      })
+    }
+  }
 
   return { showDialog, closeDialog }
 }

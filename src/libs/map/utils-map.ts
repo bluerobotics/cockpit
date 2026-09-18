@@ -205,6 +205,7 @@ export class TargetFollower {
    * @returns {void}
    */
   public enableAutoUpdate(): void {
+    clearInterval(this.updateInterval)
     this.updateInterval = setInterval(() => this.update(), defaultUpdateIntervalMs)
   }
 

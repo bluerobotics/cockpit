@@ -93,7 +93,7 @@
                 <div class="w-full text-nowrap text-center font-bold text-shadow-md">Curr. WP</div>
                 <div class="text-[12px] -mt-[2px] font-bold">{{ currentWaypointOnMission }}</div>
               </div>
-              <v-menu offset-y theme="dark">
+              <v-menu v-model="moreMenuOpen" offset-y theme="dark">
                 <template #activator="{ props: menuProps }">
                   <v-btn
                     variant="text"
@@ -127,10 +127,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, toRefs } from 'vue'
+import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
 
 import CruiseSpeedControl from '@/components/mission-planning/CruiseSpeedControl.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useActiveMenuRoute } from '@/composables/menuRouting'
 import { openSnackbar } from '@/composables/snackbar'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -139,6 +140,11 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const { showDialog, closeDialog } = useInteractionDialog()
+const { isFlightVisible } = useActiveMenuRoute()
+const moreMenuOpen = ref(false)
+watch(isFlightVisible, (visible) => {
+  if (!visible) moreMenuOpen.value = false
+})
 const interfaceStore = useAppInterfaceStore()
 
 const widgetStore = useWidgetManagerStore()

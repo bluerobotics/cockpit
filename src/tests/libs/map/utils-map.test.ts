@@ -1,5 +1,5 @@
 import type * as L from 'leaflet'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
 import { applyFollowZoomMode, isFiniteLatLng, TargetFollower } from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
@@ -28,6 +28,28 @@ test('applyFollowZoomMode pins Leaflet zoom on the view center only while follow
   expect(map.options.scrollWheelZoom).toBe(true)
   expect(map.options.doubleClickZoom).toBe(true)
   expect(map.options.touchZoom).toBe(true)
+})
+
+test('TargetFollower.enableAutoUpdate replaces an existing interval so disableAutoUpdate stops all of them', () => {
+  vi.useFakeTimers()
+  try {
+    let centers = 0
+    const follower = new TargetFollower(
+      () => undefined,
+      () => {
+        centers += 1
+      }
+    )
+    follower.setTrackableTarget('Vehicle', () => [-27.5, -48.4])
+    follower.follow('Vehicle', false)
+    follower.enableAutoUpdate()
+    follower.enableAutoUpdate()
+    follower.disableAutoUpdate()
+    vi.advanceTimersByTime(2000)
+    expect(centers).toBe(0)
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 test('isFiniteLatLng requires both components', () => {
