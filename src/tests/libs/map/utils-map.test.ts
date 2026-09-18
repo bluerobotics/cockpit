@@ -1,7 +1,7 @@
 import type * as L from 'leaflet'
 import { expect, test } from 'vitest'
 
-import { applyFollowZoomMode, isFiniteLatLng, TargetFollower } from '@/libs/map/utils-map'
+import { applyFollowZoomMode, isFiniteLatLng, recenterMapOnFollowTarget, TargetFollower } from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
 
 test('TargetFollower.currentCoordinates returns the followed trackable', () => {
@@ -34,4 +34,17 @@ test('isFiniteLatLng requires both components', () => {
   expect(isFiniteLatLng([-27.5, -48.4])).toBe(true)
   expect(isFiniteLatLng([-27.5, undefined as unknown as number])).toBe(false)
   expect(isFiniteLatLng(undefined)).toBe(false)
+})
+
+test('recenterMapOnFollowTarget does not re-apply a zoom the map already has', () => {
+  const calls: string[] = []
+  const map = {
+    getZoom: () => 12,
+    setView: () => calls.push('setView'),
+    setZoom: () => calls.push('setZoom'),
+  }
+  recenterMapOnFollowTarget(map as unknown as L.Map, 12, [-27.5, -48.4])
+  expect(calls).toEqual([])
+  recenterMapOnFollowTarget(map as unknown as L.Map, 13, undefined)
+  expect(calls).toEqual(['setZoom'])
 })
