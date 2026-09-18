@@ -498,7 +498,9 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * @returns { Promise<Waypoint[]> } Mission items that were on the vehicle
    */
   async function uploadMission(items: Waypoint[], loadingCallback: MissionLoadingCallback): Promise<void> {
-    return await mainVehicle.value?.uploadMission(items, loadingCallback)
+    await mainVehicle.value?.uploadMission(items, loadingCallback)
+    // Reached sequences have no mission identity, so they cannot outlive a replacement.
+    clearReachedMissionItems()
   }
 
   // Prevent multiple mission fetches from happening at the same time
@@ -624,6 +626,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    */
   async function clearMissions(): Promise<void> {
     mainVehicle.value?.clearMissions()
+    clearReachedMissionItems()
     openSnackbar({ message: 'Mission deleted from vehicle', variant: 'info' })
   }
 
