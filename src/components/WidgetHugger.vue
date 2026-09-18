@@ -62,7 +62,7 @@ import { useElementHover, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
-import { constrain } from '@/libs/utils'
+import { constrain, snapToInterval } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
@@ -246,6 +246,11 @@ const clampPositionToValidArea = (desiredPos: Point2D, widgetSize: SizeRect2D): 
   }
 }
 
+const snapCoordinateToGrid = (coordinate: number): number => {
+  if (!widgetStore.snapToGrid) return coordinate
+  return snapToInterval(coordinate, widgetStore.gridInterval)
+}
+
 const handleDrag = (event: MouseEvent): void => {
   if (!draggingWidget.value || !initialMousePos.value) return
 
@@ -254,7 +259,10 @@ const handleDrag = (event: MouseEvent): void => {
   const dy = (event.clientY - initialMousePos.value.y) / viewSize.height
 
   position.value = clampPositionToValidArea(
-    { x: initialWidgetPos.value.x + dx, y: initialWidgetPos.value.y + dy },
+    {
+      x: snapCoordinateToGrid(initialWidgetPos.value.x + dx),
+      y: snapCoordinateToGrid(initialWidgetPos.value.y + dy),
+    },
     size.value
   )
 }
@@ -396,16 +404,6 @@ watch(allowMoving, (isAllowing, wasAllowing) => {
 })
 
 const widgetStore = useWidgetManagerStore()
-const temporaryPosition = computed(() => {
-  let tempPos = { x: position.value.x, y: position.value.y }
-
-  if (widgetStore.snapToGrid) {
-    tempPos.x = Math.round(tempPos.x / widgetStore.gridInterval) * widgetStore.gridInterval
-    tempPos.y = Math.round(tempPos.y / widgetStore.gridInterval) * widgetStore.gridInterval
-  }
-
-  return tempPos
-})
 
 const sizeStyle = computed(() => ({
   width: `${100 * size.value.width}%`,
@@ -413,8 +411,8 @@ const sizeStyle = computed(() => ({
 }))
 
 const positionStyle = computed(() => ({
-  left: `${100 * temporaryPosition.value.x}%`,
-  top: `${100 * temporaryPosition.value.y}%`,
+  left: `${100 * position.value.x}%`,
+  top: `${100 * position.value.y}%`,
 }))
 
 const overlayDisplayStyle = computed(() => {
