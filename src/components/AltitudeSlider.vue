@@ -1,7 +1,7 @@
 <template>
   <div v-if="showAltitudeSlider" class="slider-div">
     <slider
-      v-model="altitude_setpoint"
+      v-model="displayedAltitude"
       orientation="vertical"
       width="100%"
       height="20"
@@ -9,6 +9,8 @@
       track-color="rgb(59 130 246 / 0.5)"
       always-show-handle="true"
       step="0.1"
+      :min="0"
+      :max="maxDisplayedAltitude"
     />
     <div class="slider-value"><span>Alt (Rel)</span></div>
     <div class="slider-value">{{ formattedValue }}</div>
@@ -19,9 +21,24 @@
 import { computed } from 'vue'
 import slider from 'vue3-slider'
 
+import { useUnitInput } from '@/composables/useUnitInput'
 import { altitude_setpoint, showAltitudeSlider } from '@/libs/altitude-slider'
+import { formatValueWithUnit } from '@/libs/units'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
-const formattedValue = computed(() => altitude_setpoint.value.toFixed(1))
+const interfaceStore = useAppInterfaceStore()
+
+// The setpoint is what gets commanded, so it stays in the meters the vehicle takes while the slider
+// works in whatever the user reads.
+const highestAltitudeSetpointInMeters = 100
+
+const { displayedValue: displayedAltitude, toDisplayBound } = useUnitInput(altitude_setpoint, 'm')
+
+const maxDisplayedAltitude = computed(() => toDisplayBound(highestAltitudeSetpointInMeters))
+
+const formattedValue = computed(() =>
+  formatValueWithUnit(altitude_setpoint.value, 'm', interfaceStore.displayUnitPreferences)
+)
 </script>
 <style scoped>
 .slider-value {

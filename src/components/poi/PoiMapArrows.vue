@@ -84,8 +84,10 @@ import { useMapContext } from '@/composables/map/useMapContext'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { clampPointToCircle, isInsideCircle, rotatePointAroundCenter } from '@/libs/map/minimap-geometry'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
-import { calculateHaversineDistance, formatMetersShort } from '@/libs/mission/general-estimates'
+import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
+import { formatDistance } from '@/libs/units'
 import { poiPinRotation } from '@/libs/utils-poi'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Edge, EdgeIntersection, PoiEdgeArrow, TargetEdgeArrow, WaypointCoordinates } from '@/types/mission'
 import type { Widget } from '@/types/widgets'
@@ -173,6 +175,7 @@ const props = defineProps<Props>()
 
 const { resolvedPointsOfInterest } = usePointsOfInterest()
 const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
 
 // Get map instance from composable
 const { map: mapLayer } = useMapContext()
@@ -389,7 +392,7 @@ const calculateTargetEdgeArrow = (
     return {
       style: circleArrow.style,
       angle: circleArrow.angleDeg + 90,
-      tooltipText: `${targetName} - ${formatMetersShort(circleDistanceMeters)}`,
+      tooltipText: `${targetName} - ${formatDistance(circleDistanceMeters, interfaceStore.displayUnitPreferences)}`,
       color: targetColor,
     }
   }
@@ -406,7 +409,7 @@ const calculateTargetEdgeArrow = (
   }
 
   const distanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
-  const distanceText = formatMetersShort(distanceMeters)
+  const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
 
   const distanceX = targetPoint.x - centerPoint.x
   const distanceY = targetPoint.y - centerPoint.y
@@ -520,7 +523,7 @@ const calculatePoiEdgeArrows = (): void => {
       const circleArrow = computeCircularArrow(poiPoint, width, height)
       if (!circleArrow) return
       const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
-      const distanceText = formatMetersShort(distanceMeters)
+      const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
       arrows.push({
         poiId: poi.id,
         icon: poi.icon,
@@ -545,7 +548,7 @@ const calculatePoiEdgeArrows = (): void => {
     }
 
     const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
-    const distanceText = formatMetersShort(distanceMeters)
+    const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
 
     const distanceX = poiPoint.x - centerPoint.x
     const distanceY = poiPoint.y - centerPoint.y

@@ -1,6 +1,6 @@
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { OverlayGrid } from '@/libs/sensors-logging'
-import { DistanceDisplayUnit } from '@/libs/units'
+import { type DisplayUnitPreferences, UnitSystem, unitSystems } from '@/libs/units'
 import { BatteryLevel, BatteryLevelThresholds } from '@/types/general'
 import { JoystickCalibration } from '@/types/joystick'
 import {
@@ -271,6 +271,7 @@ export const widgetProfiles: Profile[] = [
                   iconName: 'mdi-thermometer',
                   variableUnit: '°C',
                   variableMultiplier: '.01',
+                  useVariableUnit: true,
                 },
                 hash: '9ee52751-e828-4947-a7ce-0b2f3c2bc42f',
               },
@@ -614,6 +615,7 @@ export const widgetProfiles: Profile[] = [
                   iconName: 'mdi-thermometer',
                   variableUnit: '°C',
                   variableMultiplier: '.01',
+                  useVariableUnit: true,
                 },
                 hash: 'ba554289-246e-44a8-b4b2-dfdb6672ea00',
               },
@@ -751,6 +753,7 @@ export const widgetProfiles: Profile[] = [
                   variableMultiplier: 1,
                   decimalPlaces: 1,
                   widgetWidth: 160,
+                  useVariableUnit: true,
                 },
                 hash: 'dfa95e38-47e0-4656-b863-c22029b89862',
               },
@@ -961,9 +964,7 @@ export const defaultSensorDataloggerProfile: OverlayGrid = {
   RightBottom: ['Battery voltage', 'Battery current'],
 }
 
-export const defaultDisplayUnitPreferences = {
-  distance: DistanceDisplayUnit.Meters,
-}
+export const defaultDisplayUnitPreferences: DisplayUnitPreferences = { ...unitSystems[UnitSystem.Metric] }
 
 export const defaultJoystickCalibration: JoystickCalibration = {
   deadband: {

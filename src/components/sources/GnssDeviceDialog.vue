@@ -167,6 +167,7 @@ import {
   gnssStatusLabel,
   subscribeToSerialLines,
 } from '@/libs/sensors/gnss'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const props = defineProps<{
   /** Whether the dialog is open. */
@@ -193,6 +194,8 @@ const plannedId = computed(() => gnss.planDeviceId(device.value?.name ?? ''))
 const displayId = computed(() => (props.create ? plannedId.value : activeId.value))
 const dialogTitle = computed(() => (props.create ? 'Add GNSS device' : `Configure ${device.value?.name ?? 'device'}`))
 
+const interfaceStore = useAppInterfaceStore()
+
 const status = computed(() => gnss.statuses[activeId.value] ?? 'disconnected')
 const fix = computed(() => gnss.latestFixes[activeId.value])
 const isActive = computed(() => status.value !== 'disconnected')
@@ -210,7 +213,7 @@ const statusLabel = computed(() => gnssStatusLabel(status.value))
 const statusColor = computed(() => gnssStatusColor(status.value))
 const statusIcon = computed(() => gnssStatusIcon(status.value))
 
-const statusItems = computed(() => (fix.value ? gnssFixItems(fix.value) : []))
+const statusItems = computed(() => (fix.value ? gnssFixItems(fix.value, interfaceStore.displayUnitPreferences) : []))
 
 const onRefreshPorts = (): void => {
   logUserAction('Refreshed GNSS serial port list')
