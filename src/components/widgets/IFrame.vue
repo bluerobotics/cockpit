@@ -746,6 +746,8 @@ const widgetRectStyle = computed<string>(() => {
   newStyle = newStyle.concat(' ', `top: ${position.y * windowHeight.value}px;`)
   newStyle = newStyle.concat(' ', `width: ${size.width * windowWidth.value}px;`)
   newStyle = newStyle.concat(' ', `height: ${size.height * windowHeight.value}px;`)
+  // The content is teleported out of the widget hugger, so it has to apply the widget opacity itself.
+  newStyle = newStyle.concat(' ', `opacity: ${widget.value.options.opacity ?? 1};`)
   // Click-through so the status overlay cannot block widgets underneath, which leaves the iframe
   // to re-enable pointer events for itself.
   newStyle = newStyle.concat(' ', 'pointer-events:none;')
