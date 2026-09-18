@@ -1,5 +1,5 @@
 <template>
-  <div id="snackbar-container" class="snackbar-container">
+  <div id="snackbar-container" class="snackbar-container z-notification">
     <Snackbar v-for="snack in snackbars" :key="snack.id" v-bind="snack" />
   </div>
 </template>
@@ -31,7 +31,5 @@ const leftMargin = computed(() =>
   pointer-events: none;
   /* Matches the main menu's own 300ms slide, so a message never trails the panel it is stepping aside from. */
   transition: left 300ms ease;
-  /* Stays above the tallest surface in the app, the tutorial overlay at 1000000. */
-  z-index: 1000001;
 }
 </style>

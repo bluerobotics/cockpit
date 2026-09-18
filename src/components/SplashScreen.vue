@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="fixed inset-0 z-splash-screen">
     <img
       class="fixed inset-0 w-full h-full object-cover object-center z-[9990] filter brightness-[80%]"
       :src="splashBackground"
