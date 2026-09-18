@@ -40,6 +40,7 @@ import {
 import { downloadMissionItems } from '@/libs/vehicle/mavlink/mission-download'
 import { uploadMissionItems } from '@/libs/vehicle/mavlink/mission-upload'
 import {
+  type GlobalOrigin,
   type MAVLinkParameterSetData,
   type MessageIntervalOptions,
   type SendCommandLongOptions,
@@ -1288,14 +1289,59 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * Set global origin on vehicle (sets the GNSS coordinates of the local origin)
    * @param { [number, number] } coordinates Coordinates of the origin (latitude, longitude)
    * @param { number } altitude Altitude of the origin (MSL)
+   * @returns { Promise<GlobalOrigin> } The origin as read back from the vehicle
    */
-  setGlobalOrigin(coordinates: [number, number], altitude: number): void {
+  async setGlobalOrigin(coordinates: [number, number], altitude: number): Promise<GlobalOrigin> {
     sendMavlinkMessage({
       type: MAVLinkType.SET_GPS_GLOBAL_ORIGIN,
-      latitude: coordinates[0],
-      longitude: coordinates[1],
-      altitude: altitude,
+      target_system: this.currentSystemId,
+      latitude: Math.round(coordinates[0] * 1e7),
+      longitude: Math.round(coordinates[1] * 1e7),
+      altitude: Math.round(altitude * 1e3),
     })
+
+    const origin = await this.fetchGlobalOrigin()
+
+    // The vehicle keeps latitude and longitude as the same degE7 integers we sent, so any difference there means it
+    // refused the new origin. The altitude is only kept to the centimeter, and would differ just from rounding.
+    const sameLatitude = Math.round(origin.latitude * 1e7) === Math.round(coordinates[0] * 1e7)
+    const sameLongitude = Math.round(origin.longitude * 1e7) === Math.round(coordinates[1] * 1e7)
+    if (!sameLatitude || !sameLongitude) {
+      const reportedPosition = `${origin.latitude.toFixed(7)}, ${origin.longitude.toFixed(7)}`
+      throw new Error(`Vehicle rejected the new origin and kept the one it had, at ${reportedPosition}.`)
+    }
+
+    return origin
+  }
+
+  /**
+   * Fetch the GNSS coordinates of the vehicle's local origin
+   * @returns { Promise<GlobalOrigin> } The origin currently in use by the vehicle
+   */
+  async fetchGlobalOrigin(): Promise<GlobalOrigin> {
+    const requestTime = new Date().getTime()
+    await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_MESSAGE, getMAVLinkMessageId(MAVLinkType.GPS_GLOBAL_ORIGIN))
+
+    // The vehicle reports its origin on every change, so only a message newer than our request tells us the
+    // origin it has now, instead of one it was asked for earlier.
+    let origin: Message.GpsGlobalOrigin | undefined = undefined
+    while (origin === undefined && new Date().getTime() - requestTime < 5000) {
+      await sleep(100)
+      const lastOrigin = this._messages.get(MAVLinkType.GPS_GLOBAL_ORIGIN)
+      if (lastOrigin !== undefined && lastOrigin.epoch > requestTime) {
+        origin = lastOrigin as Message.GpsGlobalOrigin
+      }
+    }
+
+    if (origin === undefined) {
+      throw new Error('Vehicle did not report a local origin. It may not have one set yet.')
+    }
+
+    return {
+      latitude: origin.latitude / 1e7,
+      longitude: origin.longitude / 1e7,
+      altitude: origin.altitude / 1e3,
+    }
   }
 
   /**
