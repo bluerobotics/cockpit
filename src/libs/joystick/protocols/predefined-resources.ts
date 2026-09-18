@@ -25,6 +25,14 @@ const joystickAxisConfig = [
   { key: 'axis_t', name: 'Axis T', inputId: 'inputs/mavlink/axis-t', outputId: 'outputs/mavlink/axis-t' },
 ] as const
 
+// Camera controls a joystick can drive, feeding the zoom and focus transforming functions below
+const cameraControlConfig = [
+  { key: 'zoom_out', id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease' },
+  { key: 'zoom_in', id: 'camera-zoom-increase', name: 'Camera Zoom Increase' },
+  { key: 'focus_far', id: 'camera-focus-decrease', name: 'Camera Focus Decrease' },
+  { key: 'focus_near', id: 'camera-focus-increase', name: 'Camera Focus Increase' },
+] as const
+
 /**
  * Pre-built data lake variable actions for joystick axis inputs, used in joystick profile mappings
  */
@@ -40,15 +48,23 @@ export const joystickInputAxes: Record<(typeof joystickAxisConfig)[number]['key'
     ])
   ) as Record<(typeof joystickAxisConfig)[number]['key'], DataLakeVariableAction>
 
+/**
+ * Pre-built data lake variable actions for the camera zoom and focus controls, used in joystick profile mappings
+ */
+export const joystickCameraControls: Record<(typeof cameraControlConfig)[number]['key'], DataLakeVariableAction> =
+  Object.fromEntries(
+    cameraControlConfig.map((control) => [
+      control.key,
+      new DataLakeVariableAction({ id: control.id, name: control.name, type: 'number' as DataLakeVariableType }),
+    ])
+  ) as Record<(typeof cameraControlConfig)[number]['key'], DataLakeVariableAction>
+
 const setupMavlinkCameraResources = (): void => {
   const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
-  // Initialize camera zoom variables
-  createDataLakeVariable({ id: 'camera-zoom-decrease', name: 'Camera Zoom Decrease', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-zoom-increase', name: 'Camera Zoom Increase', ...commonVariableConfig }, 0)
-
-  // Initialize camera focus variables
-  createDataLakeVariable({ id: 'camera-focus-decrease', name: 'Camera Focus Decrease', ...commonVariableConfig }, 0)
-  createDataLakeVariable({ id: 'camera-focus-increase', name: 'Camera Focus Increase', ...commonVariableConfig }, 0)
+  // Initialize camera zoom and focus variables
+  for (const control of cameraControlConfig) {
+    createDataLakeVariable({ id: control.id, name: control.name, ...commonVariableConfig }, 0)
+  }
 
   // Initialize camera zoom transforming function
   try {

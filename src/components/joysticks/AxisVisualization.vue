@@ -7,9 +7,9 @@
         :style="`transform: scaleX(${rawValue * -1})`"
       />
     </div>
-    <div class="flex flex-col w-[50px] -mt-2">
+    <div class="flex flex-col w-[50px] -mt-2 text-center">
       <p>{{ rawValue.toFixed(2) }}</p>
-      <p class="text-[10px]">{{ processedValue.toFixed(2) }}</p>
+      <p v-if="processedValue !== undefined" class="text-[10px]">{{ processedValue.toFixed(2) }}</p>
     </div>
     <div class="w-[50px]">
       <div
@@ -31,8 +31,8 @@ defineProps<{
    */
   rawValue: number
   /**
-   * The processed value for that same axis
+   * The processed value for that same axis, omitted where the reading is uncalibrated and the two would be equal
    */
-  processedValue: number
+  processedValue?: number
 }>()
 </script>

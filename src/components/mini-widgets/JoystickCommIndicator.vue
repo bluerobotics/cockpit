@@ -10,7 +10,7 @@
         >
           <FontAwesomeIcon icon="fa-solid fa-gamepad" size="xl" />
           <FontAwesomeIcon
-            v-if="!joystickConnected || !controllerStore.enableForwarding"
+            v-if="!joystickConnected || !controllerStore.isForwardingActive"
             icon="fa-solid fa-slash"
             size="xl"
             class="absolute left-0"
@@ -29,7 +29,7 @@
         <div class="flex items-center justify-center mb-4 flex-col">
           <span class="mr-2"></span>
           <v-switch
-            :model-value="controllerStore.enableForwarding"
+            :model-value="controllerStore.isForwardingActive"
             hide-details
             :label="switchLabel"
             color="white"
@@ -75,18 +75,18 @@ onMounted(() => {
 
 const indicatorClass = computed(() => {
   if (!joystickConnected.value) return 'text-gray-700'
-  if (!controllerStore.enableForwarding) return 'text-yellow-500'
+  if (!controllerStore.isForwardingActive) return 'text-yellow-500'
   return 'text-slate-50'
 })
 
 const tooltipText = computed(() => {
   if (!joystickConnected.value) return 'Joystick disconnected'
-  if (!controllerStore.enableForwarding) return 'Joystick connected but disabled'
+  if (!controllerStore.isForwardingActive) return 'Joystick connected but disabled'
   return 'Joystick connected and enabled'
 })
 
 const switchLabel = computed(() => {
-  if (controllerStore.enableForwarding) return 'Joystick commands enabled'
+  if (controllerStore.isForwardingActive) return 'Joystick commands enabled'
   return 'Joystick commands paused'
 })
 

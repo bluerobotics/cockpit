@@ -1,6 +1,7 @@
-import { useDocumentVisibility } from '@vueuse/core'
+import { useDocumentVisibility, useStorage } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
+import { v4 as uuid4 } from 'uuid'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import { defaultJoystickCalibration } from '@/assets/defaults'
@@ -22,9 +23,17 @@ import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/proto
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron } from '@/libs/utils'
 import { isMappingBlank } from '@/migration/default-profile-importer'
-import { legacyProtocolMappingsKey, migrateLegacyJoystickMapping } from '@/migration/profile-migrations'
+import {
+  isSeededJoystickProfileList,
+  joystickFunctionsMappingKey,
+  legacyProtocolMappingsKey,
+  migrateLegacyJoystickMapping,
+  reseedJoystickProfilesFromSingleMapping,
+  seedJoystickProfiles,
+} from '@/migration/profile-migrations'
 import {
   type GamepadToCockpitStdMapping,
+  type JoystickProfileOption,
   type JoystickProtocolActionsMapping,
   type JoystickState,
   type ProtocolAction,
@@ -47,7 +56,8 @@ export type controllerUpdateCallback = (
   actionsJoystickConfirmRequired: Record<string, boolean>
 ) => void
 
-const joystickFunctionsMappingKey = 'cockpit-joystick-functions-mapping-v1'
+const joystickProfilesKey = 'cockpit-joystick-profiles-v1'
+const activeJoystickProfileKey = 'cockpit-active-joystick-profile-v1'
 const cockpitStdMappingsKey = 'cockpit-standard-mappings-v2'
 const maxSupportedInputIndexes = 63
 
@@ -55,10 +65,60 @@ export const useControllerStore = defineStore('controller', () => {
   const mainVehicleStore = useMainVehicleStore()
   const joysticks = ref<Map<number, Joystick>>(new Map())
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
-  const protocolMapping = useBlueOsStorage<JoystickProtocolActionsMapping>(
+  // Kept as the seed for the profile list below, which superseded it. Nothing writes to it any more, so a downgrade
+  // still finds the mapping the user had when they upgraded.
+  const singleMappingBeforeProfiles = useBlueOsStorage<JoystickProtocolActionsMapping>(
     joystickFunctionsMappingKey,
     migrateLegacyJoystickMapping() ?? blankMapping
   )
+  const joystickProfiles = useBlueOsStorage<JoystickProtocolActionsMapping[]>(
+    joystickProfilesKey,
+    seedJoystickProfiles(toRaw(singleMappingBeforeProfiles.value))
+  )
+  // Machine-local, unlike the list above: which profile is right depends on the gamepad plugged into this computer,
+  // so two stations on one vehicle must not overwrite each other's choice.
+  const activeProfileHash = useStorage(activeJoystickProfileKey, singleMappingBeforeProfiles.value.hash)
+
+  // A vehicle can sync an empty list over ours, and a machine-local selection can name a profile that list does not
+  // hold, leaving the picker blank while a different profile is in use. Watched rather than checked once at setup
+  // because both land long after this store is built, and flushed synchronously so no reader sees the broken state.
+  watch(
+    [joystickProfiles, activeProfileHash],
+    () => {
+      if (joystickProfiles.value.length === 0) {
+        joystickProfiles.value = seedJoystickProfiles(blankMapping)
+        return
+      }
+      const isResolvable = joystickProfiles.value.some((profile) => profile.hash === activeProfileHash.value)
+      if (!isResolvable) activeProfileHash.value = joystickProfiles.value[0].hash
+    },
+    { immediate: true, flush: 'sync' }
+  )
+
+  // A machine with no local copy of the pre-profiles key boots on a blank seed, since the vehicle's copy of that key
+  // only lands later. Rebuild from it while the list is still that untouched seed.
+  settingsManager.registerListener(joystickFunctionsMappingKey, () => {
+    if (!isSeededJoystickProfileList(joystickProfiles.value)) return
+    const reseeded = reseedJoystickProfilesFromSingleMapping()
+    if (reseeded === undefined) return
+    joystickProfiles.value = reseeded
+    activeProfileHash.value = reseeded[0].hash
+  })
+
+  const activeProfileIndex = computed(() => {
+    const index = joystickProfiles.value.findIndex((profile) => profile.hash === activeProfileHash.value)
+    return index === -1 ? 0 : index
+  })
+
+  const protocolMapping = computed<JoystickProtocolActionsMapping>({
+    get: () => joystickProfiles.value[activeProfileIndex.value],
+    // Pins the slot's identity the way replaceJoystickProfile does, since importers hand us a mapping carrying their
+    // own hash and the active selection points at the one being overwritten
+    set: (mapping) => {
+      const index = activeProfileIndex.value
+      joystickProfiles.value[index] = { ...mapping, hash: joystickProfiles.value[index].hash }
+    },
+  })
   const userCustomCockpitStdMappings = useBlueOsStorage<{ [key in JoystickModel]?: GamepadToCockpitStdMapping }>(
     cockpitStdMappingsKey,
     {}
@@ -67,6 +127,11 @@ export const useControllerStore = defineStore('controller', () => {
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
   const preventJoystickForwarding = ref(false)
+  // Raised while a surface is reading the controller to bind it, so the inputs the user is naming cannot also fire
+  // whatever they are already bound to. It is separate from enableForwarding because several places write that flag,
+  // and the last of them to run would otherwise decide whether the binding surface is heard.
+  const isCapturingInputsForMapping = ref(false)
+  const isForwardingActive = computed(() => enableForwarding.value && !isCapturingInputsForMapping.value)
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
 
   // Self-heal: if we booted with a blank mapping but legacy data is reachable now (e.g. from raw localStorage or
@@ -84,10 +149,10 @@ export const useControllerStore = defineStore('controller', () => {
     if (migrated) protocolMapping.value = migrated
   })
 
-  // Run schema migrations on the current mapping
-  const migratedArray = performJoystickMappingMigrations([protocolMapping.value])
-  if (migratedArray.length > 0) {
-    protocolMapping.value = migratedArray[0]
+  // Run schema migrations on every profile
+  const migratedProfiles = performJoystickMappingMigrations(joystickProfiles.value)
+  if (migratedProfiles.length > 0) {
+    joystickProfiles.value = migratedProfiles
   }
 
   const cockpitStdMappings = computed<typeof availableGamepadToCockpitMaps>(() => {
@@ -277,7 +342,7 @@ export const useControllerStore = defineStore('controller', () => {
     }
 
     // If joystick forwarding is disabled, disable the callback processing
-    if (!enableForwarding.value) return
+    if (!isForwardingActive.value) return
 
     for (const callback of updateCallbacks.value) {
       try {
@@ -434,6 +499,42 @@ export const useControllerStore = defineStore('controller', () => {
     reader.readAsText(e.target.files[0])
   }
 
+  const joystickProfileOptions = computed<JoystickProfileOption[]>(() =>
+    joystickProfiles.value.map((profile) => ({ value: profile.hash, title: profile.name }))
+  )
+
+  const joystickProfileName = (hash: string): string =>
+    joystickProfiles.value.find((profile) => profile.hash === hash)?.name ?? hash
+
+  const selectJoystickProfile = (hash: string): void => {
+    if (!joystickProfiles.value.some((profile) => profile.hash === hash)) return
+    activeProfileHash.value = hash
+  }
+
+  // Re-hashes rather than refuses a mapping whose hash is taken, since every lookup below resolves by hash and a
+  // duplicate would silently serve, replace or delete the wrong entry
+  const addJoystickProfile = (mapping: JoystickProtocolActionsMapping): void => {
+    const isTaken = joystickProfiles.value.some((profile) => profile.hash === mapping.hash)
+    const hash = isTaken ? uuid4() : mapping.hash
+    joystickProfiles.value.push({ ...mapping, hash })
+    activeProfileHash.value = hash
+  }
+
+  // Keeps the target's identity, so the entry the user picked by name still reads the same and whatever points at it
+  // (the active selection included) still resolves once the bindings are swapped
+  const replaceJoystickProfile = (hash: string, mapping: JoystickProtocolActionsMapping): void => {
+    const index = joystickProfiles.value.findIndex((profile) => profile.hash === hash)
+    if (index === -1) return
+    joystickProfiles.value[index] = { ...mapping, hash, name: joystickProfiles.value[index].name }
+    activeProfileHash.value = hash
+  }
+
+  const deleteJoystickProfile = (hash: string): void => {
+    if (joystickProfiles.value.length <= 1) return
+    joystickProfiles.value = joystickProfiles.value.filter((profile) => profile.hash !== hash)
+    if (activeProfileHash.value === hash) activeProfileHash.value = joystickProfiles.value[0].hash
+  }
+
   const actionsToCallFromJoystick = ref<CockpitActionsFunction[]>([])
   const addActionToCallFromJoystick = (actionId: CockpitActionsFunction): void => {
     if (!actionsToCallFromJoystick.value.includes(actionId)) {
@@ -496,7 +597,7 @@ export const useControllerStore = defineStore('controller', () => {
       }
     })
 
-    if (enableForwarding.value) {
+    if (isForwardingActive.value) {
       actionsToCallFromJoystick.value.forEach((a) => executeActionCallback(a as CockpitActionsFunction))
     }
   })
@@ -509,9 +610,19 @@ export const useControllerStore = defineStore('controller', () => {
   return {
     registerControllerUpdateCallback,
     enableForwarding,
+    isCapturingInputsForMapping,
+    isForwardingActive,
     holdLastInputWhenWindowHidden,
     joysticks,
     protocolMapping,
+    joystickProfiles,
+    joystickProfileOptions,
+    joystickProfileName,
+    activeProfileHash,
+    selectJoystickProfile,
+    addJoystickProfile,
+    replaceJoystickProfile,
+    deleteJoystickProfile,
     cockpitStdMappings,
     availableAxesActions,
     availableButtonActions,

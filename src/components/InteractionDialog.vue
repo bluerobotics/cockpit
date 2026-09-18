@@ -1,5 +1,11 @@
 <template>
-  <v-dialog v-model="internalShowDialog" :persistent="persistent" :width="maxWidth || 'auto'">
+  <v-dialog
+    v-model="internalShowDialog"
+    :persistent="persistent"
+    :width="maxWidth || 'auto'"
+    :class="{ 'dialog-backdrop': backdrop }"
+    :style="interfaceStore.dialogBackdropStyles"
+  >
     <v-card
       :width="maxWidth || 'auto'"
       class="main-dialog px-2 rounded-lg"
@@ -157,6 +163,10 @@ interface Props {
    */
   persistent?: boolean
   /**
+   * Dims whatever is behind the dialog, separating it from a surface it was opened over.
+   */
+  backdrop?: boolean
+  /**
    *
    */
   timer?: number
@@ -171,6 +181,7 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'info',
   message: '',
   persistent: false,
+  backdrop: false,
   timer: 0,
 })
 
