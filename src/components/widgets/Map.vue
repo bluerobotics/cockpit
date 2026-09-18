@@ -799,7 +799,6 @@ onMounted(async () => {
   reachedWaypoints.value = {}
   missionItemsInVehicle.value = []
   missionSeqToMarkerSeq.value = {}
-  vehicleStore.clearReachedMissionItems()
 
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
