@@ -17,6 +17,8 @@ export const round = (value: number, places = 0): number => {
   return Math.round(value * power) / power
 }
 
+export const snapToInterval = (value: number, interval: number): number => Math.round(value / interval) * interval
+
 export const range = (min: number, max: number): number[] => {
   const len = round(max) - round(min) + 1
   const arr = new Array(len)
