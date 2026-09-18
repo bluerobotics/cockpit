@@ -23,7 +23,7 @@ import {
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { settingsManager } from '@/libs/settings-management'
-import { isEqual, sequentialArray } from '@/libs/utils'
+import { isEqual, sequentialArray, snapToInterval } from '@/libs/utils'
 import { isViewsGroupBlank } from '@/migration/default-profile-importer'
 import { legacySavedProfilesKey, migrateLegacyViewsGroup } from '@/migration/profile-migrations'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -526,11 +526,20 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   function addWidget(widget: InternalWidgetSetupInfo, view: View, dropPosition?: Point2D): Widget {
     const widgetHash = uuid4()
 
+    // A widget dropped from the edit menu lands where the cursor released it, which is not a grid multiple. The grid
+    // is drawn on screen while this happens, so the position is rounded here rather than only while dragging. Only the
+    // cursor drop is rounded: an authored default is where its producer meant the widget to sit.
+    const snapDropToGrid = (point: Point2D): Point2D =>
+      snapToGrid.value
+        ? { x: snapToInterval(point.x, gridInterval.value), y: snapToInterval(point.y, gridInterval.value) }
+        : point
+
     const newWidget: Widget = {
       hash: widgetHash,
       name: widget.name,
       component: widget.component,
-      position: dropPosition ?? widget.defaultPosition ?? { x: 0.4, y: 0.32 },
+      position:
+        dropPosition === undefined ? widget.defaultPosition ?? { x: 0.4, y: 0.32 } : snapDropToGrid(dropPosition),
       size: widget.defaultSize ?? { width: 0.2, height: 0.36 },
       options: widget.options,
       persistentInternalState: {},
