@@ -475,6 +475,19 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Send an occasional external position estimate for dead-reckoning.
+   * @param {number} latitude Latitude in decimal degrees.
+   * @param {number} longitude Longitude in decimal degrees.
+   * @returns {Promise<void>}
+   */
+  async function sendExternalPositionEstimate(latitude: number, longitude: number): Promise<void> {
+    if (!mainVehicle.value) {
+      throw new Error('No vehicle available to send a position estimate.')
+    }
+    await mainVehicle.value.sendExternalPositionEstimate(latitude, longitude)
+  }
+
+  /**
    * Configure the vehicle somehow
    * @param { VehicleConfigurationSettings } settings Configuration data
    */
@@ -1234,6 +1247,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     land,
     disarm,
     goTo,
+    sendExternalPositionEstimate,
     modesAvailable,
     setFlightMode,
     sendGcsHeartbeat,
