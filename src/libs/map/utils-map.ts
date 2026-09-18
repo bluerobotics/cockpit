@@ -317,13 +317,15 @@ export const applyFollowZoomMode = (map: L.Map, following: boolean): void => {
 }
 
 /**
- * Keep the follow target under the view when zoom changes, otherwise apply a plain zoom.
+ * Keep the follow target under the view when zoom changes, otherwise apply a plain zoom, unless the map is already at that zoom.
  * @param {L.Map} map Leaflet map
  * @param {number} zoom Target zoom
  * @param {WaypointCoordinates | undefined} pos Follow coordinate, if any
  * @returns {void}
  */
 export const recenterMapOnFollowTarget = (map: L.Map, zoom: number, pos: WaypointCoordinates | undefined): void => {
+  // zoomend writes the zoom the map already has; applying it again fights the settle and drifts markers.
+  if (map.getZoom() === zoom) return
   if (isFiniteLatLng(pos)) {
     map.setView(pos, zoom, { animate: false })
     return
