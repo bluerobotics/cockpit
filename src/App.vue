@@ -66,6 +66,13 @@
               />
             </Transition>
           </div>
+          <div
+            v-if="isFlightVisible || !widgetStore.unmountHiddenViews"
+            class="absolute inset-0"
+            :class="isFlightVisible ? '' : 'invisible pointer-events-none'"
+          >
+            <WidgetsView />
+          </div>
           <router-view />
         </div>
         <EditMenu :edit-mode="widgetStore.editingMode" @update:edit-mode="setEditMode" />
@@ -160,6 +167,7 @@ import ToolsDataLakeView from '@/views/ToolsDataLakeView.vue'
 import ToolsLogsView from '@/views/ToolsLogsView.vue'
 import ToolsMapView from '@/views/ToolsMapView.vue'
 import ToolsMAVLinkView from '@/views/ToolsMAVLinkView.vue'
+import WidgetsView from '@/views/WidgetsView.vue'
 
 import About from './components/About.vue'
 import AltitudeSlider from './components/AltitudeSlider.vue'
@@ -187,7 +195,7 @@ import { useWidgetManagerStore } from './stores/widgetManager'
 const { openSnackbar } = useSnackbar()
 import { useSnapshotStore } from './stores/snapshot'
 
-const { baseRouteName, activeMenuPage, isAboutOpen } = useActiveMenuRoute()
+const { baseRouteName, isFlightVisible, activeMenuPage, isAboutOpen } = useActiveMenuRoute()
 
 const menuPageComponents: Record<SubMenuComponentName, Component> = {
   [SubMenuComponentName.SettingsGeneral]: ConfigurationGeneralView,
@@ -225,6 +233,12 @@ const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const devStore = useDevelopmentStore()
 const missionStore = useMissionStore()
+
+// v-dialog teleports to body, so hiding Flight would otherwise leave widget options sitting on Plan.
+watch(isFlightVisible, (visible) => {
+  if (visible) return
+  widgetStore.closeOpenWidgetConfigMenus()
+})
 
 // Initialize the snapshot store to register action callbacks
 useSnapshotStore()

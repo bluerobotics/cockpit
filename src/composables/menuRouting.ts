@@ -4,7 +4,7 @@ import { type RouteRecordName, useRoute } from 'vue-router'
 import { openMainMenuIfSafeOrDesired } from '@/composables/armSafetyDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { aboutSlug, editModeSlug, menuPages } from '@/libs/menu-pages'
-import router from '@/router'
+import router, { flightRouteName } from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { SubMenuComponentName, SubMenuName } from '@/types/general'
@@ -104,13 +104,17 @@ export const toggleMenuPage = (page: SubMenuComponentName): void => {
 
 /**
  * Reads the menu destination the current address stands for.
- * @returns {object} The view being shown, the sub-menu listed, the page open over it, and whether About is open.
+ * @returns {object} The view being shown, whether it is Flight, the sub-menu listed, the page open over it, and whether About is open.
  */
 export const useActiveMenuRoute = (): {
   /**
    * Name of the view the menu is layered over, regardless of which destination is open over it.
    */
   baseRouteName: ComputedRef<RouteRecordName | undefined>
+  /**
+   * Whether the Flight view is the one currently shown.
+   */
+  isFlightVisible: ComputedRef<boolean>
   /**
    * Sub-menu whose pages are listed, if any.
    */
@@ -128,6 +132,7 @@ export const useActiveMenuRoute = (): {
 
   return {
     baseRouteName: computed(() => route.matched[0]?.name),
+    isFlightVisible: computed(() => route.matched[0]?.name === flightRouteName),
     activeSubMenu: computed(() => route.meta.subMenu),
     activeMenuPage: computed(() => route.meta.menuPage),
     isAboutOpen: computed(() => route.meta.about === true),

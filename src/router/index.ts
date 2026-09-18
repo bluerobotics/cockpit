@@ -5,7 +5,6 @@ import { aboutSlug, editModeSlug, menuPages } from '@/libs/menu-pages'
 import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
 import MissionPlanningView from '../views/MissionPlanningView.vue'
-import WidgetsView from '../views/WidgetsView.vue'
 
 declare module 'vue-router' {
   /**
@@ -67,15 +66,20 @@ const menuRoutes = (basePath: string): RouteRecordRaw[] => {
   ]
 }
 
+// Shared so the Flight route name and the predicate that matches it cannot drift apart.
+export const flightRouteName = 'widgets-view'
+
 const router = createRouter({
   // Standalone serves the interface from a `file://` URL, where a path-based history would make any reload or deep
   // link resolve to a file that does not exist. Hashing in both builds also keeps a shared link working in either one.
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
+    // Flight is mounted in App.vue and hidden with visibility so iframe widgets keep their document, unless the
+    // user opts into unloading hidden views, which unmounts it instead.
     {
       path: '/',
-      name: 'widgets-view',
-      component: WidgetsView,
+      name: flightRouteName,
+      component: rendersNothing,
       children: menuRoutes('/'),
     },
     {

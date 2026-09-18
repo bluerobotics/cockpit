@@ -26,6 +26,7 @@ import { settingsManager } from '@/libs/settings-management'
 import { isEqual, sequentialArray } from '@/libs/utils'
 import { isViewsGroupBlank } from '@/migration/default-profile-importer'
 import { legacySavedProfilesKey, migrateLegacyViewsGroup } from '@/migration/profile-migrations'
+import router, { flightRouteName } from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Point2D, SizeRect2D } from '@/types/general'
@@ -349,8 +350,17 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @returns { boolean }
    * @param { Widget } widget - Widget
    */
-  const isWidgetVisible = (widget: Widget): boolean => {
+  const isWidgetOnActiveView = (widget: Widget): boolean => {
     return document.visibilityState === 'visible' && viewFromWidget(widget).hash === currentView.value.hash
+  }
+
+  /**
+   * Gets whether the user can see this widget
+   * @returns { boolean }
+   * @param { Widget } widget - Widget
+   */
+  const isWidgetVisible = (widget: Widget): boolean => {
+    return isWidgetOnActiveView(widget) && router.currentRoute.value.matched[0]?.name === flightRouteName
   }
 
   /**
@@ -681,14 +691,55 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       .filter(([, vars]) => vars.configMenuOpen)
       .map(([hash]) => hash)
   )
+  const silentWidgetConfigCloses = new Set<string>()
+  const silentMiniWidgetConfigCloses = new Set<string>()
+
+  const miniWidgetHashesHostedByWidget = (widget: Widget): string[] => {
+    const hashes: string[] = []
+    for (const miniWidget of widget.options?.miniWidgetsContainer?.widgets ?? []) {
+      hashes.push(miniWidget.hash)
+    }
+    for (const container of widget.options?.elementContainers ?? []) {
+      for (const element of container.elements ?? []) {
+        hashes.push(element.hash)
+      }
+    }
+    return hashes
+  }
+
   watch(widgetsWithOpenConfigMenu, (newHashes, oldHashes) => {
     newHashes
       .filter((hash) => !oldHashes.includes(hash))
       .forEach((hash) => logUserAction(`Opened configuration of widget '${widgetNameByHash(hash)}'`))
     oldHashes
       .filter((hash) => !newHashes.includes(hash))
-      .forEach((hash) => logUserAction(`Closed configuration of widget '${widgetNameByHash(hash)}'`))
+      .forEach((hash) => {
+        if (silentWidgetConfigCloses.delete(hash)) return
+        logUserAction(`Closed configuration of widget '${widgetNameByHash(hash)}'`)
+      })
   })
+
+  /**
+   * Close open widget and in-widget mini-widget options dialogs on the mounted views without logging them as
+   * operator actions. View-level bar containers stay open: those bars are still on screen in Plan.
+   */
+  const closeOpenWidgetConfigMenus = (): void => {
+    viewsToShow.value.forEach((view) => {
+      view.widgets.forEach((widget) => {
+        const vars = _widgetManagerVars.value[widget.hash]
+        if (vars?.configMenuOpen) {
+          silentWidgetConfigCloses.add(widget.hash)
+          vars.configMenuOpen = false
+        }
+        miniWidgetHashesHostedByWidget(widget).forEach((hash) => {
+          const miniVars = _miniWidgetManagerVars.value[hash]
+          if (!miniVars?.configMenuOpen) return
+          silentMiniWidgetConfigCloses.add(hash)
+          miniVars.configMenuOpen = false
+        })
+      })
+    })
+  }
 
   const miniWidgetsWithOpenConfigMenu = computed(() =>
     Object.entries(_miniWidgetManagerVars.value)
@@ -703,9 +754,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       )
     oldHashes
       .filter((hash) => !newHashes.includes(hash))
-      .forEach((hash) =>
+      .forEach((hash) => {
+        if (silentMiniWidgetConfigCloses.delete(hash)) return
         logUserAction(`Closed configuration of mini-widget '${getElementByHash(hash)?.component ?? hash}'`)
-      )
+      })
   })
 
   // Closes the side config panel on view change and edit mode exit
@@ -831,6 +883,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     currentMiniWidgetsProfile,
     viewsGroup,
     allowMovingAndResizing,
+    closeOpenWidgetConfigMenus,
     resetViewsGroup,
     exportViewsGroup,
     importViewsGroup,
@@ -846,6 +899,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     deleteMiniWidget,
     toggleFullScreen,
     isFullScreen,
+    isWidgetOnActiveView,
     isWidgetVisible,
     widgetClearanceForVisibleArea,
     isRealMiniWidget,

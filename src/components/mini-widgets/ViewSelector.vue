@@ -34,6 +34,7 @@
         />
         <p class="text-sm opacity-80">
           Only the view you are looking at stays loaded. Widgets on other views start again when you switch to them.
+          Opening Mission planning also unloads the flight widgets until you come back.
         </p>
       </v-card-text>
     </v-card>
