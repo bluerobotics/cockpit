@@ -15,7 +15,7 @@
           <v-slider
             v-model="OpacitySlider"
             color="white"
-            min="0.2"
+            :min="minWidgetOpacity"
             max="1"
             step="0.01"
             class="scale-75 h-[32px] opacity-75"
@@ -33,7 +33,13 @@ import { computed, defineAsyncComponent, onMounted, ref, toRefs } from 'vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { createDataLakeVariable, getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
-import { type MiniWidget, CustomWidgetElement, isMiniWidgetConfigurable, MiniWidgetType } from '@/types/widgets'
+import {
+  type MiniWidget,
+  CustomWidgetElement,
+  isMiniWidgetConfigurable,
+  MiniWidgetType,
+  minWidgetOpacity,
+} from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
 

@@ -45,7 +45,7 @@
           <v-slider
             v-model="opacitySlider"
             color="white"
-            min="0.2"
+            :min="minWidgetOpacity"
             max="1"
             step="0.01"
             class="scale-75 h-[32px] opacity-75"
@@ -65,7 +65,13 @@ import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
 import { constrain } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
-import { type Widget, isWidgetConfigurable, widgetHasOwnContextMenu, WidgetType } from '@/types/widgets'
+import {
+  type Widget,
+  isWidgetConfigurable,
+  minWidgetOpacity,
+  widgetHasOwnContextMenu,
+  WidgetType,
+} from '@/types/widgets'
 
 import ContextMenu from './ContextMenu.vue'
 

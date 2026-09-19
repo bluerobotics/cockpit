@@ -952,6 +952,11 @@ export const widgetDefaultSizes: Partial<Record<WidgetType, SizeRect2D>> = {
   [WidgetType.VirtualHorizon]: { width: 0.062, height: 0.118 },
 }
 
+/**
+ * Lowest opacity a widget can be faded to, so it never becomes invisible and unreachable
+ */
+export const minWidgetOpacity = 0.2
+
 export const validateWidget = (maybeWidget: Widget): maybeWidget is Widget => {
   if (maybeWidget.hash === undefined) throw new Error('Widget validation failed: property hash is missing.')
 
