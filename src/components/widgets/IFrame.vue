@@ -143,7 +143,20 @@
             </div>
           </div>
           <div class="mt-2 mb-2 w-[95%]">
-            <v-slider v-model="transparency" label="Transparency" color="white" :min="0" :max="90" />
+            <v-slider
+              v-model="opacityPercent"
+              label="Opacity"
+              color="white"
+              :min="minOpacityPercent"
+              :max="100"
+              :step="1"
+              @end="logOpacity"
+              @keyup="logOpacity"
+            >
+              <template #append>
+                <span class="text-sm w-[48px] text-right">{{ opacityPercent }}%</span>
+              </template>
+            </v-slider>
           </div>
           <ExpansiblePanel compact :is-expanded="true" no-bottom-divider no-top-divider>
             <template #title>Advanced options</template>
@@ -245,7 +258,7 @@ import { isValidURL } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
-import { widgetDefaultSizes, WidgetType } from '@/types/widgets'
+import { minWidgetOpacity, widgetDefaultSizes, WidgetType } from '@/types/widgets'
 
 import ExpansiblePanel from '../ExpansiblePanel.vue'
 const interfaceStore = useAppInterfaceStore()
@@ -284,7 +297,6 @@ const getInternalState = (): Record<string, any> => {
 }
 
 const iframe_loaded = ref(false)
-const transparency = ref(0)
 const inputURL = ref(widget.value.options.source)
 const vehicleAddressFromDataLake = ref<string>('')
 const lastUsedURL = ref<Record<string, string>>({
@@ -574,6 +586,23 @@ const logContentZoom = (): void => {
   logUserAction(`Set the iframe content zoom to ${contentZoomPercent.value}%`)
 }
 
+const minOpacityPercent = minWidgetOpacity * 100
+
+const opacityPercent = computed<number>({
+  get: () => Math.round((widget.value.options.opacity ?? 1) * 100),
+  set: (percent: number) => {
+    widget.value.options.opacity = percent / 100
+  },
+})
+
+let lastLoggedOpacityPercent: number | undefined
+
+const logOpacity = (): void => {
+  if (opacityPercent.value === lastLoggedOpacityPercent) return
+  lastLoggedOpacityPercent = opacityPercent.value
+  logUserAction(`Set the iframe widget opacity to ${opacityPercent.value}%`)
+}
+
 /**
  * Effective scale applied to the iframe content. The manual content zoom is the base, held to the
  * manual range so the layout box below, which is the widget's area divided by this, stays a small
@@ -767,10 +796,6 @@ const iframeStyle = computed<string>(() => {
   return widgetStore.editingMode ? contentStyle : `${contentStyle} pointer-events: auto;`
 })
 
-const iframeOpacity = computed<number>(() => {
-  return (100 - transparency.value) / 100
-})
-
 /**
  * Called when iframe finishes loading
  */
@@ -800,7 +825,6 @@ iframe {
   flex-grow: 1;
   margin: 0;
   padding: 0;
-  opacity: calc(v-bind('iframeOpacity'));
 }
 
 @supports not (zoom: 2) {
