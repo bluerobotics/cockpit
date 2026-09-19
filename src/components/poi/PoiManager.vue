@@ -8,7 +8,7 @@
   >
     <template #content>
       <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
-        <v-btn icon :width="34" :height="34" variant="text" class="bg-transparent" @click="closeDialog">
+        <v-btn icon :width="34" :height="34" variant="text" class="bg-transparent" @click="closeDialog()">
           <v-icon :size="22">mdi-close</v-icon>
         </v-btn>
       </div>
@@ -474,8 +474,9 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
   poiDialogVisible.value = true
 }
 
-const closeDialog = (): void => {
-  logUserAction('Closed the point-of-interest dialog')
+const closeDialog = (logClose = true): void => {
+  if (!poiDialogVisible.value) return
+  if (logClose) logUserAction('Closed the point-of-interest dialog')
   // Revert changes if user was editing an existing POI and cancels without saving
   if (editingPoiId.value && originalPoi.value) {
     updatePointOfInterest(editingPoiId.value, originalPoi.value)
@@ -569,6 +570,7 @@ const deletePoi = (): void => {
 
 defineExpose({
   openDialog,
+  closeDialog,
 })
 </script>
 

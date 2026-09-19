@@ -49,8 +49,10 @@
 </template>
 
 <script setup lang="ts">
-import { type AsyncComponentLoader, defineAsyncComponent } from 'vue'
+import { type AsyncComponentLoader, computed, defineAsyncComponent, provide } from 'vue'
 
+import { flightHiddenKey } from '@/composables/interactionDialog'
+import { useActiveMenuRoute } from '@/composables/menuRouting'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { WidgetType } from '@/types/widgets'
 
@@ -58,6 +60,12 @@ import SnappingGrid from '../components/SnappingGrid.vue'
 import WidgetHugger from '../components/WidgetHugger.vue'
 
 const store = useWidgetManagerStore()
+const { isFlightVisible } = useActiveMenuRoute()
+// Only this tree is hidden with Flight; the top and bottom bars sit outside and must keep their dialogs.
+provide(
+  flightHiddenKey,
+  computed(() => !isFlightVisible.value)
+)
 
 // TODO: Remove this non-migration implementation once we have a better solution that doesn't cause sync conflicts
 const mappedComponentType = (componentName: string): WidgetType => {

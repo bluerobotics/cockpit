@@ -4633,6 +4633,10 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 })
 
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
+
 const onMapClick = (e: L.LeafletMouseEvent): void => {
   // Swallow map clicks during placement; confirm/cancel happen via the dedicated overlay buttons.
   if (isPlacingMission.value) return

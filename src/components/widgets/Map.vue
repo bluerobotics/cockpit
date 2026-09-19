@@ -288,6 +288,7 @@ import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
+import { useActiveMenuRoute } from '@/composables/menuRouting'
 import { openSnackbar } from '@/composables/snackbar'
 import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
@@ -358,6 +359,7 @@ const widgetStore = useWidgetManagerStore()
 const baseStationStore = useBaseStation()
 const fenceStore = useGeoFenceStore()
 const router = useRouter()
+const { isFlightVisible } = useActiveMenuRoute()
 
 const { removePointOfInterest } = usePointsOfInterest()
 
@@ -644,7 +646,7 @@ onBeforeMount(() => {
     showBaseStationArrow: true,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
-  targetFollower.enableAutoUpdate()
+  if (isFlightVisible.value) targetFollower.enableAutoUpdate()
 })
 
 // Build the shared base maps and overlays (tile-provider definitions live in useMapTileLayers)
@@ -721,6 +723,7 @@ watch(
 
 const saveLastMapPositionDebounced = useDebounceFn(
   () => {
+    if (!isFlightVisible.value) return
     missionStore.saveLastMapPosition(zoom.value, mapCenter.value)
   },
   3000,
@@ -735,7 +738,7 @@ watch([zoom, mapCenter], () => {
   if (showButtons.value && map.value) {
     createScaleControl()
   }
-  saveLastMapPositionDebounced()
+  if (isFlightVisible.value) saveLastMapPositionDebounced()
 })
 
 // Shallow watch for reached mission item sequences to update marker styles
@@ -909,7 +912,7 @@ onMounted(async () => {
     clickedLocation.value = [event.latlng.lat, event.latlng.lng]
   })
   // Enable auto update for target follower
-  targetFollower.enableAutoUpdate()
+  if (isFlightVisible.value) targetFollower.enableAutoUpdate()
   stopUnFollowOnUserDrag = targetFollower.unFollowOnUserDrag(map.value)
   initMapBoxZoom(map.value)
 
@@ -967,7 +970,7 @@ watch(
 watch(
   () => missionStore.mapCenterOnRequest,
   (request) => {
-    if (!request || !map.value) return
+    if (!request || !map.value || !isFlightVisible.value) return
     map.value.setView(request.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
   }
 )
@@ -1814,6 +1817,43 @@ const hideContextMenuAndMarker = (): void => {
     map.value.removeLayer(contextMenuMarker.value)
   }
 }
+
+const pauseMapWhileHidden = (): void => {
+  persistLiveMapView(missionStore.saveLastMapPosition, map.value, zoom.value, mapCenter.value)
+  targetFollower.disableAutoUpdate()
+  downloadMenuOpen.value = false
+  overlaysDialogOpen.value = false
+  isMissionChecklistOpen.value = false
+  showGlobalOriginDialog.value = false
+  centerDialOpen.value = false
+  fenceDialOpen.value = false
+  hideContextMenuAndMarker()
+  poiPopupRef.value?.close()
+  poiManagerMapWidgetRef.value?.closeDialog(false)
+}
+
+const resumeMapWhenVisible = (): void => {
+  const lastZoom = missionStore.userLastMapZoom ?? missionStore.defaultMapZoom
+  const lastCenter = missionStore.userLastMapCenter ?? missionStore.defaultMapCenter
+  zoom.value = lastZoom
+  mapCenter.value = lastCenter
+  map.value?.setView(lastCenter as LatLngTuple, lastZoom)
+  targetFollower.enableAutoUpdate()
+  if (missionStore.followVehicleOnMap === true) {
+    targetFollower.follow(WhoToFollow.VEHICLE)
+  } else {
+    targetFollower.unFollow()
+  }
+  if (map.value) applyFollowZoomMode(map.value, !!followerTarget.value)
+}
+
+watch(isFlightVisible, (visible) => {
+  if (visible) {
+    nextTick(() => resumeMapWhenVisible())
+    return
+  }
+  pauseMapWhileHidden()
+})
 
 const onGlobalOriginSet = (latitude: number, longitude: number): void => {
   if (!map.value) return

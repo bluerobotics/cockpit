@@ -731,7 +731,7 @@ const collapsibleIframeStyle = computed<string>(() => {
   if (widgetStore.editingMode) {
     newStyle = newStyle.concat(' ', 'pointer-events:none; border:0;')
   }
-  if (!widgetStore.isWidgetVisible(widget.value)) {
+  if (!widgetStore.isWidgetOnActiveView(widget.value)) {
     newStyle = newStyle.concat(' ', 'display: none;')
   }
   return newStyle
@@ -753,7 +753,7 @@ const widgetRectStyle = computed<string>(() => {
   if (widgetStore.editingMode) {
     newStyle = newStyle.concat(' ', 'border:0;')
   }
-  if (!widgetStore.isWidgetVisible(widget.value)) {
+  if (!widgetStore.isWidgetOnActiveView(widget.value)) {
     newStyle = newStyle.concat(' ', 'display: none;')
   }
   return newStyle
