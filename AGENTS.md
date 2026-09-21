@@ -81,7 +81,24 @@ Prefer deletion over addition, boring over clever, and the shortest working diff
 
 **Fix the root cause, not the symptom.** A bug report names a symptom. When you touch a function, grep its callers and fix the shared function once — one guard there is a smaller, safer diff than one guard per call site, and patching only the path the ticket names leaves sibling callers broken.
 
+**Know how often your code runs.** Walk the callers of every function you change outward until you
+reach a DOM or map event handler, a timer, a lifecycle hook, a watcher, or a message handler, and
+note how often that fires. Cost and risk are the code multiplied by its frequency, and the diff
+never shows the multiplier. If the walk finds no caller at all, stop — you are changing code nothing
+runs.
+
+**Name the invariant, then find everyone who can break it.** When your change relies on a rule
+("nothing reactive enters this store", "this list is always sorted"), grep every site that can
+violate it. Close it at the single consumer or chokepoint rather than guarding N producers; guarding
+producers is only correct when the enumeration is exhaustive and something keeps it that way.
+
 **Do not be lazy about:** understanding the problem, input validation at trust boundaries, error handling that prevents data loss, security, accessibility, and the calibration real hardware needs (clocks drift, sensors read off — the vehicle is never the spec ideal).
+
+**Walk the failure paths.** For any file you add, and anything under `scripts/`, `.github/`, or
+`src/electron/`, walk each failure path deliberately — non-2xx, timeout, missing file, non-zero exit,
+malformed input — and decide what is left behind on disk when it fails, and whether a later run can
+tell a failed artifact from a good one. Error handling is the absence of a branch, so nothing will
+point at the one you did not write.
 
 **Mark deliberate corner-cuts.** When you knowingly cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic), leave a `ponytail:` comment naming the ceiling and the upgrade path.
 
