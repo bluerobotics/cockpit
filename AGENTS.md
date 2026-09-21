@@ -139,6 +139,19 @@ After running the lint and typecheck commands, check whether they auto-fixed (mo
 - When implementing new widgets, or adding/removing entries in the Options object of existing widgets, use the object merging approach (use `src/components/widgets/Plotter.vue` as a reference) to merge a default-options object with the persistent one. This ensures the new entries are added to existing widgets from the users persistence.
 - If a new Cockpit local-storage setting is being created or modified (be it directly using the settings-management.ts backend or the useBlueOsStorage composable), make sure it starts with `cockpit-` so its correctly tracked and parsed in our backend and UIs.
 
+CI measures cyclomatic complexity and nesting depth on every function a PR adds or changes
+(`.github/scripts/complexity-report.js`). Above 12, or four levels of nesting, is the top percentile
+of this tree and gets questioned. You are never asked to pay down complexity you inherited — only
+what your own change adds. When your addition trips it, fix the shape rather than the number: guard
+clauses and early returns to remove nesting, a lookup table for an `if`/`else if` chain over
+constants, separating a decision from the I/O it performs, or extracting the one genuinely cohesive
+unit that has a real name. Do not shred a function into single-use helpers to get the count down —
+the metric is per-function and therefore gameable, and that scatters the flow while adding exactly
+the speculative abstraction this file forbids. A flat `switch` over a protocol or enum discriminant,
+a parser or state machine whose branching is the algorithm, validation enumerating independent
+conditions at a trust boundary, and branches that exist for hardware reality are all fine at any
+count.
+
 ## Persistence and settings migrations
 
 - Choose the storage backend deliberately. `useBlueOsStorage` syncs the value to the vehicle, so every topside computer and every operator of that vehicle shares it. Machine-specific values — device and serial paths, local filesystem paths, window geometry — must stay machine-local, and must never be auto-acted on after a sync, since auto-connecting to a synced `/dev/ttyUSB0` can open the wrong device. Identify hardware by a stable id (USB VID/PID, device serial) rather than by path.
@@ -249,6 +262,7 @@ widget the user deletes, or a view that unloads off-screen, must leave nothing r
 - Canvas work is synchronous and freezes the interface while it runs: `toDataURL`, `getImageData`/`putImageData`, large `drawImage` compositing, and per-pixel loops. Measure before assuming a capture or an overlay is cheap.
 - Make sure the encoder matches the extension you promise the user. Cockpit once wrote PNG data under a `.jpeg` name, costing ~800ms per workspace snapshot where the real thing takes ~80ms.
 - Be strictest with expensive work that runs on its own, from an interval, timer, watcher, or mount hook, rather than from a user action. The user cannot connect the stutter to anything they did, and cannot stop it.
+- This chain runs on every incoming MAVLink message: `onIncomingMessage` (`src/libs/vehicle/mavlink/vehicle.ts`) flattens the message through `src/libs/vehicle/common/data-flattener.ts` into `setDataLakeVariableData`, which calls `notifyDataLakeVariableListeners` (both in `src/libs/actions/data-lake.ts`). Any `watch()` on a high-frequency ref is on it too. Non-trivial work added anywhere along that chain degrades framerate for the whole app.
 
 ## Logging user interactions
 
