@@ -78,6 +78,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } fr
 import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
 import { constrain, snapToInterval } from '@/libs/utils'
 import {
+  type AxisSpan,
   type MovedEdge,
   alignmentSnapDelta,
   alignmentSnapTolerancePixels,
@@ -366,6 +367,23 @@ const handleDrag = (event: MouseEvent): void => {
   updateAlignmentGuides()
 }
 
+const minWidgetSize = 0.01
+
+// Only the edge being dragged may move, and it stops at the visible area. The opposite edge caps it last, so a widget
+// that starts outside that area cannot be resized into a negative size.
+const constrainResizedSpan = (span: AxisSpan, movedEdge: MovedEdge, min: number, max: number): AxisSpan => {
+  const end = span.start + span.length
+  if (movedEdge === 'start') {
+    const start = Math.min(constrain(span.start, min, max), end - minWidgetSize)
+    return { start, length: end - start }
+  }
+  if (movedEdge === 'end') {
+    const constrainedEnd = Math.max(constrain(end, min, max), span.start + minWidgetSize)
+    return { start: span.start, length: constrainedEnd - span.start }
+  }
+  return span
+}
+
 const handleResize = (event: MouseEvent): void => {
   if (!isResizing.value || !initialMousePos.value || !resizeHandle.value) return
 
@@ -437,14 +455,12 @@ const handleResize = (event: MouseEvent): void => {
     gridInterval
   )
 
-  position.value = {
-    x: constrain(alignedX.start, 0, 1 - size.value.width),
-    y: constrain(alignedY.start, 0, 1 - size.value.height),
-  }
-  size.value = {
-    width: constrain(alignedX.length, 0.01, 1),
-    height: constrain(alignedY.length, 0.01, 1),
-  }
+  const { top: topBarNormalized, bottom: bottomBarNormalized } = barInsetsNormalized.value
+  const constrainedX = constrainResizedSpan(alignedX, movedEdgeX, 0, 1)
+  const constrainedY = constrainResizedSpan(alignedY, movedEdgeY, topBarNormalized, 1 - bottomBarNormalized)
+
+  position.value = { x: constrainedX.start, y: constrainedY.start }
+  size.value = { width: constrainedX.length, height: constrainedY.length }
   updateAlignmentGuides()
 }
 
