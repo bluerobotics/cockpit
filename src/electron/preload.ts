@@ -22,9 +22,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('update-not-available', (_event, info) => callback(info)),
   onDownloadProgress: (callback: (info: any) => void) =>
     ipcRenderer.on('download-progress', (_event, info) => callback(info)),
+  onUpdateError: (callback: (message: string) => void) =>
+    ipcRenderer.on('update-error', (_event, message) => callback(message)),
   onElectronSDLControllerJoystickStateChange: (callback: (data: ElectronSDLJoystickControllerStateEventData) => void) =>
     ipcRenderer.on('sdl-controller-joystick-state', (_event, data) => callback(data)),
   checkSDLStatus: () => ipcRenderer.invoke('check-sdl-status'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.send('download-update'),
   installUpdate: () => ipcRenderer.send('install-update'),
   cancelUpdate: () => ipcRenderer.send('cancel-update'),

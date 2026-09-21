@@ -273,6 +273,11 @@ declare global {
        */
       onUpdateDownloaded: (callback: (info: any) => void) => void
       /**
+       * Ask the main process to look for a new version right away
+       * @returns {Promise<boolean>} True when the check started, false when this platform gets no automatic updates
+       */
+      checkForUpdates: () => Promise<boolean>
+      /**
        * Trigger update download
        */
       downloadUpdate: () => void
@@ -296,6 +301,10 @@ declare global {
        * Register callback for download progress event
        */
       onDownloadProgress: (callback: (info: any) => void) => void
+      /**
+       * Register callback for update error event
+       */
+      onUpdateError: (callback: (message: string) => void) => void
       /**
        * Register callback for joystick state updates
        */
