@@ -226,6 +226,17 @@ When a widget or mini-widget needs a vehicle telemetry value:
 - To expose a new MAVLink field, extend the flattener (`src/libs/vehicle/common/data-flattener.ts`) rather than special-casing the widget.
 - Vehicle stores are for app-level state (connection, vehicle identity, mode, etc.), not for per-telemetry-message values.
 
+## Multiple widget instances
+
+Users can place several copies of the same widget, on one view and across views. Before adding state
+or startup work to a widget, check what happens when three of them mount at once:
+- State that must be per-instance goes inside `<script setup>`, which is already per-instance and
+  torn down on unmount — not at module scope.
+- Work that multiplies per instance (each copy downloading the mission, opening its own stream,
+  registering its own MAVLink listener) belongs in a shared store or composable that does it once.
+- An action on one instance must not reach the others, the way dragging one widget must not blank
+  every iframe on the view.
+
 ## Lifecycle cleanup
 
 Anything you register has to be unregistered. Every subscription, DOM or map event listener,
