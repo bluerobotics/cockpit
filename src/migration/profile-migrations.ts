@@ -3,6 +3,7 @@ import { defaultProtocolMappingVehicleCorrespondency } from '@/assets/joystick-p
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { settingsManager } from '@/libs/settings-management'
 import { deserialize } from '@/libs/utils'
+import { isMappingBlank } from '@/migration/default-profile-importer'
 import type { JoystickProtocolActionsMapping } from '@/types/joystick'
 import type { Profile } from '@/types/widgets'
 
@@ -10,6 +11,7 @@ export const legacySavedProfilesKey = 'cockpit-saved-profiles-v8'
 const legacyProfileIndexKey = 'cockpit-current-profile-index'
 const legacyProfileCorrespondencyKey = 'cockpit-default-vehicle-type-profiles'
 export const legacyProtocolMappingsKey = 'cockpit-protocol-mappings-v1'
+export const joystickFunctionsMappingKey = 'cockpit-joystick-functions-mapping-v1'
 const legacyMappingIndexKey = 'cockpit-protocol-mapping-index-v1'
 const legacyMappingCorrespondencyKey = 'cockpit-default-vehicle-type-protocol-mappings'
 
@@ -92,4 +94,33 @@ export const migrateLegacyJoystickMapping = (vehicleType?: MavType): JoystickPro
 
   console.info(`Migrated joystick functions mapping from legacy mappings (active index ${idx}).`)
   return chosen
+}
+
+/**
+ * Build the profile list that supersedes the single pre-profiles mapping.
+ * @param {JoystickProtocolActionsMapping} singleMapping - Mapping stored under the pre-profiles key
+ * @returns {JoystickProtocolActionsMapping[]} One-entry list holding a copy of it
+ */
+export const seedJoystickProfiles = (
+  singleMapping: JoystickProtocolActionsMapping
+): JoystickProtocolActionsMapping[] => [structuredClone(singleMapping)]
+
+/**
+ * Whether a profile list still holds nothing but the seed, and so can be rebuilt without losing the user's work.
+ * @param {JoystickProtocolActionsMapping[]} profiles - Profile list as it stands
+ * @returns {boolean} True when the list is empty or a single blank mapping
+ */
+export const isSeededJoystickProfileList = (profiles: JoystickProtocolActionsMapping[]): boolean =>
+  profiles.length === 0 || (profiles.length === 1 && isMappingBlank(profiles[0]))
+
+/**
+ * Rebuild the profile list from the pre-profiles key for a machine that had no local copy of it at boot, and so
+ * seeded a blank list before the vehicle's copy arrived. Reads the key rather than a cached ref, since two listeners
+ * on the same key have no ordering between them.
+ * @returns {JoystickProtocolActionsMapping[] | undefined} The rebuilt list, or undefined when the key holds nothing worth keeping
+ */
+export const reseedJoystickProfilesFromSingleMapping = (): JoystickProtocolActionsMapping[] | undefined => {
+  const singleMapping = readLegacy<JoystickProtocolActionsMapping>(joystickFunctionsMappingKey)
+  if (singleMapping === undefined || isMappingBlank(singleMapping)) return undefined
+  return seedJoystickProfiles(singleMapping)
 }

@@ -56,6 +56,10 @@ export interface DialogOptions {
    */
   persistent?: boolean
   /**
+   * Dims whatever is behind the dialog, separating it from a surface it was opened over.
+   */
+  backdrop?: boolean
+  /**
    * The time in milliseconds to automatically close the dialog.
    */
   timer?: number
@@ -107,6 +111,7 @@ export function useInteractionDialog(): {
     maxWidth: 'auto',
     showDialog: false,
     persistent: true,
+    backdrop: false,
     timer: 0,
   })
 

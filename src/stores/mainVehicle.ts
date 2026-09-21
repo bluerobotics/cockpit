@@ -1140,7 +1140,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }
 
     // Send MAVLink Manual Control message
-    if (controllerStore.enableForwarding) {
+    if (controllerStore.isForwardingActive) {
       mavlinkManualControlManager.sendManualControl()
     }
   }, 40)

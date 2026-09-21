@@ -97,3 +97,13 @@ select:focus {
     0% { background-color: rgba(255, 234, 43, 0.438); }
     100% { background-color: transparent; }
 }
+
+/* Scrim of a dialog opened with a backdrop. It is teleported to <body>, so no component's scoped styles reach it,
+   and it is shared by every such dialog rather than belonging to whichever one happens to be mounted. */
+.dialog-backdrop .v-overlay__scrim {
+    /* Vuetify dims the scrim with element opacity, which would composite the blur back towards the sharp backdrop */
+    opacity: 1;
+    background-color: #00000077;
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+}

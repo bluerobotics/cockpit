@@ -90,6 +90,7 @@
   <About v-if="isAboutOpen" @update:show-about-dialog="() => goToBaseView()" />
   <DataPrivacyModal />
   <Tutorial v-if="interfaceStore.isTutorialVisible" />
+  <JoystickWizard v-if="interfaceStore.isJoystickWizardVisible" />
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <CameraReplacementDialog />
@@ -134,6 +135,7 @@ import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import FloatingWrapper from '@/components/FloatingWrapper.vue'
 import GlassModal from '@/components/GlassModal.vue'
+import JoystickWizard from '@/components/joysticks/JoystickWizard.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'

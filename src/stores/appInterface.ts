@@ -31,6 +31,7 @@ export const useAppInterfaceStore = defineStore('responsive', {
     mainMenuCurrentStep: 1,
     isGlassModalAlwaysOnTop: false,
     isTutorialVisible: false,
+    isJoystickWizardVisible: false,
     isExternalFeaturesModalVisible: false,
     isDataPrivacyModalVisible: false,
     isVehicleDefaultsAutoImportModalVisible: false,
@@ -120,6 +121,8 @@ export const useAppInterfaceStore = defineStore('responsive', {
       border: '1px solid rgba(255, 255, 255, 0.08)',
       boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
     }),
+    // Softer than a menu's own blur, so a dialog scrim still reads as the page behind it rather than as frosted glass
+    dialogBackdropStyles: (state) => ({ '--glass-filter': `blur(${state.UIGlassEffect.blur * 0.45}px)` }),
     highlightedComponent: (state) => state.componentToHighlight,
     globalGlassMenuHighlightStyles: (state) => ({
       backgroundColor: state.UIGlassEffect.bgColor,
