@@ -20,8 +20,27 @@ You write clean, minimal code that follows existing patterns. You never over-eng
 ## Directory Structure
 
 ```
-xxx
+src/
+├── assets/         Static assets and shipped defaults
+├── components/     Vue components (widgets/ for the widget library, configuration/ for settings panels)
+├── composables/    Reactive logic (useDataLakeVariable, useBlueOsStorage, useInteractionDialog, …)
+├── directives/     Vue directives
+├── electron/       Electron main-process and preload code — never reached by the Lite build
+├── libs/           Framework-agnostic TypeScript. Must not import vue or any component
+├── migration/      Profile and joystick-mapping migrations off their pre-settings-management keys
+├── plugins/        Vuetify and other plugin setup
+├── router/         Vue Router configuration
+├── stores/         Pinia stores — app-wide state only, never per-telemetry values or map state
+├── styles/         Global styles
+├── tests/          Vitest suites, mirroring composables/, libs/ and types/
+├── types/          Shared TypeScript types
+├── utils/          Cross-cutting helpers, and migrations.ts for cockpit-* key migrations
+└── views/          Top-level routed views
 ```
+
+A new `cockpit-*` key migration goes in `src/utils/migrations.ts`, which tracks what has already run
+under its own `cockpit-migrations` key. `src/migration/` is the older, narrower home for the profile
+and protocol-mapping migrations only; do not add to it.
 
 ## Output Requirements
 
