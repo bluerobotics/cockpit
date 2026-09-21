@@ -8,6 +8,7 @@ import {
   mapOverlayStorage,
   setCachedOverlayRender,
 } from '@/libs/map/overlay-storage'
+import { createMapPane } from '@/libs/map/utils-map'
 import { useMissionStore } from '@/stores/mission'
 import type { MapOverlayMeta } from '@/types/mission'
 
@@ -76,9 +77,9 @@ export const useMapOverlays = (): UseMapOverlaysReturn => {
   let reconcileChain: Promise<void> = Promise.resolve()
 
   const ensurePane = (): void => {
-    if (!mapRef || mapRef.getPane(OVERLAY_PANE)) return
+    if (!mapRef) return
     // Above the base tile pane (200) but below vector overlays/markers so mission data stays on top.
-    mapRef.createPane(OVERLAY_PANE).style.zIndex = '250'
+    createMapPane(mapRef, OVERLAY_PANE).style.zIndex = '250'
   }
 
   const setLoading = (id: string, loading: boolean): void => {

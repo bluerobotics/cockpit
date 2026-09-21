@@ -309,6 +309,7 @@ import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/m
 import {
   applyFollowZoomMode,
   createGridOverlay,
+  createMapPane,
   fitMapToWaypoints,
   persistLiveMapView,
   recenterMapOnFollowTarget,
@@ -1257,10 +1258,7 @@ watch(vehicleStore.coordinates, () => {
       iconAnchor: [32, 32],
     })
 
-    if (!map.value.getPane('vehiclePane')) {
-      const vehiclePane = map.value.createPane('vehiclePane')
-      vehiclePane.style.zIndex = '650'
-    }
+    createMapPane(map.value, 'vehiclePane').style.zIndex = '650'
 
     vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon, pane: 'vehiclePane' })
 
