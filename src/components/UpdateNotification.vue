@@ -8,7 +8,7 @@
     max-width="560"
   >
     <template #content>
-      <div v-if="updateInfo" class="mt-2">
+      <div v-if="updateInfo.version" class="mt-2">
         <strong>Update Details:</strong>
         <p>Current Version: {{ app_version.version }}</p>
         <p>New Version: {{ updateInfo.version }}</p>
@@ -35,21 +35,23 @@ import { useStorage } from '@vueuse/core'
 import { onBeforeMount, ref } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
+import { userAskedForUpdates } from '@/composables/appUpdater'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
 
 const showUpdateDialog = ref(false)
 const dialogTitle = ref('')
-const dialogMessage = ref('')
+const dialogMessage = ref<string | string[]>('')
 const dialogVariant = ref<'error' | 'info' | 'success' | 'warning' | 'text-only'>('info')
 const showProgress = ref(false)
 const downloadProgress = ref(0)
 const dialogActions = ref<Action[]>([])
-const updateInfo = ref({
+const noUpdateInfo = {
   version: '',
   releaseDate: '',
   releaseNotes: '',
-})
+}
+const updateInfo = ref({ ...noUpdateInfo })
 const ignoredUpdateVersions = useStorage<string[]>('cockpit-ignored-update-versions', [])
 
 const formatDate = (date: string): string => {
@@ -75,7 +77,11 @@ onBeforeMount(() => {
     dialogVariant.value = 'info'
     dialogActions.value = []
     showProgress.value = false
-    showUpdateDialog.value = true
+    // This component lives for the whole session, so the offer a previous check produced has to go before the next
+    // one runs, or its details are shown under whatever this check comes back with.
+    updateInfo.value = { ...noUpdateInfo }
+    // The startup check runs on its own, so it only speaks up once it has an update to offer.
+    showUpdateDialog.value = userAskedForUpdates.value
   })
 
   window.electronAPI.onUpdateNotAvailable(() => {
@@ -105,7 +111,9 @@ onBeforeMount(() => {
         text: 'Ignore This Version',
         action: () => {
           logUserAction(`Ignored app update version ${updateInfo.value.version}`)
-          ignoredUpdateVersions.value.push(updateInfo.value.version)
+          if (!ignoredUpdateVersions.value.includes(updateInfo.value.version)) {
+            ignoredUpdateVersions.value.push(updateInfo.value.version)
+          }
           window.electronAPI!.cancelUpdate()
           showUpdateDialog.value = false
         },
@@ -140,7 +148,7 @@ onBeforeMount(() => {
     ]
 
     // Check if this version is in the ignored list
-    if (ignoredUpdateVersions.value.includes(info.version)) {
+    if (!userAskedForUpdates.value && ignoredUpdateVersions.value.includes(info.version)) {
       console.log(`Skipping ignored version ${info.version}.`)
       showUpdateDialog.value = false
       return
@@ -151,6 +159,27 @@ onBeforeMount(() => {
 
   window.electronAPI.onDownloadProgress((progressInfo) => {
     downloadProgress.value = progressInfo.percent
+  })
+
+  window.electronAPI.onUpdateError((message) => {
+    console.error('Failed to update the Electron app.', message)
+    if (!userAskedForUpdates.value) return
+    dialogTitle.value = 'Update Failed'
+    // The updater reports everything it cannot do through this event, so the reason it gives is the only thing that
+    // says which failure this is. A download is the only step that runs with the progress bar up.
+    const failedStep = showProgress.value ? 'download the update' : 'check for updates'
+    dialogMessage.value = [`Cockpit could not ${failedStep}.`, `Reported reason: ${message}`]
+    dialogVariant.value = 'error'
+    showProgress.value = false
+    dialogActions.value = [
+      {
+        text: 'OK',
+        action: () => {
+          showUpdateDialog.value = false
+        },
+      },
+    ]
+    showUpdateDialog.value = true
   })
 
   window.electronAPI.onUpdateDownloaded(() => {

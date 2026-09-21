@@ -39,6 +39,16 @@
                 <br />
                 <span class="text-sm text-gray-500">Released: {{ app_version.date }}</span>
               </p>
+              <v-btn
+                v-if="isElectron()"
+                class="self-end mb-1"
+                variant="outlined"
+                size="small"
+                prepend-icon="mdi-update"
+                @click="checkForUpdates"
+              >
+                Check for updates
+              </v-btn>
               <p class="my-3">Created by Blue Robotics</p>
               <p class="mt-1">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
             </div>
@@ -87,6 +97,7 @@ import { onUnmounted, ref, watch } from 'vue'
 import CockpitLogo from '@/assets/cockpit-logo.avif'
 import lite from '@/assets/lite.avif'
 import InteractionDialog from '@/components/InteractionDialog.vue'
+import { checkForUpdates } from '@/composables/appUpdater'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
 
