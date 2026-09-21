@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div @dragstart="preventDrag">
     <img
       class="fixed inset-0 w-full h-full object-cover object-center z-[9990] filter brightness-[80%]"
       :src="splashBackground"
@@ -259,6 +259,10 @@ const scheduleNextMessage = (): void => {
   randomLightHeartedMessage.value = remainingMessages.value.splice(randomIndex, 1)[0]
   timerId = setTimeout(scheduleNextMessage, delay)
 }
+
+// Images and selected text are native drag sources, and a drag started on the splash outlives it,
+// leaving the window swallowing every left click until Cockpit is restarted.
+const preventDrag = (event: DragEvent): void => event.preventDefault()
 
 const handleKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {

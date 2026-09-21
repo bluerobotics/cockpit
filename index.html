@@ -60,7 +60,9 @@
 </head>
 
 <body>
-    <div id="non-app-main">
+    <!-- Images and selected text are native drag sources, and a drag started here outlives the screen
+         it started on, leaving the window swallowing every left click until Cockpit is restarted. -->
+    <div id="non-app-main" ondragstart="return false">
         <div id="loading-screen">
             <img src="/cockpit-name-logo.png" alt="Cockpit" id="loading-logo" style="margin-right: 2rem;"/>
             <div id="loading-spinner" style="margin-left: 2rem;"></div>
