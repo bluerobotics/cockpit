@@ -48,6 +48,7 @@ When writing code:
 - Follow existing patterns in the codebase exactly
 - Follow the rules specified on `eslintrc.cjs`
 - Use optional chaining (`?.`) when possible in typescript
+- Avoid `any`. Give the real type, or `unknown` narrowed at the point of use. `@typescript-eslint/no-explicit-any` is `'off'` in `.eslintrc.cjs`, so lint will not catch this for you
 - Prefer Tailwind utility classes over writing new scoped CSS when a utility already covers the styling need
 - Prefer editing existing files over creating new ones, but do create dedicated composables, components, or `.ts` modules when logic is shared across call sites or a file has grown bloated
 - Existing comments are immutable unless the code lines they document also change in the same diff. Do not reword, shorten, or delete a comment whose code is unchanged.
@@ -157,6 +158,8 @@ After running the lint and typecheck commands, check whether they auto-fixed (mo
 
 > **Important:** Always use `yarn` for frontend commands, never `npx`, `npm` or others.
 
+- A failing build must fail the run. Do not add `continue-on-error`, `|| true`, or anything else that swallows a non-zero exit on a build, test, or lint step in `.github/workflows/` — a green run that shipped a broken binary is worse than a red one.
+
 - If implementing a feature that needs cannot be fully supported in both Standalone (Electron) and Lite (Web) version, the limitations should be specified in the `README.md` table, and there should exist information elements in the UI explaining that to the users.
 - README documentation alone is not enough: any call site touching Electron-only APIs (`window.electronAPI`, `electron-store`, `electron-log`, `electron-updater`, native file-system/notification APIs, custom-protocol handlers, native dialogs, `navigator.userAgentData`, etc.) must be wrapped in a runtime guard (use `isElectron()` from `src/libs/utils.ts`, or feature-detect the API). The Lite build must not throw — even silently — when it reaches that code.
 - When implementing new widgets, or adding/removing entries in the Options object of existing widgets, use the object merging approach (use `src/components/widgets/Plotter.vue` as a reference) to merge a default-options object with the persistent one. This ensures the new entries are added to existing widgets from the users persistence.
@@ -218,6 +221,7 @@ Business/domain logic must not live inside `.vue` components. Keep components li
 
 Before writing a new helper, composable, or component, search for an existing one that already does the job:
 - Stateless utilities: check `src/libs/` (e.g. `src/libs/utils.ts`) and add to it instead of redefining a local copy.
+- Installed dependencies, not only our own code: vueuse in particular already covers much of what gets hand-rolled — its `StorageSerializers` in place of a bespoke JSON serializer, for instance.
 - Reactive logic: check `src/composables/` (e.g. `useDataLakeVariable`, `useInteractionDialog`, `useBlueOsStorage`).
 - UI: check existing components and dialogs for an established pattern before building a new one.
 If the same logic would live in two or more places, extract it once and reuse it.
