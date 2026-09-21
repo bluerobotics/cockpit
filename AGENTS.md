@@ -226,6 +226,13 @@ When a widget or mini-widget needs a vehicle telemetry value:
 - To expose a new MAVLink field, extend the flattener (`src/libs/vehicle/common/data-flattener.ts`) rather than special-casing the widget.
 - Vehicle stores are for app-level state (connection, vehicle identity, mode, etc.), not for per-telemetry-message values.
 
+## Lifecycle cleanup
+
+Anything you register has to be unregistered. Every subscription, DOM or map event listener,
+`watch`/`watchEffect` stop handle, `setInterval`/`setTimeout`, and MAVLink listener needs a matching
+teardown in `onBeforeUnmount`/`onUnmounted`, or an equivalent disposer handed to whoever owns it. A
+widget the user deletes, or a view that unloads off-screen, must leave nothing running.
+
 ## Heavy work and the main thread
 
 - Canvas work is synchronous and freezes the interface while it runs: `toDataURL`, `getImageData`/`putImageData`, large `drawImage` compositing, and per-pixel loops. Measure before assuming a capture or an overlay is cheap.
