@@ -252,3 +252,53 @@ When a widget or mini-widget needs a vehicle telemetry value:
 - Do not open a new dialog while a dialog of the same purpose is already open. Guard against re-opens, especially inside timed loops (snapshots, retries, watchers).
 - For modal confirmations and from→to choices, reuse the existing `useInteractionDialog` composable (`src/composables/interactionDialog.ts`) and existing dialog patterns before creating a new component.
 - Keep protocol and implementation jargon (RTSP, WebRTC, MAVLink message names, internal ids) out of strings the user reads; where a term is unavoidable, still say what the user should do about it. Watch for unintended connotations — "upgrade to Standalone" reads as paid where "install" does not. When a setting shares a name with an autopilot concept, say how it differs, the way the heartbeat timeout has to state it is unrelated to ArduPilot's GCS failsafe.
+
+## UI house style
+
+These are Cockpit's conventions, each one asked for by hand in review more than once. Not all of
+them describe the whole tree yet — where the codebase is still converging, follow the rule for new
+code rather than copying the nearest old example.
+
+- **Dialogs.** Centered title, a separator above the footer, and no divider under the header. A
+  hand-rolled `v-dialog`/`v-card` also needs a close X at the top right, aligned with the title with
+  equal top and right insets, as a keyboard-reachable `v-btn icon`. Dialogs built on the shared
+  `useInteractionDialog` shell do not get an X — the shell does not provide one.
+- **Footer actions.** Two at most: the dismiss on the left ("Cancel" when the dialog edits, "Close"
+  when it only displays) and the primary on the right. A single action goes on the right. A
+  form-wide action (Reset, Import, Export, Test) belongs beside the content it governs, not in the
+  footer; when it has to stay there it groups with the primary on the right. In a hand-rolled footer
+  the dismiss is `variant="text"`.
+- **Button fills.** White text on a white alpha fill: `#FFFFFF22` for ordinary actions on a page or
+  panel, `#FFFFFF33` for the committing action in a dialog footer, which is what makes it read as
+  heavier than the buttons around it. `color="white"` is the legacy opaque fill still common on
+  footer commits; do not add new ones. Never `color="primary"` or another saturated Vuetify default —
+  Cockpit is flown on tablets in direct sun. The one exception is `color="error"` on a destructive
+  confirmation, where the red is the signal.
+- **`theme="dark"` on teleporting controls.** `v-select`, `v-autocomplete`, `v-combobox`, date and
+  color pickers, and any `v-menu` whose overlay is not already dark- or glass-styled must carry it.
+  `src/plugins/vuetify.ts` calls `createVuetify()` with no theme configured, so these fall back to
+  Vuetify's light theme and teleport their overlay into a light stacking context out of reach of the
+  component's own classes. Removing it from one of them is a regression, never a cleanup. Plain
+  in-flow controls (`v-btn`, `v-icon`, `v-card`) render dark without it.
+- **One glass layer per surface.** `interfaceStore.globalGlassMenuStyles` goes on the surface itself,
+  never on a block already inside a glass surface — use a flat `bg-[#FFFFFF11]` tint there. Do not
+  hand-write `backdropFilter`, and do not leave a new menu or popover as a bare Vuetify surface.
+- **Padding ownership.** The container owns the inset and content ends where its last element ends.
+  No insets stacked on nested wrappers (`ml-*` plus `pr-*`), no trailing `mb-*` leaving a dead band
+  under the last element, no magic pixel values (`ml-[10px]`) where a utility or the container's own
+  width covers it, and never a bottom inset narrower than the lateral one.
+- **Stacking.** Do not invent a `z-index` or `z-*` at a call site so one surface clears another that
+  a different file owns. Layering elements inside a single component's own stacking context is fine.
+- **Icon-only controls.** Every icon button needs a tooltip or an `aria-label`. Use `v-btn icon`
+  rather than a clickable `v-icon` or `div`, so it is keyboard-reachable. Size icons to match the
+  ones already on the surface, and pick a glyph naming the action the user is looking for rather
+  than the implementation — a zip glyph on what the user reads as a download.
+- **Field-attached actions.** A text button acting on a single input belongs beside the input, or in
+  that field's `details` row — never in a row of its own below it, and never pulled into place with
+  hand-tuned margins. Check it stays aligned with the input when the field's hint appears.
+- **Sentence case** for labels, headings, options and menu entries ("Points of interest", not
+  "Points Of Interest"). A label should not restate the panel it already sits in.
+- **Space economy.** Vertical space is the scarcest thing on a ground station. In configuration
+  views, group new settings under an `ExpansiblePanel` rather than stacking separate blocks, and put
+  paired fields in a two-column grid that collapses to one column on phones via
+  `interfaceStore.isOnPhoneScreen`.
