@@ -1,1 +1,0 @@
-import{c5 as a,c6 as r,c7 as t,c8 as _}from"./index-CkQtMLx-.js";const A=""+new URL("arducopter-top-view-CuA2PA_L.avif",import.meta.url).href,o=[r.MAV_TYPE_QUADROTOR,r.MAV_TYPE_HEXAROTOR,r.MAV_TYPE_OCTOROTOR,r.MAV_TYPE_TRICOPTER,r.MAV_TYPE_DODECAROTOR],T=e=>e===void 0?a:e===r.MAV_TYPE_SURFACE_BOAT?t:e===r.MAV_TYPE_SUBMARINE?_:o.includes(e)?A:a;export{T as v};
