@@ -185,6 +185,9 @@ count.
 - Migration logic for `cockpit-*` keys lives in `src/utils/migrations.ts` (or a sibling under `src/utils/`), not inside Pinia stores. Stores call the migration helpers; they never embed the migration body.
 - Do not write migration code for keys that were never released to users. Just change the schema.
 - When a change to a default or to existing behavior leaves already-configured users on the old value, decide explicitly whether to carry them over or to leave them alone — and when you leave them, tell the user what changed.
+- Do not let a stored value repeat its own key. An `id` field duplicating the key it is stored under gives persisted data two sources of truth that can disagree.
+- Never write before the initial read completes. A write that races the load clobbers the user's stored value with the default, and it looks exactly like a setting that will not stick.
+- When you change a stored shape, decide what an older Cockpit does when it reads it. Users downgrade, and a format only the new version understands can strand them.
 
 ## Plans
 
@@ -305,6 +308,7 @@ widget the user deletes, or a view that unloads off-screen, must leave nothing r
 - Every discrete user action needs visible feedback when it finishes or fails — a snackbar, an unambiguous UI state change, or a dialog. `logUserAction` does not count; it writes to a log the user never sees. Downloads, exports, and saves need this most, since Standalone has no browser-native download notification. The rare exception is when the resulting UI state change is itself unmistakable.
 - `openSnackbar` (`src/composables/snackbar.ts`) already writes to the logger. Do not pair it with a `console.log`/`warn`/`error` of the same message.
 - Do not open a new dialog while a dialog of the same purpose is already open. Guard against re-opens, especially inside timed loops (snapshots, retries, watchers).
+- A dialog whose open condition reads state that is briefly empty or not yet loaded will flash on every launch. Watch for a reactive effect that writes the state it watches (a flicker loop), a missing "already seen / dismissed" guard, dialog state declared in a scope that re-mounts, and a handler that can fire twice.
 - For modal confirmations and from→to choices, reuse the existing `useInteractionDialog` composable (`src/composables/interactionDialog.ts`) and existing dialog patterns before creating a new component.
 - Keep protocol and implementation jargon (RTSP, WebRTC, MAVLink message names, internal ids) out of strings the user reads; where a term is unavoidable, still say what the user should do about it. Watch for unintended connotations — "upgrade to Standalone" reads as paid where "install" does not. When a setting shares a name with an autopilot concept, say how it differs, the way the heartbeat timeout has to state it is unrelated to ArduPilot's GCS failsafe.
 
