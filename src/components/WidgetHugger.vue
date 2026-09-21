@@ -585,12 +585,17 @@ const cursorStyle = computed(() => {
 
 const isWidgetFullScreen = computed(() => widgetStore.isFullScreen(widget.value))
 
-const handleTopOffset = computed(() =>
-  isWidgetFullScreen.value ? `${widgetStore.currentTopBarHeightPixels + 5}px` : '-5px'
-)
-const handleBottomOffset = computed(() =>
-  isWidgetFullScreen.value ? `${widgetStore.currentBottomBarHeightPixels + 5}px` : '-5px'
-)
+// Resizing stops each edge at its bar, but a widget can already be under one (maximized, taller than the visible area,
+// or from an older layout), so each handle is inset past its bar as drawn (the scaled height) to stay clickable.
+const handleTopOffset = computed(() => {
+  const underBarPixels = widgetStore.currentTopBarHeightPixelsScaled - position.value.y * windowHeight.value
+  return underBarPixels > 0 ? `${underBarPixels + 5}px` : '-5px'
+})
+const handleBottomOffset = computed(() => {
+  const gapBelowPixels = (1 - position.value.y - size.value.height) * windowHeight.value
+  const underBarPixels = widgetStore.currentBottomBarHeightPixelsScaled - gapBelowPixels
+  return underBarPixels > 0 ? `${underBarPixels + 5}px` : '-5px'
+})
 const handleSideOffset = computed(() => (isWidgetFullScreen.value ? '5px' : '-5px'))
 
 const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.hash).highlighted)
