@@ -103,6 +103,12 @@ Before adding a new dependency, check the `packages.json` file. If theres a depe
 
 > Always sort dependencies alphabetically
 
+When a new dependency is genuinely needed, check it before adding it: is it maintained, is it widely
+used, and is the name the one you meant — typosquats target popular packages. Check the licence too.
+Cockpit ships an installer, so a bundled or downloaded binary, model, or dependency under GPL, LGPL,
+AGPL or similar creates distribution obligations we have to satisfy. Say so in the PR rather than
+adding it silently.
+
 ### 2. Access GitHub Data with `gh`
 ```bash
 gh pr view <number> --repo bluerobotics/cockpit
