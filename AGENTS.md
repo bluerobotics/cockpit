@@ -178,6 +178,16 @@ a parser or state machine whose branching is the algorithm, validation enumerati
 conditions at a trust boundary, and branches that exist for hardware reality are all fine at any
 count.
 
+## Tests
+
+New tests are not required for logic a change adds, and no change is held up for lacking them. Add
+one when it genuinely earns its place — a pure function in `src/libs/` with awkward edge cases is
+the usual case, and `src/tests/` mirrors `composables/`, `libs/` and `types/`.
+
+What is not optional is leaving the existing suite as strong as you found it. Do not delete, skip,
+or weaken a test to make a change pass; if a test is genuinely wrong, fix it in its own commit and
+say why.
+
 ## Persistence and settings migrations
 
 - Choose the storage backend deliberately. `useBlueOsStorage` syncs the value to the vehicle, so every topside computer and every operator of that vehicle shares it. Machine-specific values — device and serial paths, local filesystem paths, window geometry — must stay machine-local, and must never be auto-acted on after a sync, since auto-connecting to a synced `/dev/ttyUSB0` can open the wrong device. Identify hardware by a stable id (USB VID/PID, device serial) rather than by path.
