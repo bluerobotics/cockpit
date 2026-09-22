@@ -20,6 +20,7 @@ import {
   Go2rtcStreamStatKey,
   go2rtcStreamStatKeys,
   go2rtcStreamStatVariableId,
+  nextGo2rtcStallCount,
   staleStreamStatRecordedIds,
   streamStatDisplayName,
   streamStatVariableId,
@@ -43,6 +44,7 @@ const go2rtcStreamStatTypes: Record<Go2rtcStreamStatKey, 'number' | 'string'> = 
   height: 'number',
   fps: 'string',
   protocol: 'string',
+  stallCount: 'number',
 }
 
 // Latest inbound video stats per stream, keyed by external stream id, updated at the collector's
@@ -63,6 +65,24 @@ const lastInternalNames: Record<string, string> = {}
 
 // The sampler differences over its own fixed window, never over a caller-dependent shared one
 const prevGo2rtcCounters: Record<string, Go2rtcIngestCounters> = {}
+// Stall count and warmup start per stream. One tracker, so open panes cannot each increment it.
+const rtspStallTrackers: Record<
+  string,
+  {
+    /**
+     * Stalls counted for this stream since its first go2rtc sample, in 100 ms units
+     */
+    count: number
+    /**
+     * Epoch (ms) of this stream's first sample; the stall warmup runs from here
+     */
+    startedAtMs: number
+    /**
+     * Stalled milliseconds not yet enough for another count
+     */
+    remainderMs: number
+  }
+> = {}
 let go2rtcSamplerTimer: ReturnType<typeof setTimeout> | null = null
 let go2rtcSamplerEnabled = false
 let go2rtcSamplerRunning = false
@@ -141,6 +161,9 @@ const initialize = (): void => {
     Object.keys(prevGo2rtcCounters).forEach((name) => {
       if (!(name in allInfo)) delete prevGo2rtcCounters[name]
     })
+    Object.keys(rtspStallTrackers).forEach((name) => {
+      if (!(name in allInfo)) delete rtspStallTrackers[name]
+    })
     Object.keys(go2rtcStreamSamples).forEach((name) => {
       if (!(name in allInfo)) delete go2rtcStreamSamples[name]
     })
@@ -151,11 +174,28 @@ const initialize = (): void => {
       const internalName = videoStore.internalStreamNameFromExternal(streamName)
       if (internalName === undefined) return
 
-      const sample = buildGo2rtcStreamSample(info, prevGo2rtcCounters[streamName])
+      const previous = prevGo2rtcCounters[streamName]
+      const sample = buildGo2rtcStreamSample(info, previous)
       prevGo2rtcCounters[streamName] = { bytes: info.bytes, packets: info.packets, sampleEpoch: info.sampleEpoch }
 
-      go2rtcStreamSamples[streamName] = sample
-      publishGo2rtcSample(internalName, sample)
+      const tracker = rtspStallTrackers[streamName] ?? { count: 0, startedAtMs: info.sampleEpoch, remainderMs: 0 }
+      const windowMs = previous === undefined ? 0 : info.sampleEpoch - previous.sampleEpoch
+      const advance = nextGo2rtcStallCount(
+        tracker.count,
+        tracker.remainderMs,
+        sample.bitrateKbps,
+        info.sampleEpoch - tracker.startedAtMs,
+        windowMs
+      )
+      rtspStallTrackers[streamName] = {
+        count: advance.stallCount,
+        startedAtMs: tracker.startedAtMs,
+        remainderMs: advance.remainderMs,
+      }
+      const published = { ...sample, stallCount: advance.stallCount, stalled: advance.stalled }
+
+      go2rtcStreamSamples[streamName] = published
+      publishGo2rtcSample(internalName, published)
     })
   }
 
