@@ -116,28 +116,9 @@ jobs:
           REPO: ${{ github.repository }}
         run: .github/scripts/fetch-complexity-report.sh "$REPO" "$HEAD_SHA" complexity-report.json 600
 
-      # GITHUB_TOKEN is deliberately NOT here. The job holds `pull-requests: write`, and this step
-      # reads an untrusted diff, so a token in its environment would let anything the model is
-      # talked into doing reach the API — submitting an approval is a single call. The agent writes
-      # `review.md`; the step below publishes it with the token nowhere near the model.
-      - name: Run Claude PR review
-        id: review
-        uses: anthropics/claude-code-base-action@beta
+      - name: Write the system prompt
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ env.HEAD_SHA }}
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: ${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}
-          # The investigation passes are search-heavy — tracing callers out to an entry point is
-          # several greps per changed function — and at 40 the budget was spent before they started.
-          # Kept in step with the re-review, which ran out of turns at 80 on a large PR and published
-          # nothing; a first review of the same PR does the same reading.
-          max_turns: "120"
-          timeout_minutes: "35"
-          allowed_tools: "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),Bash(git log:*),View,GlobTool,GrepTool,BatchTool,Write"
-          system_prompt: |
+          SYSTEM_PROMPT: |
             You are the automated code review agent for `bluerobotics/cockpit`, running inside a GitHub Actions workflow.
 
             FIRST, read `.github/claude-review/review-guidelines.md` from the checked-out base ref. It defines your persona, the review sections (0 through 11), the collapsing rules, the tone, and the hard security constraints. Follow it exactly. Also read `AGENTS.md`, `.eslintrc.cjs`, and `package.json` to ground the review in the project's conventions.
@@ -168,6 +149,34 @@ jobs:
             `<!-- claude-pr-review-bot:v1 seq=1 sha=$HEAD_SHA -->`
             The publish step finds its own previous comment by matching that literal `seq=1` prefix,
             so an unexpanded placeholder there makes this workflow stack a new comment every run.
+        run: |
+          printf '%s' "$SYSTEM_PROMPT" > "$RUNNER_TEMP/system-prompt.md"
+          [ -s "$RUNNER_TEMP/system-prompt.md" ] || { echo "::error::the system prompt is empty"; exit 1; }
+
+      # GITHUB_TOKEN is deliberately NOT here. The job holds `pull-requests: write`, and this step
+      # reads an untrusted diff, so a token in its environment would let anything the model is
+      # talked into doing reach the API — submitting an approval is a single call. The agent writes
+      # `review.md`; the step below publishes it with the token nowhere near the model.
+      - name: Run Claude PR review
+        id: review
+        # A main commit, not a tag: every release installs a Claude Code too old for current models.
+        uses: anthropics/claude-code-base-action@52546c80b536daf02c27067b41e637b4e099c63f
+        timeout-minutes: 35
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ env.HEAD_SHA }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The investigation passes are search-heavy — tracing callers out to an entry point is
+          # several greps per changed function — and at 40 the budget was spent before they started.
+          # Kept in step with the re-review, which ran out of turns at 80 on a large PR and published
+          # nothing; a first review of the same PR does the same reading.
+          claude_args: |
+            --model "${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}"
+            --max-turns 120
+            --allowedTools "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),Bash(git log:*),Read,Glob,Grep,Write"
+            --system-prompt-file "${{ runner.temp }}/system-prompt.md"
           prompt: |
             Run the INITIAL automated review for this pull request.
 
@@ -192,7 +201,7 @@ jobs:
           # The cost line this step prints put 80 turns at $3.83-$4.02, which extrapolates to about
           # $6 at the 120-turn cap and so left no headroom at all. $9 is 1.5x that extrapolation,
           # picked rather than measured; re-derive it from the cost line whenever the cap moves.
-          # max_turns is what actually caps spend; this only reports.
+          # --max-turns is what actually caps spend; this only reports.
           REVIEW_BUDGET_USD: '9.00'
         run: .github/scripts/price-agent-run.sh "$EXECUTION_FILE" "$REVIEW_BUDGET_USD" 'PR review'
 
