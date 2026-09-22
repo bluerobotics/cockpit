@@ -20,7 +20,6 @@ const rtspStallData = ref<number[]>([])
 let maxRtspBitrate = 1000
 let maxRtspPacketRate = 100
 let rtspStallCount = 0
-let rtspStartTime = 0
 
 const props = defineProps({
   width: {
@@ -205,8 +204,7 @@ function resetPlotState(): void {
   rtspStallData.value = []
   maxRtspBitrate = 1000
   maxRtspPacketRate = 100
-  rtspStallCount = 0
-  rtspStartTime = 0
+  rtspStallCount = go2rtcStreamSamples[props.streamName]?.stallCount ?? 0
 
   framerateData.value = []
   bitrateData.value = []
@@ -281,13 +279,11 @@ watch(
 watch(rtspSample, (sample): void => {
   if (!sample) return
 
-  if (rtspStartTime === 0) rtspStartTime = Date.now()
   // A rate the sampler could not derive yet is neither a stall nor a point worth plotting
   if (sample.bitrateKbps === undefined || sample.packetsPerSec === undefined) return
 
-  const warmUp = Date.now() - rtspStartTime < 5000
-  const isStalled = !warmUp && sample.bitrateKbps === 0 ? 1 : 0
-  if (isStalled) rtspStallCount++
+  const isStalled = sample.stalled ? 1 : 0
+  if (sample.stallCount !== undefined) rtspStallCount = sample.stallCount
 
   rtspBitrateData.value.push(sample.bitrateKbps)
   rtspPacketRateData.value.push(sample.packetsPerSec)

@@ -23,7 +23,17 @@ export interface Go2rtcIngestRates {
  * A go2rtc stream sample as fanned out to consumers: the raw stream info plus the rates the
  * sampler derived over its own window, absent while no window is derivable
  */
-export type Go2rtcStreamSample = Go2RTCStreamInfo & Partial<Go2rtcIngestRates>
+export type Go2rtcStreamSample = Go2RTCStreamInfo &
+  Partial<Go2rtcIngestRates> & {
+    /**
+     * Cumulative zero-bitrate time after warmup, in 100 ms units
+     */
+    stallCount?: number
+    /**
+     * Whether this sample's ingest bitrate was zero after warmup
+     */
+    stalled?: boolean
+  }
 
 /**
  * Difference two counter samples into rates over the window between them
@@ -121,6 +131,67 @@ export const derivedWebRtcStreamStats = (
   // Whole kbps like the go2rtc series this one exists to be plotted against; bitrateBps keeps the full resolution
   Number.isFinite(stats.bitrate) ? { bitrateKbps: Math.round(stats.bitrate / 1000) } : {}
 
+// How long after a stream's first go2rtc sample a zero ingest bitrate is not yet a stall
+export const GO2RTC_STALL_WARMUP_MS = 5000
+
+// One stall count is this much zero-bitrate time, the same step the stats panel used when it counted for itself
+export const GO2RTC_STALL_QUANTUM_MS = 100
+
+/**
+ * Stall accounting after one go2rtc sample
+ */
+export interface Go2rtcStallAdvance {
+  /**
+   * Cumulative stall count in 100 ms units
+   */
+  stallCount: number
+  /**
+   * Stalled milliseconds not yet enough for another count
+   */
+  remainderMs: number
+  /**
+   * Whether this sample's ingest bitrate was zero after warmup
+   */
+  stalled: boolean
+}
+
+/**
+ * Advance the cumulative RTSP stall count by the zero-bitrate time in this sample's window.
+ * A missing bitrate is not a stall, and time during warmup is not a stall. A window is added
+ * only when its bitrate is exactly 0, which is exact at the 100 ms sampler. At the 5 s idle
+ * poll, a window that still carried traffic counts as not stalled, so the total is a lower bound.
+ * @param {number} stallCount - Cumulative stalls so far, in 100 ms units
+ * @param {number} remainderMs - Stalled milliseconds not yet enough for another count
+ * @param {number | undefined} bitrateKbps - Ingest bitrate of this sample, absent when no rate is derivable
+ * @param {number} elapsedMs - Milliseconds since this stream's first sample
+ * @param {number} sampleWindowMs - Milliseconds since this stream's previous sample
+ * @returns {Go2rtcStallAdvance} The stall count, leftover milliseconds, and whether this sample stalled
+ */
+export const nextGo2rtcStallCount = (
+  stallCount: number,
+  remainderMs: number,
+  bitrateKbps: number | undefined,
+  elapsedMs: number,
+  sampleWindowMs: number
+): Go2rtcStallAdvance => {
+  const unchanged: Go2rtcStallAdvance = { stallCount, remainderMs, stalled: false }
+  // ponytail: the idle poll is the ceiling; run the 100 ms sampler whenever any RTSP stream is
+  // active, not only while a panel is open or an rtsp-* id is armed
+  if (bitrateKbps !== 0 || !(sampleWindowMs > 0)) return unchanged
+
+  const pastWarmupMs = elapsedMs - GO2RTC_STALL_WARMUP_MS
+  const countableMs = Math.min(sampleWindowMs, pastWarmupMs)
+  if (!(countableMs > 0)) return unchanged
+
+  const stalledMs = countableMs + remainderMs
+  const quanta = Math.floor(stalledMs / GO2RTC_STALL_QUANTUM_MS)
+  return {
+    stallCount: stallCount + quanta,
+    remainderMs: stalledMs - quanta * GO2RTC_STALL_QUANTUM_MS,
+    stalled: true,
+  }
+}
+
 // go2rtc ingest stats published to the data lake for every active RTSP stream (Standalone only)
 export const go2rtcStreamStatKeys = [
   'bytes',
@@ -133,6 +204,7 @@ export const go2rtcStreamStatKeys = [
   'height',
   'fps',
   'protocol',
+  'stallCount',
 ] as const
 
 /**
