@@ -3,8 +3,11 @@ import { expect, test } from 'vitest'
 import {
   derivedWebRtcStreamStats,
   externalIdStatRecordingReplacements,
+  GO2RTC_STALL_QUANTUM_MS,
+  GO2RTC_STALL_WARMUP_MS,
   go2rtcStreamStatKeys,
   go2rtcStreamStatVariableId,
+  nextGo2rtcStallCount,
   staleStreamStatRecordedIds,
   streamStatDisplayName,
   streamStatVariableId,
@@ -53,6 +56,87 @@ test('the bitrate stats of a live stream are not stale, and those of a deleted o
 
   expect(staleStreamStatRecordedIds(bitrateIds('Front Camera'), ['Front Camera'])).toEqual([])
   expect(staleStreamStatRecordedIds(bitrateIds('Old Camera'), ['Front Camera'])).toEqual(bitrateIds('Old Camera'))
+})
+
+test('the RTSP stall count is published under the rtsp infix', () => {
+  expect(go2rtcStreamStatVariableId('front', 'stallCount')).toBe('stream-front-rtsp-stallCount')
+})
+
+test('a missing RTSP rate or a zero bitrate during warmup does not increment the stall count', () => {
+  expect(GO2RTC_STALL_WARMUP_MS).toBe(5000)
+  expect(GO2RTC_STALL_QUANTUM_MS).toBe(100)
+  const windowMs = GO2RTC_STALL_QUANTUM_MS
+  expect(nextGo2rtcStallCount(2, 0, undefined, GO2RTC_STALL_WARMUP_MS + windowMs, windowMs)).toEqual({
+    stallCount: 2,
+    remainderMs: 0,
+    stalled: false,
+  })
+  expect(nextGo2rtcStallCount(0, 0, 0, 0, windowMs)).toEqual({ stallCount: 0, remainderMs: 0, stalled: false })
+  expect(nextGo2rtcStallCount(0, 0, 0, GO2RTC_STALL_WARMUP_MS - 1, windowMs)).toEqual({
+    stallCount: 0,
+    remainderMs: 0,
+    stalled: false,
+  })
+  expect(nextGo2rtcStallCount(0, 0, 0, GO2RTC_STALL_WARMUP_MS, GO2RTC_STALL_WARMUP_MS)).toEqual({
+    stallCount: 0,
+    remainderMs: 0,
+    stalled: false,
+  })
+})
+
+test('a zero RTSP bitrate after warmup counts stalled time, and a positive bitrate does not', () => {
+  const quantum = GO2RTC_STALL_QUANTUM_MS
+  expect(nextGo2rtcStallCount(0, 0, 0, GO2RTC_STALL_WARMUP_MS + quantum, quantum)).toEqual({
+    stallCount: 1,
+    remainderMs: 0,
+    stalled: true,
+  })
+  const slowWindow = 50 * quantum
+  expect(nextGo2rtcStallCount(3, 0, 0, GO2RTC_STALL_WARMUP_MS + slowWindow, slowWindow)).toEqual({
+    stallCount: 53,
+    remainderMs: 0,
+    stalled: true,
+  })
+  expect(nextGo2rtcStallCount(4, 40, 1000, GO2RTC_STALL_WARMUP_MS + quantum, quantum)).toEqual({
+    stallCount: 4,
+    remainderMs: 40,
+    stalled: false,
+  })
+})
+
+test('a fully zero-bitrate RTSP outage counts the same at the fast poll and the slow poll', () => {
+  const quantum = GO2RTC_STALL_QUANTUM_MS
+  const outageMs = 100 * quantum
+  let fastCount = 0
+  let fastRemainder = 0
+  for (let step = 1; step <= outageMs / quantum; step++) {
+    const advance = nextGo2rtcStallCount(fastCount, fastRemainder, 0, GO2RTC_STALL_WARMUP_MS + step * quantum, quantum)
+    fastCount = advance.stallCount
+    fastRemainder = advance.remainderMs
+  }
+
+  const half = outageMs / 2
+  const firstHalf = nextGo2rtcStallCount(0, 0, 0, GO2RTC_STALL_WARMUP_MS + half, half)
+  const secondHalf = nextGo2rtcStallCount(
+    firstHalf.stallCount,
+    firstHalf.remainderMs,
+    0,
+    GO2RTC_STALL_WARMUP_MS + outageMs,
+    half
+  )
+
+  expect(fastCount).toBe(100)
+  expect(secondHalf.stallCount).toBe(fastCount)
+  expect(secondHalf.remainderMs).toBe(fastRemainder)
+})
+
+test('a short zero-bitrate window keeps the leftover until it makes a whole stall count', () => {
+  const half = GO2RTC_STALL_QUANTUM_MS / 2
+  const first = nextGo2rtcStallCount(0, 0, 0, GO2RTC_STALL_WARMUP_MS + half, half)
+  expect(first).toEqual({ stallCount: 0, remainderMs: half, stalled: true })
+
+  const second = nextGo2rtcStallCount(first.stallCount, first.remainderMs, 0, GO2RTC_STALL_WARMUP_MS + half * 2, half)
+  expect(second).toEqual({ stallCount: 1, remainderMs: 0, stalled: true })
 })
 
 test('a recording made under a stream external id carries over to its internal name', () => {
@@ -106,6 +190,7 @@ test('live stream-stat ids are not stale, including suffix pairs, odd names, and
     go2rtcStreamStatVariableId(liveName, 'bitrateKbps'),
     bytesReceived,
     headerBytesReceived,
+    go2rtcStreamStatVariableId(liveName, 'stallCount'),
     streamStatVariableId(streamyName, 'jitter'),
     go2rtcStreamStatVariableId(streamyName, 'bitrateKbps'),
     streamStatVariableId(hyphenatedName, 'framesPerSecond'),
@@ -132,6 +217,7 @@ test('gone-stream ids, a longer near-name, and credential-bearing external ids a
     'stream-rtsp://user:secret@192.168.2.2:554/other',
     streamStatVariableId(deletedName, 'jitter'),
     go2rtcStreamStatVariableId(deletedName, 'bitrateKbps'),
+    go2rtcStreamStatVariableId(deletedName, 'stallCount'),
     streamStatVariableId('cam-extra', webRtcKey),
     'stream-rtsps://user:secret@192.168.2.2:554/stream-bytesReceived',
   ]
