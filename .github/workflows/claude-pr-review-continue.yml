@@ -504,7 +504,7 @@ jobs:
           # again and every file has to be re-read: the run ended having written no review at all.
           # 120 turns measured out at ~22min, so the timeout has to clear that with room to spare.
           claude_args: |
-            --model "${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}"
+            --model "${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5-5' }}"
             --max-turns 120
             --allowedTools "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),Bash(git log:*),Read,Glob,Grep,Write"
             --system-prompt-file "${{ runner.temp }}/system-prompt.md"

@@ -173,7 +173,7 @@ jobs:
           # Kept in step with the re-review, which ran out of turns at 80 on a large PR and published
           # nothing; a first review of the same PR does the same reading.
           claude_args: |
-            --model "${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}"
+            --model "${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5-5' }}"
             --max-turns 120
             --allowedTools "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),Bash(git log:*),Read,Glob,Grep,Write"
             --system-prompt-file "${{ runner.temp }}/system-prompt.md"
