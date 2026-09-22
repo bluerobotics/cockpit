@@ -14,6 +14,7 @@ import { addRecordedVariableIdsChangedHandler, dataLakeLogger } from '@/libs/dat
 import { isElectron } from '@/libs/utils'
 import {
   buildGo2rtcStreamSample,
+  derivedWebRtcFrameStats,
   derivedWebRtcStreamStats,
   Go2rtcIngestCounters,
   Go2rtcStreamSample,
@@ -24,6 +25,8 @@ import {
   staleStreamStatRecordedIds,
   streamStatDisplayName,
   streamStatVariableId,
+  WebRtcFrameDerivedStats,
+  WebRtcFrameStatInputs,
   webRtcStreamStatKeys,
   webRtcStreamStatVariableKeys,
 } from '@/libs/video/stream-stats'
@@ -50,6 +53,13 @@ const go2rtcStreamStatTypes: Record<Go2rtcStreamStatKey, 'number' | 'string'> = 
 // Latest inbound video stats per stream, keyed by external stream id, updated at the collector's
 // 100 ms cadence. Shared by the stats-for-nerds panel and any other live consumer.
 const webRtcStreamStatsSnapshots = reactive<Record<string, WebRTCVideoStats | undefined>>({})
+
+// Per-frame stats-for-nerds figures derived from those snapshots. The panel reads these so its
+// numbers and the data-lake series come from one calculation.
+const webRtcDerivedFrameStats = reactive<Record<string, WebRtcFrameDerivedStats | undefined>>({})
+
+// Previous cumulative counters per stream, so the next sample can difference a per-frame rate
+const prevWebRtcFrameInputs: Record<string, WebRtcFrameStatInputs> = {}
 
 // One collector per stream, shared by every consumer so an open panel never doubles the sampling work
 const collectors: Record<string, ReturnType<typeof WebRTCStats>> = {}
@@ -302,7 +312,11 @@ const initialize = (): void => {
         if (streams[name]?.go2rtcManager === undefined) delete go2rtcStreamSamples[name]
       })
       Object.keys(webRtcStreamStatsSnapshots).forEach((name) => {
-        if (streams[name] === undefined) delete webRtcStreamStatsSnapshots[name]
+        if (streams[name] === undefined) {
+          delete webRtcStreamStatsSnapshots[name]
+          delete webRtcDerivedFrameStats[name]
+          delete prevWebRtcFrameInputs[name]
+        }
       })
 
       Object.keys(streams).forEach((streamName) => {
@@ -330,6 +344,16 @@ const initialize = (): void => {
             const videoData = ev.data.video.inbound[0]
             if (videoData === undefined) return
 
+            const frameDerived = derivedWebRtcFrameStats(prevWebRtcFrameInputs[streamName], videoData)
+            prevWebRtcFrameInputs[streamName] = {
+              jitterBufferDelay: videoData.jitterBufferDelay,
+              jitterBufferEmittedCount: videoData.jitterBufferEmittedCount,
+              totalProcessingDelay: videoData.totalProcessingDelay,
+              framesReceived: videoData.framesReceived,
+              packetsLost: videoData.packetsLost,
+              packetsReceived: videoData.packetsReceived,
+            }
+            webRtcDerivedFrameStats[streamName] = frameDerived
             webRtcStreamStatsSnapshots[streamName] = videoData
 
             const internalName = internalStreamName(streamName)
@@ -339,7 +363,7 @@ const initialize = (): void => {
             webRtcStreamStatKeys.forEach((key) => {
               setDataLakeVariableData(streamStatVariableId(internalName, key), videoData[key])
             })
-            Object.entries(derivedWebRtcStreamStats(videoData)).forEach(([key, value]) => {
+            Object.entries({ ...derivedWebRtcStreamStats(videoData), ...frameDerived }).forEach(([key, value]) => {
               if (value !== undefined) setDataLakeVariableData(streamStatVariableId(internalName, key), value)
             })
           } catch (error) {
@@ -426,6 +450,10 @@ export const useStreamStats = (): {
    */
   webRtcStreamStatsSnapshots: Record<string, WebRTCVideoStats | undefined>
   /**
+   * Per-frame stats-for-nerds figures derived from the latest WebRTC sample
+   */
+  webRtcDerivedFrameStats: Record<string, WebRtcFrameDerivedStats | undefined>
+  /**
    * Latest go2rtc ingest sample per stream, with rates derived over the sampler's own window
    */
   go2rtcStreamSamples: Record<string, Go2rtcStreamSample | undefined>
@@ -444,5 +472,11 @@ export const useStreamStats = (): {
     initialize()
   }
 
-  return { webRtcStreamStatsSnapshots, go2rtcStreamSamples, acquireGo2rtcSampling, releaseGo2rtcSampling }
+  return {
+    webRtcStreamStatsSnapshots,
+    webRtcDerivedFrameStats,
+    go2rtcStreamSamples,
+    acquireGo2rtcSampling,
+    releaseGo2rtcSampling,
+  }
 }

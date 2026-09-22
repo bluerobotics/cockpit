@@ -1,7 +1,9 @@
 import { expect, test } from 'vitest'
 
 import {
+  type WebRtcFrameStatInputs,
   buildGo2rtcStreamSample,
+  derivedWebRtcFrameStats,
   derivedWebRtcStreamStats,
   GO2RTC_STALL_QUANTUM_MS,
   GO2RTC_STALL_WARMUP_MS,
@@ -19,6 +21,16 @@ const webRtcKey = webRtcStreamStatKeys[0]
 const go2rtcKey = go2rtcStreamStatKeys[0]
 
 const webRtcStats = (bitrate?: number): WebRTCVideoStats => ({ bitrate } as WebRTCVideoStats)
+
+const frameInputs = (overrides: Partial<WebRtcFrameStatInputs> = {}): WebRtcFrameStatInputs => ({
+  jitterBufferDelay: 0,
+  jitterBufferEmittedCount: 0,
+  totalProcessingDelay: 0,
+  framesReceived: 0,
+  packetsLost: 0,
+  packetsReceived: 0,
+  ...overrides,
+})
 
 const streamInfo = (bytes: number, packets: number, sampleEpoch: number): Go2RTCStreamInfo => ({
   codec: 'H264',
@@ -54,6 +66,9 @@ test('an unknown WebRTC bitrate derives no kbps rather than a zero that would re
 test('other WebRTC stats keep the library key in both the id and the display name', () => {
   expect(streamStatVariableId('front', 'frameHeight')).toBe('stream-front-frameHeight')
   expect(streamStatDisplayName('front', 'frameHeight')).toBe("Stream 'front' - frameHeight")
+  expect(streamStatVariableId('front', 'jitterBufferDelayPerFrame')).toBe('stream-front-jitterBufferDelayPerFrame')
+  expect(streamStatVariableId('front', 'processingDelayPerFrame')).toBe('stream-front-processingDelayPerFrame')
+  expect(streamStatVariableId('front', 'packetLossPercent')).toBe('stream-front-packetLossPercent')
 })
 
 test('go2rtc ingest bitrate stays in kilobits per second', () => {
@@ -87,6 +102,88 @@ test('counters that went backwards publish no rates rather than a zero that woul
   expect(sample.bytes).toBe(500)
   expect('bitrateKbps' in sample).toBe(false)
   expect('packetsPerSec' in sample).toBe(false)
+})
+
+test('the first WebRTC sample publishes no per-frame rates, since no window is derivable yet', () => {
+  const derived = derivedWebRtcFrameStats(
+    undefined,
+    frameInputs({
+      jitterBufferDelay: 0.05,
+      jitterBufferEmittedCount: 10,
+      totalProcessingDelay: 0.02,
+      framesReceived: 10,
+      packetsLost: 1,
+      packetsReceived: 9,
+    })
+  )
+
+  expect(derived.jitterBufferDelayPerFrame).toBeUndefined()
+  expect(derived.processingDelayPerFrame).toBeUndefined()
+  expect(derived.packetLossPercent).toBe(10)
+})
+
+test('a later WebRTC sample publishes per-frame delays and packet-loss percent', () => {
+  const previous = frameInputs({
+    jitterBufferDelay: 1,
+    jitterBufferEmittedCount: 10,
+    totalProcessingDelay: 0.5,
+    framesReceived: 10,
+    packetsLost: 1,
+    packetsReceived: 9,
+  })
+  const derived = derivedWebRtcFrameStats(
+    previous,
+    frameInputs({
+      jitterBufferDelay: 1.125,
+      jitterBufferEmittedCount: 15,
+      totalProcessingDelay: 1,
+      framesReceived: 12,
+      packetsLost: 2,
+      packetsReceived: 8,
+    })
+  )
+
+  expect(derived.jitterBufferDelayPerFrame).toBe(25)
+  expect(derived.processingDelayPerFrame).toBe(250)
+  expect(derived.packetLossPercent).toBe(20)
+})
+
+test('a zero frame or packet delta omits that rate rather than publishing zero', () => {
+  const previous = frameInputs({
+    jitterBufferDelay: 0.1,
+    jitterBufferEmittedCount: 10,
+    totalProcessingDelay: 0.2,
+    framesReceived: 10,
+  })
+  const derived = derivedWebRtcFrameStats(previous, frameInputs({ ...previous }))
+
+  expect(derived.jitterBufferDelayPerFrame).toBeUndefined()
+  expect(derived.processingDelayPerFrame).toBeUndefined()
+  expect(derived.packetLossPercent).toBeUndefined()
+})
+
+test('a real zero delay and zero packet loss are published as zero', () => {
+  const previous = frameInputs({
+    jitterBufferDelay: 0.5,
+    jitterBufferEmittedCount: 10,
+    totalProcessingDelay: 0.5,
+    framesReceived: 10,
+    packetsReceived: 10,
+  })
+  const derived = derivedWebRtcFrameStats(
+    previous,
+    frameInputs({
+      jitterBufferDelay: 0.5,
+      jitterBufferEmittedCount: 12,
+      totalProcessingDelay: 0.5,
+      framesReceived: 12,
+      packetsReceived: 20,
+    })
+  )
+
+  expect(derived.jitterBufferDelayPerFrame).toBe(0)
+  expect(derived.processingDelayPerFrame).toBe(0)
+  expect(derived.packetLossPercent).toBe(0)
 })
 
 test('a missing RTSP rate or a zero bitrate during warmup does not increment the stall count', () => {
@@ -184,6 +281,9 @@ test('live stream-stat ids are not stale, including remapped keys, suffix pairs,
     go2rtcStreamStatVariableId(liveName, 'bitrateKbps'),
     bytesReceived,
     headerBytesReceived,
+    streamStatVariableId(liveName, 'jitterBufferDelayPerFrame'),
+    streamStatVariableId(liveName, 'processingDelayPerFrame'),
+    streamStatVariableId(liveName, 'packetLossPercent'),
     go2rtcStreamStatVariableId(liveName, 'stallCount'),
     streamStatVariableId(streamyName, 'bitrate'),
     go2rtcStreamStatVariableId(streamyName, 'bitrateKbps'),
@@ -217,6 +317,7 @@ test('gone-stream ids, a pre-rename bitrate id, a longer near-name, and credenti
     streamStatVariableId(deletedName, 'frameHeight'),
     streamStatVariableId(deletedName, 'bitrateKbps'),
     go2rtcStreamStatVariableId(deletedName, 'bitrateKbps'),
+    streamStatVariableId(deletedName, 'jitterBufferDelayPerFrame'),
     go2rtcStreamStatVariableId(deletedName, 'stallCount'),
     streamStatVariableId('cam-extra', webRtcKey),
     'stream-rtsps://user:secret@192.168.2.2:554/stream-bytesReceived',
