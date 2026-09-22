@@ -5,10 +5,10 @@
     @update:model-value="onWarningVisibilityChange"
   >
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center pt-4 pb-0">
+      <v-card-title class="text-center pt-4 pb-0 px-12 whitespace-normal">
         <div class="flex items-center justify-center gap-2">
           <v-icon color="warning" size="24">mdi-alert</v-icon>
-          <h2 class="text-xl font-semibold">Multiple joystick controllers detected</h2>
+          <h2 class="text-xl font-semibold">Another GCS is in control</h2>
         </div>
       </v-card-title>
       <v-btn
@@ -50,7 +50,7 @@
     @update:model-value="onConfirmationVisibilityChange"
   >
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center pt-4 pb-0">
+      <v-card-title class="text-center pt-4 pb-0 px-12 whitespace-normal">
         <div class="flex items-center justify-center gap-2">
           <v-icon color="warning" size="24">mdi-alert</v-icon>
           <h2 class="text-xl font-semibold">Force joystick forwarding?</h2>
