@@ -11,8 +11,13 @@ import { useStreamStats } from '@/composables/useStreamStats'
 import { useVideoStore } from '@/stores/video'
 const videoStore = useVideoStore()
 
-const { webRtcStreamStatsSnapshots, go2rtcStreamSamples, acquireGo2rtcSampling, releaseGo2rtcSampling } =
-  useStreamStats()
+const {
+  webRtcStreamStatsSnapshots,
+  webRtcDerivedFrameStats,
+  go2rtcStreamSamples,
+  acquireGo2rtcSampling,
+  releaseGo2rtcSampling,
+} = useStreamStats()
 
 const rtspBitrateData = ref<number[]>([])
 const rtspPacketRateData = ref<number[]>([])
@@ -52,20 +57,15 @@ let animationFrameId = null
 let bitrate = 0
 // cumulative values
 let packetsLost = 0
-let packetsReceived = 0
-let totalProcessingDelay = 0
 let nackCount = 0
 let pliCount = 0
 let firCount = 0
-let framesReceived = 0
 let connectionLost = false
 
 let processingDelayDelta = 0
 let freezes = 0
 let frozenTime = 0
 let framedrops = 0
-let jitterBufferDelay = 0
-let jitterBufferEmittedCount = 0
 let jitterBufferDelayPerFrame = 0
 
 let packetLossPercentage = 0
@@ -211,19 +211,14 @@ function resetPlotState(): void {
   packetLostData.value = []
   bitrate = 0
   packetsLost = 0
-  packetsReceived = 0
-  totalProcessingDelay = 0
   nackCount = 0
   pliCount = 0
   firCount = 0
-  framesReceived = 0
   connectionLost = false
   processingDelayDelta = 0
   freezes = 0
   frozenTime = 0
   framedrops = 0
-  jitterBufferDelay = 0
-  jitterBufferEmittedCount = 0
   jitterBufferDelayPerFrame = 0
   packetLossPercentage = 0
   framerate = 0
@@ -249,24 +244,15 @@ watch(
       nackCount = videoData.nackCount
       pliCount = videoData.pliCount
       firCount = videoData.firCount
-      packetsReceived = videoData.packetsReceived
-      let totalProcessingDelayDelta = videoData.totalProcessingDelay - totalProcessingDelay
-      let framesDelta = videoData.framesReceived - framesReceived
-      processingDelayDelta = (1000 * totalProcessingDelayDelta) / framesDelta
-      framesReceived = videoData.framesReceived
-      totalProcessingDelay = videoData.totalProcessingDelay
-      packetLossPercentage = (packetsLost / (packetsLost + packetsReceived)) * 100
+      const derived = webRtcDerivedFrameStats[props.streamName]
+      if (derived?.processingDelayPerFrame !== undefined) processingDelayDelta = derived.processingDelayPerFrame
+      if (derived?.packetLossPercent !== undefined) packetLossPercentage = derived.packetLossPercent
+      if (derived?.jitterBufferDelayPerFrame !== undefined) {
+        jitterBufferDelayPerFrame = derived.jitterBufferDelayPerFrame
+      }
       freezes = videoData.freezeCount
       frozenTime = videoData.totalFreezesDuration
       framedrops = videoData.framesDropped
-      // Both stats are cumulative, so only their deltas tell how much the last frames actually waited in the buffer
-      const jitterBufferDelayDelta = videoData.jitterBufferDelay - jitterBufferDelay
-      const jitterBufferEmittedDelta = videoData.jitterBufferEmittedCount - jitterBufferEmittedCount
-      if (jitterBufferEmittedDelta > 0) {
-        jitterBufferDelayPerFrame = (1000 * jitterBufferDelayDelta) / jitterBufferEmittedDelta
-      }
-      jitterBufferDelay = videoData.jitterBufferDelay
-      jitterBufferEmittedCount = videoData.jitterBufferEmittedCount
       framerate = videoData.framesPerSecond ?? 0
       videoHeight = videoData.frameHeight
       update()
