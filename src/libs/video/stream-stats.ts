@@ -111,7 +111,12 @@ export const webRtcStreamStatKeys: WebRTCVideoStat[] = [
 ]
 
 // Published alongside them, but computed here rather than reported by the WebRTC library
-const derivedWebRtcStreamStatKeys = ['bitrateKbps'] as const
+const derivedWebRtcStreamStatKeys = [
+  'bitrateKbps',
+  'jitterBufferDelayPerFrame',
+  'processingDelayPerFrame',
+  'packetLossPercent',
+] as const
 
 type DerivedWebRtcStreamStatKey = (typeof derivedWebRtcStreamStatKeys)[number]
 
@@ -130,6 +135,80 @@ export const derivedWebRtcStreamStats = (
 ): Partial<Record<DerivedWebRtcStreamStatKey, number>> =>
   // Whole kbps like the go2rtc series this one exists to be plotted against; bitrateBps keeps the full resolution
   Number.isFinite(stats.bitrate) ? { bitrateKbps: Math.round(stats.bitrate / 1000) } : {}
+
+/**
+ * Cumulative WebRTC counters the stats-for-nerds per-frame values are differenced from
+ */
+export type WebRtcFrameStatInputs = Pick<
+  WebRTCVideoStats,
+  | 'jitterBufferDelay'
+  | 'jitterBufferEmittedCount'
+  | 'totalProcessingDelay'
+  | 'framesReceived'
+  | 'packetsLost'
+  | 'packetsReceived'
+>
+
+/**
+ * Stats-for-nerds figures derived from WebRTC counters. A missing field was not derivable for this sample.
+ */
+export interface WebRtcFrameDerivedStats {
+  /**
+   * Milliseconds of jitter-buffer delay per frame emitted since the previous sample
+   */
+  jitterBufferDelayPerFrame?: number
+  /**
+   * Milliseconds of processing delay per frame received since the previous sample
+   */
+  processingDelayPerFrame?: number
+  /**
+   * Packets lost as a percentage of packets lost plus packets received
+   */
+  packetLossPercent?: number
+}
+
+const perFrameMilliseconds = (delta: number, frameCount: number): number | undefined => {
+  if (!(frameCount > 0) || !Number.isFinite(delta)) return undefined
+  const milliseconds = (1000 * delta) / frameCount
+  return Number.isFinite(milliseconds) ? milliseconds : undefined
+}
+
+/**
+ * Derive the per-frame delays and packet-loss percentage shown in stats-for-nerds.
+ * A per-frame rate with no previous sample or a zero frame delta is left out, so an unknown rate is
+ * never published as zero. A computed zero (no added delay, or no packets lost) is kept.
+ * @param {WebRtcFrameStatInputs | undefined} previous - Previous cumulative counters, if any
+ * @param {WebRtcFrameStatInputs} next - Latest cumulative counters
+ * @returns {WebRtcFrameDerivedStats} Derived stats that are known for this sample
+ */
+export const derivedWebRtcFrameStats = (
+  previous: WebRtcFrameStatInputs | undefined,
+  next: WebRtcFrameStatInputs
+): WebRtcFrameDerivedStats => {
+  const derived: WebRtcFrameDerivedStats = {}
+
+  const packetsTotal = next.packetsLost + next.packetsReceived
+  if (packetsTotal > 0 && Number.isFinite(packetsTotal)) {
+    derived.packetLossPercent = (next.packetsLost / packetsTotal) * 100
+  }
+
+  if (previous !== undefined) {
+    // Both stats are cumulative, so only their deltas tell how much the last frames actually waited in the buffer
+    const jitterPerFrame = perFrameMilliseconds(
+      next.jitterBufferDelay - previous.jitterBufferDelay,
+      next.jitterBufferEmittedCount - previous.jitterBufferEmittedCount
+    )
+    if (jitterPerFrame !== undefined) derived.jitterBufferDelayPerFrame = jitterPerFrame
+
+    const processingPerFrame = perFrameMilliseconds(
+      next.totalProcessingDelay - previous.totalProcessingDelay,
+      next.framesReceived - previous.framesReceived
+    )
+    if (processingPerFrame !== undefined) derived.processingDelayPerFrame = processingPerFrame
+  }
+
+  return derived
+}
 
 // How long after a stream's first go2rtc sample a zero ingest bitrate is not yet a stall
 export const GO2RTC_STALL_WARMUP_MS = 5000

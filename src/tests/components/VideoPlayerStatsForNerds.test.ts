@@ -4,16 +4,18 @@ import { nextTick, reactive } from 'vue'
 
 import VideoPlayerStatsForNerds from '@/components/VideoPlayerStatsForNerds.vue'
 import { useStreamStats } from '@/composables/useStreamStats'
-import type { Go2rtcStreamSample } from '@/libs/video/stream-stats'
+import type { Go2rtcStreamSample, WebRtcFrameDerivedStats } from '@/libs/video/stream-stats'
 import type { WebRTCVideoStats } from '@/types/video'
 
 vi.mock('@/composables/useStreamStats', async () => {
   const { reactive: makeReactive } = await import('vue')
   const webRtcStreamStatsSnapshots = makeReactive<Record<string, WebRTCVideoStats | undefined>>({})
+  const webRtcDerivedFrameStats = makeReactive<Record<string, WebRtcFrameDerivedStats | undefined>>({})
   const go2rtcStreamSamples = makeReactive<Record<string, Go2rtcStreamSample | undefined>>({})
   return {
     useStreamStats: () => ({
       webRtcStreamStatsSnapshots,
+      webRtcDerivedFrameStats,
       go2rtcStreamSamples,
       acquireGo2rtcSampling: (): void => undefined,
       releaseGo2rtcSampling: (): void => undefined,
