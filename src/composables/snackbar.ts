@@ -75,6 +75,14 @@ export const openSnackbar = (options: SnackbarOptions): number => {
   return snackbar.id
 }
 
+export const openActionErrorSnackbar = (error: unknown): void => {
+  openSnackbar({
+    message: error instanceof Error ? error.message : 'Action failed.',
+    variant: 'error',
+    duration: 5000,
+  })
+}
+
 export const useSnackbar = (): {
   /**
    * The list of snackbars to display

@@ -7,6 +7,7 @@ import { defaultJoystickCalibration } from '@/assets/defaults'
 import { blankMapping } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { openActionErrorSnackbar } from '@/composables/snackbar'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
 import {
   joystickCalibrationOptionsKey,
@@ -516,7 +517,9 @@ export const useControllerStore = defineStore('controller', () => {
     })
 
     if (enableForwarding.value) {
-      actionsToCallFromJoystick.value.forEach((a) => executeActionCallback(a as CockpitActionsFunction))
+      actionsToCallFromJoystick.value.forEach((a) =>
+        executeActionCallback(a as CockpitActionsFunction, openActionErrorSnackbar)
+      )
     }
   })
 

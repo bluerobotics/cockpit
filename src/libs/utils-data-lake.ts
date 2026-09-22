@@ -159,6 +159,18 @@ export const findDataLakeVariablesIdsInString = (input: string): string[] => {
   return inputs.map((i) => getDataLakeVariableIdFromInput(i)).filter((id) => id !== null)
 }
 
+/**
+ * Find placeholders whose ids are unavailable, including malformed ids with spaces.
+ * @param {string} input The string to inspect
+ * @param {string[]} availableIds The currently available variable ids
+ * @returns {string[]} The unavailable ids
+ */
+export const findUnknownDataLakeVariablesInString = (input: string, availableIds: readonly string[]): string[] => {
+  return [...input.matchAll(/{{\s*([^}]+)\s*}}/g)]
+    .map((match) => getDataLakeVariableIdFromInput(match[0]) ?? match[1].trim())
+    .filter((id) => !availableIds.includes(id))
+}
+
 export const replaceDataLakeInputsInJsonString = (jsonString: string): string => {
   let parsedJson = jsonString
 
