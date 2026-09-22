@@ -95,14 +95,9 @@ jobs:
           fi
           echo "No AI-authored or AI-co-authored commits."
 
-      - name: Classify commits with Claude
-        uses: anthropics/claude-code-base-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: ${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}
-          max_turns: "5"
-          allowed_tools: "View,Write"
-          system_prompt: |
+      - name: Write the system prompt
+        env:
+          SYSTEM_PROMPT: |
             You are a strict git release-hygiene classifier running in CI. You judge
             whether each commit on a pull request is FINAL (merge-ready) or NON-FINAL
             (should not land on the main branch as-is).
@@ -129,6 +124,21 @@ jobs:
             working directory, and nothing else (no prose, no markdown fences):
             {"nonFinal":[{"oid":"<oid>","reason":"<short reason>"}]}
             Use an empty array when every commit is final.
+        run: |
+          printf '%s' "$SYSTEM_PROMPT" > "$RUNNER_TEMP/system-prompt.md"
+          [ -s "$RUNNER_TEMP/system-prompt.md" ] || { echo "::error::the system prompt is empty"; exit 1; }
+
+      - name: Classify commits with Claude
+        # A main commit, not a tag: every release installs a Claude Code too old for current models.
+        uses: anthropics/claude-code-base-action@52546c80b536daf02c27067b41e637b4e099c63f
+        timeout-minutes: 10
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --model "${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5' }}"
+            --max-turns 5
+            --allowedTools "Read,Write"
+            --system-prompt-file "${{ runner.temp }}/system-prompt.md"
           prompt: |
             Read commits.json, classify each commit, and write verdict.json exactly
             as described in the system instructions.

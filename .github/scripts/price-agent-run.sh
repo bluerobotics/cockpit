@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Reports what a Claude agent step cost, and warns when it ran over its budget. Only ever reports —
-# `max_turns` is what actually holds spend down — so callers run it with `continue-on-error: true`.
+# `--max-turns` is what actually holds spend down — so callers run it with `continue-on-error: true`.
 #
 # Usage: price-agent-run.sh <execution-file> <budget-usd> <label>
 
@@ -18,9 +18,10 @@ fi
 
 # Slurped and walked recursively so this works whether the log is a JSON array or the
 # newline-delimited stream, and regardless of how deeply usage is nested. Claude Code reports its
-# own total only on a clean finish, so a run cut short by the turn cap or the timeout falls through
-# to the per-token sum. Rates are Opus-tier: $5/M in, $25/M out, $6.25/M cache write, $0.50/M cache
-# read.
+# own total only on a clean finish, so a run cut short by the turn cap falls through to the
+# per-token sum. One killed by the step timeout leaves no log at all, since the action writes it
+# only when the agent returns. Rates are Opus-tier: $5/M in, $25/M out, $6.25/M cache write,
+# $0.50/M cache read.
 usd=$(jq -s -r '
   ([.. | objects | select(has("total_cost_usd")) | .total_cost_usd] | last) //
   ([.. | objects | select(has("cache_read_input_tokens"))]
@@ -37,5 +38,5 @@ echo "$line" | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
 # Passed in rather than interpolated into the program text, and coerced with +0 so a value awk would
 # otherwise treat as a string is still compared as a number.
 if awk -v u="$usd" -v b="$budget_usd" 'BEGIN { exit !(u + 0 > b + 0) }'; then
-  echo "::warning::$line Lower max_turns, or raise the budget if the cap is too tight."
+  echo "::warning::$line Lower --max-turns, or raise the budget if the cap is too tight."
 fi
