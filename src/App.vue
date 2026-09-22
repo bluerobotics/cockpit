@@ -94,6 +94,7 @@
   <VideoLibraryModal v-if="interfaceStore.isVideoLibraryVisible" />
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <CameraReplacementDialog />
+  <OtherControlStationWarningDialog />
   <ExternalFeaturesDiscoveryModal auto-check-on-mount />
   <VehicleDefaultsAutoImportModal />
   <VehicleDefaultsViewsImportModal />
@@ -136,6 +137,7 @@ import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import FloatingWrapper from '@/components/FloatingWrapper.vue'
 import GlassModal from '@/components/GlassModal.vue'
+import OtherControlStationWarningDialog from '@/components/OtherControlStationWarningDialog.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'
 import SnackbarContainer from '@/components/SnackbarContainer.vue'
 import Tutorial from '@/components/Tutorial.vue'

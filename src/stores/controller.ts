@@ -66,6 +66,7 @@ export const useControllerStore = defineStore('controller', () => {
   const availableButtonActions = ref(allAvailableButtons())
   const enableForwarding = ref(false)
   const preventJoystickForwarding = ref(false)
+  const showOtherControlStationWarning = ref(false)
   // The other-GCS conflict check runs at most once per session. Neither of the calls it awaits can reject, so there
   // is no failure path that would have to reset this back to 'pending'.
   let otherSourcesCheck: 'pending' | 'running' | 'done' = 'pending'
@@ -217,18 +218,7 @@ export const useControllerStore = defineStore('controller', () => {
         if (!userChangedForwarding) enableForwarding.value = false
         updateForwardingPrevention()
 
-        showDialog({
-          title: 'Multiple joystick controllers detected',
-          message: [
-            `Another ground control station is already sending joystick commands to this vehicle, and using multiple
-            joysticks simultaneously can cause unpredictable behavior.`,
-            `If you still want to use this joystick, click the top-right joystick widget and enable forwarding. You can
-            also disable the joystick forwarding on the other Cockpit instance the same way.`,
-          ],
-          variant: 'warning',
-          maxWidth: 720,
-          persistent: false,
-        })
+        showOtherControlStationWarning.value = true
       } else if (!userChangedForwarding) {
         console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
         enableForwarding.value = true
@@ -536,6 +526,7 @@ export const useControllerStore = defineStore('controller', () => {
     registerControllerUpdateCallback,
     enableForwarding,
     setForwardingByUser,
+    showOtherControlStationWarning,
     enableJoystickForwardingIfSafe,
     holdLastInputWhenWindowHidden,
     joysticks,
