@@ -8,10 +8,22 @@ import {
   registerNewAction,
 } from '../joystick/protocols/cockpit-actions'
 import { settingsManager } from '../settings-management'
+import { type CleanupScope, createCleanupScope, runUserScript } from '../user-script'
 
 const javascriptActionIdPrefix = 'javascript-action'
 
 let registeredJavascriptActionConfigs: Record<string, JavascriptActionConfig> = {}
+const cleanupScopeOfAction: Record<string, CleanupScope> = {}
+
+const actionCleanupScope = (id: string): CleanupScope => {
+  cleanupScopeOfAction[id] ??= createCleanupScope('JavaScript action')
+  return cleanupScopeOfAction[id]
+}
+
+// Saving new code or deleting the action must not leave the old code's listeners and timers running beside it.
+const undoActionRuns = (id: string): void => {
+  cleanupScopeOfAction[id]?.cleanUp()
+}
 
 /**
  * Register a new JavaScript action config and create a cockpit action for it
@@ -21,6 +33,7 @@ let registeredJavascriptActionConfigs: Record<string, JavascriptActionConfig> = 
  */
 export const registerJavascriptActionConfig = (action: JavascriptActionConfig, customId?: string): string => {
   const id = customId ?? `${javascriptActionIdPrefix} (${action.name})`
+  undoActionRuns(id)
   registeredJavascriptActionConfigs[id] = action
   saveJavascriptActionConfigs()
   updateCockpitActions()
@@ -36,6 +49,7 @@ export const getAllJavascriptActionConfigs = (): Record<string, JavascriptAction
 }
 
 export const deleteJavascriptActionConfig = (id: string): void => {
+  undoActionRuns(id)
   deleteAction(id as CockpitActionsFunction)
   delete registeredJavascriptActionConfigs[id]
   saveJavascriptActionConfigs()
@@ -74,13 +88,13 @@ export const saveJavascriptActionConfigs = (): void => {
 
 export type JavascriptActionCallback = () => void
 
-export const executeActionCode = (code: string): void => {
-  try {
-    // Execute the code
-    new Function(code)()
-  } catch (error) {
-    console.error(`Error executing JavaScript action:`, error)
-  }
+/**
+ * Run an action's code with the tracked `cockpit` API, recording what it registers there in `scope`
+ * @param {string} code - The code to run
+ * @param {CleanupScope} scope - Where the run records what to undo
+ */
+export const executeActionCode = (code: string, scope: CleanupScope): void => {
+  runUserScript(code, 'JavaScript action', scope)
 }
 
 export const getJavascriptActionCallback = (id: string): JavascriptActionCallback => {
@@ -90,7 +104,7 @@ export const getJavascriptActionCallback = (id: string): JavascriptActionCallbac
   }
 
   return () => {
-    executeActionCode(action.code)
+    executeActionCode(action.code, actionCleanupScope(id))
   }
 }
 
