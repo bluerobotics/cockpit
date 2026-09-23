@@ -1,5 +1,7 @@
 import Store from 'electron-store'
 
+import type { McpConfig } from '@/types/mcp'
+
 const electronStoreSchema = {
   chromeVersion: {
     type: 'string',
@@ -9,6 +11,15 @@ const electronStoreSchema = {
   },
   cockpitVersion: {
     type: 'string',
+  },
+  mcp: {
+    type: 'object',
+    properties: {
+      enabled: { type: 'boolean' },
+      allowCode: { type: 'boolean' },
+      port: { type: 'number' },
+      token: { type: 'string' },
+    },
   },
   windowBounds: {
     type: 'object',
@@ -46,6 +57,10 @@ export interface ElectronStoreSchema {
    * Cockpit version that last opened this userData folder, as `app.getVersion()` (e.g. `1.18.3`)
    */
   cockpitVersion: string | undefined
+  /**
+   * MCP server configuration, machine-local since it opens a port on this computer
+   */
+  mcp: McpConfig | undefined
   /**
    * Window bounds
    */
