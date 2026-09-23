@@ -2,6 +2,8 @@
 <template>
   <div class="main">
     <div
+      ref="rootElement"
+      :key="scriptRunKey"
       class="w-full h-full"
       :style="widget.options.inheritCockpitStyles ? interfaceStore.globalGlassMenuStyles : {}"
       v-html="compiledCode"
@@ -95,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
+import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
@@ -116,6 +118,8 @@ const props = defineProps<{
 }>()
 
 const widget = toRefs(props).widget
+const rootElement = ref<HTMLElement | null>(null)
+const scriptRunKey = ref(0)
 const htmlEditorContainer = ref<HTMLElement | null>(null)
 const cssEditorContainer = ref<HTMLElement | null>(null)
 const jsEditorContainer = ref<HTMLElement | null>(null)
@@ -252,12 +256,18 @@ const applyChanges = (): void => {
   executeUserScript()
 }
 
-const executeUserScript = (): void => {
+const executeUserScript = async (): Promise<void> => {
   const js = widget.value.options.js || ''
   const scriptElementId = `diy-script-${widget.value.hash}`
 
   // Remove existing script element
   document.getElementById(scriptElementId)?.remove()
+
+  // Every run gets freshly rendered markup, so nothing an earlier run attached to it survives. Runs started together
+  // share the one render that follows, so only the latest of them goes on.
+  const run = ++scriptRunKey.value
+  await nextTick()
+  if (run !== scriptRunKey.value || !rootElement.value) return
 
   // Create new script element
   const scriptEl = document.createElement('script')
