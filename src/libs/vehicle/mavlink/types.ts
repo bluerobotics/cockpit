@@ -212,3 +212,21 @@ export interface MessageIntervalCustom {
 }
 
 export type MessageIntervalOptions = MessageIntervalDefaultOrDisabledOrDontTouch | MessageIntervalCustom
+
+/**
+ * GNSS coordinates of the vehicle's local origin (0,0,0), already converted from the MAVLink wire units
+ */
+export interface GlobalOrigin {
+  /**
+   * Latitude in decimal degrees
+   */
+  latitude: number
+  /**
+   * Longitude in decimal degrees
+   */
+  longitude: number
+  /**
+   * Altitude (MSL) in meters
+   */
+  altitude: number
+}
