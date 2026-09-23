@@ -1226,6 +1226,14 @@ export const useVideoStore = defineStore('video', () => {
       refreshHash = hashOnDB || hashOnRegistry
     }
 
+    // A second recorder on the same stream detaches the first without stopping it, leaving it writing chunks
+    // for a recording nothing can finish, so a stream already being recorded takes no new recorder.
+    // Checked below the last await, as nothing can attach one between here and where this start attaches its own.
+    if (streamData.mediaRecorder !== undefined && streamData.mediaRecorder.state !== 'inactive') {
+      console.warn(`Stream '${streamDisplayName(streamName)}' is already being recorded. Ignoring the request.`)
+      return
+    }
+
     const safeMissionName = sanitizeFilenameComponent(missionStore.missionName) || 'Cockpit'
     const timeRecordingStart = new Date()
     const fileName = videoFilename(recordingHash, timeRecordingStart, safeMissionName)
