@@ -416,6 +416,7 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <McpSettings />
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>Vehicle connection timeouts</template>
           <template #info>
@@ -527,6 +528,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
+import McpSettings from '@/components/configuration/McpSettings.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
