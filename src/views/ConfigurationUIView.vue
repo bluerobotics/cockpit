@@ -147,7 +147,7 @@
                   </div>
                 </div>
                 <div
-                  v-for="choice in unitChoices"
+                  v-for="choice in shownUnitChoices"
                   :key="choice.quantity"
                   class="flex flex-row justify-start items-center w-full mb-[35px]"
                 >
@@ -235,13 +235,25 @@ const heightUnits: HeightDisplayUnit[] = [DistanceDisplayUnit.Meters, DistanceDi
 
 const unitChoices = [
   { quantity: 'distance', label: 'Distance', units: Object.values(DistanceDisplayUnit) },
+  { quantity: 'smallDistance', label: 'Distances under 1 nmi', units: Object.values(DistanceDisplayUnit) },
   { quantity: 'depth', label: 'Depth', units: heightUnits },
   { quantity: 'altitude', label: 'Altitude', units: heightUnits },
   { quantity: 'area', label: 'Area', units: Object.values(AreaDisplayUnit) },
+  { quantity: 'smallArea', label: 'Areas under 1 nmi²', units: Object.values(AreaDisplayUnit) },
   { quantity: 'speed', label: 'Speed', units: Object.values(SpeedDisplayUnit) },
   { quantity: 'temperature', label: 'Temperature', units: Object.values(TemperatureDisplayUnit) },
   { quantity: 'pressure', label: 'Pressure', units: Object.values(PressureDisplayUnit) },
 ] as const
+
+// The units for small quantities only apply while the larger one is read in nautical miles.
+const shownUnitChoices = computed(() => {
+  const preferences = interfaceStore.displayUnitPreferences
+  return unitChoices.filter((choice) => {
+    if (choice.quantity === 'smallDistance') return preferences.distance === DistanceDisplayUnit.NauticalMiles
+    if (choice.quantity === 'smallArea') return preferences.area === AreaDisplayUnit.SquareNauticalMiles
+    return true
+  })
+})
 
 const selectableUnitSystems = Object.keys(unitSystems) as (keyof typeof unitSystems)[]
 

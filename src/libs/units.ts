@@ -1,8 +1,9 @@
 import { createUnit, Unit, unit } from 'mathjs'
 
-// Knots are what marine operators ask for and mathjs does not know the unit. Overriding keeps a hot
+// Knots and nautical miles are what marine operators ask for and mathjs knows neither. Overriding keeps a hot
 // module reload from throwing on the second definition.
-createUnit('knot', { definition: unit(1852 / 3600, 'm/s') }, { override: true })
+createUnit('nmi', { definition: unit(1852, 'm') }, { override: true })
+createUnit('knot', { definition: unit(1, 'nmi/h') }, { override: true })
 
 /**
  * Possible distance units.
@@ -11,10 +12,11 @@ createUnit('knot', { definition: unit(1852 / 3600, 'm/s') }, { override: true })
 export enum DistanceDisplayUnit {
   Meters = 'meters',
   Feet = 'feet',
+  NauticalMiles = 'nmi',
 }
 
 /**
- * Possible units for depths and altitudes.
+ * Possible units for depths and altitudes, which are never long enough to read in nautical miles.
  */
 export type HeightDisplayUnit = DistanceDisplayUnit.Meters | DistanceDisplayUnit.Feet
 
@@ -24,6 +26,7 @@ export type HeightDisplayUnit = DistanceDisplayUnit.Meters | DistanceDisplayUnit
 export enum AreaDisplayUnit {
   SquareMeters = 'm^2',
   SquareFeet = 'ft^2',
+  SquareNauticalMiles = 'nmi^2',
 }
 
 /**
@@ -118,6 +121,14 @@ export interface DisplayUnitPreferences {
    */
   area: AreaDisplayUnit
   /**
+   * Unit for distances under a nautical mile, when distances are read in nautical miles
+   */
+  smallDistance: DistanceDisplayUnit
+  /**
+   * Unit for areas under a square nautical mile, when areas are read in square nautical miles
+   */
+  smallArea: AreaDisplayUnit
+  /**
    * Unit for speeds
    */
   speed: SpeedDisplayUnit
@@ -154,8 +165,18 @@ const metricOrNautical = [UnitSystem.Metric, UnitSystem.Nautical]
 const displayUnits: Record<DisplayUnit, DisplayUnitInfo> = {
   [DistanceDisplayUnit.Meters]: { prettyName: 'Meters', abbreviation: 'm', systems: metricOrNautical },
   [DistanceDisplayUnit.Feet]: { prettyName: 'Feet', abbreviation: 'ft', systems: [UnitSystem.Imperial] },
-  [AreaDisplayUnit.SquareMeters]: { prettyName: 'Square meters', abbreviation: 'm²', systems: metricOrNautical },
+  [DistanceDisplayUnit.NauticalMiles]: {
+    prettyName: 'Nautical miles',
+    abbreviation: 'nmi',
+    systems: [UnitSystem.Nautical],
+  },
+  [AreaDisplayUnit.SquareMeters]: { prettyName: 'Square meters', abbreviation: 'm²', systems: [UnitSystem.Metric] },
   [AreaDisplayUnit.SquareFeet]: { prettyName: 'Square feet', abbreviation: 'ft²', systems: [UnitSystem.Imperial] },
+  [AreaDisplayUnit.SquareNauticalMiles]: {
+    prettyName: 'Square nautical miles',
+    abbreviation: 'nmi²',
+    systems: [UnitSystem.Nautical],
+  },
   [SpeedDisplayUnit.MetersPerSecond]: {
     prettyName: 'Meters per second',
     abbreviation: 'm/s',
@@ -197,6 +218,8 @@ export const unitSystems: Record<Exclude<UnitSystem, UnitSystem.Custom>, Display
     depth: DistanceDisplayUnit.Meters,
     altitude: DistanceDisplayUnit.Meters,
     area: AreaDisplayUnit.SquareMeters,
+    smallDistance: DistanceDisplayUnit.Meters,
+    smallArea: AreaDisplayUnit.SquareMeters,
     speed: SpeedDisplayUnit.MetersPerSecond,
     temperature: TemperatureDisplayUnit.Celsius,
     pressure: PressureDisplayUnit.HectoPascal,
@@ -206,15 +229,19 @@ export const unitSystems: Record<Exclude<UnitSystem, UnitSystem.Custom>, Display
     depth: DistanceDisplayUnit.Feet,
     altitude: DistanceDisplayUnit.Feet,
     area: AreaDisplayUnit.SquareFeet,
+    smallDistance: DistanceDisplayUnit.Feet,
+    smallArea: AreaDisplayUnit.SquareFeet,
     speed: SpeedDisplayUnit.MilesPerHour,
     temperature: TemperatureDisplayUnit.Fahrenheit,
     pressure: PressureDisplayUnit.Psi,
   },
   [UnitSystem.Nautical]: {
-    distance: DistanceDisplayUnit.Meters,
+    distance: DistanceDisplayUnit.NauticalMiles,
     depth: DistanceDisplayUnit.Meters,
     altitude: DistanceDisplayUnit.Meters,
-    area: AreaDisplayUnit.SquareMeters,
+    area: AreaDisplayUnit.SquareNauticalMiles,
+    smallDistance: DistanceDisplayUnit.Meters,
+    smallArea: AreaDisplayUnit.SquareMeters,
     speed: SpeedDisplayUnit.Knots,
     temperature: TemperatureDisplayUnit.Celsius,
     pressure: PressureDisplayUnit.HectoPascal,
@@ -227,7 +254,10 @@ export const unitSystems: Record<Exclude<UnitSystem, UnitSystem.Custom>, Display
  * @returns {UnitSystem} The system all the picked units belong to, or custom when they belong to none
  */
 export const unitSystemFromPreferences = (preferences: DisplayUnitPreferences): UnitSystem => {
-  const pickedUnits = Object.values(preferences) as DisplayUnit[]
+  // The units for small quantities only apply under nautical miles, so they say nothing about the system in use.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { smallDistance, smallArea, ...mainUnits } = preferences
+  const pickedUnits = Object.values(mainUnits) as DisplayUnit[]
   const pickedSystems = pickedUnits.map((pickedUnit) => displayUnits[pickedUnit]?.systems ?? [])
   const shared = Object.values(UnitSystem).filter((system) => pickedSystems.every((list) => list.includes(system)))
   return shared[0] ?? UnitSystem.Custom
@@ -467,13 +497,35 @@ export const convertValueToRawUnit = (value: number, rawUnit: string, preference
   return convertBetween(value, source, resolved.canonical) / resolved.scale
 }
 
-const largerDistanceUnits: Record<DistanceDisplayUnit, string> = {
+const largerDistanceUnits: Record<HeightDisplayUnit, string> = {
   [DistanceDisplayUnit.Meters]: 'km',
   [DistanceDisplayUnit.Feet]: 'mi',
 }
 
 /**
- * Writes a distance out the way it is read, moving up to kilometers or miles once the number grows.
+ * The unit a quantity is read in while small, and the one it moves up to once it grows.
+ */
+interface UnitSteps {
+  /**
+   * Unit a value smaller than one of the larger unit is read in
+   */
+  small: DisplayUnit
+  /**
+   * Unit a value is read in from one of it upward
+   */
+  large: string
+}
+
+// Nautical miles are the larger unit themselves, and step down to whichever unit was picked for distances under one.
+const distanceSteps = (preferences: DisplayUnitPreferences): UnitSteps => {
+  if (preferences.distance === DistanceDisplayUnit.NauticalMiles) {
+    return { small: preferences.smallDistance, large: 'nmi' }
+  }
+  return { small: preferences.distance, large: largerDistanceUnits[preferences.distance] }
+}
+
+/**
+ * Writes a distance out the way it is read, moving up to kilometers, miles or nautical miles once the number grows.
  * @param {number} meters The distance in meters
  * @param {DisplayUnitPreferences} preferences The units picked for each quantity
  * @returns {string} The distance and its unit, ready to be shown, or a dash when there is none
@@ -481,15 +533,15 @@ const largerDistanceUnits: Record<DistanceDisplayUnit, string> = {
 export const formatDistance = (meters: number, preferences: DisplayUnitPreferences): string => {
   if (!isFinite(meters)) return '—'
 
-  const converted = convertValue(meters, 'm', preferences)
-  const larger = largerDistanceUnits[preferences.distance] ?? largerDistanceUnits[DistanceDisplayUnit.Meters]
-  const inLarger = convertBetween(converted.value, converted.unit, larger)
-
-  if (Math.abs(inLarger) < 1) return `${Math.round(converted.value)} ${converted.unit}`
-  return `${inLarger.toFixed(1)} ${larger}`
+  const { small, large } = distanceSteps(preferences)
+  const inLarge = convertBetween(meters, 'm', large)
+  if (Math.abs(inLarge) >= 1) return `${inLarge.toFixed(1)} ${large}`
+  // Nautical miles picked for distances under one keep them in nautical miles throughout.
+  if (small === DistanceDisplayUnit.NauticalMiles) return `${inLarge.toFixed(2)} ${large}`
+  return `${Math.round(convertBetween(meters, 'm', small))} ${unitAbbreviation[small]}`
 }
 
-const largerAreaUnits: Record<AreaDisplayUnit, string> = {
+const largerAreaUnits: Record<AreaDisplayUnit.SquareMeters | AreaDisplayUnit.SquareFeet, string> = {
   [AreaDisplayUnit.SquareMeters]: 'km^2',
   [AreaDisplayUnit.SquareFeet]: 'acre',
 }
@@ -497,10 +549,18 @@ const largerAreaUnits: Record<AreaDisplayUnit, string> = {
 const largerAreaUnitAbbreviation: Record<string, string> = {
   'km^2': 'km²',
   'acre': 'acres',
+  'nmi^2': 'nmi²',
+}
+
+// Square nautical miles are the larger unit themselves, and step down to whichever unit was picked for areas under one.
+const areaSteps = (preferences: DisplayUnitPreferences): UnitSteps => {
+  if (preferences.area === AreaDisplayUnit.SquareNauticalMiles) return { small: preferences.smallArea, large: 'nmi^2' }
+  return { small: preferences.area, large: largerAreaUnits[preferences.area] }
 }
 
 /**
- * Writes an area out the way it is read, moving up to square kilometers or acres once the number grows.
+ * Writes an area out the way it is read, moving up to square kilometers, acres or square nautical miles once the
+ * number grows.
  * @param {number} squareMeters The area in square meters
  * @param {DisplayUnitPreferences} preferences The units picked for each quantity
  * @returns {string} The area and its unit, ready to be shown, or a dash when there is none
@@ -508,12 +568,14 @@ const largerAreaUnitAbbreviation: Record<string, string> = {
 export const formatArea = (squareMeters: number, preferences: DisplayUnitPreferences): string => {
   if (squareMeters <= 0 || !isFinite(squareMeters)) return '—'
 
-  const large = largerAreaUnits[preferences.area]
+  const { small, large } = areaSteps(preferences)
   const inLarge = convertBetween(squareMeters, 'm^2', large)
-  if (Math.abs(inLarge) >= 1) return `${inLarge.toFixed(3)} ${largerAreaUnitAbbreviation[large]}`
+  if (Math.abs(inLarge) >= 1 || small === AreaDisplayUnit.SquareNauticalMiles) {
+    return `${inLarge.toFixed(3)} ${largerAreaUnitAbbreviation[large]}`
+  }
   // Up to a whole square kilometer the count runs to six digits, which only reads with its thousands grouped.
-  const inSmall = Math.round(convertBetween(squareMeters, 'm^2', preferences.area))
-  return `${inSmall.toLocaleString('en-US')} ${unitAbbreviation[preferences.area]}`
+  const inSmall = Math.round(convertBetween(squareMeters, 'm^2', small))
+  return `${inSmall.toLocaleString('en-US')} ${unitAbbreviation[small]}`
 }
 
 /**

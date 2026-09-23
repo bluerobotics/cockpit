@@ -173,6 +173,12 @@ setupPostPiniaConnection(() => {
         { id: 'UNITS/depth', name: 'Depth unit in use', value: unitAbbreviation[units.depth] },
         { id: 'UNITS/altitude', name: 'Altitude unit in use', value: unitAbbreviation[units.altitude] },
         { id: 'UNITS/area', name: 'Area unit in use', value: unitAbbreviation[units.area] },
+        {
+          id: 'UNITS/smallDistance',
+          name: 'Unit in use for distances under 1 nmi',
+          value: unitAbbreviation[units.smallDistance],
+        },
+        { id: 'UNITS/smallArea', name: 'Unit in use for areas under 1 nmi²', value: unitAbbreviation[units.smallArea] },
         { id: 'UNITS/speed', name: 'Speed unit in use', value: unitAbbreviation[units.speed] },
         { id: 'UNITS/temperature', name: 'Temperature unit in use', value: unitAbbreviation[units.temperature] },
         { id: 'UNITS/pressure', name: 'Pressure unit in use', value: unitAbbreviation[units.pressure] },
