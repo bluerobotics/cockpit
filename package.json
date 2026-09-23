@@ -39,6 +39,7 @@
     "@kmamal/sdl": "github:rafaellehmkuhl/node-sdl#dd1b97aa75bb84a2c899be40b0c48fcb135a4f88",
     "@mdi/font": "^7.4.47",
     "@mdi/js": "^7.4.47",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@peermetrics/webrtc-stats": "^5.7.1",
     "@sentry/vue": "^8.20.0",
     "@serialport/bindings-cpp": "13.0.0",
