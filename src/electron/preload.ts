@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 import type { OpenCellIdBboxRequest } from '@/types/baseStation'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
+import type { McpConfig, McpToolCall, McpToolDefinition, McpToolResult } from '@/types/mcp'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 import type { TtsDownloadProgress } from '@/types/tts'
 
@@ -116,4 +117,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ttsDeleteVoices: () => ipcRenderer.invoke('tts-delete-voices'),
   onTtsDownloadProgress: (callback: (info: TtsDownloadProgress) => void) =>
     ipcRenderer.on('tts-download-progress', (_event, info) => callback(info)),
+  getMcpState: () => ipcRenderer.invoke('mcp-get-state'),
+  setMcpConfig: (changes: Partial<McpConfig>) => ipcRenderer.invoke('mcp-set-config', changes),
+  regenerateMcpToken: () => ipcRenderer.invoke('mcp-regenerate-token'),
+  registerMcpTools: (tools: McpToolDefinition[]) => ipcRenderer.invoke('mcp-register-tools', tools),
+  onMcpToolCall: (callback: (call: McpToolCall) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, call: McpToolCall): void => callback(call)
+    ipcRenderer.on('mcp-tool-call', listener)
+    return () => ipcRenderer.removeListener('mcp-tool-call', listener)
+  },
+  sendMcpToolResult: (result: McpToolResult) => ipcRenderer.send('mcp-tool-result', result),
 })

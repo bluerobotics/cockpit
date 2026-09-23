@@ -8,6 +8,7 @@ import { setupGo2RTCService } from './services/go2rtc'
 import { setupHardwareTelemetryService } from './services/hardware-telemetry'
 import { setupJoystickMonitoring } from './services/joystick'
 import { linkService } from './services/link'
+import { setupMcpService } from './services/mcp'
 import { setupNetworkService } from './services/network'
 import { setupOpenCellIdService } from './services/openCellId'
 import { setupOsmRefererService } from './services/osm-referer'
@@ -155,6 +156,7 @@ setupJoystickMonitoring()
 setupVideoRecordingService()
 setupGo2RTCService()
 setupTTSService()
+setupMcpService()
 
 app.whenReady().then(async () => {
   console.log('Electron app is ready.')
