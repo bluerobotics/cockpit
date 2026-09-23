@@ -80,6 +80,7 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 
 import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { useRangefinderDistance } from '@/composables/useRangefinderDistance'
 import {
   altitudeSourceOptions,
   defaultDepthAltitudeVariableId,
@@ -87,7 +88,7 @@ import {
 } from '@/libs/data-sources/altitude'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { unitAbbreviation } from '@/libs/units'
-import { range, resetCanvas, round } from '@/libs/utils'
+import { resetCanvas, round, sequentialArray } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -147,9 +148,45 @@ const passedDepths = ref<number[]>(Array(10).fill(0))
 const depth = computed(() => passedDepths.value[passedDepths.value.length - 1])
 const recentDepths = computed(() => passedDepths.value.slice(-10))
 const maxRecentDepth = computed(() => Math.max(...recentDepths.value))
-const maxGraphDepth = computed(() => (1.3 * maxRecentDepth.value > 10 ? 1.3 * maxRecentDepth.value : 10))
-const depthGraphDistances = computed(() => range(0, maxGraphDepth.value + 1))
-const maxDepth = computed(() => Math.max(...depthGraphDistances.value))
+
+const { distanceInMeters: rangefinderDistance } = useRangefinderDistance()
+
+// Depth of the seafloor, or undefined when no rangefinder is measuring it
+const seafloorDepth = computed(() => {
+  if (rangefinderDistance.value === undefined) return undefined
+  const distanceToBottom = unit(rangefinderDistance.value, 'm').to(interfaceStore.displayUnitPreferences.distance)
+  return depth.value + distanceToBottom.toJSON().value
+})
+
+// Depth the bottom of the scale stands for: the seafloor when a rangefinder measures it, as that is the actual
+// bottom, and otherwise room around the depths the vehicle has been through
+const scaleBottom = computed(() => {
+  if (seafloorDepth.value !== undefined) return Math.max(seafloorDepth.value, 0.1)
+  return 1.3 * maxRecentDepth.value > 10 ? 1.3 * maxRecentDepth.value : 10
+})
+
+// Distance between plain lines and between the bolder, labeled ones, for the current scale. The sub-unit steps keep
+// the scale readable when the rangefinder finds the bottom a few centimeters away.
+const graphScaleSteps = computed(() => {
+  if (scaleBottom.value <= 2) return { minor: 0.1, major: 0.5 }
+  if (scaleBottom.value <= 5) return { minor: 0.25, major: 1 }
+  if (scaleBottom.value <= 25) return { minor: 1, major: 5 }
+  if (scaleBottom.value <= 125) return { minor: 2, major: 10 }
+  if (scaleBottom.value <= 250) return { minor: 5, major: 25 }
+  if (scaleBottom.value <= 500) return { minor: 10, major: 50 }
+  return { minor: 20, major: 100 }
+})
+
+const depthGraphDistances = computed(() => {
+  // Lines stop before the seafloor, as nothing belongs under it. Without one they carry on past the bottom of the
+  // scale, into the band left at the edge of the widget.
+  const linesPastScaleBottom = seafloorDepth.value === undefined ? 2 : 0
+  const numberOfLines = Math.ceil(scaleBottom.value / graphScaleSteps.value.minor) + linesPastScaleBottom
+  return sequentialArray(numberOfLines).map((index) => round(index * graphScaleSteps.value.minor, 2))
+})
+
+// Compares in step counts, as the remainder of a fractional step is not exact (0.3 % 0.1 is not 0).
+const isMultipleOfStep = (distance: number, step: number): boolean => round(distance / step, 3) % 1 === 0
 const currentUnit = computed(() => unitAbbreviation[interfaceStore.displayUnitPreferences.distance])
 
 onBeforeMount(() => {
@@ -184,18 +221,21 @@ watch([rawAltitude, resolvedAltitudeVariableId], ([newAlt, resolvedId]) => {
   const newDepth = unit(-altMeters, 'm')
 
   const depthDiff = Math.abs(newDepth.value - (depth.value || 0))
-  if (depthDiff < 0.1) return
+  if (depthDiff < 0.01) return
 
   const depthConverted = newDepth.to(interfaceStore.displayUnitPreferences.distance)
   passedDepths.value.push(depthConverted.toJSON().value)
 })
 
+// Y position of the bottom of the scale, where the seafloor line sits when a rangefinder measures it. It stays short
+// of the bottom of the widget so that its label clears the fade over the edge.
+const scaleBottomY = computed(() => round(0.88 * canvasSize.value.height))
+
 // Returns the projected Y position of the depth line for a given distance
-const distanceY = (altitude: number): number => {
-  const diff = altitude
-  const heightFactor = canvasSize.value.height / maxDepth.value
-  return round(heightFactor * diff)
-}
+const distanceY = (altitude: number): number => round((altitude / scaleBottom.value) * scaleBottomY.value)
+
+// Y position where lines that should not be seen are parked, below the bottom of the widget
+const hiddenLineY = (): number => round(canvasSize.value.height + 100)
 
 const canvasRef = ref<HTMLCanvasElement | undefined>()
 const canvasContext = ref()
@@ -225,28 +265,47 @@ const renderCanvas = (): void => {
   ctx.strokeStyle = widget.value.options.hudColor
   ctx.fillStyle = widget.value.options.hudColor
 
-  let lineDivisors = [1, 5]
-  if (maxGraphDepth.value > 25) lineDivisors = [2, 10]
-  if (maxGraphDepth.value > 125) lineDivisors = [5, 25]
-  if (maxGraphDepth.value > 250) lineDivisors = [10, 50]
-  if (maxGraphDepth.value > 500) lineDivisors = [20, 100]
-
   // Draw line for each distance
   for (const [distance, y] of Object.entries(renderVars.depthLinesY)) {
-    if (Number(distance) % lineDivisors[0] === 0) {
-      ctx.beginPath()
-      ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize - minorLinesGap, y + initialPaddingY)
-      ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, y + initialPaddingY)
-      ctx.lineWidth = '1'
-    }
-    if (Number(distance) % lineDivisors[1] === 0) {
+    // Nothing belongs under the seafloor, not even a line from a previous scale still animating its way out
+    if (seafloorDepth.value !== undefined && y > scaleBottomY.value) continue
+
+    const isMajorLine = isMultipleOfStep(Number(distance), graphScaleSteps.value.major)
+
+    ctx.beginPath()
+    ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize - minorLinesGap, y + initialPaddingY)
+    ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, y + initialPaddingY)
+    ctx.lineWidth = '1'
+
+    if (isMajorLine) {
       // For distances that are multiple of the major graph scale, use a bolder line and write distance down
       ctx.lineWidth = '2'
       ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize, y + initialPaddingY)
       ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, y + initialPaddingY)
-      ctx.fillText(`${distance} ${currentUnit.value}`, canvasWidth - stdPad - 3 * linesFontSize, y + initialPaddingY)
+      // The seafloor keeps its own label when the two are too close for both to be readable
+      const isCoveredBySeafloorLabel =
+        seafloorDepth.value !== undefined && Math.abs(y - scaleBottomY.value) < linesFontSize
+      if (!isCoveredBySeafloorLabel) {
+        ctx.fillText(`${distance} ${currentUnit.value}`, canvasWidth - stdPad - 3 * linesFontSize, y + initialPaddingY)
+      }
     }
     ctx.stroke()
+  }
+
+  // Draw the seafloor line and its depth, over the same span as the labeled lines of the scale, but thicker
+  if (seafloorDepth.value !== undefined) {
+    ctx.beginPath()
+    ctx.lineWidth = '3'
+    ctx.moveTo(canvasWidth - stdPad - 3.3 * linesFontSize, scaleBottomY.value + initialPaddingY)
+    ctx.lineTo(stdPad + 3.9 * refFontSize + refTriangleSize, scaleBottomY.value + initialPaddingY)
+    ctx.stroke()
+    // Matches the precision of the scale, so the label does not read as a repeat of the line right above it
+    const seafloorDecimals = graphScaleSteps.value.minor < 1 ? 2 : 1
+    ctx.fillText(
+      `${round(seafloorDepth.value, seafloorDecimals)} ${currentUnit.value}`,
+      canvasWidth - stdPad - 3 * linesFontSize,
+      scaleBottomY.value + initialPaddingY
+    )
   }
 
   const indicatorY = Math.max(renderVars.indicatorY, 0)
@@ -259,7 +318,7 @@ const renderCanvas = (): void => {
     ctx.textAlign = 'right'
     ctx.font = `bold ${refFontSize}px Arial`
     ctx.fillText(
-      `${depth.value.toFixed(1)} ${currentUnit.value}`,
+      `${depth.value.toFixed(Math.abs(depth.value) < 1 ? 2 : 1)} ${currentUnit.value}`,
       stdPad + 4.3 * refFontSize - refTriangleSize - stdPad,
       indicatorY + initialPaddingY
     )
@@ -283,16 +342,16 @@ const renderCanvas = (): void => {
 }
 
 // Update the X position of each line in the render variables with GSAP to smooth the transition
-watch(depth, () => {
+watch([depth, scaleBottom], () => {
   depthGraphDistances.value.forEach((distance) => {
-    renderVars.depthLinesY[distance] ??= round(canvasSize.value.height + 100)
+    renderVars.depthLinesY[distance] ??= hiddenLineY()
     gsap.to(renderVars.depthLinesY, 0.5, { [distance]: distanceY(distance) })
   })
   const distancesToExclude = Object.keys(renderVars.depthLinesY).filter(
     (distance) => !depthGraphDistances.value.includes(Number(distance))
   )
   distancesToExclude.forEach((distance) => {
-    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: round(canvasSize.value.height + 100) })
+    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: hiddenLineY() })
   })
   gsap.to(renderVars, 0.5, { indicatorY: distanceY(depth.value) })
 })
