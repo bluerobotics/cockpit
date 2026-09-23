@@ -221,6 +221,10 @@ const handleResizeStart = (event: MouseEvent): void => {
   event.preventDefault()
 }
 
+const minWidgetSize = 0.01
+const topBarNormalized = computed(() => widgetStore.currentTopBarHeightPixels / windowHeight.value)
+const bottomBarNormalized = computed(() => widgetStore.currentBottomBarHeightPixels / windowHeight.value)
+
 /**
  * Clamps a desired position to a valid range that keeps the widget within the viewport.
  * When the widget is taller than the visible area between bars, it cannot fit between them,
@@ -230,15 +234,13 @@ const handleResizeStart = (event: MouseEvent): void => {
  * @returns {Point2D} The position clamped to the valid range
  */
 const clampPositionToValidArea = (desiredPos: Point2D, widgetSize: SizeRect2D): Point2D => {
-  const topBarNormalized = widgetStore.currentTopBarHeightPixels / windowHeight.value
-  const bottomBarNormalized = widgetStore.currentBottomBarHeightPixels / windowHeight.value
-  const visibleAreaHeight = 1 - topBarNormalized - bottomBarNormalized
+  const visibleAreaHeight = 1 - topBarNormalized.value - bottomBarNormalized.value
 
   const widgetTallerThanVisibleArea = widgetSize.height >= visibleAreaHeight
-  const minY = widgetTallerThanVisibleArea ? 0 : topBarNormalized
+  const minY = widgetTallerThanVisibleArea ? 0 : topBarNormalized.value
   const maxY = widgetTallerThanVisibleArea
     ? Math.max(0, 1 - widgetSize.height)
-    : Math.max(minY, 1 - widgetSize.height - bottomBarNormalized)
+    : Math.max(minY, 1 - widgetSize.height - bottomBarNormalized.value)
 
   return {
     x: constrain(desiredPos.x, 0, Math.max(0, 1 - widgetSize.width)),
@@ -266,46 +268,38 @@ const handleResize = (event: MouseEvent): void => {
   const dx = (event.clientX - initialMousePos.value.x) / viewSize.width
   const dy = (event.clientY - initialMousePos.value.y) / viewSize.height
 
-  let newLeft = initialWidgetPos.value.x
-  let newTop = initialWidgetPos.value.y
-  let newWidth = initialWidgetSize.value.width
-  let newHeight = initialWidgetSize.value.height
+  const handleClasses = (resizeHandle.value as HTMLElement).classList
+  const drivesTop = ['top', 'top-left', 'top-right'].some((c) => handleClasses.contains(c))
+  const drivesBottom = ['bottom', 'bottom-left', 'bottom-right'].some((c) => handleClasses.contains(c))
+  const drivesLeft = ['left', 'top-left', 'bottom-left'].some((c) => handleClasses.contains(c))
+  const drivesRight = ['right', 'top-right', 'bottom-right'].some((c) => handleClasses.contains(c))
 
-  if ((resizeHandle.value as HTMLElement).classList.contains('top-left')) {
-    newWidth -= dx
-    newHeight -= dy
-    newLeft += dx
-    newTop += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('top-right')) {
-    newWidth += dx
-    newHeight -= dy
-    newTop += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom-left')) {
-    newWidth -= dx
-    newHeight += dy
-    newLeft += dx
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom-right')) {
-    newWidth += dx
-    newHeight += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('left')) {
-    newWidth -= dx
-    newLeft += dx
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('right')) {
-    newWidth += dx
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('top')) {
-    newHeight -= dy
-    newTop += dy
-  } else if ((resizeHandle.value as HTMLElement).classList.contains('bottom')) {
-    newHeight += dy
-  }
+  const initialTop = initialWidgetPos.value.y
+  const initialBottom = initialTop + initialWidgetSize.value.height
+  const initialLeft = initialWidgetPos.value.x
+  const initialRight = initialLeft + initialWidgetSize.value.width
+
+  const bandTop = topBarNormalized.value
+  const bandBottom = 1 - bottomBarNormalized.value
+
+  // Only the edges the grabbed handle drives may move, and each stops at the visible area. The opposite edge caps the
+  // driven one last, so a widget that starts outside that area cannot be resized into a negative size.
+  const top = drivesTop
+    ? Math.min(constrain(initialTop + dy, bandTop, bandBottom), initialBottom - minWidgetSize)
+    : initialTop
+  const bottom = drivesBottom
+    ? Math.max(constrain(initialBottom + dy, bandTop, bandBottom), initialTop + minWidgetSize)
+    : initialBottom
+  const left = drivesLeft ? Math.min(constrain(initialLeft + dx, 0, 1), initialRight - minWidgetSize) : initialLeft
+  const right = drivesRight ? Math.max(constrain(initialRight + dx, 0, 1), initialLeft + minWidgetSize) : initialRight
 
   position.value = {
-    x: constrain(newLeft, 0, 1 - size.value.width),
-    y: constrain(newTop, 0, 1 - size.value.height),
+    x: left,
+    y: top,
   }
   size.value = {
-    width: constrain(newWidth, 0.01, 1),
-    height: constrain(newHeight, 0.01, 1),
+    width: right - left,
+    height: bottom - top,
   }
 }
 
@@ -437,12 +431,18 @@ const cursorStyle = computed(() => {
 
 const isWidgetFullScreen = computed(() => widgetStore.isFullScreen(widget.value))
 
-const handleTopOffset = computed(() =>
-  isWidgetFullScreen.value ? `${widgetStore.currentTopBarHeightPixels + 5}px` : '-5px'
-)
-const handleBottomOffset = computed(() =>
-  isWidgetFullScreen.value ? `${widgetStore.currentBottomBarHeightPixels + 5}px` : '-5px'
-)
+// A widget can sit under a bar without being full screen (a tall one, or one only resized sideways), and a handle
+// left on such an edge is unclickable, so each offset follows how far that edge reaches under its bar as drawn --
+// the scaled height, since that is where the user sees the bar end.
+const handleTopOffset = computed(() => {
+  const underBarPixels = widgetStore.currentTopBarHeightPixelsScaled - position.value.y * windowHeight.value
+  return underBarPixels > 0 ? `${underBarPixels + 5}px` : '-5px'
+})
+const handleBottomOffset = computed(() => {
+  const gapBelowPixels = (1 - position.value.y - size.value.height) * windowHeight.value
+  const underBarPixels = widgetStore.currentBottomBarHeightPixelsScaled - gapBelowPixels
+  return underBarPixels > 0 ? `${underBarPixels + 5}px` : '-5px'
+})
 const handleSideOffset = computed(() => (isWidgetFullScreen.value ? '5px' : '-5px'))
 
 const highlighted = computed(() => widgetStore.widgetManagerVars(widget.value.hash).highlighted)
