@@ -39,6 +39,8 @@ test('convertValue converts to the picked unit of each quantity', () => {
 })
 
 test('depths and altitudes are read in their own unit rather than the distance one', () => {
+  expect(convertValue(1852, 'm', nautical)).toEqual({ value: 1, unit: 'nmi' })
+  expect(convertValue(10, 'm', readingLengthsAs(nautical, 'depth'))).toEqual({ value: 10, unit: 'm' })
   expect(convertValue(10, 'm', readingLengthsAs({ ...metric, distance: DistanceDisplayUnit.Feet }, 'depth'))).toEqual({
     value: 10,
     unit: 'm',
@@ -90,6 +92,7 @@ test('unitSystemFromPreferences names the set of units in use', () => {
   expect(unitSystemFromPreferences({ ...metric, speed: SpeedDisplayUnit.KilometersPerHour })).toBe(UnitSystem.Metric)
 
   expect(unitSystemFromPreferences({ ...metric, distance: DistanceDisplayUnit.Feet })).toBe(UnitSystem.Custom)
+  expect(unitSystemFromPreferences({ ...nautical, area: AreaDisplayUnit.SquareMeters })).toBe(UnitSystem.Custom)
   expect(unitSystemFromPreferences({ ...imperial, temperature: TemperatureDisplayUnit.Celsius })).toBe(
     UnitSystem.Custom
   )
@@ -153,6 +156,10 @@ test('formatDistance moves up to the larger unit once the number grows', () => {
   expect(formatDistance(2500, metric)).toBe('2.5 km')
   expect(formatDistance(1609.34, imperial)).toBe('5280 ft')
   expect(formatDistance(3218.68, imperial)).toBe('2.0 mi')
+  expect(formatDistance(50, nautical)).toBe('50 m')
+  expect(formatDistance(50, { ...nautical, smallDistance: DistanceDisplayUnit.Feet })).toBe('164 ft')
+  expect(formatDistance(10400, nautical)).toBe('5.6 nmi')
+  expect(formatDistance(500, { ...nautical, smallDistance: DistanceDisplayUnit.NauticalMiles })).toBe('0.27 nmi')
   expect(formatDistance(NaN, metric)).toBe('—')
 })
 
@@ -163,6 +170,11 @@ test('formatArea follows the area preference and moves up to the larger unit', (
   expect(formatArea(100, imperial)).toBe('1,076 ft²')
   expect(formatArea(100, { ...metric, area: AreaDisplayUnit.SquareFeet })).toBe('1,076 ft²')
   expect(formatArea(10000, imperial)).toBe('2.471 acres')
+  expect(formatArea(87183, nautical)).toBe('87,183 m²')
+  expect(formatArea(100, { ...nautical, smallArea: AreaDisplayUnit.SquareFeet })).toBe('1,076 ft²')
+  expect(formatArea(6.86e6, nautical)).toBe('2.000 nmi²')
+  expect(formatArea(87183, { ...nautical, smallArea: AreaDisplayUnit.SquareNauticalMiles })).toBe('0.025 nmi²')
+  expect(formatArea(100, { ...nautical, area: AreaDisplayUnit.SquareMeters })).toBe('100 m²')
   expect(formatArea(0, metric)).toBe('—')
 })
 

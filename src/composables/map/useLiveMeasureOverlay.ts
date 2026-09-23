@@ -1,6 +1,7 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 import { onBeforeUnmount } from 'vue'
 
+import { fieldUnitPreferences } from '@/composables/useUnitInput'
 import { formatBearing, formatDistanceShort } from '@/libs/mission/general-estimates'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
@@ -189,7 +190,9 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
     endDot.setAttribute('cx', String(to.x))
     endDot.setAttribute('cy', String(to.y))
 
-    const measure = formatDistanceShort(segment.distanceInMeters, interfaceStore.displayUnitPreferences)
+    // While the distance box is open the tag reads back what is typed into it, so it reads in the box's unit.
+    const preferences = isTyping ? fieldUnitPreferences() : interfaceStore.displayUnitPreferences
+    const measure = formatDistanceShort(segment.distanceInMeters, preferences)
     const [distance, unit] = measure.split(' ')
     length.textContent = segment.clearsLength ? '' : distance
     rest.textContent = `${unit ? ` ${unit}` : ''} · ${formatBearing(segment.bearingInDegrees)}`
@@ -224,6 +227,7 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
   const setLiveMeasureTyping = (typing: boolean): void => {
     isTyping = typing
     elements?.tag.classList.toggle('typing', isTyping)
+    refreshLiveMeasureOnMapMove()
   }
 
   // Guarded on the map rather than on the overlay's nodes, which a point placed from a typed distance takes off

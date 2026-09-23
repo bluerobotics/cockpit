@@ -5,6 +5,7 @@ import {
   type LengthReading,
   convertValue,
   convertValueToRawUnit,
+  DistanceDisplayUnit,
   readingLengthsAs,
 } from '@/libs/units'
 import { round } from '@/libs/utils'
@@ -33,9 +34,23 @@ export interface UseUnitInputReturn extends UseUnitConversionReturn {
 // characters wide. A tenth is finer than any of these fields is aimed to and short enough to read at a glance.
 const displayedPlaces = 1
 
-const fieldUnitPreferences = (reading?: LengthReading): DisplayUnitPreferences => {
+// A field cannot move between units while it is typed in, so under nautical miles it takes the unit picked for
+// distances under one, which is what these fields are sized for. At one decimal a nautical mile cannot hold the
+// few meters they are set to, so they stay in meters when nautical miles are kept throughout.
+/**
+ * The units a typed field reads and takes its value in, which under nautical miles are not the ones readouts use.
+ * @param {LengthReading} [reading] - What a length measures, when it is a depth or an altitude
+ * @returns {DisplayUnitPreferences} The picked units, with distances in the unit typed fields use
+ */
+export const fieldUnitPreferences = (reading?: LengthReading): DisplayUnitPreferences => {
   const preferences = useAppInterfaceStore().displayUnitPreferences
-  return reading === undefined ? preferences : readingLengthsAs(preferences, reading)
+  if (reading !== undefined) return readingLengthsAs(preferences, reading)
+  if (preferences.distance !== DistanceDisplayUnit.NauticalMiles) return preferences
+  const fieldUnit =
+    preferences.smallDistance === DistanceDisplayUnit.NauticalMiles
+      ? DistanceDisplayUnit.Meters
+      : preferences.smallDistance
+  return { ...preferences, distance: fieldUnit }
 }
 
 /**
