@@ -186,6 +186,7 @@ import {
   useMenuRouteSync,
 } from './composables/menuRouting'
 import { useSnackbar } from './composables/snackbar'
+import { useMcpBridge } from './composables/useMcpBridge'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
 import { useAppInterfaceStore } from './stores/appInterface'
@@ -249,6 +250,8 @@ useVehicleDefaultsAutoImport()
 
 // Upload custom map tile archives imported while offline to the vehicle once it comes online.
 useCustomTileProviderVehicleSync()
+
+useMcpBridge()
 
 // Keep the main menu and the address showing the same destination.
 useMenuRouteSync()
