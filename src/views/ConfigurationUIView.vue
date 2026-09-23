@@ -7,67 +7,61 @@
           <template #title>Window material</template>
           <template #content>
             <div class="flex w-full">
-              <div class="flex flex-col w-full px-4 pt-5">
-                <div class="flex flex-row justify-start items-center w-full mb-[35px] gap-x-[85px]">
-                  <div class="flex">
-                    <v-menu
-                      :close-on-content-click="false"
-                      location="top start"
-                      origin="top start"
-                      transition="scale-transition"
-                      class="overflow-hidden"
-                    >
-                      <template #activator="{ props }">
-                        <div v-bind="props" class="flex cursor-pointer gap-x-[30px]">
-                          <span class="text-start mt-[2px]">Glass color</span>
-                          <div
-                            class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg cursor-pointer"
-                            :style="{ backgroundColor: interfaceStore.UIGlassEffect.bgColor }"
-                          ></div>
-                        </div>
-                      </template>
-                      <v-card class="overflow-hidden"
-                        ><v-color-picker
-                          v-model="interfaceStore.UIGlassEffect.bgColor"
-                          width="400px"
-                          mode="rgba"
-                          theme="dark"
-                      /></v-card>
-                    </v-menu>
-                  </div>
-                  <div class="flex gap-x-[40px] opacity-40">
-                    <v-menu
-                      :close-on-content-click="false"
-                      location="top start"
-                      origin="top start"
-                      transition="scale-transition"
-                      class="overflow-hidden"
-                      disabled
-                    >
-                      <template #activator="{ props }">
-                        <div v-bind="props" class="flex gap-x-[30px]">
-                          <span class="text-start mt-[2px]">Font color</span>
-                          <div
-                            v-bind="props"
-                            class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg"
-                            :style="{ backgroundColor: interfaceStore.UIGlassEffect.fontColor }"
-                          ></div>
-                        </div>
-                      </template>
-                      <v-card class="overflow-hidden"
-                        ><v-color-picker
-                          v-model="interfaceStore.UIGlassEffect.fontColor"
-                          width="400px"
-                          mode="rgba"
-                          theme="dark"
-                      /></v-card>
-                    </v-menu>
-                  </div>
-                  <v-btn variant="text" size="small" @click="resetColorsToDefault">Reset to defaults</v-btn>
+              <div class="flex flex-col w-full px-4 pt-3">
+                <div class="flex flex-row items-center w-full mb-3">
+                  <div class="flex w-56 shrink-0">Glass color</div>
+                  <v-menu
+                    :close-on-content-click="false"
+                    location="top start"
+                    origin="top start"
+                    transition="scale-transition"
+                    class="overflow-hidden"
+                  >
+                    <template #activator="{ props }">
+                      <div
+                        v-bind="props"
+                        class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg cursor-pointer"
+                        :style="{ backgroundColor: interfaceStore.UIGlassEffect.bgColor }"
+                      ></div>
+                    </template>
+                    <v-card class="overflow-hidden"
+                      ><v-color-picker
+                        v-model="interfaceStore.UIGlassEffect.bgColor"
+                        width="400px"
+                        mode="rgba"
+                        theme="dark"
+                    /></v-card>
+                  </v-menu>
                 </div>
-                <div class="flex w-full">
-                  <div class="flex w-[33%] mt-[2px]">Opacity</div>
-                  <div class="flex w-[66%]">
+                <div class="flex flex-row items-center w-full mb-3 opacity-40">
+                  <div class="flex w-56 shrink-0">Font color</div>
+                  <v-menu
+                    :close-on-content-click="false"
+                    location="top start"
+                    origin="top start"
+                    transition="scale-transition"
+                    class="overflow-hidden"
+                    disabled
+                  >
+                    <template #activator="{ props }">
+                      <div
+                        v-bind="props"
+                        class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg"
+                        :style="{ backgroundColor: interfaceStore.UIGlassEffect.fontColor }"
+                      ></div>
+                    </template>
+                    <v-card class="overflow-hidden"
+                      ><v-color-picker
+                        v-model="interfaceStore.UIGlassEffect.fontColor"
+                        width="400px"
+                        mode="rgba"
+                        theme="dark"
+                    /></v-card>
+                  </v-menu>
+                </div>
+                <div class="flex w-full mb-3">
+                  <div class="flex w-56 shrink-0 mt-[2px]">Opacity</div>
+                  <div class="flex flex-1">
                     <v-slider
                       :model-value="parseInt(interfaceStore.UIGlassEffect.bgColor.slice(-2), 16) / 255"
                       color="white"
@@ -75,13 +69,14 @@
                       max="1"
                       step="0.01"
                       thumb-label
+                      hide-details
                       @update:model-value="updateOpacity"
                     />
                   </div>
                 </div>
-                <div class="flex w-full">
-                  <div class="flex w-[33%] mt-[2px]">Blur</div>
-                  <div class="flex w-[66%]">
+                <div class="flex w-full mb-2">
+                  <div class="flex w-56 shrink-0 mt-[2px]">Blur</div>
+                  <div class="flex flex-1">
                     <v-slider
                       v-model="interfaceStore.UIGlassEffect.blur"
                       color="white"
@@ -89,8 +84,14 @@
                       max="50"
                       step="1"
                       thumb-label
+                      hide-details
                     />
                   </div>
+                </div>
+                <div class="flex w-full mb-4">
+                  <v-btn variant="text" size="small" class="-ml-3" @click="resetColorsToDefault"
+                    >Reset to defaults</v-btn
+                  >
                 </div>
               </div>
             </div>
@@ -100,10 +101,10 @@
           <template #title>Menu</template>
           <template #content>
             <div class="flex w-full">
-              <div class="flex flex-col w-full px-4 pt-5">
-                <div class="flex flex-row justify-start items-center w-full mb-[35px]">
-                  <div class="flex w-[33%]">Main menu trigger position</div>
-                  <div class="flex w-[66%]">
+              <div class="flex flex-col w-full px-4 pt-3">
+                <div class="flex flex-row justify-start items-center w-full mb-4">
+                  <div class="flex w-56 shrink-0">Main menu trigger position</div>
+                  <div class="flex flex-1">
                     <v-radio-group
                       :model-value="interfaceStore.mainMenuStyleTrigger"
                       inline
@@ -123,10 +124,10 @@
           <template #title>Display units</template>
           <template #content>
             <div class="flex w-full">
-              <div class="flex flex-col w-full px-4 pt-5">
-                <div class="flex flex-row justify-start items-center w-full mb-[35px]">
-                  <div class="flex w-[33%]">System</div>
-                  <div class="flex w-[66%] items-center">
+              <div class="flex flex-col w-full px-4 pt-3">
+                <div class="flex flex-row justify-start items-center w-full mb-4">
+                  <div class="flex w-56 shrink-0">System</div>
+                  <div class="flex flex-1 items-center">
                     <v-radio-group
                       :model-value="currentUnitSystem"
                       inline
@@ -149,10 +150,10 @@
                 <div
                   v-for="choice in shownUnitChoices"
                   :key="choice.quantity"
-                  class="flex flex-row justify-start items-center w-full mb-[35px]"
+                  class="flex flex-row justify-start items-center w-full mb-4"
                 >
-                  <div class="flex w-[33%]">{{ choice.label }}</div>
-                  <div class="flex w-[66%]">
+                  <div class="flex w-56 shrink-0">{{ choice.label }}</div>
+                  <div class="flex flex-1">
                     <v-radio-group
                       :model-value="interfaceStore.displayUnitPreferences[choice.quantity]"
                       inline
