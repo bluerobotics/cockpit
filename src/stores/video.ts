@@ -1298,6 +1298,12 @@ export const useVideoStore = defineStore('video', () => {
       console.warn(`Recording of stream '${streamLabel}' is already starting. Ignoring the request.`)
       return
     }
+    // A second recorder on the same stream detaches the first without stopping it, leaving it writing chunks
+    // for a recording nothing can finish, so a stream already being recorded takes no new recorder.
+    if (streamData.mediaRecorder !== undefined && streamData.mediaRecorder.state !== 'inactive') {
+      console.warn(`Stream '${streamLabel}' is already being recorded. Ignoring the request.`)
+      return
+    }
 
     // Below the guards above, so that only a start that goes on to attach a recorder takes over a wait for the
     // stream, rather than one that is about to bail leaving nothing recording
