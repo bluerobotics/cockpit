@@ -203,7 +203,7 @@
       v-model:planning-mode="planningMode"
       :map-center="mapCenter"
       :calculated-height="calculatedHeight"
-      :pinned-top="missionToolboxPinnedTop"
+      :top-offset="missionToolboxTop"
     >
       <template #mission>
         <div
@@ -630,8 +630,6 @@
         </div>
         <v-expand-transition
           v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
-          @after-enter="clampMissionToolboxWithinView"
-          @after-leave="onMissionActionsMenuCollapsed"
         >
           <div v-if="missionActionsMenuExpanded" class="flex flex-col">
             <v-divider class="mx-2 my-1 opacity-5" />
@@ -900,7 +898,7 @@
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-edgebuffer'
 
-import { useDebounceFn, useWindowSize, watchDebounced } from '@vueuse/core'
+import { useDebounceFn, useElementSize, useWindowSize, watchDebounced } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { v4 as uuid } from 'uuid'
@@ -1061,8 +1059,10 @@ const clearMissionOnVehicle = (): void => {
   vehicleStore.clearMissions()
 }
 
+const MISSION_TOOLBOX_BAR_GAP_PX = 20
 const calculatedHeight = computed(() => {
-  return windowHeight.value - widgetStore.currentBottomBarHeightPixels - widgetStore.currentTopBarHeightPixels - 20
+  const barsHeight = widgetStore.currentBottomBarHeightPixels + widgetStore.currentTopBarHeightPixels
+  return `${windowHeight.value - barsHeight - 2 * MISSION_TOOLBOX_BAR_GAP_PX}px`
 })
 
 const uploadingMission = ref(false)
@@ -4569,42 +4569,32 @@ const { hasLastUploadedMission, restoreLastUploadedMission } = useMissionOperati
 const missionToolboxSidebarRef = ref<InstanceType<typeof MissionPlanningSidebar> | null>(null)
 const missionToolboxRef = computed<HTMLElement | null>(() => missionToolboxSidebarRef.value?.rootEl ?? null)
 const missionActionsMenuExpanded = ref(false)
-// While the actions menu is open the toolbox is pinned to its current top so it grows downward instead
-// of re-centering (which would shove the whole toolbox up); null lets it re-center at rest.
 const missionToolboxPinnedTop = ref<number | null>(null)
+const { height: missionToolboxHeight } = useElementSize(missionToolboxRef, undefined, { box: 'border-box' })
+
+// Centered against the window band between the bars, rather than left to the flex container, whose box
+// can be taller than the window and then leaves a tall toolbox running under the bottom bar.
+const missionToolboxTop = computed<number>(() => {
+  const topBound = widgetStore.currentTopBarHeightPixels + MISSION_TOOLBOX_BAR_GAP_PX
+  const bottomBound = windowHeight.value - widgetStore.currentBottomBarHeightPixels - MISSION_TOOLBOX_BAR_GAP_PX
+
+  // The top is held while the actions menu is open, so the frames of its expand transition grow the box
+  // downward instead of re-centering it and sliding the chevron out from under the pointer.
+  if (missionToolboxPinnedTop.value !== null) {
+    const bottomOverflow = missionToolboxPinnedTop.value + missionToolboxHeight.value - bottomBound
+    if (bottomOverflow <= 0) return missionToolboxPinnedTop.value
+    return Math.max(topBound, missionToolboxPinnedTop.value - bottomOverflow)
+  }
+
+  return Math.max(topBound, topBound + (bottomBound - topBound - missionToolboxHeight.value) / 2)
+})
 
 const toggleMissionActionsMenu = (): void => {
   const willOpen = !missionActionsMenuExpanded.value
   logUserAction(`${willOpen ? 'Opened' : 'Closed'} the mission actions menu`)
-
-  if (willOpen && missionToolboxRef.value) {
-    missionToolboxPinnedTop.value = missionToolboxRef.value.offsetTop
-  }
-
+  missionToolboxPinnedTop.value = willOpen ? missionToolboxTop.value : null
   missionActionsMenuExpanded.value = willOpen
 }
-
-// Shift the pinned toolbox up only if the expanded panel would overflow the bottom of the available
-// area, never past the top bar, so it opens downward whenever there is room. Runs on the expand
-// transition's after-enter so the panel is measured at full height, not mid-animation.
-const clampMissionToolboxWithinView = (): void => {
-  const el = missionToolboxRef.value
-  if (!el || missionToolboxPinnedTop.value === null) return
-
-  const topBound = widgetStore.currentTopBarHeightPixels + 10
-  const bottomBound = windowHeight.value - widgetStore.currentBottomBarHeightPixels - 10
-  const rect = el.getBoundingClientRect()
-
-  const bottomOverflow = rect.bottom - bottomBound
-  if (bottomOverflow <= 0) return
-
-  missionToolboxPinnedTop.value -= Math.min(bottomOverflow, rect.top - topBound)
-}
-
-const onMissionActionsMenuCollapsed = (): void => {
-  missionToolboxPinnedTop.value = null
-}
-
 const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
   if (mission.vehicleType && !vehicleStore.isVehicleOnline) {
     missionStore.plannedVehicleType = mission.vehicleType
