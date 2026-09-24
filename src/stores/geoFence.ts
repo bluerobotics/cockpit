@@ -409,6 +409,23 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   }
 
   /**
+   * Adds a ready-made polygon to the fence, for callers that build one from
+   * something other than the click-to-draw flow.
+   * @param { FenceLatLng[] } vertices Ordered vertices, with the closing one left implicit.
+   * @param { boolean } inclusion Whether the vehicle is restricted to the inside of the polygon.
+   * @returns { FencePolygon | undefined } The added polygon, or `undefined` when given fewer than 3 vertices.
+   */
+  const addPolygon = (vertices: FenceLatLng[], inclusion: boolean): FencePolygon | undefined => {
+    if (vertices.length < 3) return undefined
+    const polygon: FencePolygon = { id: uuid(), inclusion, vertices: cloneVertices(vertices) }
+    polygons.push(polygon)
+    draft.setInteractive(polygon.id)
+    markDirty()
+    persistDraft()
+    return polygon
+  }
+
+  /**
    * Commits the polygon currently being drawn into the persistent fence
    * model. Requires at least 3 vertices, otherwise it cancels silently.
    * @returns { FencePolygon | undefined } The committed polygon, or `undefined` if not enough vertices.
@@ -682,6 +699,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     toggleCircleInclusion,
     deletePolygon,
     deleteCircle,
+    addPolygon,
     finishDrawingPolygon,
     finishDrawingCircle,
     setBreachReturn,
