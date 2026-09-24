@@ -7,6 +7,12 @@
     ]"
   >
     <div ref="mapEl" class="minimap-canvas"></div>
+    <div
+      v-if="attribution"
+      class="absolute bottom-0 right-0 z-[1001] px-1 text-[8px] leading-tight text-white bg-[#00000066]"
+    >
+      {{ attribution }}
+    </div>
     <v-icon
       class="minimap-drag-handle"
       color="white"
@@ -215,7 +221,7 @@ import type { MapTileProvider, WaypointCoordinates } from '@/types/mission'
 import type { ContextMenuItem } from '@/types/user-interface'
 import type { Widget } from '@/types/widgets'
 
-const builtInTileProviders: MapTileProvider[] = ['Esri World Imagery', 'OpenStreetMap']
+const builtInTileProviders: MapTileProvider[] = ['Esri World Imagery', 'OpenStreetMap', 'OpenTopoMap']
 
 type TrackTarget = 'vehicle' | 'poi'
 
@@ -326,7 +332,7 @@ const selectedTileProvider = computed(() => {
 })
 
 const mapEl = ref<HTMLElement>()
-const { mapReady, zoom, operatorZoom, bearing, map, init } = useMiniMap({
+const { mapReady, zoom, operatorZoom, bearing, map, attribution, init } = useMiniMap({
   vehiclePosition: () => trackedPosition.value,
   vehicleHeading: () => trackedHeading.value,
   headingUp: () => effectiveHeadingUp.value,

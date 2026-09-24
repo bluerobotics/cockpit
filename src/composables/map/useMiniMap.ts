@@ -49,6 +49,8 @@ export interface UseMiniMapReturn {
   operatorZoom: ComputedRef<number>
   /** Rotation currently applied to the map, in degrees (positive clockwise); 0 when north-up. */
   bearing: Ref<number>
+  /** Credit the current base layer's licence requires, absent when it asks for none. */
+  attribution: Ref<string | undefined>
   /**
    * Creates the rotating map on the given element and starts following the vehicle.
    * @param {HTMLElement} element - The container element to mount the map on.
@@ -80,6 +82,9 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   let closeCurrentBaseLayer: (() => void) | undefined
   let currentBaseLayerSignature: string | undefined
   let disposed = false
+  // Leaflet's own attribution control would sit inside the rotated container and turn with the map,
+  // so the credit the tiles' licences require is rendered by the widget instead.
+  const attribution = ref<string | undefined>(undefined)
   const { observe: observeMapResize, stop: stopObservingMapResize } = useMapAutoResize(() => recenter())
 
   // A custom provider's layer is built from its metadata, so the signature (rather than the plain selection)
@@ -99,6 +104,7 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
     currentBaseLayer = next.layer
     closeCurrentBaseLayer = next.close
     currentBaseLayerSignature = signature
+    attribution.value = next.layer.getAttribution?.() ?? undefined
   }
 
   const applyFadeMask = (): void => {
@@ -273,5 +279,5 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
 
   onBeforeUnmount(destroy)
 
-  return { map, mapReady, zoom, operatorZoom, bearing, init, destroy }
+  return { map, mapReady, zoom, operatorZoom, bearing, attribution, init, destroy }
 }
