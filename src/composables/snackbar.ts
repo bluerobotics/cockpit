@@ -44,6 +44,11 @@ export interface SnackbarOptions {
    * Action to offer alongside the message, so a warning can take the user where it can be dealt with.
    */
   action?: SnackbarAction
+  /**
+   * Whether to show the message as a banner: a sign for its variant beside it, and a ring around the close
+   * button that empties as the snackbar runs out. Ignored when {@link SnackbarOptions.persistent} is `true`.
+   */
+  banner?: boolean
 }
 
 type SnackbarType = SnackbarOptions & {
