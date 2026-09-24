@@ -666,11 +666,26 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
    * Upload a geofence plan to the vehicle.
    * @param { GeoFencePlan } plan The plan to upload.
    * @param { MissionLoadingCallback } loadingCallback Callback invoked with upload progress.
+   * @param { number | undefined } capacityBytes Fence storage the vehicle has room for, from
+   * `fenceCapacityBytes`, or `undefined` when it is unknown.
    * @returns { Promise<void> } Resolves when the vehicle acks the upload.
    */
-  async function uploadFence(plan: GeoFencePlan, loadingCallback: MissionLoadingCallback): Promise<void> {
+  async function uploadFence(
+    plan: GeoFencePlan,
+    loadingCallback: MissionLoadingCallback,
+    capacityBytes: number | undefined
+  ): Promise<void> {
     if (!mainVehicle.value) throw new Error('No vehicle available to upload fence.')
-    return await mainVehicle.value.uploadFence(plan, loadingCallback)
+    return await mainVehicle.value.uploadFence(plan, loadingCallback, capacityBytes)
+  }
+
+  /**
+   * Fence storage the vehicle has room for.
+   * @returns { Promise<number | undefined> } Room for the fence in bytes, or `undefined` when unknown.
+   */
+  async function fenceCapacityBytes(): Promise<number | undefined> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to upload fence.')
+    return await mainVehicle.value.fenceCapacityBytes()
   }
 
   /**
@@ -1278,6 +1293,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     uploadMission,
     clearMissions,
     uploadFence,
+    fenceCapacityBytes,
     fetchFence,
     clearFence,
     requestParameter,
