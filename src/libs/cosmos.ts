@@ -10,7 +10,7 @@ import { SDLStatus } from '@/types/sdl'
 import type { SerialData, SerialPortInfo } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
 import type { PiperVoiceStatus, TtsDownloadProgress, TtsDownloadResult } from '@/types/tts'
-import type { Go2RTCStreamInfo } from '@/types/video'
+import type { Go2RTCStreamInfo, VideoRecordingFinalizationResult } from '@/types/video'
 
 import {
   createDataLakeVariable,
@@ -560,10 +560,11 @@ declare global {
        */
       appendChunkToVideoRecording: (processId: string, chunk: Blob, chunkNumber: number) => Promise<void>
       /**
-       * Finalize live video streaming by closing FFmpeg stdin
+       * Finalize live video streaming by closing FFmpeg stdin and joining the recording's segments
        * @param processId - The ID of the streaming process
+       * @returns Promise resolving to how the recording was put together
        */
-      finalizeVideoRecording: (processId: string) => Promise<void>
+      finalizeVideoRecording: (processId: string) => Promise<VideoRecordingFinalizationResult>
       /**
        * Register an RTSP stream with the go2rtc sidecar for WebRTC consumption
        * @param name - Unique stream name used for WebRTC signaling
