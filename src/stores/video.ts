@@ -77,6 +77,9 @@ const maxOutagesInARecording = 20
 const recordingMimeType = 'video/x-matroska;codecs=avc1'
 // Shorter than the session's own video watchdog, so the recording covers the outage from the moment it starts
 const secondsWithoutVideoToStallRecording = 3
+// A pilot on a dive has both hands on the controller and the screen out of reach, so a recording warning sees
+// itself out, and is not raised again while the one before it is still up
+const recordingWarningDuration = 30 * 1000
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
@@ -140,51 +143,33 @@ export const useVideoStore = defineStore('video', () => {
      */
     meansDataLoss: boolean
   }
-  // Shared by the monitors of all recording streams, since they all warn through the same single dialog surface.
+  // Shared by the monitors of all recording streams, since they all warn through the same single surface.
   let openRecordingHealthWarning: RecordingHealthWarning | undefined
 
-  const releaseRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
-    // Compared by identity, not by text: closing the dialog leaves its promise pending, so the release can run a
-    // tick later, once a warning with the very same wording has claimed the surface again.
-    if (openRecordingHealthWarning === warning) openRecordingHealthWarning = undefined
-  }
-  const suppressRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
+  const suppressRecordingHealthWarning = (warning: RecordingHealthWarning): void => {
     logUserAction(`Silenced the recording health warning "${warning.message}" for this session`)
     suppressedRecordingHealthMessages.add(warning.message)
-    releaseRecordingHealthDialog(warning)
-    closeDialog()
+    if (openRecordingHealthWarning === warning) openRecordingHealthWarning = undefined
   }
-  const closeRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
-    logUserAction(`Closed the recording health warning "${warning.message}"`)
-    releaseRecordingHealthDialog(warning)
-    closeDialog()
-  }
-  const showRecordingHealthDialog = (message: string, meansDataLoss = false): void => {
+  const showRecordingHealthWarning = (message: string, meansDataLoss = false): void => {
     if (suppressedRecordingHealthMessages.has(message)) return
-    // The warning on screen owns the single dialog surface until it is settled, be it by the actions below or by an
-    // unrelated dialog replacing it. Nothing but the user settles it, so a warning about a recording that may
-    // already be lost takes the surface from a milder one instead of waiting behind it forever.
-    // ponytail: warnings that mean the same for the recording queue behind whichever showed first, so a second
-    // unhealthy stream can wait as long as the user leaves the first dialog up. Queue the surface if that bites.
+    // While a warning is up, only one saying the recording may already be lost is raised over it
+    // ponytail: warnings that mean the same for the recording are dropped rather than queued, so a second
+    // unhealthy stream goes unreported for half a minute. Queue the surface if that bites.
     if (openRecordingHealthWarning && (openRecordingHealthWarning.meansDataLoss || !meansDataLoss)) return
     const warning = { message, meansDataLoss }
     openRecordingHealthWarning = warning
-    const release = (): void => releaseRecordingHealthDialog(warning)
-    showDialog({
+    setTimeout(() => {
+      if (openRecordingHealthWarning === warning) openRecordingHealthWarning = undefined
+    }, recordingWarningDuration)
+    openSnackbar({
       message,
       variant: 'error',
-      // Persistent so it can only be closed via the actions below. The monitor re-checks every 15 seconds, so the
-      // opt-out action is the only way for the user to stop being told about a problem they already know about.
-      persistent: true,
-      actions: [
-        {
-          text: "Don't show again during this session",
-          size: 'small',
-          action: () => suppressRecordingHealthDialog(warning),
-        },
-        { text: 'Close', size: 'small', action: () => closeRecordingHealthDialog(warning) },
-      ],
-    }).then(release, release)
+      banner: true,
+      duration: recordingWarningDuration,
+      // The monitor re-checks every 15 seconds, so this stops it repeating a problem the user already knows about
+      action: { label: "Don't show again", handler: () => suppressRecordingHealthWarning(warning) },
+    })
   }
 
   const streamInformation = ref<ProcessedStreamInfo[]>([])
@@ -1114,18 +1099,24 @@ export const useVideoStore = defineStore('video', () => {
    * Tells the user that a recording stopped without anyone asking
    * @param {string} streamName - Name of the stream being recorded
    * @param {string} streamLabel - Name of the stream as it is shown to the user
-   * @param {boolean} interruptWithDialog - Whether the report is worth a dialog on top of the alert
+   * @param {boolean} warnOnScreen - Whether the report is worth a warning on top of the alert
    */
-  const reportUnexpectedRecordingStop = (streamName: string, streamLabel: string, interruptWithDialog = true): void => {
+  const reportUnexpectedRecordingStop = (streamName: string, streamLabel: string, warnOnScreen = true): void => {
     const footageKept = 'The video recorded until then was kept and is available in the Video Library.'
     alertStore.pushAlert(
       new Alert(AlertLevel.Error, `Recording of stream '${streamLabel}' stopped unexpectedly. ${footageKept}`)
     )
 
-    // One lost link stops every recording it was serving, and a dialog naming a stream would replace the dialog of
-    // the stream before it, so the streams are named in the alerts above and the dialog stays the same for all
-    if (interruptWithDialog) {
-      showDialog({ message: `A recording stopped unexpectedly. ${footageKept}`, variant: 'error' })
+    // One lost link stops every recording it was serving, and a warning per stream would be a wall of them, so
+    // the streams are named in the alerts above and the warning stays the same for all
+    if (warnOnScreen) {
+      const message = `A recording stopped unexpectedly. ${footageKept}`
+      openSnackbar({
+        message,
+        variant: 'error',
+        banner: true,
+        duration: recordingWarningDuration,
+      })
     }
 
     // The recording is over, so nothing should still be waiting for the stream on its behalf, and the monitor
@@ -1386,7 +1377,7 @@ export const useVideoStore = defineStore('video', () => {
       // Check if the stream is still recording before proceeding with checks
       if (activeStreams.value[streamName]?.mediaRecorder !== undefined) return false
       const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
-      showDialog({ message: msg, variant: 'warning' })
+      openSnackbar({ message: msg, variant: 'warning', banner: true, duration: recordingWarningDuration })
       clearInterval(recordingMonitors[streamName])
       delete recordingMonitors[streamName]
       return true
@@ -1405,7 +1396,7 @@ export const useVideoStore = defineStore('video', () => {
         const segmentName = videoSegmentFilename(session.fileName, session.segmentIndex)
         const fileStats = await window.electronAPI?.getFileStats(segmentName, segmentSubFolders)
         if (!fileStats || !fileStats.exists) {
-          showRecordingHealthDialog(
+          showRecordingHealthWarning(
             `Cockpit cannot find the file for the recording of stream '${streamLabel}', which means the recording may be lost. We recommend stopping it and starting a new one.`,
             true
           )
@@ -1413,7 +1404,7 @@ export const useVideoStore = defineStore('video', () => {
         }
         const lastKnownFileSize = unprocessedVideos.value[session.hash].lastKnownFileSize
         if (fileStats.size! <= lastKnownFileSize!) {
-          showRecordingHealthDialog(
+          showRecordingHealthWarning(
             `The video output file for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
           )
           return
@@ -1431,7 +1422,7 @@ export const useVideoStore = defineStore('video', () => {
       const numberOfChunks = await tempVideoStorage.localForage.length()
       const lastKnownNumberOfChunks = unprocessedVideos.value[session.hash].lastKnownNumberOfChunks
       if (numberOfChunks <= lastKnownNumberOfChunks!) {
-        showRecordingHealthDialog(
+        showRecordingHealthWarning(
           `The number of video chunks for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
         )
         return
@@ -1481,9 +1472,11 @@ export const useVideoStore = defineStore('video', () => {
 
     // Check for 5 or more sequential lost chunks
     if (session.sequentialLostChunks >= 5 && session.losingChunksWarningIssued === false) {
-      showDialog({
+      openSnackbar({
         message: sequentialChunksLossMessage,
         variant: 'error',
+        banner: true,
+        duration: recordingWarningDuration,
       })
       session.sequentialLostChunks = 0
       session.losingChunksWarningIssued = true
@@ -1492,9 +1485,11 @@ export const useVideoStore = defineStore('video', () => {
     // Check if more than 5% of total video chunks are lost
     const lostChunkPercentage = (session.totalLostChunks / session.totalChunks) * 100
     if (session.totalChunks > 10 && lostChunkPercentage > 5 && session.losingChunksWarningIssued === false) {
-      showDialog({
+      openSnackbar({
         message: fivePercentChunksLossMessage,
         variant: 'error',
+        banner: true,
+        duration: recordingWarningDuration,
       })
       session.losingChunksWarningIssued = true
     }
