@@ -2,11 +2,10 @@
   <div
     v-show="!interfaceStore.isMainMenuVisible"
     ref="rootEl"
-    class="absolute flex flex-col left-10 rounded-[10px] max-h-[80vh] overflow-hidden z-[200]"
+    class="absolute flex flex-col left-10 rounded-[10px] overflow-hidden z-[200]"
     :style="[
       interfaceStore.globalGlassMenuStyles,
-      { height: 'auto', maxHeight: calculatedHeight, width: '320px', borderBottom: 'none' },
-      pinnedTop !== null ? { top: `${pinnedTop}px` } : {},
+      { height: 'auto', maxHeight: calculatedHeight, width: '320px', borderBottom: 'none', top: `${topOffset}px` },
     ]"
   >
     <div class="flex flex-row w-full elevation-2 z-10">
@@ -56,15 +55,15 @@ defineProps<{
    */
   calculatedHeight: string | number
   /**
-   * Top offset in pixels the shell is pinned to while an expanding panel
-   * inside it should grow downward. Null lets it re-center at rest.
+   * Top offset in pixels the shell is placed at, computed by the planning
+   * view so it stays centered between the top and bottom bars.
    */
-  pinnedTop: number | null
+  topOffset: number
 }>()
 
 const interfaceStore = useAppInterfaceStore()
 
-// The planning view measures the shell to decide how far it has to be pinned up.
+// The planning view measures the shell to center it between the top and bottom bars.
 const rootEl = ref<HTMLElement | null>(null)
 defineExpose({ rootEl })
 
