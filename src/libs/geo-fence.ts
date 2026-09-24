@@ -4,6 +4,12 @@ import type { FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/typ
 
 export const CIRCLE_MAX_RADIUS_M = 1500
 
+/** Bytes one polygon vertex takes in ArduPilot's fence storage. */
+export const FENCE_VERTEX_BYTES = 8
+
+/** ArduPilot keeps a polygon's vertex count in a single byte. */
+export const MAX_POLYGON_VERTICES = 255
+
 /**
  * Minimal shape required by `detectMissionBreaches`. Accepts both Cockpit's
  * `Waypoint` and any caller-supplied object that exposes `[lat, lng]`
@@ -62,6 +68,36 @@ export const emptyGeoFencePlan = (): GeoFencePlan => ({ version: 2, polygons: []
  */
 export const planHasShapes = (plan: GeoFencePlan | null | undefined): plan is GeoFencePlan =>
   !!plan && (plan.polygons.length > 0 || plan.circles.length > 0)
+
+/**
+ * Bytes a plan takes in ArduPilot's fence storage: a format header and an end marker, then a type and a vertex
+ * count per polygon, a type and a radius per circle, a type per breach return point, and 8 bytes per location.
+ * @param { GeoFencePlan } plan Plan to measure.
+ * @returns { number } Storage bytes the plan needs, polygons too small to send left out.
+ */
+export const fenceStorageBytes = (plan: GeoFencePlan): number =>
+  5 +
+  plan.polygons.reduce(
+    (total, polygon) => total + (polygon.vertices.length >= 3 ? 2 + polygon.vertices.length * FENCE_VERTEX_BYTES : 0),
+    0
+  ) +
+  plan.circles.length * (5 + FENCE_VERTEX_BYTES) +
+  (plan.breachReturn ? 1 + FENCE_VERTEX_BYTES : 0)
+
+/**
+ * Whether a plan has a polygon with more vertices than ArduPilot can store for one polygon.
+ * @param { GeoFencePlan } plan Plan to check.
+ * @returns { boolean } True when a polygon has more than `MAX_POLYGON_VERTICES` vertices.
+ */
+export const exceedsPolygonVertexLimit = (plan: GeoFencePlan): boolean =>
+  plan.polygons.some((polygon) => polygon.vertices.length > MAX_POLYGON_VERTICES)
+
+/**
+ * Rough number of fence points a storage size holds, leaving out the few bytes each shape adds.
+ * @param { number } capacityBytes Fence storage, in bytes.
+ * @returns { number } Points that storage holds.
+ */
+export const fencePointCapacity = (capacityBytes: number): number => Math.floor(capacityBytes / FENCE_VERTEX_BYTES)
 
 /**
  * Tests whether a `[lat, lng]` point lies inside the polygon defined by the
