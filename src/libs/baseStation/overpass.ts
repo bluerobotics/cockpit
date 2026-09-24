@@ -1,3 +1,4 @@
+import { type OverpassElement, overpassRegion, runOverpassQuery } from '@/libs/overpass'
 import type { CachedOpenCellIdSite, CachedOverpassTower, CoverageBbox } from '@/types/baseStation'
 
 import { openCellIdOperatorLabel, overpassTechnologies } from './mobileCoverage'
@@ -150,12 +151,8 @@ export const operatorColor = (operator: string | null): string => {
   return OSM_OPERATOR_COLORS[hash % OSM_OPERATOR_COLORS.length]
 }
 
-/* eslint-disable jsdoc/require-jsdoc -- Inline transport DTOs; field meanings follow upstream docs. */
-type OverpassNode = { id?: number; lat?: number; lon?: number; tags?: Record<string, string> }
-
-type OverpassResponse = { elements?: OverpassNode[] }
-
-type ResolvedOverpassNode = { id: number; lat: number; lon: number; tags?: Record<string, string> }
+/* eslint-disable jsdoc/require-jsdoc -- Inline transport DTO; field meanings follow upstream docs. */
+type ResolvedOverpassNode = OverpassElement & { id: number; lat: number; lon: number }
 /* eslint-enable jsdoc/require-jsdoc */
 
 /**
@@ -165,7 +162,7 @@ type ResolvedOverpassNode = { id: number; lat: number; lon: number; tags?: Recor
  * @returns {Promise<OverpassTower[]>} Deduped towers.
  */
 export const fetchOverpassTowers = async (bbox: CoverageBbox, signal: AbortSignal): Promise<OverpassTower[]> => {
-  const region = `(${bbox.south},${bbox.west},${bbox.north},${bbox.east})`
+  const region = overpassRegion(bbox)
   const query =
     `[out:json][timeout:25];` +
     // Limit the overlay to mobile-phone infrastructure so the map reflects cellular coverage
@@ -173,16 +170,9 @@ export const fetchOverpassTowers = async (bbox: CoverageBbox, signal: AbortSigna
     `(node["communication:mobile_phone"]${region};` +
     `node["technology:mobile_phone"]${region};);` +
     `out body;`
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: query,
-    signal,
-  })
-  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`)
-  const data = (await res.json()) as OverpassResponse
+  const elements = await runOverpassQuery(query, signal)
   const seenIds = new Set<number>()
-  return (data.elements ?? [])
+  return elements
     .filter(
       (e): e is ResolvedOverpassNode =>
         typeof e.id === 'number' && typeof e.lat === 'number' && typeof e.lon === 'number'
