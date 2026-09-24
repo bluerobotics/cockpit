@@ -20,6 +20,25 @@ export type SizeRect2D = {
   height: number
 }
 
+export type GeoBbox = {
+  /**
+   * Latitude of the southern edge, in degrees
+   */
+  south: number
+  /**
+   * Longitude of the western edge, in degrees
+   */
+  west: number
+  /**
+   * Latitude of the northern edge, in degrees
+   */
+  north: number
+  /**
+   * Longitude of the eastern edge, in degrees
+   */
+  east: number
+}
+
 /* eslint-disable jsdoc/require-jsdoc */
 export interface DialogActions {
   text: string
