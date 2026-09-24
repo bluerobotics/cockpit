@@ -282,7 +282,12 @@ const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
 
-const mapTileProviderOptions: MapTileProviderPreference[] = ['Use last selected', 'OpenStreetMap', 'Esri World Imagery']
+const mapTileProviderOptions: MapTileProviderPreference[] = [
+  'Use last selected',
+  'OpenStreetMap',
+  'Esri World Imagery',
+  'OpenTopoMap',
+]
 
 // Create local reactive copies of the map settings
 const defaultMapCenter = ref<WaypointCoordinates>([...missionStore.defaultMapCenter])
