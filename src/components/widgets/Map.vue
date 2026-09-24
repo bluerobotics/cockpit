@@ -937,19 +937,21 @@ onMounted(async () => {
 
   mapReady.value = true
 
+  // Apply the current showButtons state to the leaflet controls
+  // Registered before the data layers below: rendering a stored GeoTIFF can take seconds, and the map
+  // must not be left without its own zoom, layer and scale controls while that runs.
+  if (showButtons.value && map.value) {
+    map.value.addControl(zoomControl)
+    map.value.addControl(layerControl)
+    createScaleControl()
+  }
+
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
 
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   if (map.value)
     initCustomTileProviders(map.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
-
-  // Apply the current showButtons state to the leaflet controls
-  if (showButtons.value && map.value) {
-    map.value.addControl(zoomControl)
-    map.value.addControl(layerControl)
-    createScaleControl()
-  }
 
   if (missionStore.followVehicleOnMap === true) {
     targetFollower.follow(WhoToFollow.VEHICLE)
