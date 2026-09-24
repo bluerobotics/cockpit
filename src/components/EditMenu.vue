@@ -1145,7 +1145,7 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
   let clientY: number
 
   // Gets the coordinates the user released the widget at
-  if (event instanceof TouchEvent) {
+  if ('changedTouches' in event) {
     const touch = event.changedTouches[0]
     clientX = touch.clientX
     clientY = touch.clientY
