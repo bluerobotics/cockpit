@@ -538,8 +538,9 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   const uploadToVehicle = async (loadingCallback?: MissionLoadingCallback): Promise<void> => {
     syncInProgress.value = true
     try {
+      const capacityBytes = await mainVehicleStore.fenceCapacityBytes()
       const plan = exportPlan()
-      await mainVehicleStore.uploadFence(plan, loadingCallback ?? (async () => undefined))
+      await mainVehicleStore.uploadFence(plan, loadingCallback ?? (async () => undefined), capacityBytes)
       cacheVehicleFence(plan)
       dirty.value = false
 
