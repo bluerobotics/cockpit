@@ -76,10 +76,13 @@
                 :class="interfaceStore.isOnPhoneScreen ? 'mx-0' : 'mx-1'"
               >
                 <v-checkbox
-                  v-model="missionStore.slideEventsCategoriesRequired[category]"
+                  :model-value="isCategoryConfirmationRequired(category)"
                   :disabled="!missionStore.slideEventsEnabled"
                   :label="category"
                   hide-details
+                  @update:model-value="
+                    (required) => (missionStore.slideEventsCategoriesRequired[category] = !!required)
+                  "
                 ></v-checkbox>
               </div>
             </div>
@@ -267,7 +270,7 @@
 import { ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
-import { EventCategory } from '@/libs/slide-to-confirm'
+import { EventCategory, isCategoryConfirmationRequired } from '@/libs/slide-to-confirm'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { DEFAULT_MAX_POSITION_HISTORY_SIZE, MIN_MAX_POSITION_HISTORY_SIZE, useMissionStore } from '@/stores/mission'
