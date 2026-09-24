@@ -32,7 +32,7 @@
             :class="interfaceStore.isOnSmallScreen ? 'h-[80vh] w-[200px] pr-1 ml-0' : 'h-[50vh] min-w-[220px] '"
           >
             <div id="leftColumn" class="flex flex-col justify-start align-start mt-[2vh] overflow-auto">
-              <ExpansiblePanel compact mark-expanded darken-content hover-effect>
+              <ExpansiblePanel compact follow-window-width mark-expanded darken-content hover-effect>
                 <template #title>Overlay Options</template>
                 <template #content>
                   <div>
@@ -191,7 +191,7 @@
                   </div>
                 </template>
               </ExpansiblePanel>
-              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
                 <template #title>Vehicle Variables</template>
                 <template #content>
                   <VueDraggable
@@ -220,7 +220,7 @@
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
-              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
                 <template #title>Mission Variables</template>
                 <template #content>
                   <VueDraggable
@@ -249,7 +249,7 @@
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
-              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
                 <template #title>Data Lake Variables</template>
                 <template #content>
                   <v-text-field
@@ -294,7 +294,7 @@
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
-              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
                 <template #title>Custom Messages</template>
                 <template #content>
                   <VueDraggable
@@ -366,7 +366,7 @@
                   </VueDraggable>
                 </template>
               </ExpansiblePanel>
-              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
                 <template #title>Settings</template>
                 <template #content>
                   <p class="text-[12px] mt-2 ml-1">Telemetry frequency - 1 to 100 Hz (default 1 Hz)</p>
@@ -394,7 +394,7 @@
                   </div>
                 </template>
               </ExpansiblePanel>
-              <ExpansiblePanel compact mark-expanded no-top-divider darken-content hover-effect>
+              <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
                 <template #title>Stored Telemetry Data</template>
                 <template #content>
                   <div class="flex flex-col gap-y-2 pt-2 pb-1 px-1">
