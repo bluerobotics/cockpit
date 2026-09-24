@@ -2,16 +2,14 @@
 
 import { type Ref, ref, watch } from 'vue'
 
-import { getDataLakeVariableData, getDataLakeVariableLastUpdateTimestamp } from '@/libs/actions/data-lake'
 import * as Connection from '@/libs/connection/connection'
 import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
 import { Session } from '@/libs/webrtc/session'
 import { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
-import { streamStatVariableId } from '@/libs/webrtc/stats'
+import { trackVideoArrival } from '@/libs/webrtc/stats'
 
 const secondsWithoutVideoToSessionLoss = 10
-const maxVideoStatAge = 2000
 
 /**
  *
@@ -276,35 +274,16 @@ export class WebRTCManager {
   private startVideoWatchdog(): void {
     this.stopVideoWatchdog()
 
-    let lastBytesReceived: number | undefined
-    let lastChangeTime = performance.now()
-    let missingStatReported = false
+    let secondsWithoutVideo: (() => number | undefined) | undefined
 
     this.videoWatchdog = window.setInterval(() => {
       if (this.streamName === undefined) return
 
-      const statId = streamStatVariableId(this.streamName, 'bytesReceived')
-      const bytesReceived = getDataLakeVariableData(statId)
-      if (typeof bytesReceived !== 'number') {
-        if (missingStatReported) return
-        missingStatReported = true
-        console.warn(`[WebRTC] Without '${statId}', a stream that stops arriving will not renew its session.`)
-        return
-      }
-
-      // A stat nobody is publishing any more says nothing about the media, and this timer starves alongside the
-      // stats poll it reads whenever the main thread does
-      const lastStatUpdate = getDataLakeVariableLastUpdateTimestamp(statId)
-      if (lastStatUpdate === undefined || performance.now() - lastStatUpdate > maxVideoStatAge) return
-
-      // Any difference counts as traffic, a drop included, since a renewed session restarts the count from zero
-      if (bytesReceived !== lastBytesReceived) {
-        lastBytesReceived = bytesReceived
-        lastChangeTime = performance.now()
-        return
-      }
-
-      if (performance.now() - lastChangeTime < secondsWithoutVideoToSessionLoss * 1000) return
+      secondsWithoutVideo ??= trackVideoArrival(
+        this.streamName,
+        'a stream that stops arriving will not renew its session'
+      )
+      if ((secondsWithoutVideo() ?? 0) < secondsWithoutVideoToSessionLoss) return
 
       this.onSessionClosed(`No video received for ${secondsWithoutVideoToSessionLoss} seconds`)
     }, 1000)
