@@ -1140,7 +1140,8 @@ export const useVideoStore = defineStore('video', () => {
       showDialog({ message: 'Media stream not defined.', variant: 'error' })
       return
     }
-    if (!streamData.mediaStream.active) {
+    // The media stream is active from the moment its track is added, before the session has connected
+    if (!isStreamReadyToRecord(streamName)) {
       showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
       return
     }
