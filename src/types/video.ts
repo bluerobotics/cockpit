@@ -362,6 +362,52 @@ export interface LiveStreamProcess {
 }
 
 /**
+ * State of a recording, shared by the handlers of the recorder that writes it
+ */
+export interface RecordingSession {
+  /**
+   * Unique identifier of the recording, which its chunks are named after
+   */
+  hash: string
+  /**
+   * Name of the file the recording is written to
+   */
+  fileName: string
+  /**
+   * Name of the recorded stream as it is shown to the user
+   */
+  streamLabel: string
+  /**
+   * When the recording started
+   */
+  timeRecordingStart: Date
+  /**
+   * Number of the last chunk the recording produced, counting from zero
+   */
+  chunksCount: number
+  /**
+   * How many chunks the recording produced
+   */
+  totalChunks: number
+  /**
+   * How many of the recording's chunks could not be saved
+   */
+  totalLostChunks: number
+  /**
+   * How many chunks in a row could not be saved
+   */
+  sequentialLostChunks: number
+  /**
+   * Whether the user was already warned that the recording is losing chunks
+   */
+  losingChunksWarningIssued: boolean
+  /**
+   * Whether the user was already warned about an unexpected error while assembling the video
+   */
+  unexpectedProcessorErrorWarned: boolean
+}
+
+/**
  * What one segment of a recording holds, as FFmpeg reports it
  */
 export interface SegmentStreamInfo {
