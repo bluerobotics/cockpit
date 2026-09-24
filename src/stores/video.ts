@@ -4,7 +4,7 @@ import { differenceInSeconds } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
-import { computed, markRaw, ref, watch } from 'vue'
+import { computed, markRaw, reactive, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
 
 import { Go2RTCManager } from '@/composables/go2rtc'
@@ -28,10 +28,12 @@ import {
 } from '@/libs/live-video-processor'
 import { datalogger } from '@/libs/sensors-logging'
 import { StreamActivationBackoff } from '@/libs/stream-activation-backoff'
-import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import { isElectron, isEqual, messageFromError, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import { createGapFillerStream } from '@/libs/video-gap-filler'
 import { telemetryOverlayWindowCandidates } from '@/libs/video-telemetry'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { trackVideoArrival } from '@/libs/webrtc/stats'
 import { readableVideoCodecName } from '@/libs/webrtc/video-codec-support'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -40,18 +42,44 @@ import { SubMenuComponentName } from '@/types/general'
 import {
   type DownloadProgressCallback,
   type Go2RTCStreamInfo,
+  type RecordingSession,
   type StreamData,
   type StreamPeerConnectionInfo,
   type UnprocessedVideoInfo,
+  type VideoRecordingFinalizationResult,
   type VideoStreamProtocol,
   FilesToZip,
   VideoExtensionContainer,
   VideoStreamCorrespondency,
 } from '@/types/video'
-import { videoChunkName, videoFilename, videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
+import {
+  videoChunkName,
+  videoFilename,
+  videoSegmentFilename,
+  videoSegmentSubFolders,
+  videoSubtitlesFilename,
+  videoThumbnailFilename,
+} from '@/utils/video'
 
 import { useAlertStore } from './alert'
-const { openSnackbar } = useSnackbar()
+const { openSnackbar, closeSnackbar } = useSnackbar()
+
+// How long a recording cut by a video outage waits for its stream before the stop is reported as final
+const secondsToWaitForStreamToResumeRecording = 60
+// How long a recording the outage outlasted waits for the stream to start a new one on it
+const minutesToWaitForStreamToRestartRecording = 10
+// Each try at a session the camera offers in a recordable form costs the pilot a reconnect of the live video
+const maxUnrecordableSessionRenewals = 10
+const secondsToPlayUnrecordableSessionBeforeRenewing = 3
+// Outages a recording is carried across before a link that keeps flapping is taken as beyond saving
+const maxOutagesInARecording = 20
+// The only codec a recording's segments are muxed into MP4 from without re-encoding them
+const recordingMimeType = 'video/x-matroska;codecs=avc1'
+// Shorter than the session's own video watchdog, so the recording covers the outage from the moment it starts
+const secondsWithoutVideoToStallRecording = 3
+// A pilot on a dive has both hands on the controller and the screen out of reach, so a recording warning sees
+// itself out, and is not raised again while the one before it is still up
+const recordingWarningDuration = 30 * 1000
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
@@ -92,6 +120,13 @@ export const useVideoStore = defineStore('video', () => {
   // records which of those ids the user asked for, letting a client the rule does not apply to disregard the rest.
   const userIgnoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-ignored-stream-ids', [])
   const recordingMonitors: { [key: string]: ReturnType<typeof setInterval> | undefined } = {}
+  // Streams whose recording a video outage cut, each holding the teardown of its wait for the stream to come back
+  const pendingRecordingResumes: { [key: string]: () => void } = {}
+  // Streams whose recording an outage outlasted, each holding the teardown of its wait to start a new one
+  const pendingRecordingRestarts: { [key: string]: () => void } = {}
+  // Streams being recorded whose video stopped arriving without their stream ending, and the teardown of what follows it
+  const streamsWithStalledVideo = reactive<{ [key: string]: boolean }>({})
+  const videoFlowWatchers: { [key: string]: () => void } = {}
   const broadcastCameraActionsOverMavlink = useBlueOsStorage('cockpit-broadcast-camera-actions-over-mavlink', false)
   // Streams whose recording start we mirrored over MAVLink. The broadcast fires only on the 0->1 and 1->0
   // transitions, so recording several streams at once does not repeat the same commands.
@@ -108,51 +143,33 @@ export const useVideoStore = defineStore('video', () => {
      */
     meansDataLoss: boolean
   }
-  // Shared by the monitors of all recording streams, since they all warn through the same single dialog surface.
+  // Shared by the monitors of all recording streams, since they all warn through the same single surface.
   let openRecordingHealthWarning: RecordingHealthWarning | undefined
 
-  const releaseRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
-    // Compared by identity, not by text: closing the dialog leaves its promise pending, so the release can run a
-    // tick later, once a warning with the very same wording has claimed the surface again.
-    if (openRecordingHealthWarning === warning) openRecordingHealthWarning = undefined
-  }
-  const suppressRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
+  const suppressRecordingHealthWarning = (warning: RecordingHealthWarning): void => {
     logUserAction(`Silenced the recording health warning "${warning.message}" for this session`)
     suppressedRecordingHealthMessages.add(warning.message)
-    releaseRecordingHealthDialog(warning)
-    closeDialog()
+    if (openRecordingHealthWarning === warning) openRecordingHealthWarning = undefined
   }
-  const closeRecordingHealthDialog = (warning: RecordingHealthWarning): void => {
-    logUserAction(`Closed the recording health warning "${warning.message}"`)
-    releaseRecordingHealthDialog(warning)
-    closeDialog()
-  }
-  const showRecordingHealthDialog = (message: string, meansDataLoss = false): void => {
+  const showRecordingHealthWarning = (message: string, meansDataLoss = false): void => {
     if (suppressedRecordingHealthMessages.has(message)) return
-    // The warning on screen owns the single dialog surface until it is settled, be it by the actions below or by an
-    // unrelated dialog replacing it. Nothing but the user settles it, so a warning about a recording that may
-    // already be lost takes the surface from a milder one instead of waiting behind it forever.
-    // ponytail: warnings that mean the same for the recording queue behind whichever showed first, so a second
-    // unhealthy stream can wait as long as the user leaves the first dialog up. Queue the surface if that bites.
+    // While a warning is up, only one saying the recording may already be lost is raised over it
+    // ponytail: warnings that mean the same for the recording are dropped rather than queued, so a second
+    // unhealthy stream goes unreported for half a minute. Queue the surface if that bites.
     if (openRecordingHealthWarning && (openRecordingHealthWarning.meansDataLoss || !meansDataLoss)) return
     const warning = { message, meansDataLoss }
     openRecordingHealthWarning = warning
-    const release = (): void => releaseRecordingHealthDialog(warning)
-    showDialog({
+    setTimeout(() => {
+      if (openRecordingHealthWarning === warning) openRecordingHealthWarning = undefined
+    }, recordingWarningDuration)
+    openSnackbar({
       message,
       variant: 'error',
-      // Persistent so it can only be closed via the actions below. The monitor re-checks every 15 seconds, so the
-      // opt-out action is the only way for the user to stop being told about a problem they already know about.
-      persistent: true,
-      actions: [
-        {
-          text: "Don't show again during this session",
-          size: 'small',
-          action: () => suppressRecordingHealthDialog(warning),
-        },
-        { text: 'Close', size: 'small', action: () => closeRecordingHealthDialog(warning) },
-      ],
-    }).then(release, release)
+      banner: true,
+      duration: recordingWarningDuration,
+      // The monitor re-checks every 15 seconds, so this stops it repeating a problem the user already knows about
+      action: { label: "Don't show again", handler: () => suppressRecordingHealthWarning(warning) },
+    })
   }
 
   const streamInformation = ref<ProcessedStreamInfo[]>([])
@@ -425,6 +442,10 @@ export const useVideoStore = defineStore('video', () => {
   watch([allowedIceIps, allowedIceProtocols], () => {
     Object.keys(activeStreams.value).forEach((streamName) => {
       if (getStreamProtocol(streamName) !== 'webrtc') return
+      // The entry is dropped below without going through teardown, so a wait would outlive the stream it waits on
+      // and resume onto its replacement
+      cancelRecordingResume(streamName)
+      activeStreams.value[streamName]?.webRtcManager?.close('Allowed ICE IPs or protocols changed')
       activeStreams.value[streamName] = undefined
     })
   })
@@ -481,14 +502,22 @@ export const useVideoStore = defineStore('video', () => {
       // If the stream configuration has actually changed, we need to recreate the manager
       const oldStreamData = activeStreams.value[streamName]
       if (oldStreamData && oldStreamData.webRtcManager) {
-        if (isRecording(streamName)) {
+        // A wait for the old stream counts as recording here, or it would resume onto the replacement, under the
+        // settings the user has just changed and without the warning this branch gives a recording user
+        if (isRecording(streamName) || isWaitingToResumeRecording(streamName)) {
           showDialog({ message: `Stream '${streamName}' has changed. Stopping recording...`, variant: 'error' })
           stopRecording(streamName)
         }
 
         console.log(`Stream '${streamName}' has changed. Stopping its WebRTC session...`)
-        oldStreamData.webRtcManager.endAllSessions()
+        // Closed rather than merely ended, as the manager is replaced on the next lines and an open one would keep
+        // its signaller, its streams poll and its own reconnections running with nothing rendering them
+        oldStreamData.webRtcManager.close(`Stream '${streamName}' has changed`)
       }
+
+      // The stop above may have released a stream no consumer wanted, taking its entry with it. The next consumer
+      // to register builds it again with the new configuration.
+      if (activeStreams.value[streamName] === undefined) return
 
       if (isEqual(updatedStream, activeStreams.value[streamName]!.stream)) return
 
@@ -570,6 +599,7 @@ export const useVideoStore = defineStore('video', () => {
             timeRecordingStart: undefined,
           }
           rtspActivationBackoff.forget(streamName)
+          watchVideoFlowOfStream(streamName)
           console.debug(`Activated RTSP stream '${streamName}' via go2rtc.`)
         } catch (error) {
           console.error(`Failed to activate RTSP stream '${streamName}':`, error)
@@ -625,6 +655,7 @@ export const useVideoStore = defineStore('video', () => {
       mediaRecorder: undefined,
       timeRecordingStart: undefined,
     }
+    watchVideoFlowOfStream(streamName)
     console.debug(`Activated stream '${streamName}'.`)
   }
 
@@ -637,6 +668,10 @@ export const useVideoStore = defineStore('video', () => {
   const teardownStreamResources = (externalId: string, reason: string): void => {
     const externalStreamData = activeStreams.value[externalId]
     if (!externalStreamData) return
+
+    // The stream is going away, so nothing should be left waiting for it to come back or following its video
+    cancelRecordingResume(externalId)
+    stopWatchingVideoFlowOfStream(externalId)
 
     // A stream left in the map after a failed teardown is unrecoverable: its manager is already
     // half-closed, and registerStreamConsumer skips activation for a key that exists.
@@ -657,7 +692,6 @@ export const useVideoStore = defineStore('video', () => {
       // Close WebRTC connection
       if (externalStreamData.webRtcManager) {
         try {
-          externalStreamData.webRtcManager.session?.peerConnection.close()
           externalStreamData.webRtcManager.close(reason)
           console.log(`Stopped WebRTC manager for external stream '${externalId}'`)
         } catch (error) {
@@ -693,6 +727,10 @@ export const useVideoStore = defineStore('video', () => {
     if (consumers && consumers.size > 0) return
 
     streamConsumers.delete(externalId)
+
+    // A recording waiting out a video outage still needs the stream, and tearing it down here would keep it from
+    // ever coming back
+    if (isWaitingToResumeRecording(externalId)) return
 
     // Never tear down a stream while a recorder is attached, even if no widget references it: mediaRecorder stays
     // set through recording and the async stop() finalizer (telemetry/processing), and onstop clears it when done.
@@ -840,6 +878,39 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Whether the stream has a recording waiting out a video outage, recording a filler in its place meanwhile
+   * @param {string} streamName - Name of the stream
+   * @returns {boolean} True while a recording of the stream waits for it to come back
+   */
+  const isWaitingToResumeRecording = (streamName: string): boolean => {
+    return pendingRecordingResumes[streamName] !== undefined
+  }
+
+  /**
+   * Whether the stream is back for a recording to start on it, which an active media stream alone does not mean, as it
+   * exists from the moment a session adds its track, before that session has connected or may be replaced
+   * @param {string} streamName - Name of the stream
+   * @returns {boolean} True when the stream is listed, its media stream is active and delivering, its peer is
+   * connected and its session can be recorded
+   */
+  const isStreamReadyToRecord = (streamName: string): boolean => {
+    const streamData = getStreamData(streamName)
+    const isListed = namesAvailableStreams.value.includes(streamName)
+    const isLive = streamData?.mediaStream?.active === true && streamData.connected
+    const isDelivering = streamsWithStalledVideo[streamName] !== true
+    return isListed && isLive && isDelivering && isSessionRecordable(streamName)
+  }
+
+  /**
+   * Whether a recorder on the stream's current session receives its video, which only a WebRTC session can deny
+   * @param {string} streamName - Name of the stream
+   * @returns {boolean} False when the camera offered the current session in a form that cannot be recorded
+   */
+  const isSessionRecordable = (streamName: string): boolean => {
+    return getStreamData(streamName)?.webRtcManager?.recordable.value !== false
+  }
+
+  /**
    * Whether or not the stream's last recording has stopped but is still being written and processed
    * @param {string} streamName - Name of the stream
    * @returns {boolean}
@@ -905,10 +976,350 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Follows whether a stream's video is arriving for as long as the stream is up, handing a recording of it
+   * over to a filler when it stops, as a camera can stall without ending its stream or muting its track
+   * @param {string} streamName - Name of the stream to follow
+   */
+  const watchVideoFlowOfStream = (streamName: string): void => {
+    videoFlowWatchers[streamName]?.()
+
+    const secondsWithoutVideo = trackVideoArrival(streamName, 'a recording will not cover a stream that stops arriving')
+
+    const readVideoFlow = (isStalled: boolean): void => {
+      if (isStalled === streamsWithStalledVideo[streamName]) return
+      console.debug(`Video of stream '${streamName}' ${isStalled ? 'stopped arriving' : 'is arriving'}.`)
+      streamsWithStalledVideo[streamName] = isStalled
+    }
+
+    const poll = window.setInterval(() => {
+      const seconds = secondsWithoutVideo()
+      if (seconds !== undefined) readVideoFlow(seconds >= secondsWithoutVideoToStallRecording)
+    }, 1000)
+
+    const stopOnStall = watch(
+      () => streamsWithStalledVideo[streamName] === true,
+      (stalled) => {
+        // Stopping the recorder is what starts the filler, and during an outage the recorder already is one
+        if (stalled && !isWaitingToResumeRecording(streamName)) stopRecorderOfStream(streamName)
+      }
+    )
+
+    videoFlowWatchers[streamName] = () => {
+      window.clearInterval(poll)
+      stopOnStall()
+      delete streamsWithStalledVideo[streamName]
+    }
+  }
+
+  /**
+   * Stops following a stream's video, once the stream itself is gone
+   * @param {string} streamName - Name of the stream
+   */
+  const stopWatchingVideoFlowOfStream = (streamName: string): void => {
+    videoFlowWatchers[streamName]?.()
+    delete videoFlowWatchers[streamName]
+  }
+
+  /**
+   * Whether a stream's picture is frozen, its video having stopped arriving while the stream itself is still up
+   * @param {string} streamName - Name of the stream
+   * @returns {boolean} True once the video has been missing for a few seconds, until it comes back
+   */
+  const isStreamVideoStalled = (streamName: string): boolean => {
+    return streamsWithStalledVideo[streamName] === true
+  }
+
+  /**
+   * Stops a recording's wait for its video stream to come back, or to start a new one on it, if one was waiting
+   * @param {string} streamName - Name of the stream
+   */
+  const cancelRecordingResume = (streamName: string): void => {
+    pendingRecordingResumes[streamName]?.()
+    delete pendingRecordingResumes[streamName]
+    pendingRecordingRestarts[streamName]?.()
+    delete pendingRecordingRestarts[streamName]
+  }
+
+  /**
+   * What to tell the user about a recording that was just assembled, which is worth a word of its own when
+   * video outages cut it into parts that had to be joined
+   * @param {number} segmentsJoined - How many parts the recording was written in
+   * @param {boolean} reencoded - Whether joining them meant re-encoding the recording
+   * @returns {string} The message to show
+   */
+  const joinedRecordingMessage = (segmentsJoined: number, reencoded: boolean): string => {
+    if (segmentsJoined <= 1) return 'Video processing completed.'
+    const outages = `${segmentsJoined - 1} video ${segmentsJoined > 2 ? 'outages' : 'outage'}`
+    if (reencoded) return `Video processing completed. The recording was rebuilt around ${outages}.`
+    return `Video processing completed. The recording was joined across ${outages}.`
+  }
+
+  /**
+   * Warns the user about what joining a recording's parts could not keep, be it its audio or a part that could
+   * not be read
+   * @param {string} recordingLabel - Name of the recording, or of the stream it recorded, as shown to the user
+   * @param {VideoRecordingFinalizationResult | undefined} joined - How the recording was assembled
+   */
+  const warnAboutLostRecordingParts = (
+    recordingLabel: string,
+    joined: VideoRecordingFinalizationResult | undefined
+  ): void => {
+    if (joined?.audioDropped === true) {
+      const audioLost = `The audio of '${recordingLabel}' could not be kept while joining the recording.`
+      openSnackbar({ message: audioLost, variant: 'warning' })
+    }
+
+    const lost = joined?.segmentsLost ?? 0
+    if (lost === 0) return
+    const parts = `${lost} ${lost > 1 ? 'parts' : 'part'}`
+    const partsLost =
+      `${parts} of the recording of '${recordingLabel}' could not be read, and are missing from it. ` +
+      `They were kept in the '${videoSegmentSubFolders(1).join('/')}' folder of Cockpit.`
+    alertStore.pushAlert(new Alert(AlertLevel.Warning, partsLost))
+    openSnackbar({ message: partsLost, variant: 'warning' })
+  }
+
+  /**
+   * Tells the user how a recording was put together, which is worth more than the usual word when video outages
+   * cut it into parts that had to be joined
+   * @param {string} streamLabel - Name of the recorded stream, as it is shown to the user
+   * @param {VideoRecordingFinalizationResult | undefined} joined - How the recording was assembled
+   */
+  const reportJoinedRecording = (streamLabel: string, joined: VideoRecordingFinalizationResult | undefined): void => {
+    openSnackbar({
+      message: joinedRecordingMessage(joined?.segmentsJoined ?? 1, joined?.reencoded === true),
+      duration: 2000,
+      variant: 'success',
+      closeButton: false,
+    })
+    warnAboutLostRecordingParts(streamLabel, joined)
+  }
+
+  /**
+   * Tells the user that a recording stopped without anyone asking
+   * @param {string} streamName - Name of the stream being recorded
+   * @param {string} streamLabel - Name of the stream as it is shown to the user
+   * @param {boolean} warnOnScreen - Whether the report is worth a warning on top of the alert
+   */
+  const reportUnexpectedRecordingStop = (streamName: string, streamLabel: string, warnOnScreen = true): void => {
+    const footageKept = 'The video recorded until then was kept and is available in the Video Library.'
+    alertStore.pushAlert(
+      new Alert(AlertLevel.Error, `Recording of stream '${streamLabel}' stopped unexpectedly. ${footageKept}`)
+    )
+
+    // One lost link stops every recording it was serving, and a warning per stream would be a wall of them, so
+    // the streams are named in the alerts above and the warning stays the same for all
+    if (warnOnScreen) {
+      const message = `A recording stopped unexpectedly. ${footageKept}`
+      openSnackbar({
+        message,
+        variant: 'error',
+        banner: true,
+        duration: recordingWarningDuration,
+      })
+    }
+
+    // The recording is over, so nothing should still be waiting for the stream on its behalf, and the monitor
+    // would otherwise nag about a file that stopped growing
+    cancelRecordingResume(streamName)
+    clearInterval(recordingMonitors[streamName])
+    delete recordingMonitors[streamName]
+  }
+
+  /**
+   * Stops the recorder writing a stream's recording, if one is still running
+   * @param {string} streamName - Name of the stream
+   */
+  const stopRecorderOfStream = (streamName: string): void => {
+    const recorder = activeStreams.value[streamName]?.mediaRecorder
+    if (recorder === undefined || recorder.state === 'inactive') return
+    recorder.stop()
+  }
+
+  /**
+   * Starts a new recording of a stream once it is back, for a recording its outage outlasted, so a pilot who was
+   * recording does not come back from a long outage to a stream nobody is recording
+   * @param {string} streamName - Name of the stream whose recording ended
+   * @param {string} streamLabel - Name of the stream as it is shown to the user
+   */
+  const restartRecordingWhenStreamReturns = (streamName: string, streamLabel: string): void => {
+    const stopWatching = watch(
+      () => isStreamReadyToRecord(streamName),
+      (isReady) => {
+        if (!isReady) return
+        startRecording(streamName)
+          .then(() => {
+            if (!isRecording(streamName)) return
+            const restarted = `Video stream '${streamLabel}' is back, so Cockpit started a new recording of it.`
+            openSnackbar({ message: restarted, duration: 4000, variant: 'success' })
+          })
+          .catch((error) => {
+            const failed = `Could not start a new recording of '${streamLabel}': ${messageFromError(error)}`
+            openSnackbar({ message: failed, variant: 'error' })
+          })
+      }
+    )
+
+    // Bounded, as nothing on screen shows that a new recording is still pending
+    const giveUp = setTimeout(() => cancelRecordingResume(streamName), minutesToWaitForStreamToRestartRecording * 60000)
+
+    pendingRecordingRestarts[streamName] = () => {
+      stopWatching()
+      clearTimeout(giveUp)
+    }
+  }
+
+  /**
+   * Waits for a stream that dropped mid-recording to come back in a form that can be recorded, ending the
+   * recording it belongs to once it is clear that it will not
+   * @param {string} streamName - Name of the stream whose recording is waiting for it
+   * @param {RecordingSession} session - The recording that lost its stream
+   */
+  const waitForStreamToResumeRecording = (streamName: string, session: RecordingSession): void => {
+    // The deadline belongs to the outage rather than to whichever recorder is filling it, so a wait already
+    // under way is left alone instead of being given a fresh minute
+    if (pendingRecordingResumes[streamName] !== undefined) return
+
+    let cameOnlyUnrecordable = false
+    let renewals = 0
+    let renewal: ReturnType<typeof setTimeout> | undefined
+
+    const endRecordingWithoutTheStream = (): void => {
+      const waited = `${secondsToWaitForStreamToResumeRecording} seconds`
+      const restartWindow = `${minutesToWaitForStreamToRestartRecording} minutes`
+      // Says what the generic report below cannot: the recording that ended is the one the drop message promised
+      const stoppedWaiting = cameOnlyUnrecordable
+        ? `Video stream '${session.streamLabel}' came back, but the camera did not offer it in a form Cockpit can ` +
+          'record, so Cockpit ended the recording.'
+        : `Video stream '${session.streamLabel}' did not come back within ${waited}, so Cockpit ended the recording. ` +
+          `A new one starts if the stream returns within ${restartWindow}.`
+      alertStore.pushAlert(new Alert(AlertLevel.Warning, stoppedWaiting))
+
+      // Nothing on screen, as the outage was already announced when it started
+      reportUnexpectedRecordingStop(streamName, session.streamLabel, false)
+
+      // Clearing the start time is what makes the filler's stop final, the same way the Stop button does it
+      const streamData = activeStreams.value[streamName]
+      if (streamData) streamData.timeRecordingStart = undefined
+      stopRecorderOfStream(streamName)
+
+      restartRecordingWhenStreamReturns(streamName, session.streamLabel)
+    }
+
+    const stopWaiting = watch(
+      () => isStreamReadyToRecord(streamName),
+      (isReady) => {
+        // Stopping the filler is what hands the recording over to the stream that came back, as every
+        // recorder that stops on its own is offered the stream of the moment
+        if (isReady) stopRecorderOfStream(streamName)
+      }
+    )
+
+    // Renews only a session that is already playing, and only after a while, so the pilot has a picture between tries
+    const stopRenewing = watch(
+      () => !isSessionRecordable(streamName) && getStreamData(streamName)?.connected === true,
+      (playsUnrecordable) => {
+        clearTimeout(renewal)
+        if (!playsUnrecordable) return
+        cameOnlyUnrecordable = true
+        renewal = setTimeout(() => {
+          if (renewals >= maxUnrecordableSessionRenewals) return endRecordingWithoutTheStream()
+          renewals++
+          getStreamData(streamName)?.webRtcManager?.renewUnrecordableSession()
+        }, secondsToPlayUnrecordableSessionBeforeRenewing * 1000)
+      },
+      { immediate: true }
+    )
+
+    const giveUp = setTimeout(endRecordingWithoutTheStream, secondsToWaitForStreamToResumeRecording * 1000)
+
+    pendingRecordingResumes[streamName] = () => {
+      stopWaiting()
+      stopRenewing()
+      clearTimeout(renewal)
+      clearTimeout(giveUp)
+    }
+  }
+
+  /**
+   * Keeps a recording whose recorder stopped on its own going, by handing it to the stream that is there
+   * now or, while there is none, to a filler recorded in its place, as a MediaRecorder is bound to the
+   * MediaStream it was built with and a renewed session delivers a new one
+   * @param {string} streamName - Name of the stream whose recorder stopped
+   * @param {RecordingSession} session - The recording that lost its recorder
+   * @returns {boolean} Whether the recording carries on, false meaning it has to be wrapped up
+   */
+  const continueRecordingAfterStreamDrop = (streamName: string, session: RecordingSession): boolean => {
+    const mediaStream = activeStreams.value[streamName]?.mediaStream
+    // A recorder can also stop while its stream is still live, which no later write to the stream would report,
+    // so the recording is offered the stream of the moment before any wait is armed for it
+    const streamIsBack = mediaStream !== undefined && isStreamReadyToRecord(streamName)
+    const wasFillingGap = session.gapFiller !== undefined
+    const outageStarts = !streamIsBack && !wasFillingGap
+
+    // A link that keeps flapping would otherwise be carried forever, at a segment to mux and join per outage,
+    // into a take that is mostly the notice saying the video is gone
+    if (outageStarts && session.outagesSurvived >= maxOutagesInARecording) {
+      const tooMany =
+        `Video stream '${session.streamLabel}' dropped ${maxOutagesInARecording} times during one recording, so ` +
+        'Cockpit ended it rather than carry it across another outage.'
+      alertStore.pushAlert(new Alert(AlertLevel.Warning, tooMany))
+      return false
+    }
+
+    session.gapFiller?.stop()
+    session.gapFiller = undefined
+
+    try {
+      if (streamIsBack) {
+        cancelRecordingResume(streamName)
+        attachRecorderToSession(streamName, session, mediaStream)
+      } else {
+        session.gapFiller = createGapFillerStream(session.vWidth, session.vHeight, session.hasAudio)
+        attachRecorderToSession(streamName, session, session.gapFiller.stream)
+        waitForStreamToResumeRecording(streamName, session)
+        if (!wasFillingGap) session.outagesSurvived++
+      }
+    } catch (error) {
+      // Nothing is recording the session any more, so it is wrapped up rather than left looking like a take in
+      // progress that can never end
+      console.error(`Could not keep the recording of stream '${streamName}' going:`, error)
+      session.gapFiller?.stop()
+      session.gapFiller = undefined
+      return false
+    }
+
+    if (streamIsBack && wasFillingGap) {
+      if (session.stallNoticeId !== undefined) closeSnackbar(session.stallNoticeId)
+      session.stallNoticeId = undefined
+      openSnackbar({
+        message: `Video stream '${session.streamLabel}' is back. The recording continues in the same file.`,
+        duration: 4000,
+        variant: 'success',
+      })
+    }
+
+    if (outageStarts) {
+      // The alert outlives the snackbar, telling the operator later why a take of theirs goes black in the middle
+      const stalled =
+        `Video stream '${session.streamLabel}' stalled. The recording and its telemetry carry on and mark the outage ` +
+        `in it. If the stream is not back within ${secondsToWaitForStreamToResumeRecording} seconds, the recording ` +
+        `ends, and a new one starts if it returns within ${minutesToWaitForStreamToRestartRecording} minutes.`
+      alertStore.pushAlert(new Alert(AlertLevel.Info, stalled))
+      session.stallNoticeId = openSnackbar({ message: stalled, duration: 20000, variant: 'info' })
+    }
+
+    return true
+  }
+
+  /**
    * Stop recording the stream
    * @param {string} streamName - Name of the stream
    */
   const stopRecording = (streamName: string): void => {
+    // A stop the user asked for during an outage must not be undone by the resume that outage armed
+    cancelRecordingResume(streamName)
+
     // Stop the recording monitor so there's no risk of receiving alerts after the recording is stopped.
     console.info(`Stopping recording monitor for stream '${streamName}'.`)
     clearInterval(recordingMonitors[streamName])
@@ -948,6 +1359,338 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Watches a recording as it is written, warning the user when it stops growing
+   * @param {string} streamName - Name of the stream being recorded
+   * @param {RecordingSession} session - The recording to watch
+   */
+  const startRecordingHealthMonitor = (streamName: string, session: RecordingSession): void => {
+    // On Electron, we can get the size of the video output file in real time
+    // This is useful to detect if the output file is growing, which is an indication that the recording is still ongoing.
+    // On Web, we can only know if the number of chunks is growing, which is an indication that the recording is still ongoing.
+    // We also need to clear the interval if it already exists, to avoid multiple intervals running at the same time.
+    clearInterval(recordingMonitors[streamName])
+    delete recordingMonitors[streamName]
+
+    const { streamLabel } = session
+
+    const recordingIsOver = (): boolean => {
+      // Check if the stream is still recording before proceeding with checks
+      if (activeStreams.value[streamName]?.mediaRecorder !== undefined) return false
+      const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
+      openSnackbar({ message: msg, variant: 'warning', banner: true, duration: recordingWarningDuration })
+      clearInterval(recordingMonitors[streamName])
+      delete recordingMonitors[streamName]
+      return true
+    }
+
+    if (window.electronAPI) {
+      console.info(`Starting electron recording monitor for stream '${streamName}'.`)
+      recordingMonitors[streamName] = setInterval(async () => {
+        if (recordingIsOver()) return
+        // A segment that has just started has nothing on disk yet, and none of the size the one before it reached
+        if (session.skipNextHealthCheck) {
+          session.skipNextHealthCheck = false
+          return
+        }
+        const segmentSubFolders = videoSegmentSubFolders(session.segmentIndex)
+        const segmentName = videoSegmentFilename(session.fileName, session.segmentIndex)
+        const fileStats = await window.electronAPI?.getFileStats(segmentName, segmentSubFolders)
+        if (!fileStats || !fileStats.exists) {
+          showRecordingHealthWarning(
+            `Cockpit cannot find the file for the recording of stream '${streamLabel}', which means the recording may be lost. We recommend stopping it and starting a new one.`,
+            true
+          )
+          return
+        }
+        const lastKnownFileSize = unprocessedVideos.value[session.hash].lastKnownFileSize
+        if (fileStats.size! <= lastKnownFileSize!) {
+          showRecordingHealthWarning(
+            `The video output file for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
+          )
+          return
+        }
+        unprocessedVideos.value[session.hash].lastKnownFileSize = fileStats.size
+        console.debug(`Size of video output file for stream '${streamName}' growed to ${fileStats.size} bytes.`)
+      }, 15000)
+      return
+    }
+
+    console.info(`Starting web recording monitor for stream '${streamName}'.`)
+    recordingMonitors[streamName] = setInterval(async () => {
+      if (recordingIsOver()) return
+      // @ts-ignore: localForage is not defined on the StorageDB interface
+      const numberOfChunks = await tempVideoStorage.localForage.length()
+      const lastKnownNumberOfChunks = unprocessedVideos.value[session.hash].lastKnownNumberOfChunks
+      if (numberOfChunks <= lastKnownNumberOfChunks!) {
+        showRecordingHealthWarning(
+          `The number of video chunks for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
+        )
+        return
+      }
+      unprocessedVideos.value[session.hash].lastKnownNumberOfChunks = numberOfChunks
+      console.debug(`Number of video chunks for stream '${streamName}' growed to ${numberOfChunks}.`)
+    }, 15000)
+  }
+
+  /**
+   * Builds the recorder of a stream, asking for the codec the recording is muxed from rather than letting the
+   * browser pick one, as its pick follows the source: a camera gives H.264 where a canvas gives VP8
+   * @param {MediaStream} mediaStream - The stream to record
+   * @returns {MediaRecorder} The recorder, which is not started yet
+   */
+  const buildRecorderFor = (mediaStream: MediaStream): MediaRecorder => {
+    if (MediaRecorder.isTypeSupported(recordingMimeType)) {
+      return new MediaRecorder(mediaStream, { mimeType: recordingMimeType })
+    }
+    console.warn(`Cannot record as '${recordingMimeType}', falling back to whatever the browser records as.`)
+    return new MediaRecorder(mediaStream)
+  }
+
+  /**
+   * Tells the user that part of a recording could not be saved
+   * @param {RecordingSession} session - The recording losing chunks
+   */
+  const warnAboutChunkLoss = (session: RecordingSession): void => {
+    const chunkLossWarningMsg = `A part of your video recording could not be saved.
+        This usually happens when the device's storage is full or the performance is low.
+        We recommend stopping the recording and trying again, as the video may be incomplete or corrupted
+        on several parts.`
+    const sequentialChunksLossMessage = `Warning: Several video chunks could not be saved. The video recording may be impacted.`
+    const fivePercentChunksLossMessage = `Warning: More than 5% of the video chunks could not be saved. The video recording may be impacted.`
+
+    console.error(chunkLossWarningMsg)
+
+    openSnackbar({
+      message: 'Oops, looks like a video chunk could not be saved. Retrying...',
+      duration: 2000,
+      variant: 'info',
+      closeButton: false,
+    })
+
+    session.sequentialLostChunks++
+    session.totalLostChunks++
+
+    // Check for 5 or more sequential lost chunks
+    if (session.sequentialLostChunks >= 5 && session.losingChunksWarningIssued === false) {
+      openSnackbar({
+        message: sequentialChunksLossMessage,
+        variant: 'error',
+        banner: true,
+        duration: recordingWarningDuration,
+      })
+      session.sequentialLostChunks = 0
+      session.losingChunksWarningIssued = true
+    }
+
+    // Check if more than 5% of total video chunks are lost
+    const lostChunkPercentage = (session.totalLostChunks / session.totalChunks) * 100
+    if (session.totalChunks > 10 && lostChunkPercentage > 5 && session.losingChunksWarningIssued === false) {
+      openSnackbar({
+        message: fivePercentChunksLossMessage,
+        variant: 'error',
+        banner: true,
+        duration: recordingWarningDuration,
+      })
+      session.losingChunksWarningIssued = true
+    }
+  }
+
+  /**
+   * Wraps up a recording that has stopped for good, assembling the video and its telemetry overlay
+   * @param {string} streamName - Name of the stream that was recorded
+   * @param {RecordingSession} session - The recording that ended
+   * @param {() => boolean} recorderIsStillAttached - Whether the recorder that stopped is still the stream's
+   */
+  const finishRecording = async (
+    streamName: string,
+    session: RecordingSession,
+    recorderIsStillAttached: () => boolean
+  ): Promise<void> => {
+    session.gapFiller?.stop()
+
+    const info = unprocessedVideos.value[session.hash]
+    if (!info) {
+      const errorMessage = `Failed to generate telemetry overlay: recording metadata for '${session.hash}' not found.`
+      openSnackbar({ message: errorMessage, variant: 'error' })
+      delete liveProcessors.value[session.hash]
+      if (recorderIsStillAttached()) {
+        activeStreams.value[streamName]!.mediaRecorder = undefined
+      }
+      return
+    }
+
+    // Register that the recording finished
+    info.dateFinish = new Date()
+    unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [session.hash]: info } }
+
+    // Finalize live processing if active (Electron only)
+    const processor = liveProcessors.value[session.hash]
+    if (processor) {
+      try {
+        reportJoinedRecording(session.streamLabel, await processor.stopProcessing())
+      } catch (error) {
+        console.error('Failed to process video:', error)
+        // Carries the reason, as a recording that was cut by an outage says in it where its parts were left
+        const reason = messageFromError(error)
+        alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamName}. ${reason}`))
+      } finally {
+        delete liveProcessors.value[session.hash]
+      }
+    }
+
+    // Generate telemetry overlay after video processing is complete
+    try {
+      await generateTelemetryOverlay(session.hash)
+    } catch (telemetryError) {
+      openSnackbar({ message: `Failed to generate telemetry overlay: ${telemetryError}`, variant: 'error' })
+    }
+
+    if (activeStreams.value[streamName]) {
+      // The error handler detaches a failed recorder right away, so by now the slot can already hold a newer
+      // recorder that is still running. Only the recorder that stopped may clear it.
+      if (recorderIsStillAttached()) {
+        activeStreams.value[streamName]!.mediaRecorder = undefined
+      }
+      // The recording guard may have kept this stream alive after its last consumer left (e.g. the recorder
+      // widget was unmounted mid-recording); now that recording is done, release it if nothing needs it.
+      deactivateStreamIfUnused(streamName)
+    } else {
+      console.warn(`Stream '${streamName}' was removed during video processing finalization.`)
+    }
+  }
+
+  /**
+   * Hands a recording to a recorder over the given stream, which continues it where the one before it left
+   * off, writing the same file with the same chunk numbering
+   * @param {string} streamName - Name of the stream being recorded
+   * @param {RecordingSession} session - The recording to write
+   * @param {MediaStream} mediaStream - The stream to record
+   */
+  const attachRecorderToSession = (streamName: string, session: RecordingSession, mediaStream: MediaStream): void => {
+    const recorder = buildRecorderFor(mediaStream)
+    const recorderIsStillAttached = (): boolean => activeStreams.value[streamName]?.mediaRecorder === recorder
+
+    // A recorder taking over from another one opens a WebM stream of its own, which is muxed as a segment of
+    // its own and joined to the ones before it when the recording ends
+    let segmentToOpen = session.chunksCount >= 0
+    const openSegmentIfPending = (): void => {
+      if (!segmentToOpen) return
+      segmentToOpen = false
+      session.segmentIndex++
+      session.skipNextHealthCheck = true
+      const startedInfo = unprocessedVideos.value[session.hash]
+      if (startedInfo) startedInfo.lastKnownFileSize = 0
+    }
+
+    // Registered before starting, as a recorder can fail on the very first frame it is handed
+    recorder.onerror = (event) => {
+      const error: DOMException | undefined = (event as ErrorEvent).error
+      console.error(`Recorder of stream '${streamName}' failed: ${error?.message ?? 'unknown error'}`)
+      reportUnexpectedRecordingStop(streamName, session.streamLabel)
+
+      // Vue does not proxy a MediaRecorder, so clearing the start time here is what drops the interface out of the
+      // recording state, and detaching the recorder is what drops it out of the finalizing one.
+      activeStreams.value[streamName]!.timeRecordingStart = undefined
+      activeStreams.value[streamName]!.mediaRecorder = undefined
+    }
+
+    recorder.ondataavailable = async (e) => {
+      // A recorder losing its stream signs off with an empty blob, and a chunk number spent on nothing would
+      // leave the live processor waiting for a chunk that never comes, stranding the ones after it
+      if (e.data.size === 0) return
+
+      session.chunksCount++
+      session.totalChunks++
+      const chunkNumber = session.chunksCount
+      const chunkName = videoChunkName(session.hash, chunkNumber)
+
+      try {
+        await tempVideoStorage.setItem(chunkName, e.data)
+        session.sequentialLostChunks = 0
+      } catch {
+        if (chunkNumber === 0) {
+          const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
+          showDialog({ message: msg, variant: 'error' })
+          alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+          if (recorderIsStillAttached()) stopRecording(streamName)
+        }
+
+        session.sequentialLostChunks++
+        session.totalLostChunks++
+
+        warnAboutChunkLoss(session)
+        return
+      }
+      // The main process only opens a segment for a chunk it is handed
+      openSegmentIfPending()
+
+      // Send chunk to live processor if active
+      const processor = liveProcessors.value[session.hash]
+      if (processor) {
+        try {
+          await processor.addChunk(e.data, chunkNumber)
+        } catch (error) {
+          if (error instanceof LiveVideoProcessorChunkAppendingError) {
+            if (!isRecording(streamName)) {
+              // eslint-disable-next-line
+              console.warn(`Failed to add chunk ${chunkNumber} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
+              return
+            }
+            const msg = `Failed to add chunk ${chunkNumber} to live processor: ${error.message}`
+            openSnackbar({ message: msg, variant: 'error' })
+          } else if (error instanceof LiveVideoProcessorInitializationError) {
+            const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
+            showDialog({ message: msg, variant: 'error' })
+            alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
+            if (recorderIsStillAttached()) stopRecording(streamName)
+          } else {
+            console.warn(`Unexpected live-processor error on chunk ${chunkNumber} for stream ${streamName}:`, error)
+            if (!session.unexpectedProcessorErrorWarned) {
+              session.unexpectedProcessorErrorWarned = true
+              openSnackbar({
+                message:
+                  'Something went wrong while assembling the recorded video. Recording is still running; the saved file may be incomplete.',
+                variant: 'error',
+              })
+            }
+          }
+        }
+      }
+
+      const updatedInfo = unprocessedVideos.value[session.hash]
+      updatedInfo.dateLastRecordingUpdate = new Date()
+      unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [session.hash]: updatedInfo } }
+    }
+
+    recorder.onstop = async () => {
+      // Only a stop nobody asked for still has its start time set, as both the Stop button and the error handler
+      // clear it before the recorder gets here
+      const stoppedOnItsOwn =
+        recorderIsStillAttached() && activeStreams.value[streamName]!.timeRecordingStart !== undefined
+      if (stoppedOnItsOwn && continueRecordingAfterStreamDrop(streamName, session)) return
+
+      // Every way a recording ends reaches onstop (Stop button, stream teardown, dropped link), so mirror the stop
+      // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
+      broadcastRecordingStop(streamName)
+
+      if (stoppedOnItsOwn) reportUnexpectedRecordingStop(streamName, session.streamLabel)
+
+      // A recording that ended on its own leaves the recording state here, so no consumer waits on the finalization
+      // below, which takes as long as the video processing and the telemetry overlay need.
+      if (recorderIsStillAttached()) activeStreams.value[streamName]!.timeRecordingStart = undefined
+
+      await finishRecording(streamName, session, recorderIsStillAttached)
+    }
+
+    recorder.start(1000)
+
+    // The stream becomes busy at this single point, with a recorder already running, so nothing that throws on the way
+    // here can leave it marked as recording or as still being saved.
+    activeStreams.value[streamName]!.mediaRecorder = recorder
+    activeStreams.value[streamName]!.timeRecordingStart = session.timeRecordingStart
+  }
+
+  /**
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
@@ -964,10 +1707,22 @@ export const useVideoStore = defineStore('video', () => {
       showDialog({ message: 'Media stream not defined.', variant: 'error' })
       return
     }
-    if (!streamData.mediaStream.active) {
+    if (!isSessionRecordable(streamName)) {
+      streamData.webRtcManager?.renewUnrecordableSession()
+      const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+      const message = `The camera sent stream '${streamLabel}' in a form that cannot be recorded. Try again in a few seconds.`
+      showDialog({ message, variant: 'error' })
+      return
+    }
+    // The media stream is active from the moment its track is added, before the session has connected
+    if (!streamData.mediaStream.active || !streamData.connected) {
       showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
       return
     }
+
+    // Below the guards above, so that only a start that goes on to attach a recorder takes over a wait for the
+    // stream, rather than one that is about to bail leaving nothing recording
+    cancelRecordingResume(streamName)
 
     await sleep(100)
 
@@ -986,30 +1741,7 @@ export const useVideoStore = defineStore('video', () => {
     const timeRecordingStart = new Date()
     const fileName = videoFilename(recordingHash, timeRecordingStart, safeMissionName)
 
-    const recorder = new MediaRecorder(streamData.mediaStream!)
-    const recorderIsStillAttached = (): boolean => activeStreams.value[streamName]?.mediaRecorder === recorder
-
-    // Registered before starting, as a recorder can fail on the very first frame it is handed
-    recorder.onerror = (event) => {
-      const error: DOMException | undefined = (event as ErrorEvent).error
-      console.error(`Recorder of stream '${streamName}' failed: ${error?.message ?? 'unknown error'}`)
-      const msg =
-        `Recording of stream '${streamName}' stopped unexpectedly. The video recorded until then was kept and is` +
-        ' available in the Video Library.'
-      showDialog({ message: msg, variant: 'error' })
-      alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
-
-      // The recorder stops itself on error, so the monitor would otherwise nag about a file that stopped growing
-      clearInterval(recordingMonitors[streamName])
-      delete recordingMonitors[streamName]
-
-      // Vue does not proxy a MediaRecorder, so clearing the start time here is what drops the interface out of the
-      // recording state, and detaching the recorder is what drops it out of the finalizing one.
-      activeStreams.value[streamName]!.timeRecordingStart = undefined
-      activeStreams.value[streamName]!.mediaRecorder = undefined
-    }
-
-    const videoTrack = streamData.mediaStream!.getVideoTracks()[0]
+    const videoTrack = streamData.mediaStream.getVideoTracks()[0]
     const vWidth = videoTrack.getSettings().width || 1920
     const vHeight = videoTrack.getSettings().height || 1080
 
@@ -1027,75 +1759,28 @@ export const useVideoStore = defineStore('video', () => {
     }
     unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: videoInfo } }
 
-    // On Electron, we can get the size of the video output file in real time
-    // This is useful to detect if the output file is growing, which is an indication that the recording is still ongoing.
-    // On Web, we can only know if the number of chunks is growing, which is an indication that the recording is still ongoing.
-    // We also need to clear the interval if it already exists, to avoid multiple intervals running at the same time.
-    clearInterval(recordingMonitors[streamName])
-    delete recordingMonitors[streamName]
-    // The internal name, since the external id of an RTSP stream is its URL, credentials included, and these warnings
-    // are both shown to the user and written to the logs they share with us.
-    const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
-    if (window.electronAPI) {
-      console.info(`Starting electron recording monitor for stream '${streamName}'.`)
-      recordingMonitors[streamName] = setInterval(async () => {
-        // Check if the stream is still recording before proceeding with checks
-        if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
-          showDialog({ message: msg, variant: 'warning' })
-          clearInterval(recordingMonitors[streamName])
-          delete recordingMonitors[streamName]
-          return
-        }
-        const fileStats = await window.electronAPI?.getFileStats(fileName, ['videos'])
-        if (!fileStats || !fileStats.exists) {
-          showRecordingHealthDialog(
-            `Cockpit cannot find the file for the recording of stream '${streamLabel}', which means the recording may be lost. We recommend stopping it and starting a new one.`,
-            true
-          )
-          return
-        }
-        const lastKnownFileSize = unprocessedVideos.value[recordingHash].lastKnownFileSize
-        if (fileStats.size! <= lastKnownFileSize!) {
-          showRecordingHealthDialog(
-            `The video output file for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
-          )
-          return
-        }
-        unprocessedVideos.value[recordingHash].lastKnownFileSize = fileStats.size
-        console.debug(`Size of video output file for stream '${streamName}' growed to ${fileStats.size} bytes.`)
-      }, 15000)
-    } else {
-      console.info(`Starting web recording monitor for stream '${streamName}'.`)
-      recordingMonitors[streamName] = setInterval(async () => {
-        // Check if the stream is still recording before proceeding with checks
-        if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
-          showDialog({ message: msg, variant: 'warning' })
-          clearInterval(recordingMonitors[streamName])
-          delete recordingMonitors[streamName]
-          return
-        }
-        // @ts-ignore: localForage is not defined on the StorageDB interface
-        const numberOfChunks = await tempVideoStorage.localForage.length()
-        const lastKnownNumberOfChunks = unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks
-        if (numberOfChunks <= lastKnownNumberOfChunks!) {
-          showRecordingHealthDialog(
-            `The number of video chunks for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
-          )
-          return
-        }
-        unprocessedVideos.value[recordingHash].lastKnownNumberOfChunks = numberOfChunks
-        console.debug(`Number of video chunks for stream '${streamName}' growed to ${numberOfChunks}.`)
-      }, 15000)
+    const session: RecordingSession = {
+      hash: recordingHash,
+      fileName,
+      // The internal name, since the external id of an RTSP stream is its URL, credentials included, and these
+      // warnings are both shown to the user and written to the logs they share with us.
+      streamLabel: internalStreamNameFromExternal(streamName) ?? streamName,
+      timeRecordingStart,
+      chunksCount: -1,
+      segmentIndex: 0,
+      skipNextHealthCheck: false,
+      vWidth,
+      vHeight,
+      hasAudio: streamData.mediaStream.getAudioTracks().length > 0,
+      gapFiller: undefined,
+      stallNoticeId: undefined,
+      outagesSurvived: 0,
+      totalChunks: 0,
+      totalLostChunks: 0,
+      sequentialLostChunks: 0,
+      losingChunksWarningIssued: false,
+      unexpectedProcessorErrorWarned: false,
     }
-
-    recorder.start(1000)
-
-    // The stream becomes busy at this single point, with a recorder already running, so nothing that throws on the way
-    // here can leave it marked as recording or as still being saved.
-    activeStreams.value[streamName]!.mediaRecorder = recorder
-    activeStreams.value[streamName]!.timeRecordingStart = timeRecordingStart
 
     // Initialize live processor if enabled and on Electron
     if (enableLiveProcessing.value && window.electronAPI) {
@@ -1117,189 +1802,9 @@ export const useVideoStore = defineStore('video', () => {
         throw new Error(`Failed to start live processing for recording '${recordingHash}': ${error}`)
       }
     }
-    let losingChunksWarningIssued = false
-    const unsavedChunkAlerts: { [key in string]: ReturnType<typeof setTimeout> } = {}
 
-    const warnAboutChunkLoss = (): void => {
-      const chunkLossWarningMsg = `A part of your video recording could not be saved.
-        This usually happens when the device's storage is full or the performance is low.
-        We recommend stopping the recording and trying again, as the video may be incomplete or corrupted
-        on several parts.`
-      const sequentialChunksLossMessage = `Warning: Several video chunks could not be saved. The video recording may be impacted.`
-      const fivePercentChunksLossMessage = `Warning: More than 5% of the video chunks could not be saved. The video recording may be impacted.`
-
-      console.error(chunkLossWarningMsg)
-
-      openSnackbar({
-        message: 'Oops, looks like a video chunk could not be saved. Retrying...',
-        duration: 2000,
-        variant: 'info',
-        closeButton: false,
-      })
-
-      sequentialLostChunks++
-      totalLostChunks++
-
-      // Check for 5 or more sequential lost chunks
-      if (sequentialLostChunks >= 5 && losingChunksWarningIssued === false) {
-        showDialog({
-          message: sequentialChunksLossMessage,
-          variant: 'error',
-        })
-        sequentialLostChunks = 0
-        losingChunksWarningIssued = true
-      }
-
-      // Check if more than 5% of total video chunks are lost
-      const lostChunkPercentage = (totalLostChunks / totalChunks) * 100
-      if (totalChunks > 10 && lostChunkPercentage > 5 && losingChunksWarningIssued === false) {
-        showDialog({
-          message: fivePercentChunksLossMessage,
-          variant: 'error',
-        })
-        losingChunksWarningIssued = true
-      }
-    }
-
-    Object.keys(unsavedChunkAlerts).forEach((key) => {
-      clearTimeout(unsavedChunkAlerts[key])
-      delete unsavedChunkAlerts[key]
-    })
-
-    let sequentialLostChunks = 0
-    let totalChunks = 0
-    let totalLostChunks = 0
-    let unexpectedProcessorErrorWarned = false
-
-    let chunksCount = -1
-    recorder.ondataavailable = async (e) => {
-      chunksCount++
-      totalChunks++
-      const chunkName = videoChunkName(recordingHash, chunksCount)
-
-      try {
-        await tempVideoStorage.setItem(chunkName, e.data)
-        sequentialLostChunks = 0
-      } catch {
-        if (chunksCount === 0) {
-          const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
-          showDialog({ message: msg, variant: 'error' })
-          alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
-          if (recorderIsStillAttached()) stopRecording(streamName)
-        }
-
-        sequentialLostChunks++
-        totalLostChunks++
-
-        warnAboutChunkLoss()
-        return
-      }
-
-      // Send chunk to live processor if active
-      const processor = liveProcessors.value[recordingHash]
-      if (processor && e.data.size > 0) {
-        try {
-          await processor.addChunk(e.data, chunksCount)
-        } catch (error) {
-          if (error instanceof LiveVideoProcessorChunkAppendingError) {
-            if (!isRecording(streamName)) {
-              // eslint-disable-next-line
-              console.warn(`Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
-              return
-            }
-            const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
-            openSnackbar({ message: msg, variant: 'error' })
-          } else if (error instanceof LiveVideoProcessorInitializationError) {
-            const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
-            showDialog({ message: msg, variant: 'error' })
-            alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
-            if (recorderIsStillAttached()) stopRecording(streamName)
-          } else {
-            console.warn(`Unexpected live-processor error on chunk ${chunksCount} for stream ${streamName}:`, error)
-            if (!unexpectedProcessorErrorWarned) {
-              unexpectedProcessorErrorWarned = true
-              openSnackbar({
-                message:
-                  'Something went wrong while assembling the recorded video. Recording is still running; the saved file may be incomplete.',
-                variant: 'error',
-              })
-            }
-          }
-        }
-      }
-
-      const updatedInfo = unprocessedVideos.value[recordingHash]
-      updatedInfo.dateLastRecordingUpdate = new Date()
-      unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: updatedInfo } }
-
-      // If the chunk was saved, remove it from the unsaved list
-      clearTimeout(unsavedChunkAlerts[chunkName])
-      delete unsavedChunkAlerts[chunkName]
-    }
-
-    recorder.onstop = async () => {
-      // Every way a recording ends reaches onstop (Stop button, stream teardown, dropped link), so mirror the stop
-      // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
-      broadcastRecordingStop(streamName)
-
-      // A recording that ended on its own leaves the recording state here, so no consumer waits on the finalization
-      // below, which takes as long as the video processing and the telemetry overlay need.
-      if (recorderIsStillAttached()) activeStreams.value[streamName]!.timeRecordingStart = undefined
-
-      const info = unprocessedVideos.value[recordingHash]
-      if (!info) {
-        const errorMessage = `Failed to generate telemetry overlay: recording metadata for '${recordingHash}' not found.`
-        openSnackbar({ message: errorMessage, variant: 'error' })
-        delete liveProcessors.value[recordingHash]
-        if (recorderIsStillAttached()) {
-          activeStreams.value[streamName]!.mediaRecorder = undefined
-        }
-        return
-      }
-
-      // Register that the recording finished
-      info.dateFinish = new Date()
-      unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
-
-      // Finalize live processing if active (Electron only)
-      const processor = liveProcessors.value[recordingHash]
-      if (processor) {
-        try {
-          await processor.stopProcessing()
-          openSnackbar({
-            message: 'Video processing completed.',
-            duration: 2000,
-            variant: 'success',
-            closeButton: false,
-          })
-        } catch (error) {
-          console.error('Failed to process video:', error)
-          alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamName}.`))
-        } finally {
-          delete liveProcessors.value[recordingHash]
-        }
-      }
-
-      // Generate telemetry overlay after video processing is complete
-      try {
-        await generateTelemetryOverlay(recordingHash)
-      } catch (telemetryError) {
-        openSnackbar({ message: `Failed to generate telemetry overlay: ${telemetryError}`, variant: 'error' })
-      }
-
-      if (activeStreams.value[streamName]) {
-        // The error handler detaches a failed recorder right away, so by now the slot can already hold a newer
-        // recorder that is still running. Only the recorder that stopped may clear it.
-        if (recorderIsStillAttached()) {
-          activeStreams.value[streamName]!.mediaRecorder = undefined
-        }
-        // The recording guard may have kept this stream alive after its last consumer left (e.g. the recorder
-        // widget was unmounted mid-recording); now that recording is done, release it if nothing needs it.
-        deactivateStreamIfUnused(streamName)
-      } else {
-        console.warn(`Stream '${streamName}' was removed during video processing finalization.`)
-      }
-    }
+    attachRecorderToSession(streamName, session, streamData.mediaStream)
+    startRecordingHealthMonitor(streamName, session)
 
     // Mirror only after the recorder and its handlers are fully set up, so a start that throws (e.g. live-processing
     // init failing) never leaves the stream marked as mirrored.
@@ -1660,6 +2165,8 @@ export const useVideoStore = defineStore('video', () => {
     getStreamPeerConnection,
     isRecording,
     isFinalizingRecording,
+    isStreamVideoStalled,
+    warnAboutLostRecordingParts,
     stopRecording,
     startRecording,
     unprocessedVideos,

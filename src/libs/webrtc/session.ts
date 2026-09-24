@@ -1,7 +1,7 @@
 /* eslint-disable jsdoc/no-undefined-types */ // TODO: fix type RTCConfiguration, RTCSessionDescriptionInit, RTCIceCandidateInit and RTCPeerConnectionIceEventInit are undefined
 import type { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
-import { unreceivableVideoCodecs } from '@/libs/webrtc/video-codec-support'
+import { offersVideoWithoutSsrc, unreceivableVideoCodecs } from '@/libs/webrtc/video-codec-support'
 
 type OnCloseCallback = (sessionId: string, reason: string) => void
 type OnTrackAddedCallback = (event: RTCTrackEvent) => void
@@ -31,6 +31,7 @@ export class Session {
   public onClose?: OnCloseCallback
   public onStatusChange?: OnStatusChangeCallback
   public onUnreceivableVideo?: OnUnreceivableVideoCallback
+  public onUnrecordableVideo?: () => void
 
   /**
    * Creates a new Session instance, connecting with a given Stream
@@ -145,6 +146,11 @@ export class Session {
         `[WebRTC] [Session] None of the offered video codecs can be received: ${unreceivableCodecs.join(', ')}`
       )
       this.onUnreceivableVideo?.(unreceivableCodecs)
+    }
+
+    if (offersVideoWithoutSsrc(description.sdp)) {
+      console.warn('[WebRTC] [Session] The camera offered video without its SSRC, so this video cannot be recorded')
+      this.onUnrecordableVideo?.()
     }
 
     this.peerConnection
@@ -315,26 +321,47 @@ export class Session {
    * Defines the behavior for the RTCPeerConnection's 'onconnectionstatechange' event
    */
   private onConnectionStateChange(): void {
-    const msg = `RTCPeerConnection state changed to "${this.peerConnection.connectionState}"`
+    const state = this.peerConnection.connectionState
+    const msg = `RTCPeerConnection state changed to "${state}"`
     console.debug('[WebRTC] [Session] ' + msg)
     this.onStatusChange?.(msg)
 
-    if (this.peerConnection.connectionState === 'connected') {
+    if (this.ended) return
+
+    if (state === 'connected') {
       this.onPeerConnected?.()
     }
 
-    if (this.peerConnection.connectionState === 'failed') {
-      this.onClose?.(this.id, 'PeerConnection failed')
-      this.end()
+    // 'closed' is not only our own doing: a browser can close the peer connection for us, and it never reaches
+    // 'failed' afterwards.
+    if (state === 'failed' || state === 'closed') {
+      this.reportLostConnection(`PeerConnection ${state}`)
     }
+  }
+
+  /**
+   * Reports the peer connection as lost, so the consumer can renegotiate, and ends this session
+   * @param {string} reason - Why the peer connection is taken for lost, forwarded to the consumer
+   */
+  private reportLostConnection(reason: string): void {
+    if (this.ended) return
+
+    this.onClose?.(this.id, reason)
+    this.end()
   }
 
   /**
    * Defines the behavior for the RTCPeerConnection's 'onsignalingstatechange' event
    */
   private onSignalingStateChange(): void {
-    const msg = `Signalling state changed to "${this.peerConnection.iceConnectionState}"`
+    const msg = `Signalling state changed to "${this.peerConnection.signalingState}"`
     console.debug('[WebRTC] [Session] ' + msg)
+
+    // A browser that closes the peer connection for us, as suspending the machine does, fires no
+    // 'connectionstatechange', leaving this as the only report of it
+    if (this.peerConnection.signalingState === 'closed') {
+      this.reportLostConnection('PeerConnection closed')
+    }
   }
 
   /**
@@ -352,14 +379,17 @@ export class Session {
    * Ends this Session, unregistering all its RTCPeerConnection and parents callbacks
    */
   public end(): void {
+    if (this.ended) return
+
+    // Before closing the peer connection, whose own 'closed' report would otherwise be taken for a lost session
+    this.ended = true
+
     this.endPeerConnection()
 
     // Unlink parent callbacks
     this.onTrackAdded = undefined
     this.onNewIceRemoteAddress = undefined
     this.onClose = undefined
-
-    this.ended = true
 
     console.debug(`[WebRTC] [Session] Session ${this.id} ended.`)
   }

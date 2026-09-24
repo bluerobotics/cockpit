@@ -338,6 +338,16 @@ export interface LiveStreamProcess {
    */
   outputPath: string
   /**
+   * Name of the output MP4 file, which the recording's segments are named after
+   */
+  fileName: string
+  /**
+   * Paths of the segments the recording was muxed into, in order, the first being the output file itself.
+   * A recording only has more than one when a video outage cut it, as each recorder that records it opens
+   * a WebM stream of its own, which a single FFmpeg cannot mux.
+   */
+  segmentPaths: string[]
+  /**
    * Temporary directory for chunk backups (if enabled)
    */
   tempDir: string
@@ -349,6 +359,160 @@ export interface LiveStreamProcess {
    * Whether to save raw chunk backups during streaming
    */
   chunkBackupEnabled: boolean
+}
+
+/**
+ * The stream a recording is fed while its video stream is gone, and the teardown of what feeds it
+ */
+export interface GapFillerStream {
+  /**
+   * The stream to record while the video is gone
+   */
+  stream: MediaStream
+  /**
+   * Releases the stream and everything drawing into it
+   */
+  stop: () => void
+}
+
+/**
+ * State of a recording, which outlives the recorders that write it: a video outage costs the recording
+ * its recorder, and the one that takes over continues the same file, chunk sequence and telemetry window.
+ */
+export interface RecordingSession {
+  /**
+   * Unique identifier of the recording, which its chunks are named after
+   */
+  hash: string
+  /**
+   * Name of the file the recording is written to
+   */
+  fileName: string
+  /**
+   * Name of the recorded stream as it is shown to the user
+   */
+  streamLabel: string
+  /**
+   * When the recording started
+   */
+  timeRecordingStart: Date
+  /**
+   * Number of the last chunk the recording produced, counting from zero
+   */
+  chunksCount: number
+  /**
+   * Which segment of the recording is being written, counting from zero
+   */
+  segmentIndex: number
+  /**
+   * Whether the health monitor should let this round pass, as a segment that has just started has
+   * nothing on disk yet and none of the size the one before it reached
+   */
+  skipNextHealthCheck: boolean
+  /**
+   * Width of the recorded video, in pixels
+   */
+  vWidth: number
+  /**
+   * Height of the recorded video, in pixels
+   */
+  vHeight: number
+  /**
+   * Whether the recorded stream carries audio, which what fills a video outage then has to carry too
+   */
+  hasAudio: boolean
+  /**
+   * The stream filling a video outage, while one is being filled
+   */
+  gapFiller: GapFillerStream | undefined
+  /**
+   * Snackbar telling the user the video stalled, while it can still be on screen
+   */
+  stallNoticeId: number | undefined
+  /**
+   * How many video outages the recording has been carried across
+   */
+  outagesSurvived: number
+  /**
+   * How many chunks the recording produced
+   */
+  totalChunks: number
+  /**
+   * How many of the recording's chunks could not be saved
+   */
+  totalLostChunks: number
+  /**
+   * How many chunks in a row could not be saved
+   */
+  sequentialLostChunks: number
+  /**
+   * Whether the user was already warned that the recording is losing chunks
+   */
+  losingChunksWarningIssued: boolean
+  /**
+   * Whether the user was already warned about an unexpected error while assembling the video
+   */
+  unexpectedProcessorErrorWarned: boolean
+}
+
+/**
+ * What one segment of a recording holds, as FFmpeg reports it
+ */
+export interface SegmentStreamInfo {
+  /**
+   * Name of the video codec
+   */
+  codec: string
+  /**
+   * Width of the video, in pixels
+   */
+  width: number
+  /**
+   * Height of the video, in pixels
+   */
+  height: number
+  /**
+   * Whether the segment carries an audio stream
+   */
+  hasAudio: boolean
+}
+
+/**
+ * How a recording was put together when it finished
+ */
+export interface VideoRecordingFinalizationResult {
+  /**
+   * How many segments the recording was muxed into, more than one meaning a video outage cut it
+   */
+  segmentsJoined: number
+  /**
+   * Whether joining the segments had to re-encode them, as a camera that came back with another
+   * resolution or codec leaves segments no copy can join
+   */
+  reencoded: boolean
+  /**
+   * Whether the audio had to be left out of the joined recording, which only happens when the
+   * segments disagree on having any
+   */
+  audioDropped: boolean
+  /**
+   * How many segments were left out of the recording because nothing could be read from them
+   */
+  segmentsLost: number
+}
+
+/**
+ * Recording rebuilt from the chunks of one or more ZIP files
+ */
+export interface ZipRecordingResult {
+  /**
+   * Filename of the rebuilt recording
+   */
+  fileName: string
+  /**
+   * How the recording was put together
+   */
+  joined: VideoRecordingFinalizationResult
 }
 
 /**

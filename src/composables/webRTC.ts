@@ -7,6 +7,9 @@ import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
 import { Session } from '@/libs/webrtc/session'
 import { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
+import { trackVideoArrival } from '@/libs/webrtc/stats'
+
+const secondsWithoutVideoToSessionLoss = 10
 
 /**
  *
@@ -44,15 +47,18 @@ export class WebRTCManager {
   private streamName: string | undefined
   public session: Session | undefined
   public onUnreceivableVideo?: (codecs: string[]) => void
+  // Whether a MediaRecorder on the current session receives its video, which the camera's offer decides
+  public recordable = ref(true)
   private rtcConfiguration: RTCConfiguration
   private selectedICEIPs: string[] = []
   private selectedICEProtocols: string[] = []
   private JitterBufferTarget = 0
 
-  private hasEnded = false
+  private isClosed = false
   private signaller: Signaller
   private waitingForAvailableStreamsAnswer = false
   private waitingForSessionStart = false
+  private videoWatchdog: number | undefined
 
   /**
    *
@@ -77,7 +83,7 @@ export class WebRTCManager {
    * @param {string} reason
    */
   public close(reason: string): void {
-    this.hasEnded = true
+    this.isClosed = true
     this.signaller.onOpen = undefined
     this.stopSession(reason)
     this.signaller.end(reason)
@@ -185,9 +191,8 @@ export class WebRTCManager {
    *
    */
   private startConsumer(): void {
-    if (this.hasEnded) return
+    if (this.isClosed) return
 
-    this.hasEnded = false
     // Requests a new consumer ID
     if (this.consumerId === undefined) {
       this.signaller.requestConsumerId((newConsumerId: string): void => {
@@ -207,7 +212,7 @@ export class WebRTCManager {
       this.signaller.requestStreams()
       return
     }
-    if (this.hasEnded) {
+    if (this.isClosed) {
       this.waitingForAvailableStreamsAnswer = false
       return
     }
@@ -258,6 +263,38 @@ export class WebRTCManager {
     console.debug('Settings:', event.track.getSettings?.())
     console.debug('Constraints:', event.track.getConstraints?.())
     console.debug('Capabilities:', event.track.getCapabilities?.())
+
+    this.startVideoWatchdog()
+  }
+
+  /**
+   * Starts watching the video actually arriving on the current session, so what decides a session is over is the
+   * media itself, rather than the signalling link, which RTP does not need once ICE has settled
+   */
+  private startVideoWatchdog(): void {
+    this.stopVideoWatchdog()
+
+    let secondsWithoutVideo: (() => number | undefined) | undefined
+
+    this.videoWatchdog = window.setInterval(() => {
+      if (this.streamName === undefined) return
+
+      secondsWithoutVideo ??= trackVideoArrival(
+        this.streamName,
+        'a stream that stops arriving will not renew its session'
+      )
+      if ((secondsWithoutVideo() ?? 0) < secondsWithoutVideoToSessionLoss) return
+
+      this.onSessionClosed(`No video received for ${secondsWithoutVideoToSessionLoss} seconds`)
+    }, 1000)
+  }
+
+  /**
+   * Stops watching the video arrival, so the watchdog of a session that is over cannot renew its replacement
+   */
+  private stopVideoWatchdog(): void {
+    window.clearInterval(this.videoWatchdog)
+    this.videoWatchdog = undefined
   }
 
   /**
@@ -268,12 +305,12 @@ export class WebRTCManager {
   }
 
   /**
-   * Terminates the RTCPeerConnection but preserves the signaller for reconnects
+   * Replaces the current session when its video cannot be recorded, for a recording that wants the stream, since the
+   * camera offers a recordable session again after a few tries. Watching the stream never needs this.
    */
-  public endAllSessions(): void {
-    if (this.session) {
-      this.session.end()
-    }
+  public renewUnrecordableSession(): void {
+    if (this.recordable.value) return
+    this.onSessionClosed('Camera offered a session that cannot be recorded')
   }
 
   /**
@@ -288,22 +325,20 @@ export class WebRTCManager {
     this.signaller.requestSessionId(consumerId, stream.id, (receivedSessionId: string): void => {
       this.onSessionIdReceived(stream, stream.id, receivedSessionId)
     })
-
-    this.hasEnded = false
   }
 
   /**
    *
    */
   private startSession(): void {
-    if (this.hasEnded) return
+    if (this.isClosed) return
     if (this.waitingForSessionStart) {
       return
     }
     this.waitingForSessionStart = true
 
     window.setTimeout(() => {
-      if (!this.waitingForSessionStart || this.hasEnded) {
+      if (!this.waitingForSessionStart || this.isClosed) {
         this.waitingForSessionStart = false
         return
       }
@@ -313,7 +348,8 @@ export class WebRTCManager {
       })
       if (stream === undefined) {
         const error = `Failed to start a new Session with "${this.streamName}". Reason: not available`
-        console.error('[WebRTC] ' + error)
+        // Retried once a second for as long as the stream is gone, so not worth an error entry per second
+        console.debug('[WebRTC] ' + error)
         this.updateStreamStatus(error)
 
         this.waitingForSessionStart = false
@@ -332,6 +368,8 @@ export class WebRTCManager {
         console.error('[WebRTC] ' + error)
         this.updateStreamStatus(error)
 
+        // The retry below is taken for the start already in flight unless this is cleared first
+        this.waitingForSessionStart = false
         this.startConsumer()
         this.startSession()
         return
@@ -378,12 +416,16 @@ export class WebRTCManager {
     )
 
     this.session.onUnreceivableVideo = (codecs: string[]): void => this.onUnreceivableVideo?.(codecs)
+    this.session.onUnrecordableVideo = (): void => {
+      this.recordable.value = false
+    }
 
     // Registers Session callback for the Signaller endSession parser
     this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
       console.debug(`[WebRTC] Session ${sessionId} ended. Reason: ${reason}`)
-      this.session = undefined
-      this.hasEnded = true
+      // A late arrival for a session already dropped must not tear down the one that replaced it
+      if (this.session?.id !== sessionId) return
+      this.onSessionClosed(reason)
     })
 
     // Registers Session callbacks for the Signaller Negotiation parser
@@ -405,6 +447,14 @@ export class WebRTCManager {
    * @param {string} reason
    */
   private stopSession(reason: string): void {
+    this.stopVideoWatchdog()
+
+    // The media stream no longer carries video, so drop it instead of leaving consumers with its last frame, or a
+    // black screen, as if it were live
+    this.connected.value = false
+    this.mediaStream.value = undefined
+    this.recordable.value = true
+
     if (this.session === undefined) {
       console.debug('[WebRTC] Stopping an undefined session, probably it was already stopped?')
       return
@@ -413,8 +463,8 @@ export class WebRTCManager {
     this.updateStreamStatus(msg)
     console.debug('[WebRTC] ' + msg)
 
+    this.signaller.removeSessionListeners(this.session.id)
     this.session.end()
     this.session = undefined
-    this.hasEnded = true
   }
 }

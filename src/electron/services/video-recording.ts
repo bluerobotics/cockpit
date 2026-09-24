@@ -1,17 +1,30 @@
-import { spawn } from 'child_process'
+import { type ChildProcess, spawn } from 'child_process'
 import { ipcMain } from 'electron'
 import { promises as fs } from 'fs'
 import { createWriteStream } from 'fs'
-import { tmpdir } from 'os'
+import { constants as osConstants, setPriority, tmpdir } from 'os'
 import { basename, dirname, isAbsolute, join } from 'path'
 import { pipeline } from 'stream'
 import { v4 as uuid } from 'uuid'
 import * as yauzl from 'yauzl'
 import * as yazl from 'yazl'
 
-import type { LiveConcatProcessResult, LiveStreamProcess, ZipExtractionResult } from '@/types/video'
+import type {
+  LiveConcatProcessResult,
+  LiveStreamProcess,
+  SegmentStreamInfo,
+  VideoRecordingFinalizationResult,
+  ZipExtractionResult,
+} from '@/types/video'
 
-import { videoFilename, videoThumbnailFilename } from '../../utils/video'
+import { messageFromError } from '../../libs/utils'
+import {
+  isWebmStreamStart,
+  videoFilename,
+  videoSegmentFilename,
+  videoSegmentSubFolders,
+  videoThumbnailFilename,
+} from '../../utils/video'
 import { getFFmpegPath } from './ffmpeg-path'
 import { filesystemStorage, getCockpitFolderPath } from './storage'
 
@@ -53,6 +66,66 @@ const writeBlobToFile = async (blobData: Uint8Array, filePath: string): Promise<
 }
 
 /**
+ * Spawn the FFmpeg process that muxes one segment of a recording
+ * @param {string} processId - ID of the streaming process the segment belongs to
+ * @param {string} segmentPath - Path the segment is written to
+ * @returns {ChildProcess} The spawned FFmpeg process
+ */
+const spawnSegmentProcess = (processId: string, segmentPath: string): ChildProcess => {
+  // Spawn FFmpeg with stdin input and fragmented MP4 output
+  const ffmpegArgs = [
+    '-probesize',
+    '100M', // 100MB to find decoding info
+    '-analyzeduration',
+    '15M', // 15 seconds to find decoding info
+    '-f',
+    'webm', // Input format is WebM
+    '-i',
+    'pipe:0', // Read from stdin
+    '-c:v',
+    'copy', // Copy video codec (no re-encoding)
+    '-c:a',
+    'copy', // Copy audio codec (no re-encoding)
+    '-movflags',
+    'frag_keyframe+empty_moov+default_base_moof', // Fragmented MP4 for crash-safety
+    '-fflags',
+    '+genpts', // Generate presentation timestamps
+    '-f',
+    'mp4', // Force MP4 output format
+    '-y', // Overwrite output file if exists
+    segmentPath,
+  ]
+
+  const ffmpegProcess = spawn(getFFmpegPath(), ffmpegArgs)
+
+  // Handle FFmpeg stderr output (for debugging)
+  ffmpegProcess.stderr?.on('data', (data) => {
+    const output = data.toString().trim()
+    // Filter out common/expected warnings to reduce log noise
+    if (
+      !output.includes('frame=') &&
+      !output.includes('size=') &&
+      !output.includes('time=') &&
+      !output.includes('bitrate=')
+    ) {
+      console.log(`FFmpeg (${processId}):`, output)
+    }
+  })
+
+  // Handle FFmpeg process errors
+  ffmpegProcess.on('error', (error) => {
+    console.error(`FFmpeg process error (${processId}):`, error)
+  })
+
+  // Handle FFmpeg process exit
+  ffmpegProcess.on('close', (code, signal) => {
+    console.log(`FFmpeg process ${processId} closed with code ${code}, signal ${signal}`)
+  })
+
+  return ffmpegProcess
+}
+
+/**
  * Start a live video streaming process with FFmpeg
  * @param {Uint8Array} firstChunkData - The first video chunk data
  * @param {string} recordingHash - Unique identifier for this recording
@@ -81,58 +154,7 @@ const startVideoRecording = async (
   console.log(`Starting live FFmpeg streaming process ${processId}`)
   console.log(`Output path: ${outputPath}`)
 
-  // Spawn FFmpeg with stdin input and fragmented MP4 output
-  const ffmpegArgs = [
-    '-probesize',
-    '100M', // 100MB to find decoding info
-    '-analyzeduration',
-    '15M', // 15 seconds to find decoding info
-    '-f',
-    'webm', // Input format is WebM
-    '-i',
-    'pipe:0', // Read from stdin
-    '-c:v',
-    'copy', // Copy video codec (no re-encoding)
-    '-c:a',
-    'copy', // Copy audio codec (no re-encoding)
-    '-movflags',
-    'frag_keyframe+empty_moov+default_base_moof', // Fragmented MP4 for crash-safety
-    '-fflags',
-    '+genpts', // Generate presentation timestamps
-    '-f',
-    'mp4', // Force MP4 output format
-    '-y', // Overwrite output file if exists
-    outputPath,
-  ]
-
-  const ffmpegPath = getFFmpegPath()
-  const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs)
-
-  // Handle FFmpeg stderr output (for debugging)
-  ffmpegProcess.stderr?.on('data', (data) => {
-    const output = data.toString().trim()
-    // Filter out common/expected warnings to reduce log noise
-    if (
-      !output.includes('frame=') &&
-      !output.includes('size=') &&
-      !output.includes('time=') &&
-      !output.includes('bitrate=')
-    ) {
-      console.log(`FFmpeg (${processId}):`, output)
-    }
-  })
-
-  // Handle FFmpeg process errors
-  ffmpegProcess.on('error', (error) => {
-    console.error(`FFmpeg process error (${processId}):`, error)
-    activeStreamProcesses.delete(processId)
-  })
-
-  // Handle FFmpeg process exit
-  ffmpegProcess.on('close', (code, signal) => {
-    console.log(`FFmpeg process ${processId} closed with code ${code}, signal ${signal}`)
-    activeStreamProcesses.delete(processId)
-  })
+  const ffmpegProcess = spawnSegmentProcess(processId, outputPath)
 
   // Save first chunk as backup if enabled
   if (keepChunkBackup) {
@@ -156,6 +178,8 @@ const startVideoRecording = async (
     id: processId,
     ffmpegProcess,
     outputPath,
+    fileName,
+    segmentPaths: [outputPath],
     tempDir,
     isFinalized: false,
     chunkBackupEnabled: keepChunkBackup,
@@ -164,6 +188,100 @@ const startVideoRecording = async (
   activeStreamProcesses.set(processId, streamProcess)
 
   return { id: processId, outputPath }
+}
+
+/**
+ * Wait for the FFmpeg process of a segment to write it out and exit
+ * @param {LiveStreamProcess} process - The streaming process whose current segment is ending
+ * @returns {Promise<void>} Promise that resolves once the segment is on disk
+ */
+const waitForSegmentToFinish = (process: LiveStreamProcess): Promise<void> => {
+  const { id: processId, ffmpegProcess } = process
+  const segmentPath = process.segmentPaths[process.segmentPaths.length - 1]
+
+  if (ffmpegProcess.stdin && !ffmpegProcess.stdin.destroyed) {
+    ffmpegProcess.stdin.end()
+    console.log(`Closed FFmpeg stdin for process ${processId}`)
+  }
+
+  // An FFmpeg that already died fires no further close event, so nothing would resolve the wait below
+  if (ffmpegProcess.exitCode !== null || ffmpegProcess.signalCode !== null) return Promise.resolve()
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      if (ffmpegProcess.killed || ffmpegProcess.exitCode !== null) return
+
+      console.error(`FFmpeg finalization timeout for process ${processId}`)
+      try {
+        ffmpegProcess.kill('SIGKILL')
+      } catch {
+        // Process already dead
+      }
+      reject(new Error('FFmpeg finalization timed out'))
+    }, 60000)
+
+    ffmpegProcess.on('close', async (code, signal) => {
+      clearTimeout(timeout)
+
+      if (code === 0) {
+        console.log(`FFmpeg process ${processId} completed successfully`)
+        resolve()
+        return
+      }
+
+      console.error(`FFmpeg process ${processId} exited with code ${code}, signal ${signal}`)
+
+      // Check if the file exists and is valid despite the error code
+      try {
+        const stats = await fs.stat(segmentPath)
+        if (stats.size > 0) {
+          console.log(`Output file exists (${stats.size} bytes), treating as partial success`)
+          resolve()
+        } else {
+          reject(new Error(`FFmpeg failed with exit code ${code}`))
+        }
+      } catch {
+        reject(new Error(`FFmpeg failed with exit code ${code}`))
+      }
+    })
+
+    ffmpegProcess.on('error', (error) => {
+      clearTimeout(timeout)
+      console.error(`FFmpeg process error during finalization (${processId}):`, error)
+      reject(error)
+    })
+  })
+}
+
+/**
+ * Close the segment being written and start the next one, for a recording whose chunks restart the WebM
+ * stream halfway through. A single FFmpeg cannot mux both: the new stream carries its own header and
+ * restarts its cluster timecodes, so the segments are muxed apart and joined when the recording ends.
+ * @param {LiveStreamProcess} process - The streaming process to rotate
+ */
+const startNextSegment = async (process: LiveStreamProcess): Promise<void> => {
+  const finishedSegmentPath = process.segmentPaths[process.segmentPaths.length - 1]
+
+  try {
+    await waitForSegmentToFinish(process)
+  } catch (error) {
+    // Whatever that segment holds is all it will ever hold, and the recording still has to carry on
+    console.error(`Segment '${finishedSegmentPath}' of process ${process.id} did not finish cleanly:`, error)
+  }
+
+  const segmentIndex = process.segmentPaths.length
+  const segmentFolder = join(getCockpitFolderPath(), ...videoSegmentSubFolders(segmentIndex))
+  await fs.mkdir(segmentFolder, { recursive: true })
+
+  // The recording can be finalized while its segment is being flushed, and a segment spawned after that would
+  // be written by an FFmpeg nothing can reach, into a file no join will ever read
+  if (process.isFinalized) return
+
+  const segmentPath = join(segmentFolder, videoSegmentFilename(process.fileName, segmentIndex))
+  console.log(`Recording of process ${process.id} continues in segment '${segmentPath}'`)
+
+  process.ffmpegProcess = spawnSegmentProcess(process.id, segmentPath)
+  process.segmentPaths.push(segmentPath)
 }
 
 /**
@@ -187,6 +305,20 @@ const appendChunkToVideoRecording = async (
     if (process.chunkBackupEnabled) {
       const chunkPath = join(process.tempDir, `chunk_${chunkNumber.toString().padStart(4, '0')}.webm`)
       await writeBlobToFile(chunkData, chunkPath)
+    }
+
+    const opensItsOwnStream = chunkNumber > 0 && isWebmStreamStart(chunkData)
+
+    // A dead FFmpeg takes only its own segment down, so its chunks are dropped until one opens a new WebM stream
+    const { exitCode, signalCode } = process.ffmpegProcess
+    if ((exitCode !== null || signalCode !== null) && !opensItsOwnStream) {
+      console.warn(`Dropping chunk ${chunkNumber} of process ${processId}: its segment is no longer being written.`)
+      return
+    }
+
+    // A chunk opening a WebM stream of its own comes from a recorder that replaced the one before it
+    if (opensItsOwnStream) {
+      await startNextSegment(process)
     }
 
     // Write chunk directly to FFmpeg stdin
@@ -217,17 +349,256 @@ const appendChunkToVideoRecording = async (
 }
 
 /**
- * Finalize a live video streaming process by closing FFmpeg stdin
- * @param {string} processId - ID of the streaming process to finalize
+ * Read the video stream a segment holds, so segments are only joined without re-encoding when they
+ * actually match. FFmpeg reports it on stderr and exits non-zero for want of an output, which is why
+ * the exit code is ignored here.
+ * @param {string} segmentPath - Path to the segment to inspect
+ * @returns {Promise<SegmentStreamInfo | null>} What the segment holds, or null when it cannot be read
  */
-const finalizeVideoRecording = async (processId: string): Promise<void> => {
+const probeSegment = (segmentPath: string): Promise<SegmentStreamInfo | null> => {
+  return new Promise((resolve) => {
+    const ffmpegProcess = spawn(getFFmpegPath(), ['-hide_banner', '-i', segmentPath])
+
+    let report = ''
+    ffmpegProcess.stderr.on('data', (data) => (report += data.toString()))
+
+    // Only catches an FFmpeg hung on a half-written segment, which would hold the recording in 'still being saved'
+    const timeout = setTimeout(() => ffmpegProcess.kill('SIGKILL'), 30 * 1000)
+
+    ffmpegProcess.on('error', (error) => {
+      clearTimeout(timeout)
+      console.warn(`Could not inspect segment '${segmentPath}':`, error)
+      resolve(null)
+    })
+
+    ffmpegProcess.on('close', () => {
+      clearTimeout(timeout)
+      // The dimensions are the only WxH on the video stream's line, as the codec tag next to them is hexadecimal
+      const videoLine = report.split('\n').find((line) => line.includes('Video:'))
+      const dimensions = videoLine?.match(/(\d{2,5})x(\d{2,5})/)
+      const codec = videoLine?.match(/Video: (\w+)/)
+      if (!dimensions || !codec) {
+        console.warn(`Segment '${segmentPath}' reported no video stream.`)
+        resolve(null)
+        return
+      }
+
+      resolve({
+        codec: codec[1],
+        width: parseInt(dimensions[1], 10),
+        height: parseInt(dimensions[2], 10),
+        hasAudio: report.includes('Audio:'),
+      })
+    })
+  })
+}
+
+/**
+ * Run an FFmpeg join and wait for it, leaving every input untouched when it fails
+ * @param {string[]} args - Arguments for the join
+ * @param {string} joinedPath - Path the join writes to
+ * @returns {Promise<void>} Promise that resolves once the joined file is written
+ */
+const runSegmentJoin = (args: string[], joinedPath: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const ffmpegProcess = spawn(getFFmpegPath(), args)
+
+    // A join can re-encode the whole take while the pilot is still flying on the live video
+    try {
+      if (ffmpegProcess.pid !== undefined) setPriority(ffmpegProcess.pid, osConstants.priority.PRIORITY_LOW)
+    } catch (error) {
+      console.warn('Could not lower the priority of the segment join:', error)
+    }
+
+    // FFmpeg reports its progress on stderr as it goes, so only one that has gone quiet is taken as hung
+    let hung = false
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const restartHangTimer = (): void => {
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        if (ffmpegProcess.exitCode !== null) return
+        hung = true
+        try {
+          ffmpegProcess.kill('SIGKILL')
+        } catch {
+          // Process already dead
+        }
+      }, 5 * 60 * 1000)
+    }
+    restartHangTimer()
+
+    let lastReport = ''
+    ffmpegProcess.stderr.on('data', (data) => {
+      lastReport = data.toString().trim()
+      restartHangTimer()
+    })
+
+    ffmpegProcess.on('error', (error) => {
+      clearTimeout(timeout)
+      reject(error)
+    })
+
+    ffmpegProcess.on('close', async (code) => {
+      clearTimeout(timeout)
+      if (code === 0) {
+        resolve()
+        return
+      }
+      await fs.rm(joinedPath, { force: true })
+      const cause = hung ? 'it stopped making progress' : `exit code ${code}: ${lastReport}`
+      reject(new Error(`FFmpeg failed to join the recording's segments (${cause}).`))
+    })
+  })
+}
+
+/**
+ * Build the FFmpeg arguments that re-encode a recording's segments into a single file, scaling each of them
+ * to the recording's own frame so that segments the camera renegotiated still line up
+ * @param {string[]} segmentPaths - Paths of the segments to join, in order
+ * @param {SegmentStreamInfo} target - What the joined recording holds, taken from its first segment
+ * @param {boolean} withAudio - Whether the joined recording carries audio
+ * @param {string} joinedPath - Path to write the joined recording to
+ * @returns {string[]} The arguments to run FFmpeg with
+ */
+const reencodingJoinArgs = (
+  segmentPaths: string[],
+  target: SegmentStreamInfo,
+  withAudio: boolean,
+  joinedPath: string
+): string[] => {
+  const { width, height } = target
+  const scaled = segmentPaths
+    .map((_, index) => {
+      const fit = `scale=${width}:${height}:force_original_aspect_ratio=decrease`
+      const pad = `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`
+      const audio = withAudio ? `[${index}:a]aresample=async=1[a${index}];` : ''
+      return `[${index}:v]${fit},${pad},setsar=1[v${index}];${audio}`
+    })
+    .join('')
+  const joined = segmentPaths.map((_, index) => (withAudio ? `[v${index}][a${index}]` : `[v${index}]`)).join('')
+  const concat = `concat=n=${segmentPaths.length}:v=1:a=${withAudio ? 1 : 0}`
+
+  return [
+    ...segmentPaths.flatMap((segmentPath) => ['-i', segmentPath]),
+    '-filter_complex',
+    `${scaled}${joined}${concat}${withAudio ? '[outv][outa]' : '[outv]'}`,
+    '-map',
+    '[outv]',
+    ...(withAudio ? ['-map', '[outa]', '-c:a', 'aac'] : []),
+    '-c:v',
+    'libx264',
+    '-preset',
+    'veryfast',
+    '-crf',
+    '23',
+    '-pix_fmt',
+    'yuv420p',
+    '-movflags',
+    '+faststart',
+    '-y',
+    joinedPath,
+  ]
+}
+
+/**
+ * Join the segments a recording was muxed into, leaving the recording as the single file it would have
+ * been without the video outages that cut it. Segments that match are stream-copied; a segment the
+ * camera renegotiated to another resolution or codec is re-encoded to match the first one, which no
+ * copy could join. The joined segments are only deleted once the joined file is in place, and the
+ * unreadable ones are kept for recovery.
+ * @param {LiveStreamProcess} process - The streaming process whose segments are to be joined
+ * @returns {Promise<VideoRecordingFinalizationResult>} How the recording was put together
+ */
+const joinSegments = async (process: LiveStreamProcess): Promise<VideoRecordingFinalizationResult> => {
+  const { segmentPaths, outputPath } = process
+  if (segmentPaths.length === 1) {
+    return { segmentsJoined: 1, reencoded: false, audioDropped: false, segmentsLost: 0 }
+  }
+
+  // One at a time, as a link that kept flapping leaves a recording in as many segments as it had outages
+  const streams: (SegmentStreamInfo | null)[] = []
+  for (const segmentPath of segmentPaths) {
+    streams.push(await probeSegment(segmentPath))
+  }
+
+  const [firstStream] = streams
+  if (!firstStream) {
+    throw new Error(`Could not read the recording's first segment, so its segments were left unjoined.`)
+  }
+
+  // An unreadable segment is left out rather than failing the join of the readable ones
+  const joinable = segmentPaths.filter((_, index) => streams[index] !== null)
+  const joinableStreams = streams.filter((stream): stream is SegmentStreamInfo => stream !== null)
+  const segmentsLost = segmentPaths.length - joinable.length
+
+  const sameVideo = (stream: SegmentStreamInfo): boolean =>
+    stream.codec === firstStream.codec && stream.width === firstStream.width && stream.height === firstStream.height
+  const sameAudio = (stream: SegmentStreamInfo): boolean => stream.hasAudio === firstStream.hasAudio
+
+  // Segments that disagree cannot be stream-copied together, and the audio is dropped when it is what differs
+  const audioDropped = !joinableStreams.every(sameAudio)
+  const reencoded = audioDropped || !joinableStreams.every(sameVideo)
+  const withAudio = firstStream.hasAudio && !audioDropped
+
+  // Written beside the segments, so a join never leaves a half-written file where the library lists videos
+  const segmentsFolder = dirname(segmentPaths[1])
+  if (joinable.length === 1) {
+    return { segmentsJoined: 1, reencoded: false, audioDropped: false, segmentsLost }
+  }
+
+  const joinedPath = join(segmentsFolder, `joining_${process.fileName}`)
+
+  let joinArgs: string[]
+  let listPath: string | undefined
+
+  if (reencoded) {
+    console.log(`Segments of process ${process.id} differ, so joining them re-encodes the recording.`)
+    joinArgs = reencodingJoinArgs(joinable, firstStream, withAudio, joinedPath)
+  } else {
+    listPath = join(segmentsFolder, `joining_${process.fileName}.txt`)
+    await fs.writeFile(listPath, joinable.map((path) => `file '${path.replace(/'/g, `'\\''`)}'`).join('\n'))
+    joinArgs = ['-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', '-movflags', '+faststart', '-y', joinedPath]
+  }
+
+  try {
+    await runSegmentJoin(joinArgs, joinedPath)
+  } catch (error) {
+    const reason = messageFromError(error)
+    throw new Error(`${reason} The recording's ${joinable.length} parts were kept in '${segmentsFolder}'.`)
+  } finally {
+    if (listPath) await fs.rm(listPath, { force: true })
+  }
+
+  try {
+    // The recording's own file is the first segment, so it is only replaced once the joined file exists
+    await fs.rename(joinedPath, outputPath)
+  } catch (error) {
+    const reason = messageFromError(error)
+    throw new Error(`${reason} The whole recording was written, and was left as '${joinedPath}'.`)
+  }
+
+  for (const segmentPath of joinable.slice(1)) {
+    await fs.rm(segmentPath, { force: true })
+  }
+
+  console.log(`Joined ${joinable.length} segments into '${outputPath}'`)
+  return { segmentsJoined: joinable.length, reencoded, audioDropped, segmentsLost }
+}
+
+/**
+ * Finalize a live video streaming process by closing FFmpeg stdin and joining the segments it wrote
+ * @param {string} processId - ID of the streaming process to finalize
+ * @returns {Promise<VideoRecordingFinalizationResult>} How the recording was put together
+ */
+const finalizeVideoRecording = async (processId: string): Promise<VideoRecordingFinalizationResult> => {
   const process = activeStreamProcesses.get(processId)
   if (!process) {
     throw new Error(`Live stream process ${processId} not found`)
   }
 
   if (process.isFinalized) {
-    return // Already finalized
+    // Already finalized, so how it was put together was reported to whoever finalized it
+    return { segmentsJoined: 1, reencoded: false, audioDropped: false, segmentsLost: 0 }
   }
 
   process.isFinalized = true
@@ -235,91 +606,39 @@ const finalizeVideoRecording = async (processId: string): Promise<void> => {
   try {
     console.log(`Finalizing live stream process ${processId}`)
 
-    // Close FFmpeg stdin to signal end of input
-    if (process.ffmpegProcess.stdin && !process.ffmpegProcess.stdin.destroyed) {
-      process.ffmpegProcess.stdin.end()
-      console.log(`Closed FFmpeg stdin for process ${processId}`)
+    await waitForSegmentToFinish(process)
+    const result = await joinSegments(process)
+
+    // Generate thumbnail from the final MP4 file
+    try {
+      const videoFileName = basename(process.outputPath)
+      const thumbnailFileName = videoThumbnailFilename(videoFileName)
+      const tempThumbnailPath = join(dirname(process.outputPath), `temp_${thumbnailFileName}`)
+
+      console.log(`Generating thumbnail for ${videoFileName}...`)
+      await generateThumbnailFromMP4(process.outputPath, tempThumbnailPath, 1)
+
+      // Read the generated thumbnail and store it in the database
+      const thumbnailBuffer = await fs.readFile(tempThumbnailPath)
+
+      // Store thumbnail in the video storage database
+      await filesystemStorage.setItem(thumbnailFileName, thumbnailBuffer as any, ['videos'])
+
+      // Clean up temporary thumbnail file
+      await fs.unlink(tempThumbnailPath)
+
+      console.log(`Thumbnail generated and stored: ${thumbnailFileName}`)
+    } catch (thumbnailError) {
+      console.warn(`Failed to generate thumbnail for ${processId}:`, thumbnailError)
+      // Don't fail the entire process if thumbnail generation fails
     }
 
-    // Wait for FFmpeg to finish processing
-    return new Promise((resolve, reject) => {
-      const timeoutMs = 60000 // 1 minute timeout for finalization
-
-      const timeout = setTimeout(() => {
-        if (process.ffmpegProcess.killed || process.ffmpegProcess.exitCode !== null) return
-
-        console.error(`FFmpeg finalization timeout for process ${processId}`)
-        try {
-          process.ffmpegProcess.kill('SIGKILL')
-        } catch {
-          // Process already dead
-        }
-        activeStreamProcesses.delete(processId)
-        reject(new Error('FFmpeg finalization timed out'))
-      }, timeoutMs)
-
-      process.ffmpegProcess.on('close', async (code, signal) => {
-        clearTimeout(timeout)
-
-        if (code === 0) {
-          console.log(`FFmpeg process ${processId} completed successfully`)
-
-          // Generate thumbnail from the final MP4 file
-          try {
-            const videoFileName = basename(process.outputPath)
-            const thumbnailFileName = videoThumbnailFilename(videoFileName)
-            const tempThumbnailPath = join(dirname(process.outputPath), `temp_${thumbnailFileName}`)
-
-            console.log(`Generating thumbnail for ${videoFileName}...`)
-            await generateThumbnailFromMP4(process.outputPath, tempThumbnailPath, 1)
-
-            // Read the generated thumbnail and store it in the database
-            const thumbnailBuffer = await fs.readFile(tempThumbnailPath)
-
-            // Store thumbnail in the video storage database
-            await filesystemStorage.setItem(thumbnailFileName, thumbnailBuffer as any, ['videos'])
-
-            // Clean up temporary thumbnail file
-            await fs.unlink(tempThumbnailPath)
-
-            console.log(`Thumbnail generated and stored: ${thumbnailFileName}`)
-          } catch (thumbnailError) {
-            console.warn(`Failed to generate thumbnail for ${processId}:`, thumbnailError)
-            // Don't fail the entire process if thumbnail generation fails
-          }
-
-          activeStreamProcesses.delete(processId)
-          resolve()
-        } else {
-          console.error(`FFmpeg process ${processId} exited with code ${code}, signal ${signal}`)
-          activeStreamProcesses.delete(processId)
-
-          // Check if the file exists and is valid despite the error code
-          try {
-            const stats = await fs.stat(process.outputPath)
-            if (stats.size > 0) {
-              console.log(`Output file exists (${stats.size} bytes), treating as partial success`)
-              resolve()
-            } else {
-              reject(new Error(`FFmpeg failed with exit code ${code}`))
-            }
-          } catch {
-            reject(new Error(`FFmpeg failed with exit code ${code}`))
-          }
-        }
-      })
-
-      process.ffmpegProcess.on('error', (error) => {
-        clearTimeout(timeout)
-        console.error(`FFmpeg process error during finalization (${processId}):`, error)
-        activeStreamProcesses.delete(processId)
-        reject(error)
-      })
-    })
+    return result
   } catch (error) {
     console.error(`Error finalizing live stream process ${processId}:`, error)
-    activeStreamProcesses.delete(processId)
     throw error
+  } finally {
+    activeStreamProcesses.delete(processId)
   }
 }
 
@@ -817,7 +1136,7 @@ export const setupVideoRecordingService = (): void => {
    */
   ipcMain.handle('finalize-video-recording', async (_, processId: string) => {
     try {
-      await finalizeVideoRecording(processId)
+      return await finalizeVideoRecording(processId)
     } catch (error) {
       console.error('Error finalizing live video stream:', error)
       throw error
