@@ -74,6 +74,14 @@
     <video id="mainDisplayStream" ref="videoElement" muted autoplay playsinline disablePictureInPicture>
       Your browser does not support the video tag.
     </video>
+    <div v-if="videoStalled" class="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
+      <div class="rounded-md border-[3px] border-white/20 bg-black/[0.13] px-5 py-3 text-center text-white/[0.33]">
+        <p class="text-lg font-medium">Video stalled... waiting for the stream to return</p>
+        <p v-if="recordingStalledStream" class="text-xs">
+          The telemetry recording carries on, and the outage is marked in the video file.
+        </p>
+      </div>
+    </div>
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
@@ -411,6 +419,17 @@ const showLoadingOverlay = computed(() => {
   if (!namesAvailableStreams.value.includes(nameSelectedStream.value)) return false
   if (showSuccessState.value) return true
   return !videoPlaying.value
+})
+
+// Stamped over the frozen picture rather than replacing it, as the last frame is still the best guess at
+// what is out there
+const videoStalled = computed(() => {
+  if (externalStreamId.value === undefined || showLoadingOverlay.value) return false
+  return videoStore.isStreamVideoStalled(externalStreamId.value)
+})
+
+const recordingStalledStream = computed(() => {
+  return externalStreamId.value !== undefined && videoStore.isRecording(externalStreamId.value)
 })
 
 const loadingMessage = computed(() => {

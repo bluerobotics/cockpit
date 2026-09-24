@@ -1,6 +1,11 @@
 import { isElectron } from '@/libs/utils'
 import { tempVideoStorage } from '@/libs/videoStorage'
-import type { VideoChunkQueueItem, VideoRecordingFinalizationResult, ZipExtractionResult } from '@/types/video'
+import type {
+  VideoChunkQueueItem,
+  VideoRecordingFinalizationResult,
+  ZipExtractionResult,
+  ZipRecordingResult,
+} from '@/types/video'
 import { videoChunkName, videoSubtitlesFilename } from '@/utils/video'
 
 /**
@@ -233,12 +238,12 @@ export class LiveVideoProcessor {
    * processed together in chunk-number order, producing a single output video.
    * @param {string[]} zipFilePaths - Paths to the ZIP file(s); a single-element array is fine
    * @param {(progress: number, message: string) => void} onProgress - Optional progress callback
-   * @returns {Promise<string>} Promise that resolves to the output video path
+   * @returns {Promise<ZipRecordingResult>} The rebuilt recording, and how it was put together
    */
   static async processZipFiles(
     zipFilePaths: string[],
     onProgress?: (progress: number, message: string) => void
-  ): Promise<string> {
+  ): Promise<ZipRecordingResult> {
     if (!isElectron() || !window.electronAPI) {
       throw new Error('ZIP processing is only available in Cockpit standalone')
     }
@@ -292,7 +297,7 @@ export class LiveVideoProcessor {
       onProgress?.(85, 'Finalizing video...')
 
       // Finalize the streaming process
-      await window.electronAPI.finalizeVideoRecording(processId)
+      const joined = await window.electronAPI.finalizeVideoRecording(processId)
 
       // Copy telemetry file if it exists (using the full output path)
       if (assFilePath) {
@@ -307,7 +312,7 @@ export class LiveVideoProcessor {
       onProgress?.(100, 'Processing complete!')
       console.log(`ZIP processing complete: ${outputPath}`)
 
-      return outputPath
+      return { fileName, joined }
     } catch (error) {
       console.error('Error processing ZIP file:', error)
       throw error

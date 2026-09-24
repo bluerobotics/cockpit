@@ -534,10 +534,14 @@ export const useVideoChunkManager = (): {
           ? `Starting processing of ${zipPathsToProcess.length} ZIP files...`
           : 'Starting ZIP processing...'
 
-      await LiveVideoProcessor.processZipFiles(zipPathsToProcess, (progress: number, message: string) => {
-        zipProcessingProgress.value = progress
-        zipProcessingMessage.value = message
-      })
+      const { fileName, joined } = await LiveVideoProcessor.processZipFiles(
+        zipPathsToProcess,
+        (progress: number, message: string) => {
+          zipProcessingProgress.value = progress
+          zipProcessingMessage.value = message
+        }
+      )
+      videoStore.warnAboutLostRecordingParts(fileName, joined)
 
       const successMessage =
         zipPathsToProcess.length > 1
@@ -612,7 +616,7 @@ export const useVideoChunkManager = (): {
       }
 
       // Finalize the streaming process
-      await window.electronAPI.finalizeVideoRecording(processId)
+      videoStore.warnAboutLostRecordingParts(fileName, await window.electronAPI.finalizeVideoRecording(processId))
 
       // Find and copy (if it exists) or generate (if it doesn't) telemetry overlay file
       try {

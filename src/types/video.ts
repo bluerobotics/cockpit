@@ -362,7 +362,22 @@ export interface LiveStreamProcess {
 }
 
 /**
- * State of a recording, shared by the handlers of the recorder that writes it
+ * The stream a recording is fed while its video stream is gone, and the teardown of what feeds it
+ */
+export interface GapFillerStream {
+  /**
+   * The stream to record while the video is gone
+   */
+  stream: MediaStream
+  /**
+   * Releases the stream and everything drawing into it
+   */
+  stop: () => void
+}
+
+/**
+ * State of a recording, which outlives the recorders that write it: a video outage costs the recording
+ * its recorder, and the one that takes over continues the same file, chunk sequence and telemetry window.
  */
 export interface RecordingSession {
   /**
@@ -385,6 +400,39 @@ export interface RecordingSession {
    * Number of the last chunk the recording produced, counting from zero
    */
   chunksCount: number
+  /**
+   * Which segment of the recording is being written, counting from zero
+   */
+  segmentIndex: number
+  /**
+   * Whether the health monitor should let this round pass, as a segment that has just started has
+   * nothing on disk yet and none of the size the one before it reached
+   */
+  skipNextHealthCheck: boolean
+  /**
+   * Width of the recorded video, in pixels
+   */
+  vWidth: number
+  /**
+   * Height of the recorded video, in pixels
+   */
+  vHeight: number
+  /**
+   * Whether the recorded stream carries audio, which what fills a video outage then has to carry too
+   */
+  hasAudio: boolean
+  /**
+   * The stream filling a video outage, while one is being filled
+   */
+  gapFiller: GapFillerStream | undefined
+  /**
+   * Snackbar telling the user the video stalled, while it can still be on screen
+   */
+  stallNoticeId: number | undefined
+  /**
+   * How many video outages the recording has been carried across
+   */
+  outagesSurvived: number
   /**
    * How many chunks the recording produced
    */
@@ -451,6 +499,20 @@ export interface VideoRecordingFinalizationResult {
    * How many segments were left out of the recording because nothing could be read from them
    */
   segmentsLost: number
+}
+
+/**
+ * Recording rebuilt from the chunks of one or more ZIP files
+ */
+export interface ZipRecordingResult {
+  /**
+   * Filename of the rebuilt recording
+   */
+  fileName: string
+  /**
+   * How the recording was put together
+   */
+  joined: VideoRecordingFinalizationResult
 }
 
 /**
