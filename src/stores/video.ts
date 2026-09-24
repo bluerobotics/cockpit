@@ -59,6 +59,9 @@ const secondsToWaitForStreamToResumeRecording = 60
 const maxSequentialRecordingResumes = 3
 // A take that lasted this long is a new incident rather than another bounce of a link that was already flapping
 const secondsRecordedToForgetPreviousResumes = 120
+// Each try at a session the camera offers in a recordable form costs the pilot a reconnect of the live video
+const maxUnrecordableSessionRenewals = 10
+const secondsToPlayUnrecordableSessionBeforeRenewing = 3
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
@@ -882,12 +885,23 @@ export const useVideoStore = defineStore('video', () => {
    * Whether the stream is back for a recording to start on it, which an active media stream alone does not mean, as it
    * exists from the moment a session adds its track, before that session has connected or may be replaced
    * @param {string} streamName - Name of the stream
-   * @returns {boolean} True when the stream is listed, its media stream is active and its peer is connected
+   * @returns {boolean} True when the stream is listed, its media stream is active, its peer is connected and its
+   * session can be recorded
    */
   const isStreamReadyToRecord = (streamName: string): boolean => {
     const streamData = getStreamData(streamName)
     const isListed = namesAvailableStreams.value.includes(streamName)
-    return isListed && streamData?.mediaStream?.active === true && streamData.connected
+    const isLive = streamData?.mediaStream?.active === true && streamData.connected
+    return isListed && isLive && isSessionRecordable(streamName)
+  }
+
+  /**
+   * Whether a recorder on the stream's current session receives its video, which only a WebRTC session can deny
+   * @param {string} streamName - Name of the stream
+   * @returns {boolean} False when the camera offered the current session in a form that cannot be recorded
+   */
+  const isSessionRecordable = (streamName: string): boolean => {
+    return getStreamData(streamName)?.webRtcManager?.recordable.value !== false
   }
 
   /**
@@ -1033,11 +1047,18 @@ export const useVideoStore = defineStore('video', () => {
       }
     )
 
-    const giveUp = setTimeout(() => {
+    let cameOnlyUnrecordable = false
+    let renewals = 0
+    let renewal: ReturnType<typeof setTimeout> | undefined
+
+    const stopTryingToRecordAgain = (): void => {
+      const waited = `${secondsToWaitForStreamToResumeRecording} seconds`
       // Says what the generic report below cannot: the recording that stopped is the one the drop message promised
-      const stoppedWaiting =
-        `Video stream '${streamLabel}' did not come back within ${secondsToWaitForStreamToResumeRecording} seconds, ` +
-        'so Cockpit stopped waiting to record it again.'
+      const stoppedWaiting = cameOnlyUnrecordable
+        ? `Video stream '${streamLabel}' came back, but the camera did not offer it in a form Cockpit can record, ` +
+          'so Cockpit stopped trying to record it again.'
+        : `Video stream '${streamLabel}' did not come back within ${waited}, ` +
+          'so Cockpit stopped waiting to record it again.'
       alertStore.pushAlert(new Alert(AlertLevel.Warning, stoppedWaiting))
       forgetRecordingResumes(streamName)
       // Without the dialog: the stop was announced a minute ago, and a modal about it now interrupts the operator
@@ -1045,10 +1066,30 @@ export const useVideoStore = defineStore('video', () => {
       reportStopAsFinal(false)
       // Nothing waits for the stream any more, so the guard that kept it alive for this wait is spent
       deactivateStreamIfUnused(streamName)
-    }, secondsToWaitForStreamToResumeRecording * 1000)
+    }
+
+    // Renews only a session that is already playing, and only after a while, so the pilot has a picture between tries
+    const stopRenewing = watch(
+      () => !isSessionRecordable(streamName) && getStreamData(streamName)?.connected === true,
+      (playsUnrecordable) => {
+        clearTimeout(renewal)
+        if (!playsUnrecordable) return
+        cameOnlyUnrecordable = true
+        renewal = setTimeout(() => {
+          if (renewals >= maxUnrecordableSessionRenewals) return stopTryingToRecordAgain()
+          renewals++
+          getStreamData(streamName)?.webRtcManager?.renewUnrecordableSession()
+        }, secondsToPlayUnrecordableSessionBeforeRenewing * 1000)
+      },
+      { immediate: true }
+    )
+
+    const giveUp = setTimeout(stopTryingToRecordAgain, secondsToWaitForStreamToResumeRecording * 1000)
 
     pendingRecordingResumes[streamName] = () => {
       stopWaiting()
+      stopRenewing()
+      clearTimeout(renewal)
       clearTimeout(giveUp)
     }
 
@@ -1136,6 +1177,13 @@ export const useVideoStore = defineStore('video', () => {
 
     if (streamData?.mediaStream === undefined) {
       showDialog({ message: 'Media stream not defined.', variant: 'error' })
+      return
+    }
+    if (!isSessionRecordable(streamName)) {
+      streamData.webRtcManager?.renewUnrecordableSession()
+      const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+      const message = `The camera sent stream '${streamLabel}' in a form that cannot be recorded. Try again in a few seconds.`
+      showDialog({ message, variant: 'error' })
       return
     }
     // The media stream is active from the moment its track is added, before the session has connected

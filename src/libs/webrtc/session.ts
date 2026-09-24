@@ -1,7 +1,7 @@
 /* eslint-disable jsdoc/no-undefined-types */ // TODO: fix type RTCConfiguration, RTCSessionDescriptionInit, RTCIceCandidateInit and RTCPeerConnectionIceEventInit are undefined
 import type { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
-import { unreceivableVideoCodecs } from '@/libs/webrtc/video-codec-support'
+import { offersVideoWithoutSsrc, unreceivableVideoCodecs } from '@/libs/webrtc/video-codec-support'
 
 type OnCloseCallback = (sessionId: string, reason: string) => void
 type OnTrackAddedCallback = (event: RTCTrackEvent) => void
@@ -31,6 +31,7 @@ export class Session {
   public onClose?: OnCloseCallback
   public onStatusChange?: OnStatusChangeCallback
   public onUnreceivableVideo?: OnUnreceivableVideoCallback
+  public onUnrecordableVideo?: () => void
 
   /**
    * Creates a new Session instance, connecting with a given Stream
@@ -145,6 +146,11 @@ export class Session {
         `[WebRTC] [Session] None of the offered video codecs can be received: ${unreceivableCodecs.join(', ')}`
       )
       this.onUnreceivableVideo?.(unreceivableCodecs)
+    }
+
+    if (offersVideoWithoutSsrc(description.sdp)) {
+      console.warn('[WebRTC] [Session] The camera offered video without its SSRC, so this video cannot be recorded')
+      this.onUnrecordableVideo?.()
     }
 
     this.peerConnection

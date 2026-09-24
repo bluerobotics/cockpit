@@ -49,6 +49,8 @@ export class WebRTCManager {
   private streamName: string | undefined
   public session: Session | undefined
   public onUnreceivableVideo?: (codecs: string[]) => void
+  // Whether a MediaRecorder on the current session receives its video, which the camera's offer decides
+  public recordable = ref(true)
   private rtcConfiguration: RTCConfiguration
   private selectedICEIPs: string[] = []
   private selectedICEProtocols: string[] = []
@@ -324,6 +326,15 @@ export class WebRTCManager {
   }
 
   /**
+   * Replaces the current session when its video cannot be recorded, for a recording that wants the stream, since the
+   * camera offers a recordable session again after a few tries. Watching the stream never needs this.
+   */
+  public renewUnrecordableSession(): void {
+    if (this.recordable.value) return
+    this.onSessionClosed('Camera offered a session that cannot be recorded')
+  }
+
+  /**
    *
    * @param {Stream} stream
    * @param {string} consumerId
@@ -426,6 +437,9 @@ export class WebRTCManager {
     )
 
     this.session.onUnreceivableVideo = (codecs: string[]): void => this.onUnreceivableVideo?.(codecs)
+    this.session.onUnrecordableVideo = (): void => {
+      this.recordable.value = false
+    }
 
     // Registers Session callback for the Signaller endSession parser
     this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
@@ -460,6 +474,7 @@ export class WebRTCManager {
     // black screen, as if it were live
     this.connected.value = false
     this.mediaStream.value = undefined
+    this.recordable.value = true
 
     if (this.session === undefined) {
       console.debug('[WebRTC] Stopping an undefined session, probably it was already stopped?')

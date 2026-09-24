@@ -39,6 +39,17 @@ export const unreceivableVideoCodecs = (
 }
 
 /**
+ * Whether an SDP offers video without naming the SSRC it is sent on, which the camera sometimes does. Such a session
+ * plays, but a MediaRecorder passing its video through never receives a frame of it.
+ * @param {string} sdp - Session description offered by the camera
+ * @returns {boolean} True when a video section of the offer has no ssrc attribute
+ */
+export const offersVideoWithoutSsrc = (sdp: string): boolean => {
+  const videoSections = sdp.split(/^m=/m).filter((section) => section.startsWith('video'))
+  return videoSections.some((section) => !/^a=ssrc:/m.test(section))
+}
+
+/**
  * Codec name spelled as camera settings and datasheets do, so users can match it to what they configure.
  * @param {string} codec - Codec name as an SDP spells it, such as 'H265'
  * @returns {string} Name for the user, such as 'H.265'
