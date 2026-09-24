@@ -11,7 +11,7 @@
       >
         <div
           class="flex flex-row w-full align-center"
-          :class="isCompact ? 'gap-x-[1vw] py-[0.8vh]' : 'gap-x-[3vw] py-[1.5vh]'"
+          :class="isCompact ? 'gap-x-[1vw] py-2' : 'gap-x-[3vw] py-[1.5vh]'"
         >
           <div class="flex flex-col w-full">
             <div
@@ -22,12 +22,12 @@
                 v-if="!isChevronInverted"
                 :size="isCompact ? 20 : 24"
                 :icon="isPanelExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                :class="interfaceStore.isOnSmallScreen ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
+                :class="isSmallScreenLayout ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
               />
               <div class="flex w-full flex-col">
                 <div
                   class="font-semibold"
-                  :class="interfaceStore.isOnSmallScreen ? `text-[${textSize - 4}px]` : `text-[${textSize}px]`"
+                  :class="isSmallScreenLayout ? `text-[${textSize - 4}px]` : `text-[${textSize}px]`"
                 >
                   <slot name="title" />
                 </div>
@@ -36,12 +36,12 @@
                 v-if="isChevronInverted"
                 :size="isCompact ? 20 : 24"
                 :icon="isPanelExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                :class="interfaceStore.isOnSmallScreen ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
+                :class="isSmallScreenLayout ? '-mt-[2px] mr-[3px]' : 'mt-[2px] mr-[2px]'"
               />
             </div>
             <div
               class="font-normal opacity-80"
-              :class="interfaceStore.isOnSmallScreen ? `text-[${textSize - 8}px]` : `text-[${textSize - 4}px]`"
+              :class="isSmallScreenLayout ? `text-[${textSize - 8}px]` : `text-[${textSize - 4}px]`"
             >
               <slot name="subtitle" />
             </div>
@@ -50,7 +50,7 @@
         <div class="flex justify-between ml-4">
           <div v-if="$slots.info" class="flex items-center w-[10%]">
             <v-btn class="ml-auto rounded-full" size="small" color="transparent" elevation="0" @click.stop="toggleInfo">
-              <v-icon :size="interfaceStore.isOnSmallScreen ? 15 : 18" color="white" icon="mdi-information-outline" />
+              <v-icon :size="isSmallScreenLayout ? 15 : 18" color="white" icon="mdi-information-outline" />
             </v-btn>
           </div>
           <div v-if="$slots.warning" class="flex justify-end items-center w-[10%]">
@@ -61,7 +61,7 @@
               elevation="0"
               @click.stop="toggleWarning"
             >
-              <v-icon :size="interfaceStore.isOnSmallScreen ? 15 : 18" color="yellow-400" icon="mdi-alert" />
+              <v-icon :size="isSmallScreenLayout ? 15 : 18" color="yellow-400" icon="mdi-alert" />
               <div v-if="animateWarning" class="ripple"></div>
             </v-btn>
           </div>
@@ -76,7 +76,7 @@
       >
         <div
           class="bg-[#00000033] py-3 px-5 rounded-[6px] text-white elevation-1 mb-2 mt-1"
-          :class="interfaceStore.isOnSmallScreen ? 'text-[12px]' : 'text-[14px]'"
+          :class="isSmallScreenLayout ? 'text-[12px]' : 'text-[14px]'"
         >
           <slot name="info"></slot>
         </div>
@@ -92,7 +92,7 @@
       >
         <div
           class="bg-[#00000033] py-3 px-5 rounded-[6px] text-white elevation-1 mb-2 mt-1"
-          :class="interfaceStore.isOnSmallScreen ? 'text-[12px]' : 'text-[14px]'"
+          :class="isSmallScreenLayout ? 'text-[12px]' : 'text-[14px]'"
         >
           <slot name="warning"></slot>
         </div>
@@ -143,6 +143,10 @@ const props = defineProps<{
    * Compact mode.
    */
   compact?: boolean
+  /**
+   * Keeps the small-screen sizing on a compact panel whose container follows the window width.
+   */
+  followWindowWidth?: boolean
   /**
    * Darken the content background.
    */
@@ -221,6 +225,12 @@ const togglePanel = (): void => {
 const textSize = computed(() => {
   return isCompact.value ? 16 : 18
 })
+
+// Compact panels usually live in fixed-width containers (sidebars, widgets), so the window width says nothing
+// about their room; the full-page ones opt back in with `followWindowWidth`.
+const isSmallScreenLayout = computed(
+  () => interfaceStore.isOnSmallScreen && (!isCompact.value || props.followWindowWidth === true)
+)
 
 const toggleInfo = (): void => {
   isInfoOpen.value = !isInfoOpen.value
