@@ -31,13 +31,26 @@ const startProcessor = async (keepRawChunks: boolean): Promise<LiveVideoProcesso
   return processor
 }
 
-test('addChunk deletes the raw chunk from temp storage when backup is disabled', async () => {
+test('addChunk deletes the raw chunks from temp storage when backup is disabled', async () => {
   const processor = await startProcessor(false)
 
   // The regression this guards: delete used to call window.electronAPI.deleteChunk, which was never
   // implemented, so the first chunk threw and recording aborted as "First chunk was lost".
-  await expect(processor.addChunk(chunk, 0)).resolves.toBeUndefined()
+  // These chunks are far too small to carry a header, so the output file starts once the head is capped.
+  for (let n = 0; n < 5; n++) {
+    await expect(processor.addChunk(chunk, n)).resolves.toBeUndefined()
+  }
   expect(removeItem).toHaveBeenCalledWith('rec-hash_0')
+  expect(removeItem).toHaveBeenCalledWith('rec-hash_4')
+})
+
+test('addChunk keeps a chunk still held back as part of the head, backup disabled or not', async () => {
+  const processor = await startProcessor(false)
+
+  // Until FFmpeg is given the head, the temp store holds the recording's only copy of it, so dropping a
+  // buffered chunk would leave a failed start or an early crash with nothing to recover from.
+  await expect(processor.addChunk(chunk, 0)).resolves.toBeUndefined()
+  expect(removeItem).not.toHaveBeenCalled()
 })
 
 test('addChunk keeps the raw chunk when backup is enabled', async () => {
@@ -51,7 +64,9 @@ test('addChunk still succeeds if deleting the raw chunk fails', async () => {
   removeItem.mockRejectedValueOnce(new Error('ENOENT'))
   const processor = await startProcessor(false)
 
-  await expect(processor.addChunk(chunk, 0)).resolves.toBeUndefined()
+  for (let n = 0; n < 5; n++) {
+    await expect(processor.addChunk(chunk, n)).resolves.toBeUndefined()
+  }
 })
 
 test('addChunk deletes a skipped chunk when backup is disabled', async () => {

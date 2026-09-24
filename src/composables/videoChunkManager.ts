@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { LiveVideoProcessor } from '@/libs/live-video-processor'
 import { datalogger } from '@/libs/sensors-logging'
 import { formatBytes, isElectron } from '@/libs/utils'
+import { joinRecordingHead } from '@/libs/video-recording-codec'
 import { telemetryOverlayWindowCandidates } from '@/libs/video-telemetry'
 import { useVideoStore } from '@/stores/video'
 import { type FileDescriptor } from '@/types/video'
@@ -586,13 +587,17 @@ export const useVideoChunkManager = (): {
         throw new Error('No chunk files found for processing')
       }
 
-      // Read first chunk using the electron storage API to get the blob
-      const firstChunkBlob = (await videoStore.tempVideoStorage.getItem(sortedChunks[0].key)) as Blob
-      if (!firstChunkBlob) {
+      // Read the head, which is as many leading chunks as it takes to carry the Matroska header the codec
+      // is read from, since the first chunk alone can be too small to hold it
+      const { head: firstChunkBlob, consumed: headChunks } = await joinRecordingHead(async (index) => {
+        if (index >= sortedChunks.length) return undefined
+        return (await videoStore.tempVideoStorage.getItem(sortedChunks[index].key)) as Blob | undefined
+      })
+      if (firstChunkBlob.size === 0) {
         throw new Error('Failed to read first chunk')
       }
 
-      // Start FFmpeg streaming process with first chunk
+      // Start FFmpeg streaming process with that head
       const { id: processId, outputPath } = await window.electronAPI.startVideoRecording(
         firstChunkBlob,
         group.hash,
@@ -601,7 +606,7 @@ export const useVideoChunkManager = (): {
       )
 
       // Stream remaining chunks to FFmpeg in order
-      for (let i = 1; i < sortedChunks.length; i++) {
+      for (let i = headChunks; i < sortedChunks.length; i++) {
         const chunkBlob = (await videoStore.tempVideoStorage.getItem(sortedChunks[i].key)) as Blob
         if (!chunkBlob) {
           console.warn(`Failed to read chunk ${i}, skipping`)
