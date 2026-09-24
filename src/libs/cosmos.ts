@@ -4,6 +4,7 @@ import type { NearbyOpenCellIdCell, OpenCellIdBboxRequest } from '@/types/baseSt
 import { type ElectronLog } from '@/types/electron-general'
 import { ElectronStorageDB } from '@/types/general'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
+import type { McpConfig, McpState, McpToolCall, McpToolDefinition, McpToolResult } from '@/types/mcp'
 import { NetworkInfo } from '@/types/network'
 import type { TelemetrySystemHardwareInfo } from '@/types/platform'
 import { SDLStatus } from '@/types/sdl'
@@ -615,6 +616,38 @@ declare global {
        * @param tempDir - Path to the temporary directory to remove
        */
       cleanupTempDir: (tempDir: string) => Promise<void>
+      /**
+       * Get the MCP server configuration and whether it is running
+       * @returns {Promise<McpState>} The configuration and the server state
+       */
+      getMcpState: () => Promise<McpState>
+      /**
+       * Change the MCP server configuration, restarting the server to apply it
+       * @param changes - The settings to change
+       * @returns {Promise<McpState>} The new configuration and the server state
+       */
+      setMcpConfig: (changes: Partial<Pick<McpConfig, 'enabled' | 'allowCode' | 'port'>>) => Promise<McpState>
+      /**
+       * Replace the MCP bearer token, cutting off every agent using the old one
+       * @returns {Promise<McpState>} The new configuration and the server state
+       */
+      regenerateMcpToken: () => Promise<McpState>
+      /**
+       * Register the tools this window offers to agents over MCP
+       * @param tools - The tool definitions
+       */
+      registerMcpTools: (tools: McpToolDefinition[]) => Promise<void>
+      /**
+       * Listen to tool calls agents make over MCP
+       * @param callback - Called with each tool call
+       * @returns {() => void} Stops listening
+       */
+      onMcpToolCall: (callback: (call: McpToolCall) => void) => () => void
+      /**
+       * Answer a tool call made over MCP
+       * @param result - The outcome of the call
+       */
+      sendMcpToolResult: (result: McpToolResult) => void
     }
   }
 }

@@ -24,6 +24,11 @@
             <h3 class="text-subtitle-2 font-weight-bold">JavaScript Code</h3>
             <div class="text-caption">Type <code v-pre>{{</code> to autocomplete data lake variables</div>
           </div>
+          <div class="text-caption mb-2 opacity-70">
+            Register listeners and timers through <code>cockpit.listenDataLakeVariable</code>,
+            <code>cockpit.setInterval</code> and <code>cockpit.setTimeout</code>, and pass other cleanup to
+            <code>cockpit.onCleanup(fn)</code>, so saving or deleting the action stops them.
+          </div>
           <div class="editor-wrapper">
             <div ref="editorContainer" class="editor-container"></div>
             <div v-if="codeError" class="code-error text-error text-caption mt-1">{{ codeError }}</div>
@@ -57,6 +62,7 @@ import {
   registerJavascriptActionConfig,
 } from '@/libs/actions/free-javascript'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
+import { createCleanupScope } from '@/libs/user-script'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { JavascriptActionConfig } from '@/types/cockpit-actions'
 
@@ -76,6 +82,8 @@ const newActionConfig = ref<JavascriptActionConfig>({
 })
 
 const codeError = ref('')
+// Test runs belong to the dialog rather than to an action id, which the name may still change before saving.
+const testRuns = createCleanupScope('JavaScript action test')
 const editMode = ref(false)
 const actionDialog = ref({ show: false })
 
@@ -129,6 +137,7 @@ const handleDialogOpen = (): void => {
 
 const handleDialogClose = (): void => {
   disposeEditor()
+  testRuns.cleanUp()
 }
 
 const createActionConfig = (): void => {
@@ -158,7 +167,8 @@ const resetNewAction = (): void => {
 
 const testAction = (): void => {
   logUserAction(`Tested JavaScript action '${newActionConfig.value.name}'`)
-  executeActionCode(newActionConfig.value.code)
+  testRuns.cleanUp()
+  executeActionCode(newActionConfig.value.code, testRuns)
 }
 
 const exportAction = (id: string): void => {
@@ -218,6 +228,7 @@ defineExpose({
 
 onBeforeUnmount(() => {
   disposeEditor()
+  testRuns.cleanUp()
 })
 </script>
 
