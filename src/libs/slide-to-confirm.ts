@@ -108,6 +108,18 @@ const maxRepeatIntervalMs = 150
 const holdActionTimeMs = 1000
 
 /**
+ * Check if the user wants the given category to be confirmed, falling back to the default for categories added after
+ * the user's settings were stored
+ * @param {EventCategory} category The category of the event
+ * @returns {boolean} True if the category is set to require confirmation
+ */
+export const isCategoryConfirmationRequired = (category: EventCategory): boolean => {
+  const missionStore = useMissionStore()
+
+  return missionStore.slideEventsCategoriesRequired[category] ?? eventCategoriesDefaultMapping[category]
+}
+
+/**
  * Check if slide can be bypassed for the given category
  * @param {EventCategory} category The category of the event
  * @returns {boolean} True if the slide can be bypassed, false otherwise
@@ -115,7 +127,7 @@ const holdActionTimeMs = 1000
 export const canByPassCategory = (category: EventCategory): boolean => {
   const missionStore = useMissionStore()
 
-  return !(missionStore.slideEventsEnabled && missionStore.slideEventsCategoriesRequired[category])
+  return !(missionStore.slideEventsEnabled && isCategoryConfirmationRequired(category))
 }
 
 /**
