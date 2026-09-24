@@ -199,6 +199,8 @@
       </ExpansiblePanel>
     </div>
 
+    <slot name="below-fence-lists" />
+
     <div class="flex flex-col ma-2 py-2 px-4 border-[1px] border-[#FFFFFF22] bg-[#00000022] rounded-md p-2">
       <div v-if="fenceStore.isArduPilot" class="flex items-center justify-between gap-x-2 fence-autoenable-row">
         <p class="text-xs">Auto enable fence on takeoff</p>
