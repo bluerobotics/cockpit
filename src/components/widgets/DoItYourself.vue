@@ -2,6 +2,8 @@
 <template>
   <div class="main">
     <div
+      ref="rootElement"
+      :key="scriptRunKey"
       class="w-full h-full"
       :style="widget.options.inheritCockpitStyles ? interfaceStore.globalGlassMenuStyles : {}"
       v-html="compiledCode"
@@ -30,6 +32,17 @@
                 <li>Navigate between editors using Cmd/Ctrl + Option/Alt + ↑/↓</li>
                 <li>Reset to last saved state using the Reset button</li>
                 <li>Your code runs in the widget's context and has access to the DOM</li>
+                <li>
+                  With "Run script in its own scope" on, the script gets <code>root</code>, this widget's element, and
+                  <code>cockpit</code>, whose <code>listenDataLakeVariable</code>, <code>setInterval</code> and
+                  <code>setTimeout</code> are undone when the widget is removed or the script is applied again. Use
+                  <code>cockpit.onCleanup(fn)</code> for anything else. Top-level functions are not global then, so
+                  attach event listeners from the script instead of using inline <code>onclick</code> attributes.
+                  Cockpit versions older than this one ignore the setting and run the script globally, where
+                  <code>root</code> and these helpers do not exist, so the widget's script fails there. Switching an
+                  existing widget to this mode takes effect at once, but what its old global script started keeps
+                  running until Cockpit is reloaded
+                </li>
                 <li>You can use the console to debug your code</li>
                 <li>
                   You can use the data-lake system to inject or consume data from Cockpit. Check the docs for more
@@ -65,6 +78,14 @@
 
           <v-checkbox v-model="autoSave" label="Auto Save" density="compact" class="-mb-2" hide-details />
           <v-checkbox
+            :model-value="widget.options.scopedScript"
+            label="Run script in its own scope"
+            density="compact"
+            class="-mb-2"
+            hide-details
+            @update:model-value="onScopedScriptChange"
+          />
+          <v-checkbox
             v-model="widget.options.inheritCockpitStyles"
             label="Inherit Cockpit interface styles"
             density="compact"
@@ -95,10 +116,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
+import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
+import { createCleanupScope, runUserScript } from '@/libs/user-script'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -116,6 +138,9 @@ const props = defineProps<{
 }>()
 
 const widget = toRefs(props).widget
+const rootElement = ref<HTMLElement | null>(null)
+const scriptRunKey = ref(0)
+const scriptScope = createCleanupScope('DIY widget script')
 const htmlEditorContainer = ref<HTMLElement | null>(null)
 const cssEditorContainer = ref<HTMLElement | null>(null)
 const jsEditorContainer = ref<HTMLElement | null>(null)
@@ -252,12 +277,24 @@ const applyChanges = (): void => {
   executeUserScript()
 }
 
-const executeUserScript = (): void => {
+const executeUserScript = async (): Promise<void> => {
   const js = widget.value.options.js || ''
   const scriptElementId = `diy-script-${widget.value.hash}`
 
   // Remove existing script element
   document.getElementById(scriptElementId)?.remove()
+  scriptScope.cleanUp()
+
+  // Every run gets freshly rendered markup, so nothing an earlier run attached to it survives. Runs started together
+  // share the one render that follows, so only the latest of them goes on.
+  const run = ++scriptRunKey.value
+  await nextTick()
+  if (run !== scriptRunKey.value || !rootElement.value) return
+
+  if (widget.value.options.scopedScript) {
+    runUserScript(js, 'DIY widget script', scriptScope, { root: rootElement.value })
+    return
+  }
 
   // Create new script element
   const scriptEl = document.createElement('script')
@@ -265,6 +302,12 @@ const executeUserScript = (): void => {
   scriptEl.textContent = js
   scriptEl.id = scriptElementId
   document.body.appendChild(scriptEl)
+}
+
+const onScopedScriptChange = (scoped: boolean | null): void => {
+  logUserAction(`${scoped ? 'Enabled' : 'Disabled'} running the Do-It-Yourself widget script in its own scope`)
+  widget.value.options.scopedScript = scoped === true
+  executeUserScript()
 }
 
 const resetChanges = (): void => {
@@ -307,6 +350,7 @@ const exportConfig = (): void => {
     css: cssEditor.getValue(),
     js: jsEditor.getValue(),
     inheritCockpitStyles: widget.value.options.inheritCockpitStyles || false,
+    scopedScript: widget.value.options.scopedScript === true,
   }
 
   // Create file content as JSON string
@@ -362,6 +406,8 @@ const importConfig = (): void => {
 
         // Update the inheritCockpitStyles option if present (defaults to false for backwards compatibility)
         widget.value.options.inheritCockpitStyles = config.inheritCockpitStyles || false
+        // Files exported before the scoped mode existed hold code written for a global script.
+        widget.value.options.scopedScript = config.scopedScript === true
 
         // Apply changes
         applyChanges()
@@ -388,7 +434,10 @@ const editorHeight = computed(() => {
 })
 
 onBeforeMount(() => {
-  widget.value.options = Object.assign({}, defaultOptions, widget.value.options)
+  // Only a widget that was never configured lacks html, so every widget saved before the scoped mode keeps its
+  // global script, whose top-level functions its inline handlers may rely on.
+  const scopedScript = widget.value.options.scopedScript ?? widget.value.options.html === undefined
+  widget.value.options = Object.assign({}, defaultOptions, widget.value.options, { scopedScript })
 })
 
 onMounted(() => {
@@ -397,6 +446,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   finishEditor()
+  document.getElementById(`diy-script-${widget.value.hash}`)?.remove()
+  scriptScope.cleanUp()
 })
 </script>
 
