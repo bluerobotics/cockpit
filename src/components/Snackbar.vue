@@ -107,15 +107,15 @@ onMounted((): void => {
 </script>
 
 <style scoped>
+/* Vuetify positions the message absolutely inside this root, so the root leaves the layout for the stack to space it. */
 .stacked-snackbar {
-  position: static !important;
-  margin-bottom: 10px;
-  height: fit-content;
-  width: 80vw;
-  display: inline-block;
+  display: contents;
 }
 
 ::v-deep .v-snackbar__wrapper {
+  position: relative;
+  inset: auto;
+  margin: 0;
   max-width: 1200px !important;
   box-shadow: 0px 5px 6px 0px rgba(0, 0, 0, 0.21), 0px 10px 16px 8px rgba(0, 0, 0, 0.105);
   pointer-events: auto;
