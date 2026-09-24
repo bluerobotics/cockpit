@@ -63,7 +63,7 @@ export const predefinedCockpitActions: { [key in CockpitActionsFunction]: Cockpi
   [CockpitActionsFunction.hold_to_confirm]: new CockpitAction(CockpitActionsFunction.hold_to_confirm, 'Hold to confirm'),
 }
 
-export type CockpitActionCallback = () => void
+export type CockpitActionCallback = () => void | Promise<void>
 
 /**
  * Callback entry
@@ -103,7 +103,7 @@ export class CockpitActionsManager {
     delete this.actionsCallbacks[id]
   }
 
-  executeActionCallback = (id: string): void => {
+  executeActionCallback = (id: string, onError?: (error: unknown) => void): void => {
     const callbackEntry = this.actionsCallbacks[id]
     if (!callbackEntry) {
       console.error(`Callback for action ${id} not found.`)
@@ -111,10 +111,14 @@ export class CockpitActionsManager {
     }
 
     console.debug(`Executing action callback for action ${id}.`)
+    const handleError = (error: unknown): void => {
+      if (onError) onError(error)
+      else console.error(`Error executing action callback for action ${id}.`, error)
+    }
     try {
-      callbackEntry.callback()
+      void Promise.resolve(callbackEntry.callback()).catch(handleError)
     } catch (error) {
-      console.error(`Error executing action callback for action ${id}.`, error)
+      handleError(error)
     }
   }
 }
@@ -139,8 +143,8 @@ export const unregisterActionCallback = (id: string): void => {
   cockpitActionsManager.unregisterActionCallback(id)
 }
 
-export const executeActionCallback = (id: string): void => {
-  cockpitActionsManager.executeActionCallback(id)
+export const executeActionCallback = (id: string, onError?: (error: unknown) => void): void => {
+  cockpitActionsManager.executeActionCallback(id, onError)
 }
 
 export const availableCockpitActions = cockpitActionsManager.availableActions

@@ -5,6 +5,7 @@ import {
   canUserChangeDataLakeVariable,
   canUserDeleteDataLakeVariable,
   findDataLakeVariablesIdsInString,
+  findUnknownDataLakeVariablesInString,
   getSoleDataLakeVariableIdInString,
   isSystemOwnedDataLakeVariable,
   replaceDataLakeInputsInString,
@@ -84,4 +85,17 @@ describe('Data lake input unit systems', () => {
     expect(replaceDataLakeInputsInString('{{ lat : }}')).toBe('123456789')
     expect(findDataLakeVariablesIdsInString('{{ lat : si }}')).toEqual(['lat'])
   })
+})
+
+test('finds unavailable and malformed placeholders without rejecting available ones', () => {
+  expect(findUnknownDataLakeVariablesInString('Bearer {{ known }} {{ missing }} {{ two words }}', ['known'])).toEqual([
+    'missing',
+    'two words',
+  ])
+})
+
+test('checks the variable id rather than the unit system in placeholders', () => {
+  expect(findUnknownDataLakeVariablesInString('{{ known : metric }} {{ missing : imperial }}', ['known'])).toEqual([
+    'missing',
+  ])
 })

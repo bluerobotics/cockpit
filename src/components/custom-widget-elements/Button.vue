@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { onMounted, toRefs, watch } from 'vue'
 
+import { openActionErrorSnackbar } from '@/composables/snackbar'
 import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { CustomWidgetElementOptions, CustomWidgetElementType } from '@/types/widgets'
@@ -48,7 +49,8 @@ const miniWidget = toRefs(props).miniWidget
 
 const handleClick = (): void => {
   if (widgetStore.editingMode) return
-  executeActionCallback(miniWidget.value.options.cockpitAction.id)
+  const actionId = miniWidget.value.options.cockpitAction.id
+  executeActionCallback(actionId, openActionErrorSnackbar)
 }
 
 watch(

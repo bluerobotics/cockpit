@@ -73,6 +73,8 @@
               </v-chip>
             </v-chip-group>
           </div>
+          <div v-if="headerValidationError" class="text-error text-caption mb-2">{{ headerValidationError }}</div>
+          <div v-if="headerInputWarning" class="text-warning text-caption mb-2">{{ headerInputWarning }}</div>
 
           <div class="d-flex align-center justify-space-between">
             <h3 class="text-subtitle-2 font-weight-bold">JSON Body</h3>
@@ -152,15 +154,21 @@
             label="Header Key"
             required
             variant="outlined"
-            :error-messages="headerDialog.error"
+            :error-messages="headerDialog.keyError"
             density="compact"
           ></v-text-field>
           <v-text-field
             v-model="headerDialog.value"
             label="Header Value"
+            hint="Use {{ inputId }} for dynamic values."
+            persistent-hint
+            :error-messages="headerDialog.valueError"
             variant="outlined"
             density="compact"
           ></v-text-field>
+          <div v-if="headerDialogInputWarning" class="text-warning text-caption mb-2">
+            {{ headerDialogInputWarning }}
+          </div>
           <!-- User-Agent header note -->
           <v-alert
             v-if="headerDialog.key.toLowerCase() === 'user-agent'"
@@ -226,7 +234,9 @@ import {
   deleteHttpRequestActionConfig,
   getHttpRequestActionConfig,
   registerHttpRequestActionConfig,
+  validateHttpRequestHeaders,
 } from '@/libs/actions/http-request'
+import { findUnknownDataLakeVariablesInString } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { HttpRequestActionConfig, HttpRequestMethod } from '@/types/cockpit-actions'
 import { ValidationFunctionReturn } from '@/types/general'
@@ -271,7 +281,8 @@ const headerDialog = ref({
   show: false,
   key: '',
   value: '',
-  error: '',
+  keyError: '',
+  valueError: '',
 })
 
 const paramValueOptions = computed(() => {
@@ -281,6 +292,27 @@ const paramValueOptions = computed(() => {
     options.push({ title: parameter.id, value: parameter.id })
   })
   return options
+})
+
+const availableInputIds = computed(() =>
+  paramValueOptions.value.map((option) => option.value).filter((id) => id !== 'fixed')
+)
+
+const headerValidationError = computed(() => validateHttpRequestHeaders(newActionConfig.value.headers).error ?? '')
+
+const headerInputWarning = computed(() => {
+  const unavailable = Object.values(newActionConfig.value.headers).some(
+    (value) =>
+      typeof value === 'string' && findUnknownDataLakeVariablesInString(value, availableInputIds.value).length > 0
+  )
+  return unavailable
+    ? 'Some header inputs are not available right now. They will be checked when this action runs.'
+    : ''
+})
+
+const headerDialogInputWarning = computed(() => {
+  const unknown = findUnknownDataLakeVariablesInString(headerDialog.value.value, availableInputIds.value)[0]
+  return unknown === undefined ? '' : `Input ${unknown || '(empty)'} is not available right now.`
 })
 
 const isFormValid = computed(() => {
@@ -293,7 +325,7 @@ const isValidRequestConfig = (config: HttpRequestActionConfig): boolean => {
     !!config.method &&
     !!config.url &&
     isValidUrlParams(config.urlParams) &&
-    isValidHeaders(config.headers).isValid &&
+    validateHttpRequestHeaders(config.headers).isValid &&
     isValidJsonTemplate(config.body)
   )
 }
@@ -303,23 +335,11 @@ const validateJsonTemplate = (template: string): ValidationFunctionReturn => {
     return { isValid: true, error: '' }
   }
 
-  // Check if all placeholders are properly formatted
   const placeholderRegex = /\{\{\s*([^}]+)\s*\}\}/g
-  const placeholders = template.match(placeholderRegex)
-  if (placeholders) {
-    const availableInputs = paramValueOptions.value.map((option) => option.value).filter((option) => option !== 'fixed')
-    for (const placeholder of placeholders) {
-      const inputName = placeholder.match(/\{\{\s*([^}]+)\s*\}\}/)?.[1]?.trim()
-      if (!inputName) {
-        return { isValid: false, error: `Invalid placeholder format: ${placeholder}` }
-      }
-      if (!availableInputs.includes(inputName)) {
-        return {
-          isValid: false,
-          error: `Invalid input name in placeholder: ${inputName}. Available inputs are: ${availableInputs.join(', ')}`,
-        }
-      }
-    }
+  const invalidInput = findUnknownDataLakeVariablesInString(template, availableInputIds.value)[0]
+  if (invalidInput !== undefined) {
+    if (!invalidInput) return { isValid: false, error: 'Invalid placeholder format: {{ }}' }
+    return { isValid: false, error: `Invalid input name in placeholder: ${invalidInput}` }
   }
 
   // Replace placeholders with a valid JSON value temporarily
@@ -356,23 +376,6 @@ const isValidUrlParams = (params: Record<string, string>): boolean => {
     }
     return key !== '' && value !== ''
   })
-}
-
-const isValidHeaders = (headers: Record<string, string>): ValidationFunctionReturn => {
-  for (const [key, value] of Object.entries(headers)) {
-    // Header keys should be non-empty and contain valid characters
-    const validKeyRegex = /^[a-zA-Z0-9!#$%&'*+-.^_`|~]+$/
-    if (!key || !validKeyRegex.test(key)) {
-      const error = 'Invalid header key. Use only letters, numbers, and common punctuation. No spaces allowed.'
-      return { isValid: false, error }
-    }
-
-    // Header values can be empty, but if not, they should not contain newlines
-    if (value && /[\r\n]/.test(value)) {
-      return { isValid: false, error: 'Header value cannot contain newlines.' }
-    }
-  }
-  return { isValid: true, error: '' }
 }
 
 const openUrlParamDialog = (): void => {
@@ -427,23 +430,25 @@ const openHeaderDialog = (): void => {
     show: true,
     key: '',
     value: '',
-    error: '',
+    keyError: '',
+    valueError: '',
   }
 }
 
 const closeHeaderDialog = (): void => {
   headerDialog.value.show = false
-  headerDialog.value.error = ''
+  headerDialog.value.keyError = ''
+  headerDialog.value.valueError = ''
 }
 
 const addHeader = (): void => {
-  const { isValid, error } = isValidHeaders({ [headerDialog.value.key]: headerDialog.value.value })
+  const { isValid, error, field } = validateHttpRequestHeaders({ [headerDialog.value.key]: headerDialog.value.value })
+  headerDialog.value.keyError = field === 'key' ? error ?? '' : ''
+  headerDialog.value.valueError = field === 'value' ? error ?? '' : ''
   if (isValid) {
     logUserAction('Added header to HTTP request action')
     newActionConfig.value.headers[headerDialog.value.key] = headerDialog.value.value
     closeHeaderDialog()
-  } else {
-    headerDialog.value.error = error ?? ''
   }
 }
 
