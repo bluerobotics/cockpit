@@ -338,6 +338,16 @@ export interface LiveStreamProcess {
    */
   outputPath: string
   /**
+   * Name of the output MP4 file, which the recording's segments are named after
+   */
+  fileName: string
+  /**
+   * Paths of the segments the recording was muxed into, in order, the first being the output file itself.
+   * A recording only has more than one when a video outage cut it, as each recorder that records it opens
+   * a WebM stream of its own, which a single FFmpeg cannot mux.
+   */
+  segmentPaths: string[]
+  /**
    * Temporary directory for chunk backups (if enabled)
    */
   tempDir: string
@@ -349,6 +359,52 @@ export interface LiveStreamProcess {
    * Whether to save raw chunk backups during streaming
    */
   chunkBackupEnabled: boolean
+}
+
+/**
+ * What one segment of a recording holds, as FFmpeg reports it
+ */
+export interface SegmentStreamInfo {
+  /**
+   * Name of the video codec
+   */
+  codec: string
+  /**
+   * Width of the video, in pixels
+   */
+  width: number
+  /**
+   * Height of the video, in pixels
+   */
+  height: number
+  /**
+   * Whether the segment carries an audio stream
+   */
+  hasAudio: boolean
+}
+
+/**
+ * How a recording was put together when it finished
+ */
+export interface VideoRecordingFinalizationResult {
+  /**
+   * How many segments the recording was muxed into, more than one meaning a video outage cut it
+   */
+  segmentsJoined: number
+  /**
+   * Whether joining the segments had to re-encode them, as a camera that came back with another
+   * resolution or codec leaves segments no copy can join
+   */
+  reencoded: boolean
+  /**
+   * Whether the audio had to be left out of the joined recording, which only happens when the
+   * segments disagree on having any
+   */
+  audioDropped: boolean
+  /**
+   * How many segments were left out of the recording because nothing could be read from them
+   */
+  segmentsLost: number
 }
 
 /**

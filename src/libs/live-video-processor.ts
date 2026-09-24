@@ -1,6 +1,6 @@
 import { isElectron } from '@/libs/utils'
 import { tempVideoStorage } from '@/libs/videoStorage'
-import type { VideoChunkQueueItem, ZipExtractionResult } from '@/types/video'
+import type { VideoChunkQueueItem, VideoRecordingFinalizationResult, ZipExtractionResult } from '@/types/video'
 import { videoChunkName, videoSubtitlesFilename } from '@/utils/video'
 
 /**
@@ -199,9 +199,10 @@ export class LiveVideoProcessor {
 
   /**
    * Stop live processing and finalize the output video by closing FFmpeg stdin
-   * @returns {Promise<void>} Promise that resolves when FFmpeg finishes processing
+   * @returns {Promise<VideoRecordingFinalizationResult | undefined>} How the recording was put together,
+   * when there was a process left to finalize
    */
-  async stopProcessing(): Promise<void> {
+  async stopProcessing(): Promise<VideoRecordingFinalizationResult | undefined> {
     if (!this.isProcessing) {
       return
     }
@@ -213,8 +214,9 @@ export class LiveVideoProcessor {
       // Close FFmpeg stdin to signal end of input
       // FFmpeg will finish writing the fragmented MP4 and exit cleanly
       if (this.concatProcess) {
-        await window.electronAPI?.finalizeVideoRecording(this.concatProcess.id)
+        const result = await window.electronAPI?.finalizeVideoRecording(this.concatProcess.id)
         this.concatProcess = null
+        return result
       }
     } catch (error) {
       console.error('Error during live processing finalization:', error)
