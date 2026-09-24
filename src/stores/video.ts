@@ -882,14 +882,20 @@ export const useVideoStore = defineStore('video', () => {
 
   /**
    * Whether the stream is back for a recording to start on it, which an active media stream alone does not mean, as it
-   * exists from the moment a session adds its track, before that session has connected or may be replaced
+   * exists from the moment a session adds its track, before that session has connected or decoded a single frame
    * @param {string} streamName - Name of the stream
-   * @returns {boolean} True when the stream is listed, its media stream is active and its peer is connected
+   * @returns {boolean} True when the stream is listed, its peer is connected and its video track is carrying frames
    */
   const isStreamReadyToRecord = (streamName: string): boolean => {
+    if (!namesAvailableStreams.value.includes(streamName)) return false
+
     const streamData = getStreamData(streamName)
-    const isListed = namesAvailableStreams.value.includes(streamName)
-    return isListed && streamData?.mediaStream?.active === true && streamData.connected
+    if (streamData?.mediaStream?.active !== true) return false
+    if (!streamData.connected) return false
+
+    // A remote track stays muted until its first frame arrives, and a recorder built on it before that never
+    // receives one, writing an empty file for as long as it runs
+    return streamData.mediaStream.getVideoTracks()[0]?.muted === false
   }
 
   /**
@@ -1028,10 +1034,30 @@ export const useVideoStore = defineStore('video', () => {
         })
     }
 
+    const recordIfReady = (): void => {
+      if (isStreamReadyToRecord(streamName)) recordAgain()
+    }
+
+    // The last step of becoming ready is a track event, which no reactive source reports, so the track of whichever
+    // session is current has to be listened to directly
+    let followedTrack: MediaStreamTrack | undefined
+    const stopFollowingTrack = (): void => {
+      followedTrack?.removeEventListener('unmute', recordIfReady)
+      followedTrack = undefined
+    }
+    const followTrackOfCurrentSession = (): void => {
+      const track = activeStreams.value[streamName]?.mediaStream?.getVideoTracks()[0]
+      if (track === followedTrack) return
+      stopFollowingTrack()
+      followedTrack = track
+      track?.addEventListener('unmute', recordIfReady)
+    }
+
     const stopWaiting = watch(
-      () => isStreamReadyToRecord(streamName),
-      (isReady) => {
-        if (isReady) recordAgain()
+      [() => activeStreams.value[streamName]?.mediaStream, () => activeStreams.value[streamName]?.connected],
+      () => {
+        followTrackOfCurrentSession()
+        recordIfReady()
       }
     )
 
@@ -1051,11 +1077,13 @@ export const useVideoStore = defineStore('video', () => {
 
     pendingRecordingResumes[streamName] = () => {
       stopWaiting()
+      stopFollowingTrack()
       clearTimeout(giveUp)
     }
 
     // A recorder can also stop while its stream is still live, which no later write to the stream would report,
     // so the wait above would never end
+    followTrackOfCurrentSession()
     if (isStreamReadyToRecord(streamName)) {
       recordAgain()
       return
@@ -1140,7 +1168,8 @@ export const useVideoStore = defineStore('video', () => {
       showDialog({ message: 'Media stream not defined.', variant: 'error' })
       return
     }
-    if (!streamData.mediaStream.active) {
+    // The media stream is active from the moment its track is added, before the session has connected
+    if (!isStreamReadyToRecord(streamName)) {
       showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
       return
     }
