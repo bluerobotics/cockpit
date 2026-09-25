@@ -2,11 +2,13 @@ import { v4 as uuid } from 'uuid'
 import { type Ref, ref } from 'vue'
 
 import { setJitterBufferTarget } from '@/libs/webrtc/jitter-buffer'
+import { trackVideoArrival } from '@/libs/webrtc/stats'
 
 const RECONNECT_DELAY_MS = 3000
 // Time we give the peer connection to reach 'connected' before assuming go2rtc is stuck waiting for an
 // unavailable source (e.g. camera not yet on the network) and forcing a reconnect.
 const CONNECT_WATCHDOG_MS = 8000
+const SECONDS_WITHOUT_VIDEO_TO_RECONNECT = 10
 
 /**
  * Manages a WebRTC connection to a go2rtc stream.
@@ -26,6 +28,7 @@ export class Go2RTCManager {
   private closed = false
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private connectWatchdog: ReturnType<typeof setTimeout> | null = null
+  private videoWatchdog: ReturnType<typeof setInterval> | null = null
 
   /**
    * @param {number} go2rtcPort - The port go2rtc is listening on
@@ -121,6 +124,7 @@ export class Go2RTCManager {
       switch (state) {
         case 'connected':
           this.clearConnectWatchdog()
+          this.armVideoWatchdog()
           this.connected.value = true
           break
         case 'disconnected':
@@ -248,6 +252,38 @@ export class Go2RTCManager {
   }
 
   /**
+   * Arm a watchdog that forces a reconnect once the video stops arriving. Required because go2rtc keeps the peer
+   * connection up while its source (e.g. an RTSP camera) is away, leaving the stream, and a recording of it, running
+   * on a track that carries nothing until the source returns.
+   */
+  private armVideoWatchdog(): void {
+    this.clearVideoWatchdog()
+    const secondsWithoutVideo = trackVideoArrival(this.streamName, 'a stream whose source is lost will not reconnect')
+    this.videoWatchdog = setInterval(() => {
+      if ((secondsWithoutVideo() ?? 0) < SECONDS_WITHOUT_VIDEO_TO_RECONNECT) return
+      console.warn(
+        `[go2rtc] No video received on '${this.streamName}' for ${SECONDS_WITHOUT_VIDEO_TO_RECONNECT}s. Forcing reconnect.`
+      )
+      this.streamStatus.value = 'Source unavailable'
+      // Cleared before the peer connection closes, so whoever reacts to its track ending finds the stream away
+      this.connected.value = false
+      this.mediaStream.value = undefined
+      this.cleanup()
+      this.scheduleReconnect()
+    }, 1000)
+  }
+
+  /**
+   * Clear the video watchdog timer if it is set
+   */
+  private clearVideoWatchdog(): void {
+    if (this.videoWatchdog) {
+      clearInterval(this.videoWatchdog)
+      this.videoWatchdog = null
+    }
+  }
+
+  /**
    * Clean up the current PeerConnection and WebSocket without closing the manager
    */
   private cleanup(): void {
@@ -257,6 +293,7 @@ export class Go2RTCManager {
     }
 
     this.clearConnectWatchdog()
+    this.clearVideoWatchdog()
 
     if (this.ws) {
       this.ws.onopen = null
