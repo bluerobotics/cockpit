@@ -127,6 +127,7 @@
         elevation-effect
         :is-expanded="fenceStore.circles.length > 0"
         darken-content
+        no-bottom-divider
       >
         <template #title>
           <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
@@ -198,6 +199,8 @@
         </template>
       </ExpansiblePanel>
     </div>
+
+    <GeoFenceParametersPanel />
 
     <slot name="below-fence-lists" />
 
@@ -306,8 +309,6 @@
     >
       PX4: multiple inclusion polygons are AND-ed (intersection), not OR-ed.
     </p>
-
-    <GeoFenceParametersPanel />
 
     <div class="flex w-full justify-between my-2 px-4 pt-1">
       <v-tooltip location="top" text="Save fence to file">
