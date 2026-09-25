@@ -6,17 +6,26 @@
       </template>
       <template #content>
         <div class="flex flex-col w-full">
-          <p v-if="!isApm && !isPx4" class="text-xs opacity-70 px-3 py-2">
-            Connect a vehicle to view its geofence parameters.
-          </p>
-          <p v-else class="text-[11px] opacity-70 px-3 pt-2 pb-1">
-            These parameters apply to all fences uploaded to the vehicle.
-          </p>
+          <div class="flex items-start justify-between gap-x-2 px-3">
+            <p v-if="!isApm && !isPx4" class="text-xs opacity-70 py-2">
+              Connect a vehicle to view its geofence parameters.
+            </p>
+            <p v-else class="text-[11px] opacity-70 pt-2 pb-1">
+              These parameters apply to all fences uploaded to the vehicle.
+            </p>
+            <v-tooltip location="top" text="Reload values from vehicle">
+              <template #activator="{ props }">
+                <v-btn v-bind="props" variant="text" size="x-small" icon class="mt-1 -mr-2" @click="onRefreshAllParams">
+                  <v-icon size="14">mdi-refresh</v-icon>
+                </v-btn>
+              </template>
+            </v-tooltip>
+          </div>
 
           <div
             v-for="param in activeParams"
             :key="param.name"
-            class="flex w-full justify-between items-center border-b-[1px] border-[#FFFFFF22] h-[36px] px-3"
+            class="flex w-full justify-between items-center border-b-[1px] last:border-b-0 border-[#FFFFFF22] h-[36px] px-3"
           >
             <p class="text-start text-[12px] flex-1 truncate">{{ param.name }}</p>
             <div class="flex items-center gap-x-2">
@@ -44,16 +53,6 @@
                 @change="onWriteParam(param.name, ($event.target as HTMLInputElement).value, param.type)"
               />
             </div>
-          </div>
-
-          <div class="flex flex-row justify-end px-3 py-2">
-            <v-tooltip location="top" text="Reload values from vehicle">
-              <template #activator="{ props }">
-                <v-btn v-bind="props" variant="text" size="x-small" icon @click="onRefreshAllParams">
-                  <v-icon size="14">mdi-refresh</v-icon>
-                </v-btn>
-              </template>
-            </v-tooltip>
           </div>
         </div>
       </template>
