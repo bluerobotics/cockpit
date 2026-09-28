@@ -81,34 +81,32 @@ export const getExtrasJsonFromBlueOsService = async (
 
 export const getWidgetsFromBlueOS = async (vehicleAddress: string): Promise<ExternalWidgetSetupInfo[]> => {
   const services = await getServicesFromBlueOS(vehicleAddress)
-  const widgets: ExternalWidgetSetupInfo[] = []
-  await Promise.all(
-    services.map(async (service) => {
+  // Collected per service rather than pushed as each resolves, so the order is stable across fetches
+  const widgetsPerService = await Promise.all(
+    services.map(async (service): Promise<ExternalWidgetSetupInfo[]> => {
       try {
         const extraJson = await getExtrasJsonFromBlueOsService(vehicleAddress, service)
         const baseUrl = blueOsServiceUrl(vehicleAddress, service)
-        if (extraJson !== null) {
-          const extensionPath = new URL(baseUrl).pathname
-          widgets.push(
-            ...extraJson.widgets.map((widget) => {
-              const useExtPath = widget.useExtensionPathAsBaseUrl ?? false
-              const iconUrl = widget.iconUrl ?? widget.iframeIcon ?? ''
+        if (extraJson === null) return []
+        const extensionPath = new URL(baseUrl).pathname
+        return extraJson.widgets.map((widget) => {
+          const useExtPath = widget.useExtensionPathAsBaseUrl ?? false
+          const iconUrl = widget.iconUrl ?? widget.iframeIcon ?? ''
 
-              return {
-                ...widget,
-                iframeUrl: useExtPath ? extensionPath + widget.iframeUrl : widget.iframeUrl,
-                iframeIcon: useExtPath ? baseUrl + iconUrl : iconUrl,
-              }
-            })
-          )
-        }
+          return {
+            ...widget,
+            iframeUrl: useExtPath ? extensionPath + widget.iframeUrl : widget.iframeUrl,
+            iframeIcon: useExtPath ? baseUrl + iconUrl : iconUrl,
+          }
+        })
       } catch (error) {
         console.error(`Could not get widgets from BlueOS service ${service.metadata?.sanitizedName}. ${error}`)
+        return []
       }
     })
   )
 
-  return widgets
+  return widgetsPerService.flat()
 }
 
 export const getActionsFromBlueOS = async (vehicleAddress: string): Promise<ActionsFromExtension[]> => {
