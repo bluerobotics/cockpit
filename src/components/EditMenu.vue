@@ -545,7 +545,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog } from '@vueuse/core'
+import { useConfirmDialog, useTimeoutPoll } from '@vueuse/core'
 import { v4 as uuid } from 'uuid'
 import { computed, onMounted, ref, toRefs, watch } from 'vue'
 import { nextTick } from 'vue'
@@ -946,15 +946,18 @@ const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
 })
 useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidgetsContainerOptions)
 
-const getExternalWidgetSetupInfos = async (): Promise<void> => {
+const getExternalWidgetSetupInfos = async (notifyOnError = true): Promise<void> => {
   try {
     const vehicleAddress = await mainVehicleStore.getVehicleAddress()
-    ExternalWidgetSetupInfos.value = await getWidgetsFromBlueOS(vehicleAddress)
+    const widgets = await getWidgetsFromBlueOS(vehicleAddress)
+    // Swapping in an identical list would re-render the widget row under a user dragging from it
+    if (JSON.stringify(widgets) === JSON.stringify(ExternalWidgetSetupInfos.value)) return
+    ExternalWidgetSetupInfos.value = widgets
   } catch (error) {
     console.error('Could not fetch external widgets from BlueOS:', error)
     // Only surface the error to the user when the vehicle is reachable; while it is offline we
     // expect the fetch to fail and a retry will run automatically once it comes online (issue #2650).
-    if (mainVehicleStore.isVehicleOnline) {
+    if (notifyOnError && mainVehicleStore.isVehicleOnline) {
       const errorMessage = 'Error getting info around external widgets from BlueOS.'
       openSnackbar({ message: errorMessage, variant: 'error', closeButton: true })
     }
@@ -967,6 +970,17 @@ watch(
     if (!isOnline) return
     getExternalWidgetSetupInfos()
   }
+)
+
+// Extensions can add widgets at any time, so refresh the list while it is on screen
+const externalWidgetsPoll = useTimeoutPoll(async () => {
+  // Offline ticks would only time out; the online watcher above refetches on reconnect
+  if (mainVehicleStore.isVehicleOnline) await getExternalWidgetSetupInfos(false)
+}, 10000)
+watch(
+  () => props.editMode,
+  (isEditing) => (isEditing ? externalWidgetsPoll.resume() : externalWidgetsPoll.pause()),
+  { immediate: true }
 )
 
 // @ts-ignore: Documentation is not clear on what generic should be passed to 'UseDraggableOptions'
