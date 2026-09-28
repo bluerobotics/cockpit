@@ -98,7 +98,7 @@
           <div class="w-full">
             <div class="flex items-center justify-between mb-2">
               <span v-if="isCalibrating && calibratingAxis === null" class="text-xs text-blue-400 ml-2">
-                Calibrating all axes...
+                Calibrating all inputs...
               </span>
               <v-progress-linear
                 v-if="isCalibrating && calibratingAxis === null"
@@ -113,11 +113,13 @@
           <!-- Deadband Axis Panels -->
           <div class="grid grid-rows-2 grid-cols-3 grid-flow-row gap-x-6 gap-y-6 w-full my-2">
             <div
-              v-for="(_, index) in controllerStore.currentMainJoystick?.state.axes ?? []"
+              v-for="index in calibrationPanels"
               :key="index"
               class="border border-gray-700/60 rounded-lg py-2 px-4 bg-gray-900/60 flex flex-col"
             >
-              <div class="flex w-full justify-center text-lg font-bold text-white mb-3">Axis {{ index }}</div>
+              <div class="flex w-full justify-center text-lg font-bold text-white mb-3 capitalize">
+                {{ inputName(index) }}
+              </div>
               <div class="w-full h-40 relative">
                 <svg
                   :id="`deadband-svg-${index}`"
@@ -131,10 +133,10 @@
 
                   <!-- Axis labels (rendered inside the viewBox so they always align with the gridlines) -->
                   <text x="102" y="9" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="start">
-                    out: {{ numberToTwoDigitsSigned(processedAxisValues[index]) }}
+                    out: {{ numberToTwoDigitsSigned(processedInputValues[index]) }}
                   </text>
                   <text x="198" y="56" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="end">
-                    in: {{ numberToTwoDigitsSigned(rawAxisValues[index]) }}
+                    in: {{ numberToTwoDigitsSigned(rawInputValues[index]) }}
                   </text>
 
                   <!-- Deadband region -->
@@ -173,17 +175,17 @@
 
                   <!-- Current value indicator -->
                   <circle
-                    :cx="100 + (rawAxisValues[index] ?? 0) * 100"
-                    :cy="60 - processedAxisValues[index] * 50"
+                    :cx="100 + (rawInputValues[index] ?? 0) * 100"
+                    :cy="60 - processedInputValues[index] * 50"
                     r="4"
                     fill="#3b82f6"
                   />
 
                   <!-- Vertical line (input) -->
                   <line
-                    :x1="100 + (rawAxisValues[index] ?? 0) * 100"
+                    :x1="100 + (rawInputValues[index] ?? 0) * 100"
                     y1="0"
-                    :x2="100 + (rawAxisValues[index] ?? 0) * 100"
+                    :x2="100 + (rawInputValues[index] ?? 0) * 100"
                     y2="120"
                     stroke="#3b82f6"
                     stroke-width="1"
@@ -193,9 +195,9 @@
                   <!-- Horizontal line (output) -->
                   <line
                     x1="0"
-                    :y1="60 - processedAxisValues[index] * 50"
+                    :y1="60 - processedInputValues[index] * 50"
                     x2="200"
-                    :y2="60 - processedAxisValues[index] * 50"
+                    :y2="60 - processedInputValues[index] * 50"
                     stroke="#3b82f6"
                     stroke-width="1"
                     stroke-dasharray="2,2"
@@ -256,6 +258,9 @@
               </div>
             </div>
           </div>
+          <p v-if="analogButtons.size === 0" class="text-xs text-gray-400">
+            Analog buttons get a card here once pressed partway. On/off buttons have no calibration.
+          </p>
         </div>
       </template>
       <template #actions>
@@ -274,17 +279,21 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import InteractionDialog from '@/components/InteractionDialog.vue'
-import { JoystickModel } from '@/libs/joystick/manager'
+import { hasTriggerAxes, JoystickModel } from '@/libs/joystick/manager'
 import { round } from '@/libs/utils'
 import { useControllerStore } from '@/stores/controller'
-import { type JoystickCalibration } from '@/types/joystick'
+import { type JoystickCalibration, standardTriggerAxes } from '@/types/joystick'
 
 const controllerStore = useControllerStore()
 
 const showCalibrationModal = ref(false)
+// Per-input arrays hold every axis first, then every button. Buttons follow the raw gamepad index calibration is
+// applied at, while axes follow the model profile's order, which only matches it for profiles that keep device order
+const numAxes = ref(0)
 const exponentialFactors = ref<number[]>([])
-const rawAxisValues = ref<number[]>([])
-const processedAxisValues = ref<number[]>([])
+const rawInputValues = ref<number[]>([])
+const processedInputValues = ref<number[]>([])
+const analogButtons = ref(new Set<number>())
 const allowSavingCalibration = ref(false)
 const deadzoneThresholds = ref<number[]>([])
 const isCalibrating = ref(false)
@@ -308,25 +317,53 @@ const currentCalibration = computed<JoystickCalibration>({
   },
 })
 
+const currentButtonValues = (): number[] =>
+  controllerStore.currentMainJoystick?.gamepad.buttons.map((button) => button.value) ?? []
+
+// Triggers are calibrated on their axis card, which their button copy follows
+const triggerButtons = computed<number[]>(() => {
+  const gamepad = controllerStore.currentMainJoystick?.gamepad
+  return gamepad && hasTriggerAxes(gamepad) ? standardTriggerAxes.map(({ button }) => button) : []
+})
+
+const inputName = (index: number): string =>
+  index < numAxes.value ? `axis ${index}` : `button ${index - numAxes.value}`
+
+const calibrationPanels = computed<number[]>(() => [
+  ...Array.from({ length: numAxes.value }, (_, index) => index),
+  ...[...analogButtons.value].sort((a, b) => a - b).map((button) => numAxes.value + button),
+])
+
+const savedOrFilled = (saved: number[], length: number, fill: number): number[] =>
+  Array.from({ length }, (_, index) => saved[index] ?? fill)
+
 const openCalibrationModal = (): void => {
   logUserAction('Opened joystick calibration dialog')
   showCalibrationModal.value = true
-  const numAxes = controllerStore.currentMainJoystick?.state.axes.length ?? 0
-  exponentialFactors.value =
-    currentCalibration.value.exponential.factors.axes.length === numAxes
-      ? [...currentCalibration.value.exponential.factors.axes]
-      : Array(numAxes).fill(1.0)
-  deadzoneThresholds.value =
-    currentCalibration.value.deadband.thresholds.axes.length === numAxes
-      ? [...currentCalibration.value.deadband.thresholds.axes]
-      : Array(numAxes).fill(0.05)
-  rawAxisValues.value = Array(numAxes).fill(0)
-  processedAxisValues.value = Array(numAxes).fill(0)
+  numAxes.value = controllerStore.currentMainJoystick?.state.axes.length ?? 0
+  const numButtons = currentButtonValues().length
+  const { deadband, exponential } = currentCalibration.value
+  exponentialFactors.value = [
+    ...savedOrFilled(exponential.factors.axes, numAxes.value, 1.0),
+    ...savedOrFilled(exponential.factors.buttons, numButtons, 1.0),
+  ]
+  deadzoneThresholds.value = [
+    ...savedOrFilled(deadband.thresholds.axes, numAxes.value, 0.05),
+    ...savedOrFilled(deadband.thresholds.buttons, numButtons, 0),
+  ]
+  const calibratedButtons = Array.from({ length: numButtons }, (_, button) => button).filter((button) => {
+    const index = numAxes.value + button
+    const calibrated = deadzoneThresholds.value[index] !== 0 || exponentialFactors.value[index] !== 1
+    return calibrated && !triggerButtons.value.includes(button)
+  })
+  analogButtons.value = new Set(calibratedButtons)
+  rawInputValues.value = Array(numAxes.value + numButtons).fill(0)
+  processedInputValues.value = Array(numAxes.value + numButtons).fill(0)
   allowSavingCalibration.value = true
 }
 
 const startCalibration = (axisIndex?: number): void => {
-  logUserAction(`Started deadband auto-calibration (${axisIndex === undefined ? 'all axes' : `axis ${axisIndex}`})`)
+  logUserAction(`Started deadband auto-calibration (${axisIndex === undefined ? 'all inputs' : inputName(axisIndex)})`)
   isCalibrating.value = true
   calibrationStartTime.value = Date.now()
   calibratingAxis.value = axisIndex ?? null
@@ -344,8 +381,10 @@ const cancelCalibration = (): void => {
 
 const saveCalibration = (): void => {
   logUserAction('Saved joystick calibration')
-  currentCalibration.value.deadband.thresholds.axes = [...deadzoneThresholds.value]
-  currentCalibration.value.exponential.factors.axes = [...exponentialFactors.value]
+  currentCalibration.value.deadband.thresholds.axes = deadzoneThresholds.value.slice(0, numAxes.value)
+  currentCalibration.value.deadband.thresholds.buttons = deadzoneThresholds.value.slice(numAxes.value)
+  currentCalibration.value.exponential.factors.axes = exponentialFactors.value.slice(0, numAxes.value)
+  currentCalibration.value.exponential.factors.buttons = exponentialFactors.value.slice(numAxes.value)
   showCalibrationModal.value = false
 }
 
@@ -362,12 +401,12 @@ const setExponentialEnabled = (value: boolean | null): void => {
 }
 
 const resetDeadband = (index: number): void => {
-  logUserAction(`Reset deadband for axis ${index}`)
+  logUserAction(`Reset deadband for ${inputName(index)}`)
   deadzoneThresholds.value[index] = 0
 }
 
 const resetExponential = (index: number): void => {
-  logUserAction(`Reset exponential factor for axis ${index}`)
+  logUserAction(`Reset exponential factor for ${inputName(index)}`)
   exponentialFactors.value[index] = 1.0
 }
 
@@ -461,7 +500,7 @@ function onDeadbandRegionMouseMove(event: MouseEvent): void {
 function onDeadbandRegionMouseUp(): void {
   if (draggingDeadbandAxis.value !== null) {
     const axisIndex = draggingDeadbandAxis.value
-    logUserAction(`Adjusted deadband for axis ${axisIndex} to ${deadzoneThresholds.value[axisIndex]}`)
+    logUserAction(`Adjusted deadband for ${inputName(axisIndex)} to ${deadzoneThresholds.value[axisIndex]}`)
   }
   draggingDeadbandAxis.value = null
   document.body.style.userSelect = ''
@@ -471,6 +510,7 @@ function onDeadbandRegionMouseUp(): void {
 watch(
   [
     () => controllerStore.currentMainJoystick?.state.axes,
+    currentButtonValues,
     () => [...exponentialFactors.value],
     () => [...deadzoneThresholds.value],
     () => currentCalibration.value.deadband.enabled,
@@ -481,27 +521,33 @@ watch(
   ],
   () => {
     const axes = controllerStore.currentMainJoystick?.state.axes ?? []
+    const buttons = currentButtonValues()
+    buttons.forEach((value, button) => {
+      if (value > 0 && value < 1 && !triggerButtons.value.includes(button)) analogButtons.value.add(button)
+    })
+    const inputs = [...axes.map((axis) => axis ?? 0), ...buttons]
     const deadbandEnabled = currentCalibration.value.deadband.enabled
     const exponentialEnabled = currentCalibration.value.exponential.enabled
-    rawAxisValues.value = axes.map((axis) => axis ?? 0)
-    processedAxisValues.value = axes.map((value, index) => {
+    rawInputValues.value = inputs
+    processedInputValues.value = inputs.map((value, index) => {
       const deadband = deadzoneThresholds.value[index] ?? 0
       const factor = exponentialFactors.value[index] ?? 1.0
-      return applyDeadbandAndExponential(value ?? 0, deadband, factor, deadbandEnabled, exponentialEnabled)
+      return applyDeadbandAndExponential(value, deadband, factor, deadbandEnabled, exponentialEnabled)
     })
     // Deadband calibration logic
     if (isCalibrating.value) {
       const elapsed = Date.now() - calibrationStartTime.value
-      axes.forEach((value, index) => {
+      // Hidden digital buttons are skipped, as a press during calibration would give them a deadband of 1
+      calibrationPanels.value.forEach((index) => {
         if (calibratingAxis.value === null || calibratingAxis.value === index) {
-          const deviation = Math.abs(value ?? 0)
+          const deviation = Math.abs(inputs[index] ?? 0)
           maxDeviations.value[index] = Math.max(maxDeviations.value[index] ?? 0, deviation)
         }
       })
       if (elapsed >= 5000) {
         isCalibrating.value = false
         // Set the deadzone threshold to the maximum deviation plus a small buffer
-        axes.forEach((_, index) => {
+        calibrationPanels.value.forEach((index) => {
           if (calibratingAxis.value === null || calibratingAxis.value === index) {
             deadzoneThresholds.value[index] = Math.min(1, round(maxDeviations.value[index], 2) ?? 0)
           }
