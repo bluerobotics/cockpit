@@ -119,7 +119,12 @@ function createWindow(): void {
     }
   })
 
-  if (store.get('windowMaximized')) mainWindow.maximize()
+  // Linux caps a new window at the display Electron guesses it is on (the primary one under Wayland), so resize once open,
+  // then maximize, since a resize after the maximize would undo it
+  setTimeout(() => {
+    if (restoredBounds) mainWindow?.setSize(restoredBounds.width, restoredBounds.height)
+    if (store.get('windowMaximized')) mainWindow?.maximize()
+  })
 
   // Saving on close catches resizes and maximizes, which Wayland never reports as a move
   mainWindow.on('close', () => {
