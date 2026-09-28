@@ -30,7 +30,7 @@
   </div>
 
   <teleport to="body">
-    <InteractionDialog v-model="showCalibrationModal" max-width="1000px" variant="text-only" persistent>
+    <InteractionDialog v-model="showCalibrationModal" max-width="1000px" variant="text-only" persistent backdrop>
       <template #title>
         <div class="flex justify-center w-full font-bold mt-1 relative">
           Joystick Calibration
@@ -40,7 +40,7 @@
         </div>
       </template>
       <template #content>
-        <div class="flex flex-col items-center gap-2 p-1 -mt-4 mb-2">
+        <div class="flex flex-col items-center gap-2 p-1 -mt-8 mb-2">
           <!-- Info panel for instructions -->
           <v-expand-transition>
             <div v-if="showInstructions" class="help-panel mb-4 p-4 rounded bg-white/5 w-full">
@@ -95,13 +95,10 @@
             </div>
           </div>
           <!-- Deadband Calibration Section -->
-          <div class="w-full">
+          <div v-if="isCalibrating && calibratingAxis === null" class="w-full">
             <div class="flex items-center justify-between mb-2">
-              <span v-if="isCalibrating && calibratingAxis === null" class="text-xs text-blue-400 ml-2">
-                Calibrating all inputs...
-              </span>
+              <span class="text-xs text-blue-400 ml-2"> Calibrating all inputs... </span>
               <v-progress-linear
-                v-if="isCalibrating && calibratingAxis === null"
                 :model-value="((Date.now() - calibrationStartTime) / 5000) * 100"
                 color="primary"
                 height="4"
@@ -111,13 +108,13 @@
             </div>
           </div>
           <!-- Deadband Axis Panels -->
-          <div class="grid grid-rows-2 grid-cols-3 grid-flow-row gap-x-6 gap-y-6 w-full my-2">
+          <div class="grid grid-rows-2 grid-cols-3 grid-flow-row gap-[18px] w-full -mt-1 mb-2">
             <div
               v-for="index in calibrationPanels"
               :key="index"
               class="border border-gray-700/60 rounded-lg py-2 px-4 bg-gray-900/60 flex flex-col"
             >
-              <div class="flex w-full justify-center text-lg font-bold text-white mb-3 capitalize">
+              <div class="flex w-full justify-center text-lg font-bold text-white mb-0.5 capitalize">
                 {{ inputName(index) }}
               </div>
               <div class="w-full h-40 relative">
@@ -204,22 +201,56 @@
                   />
                 </svg>
               </div>
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center justify-between mt-3 mb-2">
                 <div class="flex items-center gap-2 w-full">
-                  <span class="text-xs text-gray-300">Deadband: </span>
+                  <span
+                    class="text-xs"
+                    :class="currentCalibration.deadband.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
+                  >
+                    Deadband:
+                  </span>
                   <div class="w-full" />
-                  <v-text-field
-                    v-model.number="deadzoneThresholds[index]"
-                    type="number"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    density="compact"
-                    hide-details
-                    class="min-w-20"
-                    variant="outlined"
-                    :disabled="!currentCalibration.deadband.enabled"
-                  />
+                  <div
+                    class="group relative flex w-20 shrink-0 bg-[#FFFFFF11]"
+                    :class="{ 'opacity-40': !currentCalibration.deadband.enabled }"
+                  >
+                    <input
+                      v-model.number="deadzoneThresholds[index]"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      class="calibration-input w-full min-w-0 px-2 group-focus-within:pr-7 py-1 text-[13px] text-white bg-transparent disabled:cursor-not-allowed"
+                      :disabled="!currentCalibration.deadband.enabled"
+                      :aria-label="`Deadband for ${inputName(index)}`"
+                    />
+                    <div class="absolute inset-y-0 right-0 hidden group-focus-within:flex flex-col" @mousedown.prevent>
+                      <v-btn
+                        icon
+                        variant="text"
+                        rounded="0"
+                        :width="24"
+                        class="flex-1 !h-0 min-h-0"
+                        :aria-label="`Increase deadband for ${inputName(index)}`"
+                        :disabled="!currentCalibration.deadband.enabled || deadzoneThresholds[index] >= 1"
+                        @click="stepDeadband(index, 1)"
+                      >
+                        <v-icon size="18">mdi-menu-up</v-icon>
+                      </v-btn>
+                      <v-btn
+                        icon
+                        variant="text"
+                        rounded="0"
+                        :width="24"
+                        class="flex-1 !h-0 min-h-0"
+                        :aria-label="`Decrease deadband for ${inputName(index)}`"
+                        :disabled="!currentCalibration.deadband.enabled || deadzoneThresholds[index] <= 0"
+                        @click="stepDeadband(index, -1)"
+                      >
+                        <v-icon size="18">mdi-menu-down</v-icon>
+                      </v-btn>
+                    </div>
+                  </div>
                   <v-btn
                     size="x-small"
                     variant="text"
@@ -231,8 +262,13 @@
                   </v-btn>
                 </div>
               </div>
-              <div class="flex items-center justify-between mb-2 w-full">
-                <span class="text-xs text-gray-300">Exponential: </span>
+              <div class="flex items-center justify-between mb-px w-full">
+                <span
+                  class="text-xs"
+                  :class="currentCalibration.exponential.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
+                >
+                  Exponential:
+                </span>
                 <div class="w-full" />
                 <v-slider
                   v-model="exponentialFactors[index]"
@@ -245,7 +281,12 @@
                   color="white"
                   :disabled="!currentCalibration.exponential.enabled"
                 />
-                <span class="text-xs text-gray-300 w-8 text-end">{{ exponentialFactors[index].toFixed(1) }}</span>
+                <span
+                  class="text-xs w-8 text-end"
+                  :class="currentCalibration.exponential.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
+                >
+                  {{ exponentialFactors[index].toFixed(1) }}
+                </span>
                 <v-btn
                   size="x-small"
                   variant="text"
@@ -264,11 +305,22 @@
         </div>
       </template>
       <template #actions>
-        <v-btn variant="text" @click="cancelCalibration">Cancel</v-btn>
-        <div class="w-full" />
-        <v-btn variant="text" :disabled="isCalibrating" @click="startCalibration()"> Auto calibrate deadzones </v-btn>
-
-        <v-btn variant="text" :disabled="!allowSavingCalibration" @click="saveCalibration">Save</v-btn>
+        <div class="flex w-full justify-between items-center px-1 py-2">
+          <v-btn variant="text" size="small" @click="cancelCalibration">Cancel</v-btn>
+          <div class="flex gap-x-10">
+            <v-btn variant="text" size="small" :disabled="isCalibrating" @click="startCalibration()">
+              Auto calibrate deadzones
+            </v-btn>
+            <v-btn
+              size="small"
+              class="bg-[#FFFFFF22] text-white"
+              :disabled="!allowSavingCalibration"
+              @click="saveCalibration"
+            >
+              Save
+            </v-btn>
+          </div>
+        </div>
       </template>
     </InteractionDialog>
   </teleport>
@@ -419,6 +471,15 @@ const setExponentialEnabled = (value: boolean | null): void => {
 const resetDeadband = (index: number): void => {
   logUserAction(`Reset deadband for ${inputName(index)}`)
   deadzoneThresholds.value[index] = 0
+}
+
+const stepDeadband = (index: number, direction: 1 | -1): void => {
+  const threshold = Math.min(
+    1,
+    Math.max(0, round((Number(deadzoneThresholds.value[index]) || 0) + direction * 0.01, 2))
+  )
+  deadzoneThresholds.value[index] = threshold
+  logUserAction(`Stepped deadband for ${inputName(index)} to ${threshold}`)
 }
 
 const resetExponential = (index: number): void => {
@@ -599,3 +660,15 @@ onBeforeUnmount(() => {
   window.removeEventListener('mouseup', onDeadbandRegionMouseUp)
 })
 </script>
+
+<style scoped>
+.calibration-input[type='number']::-webkit-inner-spin-button,
+.calibration-input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.calibration-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+</style>
