@@ -43,9 +43,21 @@
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <div
-      class="flex flex-col items-center p-2 pt-1 m-5 rounded-md gap-y-4"
+      class="relative flex flex-col items-center p-2 pt-1 m-5 rounded-md gap-y-4 w-[520px] max-w-[90vw]"
       :style="interfaceStore.globalGlassMenuStyles"
     >
+      <div class="absolute top-3 right-3 z-10">
+        <v-btn
+          icon
+          size="30"
+          variant="text"
+          class="text-white text-[22px]"
+          aria-label="Close"
+          @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
+        >
+          <i class="mdi mdi-close"></i>
+        </v-btn>
+      </div>
       <p class="text-xl font-semibold m-4">Choose a stream to record</p>
       <v-select
         :model-value="nameSelectedStream"
@@ -98,23 +110,55 @@
           </v-list-item>
         </template>
       </v-select>
-      <div class="flex w-full justify-between items-center mt-4">
+      <div class="flex items-center gap-x-2 w-[90%]">
+        <v-switch
+          :model-value="videoStore.keepRecordingAcrossVideoOutages"
+          label="Keep one file across video outages"
+          color="white"
+          hide-details
+          base-color="#FFFFFF33"
+          class="flex-none"
+          @update:model-value="videoStore.setKeepRecordingAcrossVideoOutages"
+        />
+        <v-tooltip location="top" max-width="320" open-on-click>
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              v-bind="tooltipProps"
+              icon
+              variant="text"
+              size="x-small"
+              aria-label="About keeping one file across video outages"
+              class="opacity-70 hover:opacity-100"
+            >
+              <v-icon size="18">mdi-information-outline</v-icon>
+            </v-btn>
+          </template>
+          {{
+            videoStore.keepRecordingAcrossVideoOutages
+              ? 'When the video drops, the recording carries on and marks the outage in the same file.'
+              : 'When the video drops, the recording is saved, and a new one starts in a separate file once it is back.'
+          }}
+          Applies to every recording on this vehicle.
+        </v-tooltip>
+      </div>
+      <v-divider class="w-[90%]" />
+      <div class="flex w-full justify-between items-center px-2 pb-2">
         <v-btn
-          class="w-auto text-uppercase"
+          size="small"
           variant="text"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
           Close
         </v-btn>
         <v-btn
-          class="bg-[#FFFFFF11] hover:bg-[#FFFFFF33]"
-          size="large"
-          :class="{ 'opacity-30 pointer-events-none': isLoadingStream }"
+          size="small"
+          class="bg-[#FFFFFF22] text-white"
+          :class="{ 'opacity-40 pointer-events-none': isLoadingStream }"
           @click="startRecording"
         >
           <span>Record</span>
-          <v-icon v-if="isLoadingStream" class="m-2 animate-spin">mdi-loading</v-icon>
-          <div v-else class="w-5 h-5 ml-2 rounded-full bg-red" />
+          <v-icon v-if="isLoadingStream" size="small" class="ml-2 animate-spin">mdi-loading</v-icon>
+          <div v-else class="w-3 h-3 ml-2 rounded-full bg-red" />
         </v-btn>
       </div>
     </div>

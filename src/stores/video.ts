@@ -112,6 +112,7 @@ export const useVideoStore = defineStore('video', () => {
   const liveProcessors = ref<{ [key: string]: LiveVideoProcessor }>({})
   const enableLiveProcessing = useBlueOsStorage('cockpit-enable-live-processing', true)
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
+  const keepRecordingAcrossVideoOutages = useBlueOsStorage('cockpit-keep-recording-across-video-outages', true)
   const userRestoredStreamIds = useBlueOsStorage<string[]>('cockpit-user-restored-stream-ids', [])
   // The ignored list mixes the streams the user chose to hide with the ones an automatic rule hid for them, so this
   // records which of those ids the user asked for, letting a client the rule does not apply to disregard the rest.
@@ -1201,6 +1202,36 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Ends a recording whose stream dropped, for an operator who keeps each part of a take in a file of its own, and
+   * starts a new one once the stream is back
+   * @param {string} streamName - Name of the stream whose recording ended
+   * @param {string} streamLabel - Name of the stream as it is shown to the user
+   */
+  const endRecordingAtVideoOutage = (streamName: string, streamLabel: string): void => {
+    reportUnexpectedRecordingStop(streamName, streamLabel, false)
+
+    const restartWindow = `${minutesToWaitForStreamToRestartRecording} minutes`
+    const dropped =
+      `Video stream '${streamLabel}' dropped. The recording was saved, and a new one starts in a separate file if ` +
+      `the stream returns within ${restartWindow}.`
+    alertStore.pushAlert(new Alert(AlertLevel.Info, dropped))
+    openSnackbar({ message: dropped, duration: 20000, variant: 'info' })
+
+    restartRecordingWhenStreamReturns(streamName, streamLabel)
+  }
+
+  /**
+   * Chooses whether a video outage during a recording is filled in the same file or ends it, with a new
+   * recording started in a separate file once the stream is back
+   * @param {unknown} value - True to keep one file across outages
+   */
+  const setKeepRecordingAcrossVideoOutages = (value: unknown): void => {
+    const enabled = Boolean(value)
+    logUserAction(`${enabled ? 'Enabled' : 'Disabled'} keeping one recording file across video outages`)
+    keepRecordingAcrossVideoOutages.value = enabled
+  }
+
+  /**
    * Waits for a stream that dropped mid-recording to come back, ending the recording it belongs to once it is
    * clear that it will not
    * @param {string} streamName - Name of the stream whose recording is waiting for it
@@ -1258,6 +1289,8 @@ export const useVideoStore = defineStore('video', () => {
     const streamIsBack = mediaStream !== undefined && isStreamReadyToRecord(streamName)
     const wasFillingGap = session.gapFiller !== undefined
     const outageStarts = !streamIsBack && !wasFillingGap
+
+    if (outageStarts && !keepRecordingAcrossVideoOutages.value) return false
 
     // A link that keeps flapping would otherwise be carried forever, at a segment to mux and join per outage,
     // into a take that is mostly the notice saying the video is gone
@@ -1675,7 +1708,13 @@ export const useVideoStore = defineStore('video', () => {
       // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
       broadcastRecordingStop(streamName)
 
-      if (stoppedOnItsOwn) reportUnexpectedRecordingStop(streamName, session.streamLabel)
+      const endedByOutage =
+        stoppedOnItsOwn && !keepRecordingAcrossVideoOutages.value && !isStreamReadyToRecord(streamName)
+      if (endedByOutage) {
+        endRecordingAtVideoOutage(streamName, session.streamLabel)
+      } else if (stoppedOnItsOwn) {
+        reportUnexpectedRecordingStop(streamName, session.streamLabel)
+      }
 
       // A recording that ended on its own leaves the recording state here, so no consumer waits on the finalization
       // below, which takes as long as the video processing and the telemetry overlay need.
@@ -2176,6 +2215,8 @@ export const useVideoStore = defineStore('video', () => {
     addRtspStreamCorrespondency,
     enableLiveProcessing,
     keepRawVideoChunksAsBackup,
+    keepRecordingAcrossVideoOutages,
+    setKeepRecordingAcrossVideoOutages,
     broadcastCameraActionsOverMavlink,
     broadcastSnapshotCapture,
   }
