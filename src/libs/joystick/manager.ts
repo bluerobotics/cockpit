@@ -498,9 +498,8 @@ class JoystickManager {
 
   /**
    * Build a calibrated `JoystickState` from raw axes and buttons.
-   * Calibration is per-axis: deadband and exponential scaling are applied
+   * Calibration is per-input: deadband and exponential scaling are applied to each axis and button
    * using the thresholds/factors stored for the given joystick model.
-   * Buttons are passed through untouched, matching the previous behavior.
    * @param {number[]} rawAxes Raw axis values straight from the device
    * @param {number[]} rawButtons Raw button values straight from the device
    * @param {JoystickModel} model Joystick model used to look up calibration
@@ -510,7 +509,7 @@ class JoystickManager {
     const calibration = this.calibrationOptions.get(model) ?? defaultJoystickCalibration
     return {
       axes: rawAxes.map((value, index) => applyCalibration('axis', index, value, calibration)),
-      buttons: [...rawButtons],
+      buttons: rawButtons.map((value, index) => applyCalibration('button', index, value, calibration)),
     }
   }
 
