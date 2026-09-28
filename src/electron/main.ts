@@ -63,6 +63,23 @@ const recordProfileOpenerVersions = (): void => {
  * Create electron window
  */
 function createWindow(): void {
+  // A monitor that was unplugged or rearranged leaves saved bounds that no display shows anymore
+  const savedBounds = store.get('windowBounds')
+  const minVisiblePx = 100
+  // Windows places maximized windows a few pixels outside the work area, behind their invisible resize border
+  const frameTolerancePx = 20
+  const isSavedBoundsVisible =
+    !!savedBounds &&
+    screen.getAllDisplays().some(({ workArea }) => {
+      const overlapWidth =
+        Math.min(savedBounds.x + savedBounds.width, workArea.x + workArea.width) - Math.max(savedBounds.x, workArea.x)
+      const isTitleBarReachable =
+        savedBounds.y >= workArea.y - frameTolerancePx && savedBounds.y <= workArea.y + workArea.height - minVisiblePx
+      return overlapWidth >= minVisiblePx && isTitleBarReachable
+    })
+  const restoredBounds = isSavedBoundsVisible ? savedBounds : undefined
+  const primaryWorkAreaSize = screen.getPrimaryDisplay().workAreaSize
+
   mainWindow = new BrowserWindow({
     icon: join(ROOT_PATH.dist, 'pwa-512x512.png'),
     backgroundColor: '#333333',
@@ -74,10 +91,10 @@ function createWindow(): void {
       webSecurity: !process.env.VITE_DEV_SERVER_URL, // Disable CORS in dev mode so we don't have to deal with per-system workarounds
     },
     autoHideMenuBar: true,
-    width: store.get('windowBounds')?.width ?? screen.getPrimaryDisplay().workAreaSize.width,
-    height: store.get('windowBounds')?.height ?? screen.getPrimaryDisplay().workAreaSize.height,
-    x: store.get('windowBounds')?.x ?? screen.getPrimaryDisplay().bounds.x,
-    y: store.get('windowBounds')?.y ?? screen.getPrimaryDisplay().bounds.y,
+    width: restoredBounds?.width ?? Math.min(savedBounds?.width ?? Infinity, primaryWorkAreaSize.width),
+    height: restoredBounds?.height ?? Math.min(savedBounds?.height ?? Infinity, primaryWorkAreaSize.height),
+    x: restoredBounds?.x ?? screen.getPrimaryDisplay().bounds.x,
+    y: restoredBounds?.y ?? screen.getPrimaryDisplay().bounds.y,
     title: `Cockpit (${app.getVersion()})`,
   })
 
