@@ -119,10 +119,13 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.on('move', () => {
-    const windowBounds = mainWindow!.getBounds()
-    const { x, y, width, height } = windowBounds
+  if (store.get('windowMaximized')) mainWindow.maximize()
+
+  // Saving on close catches resizes and maximizes, which Wayland never reports as a move
+  mainWindow.on('close', () => {
+    const { x, y, width, height } = mainWindow!.getNormalBounds()
     store.set('windowBounds', { x, y, width, height })
+    store.set('windowMaximized', mainWindow!.isMaximized())
   })
 
   // Don't use the browser page title
