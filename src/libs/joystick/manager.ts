@@ -5,13 +5,14 @@ import {
   type JoystickState,
   convertSDLControllerStateToGamepadState,
   convertSDLJoystickStateToGamepadState,
+  standardTriggerAxes,
   withTriggerAxes,
 } from '@/types/joystick'
 import { JoystickMapVidPid, JoystickModel } from '@/types/joystick-model-defs'
 
 import { settingsManager } from '../settings-management'
 import { isElectron } from '../utils'
-import { applyCalibration } from './calibration'
+import { applyCalibration, withTriggerButtonsFollowingAxes } from './calibration'
 
 export { JoystickModel }
 
@@ -218,6 +219,7 @@ class JoystickManager {
   private lastTimeGamepadStatesPolled = 0
   private previousGamepadState: Map<number, JoystickState> = new Map()
   private calibrationOptions: Map<JoystickModel, JoystickCalibration> = new Map()
+  private triggerAxesCalibrationOptions: Map<JoystickModel, JoystickCalibration> = new Map()
   /**
    * Singleton constructor
    */
@@ -394,7 +396,7 @@ class JoystickManager {
             reset: async () => 'complete' as const,
           },
         },
-        calibratedState: this.buildCalibratedState(rawAxes, rawButtons, gamepadModel),
+        calibratedState: this.buildCalibratedState(rawAxes, rawButtons, gamepadModel, data.type === 'controller'),
       }
 
       // Add joystick to the list of joysticks if it is not already there
@@ -502,6 +504,12 @@ class JoystickManager {
       if (stored !== undefined) {
         const options = stored as Record<JoystickModel, JoystickCalibration>
         this.calibrationOptions = new Map(Object.entries(options).map(([key, value]) => [key as JoystickModel, value]))
+        this.triggerAxesCalibrationOptions = new Map(
+          [...this.calibrationOptions].map(([model, calibration]) => [
+            model,
+            withTriggerButtonsFollowingAxes(calibration, standardTriggerAxes),
+          ])
+        )
       }
     } catch (error) {
       console.error('Failed to load joystick calibration settings:', error)
@@ -510,19 +518,25 @@ class JoystickManager {
 
   /**
    * Build a calibrated `JoystickState` from raw axes and buttons.
-   * Calibration is per-axis: deadband and exponential scaling are applied
+   * Calibration is per-input: deadband and exponential scaling are applied to each axis and button
    * using the thresholds/factors stored for the given joystick model.
-   * Buttons are passed through untouched, matching the previous behavior.
    * @param {number[]} rawAxes Raw axis values straight from the device
    * @param {number[]} rawButtons Raw button values straight from the device
    * @param {JoystickModel} model Joystick model used to look up calibration
+   * @param {boolean} triggerAxes Whether the triggers arrive both as axes and as buttons, which then follow the axes
    * @returns {JoystickState} The calibrated joystick state
    */
-  private buildCalibratedState(rawAxes: number[], rawButtons: number[], model: JoystickModel): JoystickState {
-    const calibration = this.calibrationOptions.get(model) ?? defaultJoystickCalibration
+  private buildCalibratedState(
+    rawAxes: number[],
+    rawButtons: number[],
+    model: JoystickModel,
+    triggerAxes = false
+  ): JoystickState {
+    const options = triggerAxes ? this.triggerAxesCalibrationOptions : this.calibrationOptions
+    const calibration = options.get(model) ?? defaultJoystickCalibration
     return {
       axes: rawAxes.map((value, index) => applyCalibration('axis', index, value, calibration)),
-      buttons: [...rawButtons],
+      buttons: rawButtons.map((value, index) => applyCalibration('button', index, value, calibration)),
     }
   }
 
@@ -568,7 +582,7 @@ class JoystickManager {
         this.emitStateEvent({
           index: gamepad.index,
           gamepad: triggerAxes ? this.withAxes(gamepad, rawAxes) : gamepad,
-          calibratedState: this.buildCalibratedState(rawAxes, rawButtons, joystickModel),
+          calibratedState: this.buildCalibratedState(rawAxes, rawButtons, joystickModel, triggerAxes),
         })
       }
     }

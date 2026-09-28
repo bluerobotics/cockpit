@@ -1,4 +1,26 @@
-import { type JoystickCalibration } from '@/types/joystick'
+import { type JoystickCalibration, type TriggerAxis } from '@/types/joystick'
+
+/**
+ * Make each trigger's button use the curve of its axis, so both copies of the trigger output the same value
+ * @param {JoystickCalibration} calibration The stored calibration settings
+ * @param {TriggerAxis[]} triggers The triggers reported both as an axis and as a button
+ * @returns {JoystickCalibration} A copy of the calibration with each trigger button's entries taken from its axis
+ */
+export function withTriggerButtonsFollowingAxes(
+  calibration: JoystickCalibration,
+  triggers: TriggerAxis[]
+): JoystickCalibration {
+  const thresholds = [...calibration.deadband.thresholds.buttons]
+  const factors = [...calibration.exponential.factors.buttons]
+  triggers.forEach(({ axis, button }) => {
+    thresholds[button] = calibration.deadband.thresholds.axes[axis] ?? 0
+    factors[button] = calibration.exponential.factors.axes[axis] ?? 1
+  })
+  return {
+    deadband: { ...calibration.deadband, thresholds: { ...calibration.deadband.thresholds, buttons: thresholds } },
+    exponential: { ...calibration.exponential, factors: { ...calibration.exponential.factors, buttons: factors } },
+  }
+}
 
 /**
  * Apply deadband correction to a value
