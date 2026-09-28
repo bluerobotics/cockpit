@@ -69,13 +69,17 @@ export interface Go2RTCStreamInfo {
    */
   protocol: string
   /**
-   * Live ingest bitrate from the RTSP source in kbps
+   * Cumulative bytes ingested from the source since the stream started
    */
-  bitrateKbps: number
+  bytes: number
   /**
-   * Live packet rate from the RTSP source in packets/sec
+   * Cumulative packets ingested from the source since the stream started
    */
-  packetsPerSec: number
+  packets: number
+  /**
+   * Epoch (ms) at which the cumulative counters were sampled, so each consumer can difference over its own window
+   */
+  sampleEpoch: number
 }
 
 /**
