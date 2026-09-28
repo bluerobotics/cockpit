@@ -27,6 +27,9 @@ const electronStoreSchema = {
       },
     },
   },
+  windowMaximized: {
+    type: 'boolean',
+  },
 }
 
 /**
@@ -69,6 +72,10 @@ export interface ElectronStoreSchema {
          */
         y: number
       }
+  /**
+   * Whether the window was maximized when it was last closed
+   */
+  windowMaximized: boolean | undefined
 }
 
 const store = new Store<ElectronStoreSchema>({ schema: electronStoreSchema })
