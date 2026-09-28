@@ -326,7 +326,7 @@ export const useControllerStore = defineStore('controller', () => {
     let modifierKeyId = modifierKeyActions.regular.id
 
     Object.entries(mapping.buttonsCorrespondencies.regular).forEach(([key, value]) => {
-      const buttonActive = joystickState.buttons[Number(key)] ?? 0 > 0.5
+      const buttonActive = (joystickState.buttons[Number(key)] ?? 0) > 0.5
       const isModifier = Object.values(modifierKeyActions)
         .map((a) => JSON.stringify(a))
         .includes(JSON.stringify(value.action))
