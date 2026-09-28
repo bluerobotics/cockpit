@@ -374,7 +374,7 @@ class JoystickManager {
           index: data.deviceId,
           connected: true,
           timestamp: Date.now(),
-          mapping: 'standard',
+          mapping: data.type === 'joystick' ? '' : 'standard',
           axes: rawAxes,
           buttons: rawButtons.map((value) => ({
             pressed: value > 0.5,
