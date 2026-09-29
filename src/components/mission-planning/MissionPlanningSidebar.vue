@@ -5,7 +5,7 @@
     class="absolute flex flex-col left-10 rounded-[10px] overflow-hidden z-[200]"
     :style="[
       interfaceStore.globalGlassMenuStyles,
-      { height: 'auto', maxHeight: calculatedHeight, width: '320px', borderBottom: 'none', top: `${topOffset}px` },
+      { height: 'auto', maxHeight: calculatedHeight, width: '352px', borderBottom: 'none', top: `${topOffset}px` },
     ]"
   >
     <div class="flex flex-row w-full elevation-2 z-10">
