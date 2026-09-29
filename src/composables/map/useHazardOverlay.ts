@@ -2,6 +2,7 @@ import * as turf from '@turf/turf'
 import L, { type Map as LeafletMap } from 'leaflet'
 import { computed, onBeforeUnmount, watch } from 'vue'
 
+import { useAisTrafficOverlay } from '@/composables/map/useAisTrafficOverlay'
 import { polygonRings } from '@/libs/hazards/hazard-areas'
 import {
   HAZARD_AREA_SOURCE_IDS,
@@ -74,12 +75,15 @@ const areaLabel = (area: HazardArea): L.Tooltip => {
 
 /**
  * Draws the loaded hazard advisory areas on a Leaflet map, one toggleable layer-control overlay per
- * source, and keeps them in sync with the hazard store. Shared by the dashboard Map widget and the
+ * source, and keeps them in sync with the hazard store, along with the vessel traffic the vehicle's AIS
+ * receiver reports. Shared by the dashboard Map widget and the
  * Mission Planning view so the behavior lives in one place.
  * @returns {UseHazardOverlayReturn} Methods to bind the overlay to a map and to tear it down.
  */
 export const useHazardOverlay = (): UseHazardOverlayReturn => {
   const hazardStore = useHazardStore()
+  // Nearby traffic is a hazard too, and riding on this lifecycle keeps both map views free of extra wiring.
+  const { initAisTrafficOverlay, destroyAisTrafficOverlay } = useAisTrafficOverlay()
 
   const groups = new Map<HazardSourceId, L.LayerGroup>()
   let mapRef: LeafletMap | undefined
@@ -289,11 +293,13 @@ export const useHazardOverlay = (): UseHazardOverlayReturn => {
     map.on('zoomend', fitLabels)
     map.on('moveend', fitFills)
     map.on('overlayadd', stackBySize)
+    initAisTrafficOverlay(map, layerControl)
   }
 
   const destroyHazardOverlay = (): void => {
     stopWatches.forEach((stop) => stop())
     stopWatches = []
+    destroyAisTrafficOverlay()
     mapRef?.off('zoomend', fitLabels)
     mapRef?.off('moveend', fitFills)
     mapRef?.off('overlayadd', stackBySize)
