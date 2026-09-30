@@ -54,7 +54,6 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   // fences from whichever one injected the shared id first.
   const instanceToken = ++patternInstanceCount
   const EXCLUSION_PATTERN_ID = `fence-exclusion-stripes-${instanceToken}`
-  const EXCLUSION_PATTERN_DIM_ID = `fence-exclusion-stripes-dim-${instanceToken}`
   const VERTEX_COLOR = '#FFFFFF'
   const VERTEX_BORDER = '#FF8800'
 
@@ -62,6 +61,13 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   // fence-related opacity halved so the fences sit further into the background
   // while staying clearly differentiated as inclusion/exclusion.
   const READONLY_OPACITY_FACTOR = 0.5
+  const ENFORCED_OPACITY_BOOST = 1.3
+
+  const opacityFactor = (): number => {
+    if (!props.readonly) return 1
+    return READONLY_OPACITY_FACTOR * (fenceStore.fenceEnabled ? ENFORCED_OPACITY_BOOST : 1)
+  }
+  const patternIdFor = (factor: number): string => `${EXCLUSION_PATTERN_ID}-${Math.round(factor * 100)}`
 
   const polygonLayers = new Map<string, L.Polygon>()
   const polygonVertexMarkers = new Map<string, L.CircleMarker[]>()
@@ -74,7 +80,7 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   let breachReturnMarker: L.Marker | null = null
 
   const polygonStyle = (inclusion: boolean): L.PathOptions => {
-    const dim = props.readonly ? READONLY_OPACITY_FACTOR : 1
+    const dim = opacityFactor()
     return {
       // Tags the SVG path so the planning view's fence-mode dimming can spare
       // fences by class instead of matching their border colors.
@@ -93,17 +99,17 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
    * draws all vector layers under a single SVG renderer per map, so a single
    * pattern definition is enough for the whole layer.
    *
-   * Two flavors are registered on demand: a "normal" pattern used by the
-   * interactive editor, and a dimmed one (50% less opaque) used by the
-   * read-only live overlay so map context stays readable underneath.
+   * One pattern is registered on demand per opacity: full for the interactive
+   * editor, and dimmed for the read-only live overlay so map context stays
+   * readable underneath, a little less so while the vehicle enforces the fence.
    * @param { L.Map } targetMap The Leaflet map to inject the pattern into.
-   * @param { boolean } dim When true, registers / reuses the dimmed pattern.
+   * @param { number } factor Opacity factor the pattern's stripes are drawn with.
    */
-  const ensureExclusionPattern = (targetMap: L.Map, dim: boolean): void => {
+  const ensureExclusionPattern = (targetMap: L.Map, factor: number): void => {
     const overlayPane = targetMap.getPanes().overlayPane
     const svg = overlayPane?.querySelector('svg') as SVGSVGElement | null
     if (!svg) return
-    const id = dim ? EXCLUSION_PATTERN_DIM_ID : EXCLUSION_PATTERN_ID
+    const id = patternIdFor(factor)
     if (svg.querySelector(`#${id}`)) return
 
     const svgNs = 'http://www.w3.org/2000/svg'
@@ -127,7 +133,7 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     stripe.setAttribute('width', '6')
     stripe.setAttribute('height', '12')
     stripe.setAttribute('fill', EXCLUSION_FILL_COLOR)
-    stripe.setAttribute('fill-opacity', String(0.32 * (dim ? READONLY_OPACITY_FACTOR : 1)))
+    stripe.setAttribute('fill-opacity', String(0.32 * factor))
     pattern.appendChild(stripe)
 
     defs.appendChild(pattern)
@@ -147,9 +153,9 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     if (inclusion) {
       el.setAttribute('fill', INCLUSION_FILL_COLOR)
     } else if (map.value) {
-      ensureExclusionPattern(map.value, props.readonly)
-      const patternId = props.readonly ? EXCLUSION_PATTERN_DIM_ID : EXCLUSION_PATTERN_ID
-      el.setAttribute('fill', `url(#${patternId})`)
+      const factor = opacityFactor()
+      ensureExclusionPattern(map.value, factor)
+      el.setAttribute('fill', `url(#${patternIdFor(factor)})`)
     }
   }
 
@@ -573,7 +579,14 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   // drag-driven mutations no longer build per-vertex strings just to detect that
   // "something changed".
   watch(
-    () => [sourcePolygons(), sourceCircles(), sourceBreach(), fenceDraft.interactiveShapeId, props.readonly],
+    () => [
+      sourcePolygons(),
+      sourceCircles(),
+      sourceBreach(),
+      fenceDraft.interactiveShapeId,
+      props.readonly,
+      fenceStore.fenceEnabled,
+    ],
     () => debouncedSyncLayers(),
     { deep: true }
   )
