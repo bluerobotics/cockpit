@@ -1,4 +1,3 @@
-import * as turf from '@turf/turf'
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
@@ -11,6 +10,7 @@ import { useMissionThumbnails } from '@/composables/useMissionThumbnails'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
+import { simplifyPath } from '@/libs/map/path-simplify'
 import {
   AUTOMATIC_MISSION_NAME_MIN_IDLE_MS,
   generateAutomaticMissionName,
@@ -803,9 +803,7 @@ export const useMissionStore = defineStore('mission', () => {
 
     if (chunkSegment.length < 2) return false
 
-    const line = turf.lineString(chunkSegment.map(([lat, lng]) => [lng, lat]))
-    const simplified = turf.simplify(line, { tolerance: 0.000001, highQuality: true })
-    const simplifiedPoints = simplified.geometry.coordinates.map(([lng, lat]) => [lat, lng] as WaypointCoordinates)
+    const simplifiedPoints = simplifyPath(chunkSegment)
 
     vehiclePositionHistory.value = [...alreadySimplified, ...simplifiedPoints, ...recentSegment]
     vehiclePositionHistoryRevision.value += 1
