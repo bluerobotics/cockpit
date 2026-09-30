@@ -4,6 +4,7 @@
     ref="menuEl"
     :style="{ top: `${clampedPosition.y}px`, left: `${clampedPosition.x}px` }"
     class="context-menu absolute flex justify-center items-center z-[1000] text-white rounded-lg w-max"
+    @animationend="onMenuAnimationEnd"
   >
     <div v-if="menuType === 'survey'" class="relative orbit-container">
       <div class="central-element flex justify-start items-start">
@@ -132,6 +133,61 @@
         class="flex flex-col rounded-md"
         :style="[interfaceStore.globalGlassMenuStyles, { background: '#333333EE', border: '1px solid #FFFFFF44' }]"
       >
+        <template v-if="canCreateFenceExclusion">
+          <v-menu
+            v-model="exclusionSubmenuOpen"
+            :open-on-hover="exclusionHoverArmed"
+            :open-on-click="false"
+            location="end"
+            :close-on-content-click="false"
+            :open-delay="50"
+            :close-delay="120"
+          >
+            <template #activator="{ props: exclusionActivator }">
+              <v-list-item
+                v-bind="exclusionActivator"
+                class="flex items-center gap-x-2 pb-2 cursor-pointer"
+                @pointermove="onExclusionPointerMove"
+                @click="onExclusionItemClick"
+              >
+                <v-icon
+                  variant="text"
+                  icon="mdi-shield-plus-outline"
+                  rounded="full"
+                  size="x-small"
+                  color="white"
+                  class="text-[16px]"
+                ></v-icon>
+                <span class="text-white text-sm ml-4">Create geofence exclusion zone</span>
+                <template #append>
+                  <v-icon color="white" class="absolute right-1 text-[21px] self-center -mb-[2px]"
+                    >mdi-chevron-right</v-icon
+                  >
+                </template>
+              </v-list-item>
+            </template>
+            <div
+              class="flex flex-col rounded-md ml-1"
+              :style="[
+                interfaceStore.globalGlassMenuStyles,
+                { background: '#333333EE', border: '1px solid #FFFFFF44' },
+              ]"
+            >
+              <p class="px-4 py-2 text-sm font-semibold rounded-t-md bg-[#00000033]">Clearance</p>
+              <template v-for="clearanceM in EXCLUSION_CLEARANCES_M" :key="clearanceM">
+                <v-divider />
+                <v-list-item class="flex items-center pb-2" @click="handleCreateFenceExclusion(clearanceM)">
+                  <span class="text-white text-sm">{{ clearanceM }} m</span>
+                </v-list-item>
+              </template>
+              <v-divider />
+              <v-list-item class="flex items-center pb-2" @click="handleCreateFenceExclusion()">
+                <span class="text-white text-sm">Custom...</span>
+              </v-list-item>
+            </div>
+          </v-menu>
+          <v-divider />
+        </template>
         <v-list-item v-if="!isCreatingSurvey" class="flex items-center gap-x-2 pb-2" @click="handleAddHereClick">
           <v-icon
             variant="text"
@@ -436,6 +492,7 @@ const props = defineProps<{
   menuType: ContextMenuTypes
   canSaveCurrent: boolean
   nearestSegmentIndex: number | null
+  canCreateFenceExclusion: boolean
 }>()
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -462,7 +519,49 @@ const emit = defineEmits<{
   (event: 'toggleBaseStationSignalVisibility'): void
   (event: 'addMissionFromLibrary'): void
   (event: 'saveMissionToLibrary'): void
+  (event: 'createFenceExclusion', clearanceM?: number): void
 }>()
+
+const EXCLUSION_CLEARANCES_M = [2, 5, 10, 15, 30]
+const HOVER_ARM_DISTANCE_PX = 4
+
+// The menu opens under the pointer, so hovering the submenu open waits for a deliberate move, and for the
+// bloom animation, whose scale would otherwise anchor the submenu inside the main menu.
+const exclusionSubmenuOpen = ref(false)
+const exclusionHoverArmed = ref(false)
+const menuSettled = ref(false)
+let hoverOrigin: [number, number] | undefined
+
+watch(
+  () => props.visible,
+  (isVisible) => {
+    if (!isVisible) return
+    exclusionSubmenuOpen.value = false
+    exclusionHoverArmed.value = false
+    menuSettled.value = false
+    hoverOrigin = undefined
+  }
+)
+
+const onMenuAnimationEnd = (event: AnimationEvent): void => {
+  if (event.target === event.currentTarget) menuSettled.value = true
+}
+
+const onExclusionPointerMove = (event: PointerEvent): void => {
+  if (event.pointerType !== 'mouse' || exclusionHoverArmed.value || !menuSettled.value) return
+  hoverOrigin ??= [event.clientX, event.clientY]
+  if (Math.hypot(event.clientX - hoverOrigin[0], event.clientY - hoverOrigin[1]) < HOVER_ARM_DISTANCE_PX) return
+  exclusionHoverArmed.value = true
+  exclusionSubmenuOpen.value = true
+}
+
+const onExclusionItemClick = (): void => {
+  if (exclusionSubmenuOpen.value) {
+    handleCreateFenceExclusion()
+    return
+  }
+  exclusionSubmenuOpen.value = true
+}
 
 const menuType = computed(() => props.menuType)
 const selectedWaypoint = computed<Waypoint | undefined>(() => props.selectedWaypoint)
@@ -616,6 +715,11 @@ const handleAddMissionFromLibrary = (): void => {
 const handleSaveMissionToLibrary = (): void => {
   if (!props.canSaveCurrent) return
   emit('saveMissionToLibrary')
+  emit('close')
+}
+
+const handleCreateFenceExclusion = (clearanceM?: number): void => {
+  emit('createFenceExclusion', clearanceM)
   emit('close')
 }
 

@@ -1,3 +1,4 @@
+import * as turf from '@turf/turf'
 import type { Position } from 'geojson'
 
 import type { GeoBbox } from '@/types/general'
@@ -9,6 +10,9 @@ import type { WaypointCoordinates } from '@/types/mission'
  * unusable either way, so requests wider than this are refused before they are sent.
  */
 export const MAX_HAZARD_BBOX_DEG = 1
+
+/** Largest clearance, in meters. A margin past this stops describing a clearance and starts flagging the whole chart. */
+export const MAX_HAZARD_CLEARANCE_M = 5000
 
 const METERS_PER_LAT_DEGREE = 111320
 
@@ -61,4 +65,21 @@ export const paddedBbox = (coordinates: WaypointCoordinates[], marginM: number):
     west: Math.min(...lngs) - lngMargin,
     east: Math.max(...lngs) + lngMargin,
   }
+}
+
+/**
+ * The polygon area under a point, the smallest when several overlap, so a rock wins over the restricted
+ * area around it. Open lines, such as a run of coastline, have no inside and are never returned.
+ * @param {HazardArea[]} areas Areas to search.
+ * @param {WaypointCoordinates} point `[latitude, longitude]` to look under.
+ * @returns {HazardArea | undefined} The area, or undefined when the point is clear of every one.
+ */
+export const hazardAreaAt = (areas: HazardArea[], point: WaypointCoordinates): HazardArea | undefined => {
+  const target = turf.point([point[1], point[0]])
+  return areas
+    .filter((area) => area.kind === 'polygon' && area.coordinates.length >= 3)
+    .filter((area) => bboxContains(paddedBbox(area.coordinates, 0), point))
+    .map((area) => ({ area, polygon: turf.polygon(polygonRings(area)) }))
+    .filter(({ polygon }) => turf.booleanPointInPolygon(target, polygon))
+    .sort((a, b) => turf.area(a.polygon) - turf.area(b.polygon))[0]?.area
 }
