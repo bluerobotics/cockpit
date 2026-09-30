@@ -94,6 +94,52 @@ export interface GeoFencePlan {
 }
 
 /**
+ * Room an ArduPilot vehicle's fence would gain by moving to its SD card through `BRD_SD_FENCE`.
+ */
+export interface FenceStorageExpansion {
+  /**
+   * Current `BRD_SD_FENCE` value, in KB. `0` keeps the fence in the built-in area.
+   */
+  currentKb: number
+  /**
+   * `BRD_SD_FENCE` value the expansion sets, in KB.
+   */
+  targetKb: number
+  /**
+   * Room for the fence once expanded, in bytes.
+   */
+  capacityBytes: number
+}
+
+/**
+ * How far an attempt to move the fence to the SD card got: `rebooting` once the autopilot took the
+ * restart, `reboot-pending` when the new size is set but the restart went unacknowledged.
+ */
+export type FenceStorageExpansionOutcome = 'rebooting' | 'reboot-pending'
+
+/**
+ * Ways to fit a fence the vehicle has no room for, offered to the operator in place of the upload error.
+ */
+export interface FenceTooLargeOffer {
+  /**
+   * Points the fence has now.
+   */
+  points: number
+  /**
+   * Points the vehicle has room for, when it reported a size.
+   */
+  capacityPoints?: number
+  /**
+   * The fence with its polygons simplified to fit, when they can shrink that far.
+   */
+  coarser?: GeoFencePlan
+  /**
+   * Storage the vehicle can gain, when it can grow.
+   */
+  expansion?: FenceStorageExpansion
+}
+
+/**
  * Cockpit-native fence file. Wraps a `GeoFencePlan` in a small envelope so
  * the file can be unambiguously identified on import (cf. `.cmp` mission
  * files).

@@ -1,5 +1,6 @@
 import * as turf from '@turf/turf'
 
+import { FINE_SIMPLIFY_TOLERANCE_DEG, simplifyPath } from '@/libs/map/path-simplify'
 import type { FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
 
 export const CIRCLE_MAX_RADIUS_M = 1500
@@ -9,6 +10,14 @@ export const FENCE_VERTEX_BYTES = 8
 
 /** ArduPilot keeps a polygon's vertex count in a single byte. */
 export const MAX_POLYGON_VERTICES = 255
+
+// Doubling from the finest tolerance, this many rounds reach several degrees, past which no fence survives.
+const MAX_COARSEN_ROUNDS = 24
+
+// Halving the tolerance's doubling step this many times lands within a fraction of a percent of the finest fit.
+const REFINE_STEPS = 12
+
+let selfChecked = false
 
 /**
  * Minimal shape required by `detectMissionBreaches`. Accepts both Cockpit's
@@ -70,6 +79,16 @@ export const planHasShapes = (plan: GeoFencePlan | null | undefined): plan is Ge
   !!plan && (plan.polygons.length > 0 || plan.circles.length > 0)
 
 /**
+ * Number of items a plan takes on the vehicle: one per polygon vertex, circle and breach return point.
+ * @param { GeoFencePlan } plan Plan to count.
+ * @returns { number } Items the upload sends, polygons too small to send left out.
+ */
+export const fenceItemCount = (plan: GeoFencePlan): number =>
+  plan.polygons.reduce((total, polygon) => total + (polygon.vertices.length >= 3 ? polygon.vertices.length : 0), 0) +
+  plan.circles.length +
+  (plan.breachReturn ? 1 : 0)
+
+/**
  * Bytes a plan takes in ArduPilot's fence storage: a format header and an end marker, then a type and a vertex
  * count per polygon, a type and a radius per circle, a type per breach return point, and 8 bytes per location.
  * @param { GeoFencePlan } plan Plan to measure.
@@ -98,6 +117,66 @@ export const exceedsPolygonVertexLimit = (plan: GeoFencePlan): boolean =>
  * @returns { number } Points that storage holds.
  */
 export const fencePointCapacity = (capacityBytes: number): number => Math.floor(capacityBytes / FENCE_VERTEX_BYTES)
+
+/**
+ * Simplifies every polygon of a plan with the same Ramer-Douglas-Peucker pass the vehicle history path uses.
+ * @param { GeoFencePlan } plan Plan to simplify.
+ * @param { number } toleranceDeg Largest distance, in degrees, a dropped vertex may lie from the new outline.
+ * @returns { GeoFencePlan } A copy of the plan with simplified polygons.
+ */
+export const simplifyFencePolygons = (
+  plan: GeoFencePlan,
+  toleranceDeg = FINE_SIMPLIFY_TOLERANCE_DEG
+): GeoFencePlan => ({
+  ...plan,
+  polygons: plan.polygons.map((polygon) => ({
+    ...polygon,
+    vertices: simplifyPath(polygon.vertices, toleranceDeg, true),
+  })),
+})
+
+/**
+ * Simplifies a plan the vehicle had no room for into the most detailed one that fits the vehicle's
+ * room or, when it already fits that and was refused anyway, half its own size. All polygons share
+ * one tolerance, so detail is lost evenly rather than from one shape.
+ * @param { GeoFencePlan } plan Plan to coarsen.
+ * @param { number } capacityBytes Fence storage the vehicle has room for, in bytes.
+ * @returns { GeoFencePlan | undefined } The coarser plan, or `undefined` when its polygons cannot shrink that far.
+ */
+export const coarsenFencePlan = (plan: GeoFencePlan, capacityBytes: number): GeoFencePlan | undefined => {
+  runSelfCheckOnce()
+  const bytes = fenceStorageBytes(plan)
+  // Halving is only for a plan that broke neither limit, which the vehicle refused for a reason
+  // Cockpit cannot see; one that is merely over the per-polygon limit still has all its room.
+  const overALimit = bytes > capacityBytes || exceedsPolygonVertexLimit(plan)
+  const budget = overALimit ? capacityBytes : bytes / 2
+  const fits = (candidate: GeoFencePlan): boolean =>
+    fenceStorageBytes(candidate) <= budget && !exceedsPolygonVertexLimit(candidate)
+
+  let tooFine = FINE_SIMPLIFY_TOLERANCE_DEG
+  let coarse = tooFine
+  let fitting: GeoFencePlan | undefined
+  for (let round = 0; round < MAX_COARSEN_ROUNDS && !fitting; round++) {
+    coarse *= 2
+    const candidate = simplifyFencePolygons(plan, coarse)
+    if (fits(candidate)) fitting = candidate
+    else tooFine = coarse
+  }
+  if (!fitting) return undefined
+
+  // Doubling overshoots the room, so the tolerance is narrowed back to the finest one that still fits.
+  for (let step = 0; step < REFINE_STEPS; step++) {
+    const middle = Math.sqrt(tooFine * coarse)
+    const candidate = simplifyFencePolygons(plan, middle)
+    if (fits(candidate)) {
+      fitting = candidate
+      coarse = middle
+    } else {
+      tooFine = middle
+    }
+  }
+  return fitting
+}
 
 /**
  * Tests whether a `[lat, lng]` point lies inside the polygon defined by the
@@ -169,4 +248,67 @@ export const detectMissionBreaches = (
     breachedIndices,
     totalChecked: waypoints.length,
   }
+}
+
+// Runs once, on the first coarsening of a development session, after bootstrap has installed `assert`.
+const runSelfCheckOnce = (): void => {
+  // @ts-ignore: import.meta.env does not exist in the types
+  if (selfChecked || !import.meta.env.DEV) return
+  selfChecked = true
+
+  const square: FencePolygon = {
+    id: 'self-check',
+    inclusion: true,
+    vertices: [
+      [0, 0],
+      [0, 0.005],
+      [0, 0.01],
+      [0.01, 0.01],
+      [0.01, 0],
+    ],
+  }
+  const fine = simplifyFencePolygons({ version: 2, polygons: [square], circles: [] })
+  assert(fenceItemCount(fine) === 4, 'The fine pass must drop a vertex lying on a straight edge')
+  const mixed: GeoFencePlan = {
+    version: 2,
+    polygons: fine.polygons,
+    circles: [{ id: 'self-check', inclusion: false, center: [0, 0], radius: 10 }],
+    breachReturn: { coordinates: [0, 0], altitude: 10 },
+  }
+  assert(fenceStorageBytes(mixed) === 5 + 34 + 13 + 9, 'Storage bytes must match ArduPilot fence encoding')
+
+  const circle: FencePolygon = {
+    id: 'self-check',
+    inclusion: false,
+    vertices: turf
+      .circle([0, 0], 1, { units: 'kilometers', steps: 256 })
+      .geometry.coordinates[0].slice(0, -1)
+      .map(([lng, lat]) => [lat, lng]),
+  }
+  const plan: GeoFencePlan = { version: 2, polygons: [circle], circles: [] }
+  const capacity = 200 * FENCE_VERTEX_BYTES
+  const coarser = coarsenFencePlan(plan, capacity)
+  assert(coarser !== undefined, 'A dense circle must coarsen into a plan')
+  const bytes = fenceStorageBytes(coarser as GeoFencePlan)
+  const fitsRoom = bytes <= capacity && fenceItemCount(coarser as GeoFencePlan) >= 3
+  assert(fitsRoom, 'A coarsened plan must fit the room and stay a polygon')
+  const again = coarsenFencePlan(coarser as GeoFencePlan, capacity)
+  assert(again !== undefined && fenceStorageBytes(again) <= bytes / 2, 'A plan that already fits must halve')
+  const huge = coarsenFencePlan(plan, 0xffff)
+  const cappedNotHalved =
+    huge !== undefined && !exceedsPolygonVertexLimit(huge) && fenceItemCount(huge) > fenceItemCount(plan) / 3
+  assert(cappedNotHalved, 'A roomy vehicle caps vertices per polygon without halving the fence')
+
+  // A coastline-like outline, whose vertices each stand out by a different amount.
+  const jagged: FencePolygon = {
+    id: 'self-check',
+    inclusion: false,
+    vertices: Array.from({ length: 120 }, (_, index) => {
+      const angle = (index / 120) * 2 * Math.PI
+      const radius = 0.01 * (1 + 0.15 * Math.sin(7 * angle) + 0.05 * Math.sin(23 * angle + 1))
+      return [radius * Math.sin(angle), radius * Math.cos(angle)] as FenceLatLng
+    }),
+  }
+  const snug = coarsenFencePlan({ version: 2, polygons: [jagged], circles: [] }, 84 * FENCE_VERTEX_BYTES)
+  assert(snug !== undefined && fenceItemCount(snug) >= 80, 'A coarsened plan must keep nearly as many points as fit')
 }

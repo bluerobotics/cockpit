@@ -54,7 +54,7 @@ import { Coordinates } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { VehicleFactory } from '@/libs/vehicle/vehicle-factory'
 import { canSuggestCabledLink, createWirelessTrafficWatcher } from '@/libs/wireless-traffic-warning'
-import type { GeoFencePlan } from '@/types/geofence'
+import type { FenceStorageExpansion, FenceStorageExpansionOutcome, GeoFencePlan } from '@/types/geofence'
 import type { MissionLoadingCallback, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 import { useControllerStore } from './controller'
@@ -689,6 +689,23 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   /**
+   * Room the fence would gain once moved to the vehicle's SD card.
+   * @returns { Promise<FenceStorageExpansion | undefined> } The expansion, or `undefined` when it cannot grow.
+   */
+  async function fenceStorageExpansion(): Promise<FenceStorageExpansion | undefined> {
+    return await mainVehicle.value?.fenceStorageExpansion()
+  }
+
+  /**
+   * Moves the vehicle's fence to its SD card and reboots the autopilot.
+   * @returns { Promise<FenceStorageExpansionOutcome> } How far the attempt got.
+   */
+  async function expandFenceStorage(): Promise<FenceStorageExpansionOutcome> {
+    if (!mainVehicle.value) throw new Error('No vehicle available to expand fence storage.')
+    return await mainVehicle.value.expandFenceStorage()
+  }
+
+  /**
    * Download the geofence plan currently stored on the vehicle.
    * @param { MissionLoadingCallback } loadingCallback Callback invoked with download progress.
    * @returns { Promise<GeoFencePlan> } The decoded geofence plan from the vehicle.
@@ -1294,6 +1311,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     clearMissions,
     uploadFence,
     fenceCapacityBytes,
+    fenceStorageExpansion,
+    expandFenceStorage,
     fetchFence,
     clearFence,
     requestParameter,

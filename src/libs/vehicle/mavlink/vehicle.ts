@@ -45,7 +45,7 @@ import {
 } from '@/libs/vehicle/mavlink/geofence-conversion'
 import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 import { downloadMissionItems } from '@/libs/vehicle/mavlink/mission-download'
-import { uploadMissionItems } from '@/libs/vehicle/mavlink/mission-upload'
+import { MissionRefusedError, uploadMissionItems } from '@/libs/vehicle/mavlink/mission-upload'
 import {
   type MAVLinkParameterSetData,
   type MessageIntervalOptions,
@@ -69,13 +69,16 @@ import {
   StatusText,
   Velocity,
 } from '@/libs/vehicle/types'
-import type { GeoFencePlan } from '@/types/geofence'
+import type { FenceStorageExpansion, FenceStorageExpansionOutcome, GeoFencePlan } from '@/types/geofence'
 import { type MissionLoadingCallback, type Waypoint, defaultLoadingCallback } from '@/types/mission'
 
 import { flattenData } from '../common/data-flattener'
 import * as Vehicle from '../vehicle'
 
 export const MAVLINK_MESSAGE_INTERVALS_STORAGE_KEY = 'cockpit-mavlink-message-intervals'
+
+// The fence file is addressed with 16 bits, so 64 KB is all of it the autopilot can reach.
+const SD_FENCE_TARGET_KB = 64
 
 /**
  * Generic MAVLink vehicle
@@ -1396,8 +1399,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * `MAV_FRAME_GLOBAL_RELATIVE_ALT`. See `convertGeoFencePlanToMavlink`.
    * @param { GeoFencePlan } plan The fence plan to upload.
    * @param { MissionLoadingCallback } loadingCallback Callback that returns the state of the upload progress.
-   * @param { number | undefined } capacityBytes Fence storage the vehicle has room for, from
-   * `fenceCapacityBytes`, or `undefined` when it is unknown.
+   * @param { number } capacityBytes Fence storage the vehicle has room for, from `fenceCapacityBytes`.
    */
   async uploadFence(
     plan: GeoFencePlan,
@@ -1409,15 +1411,17 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     // transfer, leaving whatever it did store in place, so the count is checked before anything is sent.
     if (capacityBytes !== undefined && fenceStorageBytes(plan) > capacityBytes) {
       const room = fencePointCapacity(capacityBytes)
-      throw new Error(
+      throw new MissionRefusedError(
         `This geofence needs ${items.length} points and the vehicle has room for about ${room}. ` +
-          'Remove a shape, or use fewer vertices on the largest one, and transfer it again.'
+          'Remove a shape, or use fewer vertices on the largest one, and transfer it again.',
+        MavMissionResult.MAV_MISSION_NO_SPACE
       )
     }
     if (exceedsPolygonVertexLimit(plan)) {
-      throw new Error(
+      throw new MissionRefusedError(
         `The vehicle stores at most ${MAX_POLYGON_VERTICES} points per polygon. ` +
-          'Use fewer vertices on the largest polygon, or split it in two, and transfer it again.'
+          'Use fewer vertices on the largest polygon, or split it in two, and transfer it again.',
+        MavMissionResult.MAV_MISSION_NO_SPACE
       )
     }
     await uploadMissionItems(this, items, MavMissionType.MAV_MISSION_TYPE_FENCE, loadingCallback)
@@ -1436,12 +1440,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     // Silence means either firmware without the parameter (ArduSub 4.5 and older) or a lost reply, and
     // the two read alike, so the fence goes out and the vehicle refuses it rather than Cockpit refusing
     // it against a size that may be wrong.
-    if (sdFenceKb === undefined) return undefined
-    // ponytail: the built-in areas are those of 16 KB storage boards (Navigator and current flight
-    // controllers). Older boards have less, which the vehicle's refusal and the coarser offer cover.
-    const builtInBytes = this._type === Vehicle.Type.Copter ? 560 : 672
-    // The fence file is addressed with 16 bits, so it holds at most 64 KB minus one byte.
-    return sdFenceKb > 0 ? Math.min(Math.round(sdFenceKb) * 1024, 0xffff) : builtInBytes
+    return sdFenceKb === undefined ? undefined : this._fenceCapacityFor(sdFenceKb)
   }
 
   /**
@@ -1453,6 +1452,60 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   private _sdFenceKb(): Promise<number | undefined> {
     this._sdFenceKbRead ??= this.requestParameterValue('BRD_SD_FENCE')
     return this._sdFenceKbRead
+  }
+
+  /**
+   * Room the fence would gain once `BRD_SD_FENCE` moves it to the SD card, on ArduPilot firmware that
+   * supports it where it is not there yet.
+   * @returns { Promise<FenceStorageExpansion | undefined> } The expansion, or `undefined` when it cannot grow.
+   */
+  async fenceStorageExpansion(): Promise<FenceStorageExpansion | undefined> {
+    if (this.firmware() !== Vehicle.Firmware.ArduPilot) return undefined
+    const currentKb = await this._sdFenceKb()
+    const targetKb = SD_FENCE_TARGET_KB
+    if (currentKb === undefined || currentKb >= targetKb) return undefined
+    return { currentKb, targetKb, capacityBytes: this._fenceCapacityFor(targetKb) }
+  }
+
+  /**
+   * Moves the fence to the SD card by setting `BRD_SD_FENCE`, then reboots the autopilot, which only
+   * reads it at boot. The vehicle stops responding while it restarts.
+   * @returns { Promise<FenceStorageExpansionOutcome> } How far the attempt got.
+   */
+  async expandFenceStorage(): Promise<FenceStorageExpansionOutcome> {
+    if (this.isArmed()) throw new Error('Disarm the vehicle before rebooting its autopilot.')
+    const targetKb = SD_FENCE_TARGET_KB
+    this.setParameter({
+      id: 'BRD_SD_FENCE',
+      value: targetKb,
+      // @ts-ignore: The correct type is indeed a Type<MavParamType>
+      type: { type: MavParamType.MAV_PARAM_TYPE_INT16 },
+    })
+    // The reply to this read is what refreshes the cached value, so nothing has to clear it by hand.
+    if ((await this.requestParameterValue('BRD_SD_FENCE')) !== targetKb) {
+      throw new Error('The vehicle did not confirm the new fence storage size, so the autopilot was not rebooted.')
+    }
+    try {
+      await this.sendCommandLong(MavCmd.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, 1)
+    } catch {
+      // The autopilot acknowledges the reboot just as it goes down, so a lost acknowledgment does not
+      // mean it refused. Either way the size is already set and takes effect at the next boot.
+      return 'reboot-pending'
+    }
+    return 'rebooting'
+  }
+
+  /**
+   * Fence room for a given `BRD_SD_FENCE` size.
+   * @param { number } sdFenceKb SD card fence storage in KB, 0 for the built-in area.
+   * @returns { number } Room for the fence, in bytes.
+   */
+  private _fenceCapacityFor(sdFenceKb: number): number {
+    // ponytail: the built-in areas are those of 16 KB storage boards (Navigator and current flight
+    // controllers). Older boards have less, which the vehicle's refusal and the coarser offer cover.
+    const builtInBytes = this._type === Vehicle.Type.Copter ? 560 : 672
+    // The fence file is addressed with 16 bits, so it holds at most 64 KB minus one byte.
+    return sdFenceKb > 0 ? Math.min(Math.round(sdFenceKb) * 1024, 0xffff) : builtInBytes
   }
 
   /**
