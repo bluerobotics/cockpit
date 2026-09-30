@@ -56,10 +56,9 @@
           />
         </template>
       </v-tooltip>
-      <v-tooltip location="top" text="Switch to Mission Planning mode">
+      <v-tooltip v-if="showButtons" location="top" text="Switch to Mission Planning mode">
         <template #activator="{ props: tooltipProps }">
           <v-btn
-            v-if="showButtons"
             v-bind="tooltipProps"
             class="absolute right-[193px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"

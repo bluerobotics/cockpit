@@ -1,8 +1,11 @@
 <template>
-  <v-tooltip location="top" text="Finish polygon fence">
+  <v-tooltip
+    v-if="fenceDraft.isDrawingPolygon && polygonVertexes.length >= 3"
+    location="top"
+    text="Finish polygon fence"
+  >
     <template #activator="{ props: tooltipProps }">
       <div
-        v-if="fenceDraft.isDrawingPolygon && polygonVertexes.length >= 3"
         v-bind="tooltipProps"
         :style="confirmButtonStyle"
         class="absolute text-[22px] -ml-[10px] -mt-[10px] bg-transparent rounded-full cursor-pointer elevation-4"
@@ -13,10 +16,13 @@
       </div>
     </template>
   </v-tooltip>
-  <v-tooltip location="top" text="Discard polygon fence">
+  <v-tooltip
+    v-if="fenceDraft.isDrawingPolygon && polygonVertexes.length >= 1"
+    location="top"
+    text="Discard polygon fence"
+  >
     <template #activator="{ props: tooltipProps }">
       <div
-        v-if="fenceDraft.isDrawingPolygon && polygonVertexes.length >= 1"
         v-bind="tooltipProps"
         :style="confirmButtonStyle"
         class="absolute text-[14px] mt-[40px] -ml-[7px] bg-transparent rounded-full cursor-pointer elevation-4"
