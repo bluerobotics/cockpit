@@ -27,14 +27,14 @@
         GeoFence
       </button>
     </div>
-    <div class="flex flex-col w-full h-full p-2 overflow-y-auto scrollbar-hide">
+    <OverflowIndicatorArrows class="w-full" content-class="flex flex-col w-full p-2" align="right">
       <GeoFenceEditor v-if="planningMode === 'geofence'" :map-center="mapCenter">
         <template #below-fence-lists>
           <HazardAdvisoryPanel />
         </template>
       </GeoFenceEditor>
       <slot v-if="planningMode === 'mission'" name="mission" />
-    </div>
+    </OverflowIndicatorArrows>
   </div>
 </template>
 
@@ -43,6 +43,7 @@ import { defineModel, ref } from 'vue'
 
 import GeoFenceEditor from '@/components/geofence/GeoFenceEditor.vue'
 import HazardAdvisoryPanel from '@/components/hazards/HazardAdvisoryPanel.vue'
+import OverflowIndicatorArrows from '@/components/OverflowIndicatorArrows.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const planningMode = defineModel<'mission' | 'geofence'>('planningMode', { required: true })
