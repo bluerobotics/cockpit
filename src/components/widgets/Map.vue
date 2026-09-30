@@ -76,6 +76,8 @@
         v-if="showButtons"
         v-model:open="fenceDialOpen"
         :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+        :shown-hazard-sources="shownHazardSources"
+        @toggle-hazard-source="toggleHazardSource"
       />
       <MapCenterControl
         v-if="showButtons"
@@ -329,6 +331,7 @@ import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { HazardSourceId } from '@/types/hazards'
 import type {
   IconDimensions,
   MarkerSizes,
@@ -647,6 +650,7 @@ onBeforeMount(() => {
     showHomeArrow: true,
     showVehicleArrow: true,
     showBaseStationArrow: true,
+    shownHazardSources: [] as HazardSourceId[],
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
   if (isFlightVisible.value) targetFollower.enableAutoUpdate()
@@ -667,7 +671,14 @@ const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
 
 // Draws the coastline, restricted-area and airspace advisories the operator has loaded
-const { initHazardOverlay, destroyHazardOverlay } = useHazardOverlay()
+// Chosen per widget, so hiding a layer here leaves Mission Planning's hazard checks alone.
+const shownHazardSources = computed<HazardSourceId[]>({
+  get: () => widget.value.options.shownHazardSources ?? [],
+  set: (sourceIds) => (widget.value.options.shownHazardSources = sourceIds),
+})
+const { initHazardOverlay, destroyHazardOverlay, toggleHazardSource } = useHazardOverlay({
+  shownSources: shownHazardSources,
+})
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
