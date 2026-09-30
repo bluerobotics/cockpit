@@ -8,7 +8,7 @@ import { useTerrainElevation } from '@/composables/useTerrainElevation'
 import { type VehicleFileMeta, createVehicleFileStorage } from '@/composables/useVehicleFileStorage'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type CoastlineFaces, coastlineFaces } from '@/libs/hazards/coastline-faces'
-import { bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG } from '@/libs/hazards/hazard-areas'
+import { bboxContains, bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG } from '@/libs/hazards/hazard-areas'
 import {
   checkCoverage,
   checkMissionAgainstAreas,
@@ -182,6 +182,30 @@ export const useHazardStore = defineStore('hazards', () => {
       (area) => area.id === areaId
     )
 
+  /**
+   * Loaded areas of one source, whether or not the source is enabled.
+   * @param {HazardSourceId} sourceId Source to read.
+   * @returns {HazardArea[]} Its areas, traced first for the grid sources.
+   */
+  const loadedAreasOf = (sourceId: HazardSourceId): HazardArea[] => {
+    if (sourceId === 'terrain') return tracedTerrainAreas.value
+    if (sourceId === 'shallow-water') return tracedShallowAreas.value
+    return results.value[sourceId]?.areas ?? []
+  }
+
+  /**
+   * Whether a source has data loaded over a point, even if it found nothing there.
+   * @param {HazardSourceId} sourceId Source to check.
+   * @param {WaypointCoordinates} point Point to check.
+   * @returns {boolean} True when the source's last load covered the point.
+   */
+  const isLoadedAt = (sourceId: HazardSourceId, point: WaypointCoordinates): boolean => {
+    const bbox = HAZARD_GRID_SOURCE_IDS.includes(sourceId as HazardGridSourceId)
+      ? terrainGrid.value?.bbox
+      : results.value[sourceId as HazardAreaSourceId]?.bbox
+    return bbox !== undefined && bboxContains(bbox, point)
+  }
+
   const isFetching = computed<boolean>(() => fetchingSources.value.length > 0)
 
   // Each fetch is kept as a file on the vehicle (and cached on this computer), so every topside
@@ -275,14 +299,15 @@ export const useHazardStore = defineStore('hazards', () => {
    * bounding box, replacing whatever each had cached. Areas outside the box were never queried, so
    * their absence says nothing about them.
    * @param {GeoBbox} bbox Area to query, normally the current map view.
+   * @param {HazardSourceId[]} [only] Sources to load instead of the enabled ones, enabled or not.
    * @returns {Promise<void>}
    */
-  const refreshAreas = async (bbox: GeoBbox): Promise<void> => {
+  const refreshAreas = async (bbox: GeoBbox, only?: HazardSourceId[]): Promise<void> => {
     // The caller reads the box off a map through a ref, so what arrives here is a reactive proxy.
     // It ends up inside the cached result, and IndexedDB cannot structured-clone a proxy.
     const queryBbox = { ...bbox }
-    const sources = enabledAreaSources.value
-    const gridSources = enabledGridSources.value
+    const sources = only ? HAZARD_AREA_SOURCE_IDS.filter((id) => only.includes(id)) : enabledAreaSources.value
+    const gridSources = only ? HAZARD_GRID_SOURCE_IDS.filter((id) => only.includes(id)) : enabledGridSources.value
     const withTerrain = gridSources.length > 0
     if (sources.length === 0 && !withTerrain) {
       openSnackbar({ variant: 'info', message: 'No hazard sources are enabled.', duration: 3000 })
@@ -297,10 +322,14 @@ export const useHazardStore = defineStore('hazards', () => {
       return
     }
 
-    controller?.abort()
+    // A full refresh replaces the one in flight, while loading single sources adds to it.
     const activeController = new AbortController()
-    controller = activeController
-    fetchingSources.value = [...sources, ...gridSources]
+    if (!only) {
+      controller?.abort()
+      controller = activeController
+    }
+    const loading = [...sources, ...gridSources]
+    fetchingSources.value = [...fetchingSources.value.filter((id) => !loading.includes(id)), ...loading]
 
     const failures: string[] = []
     const partial: string[] = []
@@ -537,6 +566,8 @@ export const useHazardStore = defineStore('hazards', () => {
     shallowAreas,
     coastlineExclusionAreas,
     findArea,
+    loadedAreasOf,
+    isLoadedAt,
     advisories,
     advisoriesCheckedAtMs,
     enabledAreaSources,

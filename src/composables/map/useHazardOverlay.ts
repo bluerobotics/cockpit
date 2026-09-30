@@ -1,8 +1,9 @@
 import * as turf from '@turf/turf'
 import L, { type Map as LeafletMap } from 'leaflet'
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { type Ref, computed, onBeforeUnmount, watch } from 'vue'
 
 import { useAisTrafficOverlay } from '@/composables/map/useAisTrafficOverlay'
+import { useSnackbar } from '@/composables/snackbar'
 import { hazardAreaAt, polygonRings } from '@/libs/hazards/hazard-areas'
 import {
   HAZARD_AREA_SOURCE_IDS,
@@ -47,6 +48,21 @@ export interface UseHazardOverlayReturn {
    * switched off in the layer control are skipped, and the coastline offers the side the vehicle must keep off.
    */
   shownHazardAreaAt: (point: WaypointCoordinates) => HazardArea | undefined
+  /**
+   * Shows or hides one source on a map that keeps its own shown sources, loading it over the view
+   * when nothing is loaded there yet.
+   */
+  toggleHazardSource: (sourceId: HazardSourceId) => void
+}
+
+/**
+ * Options for a map that decides for itself which hazard sources it draws.
+ */
+export interface UseHazardOverlayOptions {
+  /**
+   * Sources this map draws, in place of the enabled ones and of the layer control's checkboxes.
+   */
+  shownSources?: Ref<HazardSourceId[]>
 }
 
 const areaBand = (area: HazardArea): string | undefined => {
@@ -84,10 +100,12 @@ const areaLabel = (area: HazardArea): L.Tooltip => {
  * source, and keeps them in sync with the hazard store, along with the vessel traffic the vehicle's AIS
  * receiver reports. Shared by the dashboard Map widget and the
  * Mission Planning view so the behavior lives in one place.
+ * @param {UseHazardOverlayOptions} [options] Per-map choice of the sources drawn.
  * @returns {UseHazardOverlayReturn} Methods to bind the overlay to a map and to tear it down.
  */
-export const useHazardOverlay = (): UseHazardOverlayReturn => {
+export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {}): UseHazardOverlayReturn => {
   const hazardStore = useHazardStore()
+  const { openSnackbar } = useSnackbar()
   // Nearby traffic is a hazard too, and riding on this lifecycle keeps both map views free of extra wiring.
   const { initAisTrafficOverlay, destroyAisTrafficOverlay } = useAisTrafficOverlay()
 
@@ -113,27 +131,26 @@ export const useHazardOverlay = (): UseHazardOverlayReturn => {
 
   // Rebuilding on anything less specific would redraw every path whenever an unrelated store field
   // changed; a source's areas only ever change when it is toggled or re-fetched.
+  const isShown = (sourceId: HazardSourceId): boolean =>
+    shownSources ? shownSources.value.includes(sourceId) : hazardStore.isSourceEnabled(sourceId)
+
   const renderSignature = computed(() =>
     HAZARD_AREA_SOURCE_IDS.map((sourceId) => {
-      const enabled = hazardStore.isSourceEnabled(sourceId) ? 1 : 0
+      const enabled = isShown(sourceId) ? 1 : 0
       return `${sourceId}:${enabled}:${hazardStore.results[sourceId]?.fetchedAtMs ?? 0}`
     }).join('|')
   )
   // The grid sources also follow their elevation thresholds, which change far more often than any fetch.
   const gridSignature = computed(() => {
     const { terrainClearanceMeters, shallowWaterDepthMeters } = hazardStore.settings
-    const enabled = HAZARD_GRID_SOURCE_IDS.map((sourceId) => (hazardStore.isSourceEnabled(sourceId) ? 1 : 0)).join('')
+    const enabled = HAZARD_GRID_SOURCE_IDS.map((sourceId) => (isShown(sourceId) ? 1 : 0)).join('')
     return `${enabled}:${
       hazardStore.terrainGrid?.fetchedAtMs ?? 0
     }:${terrainClearanceMeters}:${shallowWaterDepthMeters}`
   })
 
-  const areasOf = (sourceId: HazardSourceId): HazardArea[] => {
-    if (!hazardStore.isSourceEnabled(sourceId)) return []
-    if (sourceId === 'terrain') return hazardStore.terrainAreas
-    if (sourceId === 'shallow-water') return hazardStore.shallowAreas
-    return hazardStore.results[sourceId]?.areas ?? []
-  }
+  const areasOf = (sourceId: HazardSourceId): HazardArea[] =>
+    isShown(sourceId) ? hazardStore.loadedAreasOf(sourceId) : []
 
   const ensurePane = (): void => {
     if (!mapRef) return
@@ -284,7 +301,7 @@ export const useHazardOverlay = (): UseHazardOverlayReturn => {
       groups.set(sourceId, group)
       // Added to the map before the control knows it, or the control reports it as an operator's `overlayadd`.
       if (wasVisible) group.addTo(mapRef as LeafletMap)
-      controlRef?.addOverlay(group, HAZARD_SOURCES[sourceId].label)
+      if (!shownSources) controlRef?.addOverlay(group, HAZARD_SOURCES[sourceId].label)
     })
     fitLabels()
     fitFills()
@@ -323,7 +340,48 @@ export const useHazardOverlay = (): UseHazardOverlayReturn => {
     return hazardAreaAt(shownSourceIds.flatMap(pickableAreasOf), point)
   }
 
+  const toggleHazardSource = (sourceId: HazardSourceId): void => {
+    if (!shownSources) return
+    const { label } = HAZARD_SOURCES[sourceId]
+    if (shownSources.value.includes(sourceId)) {
+      logUserAction(`Hid the "${label}" hazard layer on the map`)
+      shownSources.value = shownSources.value.filter((id) => id !== sourceId)
+      return
+    }
+    logUserAction(`Showed the "${label}" hazard layer on the map`)
+    if (sourceId === 'airspace' && !hazardStore.openAipApiKey.trim()) {
+      openSnackbar({
+        variant: 'warning',
+        message:
+          'Restricted airspace needs your own openAIP API key. Add it in Mission Planning, under GeoFence > ' +
+          'Hazard advisories settings.',
+        duration: 20000,
+        closeButton: true,
+      })
+      return
+    }
+    shownSources.value = [...shownSources.value, sourceId]
+
+    const center = mapRef?.getCenter()
+    const bounds = mapRef?.getBounds()
+    if (!center || !bounds || hazardStore.fetchingSources.includes(sourceId)) return
+    if (hazardStore.isLoadedAt(sourceId, [center.lat, center.lng])) return
+    const viewBbox = {
+      south: bounds.getSouth(),
+      west: bounds.getWest(),
+      north: bounds.getNorth(),
+      east: bounds.getEast(),
+    }
+    hazardStore.refreshAreas(viewBbox, [sourceId]).catch((error: Error) => {
+      openSnackbar({
+        variant: 'error',
+        message: `Could not load ${label.toLowerCase()}: ${error.message}`,
+        duration: 5000,
+      })
+    })
+  }
+
   onBeforeUnmount(destroyHazardOverlay)
 
-  return { initHazardOverlay, destroyHazardOverlay, shownHazardAreaAt }
+  return { initHazardOverlay, destroyHazardOverlay, shownHazardAreaAt, toggleHazardSource }
 }
