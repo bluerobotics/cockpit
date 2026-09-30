@@ -2,7 +2,7 @@ import * as turf from '@turf/turf'
 import type { Feature, LineString, MultiLineString, Position } from 'geojson'
 
 import type { WaypointLike } from '@/libs/geo-fence'
-import { bboxContains, paddedBbox, polygonRings } from '@/libs/hazards/hazard-areas'
+import { bboxContains, hazardAreaAt, paddedBbox, polygonRings } from '@/libs/hazards/hazard-areas'
 import type { GeoBbox } from '@/types/general'
 import type { HazardAdvisory, HazardArea, HazardGridSourceId } from '@/types/hazards'
 import { type Waypoint, type WaypointCoordinates, AltitudeReferenceType } from '@/types/mission'
@@ -352,6 +352,8 @@ const runSelfCheckOnce = (): void => {
     checkMissionAgainstAreas([{ coordinates: [0.005, 0.005] }], [holed], 0).length === 0,
     'A waypoint in a hole of an area must not be reported as inside it'
   )
+  assert(hazardAreaAt([square, holed], [0.002, 0.002]) === holed, 'The smallest area under a point must be picked')
+  assert(hazardAreaAt([holed], [0.005, 0.005]) === undefined, 'A point in a hole must not pick the area around it')
 
   assert(
     checkTerrainElevation(
