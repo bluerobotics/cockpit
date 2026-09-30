@@ -817,6 +817,7 @@
     :menu-type="contextMenuType"
     :can-save-current="canSaveCurrentMissionToLibrary"
     :nearest-segment-index="contextMenuNearestSegmentIndex"
+    :can-create-fence-exclusion="contextMenuHazardArea !== undefined"
     @set-home-position="setHomePositionFromContextMenu"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
@@ -839,7 +840,9 @@
     @toggle-base-station-signal-visibility="baseStationStore.toggleSignalVisibility()"
     @add-mission-from-library="addMissionFromLibraryContextMenu"
     @save-mission-to-library="openMissionLibraryWithSaveDialog"
+    @create-fence-exclusion="createFenceExclusionFromContextMenu"
   />
+  <HazardExclusionDialog v-model:area="exclusionDialogArea" />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <Teleport to="#planningMap">
     <RadialMenu
@@ -950,6 +953,7 @@ import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, sha
 
 import GeoFenceDrawingActionButtons from '@/components/geofence/GeoFenceDrawingActionButtons.vue'
 import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
+import HazardExclusionDialog from '@/components/hazards/HazardExclusionDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
@@ -1054,10 +1058,12 @@ import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
+import { useHazardStore } from '@/stores/hazards'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { SubMenuComponentName } from '@/types/general'
+import type { HazardArea } from '@/types/hazards'
 import {
   type CockpitMission,
   type MissionEstimatesSnapshot,
@@ -1357,7 +1363,10 @@ const overlaysDialogOpen = ref(false)
 const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
 
 // Draws the coastline, restricted-area and airspace advisories the operator has loaded
-const { initHazardOverlay, destroyHazardOverlay } = useHazardOverlay()
+const { initHazardOverlay, destroyHazardOverlay, shownHazardAreaAt } = useHazardOverlay()
+const hazardStore = useHazardStore()
+const contextMenuHazardArea = ref<HazardArea>()
+const exclusionDialogArea = ref<HazardArea>()
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
@@ -2667,6 +2676,8 @@ const showContextMenu = (event: L.LeafletMouseEvent): void => {
       contextMenuNearestSegmentIndex.value = segmentIndex
     }
   }
+  contextMenuHazardArea.value =
+    contextMenuType.value === 'map' ? shownHazardAreaAt([event.latlng.lat, event.latlng.lng]) : undefined
 
   let x = event.originalEvent.clientX
   let y = event.originalEvent.clientY
@@ -2728,6 +2739,17 @@ const clearVehiclePathHistory = (): void => {
   logUserAction('Cleared vehicle path history')
   missionStore.clearVehicleHistory()
   openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+}
+
+const createFenceExclusionFromContextMenu = (clearanceM?: number): void => {
+  const area = contextMenuHazardArea.value
+  if (!area) return
+  if (clearanceM === undefined) {
+    logUserAction(`Opened the exclusion zone clearance dialog for "${area.label}"`)
+    exclusionDialogArea.value = area
+    return
+  }
+  hazardStore.addAreaAsFenceExclusion(area.id, clearanceM)
 }
 
 const setHomePositionFromContextMenu = (): void => {

@@ -6,6 +6,8 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useTerrainElevation } from '@/composables/useTerrainElevation'
 import { type VehicleFileMeta, createVehicleFileStorage } from '@/composables/useVehicleFileStorage'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { type CoastlineFaces, coastlineFaces } from '@/libs/hazards/coastline-faces'
 import { bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG } from '@/libs/hazards/hazard-areas'
 import {
   checkCoverage,
@@ -25,6 +27,7 @@ import { traceGridAreas } from '@/libs/hazards/terrain-trace'
 import { useAlertStore } from '@/stores/alert'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import { useMissionStore } from '@/stores/mission'
 import { Alert, AlertLevel } from '@/types/alert'
 import type { GeoBbox } from '@/types/general'
 import type {
@@ -133,6 +136,7 @@ export const useHazardStore = defineStore('hazards', () => {
   const fenceStore = useGeoFenceStore()
   const alertStore = useAlertStore()
   const vehicleStore = useMainVehicleStore()
+  const missionStore = useMissionStore()
   const { isSampling: isSamplingTerrain, sampleElevations } = useTerrainElevation()
 
   const settings = useBlueOsStorage<HazardAdvisorySettings>('cockpit-hazard-sources-v1', DEFAULT_HAZARD_SETTINGS)
@@ -226,13 +230,32 @@ export const useHazardStore = defineStore('hazards', () => {
     ...(enabledGridSources.value.length > 0 && terrainGrid.value ? [terrainGrid.value.bbox] : []),
   ])
 
+  // A truncated coastline is missing runs, which would merge land and water into one face.
+  const dividedCoastline = computed<CoastlineFaces>(() => {
+    const coastline = results.value.coastline
+    return coastline && !coastline.truncated ? coastlineFaces(coastline.areas, coastline.bbox) : { land: [], water: [] }
+  })
+
+  /** The side of the coastline the vehicle must keep off: the land for a boat or submarine, the water for a rover. */
+  const coastlineExclusionAreas = computed<HazardArea[]>(() => {
+    if (!isSourceEnabled('coastline')) return []
+    const vehicleType = missionStore.effectiveVehicleType
+    if (vehicleType === MavType.MAV_TYPE_GROUND_ROVER) return dividedCoastline.value.water
+    if (vehicleType === MavType.MAV_TYPE_SURFACE_BOAT || vehicleType === MavType.MAV_TYPE_SUBMARINE) {
+      return dividedCoastline.value.land
+    }
+    return []
+  })
+
   /**
    * Finds a loaded area of any enabled source, grid-traced ones included.
    * @param {string} areaId Area to look up.
    * @returns {HazardArea | undefined} The area, when it is still loaded and its source enabled.
    */
   const findArea = (areaId: string): HazardArea | undefined =>
-    [...visibleAreas.value, ...terrainAreas.value, ...shallowAreas.value].find((area) => area.id === areaId)
+    [...visibleAreas.value, ...terrainAreas.value, ...shallowAreas.value, ...coastlineExclusionAreas.value].find(
+      (area) => area.id === areaId
+    )
 
   const isFetching = computed<boolean>(() => fetchingSources.value.length > 0)
 
@@ -424,14 +447,14 @@ export const useHazardStore = defineStore('hazards', () => {
    * A fence is two-dimensional, so an airspace area's vertical band is not carried over: the
    * resulting exclusion keeps the vehicle out at every altitude. Nor are an area's holes, so an exclusion
    * traced from the elevation grid also covers the deeper water or lower ground it rings.
-   * @param {string} areaId Area to convert, as listed in the advisories.
+   * @param {string} areaId Area to convert, as listed in the advisories or picked on the map.
+   * @param {number} [marginM] Clearance to keep from the area, in meters. Defaults to the proximity margin.
    * @returns {boolean} True when a polygon was added.
    */
-  const addAreaAsFenceExclusion = (areaId: string): boolean => {
-    const area = visibleAreas.value.find((candidate) => candidate.id === areaId)
+  const addAreaAsFenceExclusion = (areaId: string, marginM = settings.value.proximityMarginMeters): boolean => {
+    const area = findArea(areaId)
     if (!area) return false
 
-    const marginM = settings.value.proximityMarginMeters
     const budget = settings.value.exclusionVertexBudget
     const ring = hazardAreaToExclusionRing(area, marginM, budget)
     const polygon = Array.isArray(ring) ? fenceStore.addPolygon(ring, false, area.label) : undefined
@@ -584,6 +607,7 @@ export const useHazardStore = defineStore('hazards', () => {
     terrainGrid,
     terrainAreas,
     shallowAreas,
+    coastlineExclusionAreas,
     findArea,
     advisories,
     visibleAreas,
