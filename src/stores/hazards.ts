@@ -371,7 +371,7 @@ export const useHazardStore = defineStore('hazards', () => {
       settings.value.proximityMarginMeters,
       settings.value.exclusionVertexBudget
     )
-    const polygon = ring ? fenceStore.addPolygon(ring, false) : undefined
+    const polygon = ring ? fenceStore.addPolygon(ring, false, area.label) : undefined
     if (!polygon) {
       openSnackbar({
         variant: 'error',
