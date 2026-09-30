@@ -24,6 +24,10 @@ export interface FencePolygon {
    * enforced via vehicle parameters (FENCE_ALT_MAX/MIN, GF_MAX_VER_DIST).
    */
   vertices: FenceLatLng[]
+  /**
+   * Operator-facing name, such as the hazard it was made from. Stays in Cockpit: the autopilot keeps no names.
+   */
+  name?: string
 }
 
 /**
@@ -282,6 +286,7 @@ const instanceOfFencePolygon = (value: unknown): value is FencePolygon => {
   if (!value || typeof value !== 'object') return false
   const p = value as Partial<FencePolygon>
   if (typeof p.inclusion !== 'boolean') return false
+  if (p.name !== undefined && typeof p.name !== 'string') return false
   return Array.isArray(p.vertices) && p.vertices.length >= 3 && p.vertices.every(instanceOfFenceLatLng)
 }
 
