@@ -443,7 +443,7 @@ export const useHazardStore = defineStore('hazards', () => {
     const marginM = settings.value.proximityMarginMeters
     const budget = settings.value.exclusionVertexBudget
     const ring = hazardAreaToExclusionRing(area, marginM, budget)
-    const polygon = Array.isArray(ring) ? fenceStore.addPolygon(ring, false) : undefined
+    const polygon = Array.isArray(ring) ? fenceStore.addPolygon(ring, false, area.label) : undefined
     if (!polygon) {
       const tooCoarse =
         `"${area.label}" cannot be outlined within ${budget} vertices while staying ${marginM} m clear of it. ` +

@@ -78,15 +78,28 @@
             >
               <v-icon icon="mdi-vector-polygon" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Polygon {{ idx + 1 }}</p>
+              <p
+                class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap"
+                @mouseenter="onPolygonNameHover($event, polygon.id)"
+                @mouseleave="truncatedNameId = undefined"
+              >
+                {{ polygon.name ?? `Polygon ${idx + 1}` }}
+                <v-tooltip
+                  activator="parent"
+                  location="top"
+                  :open-on-hover="false"
+                  :model-value="truncatedNameId === polygon.id"
+                  :text="polygon.name ?? `Polygon ${idx + 1}`"
+                />
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="polygon.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onTogglePolygonInclusion(polygon.id)"
               >
                 {{ polygon.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete polygon">
                   <template #activator="{ props: tooltipProps }">
@@ -159,15 +172,17 @@
             >
               <v-icon icon="mdi-vector-circle-variant" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Circle {{ idx + 1 }}</p>
+              <p class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
+                Circle {{ idx + 1 }}
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="circle.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onToggleCircleInclusion(circle.id)"
               >
                 {{ circle.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete circle">
                   <template #activator="{ props: tooltipProps }">
@@ -451,6 +466,12 @@ const importedPlanSections = ref<Pick<MavlinkPlanFile, 'mission' | 'rallyPoints'
 const syncProgress = ref(0)
 const tooLargeOffer = ref<FenceTooLargeOffer>()
 const breachAltTooltipOpen = ref(false)
+const truncatedNameId = ref<string>()
+
+const onPolygonNameHover = (event: MouseEvent, id: string): void => {
+  const name = event.currentTarget as HTMLElement
+  truncatedNameId.value = name.scrollWidth > name.clientWidth ? id : undefined
+}
 
 const onToggleShapeInteractive = (id: string): void => {
   const willSelect = fenceDraft.interactiveShapeId !== id
