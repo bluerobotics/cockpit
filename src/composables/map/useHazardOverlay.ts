@@ -3,7 +3,7 @@ import L, { type Map as LeafletMap } from 'leaflet'
 import { computed, onBeforeUnmount, watch } from 'vue'
 
 import { useAisTrafficOverlay } from '@/composables/map/useAisTrafficOverlay'
-import { polygonRings } from '@/libs/hazards/hazard-areas'
+import { hazardAreaAt, polygonRings } from '@/libs/hazards/hazard-areas'
 import {
   HAZARD_AREA_SOURCE_IDS,
   HAZARD_GRID_SOURCE_IDS,
@@ -13,6 +13,7 @@ import {
 import { escapeHtml } from '@/libs/utils'
 import { useHazardStore } from '@/stores/hazards'
 import type { HazardArea, HazardSourceId } from '@/types/hazards'
+import type { WaypointCoordinates } from '@/types/mission'
 
 const HAZARD_PANE = 'hazardAdvisoryPane'
 
@@ -41,6 +42,11 @@ export interface UseHazardOverlayReturn {
    * Stops syncing and removes every hazard layer from the map and the layer control.
    */
   destroyHazardOverlay: () => void
+  /**
+   * The drawn hazard area under a point, the smallest when several overlap. Sources the operator
+   * switched off in the layer control are skipped, and the coastline offers the side the vehicle must keep off.
+   */
+  shownHazardAreaAt: (point: WaypointCoordinates) => HazardArea | undefined
 }
 
 const areaBand = (area: HazardArea): string | undefined => {
@@ -310,7 +316,14 @@ export const useHazardOverlay = (): UseHazardOverlayReturn => {
     controlRef = undefined
   }
 
+  const shownHazardAreaAt = (point: WaypointCoordinates): HazardArea | undefined => {
+    const shownSourceIds = [...groups].filter(([, group]) => mapRef?.hasLayer(group)).map(([sourceId]) => sourceId)
+    const pickableAreasOf = (sourceId: HazardSourceId): HazardArea[] =>
+      sourceId === 'coastline' ? hazardStore.coastlineExclusionAreas : areasOf(sourceId)
+    return hazardAreaAt(shownSourceIds.flatMap(pickableAreasOf), point)
+  }
+
   onBeforeUnmount(destroyHazardOverlay)
 
-  return { initHazardOverlay, destroyHazardOverlay }
+  return { initHazardOverlay, destroyHazardOverlay, shownHazardAreaAt }
 }
