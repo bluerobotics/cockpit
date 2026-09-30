@@ -381,27 +381,33 @@
       </v-tooltip>
     </div>
 
-    <button
-      :disabled="!fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
-      :class="{
-        'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-          !fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress,
-      }"
-      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
-      @click="onUpload"
-    >
-      UPLOAD FENCE TO VEHICLE
-    </button>
-    <button
+    <UploadActionsButton
       v-if="fenceStore.hasItems"
-      class="h-auto py-1 px-1 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-      @click="onClearLocal"
+      label="UPLOAD FENCE TO VEHICLE"
+      actions-name="fence actions"
+      indicator
+      :disabled="!vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
+      @upload="onUpload"
     >
-      CLEAR CURRENT FENCE
-    </button>
+      <button
+        class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        @click="onClearLocal"
+      >
+        CLEAR CURRENT FENCE
+      </button>
+      <button
+        :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
+        class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+        @click="onDownload"
+      >
+        DOWNLOAD FENCE FROM VEHICLE
+      </button>
+    </UploadActionsButton>
     <button
+      v-else
       :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
-      class="h-auto py-2 px-2 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
       :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
       @click="onDownload"
     >
@@ -424,6 +430,7 @@ import { ref } from 'vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceParametersPanel from '@/components/geofence/GeoFenceParametersPanel.vue'
 import GeoFenceTooLargeDialog from '@/components/geofence/GeoFenceTooLargeDialog.vue'
+import UploadActionsButton from '@/components/mission-planning/UploadActionsButton.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'

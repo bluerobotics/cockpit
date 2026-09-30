@@ -604,79 +604,41 @@
             </v-tooltip>
           </div>
         </div>
-        <div
+        <UploadActionsButton
           v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
-          class="flex flex-row items-stretch gap-2 m-2 mt-2"
+          v-model:expanded="missionActionsMenuExpanded"
+          label="UPLOAD MISSION TO VEHICLE"
+          actions-name="mission actions"
+          :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
+          :indicator="hasLastUploadedMission"
+          @upload="uploadMissionToVehicle"
         >
           <button
-            :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
-            :class="{
-              'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-                missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline,
-            }"
-            class="flex-1 min-w-0 h-[40px] py-2 px-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
-            @click="uploadMissionToVehicle"
+            :disabled="loading"
+            class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            @click="openCLearMissionDialog"
           >
-            UPLOAD MISSION TO VEHICLE
+            <v-progress-circular v-if="loading" size="20" class="py-4" />
+            <p v-else>CLEAR CURRENT MISSION</p>
           </button>
-          <v-tooltip
-            location="top"
-            :text="missionActionsMenuExpanded ? 'Hide mission actions' : 'Show mission actions'"
+          <button
+            :disabled="loading || !vehicleStore.isVehicleOnline"
+            class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+            @click="downloadMissionFromVehicle"
           >
-            <template #activator="{ props }">
-              <button
-                v-bind="props"
-                :aria-label="missionActionsMenuExpanded ? 'Hide mission actions' : 'Show mission actions'"
-                class="relative flex items-center justify-center h-[40px] py-2 px-1 rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-                @click="toggleMissionActionsMenu"
-              >
-                <span
-                  v-if="hasLastUploadedMission && !missionActionsMenuExpanded"
-                  class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#3B78A8]"
-                />
-                <v-icon
-                  size="28"
-                  class="text-white transition-transform duration-200"
-                  :class="{ 'rotate-180': missionActionsMenuExpanded }"
-                >
-                  mdi-menu-down
-                </v-icon>
-              </button>
-            </template>
-          </v-tooltip>
-        </div>
-        <v-expand-transition
-          v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
-        >
-          <div v-if="missionActionsMenuExpanded" class="flex flex-col">
-            <v-divider class="mx-2 my-1 opacity-5" />
-            <button
-              :disabled="loading"
-              class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-              @click="openCLearMissionDialog"
-            >
-              <v-progress-circular v-if="loading" size="20" class="py-4" />
-              <p v-else>CLEAR CURRENT MISSION</p>
-            </button>
-            <button
-              :disabled="loading || !vehicleStore.isVehicleOnline"
-              class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-              :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
-              @click="downloadMissionFromVehicle"
-            >
-              <v-progress-circular v-if="loading" size="20" class="py-4" />
-              <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
-            </button>
-            <button
-              v-if="hasLastUploadedMission"
-              :disabled="loading"
-              class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-              @click="restoreLastUploadedMission"
-            >
-              RESTORE LAST UPLOADED MISSION
-            </button>
-          </div>
-        </v-expand-transition>
+            <v-progress-circular v-if="loading" size="20" class="py-4" />
+            <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
+          </button>
+          <button
+            v-if="hasLastUploadedMission"
+            :disabled="loading"
+            class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            @click="restoreLastUploadedMission"
+          >
+            RESTORE LAST UPLOADED MISSION
+          </button>
+        </UploadActionsButton>
         <div v-else-if="!isCreatingSimplePath && !isCreatingSurvey" class="flex flex-col gap-2 m-2 mt-2">
           <button
             :disabled="loading || !vehicleStore.isVehicleOnline"
@@ -943,6 +905,7 @@ import MissionPlacementToolbar, {
 import MissionPlanningSidebar from '@/components/mission-planning/MissionPlanningSidebar.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
+import UploadActionsButton from '@/components/mission-planning/UploadActionsButton.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import MissionLibraryModal from '@/components/MissionLibraryModal.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -4589,12 +4552,10 @@ const missionToolboxTop = computed<number>(() => {
   return Math.max(topBound, topBound + (bottomBound - topBound - missionToolboxHeight.value) / 2)
 })
 
-const toggleMissionActionsMenu = (): void => {
-  const willOpen = !missionActionsMenuExpanded.value
-  logUserAction(`${willOpen ? 'Opened' : 'Closed'} the mission actions menu`)
-  missionToolboxPinnedTop.value = willOpen ? missionToolboxTop.value : null
-  missionActionsMenuExpanded.value = willOpen
-}
+watch(missionActionsMenuExpanded, (expanded) => {
+  missionToolboxPinnedTop.value = expanded ? missionToolboxTop.value : null
+})
+
 const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
   if (mission.vehicleType && !vehicleStore.isVehicleOnline) {
     missionStore.plannedVehicleType = mission.vehicleType
