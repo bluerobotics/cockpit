@@ -413,11 +413,17 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
    * something other than the click-to-draw flow.
    * @param { FenceLatLng[] } vertices Ordered vertices, with the closing one left implicit.
    * @param { boolean } inclusion Whether the vehicle is restricted to the inside of the polygon.
+   * @param { string } [name] Name shown for the polygon in the editor.
    * @returns { FencePolygon | undefined } The added polygon, or `undefined` when given fewer than 3 vertices.
    */
-  const addPolygon = (vertices: FenceLatLng[], inclusion: boolean): FencePolygon | undefined => {
+  const addPolygon = (vertices: FenceLatLng[], inclusion: boolean, name?: string): FencePolygon | undefined => {
     if (vertices.length < 3) return undefined
-    const polygon: FencePolygon = { id: uuid(), inclusion, vertices: cloneVertices(vertices) }
+    const polygon: FencePolygon = {
+      id: uuid(),
+      inclusion,
+      vertices: cloneVertices(vertices),
+      ...(name ? { name } : {}),
+    }
     polygons.push(polygon)
     draft.setInteractive(polygon.id)
     markDirty()
@@ -491,6 +497,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
         id: p.id ?? uuid(),
         inclusion: p.inclusion,
         vertices: cloneVertices(p.vertices),
+        ...(p.name ? { name: p.name } : {}),
       }))
     )
     circles.splice(
@@ -518,7 +525,12 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
    */
   const exportPlan = (): GeoFencePlan => ({
     version: 2,
-    polygons: polygons.map((p) => ({ id: p.id, inclusion: p.inclusion, vertices: cloneVertices(p.vertices) })),
+    polygons: polygons.map((p) => ({
+      id: p.id,
+      inclusion: p.inclusion,
+      vertices: cloneVertices(p.vertices),
+      ...(p.name ? { name: p.name } : {}),
+    })),
     circles: circles.map((c) => ({
       id: c.id,
       inclusion: c.inclusion,
