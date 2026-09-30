@@ -5556,6 +5556,16 @@ watch(
   filter: saturate(0.5);
 }
 
+.mission-planning--fence-mode :deep(.leaflet-marker-pane > .vehicle-marker) {
+  opacity: 0.68;
+  filter: saturate(0.75);
+}
+
+.mission-planning--fence-mode :deep(.leaflet-vehiclePath-pane) {
+  opacity: 0.3;
+  filter: saturate(0.5);
+}
+
 .speed-dial-group {
   display: flex;
   align-items: center;
