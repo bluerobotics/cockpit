@@ -289,11 +289,7 @@
               :key="group.key"
               class="flex items-center w-full py-[2px] border-b-[1px] border-[#FF880026] last:border-b-0"
             >
-              <v-icon
-                :icon="group.sourceId ? HAZARD_SOURCES[group.sourceId].icon : 'mdi-map-marker-question-outline'"
-                class="mr-2 text-[14px]"
-                :style="{ color: group.sourceId ? HAZARD_SOURCES[group.sourceId].color : ADVISORY_COLOR }"
-              />
+              <v-icon :icon="group.icon" class="mr-2 text-[14px]" :style="{ color: group.color }" />
               <div class="grow min-w-0">
                 <p v-for="message in group.messages" :key="message" class="text-[10px] leading-tight">
                   {{ message }}
@@ -365,6 +361,7 @@ import { HAZARD_AREA_SOURCE_IDS, HAZARD_SOURCE_IDS, HAZARD_SOURCES } from '@/lib
 import { terrainSampleSpacingM } from '@/libs/hazards/terrain-areas'
 import { constrain } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useGeoFenceStore } from '@/stores/geoFence'
 import { useHazardStore } from '@/stores/hazards'
 import { useMissionStore } from '@/stores/mission'
 import type { GeoBbox } from '@/types/general'
@@ -393,9 +390,13 @@ type AdvisoryGroup = {
    */
   areaId?: string
   /**
-   * Source that raised the advisories, absent for findings about the loaded data as a whole.
+   * Icon shown at the start of the row.
    */
-  sourceId?: HazardSourceId
+  icon: string
+  /**
+   * Color of that icon.
+   */
+  color: string
   /**
    * The advisory messages themselves, in the order they were raised.
    */
@@ -407,6 +408,7 @@ type AdvisoryGroup = {
 }
 
 const hazardStore = useHazardStore()
+const fenceStore = useGeoFenceStore()
 const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const { map, mapReady } = useMapContext()
@@ -472,6 +474,21 @@ const sourceDataNote = (sourceId: HazardSourceId): string | undefined => {
   return `Loaded ${formatDistanceToNow(fetchedAtMs)} ago${spacing}.`
 }
 
+// ponytail: re-runs on every waypoint or fence edit, drags included, which stays cheap for fences of a few
+// hundred vertices; fold it into the debounced hazard re-check if larger fences make dragging stutter.
+const fenceBreachGroup = computed<AdvisoryGroup | undefined>(() => {
+  const { breachedIndices } = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
+  if (breachedIndices.length === 0) return undefined
+  const count = breachedIndices.length === 1 ? '1 waypoint breaches' : `${breachedIndices.length} waypoints breach`
+  return {
+    key: 'fence-breach',
+    icon: 'mdi-shield-alert-outline',
+    color: ADVISORY_COLOR,
+    messages: [`${count} the geofence, outside every inclusion fence or inside an exclusion fence.`],
+    waypointIndices: breachedIndices,
+  }
+})
+
 // One entry per area, since every contact with the same area is fixed by the same exclusion zone.
 const advisoryGroups = computed<AdvisoryGroup[]>(() => {
   const groups = new Map<string, AdvisoryGroup>()
@@ -488,12 +505,14 @@ const advisoryGroups = computed<AdvisoryGroup[]>(() => {
     groups.set(key, {
       key,
       areaId: advisory.areaId,
-      sourceId: advisory.sourceId,
+      icon: advisory.sourceId ? HAZARD_SOURCES[advisory.sourceId].icon : 'mdi-map-marker-question-outline',
+      color: advisory.sourceId ? HAZARD_SOURCES[advisory.sourceId].color : ADVISORY_COLOR,
       messages: [advisory.message],
       waypointIndices: advisory.waypointIndices,
     })
   })
-  return [...groups.values()]
+  const breachGroup = fenceBreachGroup.value
+  return breachGroup ? [breachGroup, ...groups.values()] : [...groups.values()]
 })
 
 const onFocusGroup = (group: AdvisoryGroup): void => {
