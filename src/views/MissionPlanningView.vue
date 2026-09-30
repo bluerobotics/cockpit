@@ -20,10 +20,13 @@
       @apply="applyExtent(box.id)"
       @close="closeExtentInputs"
     />
-    <v-tooltip location="top" text="Generate waypoints">
+    <v-tooltip
+      v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+      location="top"
+      text="Generate waypoints"
+    >
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute text-[22px] -ml-[10px] -mt-[10px] bg-transparent rounded-full cursor-pointer elevation-4"
@@ -34,10 +37,13 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" :text="`Scan spacing (${distanceUnit})`">
+    <v-tooltip
+      v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+      location="top"
+      :text="`Scan spacing (${distanceUnit})`"
+    >
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute mt-[46px] ml-[10px] rounded-lg elevation-4"
@@ -52,10 +58,13 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" :text="`Turnaround distance (${distanceUnit})`">
+    <v-tooltip
+      v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+      location="top"
+      :text="`Turnaround distance (${distanceUnit})`"
+    >
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute mt-[76px] ml-[10px] rounded-lg elevation-4"
@@ -69,10 +78,13 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" :text="`Cruise speed (${speedUnit})`">
+    <v-tooltip
+      v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+      location="top"
+      :text="`Cruise speed (${speedUnit})`"
+    >
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute mt-[106px] ml-[10px] rounded-lg elevation-4"
@@ -88,10 +100,13 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Rotate the survey entry point to the next corner">
+    <v-tooltip
+      v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
+      location="top"
+      text="Rotate the survey entry point to the next corner"
+    >
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute mt-[24px] -ml-[165px] bg-transparent cursor-pointer elevation-4"
@@ -105,12 +120,12 @@
       </template>
     </v-tooltip>
     <v-tooltip
+      v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
       location="top"
       :text="surveyCrosshatch ? 'Disable 90° crosshatch re-fly' : 'Enable 90° crosshatch re-fly'"
     >
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute mt-[72px] -ml-[165px] bg-transparent cursor-pointer elevation-4"
@@ -126,10 +141,13 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" :text="`Crosshatch scan spacing (${distanceUnit})`">
+    <v-tooltip
+      v-if="isCreatingSurvey && surveyCrosshatch && surveyPolygonVertexesPositions.length >= 3"
+      location="top"
+      :text="`Crosshatch scan spacing (${distanceUnit})`"
+    >
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyCrosshatch && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute mt-[120px] -ml-[160px] rounded-lg elevation-4"
@@ -144,10 +162,9 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="top" text="Clear survey">
+    <v-tooltip v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3" location="top" text="Clear survey">
       <template #activator="{ props }">
         <div
-          v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
           v-bind="props"
           :style="confirmButtonStyle"
           class="absolute text-[14px] mt-[150px] -ml-[7px] bg-transparent rounded-full cursor-pointer elevation-4"
