@@ -355,7 +355,12 @@ import { useMapContext } from '@/composables/map/useMapContext'
 import { openSnackbar } from '@/composables/snackbar'
 import { leafletBoundsToCoverageBbox } from '@/libs/baseStation/coverageBbox'
 import { MAX_POLYGON_VERTICES } from '@/libs/geo-fence'
-import { bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG, paddedBbox } from '@/libs/hazards/hazard-areas'
+import {
+  bboxMaxSpanDegrees,
+  MAX_HAZARD_BBOX_DEG,
+  MAX_HAZARD_CLEARANCE_M,
+  paddedBbox,
+} from '@/libs/hazards/hazard-areas'
 import { HAZARD_AREA_SOURCE_IDS, HAZARD_SOURCE_IDS, HAZARD_SOURCES } from '@/libs/hazards/sources'
 import { terrainSampleSpacingM } from '@/libs/hazards/terrain-areas'
 import { constrain } from '@/libs/utils'
@@ -366,8 +371,6 @@ import type { GeoBbox } from '@/types/general'
 import type { HazardSourceId } from '@/types/hazards'
 import type { WaypointCoordinates } from '@/types/mission'
 
-// A margin past this stops describing a clearance and starts flagging the whole chart.
-const MAX_HAZARD_CLEARANCE_M = 5000
 // Deeper than this the elevation model's seabed is too coarse to single out anything worth avoiding.
 const MAX_SHALLOW_WATER_DEPTH_M = 100
 const MIN_EXCLUSION_VERTEX_BUDGET = 3
