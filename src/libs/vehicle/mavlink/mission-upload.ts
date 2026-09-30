@@ -12,6 +12,34 @@ const RETRY_IDLE_MS = 250
 const MAX_RETRY_IDLE_MS = 1280
 
 /**
+ * A transfer the vehicle refused, or one Cockpit already knows it has no room for.
+ */
+export class MissionRefusedError extends Error {
+  /**
+   * Result the vehicle answered with, or the one it would answer.
+   */
+  readonly result: MavMissionResult
+
+  /**
+   * @param {string} message Explanation shown to the user.
+   * @param {MavMissionResult} result Result the refusal carries.
+   */
+  constructor(message: string, result: MavMissionResult) {
+    super(message)
+    this.result = result
+  }
+
+  /**
+   * Whether the refusal was for lack of room, which is the only one a smaller transfer answers.
+   * @returns { boolean } True when the vehicle had no space, or gave the generic error ArduPilot
+   * answers an oversized fence with.
+   */
+  get isNoSpace(): boolean {
+    return [MavMissionResult.MAV_MISSION_NO_SPACE, MavMissionResult.MAV_MISSION_ERROR].includes(this.result)
+  }
+}
+
+/**
  * Vehicle surface used to upload a mission micro-service. Matches the methods already on `MAVLinkVehicle`.
  */
 export type MissionUploadPort = {
@@ -116,9 +144,10 @@ export const uploadMissionItems = async (
     let idleMs = RETRY_IDLE_MS
     while (!accepted) {
       if (refused !== undefined) {
-        fail(
-          `[Mission upload] Mission upload failed (${refused}).`,
-          `The vehicle refused the ${kind}. Check that it has room for one this size and try again.`
+        console.error(`[Mission upload] Mission upload failed (${refused}).`)
+        throw new MissionRefusedError(
+          `The vehicle refused the ${kind}. Check that it has room for one this size and try again.`,
+          refused
         )
       }
       if (Date.now() - lastProgress > stallTimeoutMs) {
