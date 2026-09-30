@@ -393,6 +393,8 @@
     <input ref="fileInput" type="file" accept=".cfp,.plan,application/json" class="hidden" @change="onFilePicked" />
 
     <v-progress-linear v-if="fenceStore.syncInProgress" :model-value="syncProgress" height="4" color="white" />
+
+    <GeoFenceTooLargeDialog :offer="tooLargeOffer" @choose="onTooLargeChoice" />
   </div>
 </template>
 
@@ -403,18 +405,22 @@ import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceParametersPanel from '@/components/geofence/GeoFenceParametersPanel.vue'
+import GeoFenceTooLargeDialog from '@/components/geofence/GeoFenceTooLargeDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
+import { fenceItemCount, fencePointCapacity } from '@/libs/geo-fence'
 import {
   geoFencePlanToMavlinkPlanFile,
   mavlinkPlanFileToGeoFencePlan,
 } from '@/libs/vehicle/mavlink/geofence-conversion'
+import { MissionRefusedError } from '@/libs/vehicle/mavlink/mission-upload'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import {
   type CockpitFencePlanFile,
+  type FenceTooLargeOffer,
   type MavlinkPlanFile,
   instanceOfCockpitFencePlanFile,
   instanceOfMavlinkPlanFile,
@@ -440,6 +446,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 // that file again hands them back instead of dropping the user's mission.
 const importedPlanSections = ref<Pick<MavlinkPlanFile, 'mission' | 'rallyPoints'>>({})
 const syncProgress = ref(0)
+const tooLargeOffer = ref<FenceTooLargeOffer>()
 const breachAltTooltipOpen = ref(false)
 
 const onToggleShapeInteractive = (id: string): void => {
@@ -545,7 +552,12 @@ const onToggleFenceAutoEnable = (value: boolean | null): void => {
   }
 }
 
-const confirmAction = async (title: string, message: string, confirmText: string): Promise<boolean> => {
+const confirmAction = async (
+  title: string,
+  message: string | string[],
+  confirmText: string,
+  maxWidth = '520px'
+): Promise<boolean> => {
   let confirmed = false
   try {
     // Awaiting the dialog's own promise is what keeps Escape and backdrop
@@ -555,7 +567,7 @@ const confirmAction = async (title: string, message: string, confirmText: string
       title,
       message,
       persistent: false,
-      maxWidth: '520px',
+      maxWidth,
       actions: [
         { text: 'Cancel', action: () => undefined },
         {
@@ -604,12 +616,100 @@ const onUpload = async (): Promise<void> => {
   if (!(await confirmPx4MultipleInclusionsIfNeeded())) return
   if (!(await confirmLiveEnforcementIfNeeded())) return
   logUserAction('Uploaded the local fence to the vehicle')
+  await uploadFence()
+}
+
+// A refused fence is usually one the vehicle has no room for, so a coarser version is offered in
+// place of the error, retried without asking again what the operator already confirmed.
+const offerCoarserFence = async (): Promise<boolean> => {
+  const coarser = fenceStore.coarserPlan()
+  const expansion = await vehicleStore.fenceStorageExpansion()
+  if (!coarser && !expansion) return false
+  const capacityBytes = fenceStore.vehicleFenceCapacity()
+  tooLargeOffer.value = {
+    points: fenceItemCount(fenceStore.exportPlan()),
+    capacityPoints: capacityBytes === undefined ? undefined : fencePointCapacity(capacityBytes),
+    coarser,
+    expansion,
+  }
+  return true
+}
+
+const onTooLargeChoice = async (choice: 'expand' | 'simplify' | 'cancel'): Promise<void> => {
+  const offer = tooLargeOffer.value
+  if (!offer) return
+  tooLargeOffer.value = undefined
+  if (choice === 'expand') return await confirmFenceStorageExpansion()
+  if (choice !== 'simplify' || !offer.coarser) {
+    logUserAction('Declined to simplify the geofence or expand its storage')
+    return
+  }
+  const to = fenceItemCount(offer.coarser)
+  logUserAction(`Simplified the geofence from ${offer.points} to ${to} points to fit the vehicle`)
+  fenceStore.replacePolygonVertices(offer.coarser)
+  await uploadFence()
+}
+
+const confirmFenceStorageExpansion = async (): Promise<void> => {
+  logUserAction('Chose to expand the vehicle fence storage')
+  if (vehicleStore.isArmed) {
+    showDialog({
+      variant: 'error',
+      title: 'Vehicle is armed',
+      message: 'The autopilot cannot be rebooted while the vehicle is armed. Disarm it and upload the fence again.',
+      maxWidth: '800px',
+    })
+    return
+  }
+  const confirmed = await confirmAction(
+    'Reboot the autopilot?',
+    [
+      'The fence storage size only takes effect after the autopilot restarts, which takes about 20 seconds.',
+      'While it restarts the vehicle does not respond: its motors stop, it holds no position or heading, and any ' +
+        'running mission is interrupted.',
+      'On the water it drifts with the wind and current until the autopilot is back, and Cockpit shows no ' +
+        'telemetry for it meanwhile.',
+      'Only continue with the vehicle out of the water, or moored where it is safe to drift.',
+    ],
+    'Reboot autopilot',
+    '800px'
+  )
+  if (!confirmed) {
+    logUserAction('Cancelled the autopilot reboot for fence storage')
+    return
+  }
+  logUserAction('Confirmed the autopilot reboot to expand the vehicle fence storage')
+  try {
+    const outcome = await vehicleStore.expandFenceStorage()
+    const pendingMessage =
+      'Fence storage expanded, but the vehicle did not confirm the restart. The new size only applies once the ' +
+      'autopilot starts again, so restart or power-cycle the vehicle before uploading the fence.'
+    openSnackbar({
+      variant: outcome === 'rebooting' ? 'success' : 'warning',
+      message:
+        outcome === 'rebooting'
+          ? 'Fence storage expanded. The autopilot is rebooting; upload the fence again once the vehicle is back.'
+          : pendingMessage,
+      duration: 8000,
+    })
+  } catch (error) {
+    showDialog({
+      variant: 'error',
+      title: 'Could not expand fence storage',
+      message: error instanceof Error ? error.message : String(error),
+      maxWidth: '800px',
+    })
+  }
+}
+
+const uploadFence = async (): Promise<void> => {
   syncProgress.value = 0
   try {
     await fenceStore.uploadToVehicle(async (p: number) => {
       syncProgress.value = p
     })
   } catch (error) {
+    if (error instanceof MissionRefusedError && error.isNoSpace && (await offerCoarserFence())) return
     showDialog({
       variant: 'error',
       title: 'Geofence upload failed',
