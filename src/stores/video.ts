@@ -1685,8 +1685,8 @@ export const useVideoStore = defineStore('video', () => {
     return activeStreams.value[streamName]?.timeRecordingStart !== undefined || isWaitingToResumeRecording(streamName)
   }
 
-  const startRecordingAllStreams = (): void => {
-    const streamsThatStarted: string[] = []
+  const startRecordingAllStreams = async (): Promise<void> => {
+    const streamsToStart: string[] = []
     const streamsWaitingForVideo: string[] = []
 
     namesAvailableStreams.value.forEach((streamName) => {
@@ -1695,8 +1695,7 @@ export const useVideoStore = defineStore('video', () => {
       if (isWaitingToResumeRecording(streamName)) {
         streamsWaitingForVideo.push(streamName)
       } else if (!isRecording(streamName)) {
-        startRecording(streamName)
-        streamsThatStarted.push(streamName)
+        streamsToStart.push(streamName)
       }
     })
 
@@ -1707,13 +1706,20 @@ export const useVideoStore = defineStore('video', () => {
       alertStore.pushAlert(new Alert(AlertLevel.Info, waiting))
     }
 
-    if (streamsThatStarted.isEmpty()) {
+    if (streamsToStart.isEmpty()) {
       // A stream waiting for its video is neither started here nor unavailable, and is already reported above
       if (streamsWaitingForVideo.isEmpty()) {
         alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
       }
       return
     }
+
+    // startRecording reports its own refusals, so what started is read from the streams rather than from the starts
+    // that returned
+    await Promise.allSettled(streamsToStart.map((streamName) => startRecording(streamName)))
+    const streamsThatStarted = streamsToStart.filter((streamName) => isRecording(streamName))
+    if (streamsThatStarted.isEmpty()) return
+
     const msg = `Started recording all ${streamsThatStarted.length} streams: ${streamsThatStarted.join(', ')}.`
     alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
