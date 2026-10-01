@@ -947,6 +947,7 @@ import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMapVehicleMarker } from '@/composables/map/useMapVehicleMarker'
 import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
 import { useMeasureExtentInput } from '@/composables/map/useMeasureExtentInput'
 import { useMissionInsertion } from '@/composables/map/useMissionInsertion'
@@ -988,6 +989,7 @@ import {
   WhoToFollow,
 } from '@/libs/map/utils-map'
 import { orderedSurveyPath, surveyEndpointEdgeBearing, surveyEntryCornerCount } from '@/libs/map/utils-map'
+import type { VehicleTooltipState } from '@/libs/map/vehicle-tooltip'
 import { vehicleTooltipContent } from '@/libs/map/vehicle-tooltip'
 import {
   bearingBetween,
@@ -4976,40 +4978,6 @@ const vehiclePosition = computed((): [number, number] | undefined =>
     : undefined
 )
 
-// Create marker for the vehicle
-const vehicleMarker = shallowRef<L.Marker>()
-watch(vehicleStore.coordinates, () => {
-  if (!planningMap.value || !vehiclePosition.value) return
-
-  if (vehicleMarker.value === undefined) {
-    let vehicleIconUrl = genericVehicleMarkerImage
-
-    if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) {
-      vehicleIconUrl = blueboatMarkerImage
-    } else if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) {
-      vehicleIconUrl = brov2MarkerImage
-    }
-
-    const vehicleMarkerIcon = L.divIcon({
-      className: 'vehicle-marker',
-      html: `<img src="${vehicleIconUrl}" style="width: 64px; height: 64px;">`,
-      iconSize: [64, 64],
-      iconAnchor: [32, 32],
-    })
-
-    vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon })
-
-    const vehicleMarkerTooltip = L.tooltip({
-      content: 'No data available',
-      className: 'waypoint-tooltip',
-      offset: [40, 0],
-    })
-    vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
-    planningMap.value.addLayer(vehicleMarker.value)
-  }
-  vehicleMarker.value.setLatLng(vehiclePosition.value)
-})
-
 // Calculate live vehicle heading
 const vehicleHeading = computed(() => (vehicleStore.attitude.yaw ? degrees(vehicleStore.attitude?.yaw) : 0))
 
@@ -5019,27 +4987,27 @@ const timeAgoSeenText = computed(() => {
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
 
-// Dinamically update data of the vehicle tooltip
-watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed], () => {
-  if (vehicleMarker.value === undefined) return
+const planningVehicleIconUrl = computed(() => {
+  if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) return blueboatMarkerImage
+  if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) return brov2MarkerImage
+  return genericVehicleMarkerImage
+})
 
-  const content = vehicleTooltipContent(
-    {
-      coordinates: vehiclePosition.value,
-      groundVelocityInMetersPerSecond: vehicleStore.velocity.ground,
-      headingInDegrees: vehicleHeading.value,
-      isArmed: vehicleStore.isArmed,
-      timeAgoSeenText: timeAgoSeenText.value,
-    },
-    interfaceStore.displayUnitPreferences
-  )
-  vehicleMarker.value.getTooltip()?.setContent(content)
+const vehicleTooltipState = computed<VehicleTooltipState>(() => ({
+  coordinates: vehiclePosition.value,
+  groundVelocityInMetersPerSecond: vehicleStore.velocity.ground,
+  headingInDegrees: vehicleHeading.value,
+  isArmed: vehicleStore.isArmed,
+  timeAgoSeenText: timeAgoSeenText.value,
+}))
 
-  // Update the rotation
-  const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
-  if (iconElement) {
-    iconElement.style.transform = `rotate(${vehicleHeading.value}deg)`
-  }
+// Create marker for the vehicle
+const vehicleMarker = useMapVehicleMarker(planningMap, {
+  position: () => vehiclePosition.value,
+  iconUrl: () => planningVehicleIconUrl.value,
+  tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
+  headingInDegrees: () => vehicleHeading.value,
+  tooltipClassName: 'waypoint-tooltip',
 })
 
 const homeMarker = shallowRef<L.Marker>()
