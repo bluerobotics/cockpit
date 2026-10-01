@@ -56,10 +56,9 @@
           />
         </template>
       </v-tooltip>
-      <v-tooltip location="top" text="Switch to Mission Planning mode">
+      <v-tooltip v-if="showButtons" location="top" text="Switch to Mission Planning mode">
         <template #activator="{ props: tooltipProps }">
           <v-btn
-            v-if="showButtons"
             v-bind="tooltipProps"
             class="absolute right-[193px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
@@ -77,6 +76,8 @@
         v-if="showButtons"
         v-model:open="fenceDialOpen"
         :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+        :shown-hazard-sources="shownHazardSources"
+        @toggle-hazard-source="toggleHazardSource"
       />
       <MapCenterControl
         v-if="showButtons"
@@ -276,6 +277,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
@@ -286,6 +288,7 @@ import { useMapPoiGoTo } from '@/composables/map/useMapPoiGoTo'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
+import { useMapVehicleMarker } from '@/composables/map/useMapVehicleMarker'
 import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { useActiveMenuRoute } from '@/composables/menuRouting'
@@ -316,6 +319,7 @@ import {
   TargetFollower,
   WhoToFollow,
 } from '@/libs/map/utils-map'
+import type { VehicleTooltipState } from '@/libs/map/vehicle-tooltip'
 import { vehicleTooltipContent } from '@/libs/map/vehicle-tooltip'
 import { missionControlPanelSetupInfo } from '@/libs/mission-control-panel'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
@@ -327,6 +331,7 @@ import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { HazardSourceId } from '@/types/hazards'
 import type {
   IconDimensions,
   MarkerSizes,
@@ -645,6 +650,7 @@ onBeforeMount(() => {
     showHomeArrow: true,
     showVehicleArrow: true,
     showBaseStationArrow: true,
+    shownHazardSources: [] as HazardSourceId[],
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
   if (isFlightVisible.value) targetFollower.enableAutoUpdate()
@@ -663,6 +669,16 @@ const { preferredBaseLayer, getInitialLayers, createLayerControl, registerLayerS
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Draws the coastline, restricted-area and airspace advisories the operator has loaded
+// Chosen per widget, so hiding a layer here leaves Mission Planning's hazard checks alone.
+const shownHazardSources = computed<HazardSourceId[]>({
+  get: () => widget.value.options.shownHazardSources ?? [],
+  set: (sourceIds) => (widget.value.options.shownHazardSources = sourceIds),
+})
+const { initHazardOverlay, destroyHazardOverlay, toggleHazardSource } = useHazardOverlay({
+  shownSources: shownHazardSources,
+})
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
@@ -937,19 +953,23 @@ onMounted(async () => {
 
   mapReady.value = true
 
-  // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
-  if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
-
-  // Register any user-defined custom tile providers as selectable base layers on the layer control
-  if (map.value)
-    initCustomTileProviders(map.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
-
   // Apply the current showButtons state to the leaflet controls
+  // Registered before the data layers below: rendering a stored GeoTIFF can take seconds, and the map
+  // must not be left without its own zoom, layer and scale controls while that runs.
   if (showButtons.value && map.value) {
     map.value.addControl(zoomControl)
     map.value.addControl(layerControl)
     createScaleControl()
   }
+
+  // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
+  if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
+
+  if (map.value) initHazardOverlay(map.value, layerControl)
+
+  // Register any user-defined custom tile providers as selectable base layers on the layer control
+  if (map.value)
+    initCustomTileProviders(map.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
 
   if (missionStore.followVehicleOnMap === true) {
     targetFollower.follow(WhoToFollow.VEHICLE)
@@ -1010,6 +1030,8 @@ const clearMapDrawing = (): void => {
   map.value?.eachLayer((l) => {
     if (l instanceof L.Marker) {
       if (poiMarkerSet.has(l as L.Marker)) return
+      // The vehicle is not part of the mission drawing, and nothing recreates its marker until it moves.
+      if (l === vehicleMarker.value) return
       map.value!.removeLayer(l)
     }
   })
@@ -1019,7 +1041,6 @@ const clearMapDrawing = (): void => {
 
   homeMarker.value = undefined
   gotoMarker.value = undefined
-  vehicleMarker.value = undefined
   reachedWaypoints.value = {}
   missionItemsInVehicle.value = []
   missionSeqToMarkerSeq.value = {}
@@ -1160,6 +1181,7 @@ onBeforeUnmount(() => {
 
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
+  destroyHazardOverlay()
   destroyCustomTileProviders()
 
   if (map.value) {
@@ -1233,6 +1255,14 @@ const timeAgoSeenText = computed(() => {
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
 
+const vehicleTooltipState = computed<VehicleTooltipState>(() => ({
+  coordinates: vehiclePosition.value,
+  groundVelocityInMetersPerSecond: vehicleStore.velocity.ground,
+  headingInDegrees: vehicleHeading.value,
+  isArmed: vehicleStore.isArmed,
+  timeAgoSeenText: timeAgoSeenText.value,
+}))
+
 useMapCenterFromUserLocation(mapCenter, () => Boolean(home.value || vehiclePosition.value))
 
 // If home position is updated and map was not yet centered on it, center
@@ -1244,36 +1274,14 @@ watch([home, map], async () => {
 })
 
 // Create marker for the vehicle
-const vehicleMarker = shallowRef<L.Marker>()
-watch(vehicleStore.coordinates, () => {
-  if (!map.value || !vehiclePosition.value) return
-
-  if (vehicleMarker.value === undefined) {
-    const vehicleIconUrl = vehicleMarkerImageUrl(vehicleStore.vehicleType)
-
-    const vehicleMarkerIcon = L.divIcon({
-      className: 'vehicle-marker',
-      html: `<img src="${vehicleIconUrl}" style="width: 64px; height: 64px;">`,
-      iconSize: [64, 64],
-      iconAnchor: [32, 32],
-    })
-
-    if (!map.value.getPane('vehiclePane')) {
-      const vehiclePane = map.value.createPane('vehiclePane')
-      vehiclePane.style.zIndex = '650'
-    }
-
-    vehicleMarker.value = L.marker(vehiclePosition.value, { icon: vehicleMarkerIcon, pane: 'vehiclePane' })
-
-    const vehicleMarkerTooltip = L.tooltip({
-      content: 'No data available',
-      className: 'vehicle-tooltip',
-      offset: [40, 0],
-    })
-    vehicleMarker.value.bindTooltip(vehicleMarkerTooltip)
-    map.value.addLayer(vehicleMarker.value)
-  }
-  vehicleMarker.value.setLatLng(vehiclePosition.value)
+const vehicleMarker = useMapVehicleMarker(map, {
+  position: () => vehiclePosition.value,
+  iconUrl: () => vehicleMarkerImageUrl(vehicleStore.vehicleType),
+  tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
+  headingInDegrees: () => vehicleHeading.value,
+  tooltipClassName: 'vehicle-tooltip',
+  paneName: 'vehiclePane',
+  paneZIndex: '650',
 })
 
 watch(followerTarget, (newTarget) => {
@@ -1283,29 +1291,6 @@ watch(followerTarget, (newTarget) => {
     missionStore.followVehicleOnMap = false
   }
   if (map.value) applyFollowZoomMode(map.value, !!newTarget)
-})
-
-// Dinamically update data of the vehicle tooltip
-watch([vehiclePosition, vehicleHeading, timeAgoSeenText, () => vehicleStore.isArmed], () => {
-  if (vehicleMarker.value === undefined) return
-
-  const content = vehicleTooltipContent(
-    {
-      coordinates: vehiclePosition.value,
-      groundVelocityInMetersPerSecond: vehicleStore.velocity.ground,
-      headingInDegrees: vehicleHeading.value,
-      isArmed: vehicleStore.isArmed,
-      timeAgoSeenText: timeAgoSeenText.value,
-    },
-    interfaceStore.displayUnitPreferences
-  )
-  vehicleMarker.value.getTooltip()?.setContent(content)
-
-  // Update the rotation
-  const iconElement = vehicleMarker.value.getElement()?.querySelector('img')
-  if (iconElement) {
-    iconElement.style.transform = `rotate(${vehicleHeading.value}deg)`
-  }
 })
 
 // Create marker for the home position

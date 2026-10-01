@@ -13,9 +13,14 @@ import {
   CIRCLE_MAX_RADIUS_M,
   clonePlan,
   cloneVertices,
+  coarsenFencePlan,
   detectMissionBreaches as detectMissionBreachesInShapes,
   emptyGeoFencePlan,
+  exceedsPolygonVertexLimit,
+  fenceItemCount,
+  fenceStorageBytes,
   planHasShapes,
+  simplifyFencePolygons,
 } from '@/libs/geo-fence'
 import type { Parameter } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
@@ -404,6 +409,29 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   }
 
   /**
+   * Adds a ready-made polygon to the fence, for callers that build one from
+   * something other than the click-to-draw flow.
+   * @param { FenceLatLng[] } vertices Ordered vertices, with the closing one left implicit.
+   * @param { boolean } inclusion Whether the vehicle is restricted to the inside of the polygon.
+   * @param { string } [name] Name shown for the polygon in the editor.
+   * @returns { FencePolygon | undefined } The added polygon, or `undefined` when given fewer than 3 vertices.
+   */
+  const addPolygon = (vertices: FenceLatLng[], inclusion: boolean, name?: string): FencePolygon | undefined => {
+    if (vertices.length < 3) return undefined
+    const polygon: FencePolygon = {
+      id: uuid(),
+      inclusion,
+      vertices: cloneVertices(vertices),
+      ...(name ? { name } : {}),
+    }
+    polygons.push(polygon)
+    draft.setInteractive(polygon.id)
+    markDirty()
+    persistDraft()
+    return polygon
+  }
+
+  /**
    * Commits the polygon currently being drawn into the persistent fence
    * model. Requires at least 3 vertices, otherwise it cancels silently.
    * @returns { FencePolygon | undefined } The committed polygon, or `undefined` if not enough vertices.
@@ -469,6 +497,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
         id: p.id ?? uuid(),
         inclusion: p.inclusion,
         vertices: cloneVertices(p.vertices),
+        ...(p.name ? { name: p.name } : {}),
       }))
     )
     circles.splice(
@@ -496,7 +525,12 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
    */
   const exportPlan = (): GeoFencePlan => ({
     version: 2,
-    polygons: polygons.map((p) => ({ id: p.id, inclusion: p.inclusion, vertices: cloneVertices(p.vertices) })),
+    polygons: polygons.map((p) => ({
+      id: p.id,
+      inclusion: p.inclusion,
+      vertices: cloneVertices(p.vertices),
+      ...(p.name ? { name: p.name } : {}),
+    })),
     circles: circles.map((c) => ({
       id: c.id,
       inclusion: c.inclusion,
@@ -530,6 +564,34 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   }
 
   /**
+   * Replaces the vertices of the editor's polygons with those of the same polygons in another plan.
+   * @param { GeoFencePlan } plan Plan holding the new vertices, matched to the editor's polygons by id.
+   * @returns { number } How many fence points the editor lost.
+   */
+  const replacePolygonVertices = (plan: GeoFencePlan): number => {
+    const before = fenceItemCount(exportPlan())
+    plan.polygons.forEach((polygon) => updatePolygon(polygon.id, { vertices: polygon.vertices }))
+    return before - fenceItemCount(exportPlan())
+  }
+
+  // Room the vehicle reported at the last upload, which the coarser offer shrinks the fence towards.
+  let vehicleFenceCapacityBytes: number | undefined = undefined
+
+  /**
+   * A coarser version of the editor's fence, for a vehicle that has no room for it. With no room to
+   * aim at, `coarsenFencePlan` falls back to halving the fence rather than to a size nobody reported.
+   * @returns { GeoFencePlan | undefined } The coarser plan, or `undefined` when the polygons cannot shrink further.
+   */
+  const coarserPlan = (): GeoFencePlan | undefined =>
+    coarsenFencePlan(exportPlan(), vehicleFenceCapacityBytes ?? Infinity)
+
+  /**
+   * Fence storage the vehicle reported at the last upload.
+   * @returns { number | undefined } Room for the fence in bytes, or `undefined` when it never reported any.
+   */
+  const vehicleFenceCapacity = (): number | undefined => vehicleFenceCapacityBytes
+
+  /**
    * Uploads the current editor state to the vehicle. Caches the uploaded
    * plan in `lastUploadedPlan` (also persisted to BlueOS) so the live
    * overlay on the flight Map widget can render it without re-downloading.
@@ -538,20 +600,29 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   const uploadToVehicle = async (loadingCallback?: MissionLoadingCallback): Promise<void> => {
     syncInProgress.value = true
     try {
-      const plan = exportPlan()
-      await mainVehicleStore.uploadFence(plan, loadingCallback ?? (async () => undefined))
+      const capacityBytes = await mainVehicleStore.fenceCapacityBytes()
+      vehicleFenceCapacityBytes = capacityBytes
+      const current = exportPlan()
+      const tooBig = capacityBytes !== undefined && fenceStorageBytes(current) > capacityBytes / 2
+      const plan = tooBig || exceedsPolygonVertexLimit(current) ? simplifyFencePolygons(current) : current
+      await mainVehicleStore.uploadFence(plan, loadingCallback ?? (async () => undefined), capacityBytes)
+      // The draft only follows the simplified copy once the vehicle has it, so a failed transfer does
+      // not quietly reshape a drawing shared with every other topside computer.
+      const removedPoints = plan === current ? 0 : replacePolygonVertices(plan)
       cacheVehicleFence(plan)
       dirty.value = false
 
       // Transferring a plan deliberately leaves enforcement alone: arming it
       // can make a vehicle already outside the new fence act on its own, and
       // `FENCE_AUTOENABLE` is a user preference owned by the parameters panel.
+      const simplifiedNote = removedPoints > 0 ? ` ${removedPoints} redundant points were removed to fit it.` : ''
       openSnackbar({
         variant: 'success',
-        message: fenceEnabled.value
-          ? 'Geofence uploaded to vehicle. Enforcement is on, so the vehicle is already obeying the new shapes.'
-          : 'Geofence uploaded to vehicle. Enforcement was left unchanged.',
-        duration: 3000,
+        message:
+          (fenceEnabled.value
+            ? 'Geofence uploaded to vehicle. Enforcement is on, so the vehicle is already obeying the new shapes.'
+            : 'Geofence uploaded to vehicle. Enforcement was left unchanged.') + simplifiedNote,
+        duration: removedPoints > 0 ? 5000 : 3000,
       })
     } finally {
       syncInProgress.value = false
@@ -640,6 +711,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     toggleCircleInclusion,
     deletePolygon,
     deleteCircle,
+    addPolygon,
     finishDrawingPolygon,
     finishDrawingCircle,
     setBreachReturn,
@@ -647,6 +719,9 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     loadFromPlan,
     exportPlan,
     uploadToVehicle,
+    replacePolygonVertices,
+    coarserPlan,
+    vehicleFenceCapacity,
     downloadFromVehicle,
     refreshVehicleFenceOverlay,
     clearOnVehicle,

@@ -5,6 +5,7 @@ import { isLeafletMapReady } from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
 
 const vehiclePathColor = '#ffff00'
+const VEHICLE_PATH_PANE = 'vehiclePathPane'
 
 /**
  * Reactive inputs driving the vehicle-path layer. Getters so the composable can watch them.
@@ -32,7 +33,7 @@ export const useMapVehiclePathLayer = (
   options: UseMapVehiclePathLayerOptions
 ): void => {
   // A dedicated Canvas renderer keeps the growing trail off the SVG pane, which otherwise stutters as points accumulate.
-  const renderer = L.canvas()
+  const renderer = L.canvas({ pane: VEHICLE_PATH_PANE })
   const polyline = shallowRef<Polyline>()
   let lastDrawnLength = 0
 
@@ -52,6 +53,13 @@ export const useMapVehiclePathLayer = (
     }
 
     if (polyline.value === undefined) {
+      // A canvas takes the pointer across its whole box, so the non-interactive trail sits in a pane that lets
+      // hovers and clicks through to the map layers beneath it.
+      if (!map.value.getPane(VEHICLE_PATH_PANE)) {
+        const pane = map.value.createPane(VEHICLE_PATH_PANE)
+        pane.style.zIndex = '400'
+        pane.style.pointerEvents = 'none'
+      }
       polyline.value = L.polyline([], { color: vehiclePathColor, renderer }).addTo(map.value)
       lastDrawnLength = 0
     }

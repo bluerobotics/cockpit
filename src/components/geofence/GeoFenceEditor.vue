@@ -78,15 +78,28 @@
             >
               <v-icon icon="mdi-vector-polygon" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Polygon {{ idx + 1 }}</p>
+              <p
+                class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap"
+                @mouseenter="onPolygonNameHover($event, polygon.id)"
+                @mouseleave="truncatedNameId = undefined"
+              >
+                {{ polygon.name ?? `Polygon ${idx + 1}` }}
+                <v-tooltip
+                  activator="parent"
+                  location="top"
+                  :open-on-hover="false"
+                  :model-value="truncatedNameId === polygon.id"
+                  :text="polygon.name ?? `Polygon ${idx + 1}`"
+                />
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="polygon.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onTogglePolygonInclusion(polygon.id)"
               >
                 {{ polygon.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete polygon">
                   <template #activator="{ props: tooltipProps }">
@@ -127,6 +140,7 @@
         elevation-effect
         :is-expanded="fenceStore.circles.length > 0"
         darken-content
+        no-bottom-divider
       >
         <template #title>
           <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
@@ -158,15 +172,17 @@
             >
               <v-icon icon="mdi-vector-circle-variant" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Circle {{ idx + 1 }}</p>
+              <p class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
+                Circle {{ idx + 1 }}
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="circle.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onToggleCircleInclusion(circle.id)"
               >
                 {{ circle.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete circle">
                   <template #activator="{ props: tooltipProps }">
@@ -198,6 +214,10 @@
         </template>
       </ExpansiblePanel>
     </div>
+
+    <GeoFenceParametersPanel />
+
+    <slot name="below-fence-lists" />
 
     <div class="flex flex-col ma-2 py-2 px-4 border-[1px] border-[#FFFFFF22] bg-[#00000022] rounded-md p-2">
       <div v-if="fenceStore.isArduPilot" class="flex items-center justify-between gap-x-2 fence-autoenable-row">
@@ -305,8 +325,6 @@
       PX4: multiple inclusion polygons are AND-ed (intersection), not OR-ed.
     </p>
 
-    <GeoFenceParametersPanel />
-
     <div class="flex w-full justify-between my-2 px-4 pt-1">
       <v-tooltip location="top" text="Save fence to file">
         <template #activator="{ props: tooltipProps }">
@@ -363,27 +381,33 @@
       </v-tooltip>
     </div>
 
-    <button
-      :disabled="!fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
-      :class="{
-        'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-          !fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress,
-      }"
-      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
-      @click="onUpload"
-    >
-      UPLOAD FENCE TO VEHICLE
-    </button>
-    <button
+    <UploadActionsButton
       v-if="fenceStore.hasItems"
-      class="h-auto py-1 px-1 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-      @click="onClearLocal"
+      label="UPLOAD FENCE TO VEHICLE"
+      actions-name="fence actions"
+      indicator
+      :disabled="!vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
+      @upload="onUpload"
     >
-      CLEAR CURRENT FENCE
-    </button>
+      <button
+        class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        @click="onClearLocal"
+      >
+        CLEAR CURRENT FENCE
+      </button>
+      <button
+        :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
+        class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+        @click="onDownload"
+      >
+        DOWNLOAD FENCE FROM VEHICLE
+      </button>
+    </UploadActionsButton>
     <button
+      v-else
       :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
-      class="h-auto py-2 px-2 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
       :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
       @click="onDownload"
     >
@@ -393,6 +417,8 @@
     <input ref="fileInput" type="file" accept=".cfp,.plan,application/json" class="hidden" @change="onFilePicked" />
 
     <v-progress-linear v-if="fenceStore.syncInProgress" :model-value="syncProgress" height="4" color="white" />
+
+    <GeoFenceTooLargeDialog :offer="tooLargeOffer" @choose="onTooLargeChoice" />
   </div>
 </template>
 
@@ -403,18 +429,23 @@ import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceParametersPanel from '@/components/geofence/GeoFenceParametersPanel.vue'
+import GeoFenceTooLargeDialog from '@/components/geofence/GeoFenceTooLargeDialog.vue'
+import UploadActionsButton from '@/components/mission-planning/UploadActionsButton.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
+import { fenceItemCount, fencePointCapacity } from '@/libs/geo-fence'
 import {
   geoFencePlanToMavlinkPlanFile,
   mavlinkPlanFileToGeoFencePlan,
 } from '@/libs/vehicle/mavlink/geofence-conversion'
+import { MissionRefusedError } from '@/libs/vehicle/mavlink/mission-upload'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import {
   type CockpitFencePlanFile,
+  type FenceTooLargeOffer,
   type MavlinkPlanFile,
   instanceOfCockpitFencePlanFile,
   instanceOfMavlinkPlanFile,
@@ -440,7 +471,14 @@ const fileInput = ref<HTMLInputElement | null>(null)
 // that file again hands them back instead of dropping the user's mission.
 const importedPlanSections = ref<Pick<MavlinkPlanFile, 'mission' | 'rallyPoints'>>({})
 const syncProgress = ref(0)
+const tooLargeOffer = ref<FenceTooLargeOffer>()
 const breachAltTooltipOpen = ref(false)
+const truncatedNameId = ref<string>()
+
+const onPolygonNameHover = (event: MouseEvent, id: string): void => {
+  const name = event.currentTarget as HTMLElement
+  truncatedNameId.value = name.scrollWidth > name.clientWidth ? id : undefined
+}
 
 const onToggleShapeInteractive = (id: string): void => {
   const willSelect = fenceDraft.interactiveShapeId !== id
@@ -545,7 +583,12 @@ const onToggleFenceAutoEnable = (value: boolean | null): void => {
   }
 }
 
-const confirmAction = async (title: string, message: string, confirmText: string): Promise<boolean> => {
+const confirmAction = async (
+  title: string,
+  message: string | string[],
+  confirmText: string,
+  maxWidth = '520px'
+): Promise<boolean> => {
   let confirmed = false
   try {
     // Awaiting the dialog's own promise is what keeps Escape and backdrop
@@ -555,7 +598,7 @@ const confirmAction = async (title: string, message: string, confirmText: string
       title,
       message,
       persistent: false,
-      maxWidth: '520px',
+      maxWidth,
       actions: [
         { text: 'Cancel', action: () => undefined },
         {
@@ -604,12 +647,100 @@ const onUpload = async (): Promise<void> => {
   if (!(await confirmPx4MultipleInclusionsIfNeeded())) return
   if (!(await confirmLiveEnforcementIfNeeded())) return
   logUserAction('Uploaded the local fence to the vehicle')
+  await uploadFence()
+}
+
+// A refused fence is usually one the vehicle has no room for, so a coarser version is offered in
+// place of the error, retried without asking again what the operator already confirmed.
+const offerCoarserFence = async (): Promise<boolean> => {
+  const coarser = fenceStore.coarserPlan()
+  const expansion = await vehicleStore.fenceStorageExpansion()
+  if (!coarser && !expansion) return false
+  const capacityBytes = fenceStore.vehicleFenceCapacity()
+  tooLargeOffer.value = {
+    points: fenceItemCount(fenceStore.exportPlan()),
+    capacityPoints: capacityBytes === undefined ? undefined : fencePointCapacity(capacityBytes),
+    coarser,
+    expansion,
+  }
+  return true
+}
+
+const onTooLargeChoice = async (choice: 'expand' | 'simplify' | 'cancel'): Promise<void> => {
+  const offer = tooLargeOffer.value
+  if (!offer) return
+  tooLargeOffer.value = undefined
+  if (choice === 'expand') return await confirmFenceStorageExpansion()
+  if (choice !== 'simplify' || !offer.coarser) {
+    logUserAction('Declined to simplify the geofence or expand its storage')
+    return
+  }
+  const to = fenceItemCount(offer.coarser)
+  logUserAction(`Simplified the geofence from ${offer.points} to ${to} points to fit the vehicle`)
+  fenceStore.replacePolygonVertices(offer.coarser)
+  await uploadFence()
+}
+
+const confirmFenceStorageExpansion = async (): Promise<void> => {
+  logUserAction('Chose to expand the vehicle fence storage')
+  if (vehicleStore.isArmed) {
+    showDialog({
+      variant: 'error',
+      title: 'Vehicle is armed',
+      message: 'The autopilot cannot be rebooted while the vehicle is armed. Disarm it and upload the fence again.',
+      maxWidth: '800px',
+    })
+    return
+  }
+  const confirmed = await confirmAction(
+    'Reboot the autopilot?',
+    [
+      'The fence storage size only takes effect after the autopilot restarts, which takes about 20 seconds.',
+      'While it restarts the vehicle does not respond: its motors stop, it holds no position or heading, and any ' +
+        'running mission is interrupted.',
+      'On the water it drifts with the wind and current until the autopilot is back, and Cockpit shows no ' +
+        'telemetry for it meanwhile.',
+      'Only continue with the vehicle out of the water, or moored where it is safe to drift.',
+    ],
+    'Reboot autopilot',
+    '800px'
+  )
+  if (!confirmed) {
+    logUserAction('Cancelled the autopilot reboot for fence storage')
+    return
+  }
+  logUserAction('Confirmed the autopilot reboot to expand the vehicle fence storage')
+  try {
+    const outcome = await vehicleStore.expandFenceStorage()
+    const pendingMessage =
+      'Fence storage expanded, but the vehicle did not confirm the restart. The new size only applies once the ' +
+      'autopilot starts again, so restart or power-cycle the vehicle before uploading the fence.'
+    openSnackbar({
+      variant: outcome === 'rebooting' ? 'success' : 'warning',
+      message:
+        outcome === 'rebooting'
+          ? 'Fence storage expanded. The autopilot is rebooting; upload the fence again once the vehicle is back.'
+          : pendingMessage,
+      duration: 8000,
+    })
+  } catch (error) {
+    showDialog({
+      variant: 'error',
+      title: 'Could not expand fence storage',
+      message: error instanceof Error ? error.message : String(error),
+      maxWidth: '800px',
+    })
+  }
+}
+
+const uploadFence = async (): Promise<void> => {
   syncProgress.value = 0
   try {
     await fenceStore.uploadToVehicle(async (p: number) => {
       syncProgress.value = p
     })
   } catch (error) {
+    if (error instanceof MissionRefusedError && error.isNoSpace && (await offerCoarserFence())) return
     showDialog({
       variant: 'error',
       title: 'Geofence upload failed',

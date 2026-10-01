@@ -18,7 +18,13 @@
           </p>
         </div>
         <div>
-          <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
+          <ExpansiblePanel
+            no-top-divider
+            no-bottom-divider
+            :is-expanded="!interfaceStore.isOnPhoneScreen"
+            compact
+            follow-window-width
+          >
             <template #title>General settings</template>
             <template #info>
               <div class="flex flex-col items-start px-5 font-medium">
@@ -471,7 +477,13 @@
               </div>
             </template>
           </ExpansiblePanel>
-          <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen" compact>
+          <ExpansiblePanel
+            no-top-divider
+            no-bottom-divider
+            :is-expanded="!interfaceStore.isOnPhoneScreen"
+            compact
+            follow-window-width
+          >
             <template #title>Axis Calibration</template>
             <template #info>
               <div class="flex flex-col items-start px-5 font-medium">

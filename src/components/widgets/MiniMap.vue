@@ -215,7 +215,7 @@ import type { MapTileProvider, WaypointCoordinates } from '@/types/mission'
 import type { ContextMenuItem } from '@/types/user-interface'
 import type { Widget } from '@/types/widgets'
 
-const builtInTileProviders: MapTileProvider[] = ['Esri World Imagery', 'OpenStreetMap']
+const builtInTileProviders: MapTileProvider[] = ['Esri World Imagery', 'OpenStreetMap', 'OpenTopoMap']
 
 type TrackTarget = 'vehicle' | 'poi'
 
