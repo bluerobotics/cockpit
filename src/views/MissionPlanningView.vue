@@ -977,6 +977,7 @@ import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
 import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
+import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
@@ -1000,6 +1001,7 @@ import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceMapInteraction'
+import { useMissionPreflightChecks } from '@/composables/mission-planning/useMissionPreflightChecks'
 import { useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import {
@@ -1140,65 +1142,6 @@ const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
   return makeDefaultNavCommands()
 }
 
-/**
- * Inspects the mission waypoints against every geofence that applies to them: the one stored on
- * the vehicle and, while it has not been uploaded, the one open in the editor. When at least one
- * waypoint breaches either, prompts the user with a "Back to mission planning" / "Upload to
- * vehicle anyway" choice naming the fence each breach belongs to, and resolves to whether the
- * upload should continue. No-op (returns true) when there's no fence or no breach.
- * @returns { Promise<boolean> } True when the upload should proceed.
- */
-const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
-  // The live check is debounced, so a waypoint moved a moment ago would still be judged by the
-  // previous snapshot.
-  recheckFenceBreaches()
-  const { vehicle, draft } = fenceBreachReports.value
-  const message: string[] = []
-  if (vehicle?.hasBreaches) {
-    message.push(
-      `${vehicle.breaches.length} of ${vehicle.totalChecked} waypoints breach the geofence stored ` +
-        'on the vehicle. Uploading anyway may trigger the fence action the autopilot is configured with ' +
-        '(return, land or brake) once the mission runs.'
-    )
-  }
-  if (draft?.hasBreaches) {
-    message.push(
-      `${draft.breaches.length} of ${draft.totalChecked} waypoints breach the geofence you are ` +
-        'drawing, which has not been uploaded to the vehicle yet.'
-    )
-  }
-  if (message.length === 0) return true
-  message.push('The waypoints in question are marked red on the map, each with the reason on hover.')
-
-  let confirmed = false
-  try {
-    // Awaiting the dialog's own promise is what keeps Escape and backdrop
-    // clicks from stranding the upload: those reject rather than press a button.
-    await showDialog({
-      variant: 'text-only',
-      title: 'Mission breaches geofence',
-      message,
-      persistent: false,
-      maxWidth: '720px',
-      actions: [
-        { text: 'Back to mission planning', action: () => focusBreaches() },
-        {
-          text: 'Upload to vehicle anyway',
-          class: 'bg-[#FFFFFF33]',
-          action: () => {
-            confirmed = true
-          },
-        },
-      ],
-    })
-  } catch {
-    return false
-  } finally {
-    closeDialog()
-  }
-  return confirmed
-}
-
 // Moving home on an armed vehicle changes where it returns to on return-to-home and failsafes mid-operation, so it is
 // only done after the operator agrees.
 const confirmHomeMoveIfArmed = async (): Promise<boolean> => {
@@ -1255,7 +1198,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
     return
   }
 
-  if (!(await confirmMissionFenceBreachIfNeeded())) return
+  if (!(await confirmMissionUpload())) return
   const sendPlannedHome = missionStore.plannedHomeSetByOperator && (await confirmHomeMoveIfArmed())
 
   logUserAction('Uploaded mission to vehicle')
@@ -1412,6 +1355,9 @@ const overlaysDialogOpen = ref(false)
 
 // Draws the overlays external software (BlueOS extensions, embedded pages) sent onto the planning map
 const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
+
+// Draws the coastline, restricted-area and airspace advisories the operator has loaded
+const { initHazardOverlay, destroyHazardOverlay } = useHazardOverlay()
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
@@ -5044,6 +4990,8 @@ onMounted(async () => {
   await mapOverlays.initOverlays(planningMap.value, layerControl)
   initExternalOverlayLayers(planningMap.value, layerControl)
 
+  initHazardOverlay(planningMap.value, layerControl)
+
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   initCustomTileProviders(planningMap.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
 
@@ -5126,6 +5074,7 @@ onUnmounted(() => {
   stopTileFallbackWatcher = undefined
   mapOverlays.destroyOverlays()
   destroyExternalOverlayLayers()
+  destroyHazardOverlay()
   destroyCustomTileProviders()
 
   // Reset the map context so descendants stop reacting to the destroyed instance
@@ -5270,6 +5219,11 @@ const {
 } = useMissionFenceBreaches(planningMap, {
   waypoints: () => missionStore.currentPlanningWaypoints,
   refreshMarkers: updateWaypointMarkers,
+})
+
+// Gates the upload on the geofence breach and hazard advisory checks
+const { confirmMissionUpload } = useMissionPreflightChecks({
+  fenceBreaches: { reports: fenceBreachReports, recheck: recheckFenceBreaches, focusBreaches },
 })
 
 const hasFenceToRespect = computed<boolean>(
