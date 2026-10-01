@@ -277,6 +277,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
 import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
+import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
@@ -672,6 +673,9 @@ const overlaysDialogOpen = ref(false)
 const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
 const hasAnyMapOverlay = useHasAnyMapOverlay()
 
+// Draws the coastline, restricted-area and airspace advisories the operator has loaded
+const { initHazardOverlay, destroyHazardOverlay } = useHazardOverlay()
+
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
@@ -958,6 +962,8 @@ onMounted(async () => {
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
   if (map.value) initExternalOverlayLayers(map.value, layerControl)
 
+  if (map.value) initHazardOverlay(map.value, layerControl)
+
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   if (map.value)
     initCustomTileProviders(map.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
@@ -1171,6 +1177,7 @@ onBeforeUnmount(() => {
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
   destroyExternalOverlayLayers()
+  destroyHazardOverlay()
   destroyCustomTileProviders()
 
   if (map.value) {
