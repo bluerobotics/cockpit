@@ -1731,8 +1731,11 @@ export const useVideoStore = defineStore('video', () => {
   const startRecordingAllStreams = async (): Promise<void> => {
     const streamsToStart: string[] = []
     const streamsWaitingForVideo: string[] = []
+    // RTSP is Standalone-only, yet its streams reach Lite through the synced correspondency list, and would only
+    // hold the batch for the whole wait before failing
+    const isRecordable = (streamName: string): boolean => isElectron() || getStreamProtocol(streamName) !== 'rtsp'
 
-    namesAvailableStreams.value.forEach((streamName) => {
+    namesAvailableStreams.value.filter(isRecordable).forEach((streamName) => {
       // A stream waiting out an outage is already going to be recorded, and starting it now would only fail on its
       // released media stream
       if (isWaitingToResumeRecording(streamName)) {
