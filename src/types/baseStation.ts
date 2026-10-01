@@ -1,3 +1,4 @@
+import type { GeoBbox } from '@/types/general'
 import type { WaypointCoordinates } from '@/types/mission'
 
 /**
@@ -84,9 +85,8 @@ export type MobileCoverageConfig = {
   heatmapIntensity: number
 }
 
-/* eslint-disable jsdoc/require-jsdoc -- Self-describing geo bbox in WGS84 degrees. */
-export type CoverageBbox = { south: number; west: number; north: number; east: number }
-/* eslint-enable jsdoc/require-jsdoc */
+/** A geo bbox in WGS84 degrees, under the name the coverage code has always used for it. */
+export type CoverageBbox = GeoBbox
 
 /* eslint-disable jsdoc/require-jsdoc -- OpenCellID transport DTO; fields mirror the upstream API. */
 export type OpenCellIdCellBase = {
