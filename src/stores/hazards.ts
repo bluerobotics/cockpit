@@ -6,9 +6,10 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useTerrainElevation } from '@/composables/useTerrainElevation'
 import { type VehicleFileMeta, createVehicleFileStorage } from '@/composables/useVehicleFileStorage'
+import { bboxIntersects } from '@/libs/baseStation/coverageBbox'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type CoastlineFaces, coastlineFaces } from '@/libs/hazards/coastline-faces'
-import { bboxContains, bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG } from '@/libs/hazards/hazard-areas'
+import { bboxContains, bboxMaxSpanDegrees, coversPoint, MAX_HAZARD_BBOX_DEG } from '@/libs/hazards/hazard-areas'
 import {
   checkCoverage,
   checkMissionAgainstAreas,
@@ -22,7 +23,7 @@ import { hazardAreaToExclusionRing } from '@/libs/hazards/hazard-to-fence'
 import { fetchAirspaceHazards, OpenAipAuthError } from '@/libs/hazards/openaip'
 import { fetchOverpassHazardAreas } from '@/libs/hazards/overpass-hazards'
 import { HAZARD_AREA_SOURCE_IDS, HAZARD_GRID_SOURCE_IDS, HAZARD_SOURCES } from '@/libs/hazards/sources'
-import { terrainGridLayout } from '@/libs/hazards/terrain-areas'
+import { clearGridSamplesIn, terrainGridLayout } from '@/libs/hazards/terrain-areas'
 import { traceGridAreas } from '@/libs/hazards/terrain-trace'
 import { useAlertStore } from '@/stores/alert'
 import { useGeoFenceStore } from '@/stores/geoFence'
@@ -35,6 +36,7 @@ import type {
   HazardAdvisorySettings,
   HazardArea,
   HazardAreaSourceId,
+  HazardCoverage,
   HazardFetchResult,
   HazardGridSourceId,
   HazardSourceId,
@@ -225,9 +227,9 @@ export const useHazardStore = defineStore('hazards', () => {
   const shallowAreas = computed<HazardArea[]>(() => (isSourceEnabled('shallow-water') ? tracedShallowAreas.value : []))
 
   /** Area each enabled source with loaded data covers, anything outside being unknown rather than clear. */
-  const loadedBboxes = computed<GeoBbox[]>(() => [
-    ...enabledAreaSources.value.flatMap((sourceId) => results.value[sourceId]?.bbox ?? []),
-    ...(enabledGridSources.value.length > 0 && terrainGrid.value ? [terrainGrid.value.bbox] : []),
+  const loadedCoverage = computed<HazardCoverage[]>(() => [
+    ...enabledAreaSources.value.flatMap((sourceId) => results.value[sourceId] ?? []),
+    ...(enabledGridSources.value.length > 0 && terrainGrid.value ? [terrainGrid.value] : []),
   ])
 
   // A truncated coastline is missing runs, which would merge land and water into one face.
@@ -275,10 +277,10 @@ export const useHazardStore = defineStore('hazards', () => {
    * @returns {boolean} True when the source's last load covered the point.
    */
   const isLoadedAt = (sourceId: HazardSourceId, point: WaypointCoordinates): boolean => {
-    const bbox = HAZARD_GRID_SOURCE_IDS.includes(sourceId as HazardGridSourceId)
-      ? terrainGrid.value?.bbox
-      : results.value[sourceId as HazardAreaSourceId]?.bbox
-    return bbox !== undefined && bboxContains(bbox, point)
+    const loaded = HAZARD_GRID_SOURCE_IDS.includes(sourceId as HazardGridSourceId)
+      ? terrainGrid.value
+      : results.value[sourceId as HazardAreaSourceId]
+    return loaded != null && coversPoint(loaded, point)
   }
 
   const isFetching = computed<boolean>(() => fetchingSources.value.length > 0)
@@ -297,8 +299,12 @@ export const useHazardStore = defineStore('hazards', () => {
   const filesOfSource = (sourceId: HazardFileSourceId): HazardFileMeta[] =>
     hazardFiles.entries.value.filter((entry) => entry.sourceId === sourceId)
 
-  const loadedAtMs = (sourceId: HazardFileSourceId): number =>
-    (sourceId === 'terrain' ? terrainGrid.value?.fetchedAtMs : results.value[sourceId]?.fetchedAtMs) ?? -Infinity
+  const storedAtMs = (data: HazardFetchResult | TerrainGrid): number => data.clearedAtMs ?? data.fetchedAtMs
+
+  const loadedAtMs = (sourceId: HazardFileSourceId): number => {
+    const loaded = sourceId === 'terrain' ? terrainGrid.value : results.value[sourceId]
+    return loaded ? storedAtMs(loaded) : -Infinity
+  }
 
   const isNewerThanLoaded = (entry: HazardFileMeta): boolean =>
     hazardFiles.entries.value.some(({ id }) => id === entry.id) && loadedAtMs(entry.sourceId) < entry.createdAt
@@ -332,15 +338,12 @@ export const useHazardStore = defineStore('hazards', () => {
   // failing the refresh.
   const storeSourceFile = async (
     sourceId: HazardFileSourceId,
-    fetchedAtMs: number,
     data: HazardFetchResult | TerrainGrid
   ): Promise<void> => {
     const replaced = filesOfSource(sourceId)
+    const createdAt = storedAtMs(data)
     try {
-      await hazardFiles.add(
-        { id: `${sourceId}-${fetchedAtMs}`, sourceId, createdAt: fetchedAtMs },
-        JSON.stringify(data)
-      )
+      await hazardFiles.add({ id: `${sourceId}-${createdAt}`, sourceId, createdAt }, JSON.stringify(data))
       await Promise.all(replaced.map((entry) => hazardFiles.remove(entry.id)))
     } catch (error) {
       console.warn(`Could not store hazard data for ${sourceId}:`, error)
@@ -377,7 +380,7 @@ export const useHazardStore = defineStore('hazards', () => {
     const result = await fetchers[sourceId](bbox, signal)
     if (signal.aborted) return NOTHING_LOADED
     results.value = { ...results.value, [sourceId]: result }
-    await storeSourceFile(sourceId, result.fetchedAtMs, result)
+    await storeSourceFile(sourceId, result)
     return { areaCount: result.areas.length, truncated: result.truncated === true }
   }
 
@@ -386,7 +389,7 @@ export const useHazardStore = defineStore('hazards', () => {
     if (signal.aborted) return NOTHING_LOADED
     terrainGrid.value = grid
     // The areas only appear once the worker has traced them, so the source stays busy until then.
-    await Promise.all([whenTraced(), storeSourceFile('terrain', grid.fetchedAtMs, grid)])
+    await Promise.all([whenTraced(), storeSourceFile('terrain', grid)])
     return NOTHING_LOADED
   }
 
@@ -459,14 +462,76 @@ export const useHazardStore = defineStore('hazards', () => {
 
   /**
    * Drops one source's areas, on the map and on disk.
-   * @param {HazardAreaSourceId} sourceId Source to clear.
+   * @param {HazardFileSourceId} sourceId Source to clear, `terrain` being the grid both grid sources trace.
    * @returns {Promise<void>}
    */
-  const clearSource = async (sourceId: HazardAreaSourceId): Promise<void> => {
-    const remaining = { ...results.value }
-    delete remaining[sourceId]
-    results.value = remaining
+  const clearSource = async (sourceId: HazardFileSourceId): Promise<void> => {
+    if (sourceId === 'terrain') {
+      terrainGrid.value = null
+    } else {
+      const remaining = { ...results.value }
+      delete remaining[sourceId]
+      results.value = remaining
+    }
     await Promise.all(filesOfSource(sourceId).map((entry) => hazardFiles.remove(entry.id)))
+  }
+
+  /**
+   * Clears the loaded hazard data inside a box, on the map and in the stored copies, and marks the box as
+   * not loaded again so waypoints in it are reported as uncovered. Areas reaching outside the box are kept.
+   * @param {GeoBbox} bbox Area to clear, normally the current map view.
+   * @returns {Promise<void>}
+   */
+  const clearDataIn = async (bbox: GeoBbox): Promise<void> => {
+    const box = { ...bbox }
+    const clearedAtMs = Date.now()
+    const isWhollyInside = (coverage: HazardCoverage): boolean =>
+      bboxContains(box, [coverage.bbox.south, coverage.bbox.west]) &&
+      bboxContains(box, [coverage.bbox.north, coverage.bbox.east])
+    const cut = <T extends HazardFetchResult | TerrainGrid>(data: T): T => ({
+      ...data,
+      clearedBboxes: [...(data.clearedBboxes ?? []), box],
+      clearedAtMs,
+    })
+
+    const loaded: (HazardFetchResult | TerrainGrid)[] = [
+      ...HAZARD_AREA_SOURCE_IDS.flatMap((sourceId) => results.value[sourceId] ?? []),
+      ...(terrainGrid.value ? [terrainGrid.value] : []),
+    ]
+    const updates = loaded
+      .filter((data) => bboxIntersects(data.bbox, box))
+      .map((data) => {
+        const sourceId = 'sourceId' in data ? data.sourceId : 'terrain'
+        if (isWhollyInside(data)) return clearSource(sourceId)
+        if ('sourceId' in data) {
+          // Only whole areas go: a coastline run cut at the box edge would no longer divide land from water.
+          const areas = data.areas.filter((area) => !area.coordinates.every((point) => bboxContains(box, point)))
+          const next = cut({ ...data, areas })
+          results.value = { ...results.value, [data.sourceId]: next }
+          return storeSourceFile(data.sourceId, next)
+        }
+        const next = cut(clearGridSamplesIn(data, box))
+        terrainGrid.value = next
+        return storeSourceFile('terrain', next)
+      })
+    await Promise.all(updates)
+    openSnackbar({
+      variant: 'success',
+      message:
+        updates.length > 0
+          ? 'Cleared the hazard data in the current view. Load it again to check missions there.'
+          : 'There was no hazard data in the current view to clear.',
+      duration: 4000,
+    })
+  }
+
+  /**
+   * Clears every loaded hazard source and its stored copies, including copies not restored yet.
+   * @returns {Promise<void>}
+   */
+  const clearAllData = async (): Promise<void> => {
+    await Promise.all([...HAZARD_AREA_SOURCE_IDS, 'terrain' as const].map(clearSource))
+    openSnackbar({ variant: 'success', message: 'Cleared all hazard data.', duration: 3000 })
   }
 
   /**
@@ -573,7 +638,7 @@ export const useHazardStore = defineStore('hazards', () => {
       await whenTraced()
       const { groundM, altitudesAmslM } = await sampleMissionGround(waypoints, homePosition)
       found = [
-        ...checkCoverage(waypoints, loadedBboxes.value),
+        ...checkCoverage(waypoints, loadedCoverage.value),
         ...checkMissionAgainstAreas(
           waypoints,
           visibleAreas.value,
@@ -646,7 +711,8 @@ export const useHazardStore = defineStore('hazards', () => {
     isSourceEnabled,
     setSourceEnabled,
     refreshAreas,
-    clearSource,
+    clearDataIn,
+    clearAllData,
     checkMission,
     addAreaAsFenceExclusion,
     isAreaExcluded,
