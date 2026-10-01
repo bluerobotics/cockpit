@@ -952,6 +952,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
+import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
@@ -974,6 +975,7 @@ import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceMapInteraction'
+import { useMissionPreflightChecks } from '@/composables/mission-planning/useMissionPreflightChecks'
 import { useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import {
@@ -1018,7 +1020,6 @@ import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { degrees, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -1046,7 +1047,6 @@ const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const baseStationStore = useBaseStation()
-const fenceStore = useGeoFenceStore()
 const fenceDraft = useGeoFenceEditorDraft()
 const missionEstimates = useMissionEstimates()
 const angleOverlay = useVertexAngleOverlay()
@@ -1107,58 +1107,13 @@ const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
   return makeDefaultNavCommands()
 }
 
-/**
- * Inspects the mission waypoints against the active geofence (the editor
- * draft when present, falling back to the plan currently uploaded to the
- * vehicle). When at least one waypoint breaches the fence, prompts the user
- * with a "Back to mission planning" / "Upload to vehicle anyway" choice and
- * resolves to whether the upload should continue. No-op (returns true) when
- * there's no fence to check against or no breach is detected.
- * @returns { Promise<boolean> } True when the upload should proceed.
- */
-const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
-  const report = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
-  if (!report.hasBreaches) return true
-
-  let confirmed = false
-  try {
-    // Awaiting the dialog's own promise is what keeps Escape and backdrop
-    // clicks from stranding the upload: those reject rather than press a button.
-    await showDialog({
-      variant: 'text-only',
-      title: 'Mission breaches geofence',
-      message:
-        `${report.breachedIndices.length} of ${report.totalChecked} waypoints fall outside an inclusion fence ` +
-        'or inside an exclusion fence. Uploading anyway may trigger an in-flight fence breach action ' +
-        '(RTL / Land / Brake, depending on the autopilot configuration).',
-      persistent: false,
-      maxWidth: '720px',
-      actions: [
-        { text: 'Back to mission planning', action: () => undefined },
-        {
-          text: 'Upload to vehicle anyway',
-          class: 'bg-[#FFFFFF33]',
-          action: () => {
-            confirmed = true
-          },
-        },
-      ],
-    })
-  } catch {
-    return false
-  } finally {
-    closeDialog()
-  }
-  return confirmed
-}
-
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
     showHomePositionNotSetDialog.value = true
     return
   }
 
-  if (!(await confirmMissionFenceBreachIfNeeded())) return
+  if (!(await confirmMissionUpload())) return
 
   logUserAction('Uploaded mission to vehicle')
   uploadingMission.value = true
@@ -1302,6 +1257,12 @@ const { observe: observeMapResize } = useMapAutoResize()
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Draws the coastline, restricted-area and airspace advisories the operator has loaded
+const { initHazardOverlay, destroyHazardOverlay } = useHazardOverlay()
+
+// Gates the upload on the geofence breach and hazard advisory checks
+const { confirmMissionUpload } = useMissionPreflightChecks()
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
@@ -4894,6 +4855,8 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   await mapOverlays.initOverlays(planningMap.value, layerControl)
 
+  initHazardOverlay(planningMap.value, layerControl)
+
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   initCustomTileProviders(planningMap.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
 
@@ -4972,6 +4935,7 @@ onUnmounted(() => {
   stopTileFallbackWatcher?.()
   stopTileFallbackWatcher = undefined
   mapOverlays.destroyOverlays()
+  destroyHazardOverlay()
   destroyCustomTileProviders()
 
   // Reset the map context so descendants stop reacting to the destroyed instance

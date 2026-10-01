@@ -199,6 +199,8 @@
       </ExpansiblePanel>
     </div>
 
+    <slot name="below-fence-lists" />
+
     <div class="flex flex-col ma-2 py-2 px-4 border-[1px] border-[#FFFFFF22] bg-[#00000022] rounded-md p-2">
       <div v-if="fenceStore.isArduPilot" class="flex items-center justify-between gap-x-2 fence-autoenable-row">
         <p class="text-xs">Auto enable fence on takeoff</p>
@@ -438,7 +440,7 @@ const fenceStore = useGeoFenceStore()
 const fenceDraft = useGeoFenceEditorDraft()
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
-const { showDialog, closeDialog } = useInteractionDialog()
+const { showDialog, confirmAction } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -550,41 +552,6 @@ const onToggleFenceAutoEnable = (value: boolean | null): void => {
       timer: 4000,
     })
   }
-}
-
-const confirmAction = async (
-  title: string,
-  message: string | string[],
-  confirmText: string,
-  maxWidth = '520px'
-): Promise<boolean> => {
-  let confirmed = false
-  try {
-    // Awaiting the dialog's own promise is what keeps Escape and backdrop
-    // clicks from stranding the caller: those reject rather than press a button.
-    await showDialog({
-      variant: 'warning',
-      title,
-      message,
-      persistent: false,
-      maxWidth,
-      actions: [
-        { text: 'Cancel', action: () => undefined },
-        {
-          text: confirmText,
-          class: 'bg-[#FFFFFF33]',
-          action: () => {
-            confirmed = true
-          },
-        },
-      ],
-    })
-  } catch {
-    return false
-  } finally {
-    closeDialog()
-  }
-  return confirmed
 }
 
 const confirmPx4MultipleInclusionsIfNeeded = async (): Promise<boolean> => {
