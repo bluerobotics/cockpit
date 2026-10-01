@@ -318,13 +318,24 @@ export const applyFollowZoomMode = (map: L.Map, following: boolean): void => {
 }
 
 /**
- * Keep the follow target under the view when zoom changes, otherwise apply a plain zoom.
+ * Creates a Leaflet pane, or returns the existing one. Leaflet's `createPane` does not check for
+ * an existing pane, so calling it twice would orphan the layers already in the first one.
+ * @param {L.Map} map The map to add the pane to.
+ * @param {string} name Pane name.
+ * @returns {HTMLElement} The existing pane, or the one just created.
+ */
+export const createMapPane = (map: L.Map, name: string): HTMLElement => map.getPane(name) ?? map.createPane(name)
+
+/**
+ * Keep the follow target under the view when zoom changes, otherwise apply a plain zoom, unless the map is already at that zoom.
  * @param {L.Map} map Leaflet map
  * @param {number} zoom Target zoom
  * @param {WaypointCoordinates | undefined} pos Follow coordinate, if any
  * @returns {void}
  */
 export const recenterMapOnFollowTarget = (map: L.Map, zoom: number, pos: WaypointCoordinates | undefined): void => {
+  // zoomend writes the zoom the map already has; applying it again fights the settle and drifts markers.
+  if (map.getZoom() === zoom) return
   if (isFiniteLatLng(pos)) {
     map.setView(pos, zoom, { animate: false })
     return

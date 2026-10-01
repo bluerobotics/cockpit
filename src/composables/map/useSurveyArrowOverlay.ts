@@ -8,6 +8,7 @@ import {
   partitionArrowsByLength,
   partitionArrowsByOrientation,
 } from '@/libs/map/survey-arrows'
+import { createMapPane } from '@/libs/map/utils-map'
 import type { Survey, Waypoint, WaypointCoordinates } from '@/types/mission'
 
 const ARROW_PANE = 'surveyArrowPane'
@@ -235,24 +236,18 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
 
   const initArrowOverlay = (map: LeafletMap): void => {
     mapRef = map
-    if (!map.getPane(ARROW_PANE)) {
-      const pane = map.createPane(ARROW_PANE)
-      // Above the mission path (overlay pane, 400) but below the waypoint-number tooltips (650).
-      pane.style.zIndex = '620'
-      pane.style.pointerEvents = 'none'
-    }
-    if (!map.getPane(REFLY_PANE)) {
-      const pane = map.createPane(REFLY_PANE)
-      // Just above the mission path so the purple crosshatch lines sit on it, but below the waypoint markers (600).
-      pane.style.zIndex = '410'
-      pane.style.pointerEvents = 'none'
-    }
-    if (!map.getPane(PRIMARY_PANE)) {
-      const pane = map.createPane(PRIMARY_PANE)
-      // Above the crosshatch pane so the blue primary lines paint over the purple ones at every crossing.
-      pane.style.zIndex = '420'
-      pane.style.pointerEvents = 'none'
-    }
+    const arrowPane = createMapPane(map, ARROW_PANE)
+    // Above the mission path (overlay pane, 400) but below the waypoint-number tooltips (650).
+    arrowPane.style.zIndex = '620'
+    arrowPane.style.pointerEvents = 'none'
+    const reflyPane = createMapPane(map, REFLY_PANE)
+    // Just above the mission path so the purple crosshatch lines sit on it, but below the waypoint markers (600).
+    reflyPane.style.zIndex = '410'
+    reflyPane.style.pointerEvents = 'none'
+    const primaryPane = createMapPane(map, PRIMARY_PANE)
+    // Above the crosshatch pane so the blue primary lines paint over the purple ones at every crossing.
+    primaryPane.style.zIndex = '420'
+    primaryPane.style.pointerEvents = 'none'
 
     map.on('zoomend', scheduleRender)
     stopWatch = watch(

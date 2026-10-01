@@ -979,6 +979,7 @@ import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 import {
   applyFollowZoomMode,
   createGridOverlay,
+  createMapPane,
   fitMapToWaypoints,
   mapPointerPositionFromClient,
   persistLiveMapView,
@@ -4798,7 +4799,7 @@ onMounted(async () => {
     }
   )
 
-  const pane = planningMap.value!.createPane('measurePane')
+  const pane = createMapPane(planningMap.value!, 'measurePane')
   pane.style.zIndex = '640'
   pane.style.pointerEvents = 'none'
   angleOverlay.initAngleOverlay(planningMap.value!)

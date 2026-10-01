@@ -1,6 +1,6 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 
-import { computeVertexAngle } from '@/libs/map/utils-map'
+import { computeVertexAngle, createMapPane } from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
 
 const ANGLE_PANE = 'measureAnglePane'
@@ -38,9 +38,8 @@ export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
 
   const initAngleOverlay = (map: LeafletMap): void => {
     mapRef = map
-    if (map.getPane(ANGLE_PANE)) return
     // Above the tooltip pane (650, where waypoint numbers live) so angle tags always sit on top.
-    const pane = map.createPane(ANGLE_PANE)
+    const pane = createMapPane(map, ANGLE_PANE)
     pane.style.zIndex = '660'
     pane.style.pointerEvents = 'none'
   }

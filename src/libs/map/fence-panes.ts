@@ -1,5 +1,7 @@
 import L from 'leaflet'
 
+import { createMapPane } from '@/libs/map/utils-map'
+
 /**
  * Leaflet pane holding every geofence marker, both the committed handles and
  * the ones drawn while a fence is in progress.
@@ -20,11 +22,8 @@ export const FENCE_PATH_CLASS = 'fence-path'
 
 /**
  * Creates {@link FENCE_MARKER_PANE} on the given map if it is not there yet.
- * Leaflet's `createPane` does not check for an existing pane, so calling it
- * twice would orphan the markers already in the first one.
  * @param { L.Map } map The Leaflet map to create the pane on.
  */
 export const ensureFenceMarkerPane = (map: L.Map): void => {
-  if (map.getPane(FENCE_MARKER_PANE)) return
-  map.createPane(FENCE_MARKER_PANE).style.zIndex = '610'
+  createMapPane(map, FENCE_MARKER_PANE).style.zIndex = '610'
 }
