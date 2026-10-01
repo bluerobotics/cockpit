@@ -55,3 +55,36 @@ export const videoSubtitlesFilename = (videoFileName: string): string => {
 export const videoChunkName = (hash: string, chunkNumber: number): string => {
   return `${hash}_${chunkNumber}`
 }
+
+// Segments live apart from the finished videos, as the library lists whatever sits in the videos folder itself.
+const videoSegmentsFolderName = 'recording-segments'
+
+/**
+ * Returns the filename of one segment of a recording, the first being the recording's own file.
+ * @param {string} videoFileName - The filename of the video, with or without the extension.
+ * @param {number} segmentIndex - Position of the segment in the recording, starting at zero.
+ * @returns {string} The filename for that segment.
+ */
+export const videoSegmentFilename = (videoFileName: string, segmentIndex: number): string => {
+  if (segmentIndex === 0) return videoFileName
+  return `${videoFilenameWithoutExtension(videoFileName)} - part${segmentIndex + 1}.mp4`
+}
+
+/**
+ * Returns the folders a recording's segment is stored under, inside the Cockpit folder.
+ * @param {number} segmentIndex - Position of the segment in the recording, starting at zero.
+ * @returns {string[]} The subfolders holding that segment.
+ */
+export const videoSegmentSubFolders = (segmentIndex: number): string[] => {
+  return segmentIndex === 0 ? ['videos'] : ['videos', videoSegmentsFolderName]
+}
+
+/**
+ * Whether a recording chunk opens a WebM stream of its own, which a MediaRecorder's first chunk does and
+ * the ones that follow it do not, so a recording that outlived its recorder is told apart chunk by chunk.
+ * @param {Uint8Array} chunkData - The chunk's first bytes, or the whole chunk.
+ * @returns {boolean} True when the chunk starts with the EBML header.
+ */
+export const isWebmStreamStart = (chunkData: Uint8Array): boolean => {
+  return chunkData[0] === 0x1a && chunkData[1] === 0x45 && chunkData[2] === 0xdf && chunkData[3] === 0xa3
+}
