@@ -92,7 +92,6 @@ export const useVideoStore = defineStore('video', () => {
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const lastRenamedStreamName = ref('')
-  const isRecordingAllStreams = ref(false)
   const liveProcessors = ref<{ [key: string]: LiveVideoProcessor }>({})
   const enableLiveProcessing = useBlueOsStorage('cockpit-enable-live-processing', true)
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
@@ -1681,10 +1680,14 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Video recording actions
+  // From the map directly, as isRecording would activate every stream it is asked about just to say it is not recording
+  const isRecordingOrAboutTo = (streamName: string): boolean => {
+    return activeStreams.value[streamName]?.timeRecordingStart !== undefined || isWaitingToResumeRecording(streamName)
+  }
+
   const startRecordingAllStreams = (): void => {
     const streamsThatStarted: string[] = []
     const streamsWaitingForVideo: string[] = []
-    isRecordingAllStreams.value = true
 
     namesAvailableStreams.value.forEach((streamName) => {
       // A stream waiting out an outage is already going to be recorded, and starting it now would only fail on its
@@ -1717,12 +1720,11 @@ export const useVideoStore = defineStore('video', () => {
 
   const stopRecordingAllStreams = (): void => {
     const streamsThatStopped: string[] = []
-    isRecordingAllStreams.value = false
 
     namesAvailableStreams.value.forEach((streamName) => {
       // A stream waiting out an outage counts as recording here, or the stop leaves the wait to start a recording
       // moments after the user asked for everything to stop
-      if (isRecording(streamName) || isWaitingToResumeRecording(streamName)) {
+      if (isRecordingOrAboutTo(streamName)) {
         stopRecording(streamName)
         streamsThatStopped.push(streamName)
       }
@@ -1737,7 +1739,9 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const toggleRecordingAllStreams = (): void => {
-    if (isRecordingAllStreams.value) {
+    // Read from the streams rather than kept as a flag, which a recording started or stopped elsewhere, or a start
+    // refused by its stream, would leave stale for the next press
+    if (namesAvailableStreams.value.some(isRecordingOrAboutTo)) {
       stopRecordingAllStreams()
     } else {
       startRecordingAllStreams()
