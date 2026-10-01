@@ -27,8 +27,12 @@
         GeoFence
       </button>
     </div>
-    <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
-      <GeoFenceEditor v-if="planningMode === 'geofence'" :map-center="mapCenter" />
+    <div class="flex flex-col w-full h-full p-2 overflow-y-auto scrollbar-hide">
+      <GeoFenceEditor v-if="planningMode === 'geofence'" :map-center="mapCenter">
+        <template #below-fence-lists>
+          <HazardAdvisoryPanel />
+        </template>
+      </GeoFenceEditor>
       <slot v-if="planningMode === 'mission'" name="mission" />
     </div>
   </div>
@@ -38,6 +42,7 @@
 import { defineModel, ref } from 'vue'
 
 import GeoFenceEditor from '@/components/geofence/GeoFenceEditor.vue'
+import HazardAdvisoryPanel from '@/components/hazards/HazardAdvisoryPanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const planningMode = defineModel<'mission' | 'geofence'>('planningMode', { required: true })

@@ -98,6 +98,22 @@ export function useInteractionDialog(): {
    * @returns {void}
    */
   closeDialog: () => void
+  /**
+   * Asks the operator to confirm an action, and closes the dialog whichever way it ends.
+   * @param {string} title - Title of the dialog.
+   * @param {string | string[]} message - What the action does, as a paragraph or a list of them.
+   * @param {string} confirmText - Label of the confirming button.
+   * @param {string} [maxWidth] - Maximum width of the dialog.
+   * @param {string} [cancelText] - Label of the dismissing button.
+   * @returns {Promise<boolean>} True when the operator pressed the confirming button.
+   */
+  confirmAction: (
+    title: string,
+    message: string | string[],
+    confirmText: string,
+    maxWidth?: string,
+    cancelText?: string
+  ) => Promise<boolean>
 } {
   const defaultDialogState = (): DialogState => ({
     message: '',
@@ -186,6 +202,42 @@ export function useInteractionDialog(): {
     unmountDialog()
   }
 
+  const confirmAction = async (
+    title: string,
+    message: string | string[],
+    confirmText: string,
+    maxWidth = '520px',
+    cancelText = 'Cancel'
+  ): Promise<boolean> => {
+    let confirmed = false
+    try {
+      // Awaiting the dialog's own promise is what keeps Escape and backdrop
+      // clicks from stranding the caller: those reject rather than press a button.
+      await showDialog({
+        variant: 'warning',
+        title,
+        message,
+        persistent: false,
+        maxWidth,
+        actions: [
+          { text: cancelText, action: () => undefined },
+          {
+            text: confirmText,
+            class: 'bg-[#FFFFFF33]',
+            action: () => {
+              confirmed = true
+            },
+          },
+        ],
+      })
+    } catch {
+      return false
+    } finally {
+      closeDialog()
+    }
+    return confirmed
+  }
+
   onUnmounted(() => {
     unmountDialog()
   })
@@ -200,5 +252,5 @@ export function useInteractionDialog(): {
     }
   }
 
-  return { showDialog, closeDialog }
+  return { showDialog, closeDialog, confirmAction }
 }
