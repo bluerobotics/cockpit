@@ -303,7 +303,10 @@
                 </div>
 
                 <div class="w-full flex-centered flex-column">
-                  <p class="text-start text-sm font-bold w-[93%] mb-1">Axes</p>
+                  <div class="flex items-baseline justify-between w-[93%] mb-1">
+                    <p class="text-sm font-bold">Axes</p>
+                    <p class="text-xs opacity-70">{{ rangeCheckDescription }}</p>
+                  </div>
                   <v-data-table
                     :items="axisTableItems"
                     class="elevation-1 bg-transparent rounded-lg mb-[20px]"
@@ -391,6 +394,7 @@
                             :dirty="isAxisDirty(item.id as JoystickAxis)"
                             :can-save="canSaveAxis(item.id as JoystickAxis)"
                             :blocking-axis="blockingAxis(item.id as JoystickAxis)"
+                            :range-issues="rangeIssues(item.id as JoystickAxis)?.issues"
                             @save="requestAxisSave(item.id as JoystickAxis)"
                             @revert="revertAxisDraft(item.id as JoystickAxis)"
                           />
@@ -672,6 +676,7 @@
               :dirty="isAxisDirty(input.id)"
               :can-save="canSaveAxis(input.id)"
               :blocking-axis="blockingAxis(input.id)"
+              :range-issues="rangeIssues(input.id)?.issues"
               class="ml-2"
               @save="requestAxisSave(input.id)"
               @revert="revertAxisDraft(input.id)"
@@ -685,6 +690,20 @@
         </div>
       </template>
     </InteractionDialog>
+    <AxisRangeWarningDialog
+      v-if="rangeWarning"
+      :axis="rangeWarning.axis"
+      :action-name="axisMapping(rangeWarning.axis).action.name"
+      :vehicle-type-name="rangeWarning.vehicleName"
+      :min="axisMapping(rangeWarning.axis).min"
+      :max="axisMapping(rangeWarning.axis).max"
+      :default-min="rangeWarning.defaultMapping.min"
+      :default-max="rangeWarning.defaultMapping.max"
+      :issues="rangeWarning.issues"
+      :off-endpoints="rangeWarning.offEndpoints"
+      @use-defaults="saveAxisWithDefaultRange"
+      @keep-values="saveAxisKeepingRange"
+    />
   </teleport>
 </template>
 
@@ -696,11 +715,12 @@ import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisDraftActions from '@/components/joysticks/AxisDraftActions.vue'
+import AxisRangeWarningDialog from '@/components/joysticks/AxisRangeWarningDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
-import { useAxisMappingDrafts } from '@/composables/useAxisMappingDrafts'
+import { type AxisRangeReview, useAxisMappingDrafts } from '@/composables/useAxisMappingDrafts'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
@@ -710,10 +730,12 @@ import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
+import { vehicleTypeName } from '@/migration/default-profile-importer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import {
+  type AxisCorrespondence,
   type Joystick,
   type JoystickInput,
   type ProtocolAction,
@@ -730,7 +752,8 @@ import {
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
-const { globalAddress } = useMainVehicleStore()
+const mainVehicleStore = useMainVehicleStore()
+const { globalAddress } = mainVehicleStore
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
 
@@ -1088,7 +1111,24 @@ const closeInputMappingDialog = (): void => {
   inputClickedDialog.value = false
 }
 
-const { axisMapping, isAxisDirty, editAxis, blockingAxis, canSaveAxis, saveAxis, revertAxis } = useAxisMappingDrafts()
+const {
+  axisMapping,
+  isAxisDirty,
+  editAxis,
+  blockingAxis,
+  canSaveAxis,
+  rangeCheckVehicleType,
+  rangeIssues,
+  saveAxis,
+  revertAxis,
+} = useAxisMappingDrafts()
+
+const rangeCheckDescription = computed(() => {
+  if (!rangeCheckVehicleType.value) return 'Ranges are not checked until a vehicle connects'
+  const vehicleName = vehicleTypeName(rangeCheckVehicleType.value)
+  const source = mainVehicleStore.isVehicleOnline ? '' : ' (last vehicle connected)'
+  return `Ranges checked against the ${vehicleName} defaults${source}`
+})
 
 const editAxisRange = (axis: JoystickAxis, endpoint: 'min' | 'max', value: unknown): void => {
   // An emptied field is NaN rather than 0, so it blocks the save instead of silently becoming a valid range.
@@ -1100,16 +1140,61 @@ const editAxisAction = (axis: JoystickAxis, action: ProtocolAction): void => {
   editAxis(axis, { action })
 }
 
-const requestAxisSave = (axis: JoystickAxis): void => {
-  saveAxis(axis)
+const rangeWarning = ref<
+  AxisRangeReview & {
+    /** Axis waiting to be saved */
+    axis: JoystickAxis
+    /** Friendly name of the vehicle the default belongs to */
+    vehicleName: string
+  }
+>()
+
+// A sync or an import can drop the pending edit while the warning is open, leaving nothing for it to save.
+watch(
+  () => rangeWarning.value && !isAxisDirty(rangeWarning.value.axis),
+  (editDiscarded) => {
+    if (editDiscarded) rangeWarning.value = undefined
+  }
+)
+
+const commitAxis = (axis: JoystickAxis, range?: Pick<AxisCorrespondence, 'min' | 'max'>): void => {
+  saveAxis(axis, range)
   const { action, min, max } = axisMapping(axis)
   logUserAction(`Saved axis ${axis} mapping ('${action.name}', ${min} / ${max})`)
   openSnackbar({ message: `Axis ${axis} saved: '${action.name}' (${min} / ${max}).`, variant: 'success' })
 }
 
+const requestAxisSave = (axis: JoystickAxis): void => {
+  const found = rangeIssues(axis)
+  if (found === undefined) {
+    commitAxis(axis)
+    return
+  }
+  logUserAction(`Opened the unusual axis range warning for axis ${axis} (${found.issues.join(', ')})`)
+  const vehicleName = vehicleTypeName(found.vehicleType)
+  const source = mainVehicleStore.isVehicleOnline ? '' : ' (the last vehicle connected)'
+  rangeWarning.value = { axis, ...found, vehicleName: `${vehicleName}${source}` }
+}
+
 const revertAxisDraft = (axis: JoystickAxis): void => {
   logUserAction(`Reverted unsaved changes on axis ${axis}`)
   revertAxis(axis)
+}
+
+const saveAxisWithDefaultRange = (): void => {
+  if (!rangeWarning.value) return
+  const { axis, defaultMapping } = rangeWarning.value
+  logUserAction(`Chose the vehicle default range for axis ${axis}`)
+  rangeWarning.value = undefined
+  commitAxis(axis, { min: defaultMapping.min, max: defaultMapping.max })
+}
+
+const saveAxisKeepingRange = (): void => {
+  if (!rangeWarning.value) return
+  const { axis } = rangeWarning.value
+  logUserAction(`Chose to keep a range far from the vehicle default for axis ${axis}`)
+  rangeWarning.value = undefined
+  commitAxis(axis)
 }
 
 const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {

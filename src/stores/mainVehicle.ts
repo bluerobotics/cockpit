@@ -130,6 +130,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   const hasVehicleBeenOnlineThisSession = ref(false)
   const firmwareType = ref<MavAutopilot>()
   const vehicleType = ref<MavType>()
+  // Machine-local, since it describes what this computer last flew rather than a setting of any one vehicle.
+  const lastConnectedVehicleType = useStorage<MavType | null>('cockpit-last-connected-vehicle-type', null)
   const altitude: Altitude = reactive({} as Altitude)
   const attitude: Attitude = reactive({} as Attitude)
   const coordinates: Coordinates = reactive({} as Coordinates)
@@ -908,6 +910,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
       if (oldVehicleType !== vehicleType.value && vehicleType.value !== undefined) {
         console.log('Vehicle type changed to', vehicleType.value)
+        lastConnectedVehicleType.value = vehicleType.value
       }
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1339,6 +1342,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     lastHeartbeat,
     firmwareType,
     vehicleType,
+    lastConnectedVehicleType,
     altitude,
     attitude,
     coordinates,
