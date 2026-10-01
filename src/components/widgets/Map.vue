@@ -275,6 +275,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
@@ -665,6 +666,9 @@ const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
 
+// Draws the coastline, restricted-area and airspace advisories the operator has loaded
+const { initHazardOverlay, destroyHazardOverlay } = useHazardOverlay()
+
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
@@ -807,9 +811,11 @@ onMounted(async () => {
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
     layers: getInitialLayers(),
-    attributionControl: false,
     ...singleStepZoomMapOptions,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+  // The tile and hazard licences require their credit to be visible wherever their data is drawn.
+  // Leaflet shows only the layers currently on the map, so the line stays as short as the view is.
+  map.value.attributionControl.setPrefix(false)
 
   // Expose the Leaflet instance to descendant components via the map context
   mapContext.map.value = map.value
@@ -949,6 +955,8 @@ onMounted(async () => {
 
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
+
+  if (map.value) initHazardOverlay(map.value, layerControl)
 
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   if (map.value)
@@ -1164,6 +1172,7 @@ onBeforeUnmount(() => {
 
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
+  destroyHazardOverlay()
   destroyCustomTileProviders()
 
   if (map.value) {
