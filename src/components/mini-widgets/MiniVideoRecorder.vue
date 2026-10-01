@@ -363,7 +363,9 @@ const startRecording = (): void => {
 
   assertStreamIsSelectedAndAvailable(nameSelectedStream.value)
   logUserAction(`Started video recording of stream '${nameSelectedStream.value}'`)
-  videoStore.startRecording(selectedExternalId.value)
+  videoStore.startRecording(selectedExternalId.value).catch((error: Error) => {
+    showDialog({ title: 'Recording did not start yet', message: error.message, variant: 'error' })
+  })
   widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen = false
 }
 
