@@ -1,11 +1,31 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import {
+  type AxisRangeIssue,
+  findAxisRangeIssues,
+  findOffDefaultAxisEndpoints,
+  getDefaultAxisCorrespondence,
+} from '@/libs/joystick/default-mappings'
 import { otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { useControllerStore } from '@/stores/controller'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { AxisCorrespondence, JoystickAxis } from '@/types/joystick'
 
 const noFunctionId = otherAvailableActions.no_function.id
+
+/** A pending axis range that needs a second look, and the vehicle default it was compared to */
+export interface AxisRangeReview {
+  /** Vehicle type the default belongs to */
+  vehicleType: MavType
+  /** Vehicle default for the axis' function */
+  defaultMapping: AxisCorrespondence
+  /** What is wrong with the pending range */
+  issues: AxisRangeIssue[]
+  /** Endpoints of the pending range that cause the issues */
+  offEndpoints: ('min' | 'max')[]
+}
 
 const isSameMapping = (a: AxisCorrespondence, b: AxisCorrespondence): boolean =>
   a.action.id === b.action.id && a.min === b.min && a.max === b.max
@@ -18,6 +38,7 @@ const isSameMapping = (a: AxisCorrespondence, b: AxisCorrespondence): boolean =>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const useAxisMappingDrafts = () => {
   const controllerStore = useControllerStore()
+  const mainVehicleStore = useMainVehicleStore()
 
   const drafts = ref<Partial<Record<JoystickAxis, AxisCorrespondence>>>({})
 
@@ -99,10 +120,37 @@ export const useAxisMappingDrafts = () => {
     return isAxisDirty(axis) && Number.isFinite(min) && Number.isFinite(max) && blockingAxis(axis) === undefined
   }
 
-  const saveAxis = (axis: JoystickAxis): void => {
+  const rangeCheckVehicleType = computed(
+    () => mainVehicleStore.vehicleType ?? mainVehicleStore.lastConnectedVehicleType ?? undefined
+  )
+
+  /**
+   * What is wrong with the axis' pending range for the vehicle (the last one connected, when none is), next to the
+   * default it should be compared to.
+   * @param {JoystickAxis} axis - The axis being saved
+   * @returns {AxisRangeReview | undefined} The default and the issues found, or undefined when the range is fine or
+   * there is no default to compare to
+   */
+  const rangeIssues = (axis: JoystickAxis): AxisRangeReview | undefined => {
+    const vehicleType = rangeCheckVehicleType.value
+    if (!vehicleType) return undefined
+    const mapping = axisMapping(axis)
+    const defaultMapping = getDefaultAxisCorrespondence(vehicleType, mapping.action.id)
+    if (!defaultMapping) return undefined
+    const issues = findAxisRangeIssues(mapping, defaultMapping)
+    if (issues.length === 0) return undefined
+    return {
+      vehicleType,
+      defaultMapping,
+      issues,
+      offEndpoints: findOffDefaultAxisEndpoints(mapping, defaultMapping),
+    }
+  }
+
+  const saveAxis = (axis: JoystickAxis, range?: Pick<AxisCorrespondence, 'min' | 'max'>): void => {
     const draft = drafts.value[axis]
     if (!draft) return
-    controllerStore.protocolMapping.axesCorrespondencies[axis] = { ...draft, action: { ...draft.action } }
+    controllerStore.protocolMapping.axesCorrespondencies[axis] = { ...draft, ...range, action: { ...draft.action } }
     delete drafts.value[axis]
   }
 
@@ -113,5 +161,15 @@ export const useAxisMappingDrafts = () => {
     restoreReleasedAxes(draft.action.id)
   }
 
-  return { axisMapping, isAxisDirty, editAxis, blockingAxis, canSaveAxis, saveAxis, revertAxis }
+  return {
+    axisMapping,
+    isAxisDirty,
+    editAxis,
+    blockingAxis,
+    canSaveAxis,
+    rangeCheckVehicleType,
+    rangeIssues,
+    saveAxis,
+    revertAxis,
+  }
 }
