@@ -2,9 +2,8 @@ import * as turf from '@turf/turf'
 import type { Feature, LineString, MultiLineString, Position } from 'geojson'
 
 import type { WaypointLike } from '@/libs/geo-fence'
-import { bboxContains, hazardAreaAt, paddedBbox, polygonRings } from '@/libs/hazards/hazard-areas'
-import type { GeoBbox } from '@/types/general'
-import type { HazardAdvisory, HazardArea, HazardGridSourceId } from '@/types/hazards'
+import { bboxContains, coversPoint, hazardAreaAt, paddedBbox, polygonRings } from '@/libs/hazards/hazard-areas'
+import type { HazardAdvisory, HazardArea, HazardCoverage, HazardGridSourceId } from '@/types/hazards'
 import { type Waypoint, type WaypointCoordinates, AltitudeReferenceType } from '@/types/mission'
 
 const toPosition = ([lat, lng]: WaypointCoordinates): Position => [lng, lat]
@@ -247,12 +246,12 @@ export const checkShallowWater = (
  * Reports waypoints outside an area hazard data was loaded for. The other checks stay silent there
  * because nothing was asked about it, which reads as "clear" unless it is said.
  * @param {WaypointLike[]} waypoints Mission waypoints, in order.
- * @param {GeoBbox[]} loadedBboxes Area each enabled source with loaded data covers.
+ * @param {HazardCoverage[]} loaded Area each enabled source with loaded data covers.
  * @returns {HazardAdvisory[]} A single advisory naming the uncovered waypoints, or none.
  */
-export const checkCoverage = (waypoints: WaypointLike[], loadedBboxes: GeoBbox[]): HazardAdvisory[] => {
+export const checkCoverage = (waypoints: WaypointLike[], loaded: HazardCoverage[]): HazardAdvisory[] => {
   const outside = indicesWhere(waypoints.length, (index) =>
-    loadedBboxes.some((bbox) => !bboxContains(bbox, waypoints[index].coordinates))
+    loaded.some((coverage) => !coversPoint(coverage, waypoints[index].coordinates))
   )
   if (outside.length === 0) return []
 
@@ -391,9 +390,15 @@ const runSelfCheckOnce = (): void => {
     checkShallowWater(legAcross, [4, null], 5).length === 0,
     'Land and unknown seabed must never be reported as shallow water'
   )
+  const loadedWest = { bbox: { south: 0, west: -0.02, north: 0.01, east: 0.01 } }
   assert(
-    checkCoverage(legAcross, [{ south: 0, west: -0.02, north: 0.01, east: 0.01 }])[0]?.waypointIndices.join() === '1',
+    checkCoverage(legAcross, [loadedWest])[0]?.waypointIndices.join() === '1',
     'Only waypoints outside a loaded area must be reported'
+  )
+  assert(
+    checkCoverage(legAcross, [{ ...loadedWest, clearedBboxes: [loadedWest.bbox] }])[0]?.waypointIndices.join() ===
+      '0,1',
+    'Waypoints in a cleared part of a loaded area must be reported'
   )
 
   const [amsl, relative, terrain] = waypointAltitudesAmsl(

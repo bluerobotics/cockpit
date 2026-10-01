@@ -2,7 +2,7 @@ import * as turf from '@turf/turf'
 import type { Position } from 'geojson'
 
 import type { GeoBbox } from '@/types/general'
-import type { HazardArea } from '@/types/hazards'
+import type { HazardArea, HazardCoverage } from '@/types/hazards'
 import type { WaypointCoordinates } from '@/types/mission'
 
 /**
@@ -37,6 +37,15 @@ export const bboxMaxSpanDegrees = (bbox: GeoBbox): number => Math.max(bbox.north
  */
 export const bboxContains = (bbox: GeoBbox, [lat, lng]: WaypointCoordinates): boolean =>
   lat >= bbox.south && lat <= bbox.north && lng >= bbox.west && lng <= bbox.east
+
+/**
+ * Whether loaded data covers a point: inside the box it was loaded for, and outside every part cleared since.
+ * @param {HazardCoverage} coverage Loaded data to test against.
+ * @param {WaypointCoordinates} point `[latitude, longitude]` to test.
+ * @returns {boolean} True when the data says something about the point, even that it is clear.
+ */
+export const coversPoint = (coverage: HazardCoverage, point: WaypointCoordinates): boolean =>
+  bboxContains(coverage.bbox, point) && !coverage.clearedBboxes?.some((cleared) => bboxContains(cleared, point))
 
 /**
  * A polygon area's rings as GeoJSON expects them: closed, `[longitude, latitude]`, outline first, then its holes.

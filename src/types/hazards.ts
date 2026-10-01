@@ -99,9 +99,27 @@ export interface HazardAdvisory {
 }
 
 /**
+ * A box hazard data was loaded for, less the parts of it the operator has cleared since.
+ */
+export interface HazardCoverage {
+  /**
+   * Area the data was loaded for.
+   */
+  bbox: GeoBbox
+  /**
+   * Boxes inside `bbox` whose data was cleared, which read as not loaded again.
+   */
+  clearedBboxes?: GeoBbox[]
+  /**
+   * Epoch milliseconds of the last clear, so the copy stored then replaces the one saved at the load.
+   */
+  clearedAtMs?: number
+}
+
+/**
  * The areas one source published for one bounding box, as returned by a fetch and as cached.
  */
-export interface HazardFetchResult {
+export interface HazardFetchResult extends HazardCoverage {
   /**
    * Source the areas came from.
    */
@@ -128,7 +146,7 @@ export interface HazardFetchResult {
 /**
  * Ground elevation sampled on a regular grid over one bounding box, from which terrain areas are traced.
  */
-export interface TerrainGrid {
+export interface TerrainGrid extends HazardCoverage {
   /**
    * Area the grid covers, its corners being the outermost samples.
    */
