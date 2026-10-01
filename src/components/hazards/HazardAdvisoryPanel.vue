@@ -20,7 +20,7 @@
                 </v-btn>
               </template>
               <div
-                class="flex flex-col gap-y-2 p-3 rounded-lg w-[250px] text-white"
+                class="flex flex-col gap-y-2 p-3 rounded-lg w-[280px] text-white"
                 :style="interfaceStore.globalGlassMenuStyles"
               >
                 <div class="flex items-center justify-between">
@@ -66,6 +66,31 @@
                 </div>
                 <p class="text-[10px] opacity-60 leading-snug">
                   Raises an alert when the vehicle comes within the clearance margin of a loaded area.
+                </p>
+                <div class="flex gap-x-2 mt-1">
+                  <v-btn
+                    variant="flat"
+                    size="x-small"
+                    class="grow bg-[#FFFFFF22] rounded-md elevation-1 disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50"
+                    :disabled="!hasLoadedData || hazardStore.isFetching"
+                    prepend-icon="mdi-eraser"
+                    @click="onClearForView"
+                  >
+                    Clear for view
+                  </v-btn>
+                  <v-btn
+                    variant="flat"
+                    size="x-small"
+                    class="grow bg-[#FFFFFF22] rounded-md elevation-1 disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50"
+                    :disabled="!hasLoadedData || hazardStore.isFetching"
+                    prepend-icon="mdi-delete-sweep-outline"
+                    @click="onClearAll"
+                  >
+                    Clear all
+                  </v-btn>
+                </div>
+                <p class="text-[10px] opacity-60 leading-snug">
+                  Removes loaded hazard data from this computer and from the vehicle.
                 </p>
               </div>
             </v-menu>
@@ -346,6 +371,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useHazardAdvisoryFocus } from '@/composables/map/useHazardAdvisoryFocus'
 import { useMapContext } from '@/composables/map/useMapContext'
 import { openSnackbar } from '@/composables/snackbar'
@@ -411,6 +437,7 @@ const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const { map, mapReady } = useMapContext()
 const { focusAdvisory } = useHazardAdvisoryFocus(map)
+const { showDialog, closeDialog } = useInteractionDialog()
 
 const viewBbox = ref<GeoBbox | null>(null)
 const isOpenAipMenuOpen = ref(false)
@@ -555,7 +582,9 @@ const areasSignature = computed(() => {
   const { enabledSources, proximityMarginMeters, terrainClearanceMeters, shallowWaterDepthMeters } =
     hazardStore.settings
   const thresholds = `${proximityMarginMeters}:${terrainClearanceMeters}:${shallowWaterDepthMeters}`
-  return `${hazardStore.visibleAreas.length}:${hazardStore.oldestFetchAtMs ?? 0}:${enabledSources.join()}:${thresholds}`
+  const loaded = [hazardStore.terrainGrid, ...Object.values(hazardStore.results)]
+  const loadedAt = `${hazardStore.oldestFetchAtMs ?? 0}:${loaded.map((data) => data?.clearedAtMs).join()}`
+  return `${hazardStore.visibleAreas.length}:${loadedAt}:${enabledSources.join()}:${thresholds}`
 })
 
 watch([missionSignature, areasSignature], () => recheckMission(), { immediate: true })
@@ -650,6 +679,82 @@ const onLoadForMission = (): void => {
   if (coordinates.length === 0) return
   const padding = Math.max(hazardStore.settings.proximityMarginMeters, MIN_MISSION_LOAD_PADDING_M)
   loadAreas(paddedBbox(coordinates, padding), 'mission')
+}
+
+const hasLoadedData = computed(() => Object.keys(hazardStore.results).length > 0 || hazardStore.terrainGrid !== null)
+
+const confirmClear = async (title: string, message: string, confirmText: string): Promise<boolean> => {
+  let confirmed = false
+  try {
+    await showDialog({
+      variant: 'warning',
+      title,
+      message,
+      persistent: false,
+      maxWidth: '800px',
+      actions: [
+        { text: 'Cancel', action: () => undefined },
+        {
+          text: confirmText,
+          class: 'bg-[#FFFFFF33]',
+          action: () => {
+            confirmed = true
+          },
+        },
+      ],
+    })
+  } catch {
+    return false
+  } finally {
+    closeDialog()
+  }
+  return confirmed
+}
+
+const clearData = async (clear: () => Promise<void>): Promise<void> => {
+  try {
+    await clear()
+  } catch (error) {
+    openSnackbar({
+      variant: 'error',
+      message: `Could not clear hazard data: ${(error as Error).message}`,
+      duration: 5000,
+    })
+  }
+}
+
+const onClearForView = async (): Promise<void> => {
+  logUserAction('Opened the confirmation to clear hazard data for the current map view')
+  readViewBbox()
+  const bbox = viewBbox.value
+  if (!bbox) return
+  const confirmed = await confirmClear(
+    'Clear hazard data for this view?',
+    'Hazard data inside the visible map area is removed from this computer and from the vehicle. ' +
+      'Missions there are reported as having no hazard data until it is loaded again.',
+    'Clear for view'
+  )
+  if (!confirmed) {
+    logUserAction('Canceled clearing hazard data for the current map view')
+    return
+  }
+  logUserAction('Cleared hazard data for the current map view')
+  await clearData(() => hazardStore.clearDataIn(bbox))
+}
+
+const onClearAll = async (): Promise<void> => {
+  logUserAction('Opened the confirmation to clear all hazard data')
+  const confirmed = await confirmClear(
+    'Clear all hazard data?',
+    'Every loaded hazard source and the ground elevation are removed from this computer and from the vehicle.',
+    'Clear all'
+  )
+  if (!confirmed) {
+    logUserAction('Canceled clearing all hazard data')
+    return
+  }
+  logUserAction('Cleared all hazard data')
+  await clearData(hazardStore.clearAllData)
 }
 
 onBeforeUnmount(() => detachMoveListener?.())
