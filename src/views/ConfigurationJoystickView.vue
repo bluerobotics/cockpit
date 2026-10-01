@@ -319,6 +319,7 @@
                         <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Min</p></th>
                         <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
                         <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
+                        <th class="w-[104px]"></th>
                       </tr>
                       <p v-if="axisTableItems.length === 0" class="fixed top-[67%] left-[40%]">
                         Press a key or move an axis
@@ -351,17 +352,18 @@
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].min"
+                            :model-value="axisMapping(item.id as JoystickAxis).min"
                             type="number"
                             density="compact"
                             variant="plain"
                             hide-details
                             class="ml-4"
+                            @update:model-value="(v) => editAxisRange(item.id as JoystickAxis, 'min', v)"
                           />
                         </td>
                         <td class="w-[120px] text-center">
                           <v-select
-                            v-model="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].action"
+                            :model-value="axisMapping(item.id as JoystickAxis).action"
                             :items="filteredAndSortedAxisActions"
                             item-title="name"
                             hide-details
@@ -370,16 +372,27 @@
                             variant="plain"
                             theme="dark"
                             return-object
+                            @update:model-value="(a) => editAxisAction(item.id as JoystickAxis, a)"
                           />
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].max"
+                            :model-value="axisMapping(item.id as JoystickAxis).max"
                             type="number"
                             density="compact"
                             variant="plain"
                             hide-details
                             class="ml-4"
+                            @update:model-value="(v) => editAxisRange(item.id as JoystickAxis, 'max', v)"
+                          />
+                        </td>
+                        <td class="w-[104px]">
+                          <AxisDraftActions
+                            :dirty="isAxisDirty(item.id as JoystickAxis)"
+                            :can-save="canSaveAxis(item.id as JoystickAxis)"
+                            :blocking-axis="blockingAxis(item.id as JoystickAxis)"
+                            @save="requestAxisSave(item.id as JoystickAxis)"
+                            @revert="revertAxisDraft(item.id as JoystickAxis)"
                           />
                         </td>
                       </tr>
@@ -611,7 +624,11 @@
               <v-progress-linear v-if="remappingAxisInput" v-model="remapAxisTimeProgress" />
             </Transition>
           </div>
-          <div v-for="input in currentAxisInputs" :key="input.id" class="flex items-center justify-between p-2 mb-1">
+          <div
+            v-for="input in currentAxisInputs"
+            :key="input.id"
+            class="flex items-center justify-between p-2 mb-1 rounded bg-[#FFFFFF11]"
+          >
             <v-icon class="mr-3">
               {{
                 [JoystickAxis.A0, JoystickAxis.A2].includes(Number(input.id))
@@ -620,16 +637,17 @@
               }}
             </v-icon>
             <v-text-field
-              v-model.number="selectedProfileAxesCorrespondencies[input.id].min"
+              :model-value="axisMapping(input.id).min"
               class="bg-transparent w-[110px]"
               label="Min"
               type="number"
               density="compact"
               variant="outlined"
               hide-details
+              @update:model-value="(v) => editAxisRange(input.id, 'min', v)"
             />
             <v-select
-              v-model="selectedProfileAxesCorrespondencies[input.id].action"
+              :model-value="axisMapping(input.id).action"
               :items="filteredAndSortedAxisActions"
               item-title="name"
               hide-details
@@ -638,15 +656,25 @@
               class="bg-transparent w-[120px] mx-2"
               theme="dark"
               return-object
+              @update:model-value="(a) => editAxisAction(input.id, a)"
             />
             <v-text-field
-              v-model.number="selectedProfileAxesCorrespondencies[input.id].max"
+              :model-value="axisMapping(input.id).max"
               class="bg-transparent w-[110px]"
               label="Max"
               type="number"
               density="compact"
               variant="outlined"
               hide-details
+              @update:model-value="(v) => editAxisRange(input.id, 'max', v)"
+            />
+            <AxisDraftActions
+              :dirty="isAxisDirty(input.id)"
+              :can-save="canSaveAxis(input.id)"
+              :blocking-axis="blockingAxis(input.id)"
+              class="ml-2"
+              @save="requestAxisSave(input.id)"
+              @revert="revertAxisDraft(input.id)"
             />
           </div>
         </div>
@@ -667,10 +695,12 @@ import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
+import AxisDraftActions from '@/components/joysticks/AxisDraftActions.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
+import { useAxisMappingDrafts } from '@/composables/useAxisMappingDrafts'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
@@ -1056,6 +1086,30 @@ const selectedProfileButtonsCorrespondencies = computed(() => controllerStore.pr
 const closeInputMappingDialog = (): void => {
   logUserAction('Closed input mapping dialog')
   inputClickedDialog.value = false
+}
+
+const { axisMapping, isAxisDirty, editAxis, blockingAxis, canSaveAxis, saveAxis, revertAxis } = useAxisMappingDrafts()
+
+const editAxisRange = (axis: JoystickAxis, endpoint: 'min' | 'max', value: unknown): void => {
+  // An emptied field is NaN rather than 0, so it blocks the save instead of silently becoming a valid range.
+  editAxis(axis, { [endpoint]: value === '' ? NaN : Number(value) })
+}
+
+const editAxisAction = (axis: JoystickAxis, action: ProtocolAction): void => {
+  logUserAction(`Selected function '${action.name}' for axis ${axis}`)
+  editAxis(axis, { action })
+}
+
+const requestAxisSave = (axis: JoystickAxis): void => {
+  saveAxis(axis)
+  const { action, min, max } = axisMapping(axis)
+  logUserAction(`Saved axis ${axis} mapping ('${action.name}', ${min} / ${max})`)
+  openSnackbar({ message: `Axis ${axis} saved: '${action.name}' (${min} / ${max}).`, variant: 'success' })
+}
+
+const revertAxisDraft = (axis: JoystickAxis): void => {
+  logUserAction(`Reverted unsaved changes on axis ${axis}`)
+  revertAxis(axis)
 }
 
 const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
