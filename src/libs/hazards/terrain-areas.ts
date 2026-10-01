@@ -1,7 +1,7 @@
 import * as turf from '@turf/turf'
 import type { BBox, Feature, MultiPolygon, Polygon, Position } from 'geojson'
 
-import { polygonRings } from '@/libs/hazards/hazard-areas'
+import { bboxContains, polygonRings } from '@/libs/hazards/hazard-areas'
 import { TERRAIN_TILE_SIZE, TERRAIN_TILE_ZOOM } from '@/libs/hazards/terrain-rgb'
 import type { GeoBbox } from '@/types/general'
 import type { HazardArea, HazardGridSourceId, TerrainGrid } from '@/types/hazards'
@@ -181,6 +181,19 @@ export const terrainSampleSpacingM = (grid: TerrainGrid): number => {
 }
 
 /**
+ * A copy of a grid with every sample inside a box turned unknown, so nothing is traced there.
+ * @param {TerrainGrid} grid Sampled grid.
+ * @param {GeoBbox} bbox Box whose samples to clear, edges included.
+ * @returns {TerrainGrid} The grid with those samples set to `null`.
+ */
+export const clearGridSamplesIn = (grid: TerrainGrid, bbox: GeoBbox): TerrainGrid => ({
+  ...grid,
+  elevationsM: grid.elevationsM.map((elevation, index) =>
+    bboxContains(bbox, gridPosition(grid.bbox, grid.columns, grid.rows, index)) ? null : elevation
+  ),
+})
+
+/**
  * Traces the ground higher than an elevation as closed areas. Samples whose tile could not be loaded
  * are never marked, matching the waypoint check, which skips what it cannot establish.
  * @param {TerrainGrid} grid Sampled grid.
@@ -229,6 +242,10 @@ const runSelfCheckOnce = (): void => {
   assert(
     terrainAreasAbove({ ...slope, elevationsM: slope.elevationsM.map(() => null) }, -10).length === 0,
     'Unknown ground must never be marked'
+  )
+  assert(
+    terrainAreasAbove(clearGridSamplesIn(slope, { south: 0, west: 0.015, north: 0.02, east: 0.02 }), 50).length === 0,
+    'Ground in a cleared box must never be marked'
   )
   assert(
     shallowWaterAreas({ ...slope, elevationsM: [5, 5, null, 5, 5, null, 5, 5, null] }, 5).length === 0,
