@@ -25,8 +25,9 @@ export interface UseMapVehicleMarkerOptions {
 
 /**
  * Draws the vehicle on the given map and keeps its position, rotation and tooltip in sync, so the map
- * widget and the planning view share one copy of the marker logic instead of each keeping its own.
- * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on.
+ * widget and the planning view share one copy of the marker logic instead of each keeping its own. The
+ * marker appears as soon as both the map and a position exist, rather than on the next position change.
+ * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; the marker appears once available.
  * @param {UseMapVehicleMarkerOptions} options - Reactive getters for the position, icon, tooltip and heading.
  * @returns {ShallowRef<Marker | undefined>} The marker, undefined until the map and a position exist.
  */
@@ -74,15 +75,24 @@ export const useMapVehicleMarker = (
     map.value.addLayer(marker.value)
   }
 
+  // Driven by the map as well as the position, and immediate, so a vehicle that is already connected and
+  // holding station gets its marker on mount instead of waiting for its coordinates to change.
   watch(
-    () => options.position(),
+    [() => options.position(), map],
     () => {
       const position = options.position()
       if (!map.value || !position) return
 
-      if (marker.value === undefined) create(position)
+      if (marker.value === undefined) {
+        create(position)
+        // A station-keeping vehicle may never fire the telemetry watch below, which would leave the
+        // placeholder tooltip in place for as long as it holds position.
+        applyTooltipAndRotation(options.tooltipContent(), options.headingInDegrees())
+      }
+
       marker.value?.setLatLng(position)
-    }
+    },
+    { immediate: true }
   )
 
   watch([() => options.tooltipContent(), () => options.headingInDegrees()], ([content, heading]) =>

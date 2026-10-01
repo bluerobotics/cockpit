@@ -1014,6 +1014,8 @@ const clearMapDrawing = (): void => {
   map.value?.eachLayer((l) => {
     if (l instanceof L.Marker) {
       if (poiMarkerSet.has(l as L.Marker)) return
+      // The vehicle is not part of the mission drawing, and nothing recreates its marker until it moves.
+      if (l === vehicleMarker.value) return
       map.value!.removeLayer(l)
     }
   })
@@ -1023,7 +1025,6 @@ const clearMapDrawing = (): void => {
 
   homeMarker.value = undefined
   gotoMarker.value = undefined
-  vehicleMarker.value = undefined
   reachedWaypoints.value = {}
   missionItemsInVehicle.value = []
   missionSeqToMarkerSeq.value = {}
