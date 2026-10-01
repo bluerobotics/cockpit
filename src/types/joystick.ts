@@ -119,6 +119,11 @@ export type JoystickAxisActionCorrespondency = {
 }
 
 /**
+ * A single axis' function and output range
+ */
+export type AxisCorrespondence = JoystickAxisActionCorrespondency[number]
+
+/**
  * Correspondency between the hardware button input and the protocol action that should be triggered by it
  */
 export type JoystickButtonActionCorrespondency = {
