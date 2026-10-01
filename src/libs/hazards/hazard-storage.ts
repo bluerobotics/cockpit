@@ -1,5 +1,5 @@
 import type { GeoBbox } from '@/types/general'
-import type { HazardArea, HazardAreaSourceId, HazardFetchResult, TerrainGrid } from '@/types/hazards'
+import type { HazardArea, HazardAreaSourceId, HazardCoverage, HazardFetchResult, TerrainGrid } from '@/types/hazards'
 
 const isCoordinate = (value: unknown): boolean =>
   Array.isArray(value) && value.length === 2 && value.every((part) => Number.isFinite(part))
@@ -21,12 +21,22 @@ const isHazardArea = (value: unknown, sourceId: HazardAreaSourceId): value is Ha
 const isGeoBbox = (value: unknown): value is GeoBbox =>
   (['south', 'west', 'north', 'east'] as const).every((edge) => Number.isFinite((value as GeoBbox)?.[edge]))
 
+const isHazardCoverage = (value: unknown): value is HazardCoverage => {
+  const coverage = value as HazardCoverage
+  return (
+    isGeoBbox(coverage?.bbox) &&
+    (coverage.clearedBboxes === undefined ||
+      (Array.isArray(coverage.clearedBboxes) && coverage.clearedBboxes.every(isGeoBbox))) &&
+    (coverage.clearedAtMs === undefined || Number.isFinite(coverage.clearedAtMs))
+  )
+}
+
 const isHazardFetchResult = (value: unknown, sourceId: HazardAreaSourceId): value is HazardFetchResult => {
   const result = value as HazardFetchResult
   return (
     Number.isFinite(result?.fetchedAtMs) &&
     typeof result.truncated === 'boolean' &&
-    isGeoBbox(result.bbox) &&
+    isHazardCoverage(result) &&
     Array.isArray(result.areas) &&
     result.areas.every((area) => isHazardArea(area, sourceId))
   )
@@ -36,7 +46,7 @@ const isTerrainGrid = (value: unknown): value is TerrainGrid => {
   const grid = value as TerrainGrid
   return (
     Number.isFinite(grid?.fetchedAtMs) &&
-    isGeoBbox(grid.bbox) &&
+    isHazardCoverage(grid) &&
     Number.isInteger(grid.columns) &&
     Number.isInteger(grid.rows) &&
     grid.columns >= 2 &&
