@@ -1,11 +1,16 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
+import { getDefaultAxisCorrespondence, isAxisRangeOffDefault } from '@/libs/joystick/default-mappings'
 import { otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { useControllerStore } from '@/stores/controller'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { AxisCorrespondence, JoystickAxis } from '@/types/joystick'
 
 const noFunctionId = otherAvailableActions.no_function.id
+
+/** Fraction of the default full range a saved axis endpoint may stray before the user is warned */
+const axisRangeWarningTolerance = 0.1
 
 const isSameMapping = (a: AxisCorrespondence, b: AxisCorrespondence): boolean =>
   a.action.id === b.action.id && a.min === b.min && a.max === b.max
@@ -18,6 +23,7 @@ const isSameMapping = (a: AxisCorrespondence, b: AxisCorrespondence): boolean =>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const useAxisMappingDrafts = () => {
   const controllerStore = useControllerStore()
+  const mainVehicleStore = useMainVehicleStore()
 
   const drafts = ref<Partial<Record<JoystickAxis, AxisCorrespondence>>>({})
 
@@ -99,10 +105,24 @@ export const useAxisMappingDrafts = () => {
     return isAxisDirty(axis) && Number.isFinite(min) && Number.isFinite(max) && blockingAxis(axis) === undefined
   }
 
-  const saveAxis = (axis: JoystickAxis): void => {
+  /**
+   * The connected vehicle's default mapping for the axis' function, when the pending range strays from it.
+   * @param {JoystickAxis} axis - The axis being saved
+   * @returns {AxisCorrespondence | undefined} The default to offer, or undefined when the range is close enough
+   */
+  const offDefaultRange = (axis: JoystickAxis): AxisCorrespondence | undefined => {
+    const vehicleType = mainVehicleStore.vehicleType
+    if (vehicleType === undefined) return undefined
+    const mapping = axisMapping(axis)
+    const defaultMapping = getDefaultAxisCorrespondence(vehicleType, mapping.action.id)
+    if (!defaultMapping || !isAxisRangeOffDefault(mapping, defaultMapping, axisRangeWarningTolerance)) return undefined
+    return defaultMapping
+  }
+
+  const saveAxis = (axis: JoystickAxis, range?: Pick<AxisCorrespondence, 'min' | 'max'>): void => {
     const draft = drafts.value[axis]
     if (!draft) return
-    controllerStore.protocolMapping.axesCorrespondencies[axis] = { ...draft, action: { ...draft.action } }
+    controllerStore.protocolMapping.axesCorrespondencies[axis] = { ...draft, ...range, action: { ...draft.action } }
     delete drafts.value[axis]
   }
 
@@ -113,5 +133,5 @@ export const useAxisMappingDrafts = () => {
     restoreReleasedAxes(draft.action.id)
   }
 
-  return { axisMapping, isAxisDirty, editAxis, blockingAxis, canSaveAxis, saveAxis, revertAxis }
+  return { axisMapping, isAxisDirty, editAxis, blockingAxis, canSaveAxis, offDefaultRange, saveAxis, revertAxis }
 }

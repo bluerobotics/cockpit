@@ -29,3 +29,18 @@ export const isAxisRangeOffDefault = (
   const tolerance = toleranceFraction * Math.abs(defaultRange.max - defaultRange.min)
   return Math.abs(range.min - defaultRange.min) > tolerance || Math.abs(range.max - defaultRange.max) > tolerance
 }
+
+/**
+ * Finds the vehicle-type default axis mapping for a function, wherever the default puts it.
+ * @param {MavType} vehicleType - The vehicle's type
+ * @param {string} actionId - The axis function id
+ * @returns {AxisCorrespondence | undefined} The default correspondence, or undefined when the vehicle has none for it
+ */
+export const getDefaultAxisCorrespondence = (
+  vehicleType: MavType,
+  actionId: string
+): AxisCorrespondence | undefined => {
+  const defaultMapping = getDefaultMapping(vehicleType)
+  if (!defaultMapping) return undefined
+  return Object.values(defaultMapping.axesCorrespondencies).find((corr) => corr.action.id === actionId)
+}
