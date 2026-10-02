@@ -140,7 +140,7 @@ export class TargetFollower {
 
   // Whether the user is currently dragging the map, used to pause re-centering so the periodic update doesn't fight the drag.
   private isUserDragging = false
-  // Box-zoom press pause, separate from Leaflet drag so clearing it cannot un-pause a pan already in progress.
+  // Box-zoom press pause, separate from map drag so clearing it cannot un-pause a pan already in progress.
   private isBoxPress = false
 
   /**
