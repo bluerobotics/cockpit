@@ -685,3 +685,18 @@ export const framedScaleControl = (): IControl => {
     },
   }
 }
+
+/**
+ * A dash pattern shifted along its line, which is how a line's dashes are made to march: MapLibre has no dash offset
+ * to animate, so the pattern itself is rotated by the distance travelled.
+ * @param {number} travelled - How far the dashes have moved forward along the line, in the pattern's units.
+ * @param {number} dash - Length of a dash.
+ * @param {number} gap - Length of a gap.
+ * @returns {number[]} A `line-dasharray` drawing the shifted pattern.
+ */
+export const marchingDashArray = (travelled: number, dash: number, gap: number): number[] => {
+  const period = dash + gap
+  // Moving forward by `travelled` means the line now starts that far back into the pattern.
+  const offset = ((-travelled % period) + period) % period
+  return offset < dash ? [dash - offset, gap, offset, 0] : [0, gap - (offset - dash), dash, offset - dash]
+}
