@@ -33,15 +33,24 @@
           <span>{{ layer.label }}</span>
         </label>
         <div v-if="baseLayers.length && overlays.length" class="cockpit-layer-control__separator" />
-        <label v-for="layer in overlays" :key="layer.id" class="flex items-center gap-[6px] cursor-pointer leading-5">
-          <input
-            type="checkbox"
-            class="cockpit-layer-control__input"
-            :checked="layer.active"
-            @change="emit('toggleOverlay', layer.id, ($event.target as HTMLInputElement).checked)"
-          />
-          <span>{{ layer.label }}</span>
-        </label>
+        <template v-for="layer in overlays" :key="layer.id">
+          <label
+            class="flex items-center gap-[6px] leading-5"
+            :class="layer.unavailableReason ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'"
+          >
+            <input
+              type="checkbox"
+              class="cockpit-layer-control__input"
+              :checked="layer.active"
+              :disabled="!!layer.unavailableReason"
+              @change="emit('toggleOverlay', layer.id, ($event.target as HTMLInputElement).checked)"
+            />
+            <span>{{ layer.label }}</span>
+          </label>
+          <p v-if="layer.unavailableReason" class="max-w-[160px] pl-[19px] text-[10px] leading-3 opacity-70">
+            {{ layer.unavailableReason }}
+          </p>
+        </template>
         <div class="cockpit-layer-control__separator" />
         <button type="button" class="cockpit-layer-control__action" @click="openProviderSettings">
           Add map provider
