@@ -2,7 +2,12 @@ import * as turf from '@turf/turf'
 import type { Feature, Point, Polygon, Position } from 'geojson'
 import * as L from 'leaflet'
 
-import { bearingBetween, calculateHaversineDistance, deltaBearing } from '@/libs/mission/general-estimates'
+import {
+  bearingBetween,
+  calculateHaversineDistance,
+  deltaBearing,
+  earthRadiusMeters,
+} from '@/libs/mission/general-estimates'
 import type { SurveyPath, WaypointCoordinates } from '@/types/mission'
 
 /**
@@ -35,6 +40,9 @@ export const singleStepZoomMapOptions: Pick<
 export const isLeafletMapReady = (instance: L.Map | undefined): instance is L.Map =>
   !!instance && typeof instance.getContainer === 'function' && !!instance.getContainer()
 
+// Leaflet's mean earth radius, kept so every distance the map has always shown stays the same.
+const leafletEarthRadiusMeters = 6371000
+
 /**
  * Great-circle distance between two coordinates.
  * @param {WaypointCoordinates} from - The first coordinate pair ([latitude, longitude]).
@@ -42,7 +50,7 @@ export const isLeafletMapReady = (instance: L.Map | undefined): instance is L.Ma
  * @returns {number} The distance between the two coordinates, in meters.
  */
 export const distanceInMeters = (from: WaypointCoordinates, to: WaypointCoordinates): number =>
-  L.latLng(from[0], from[1]).distanceTo(L.latLng(to[0], to[1]))
+  calculateHaversineDistance(from, to) * (leafletEarthRadiusMeters / earthRadiusMeters)
 
 /**
  * Ground distance covered by one screen pixel on a Web Mercator map.
@@ -389,7 +397,7 @@ export const persistLiveMapView = (
 
 /**
  * Generates a survey path based on the given polygon and parameters.
- * @param {L.LatLng[]} polygonPoints - The points of the polygon.
+ * @param {WaypointCoordinates[]} polygonPoints - The points of the polygon.
  * @param {number} distanceBetweenLines - The distance between survey lines in meters.
  * @param {number} linesAngle - The angle of the survey lines in degrees.
  * @param {number} turnaroundDistance - Distance in meters to extend (positive) or inset (negative) from the polygon
@@ -404,7 +412,7 @@ export const persistLiveMapView = (
  * @returns {SurveyPath} The generated survey path and turnaround segments.
  */
 export const generateSurveyPath = (
-  polygonPoints: L.LatLng[],
+  polygonPoints: WaypointCoordinates[],
   distanceBetweenLines: number,
   linesAngle: number,
   turnaroundDistance = 0,
@@ -415,7 +423,7 @@ export const generateSurveyPath = (
 ): SurveyPath => {
   if (polygonPoints.length < 4) return { path: [], turnaroundSegments: [] }
 
-  const polygonCoords = polygonPoints.map((p) => [p.lng, p.lat])
+  const polygonCoords = polygonPoints.map(([lat, lng]) => [lng, lat])
   if (
     polygonCoords[0][0] !== polygonCoords[polygonCoords.length - 1][0] ||
     polygonCoords[0][1] !== polygonCoords[polygonCoords.length - 1][1]
@@ -432,13 +440,13 @@ export const generateSurveyPath = (
     const adjustedAngle = linesAngle + 90
     const angleRad = (adjustedAngle * Math.PI) / 180
 
-    const continuousPath: L.LatLng[] = []
-    const turnaroundSegments: L.LatLng[][] = []
+    const continuousPath: WaypointCoordinates[] = []
+    const turnaroundSegments: WaypointCoordinates[][] = []
     let crosshatchStartIndex: number | undefined
     let isReverse = startReversed
 
-    let prevExitBoundary: L.LatLng | null = null
-    let prevExitTurnaround: L.LatLng | null = null
+    let prevExitBoundary: WaypointCoordinates | null = null
+    let prevExitTurnaround: WaypointCoordinates | null = null
 
     const lineBearing = turf.bearing(
       turf.point([minX - diagonal * Math.sin(angleRad), minY + diagonal * Math.cos(angleRad)]),
@@ -475,10 +483,10 @@ export const generateSurveyPath = (
         const coords = sortedFeatures.map((f) => f.geometry.coordinates)
 
         if (turnaroundDistance !== 0 && coords.length >= 2) {
-          const origFirst = L.latLng(coords[0][1], coords[0][0])
-          const origLast = L.latLng(coords[coords.length - 1][1], coords[coords.length - 1][0])
+          const origFirst: WaypointCoordinates = [coords[0][1], coords[0][0]]
+          const origLast: WaypointCoordinates = [coords[coords.length - 1][1], coords[coords.length - 1][0]]
 
-          if (turnaroundDistance < 0 && Math.abs(turnaroundDistance) * 2 >= origFirst.distanceTo(origLast)) {
+          if (turnaroundDistance < 0 && Math.abs(turnaroundDistance) * 2 >= distanceInMeters(origFirst, origLast)) {
             continue
           }
 
@@ -499,8 +507,8 @@ export const generateSurveyPath = (
 
           if (isReverse) coords.reverse()
 
-          const entryTurnaround = L.latLng(coords[0][1], coords[0][0])
-          const exitTurnaround = L.latLng(coords[coords.length - 1][1], coords[coords.length - 1][0])
+          const entryTurnaround: WaypointCoordinates = [coords[0][1], coords[0][0]]
+          const exitTurnaround: WaypointCoordinates = [coords[coords.length - 1][1], coords[coords.length - 1][0]]
 
           if (prevExitBoundary && prevExitTurnaround) {
             turnaroundSegments.push([prevExitBoundary, prevExitTurnaround, entryTurnaround, entryBoundary])
@@ -514,7 +522,7 @@ export const generateSurveyPath = (
           if (isReverse) coords.reverse()
         }
 
-        const linePoints = coords.map((c) => L.latLng(c[1], c[0]))
+        const linePoints = coords.map((c): WaypointCoordinates => [c[1], c[0]])
 
         if (continuousPath.length > 0 && turnaroundDistance === 0) {
           const lastPoint = continuousPath[continuousPath.length - 1]
@@ -585,7 +593,7 @@ export const generateSurveyPath = (
       let bestTransit = Infinity
       for (const sweep of sweeps) {
         if (sweep.path.length === 0) continue
-        const transit = passEnd ? passEnd.distanceTo(sweep.path[0]) : 0
+        const transit = passEnd ? distanceInMeters(passEnd, sweep.path[0]) : 0
         if (transit < bestTransit) {
           bestTransit = transit
           bestPass = sweep
@@ -621,7 +629,7 @@ export const surveyEntryCornerCount = (crosshatch = false): number => (crosshatc
  */
 interface SurveyGenerationParams {
   /** Polygon vertices to survey. */
-  polygonPoints: L.LatLng[]
+  polygonPoints: WaypointCoordinates[]
   /** Distance between survey lines, in meters. */
   distanceBetweenLines: number
   /** Angle of the survey lines, in degrees. */
@@ -670,16 +678,19 @@ export const orderedSurveyPath = (params: SurveyGenerationParams, entryCorner = 
  * Computes the outward bearing of the polygon edge nearest a survey entrance/exit, i.e. the direction
  * perpendicular to that edge pointing away from the polygon interior. A marker sitting on the boundary can
  * then be oriented relative to the edge it lies on.
- * @param {L.LatLng[]} polygonPoints - The survey polygon vertices (open ring; the first vertex is not repeated).
- * @param {L.LatLng} endpoint - The entrance or exit point, on or near the polygon boundary.
+ * @param {WaypointCoordinates[]} polygonPoints - The survey polygon vertices (open ring; the first vertex is not repeated).
+ * @param {WaypointCoordinates} endpoint - The entrance or exit point, on or near the polygon boundary.
  * @returns {number} The outward compass bearing (degrees clockwise from north) of the nearest edge's normal.
  */
-export const surveyEndpointEdgeBearing = (polygonPoints: L.LatLng[], endpoint: L.LatLng): number => {
-  const coords = polygonPoints.map((p) => [p.lng, p.lat] as Position)
+export const surveyEndpointEdgeBearing = (
+  polygonPoints: WaypointCoordinates[],
+  endpoint: WaypointCoordinates
+): number => {
+  const coords = polygonPoints.map(([lat, lng]) => [lng, lat] as Position)
   if (coords.length < 3) return 0
 
   const norm = (bearing: number): number => ((bearing % 360) + 360) % 360
-  const point = turf.point([endpoint.lng, endpoint.lat])
+  const point = turf.point([endpoint[1], endpoint[0]])
 
   let closestEdge = 0
   let closestDistance = Infinity
@@ -728,27 +739,34 @@ const findRingEdgeIndex = (point: Feature<Point>, coords: Position[]): number =>
 
 /**
  * Total length of the path start -> vertices -> end, in kilometers.
- * @param {L.LatLng} start - The starting point.
+ * @param {WaypointCoordinates} start - The starting point.
  * @param {Position[]} vertices - The intermediate ring vertices.
- * @param {L.LatLng} end - The ending point.
+ * @param {WaypointCoordinates} end - The ending point.
  * @returns {number} The path length, in kilometers.
  */
-const pathLengthThroughVertices = (start: L.LatLng, vertices: Position[], end: L.LatLng): number =>
-  turf.length(turf.lineString([[start.lng, start.lat], ...vertices, [end.lng, end.lat]]))
+const pathLengthThroughVertices = (
+  start: WaypointCoordinates,
+  vertices: Position[],
+  end: WaypointCoordinates
+): number => turf.length(turf.lineString([[start[1], start[0]], ...vertices, [end[1], end[0]]]))
 
 /**
  * Finds the shortest path hugging a polygon's boundary between two points that lie on that boundary, so
  * consecutive survey transects are connected without overshooting into a far corner.
  * @param {Feature<Polygon>} polygon - The polygon to move along.
- * @param {L.LatLng} start - The starting point, expected to lie on the polygon boundary.
- * @param {L.LatLng} end - The ending point, expected to lie on the polygon boundary.
- * @returns {L.LatLng[]} The intermediate ring vertices between start and end, in the shorter direction. Empty
+ * @param {WaypointCoordinates} start - The starting point, expected to lie on the polygon boundary.
+ * @param {WaypointCoordinates} end - The ending point, expected to lie on the polygon boundary.
+ * @returns {WaypointCoordinates[]} The intermediate ring vertices between start and end, in the shorter direction. Empty
  *   when both points lie on the same edge, so the caller connects them with a direct segment.
  */
-const moveAlongEdge = (polygon: Feature<Polygon>, start: L.LatLng, end: L.LatLng): L.LatLng[] => {
+const moveAlongEdge = (
+  polygon: Feature<Polygon>,
+  start: WaypointCoordinates,
+  end: WaypointCoordinates
+): WaypointCoordinates[] => {
   const coords = polygon.geometry.coordinates[0]
-  const startEdge = findRingEdgeIndex(turf.point([start.lng, start.lat]), coords)
-  const endEdge = findRingEdgeIndex(turf.point([end.lng, end.lat]), coords)
+  const startEdge = findRingEdgeIndex(turf.point([start[1], start[0]]), coords)
+  const endEdge = findRingEdgeIndex(turf.point([end[1], end[0]]), coords)
 
   if (startEdge === -1 || endEdge === -1 || startEdge === endEdge) return []
 
@@ -771,7 +789,7 @@ const moveAlongEdge = (polygon: Feature<Polygon>, start: L.LatLng, end: L.LatLng
       ? forwardVertices
       : backwardVertices
 
-  return shorterVertices.map((c) => L.latLng(c[1], c[0]))
+  return shorterVertices.map((c): WaypointCoordinates => [c[1], c[0]])
 }
 
 /**
