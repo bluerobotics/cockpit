@@ -13,6 +13,7 @@ import {
   setRasterLayerVisible,
 } from '@/libs/map/raster-layers'
 import { registerTileProtocols } from '@/libs/map/tile-protocol'
+import { isElectron } from '@/libs/utils'
 import { useMissionStore } from '@/stores/mission'
 import type { MapTileProvider } from '@/types/mission'
 
@@ -45,6 +46,10 @@ export interface MapLayerSelectorEntry {
    * Whether the layer is currently shown.
    */
   active: boolean
+  /**
+   * Why the row cannot be picked here, when it cannot.
+   */
+  unavailableReason?: string
 }
 
 /**
@@ -117,6 +122,8 @@ export const useMapTileLayerSelection = (
     }
   }
 
+  const isAvailable = (definition: RasterLayerDefinition): boolean => !definition.standaloneOnly || isElectron()
+
   const showOverlay = (name: string, enabled: boolean): void => {
     enabledOverlays.value = enabled
       ? [...new Set([...enabledOverlays.value, name])]
@@ -139,10 +146,13 @@ export const useMapTileLayerSelection = (
   ])
 
   const overlays = computed<MapLayerSelectorEntry[]>(() =>
-    Object.keys(overlayDefinitions).map((name) => ({
+    Object.entries(overlayDefinitions).map(([name, definition]) => ({
       id: name,
       label: name,
       active: enabledOverlays.value.includes(name),
+      unavailableReason: isAvailable(definition)
+        ? undefined
+        : 'Only in the desktop app: this map server blocks browsers',
     }))
   )
 
@@ -161,6 +171,8 @@ export const useMapTileLayerSelection = (
     activeBuiltIn.value = initialProvider
 
     for (const [name, definition] of Object.entries(overlayDefinitions)) {
+      // The toggle synced from a Standalone stays as it is, but the layer is never drawn where it cannot load.
+      if (!isAvailable(definition)) continue
       const flag = overlayPersistenceFlags[name]
       const enabled = Boolean(flag && missionStore[flag])
       addRasterLayer(map, definition, { slot: 'raster-overlay', visible: enabled })
@@ -217,7 +229,8 @@ export const useMapTileLayerSelection = (
   }
 
   const setOverlayEnabled = (id: string, enabled: boolean): void => {
-    if (!overlayDefinitions[id]) return
+    const definition = overlayDefinitions[id]
+    if (!definition || !isAvailable(definition)) return
     logUserAction(`${enabled ? 'Enabled' : 'Disabled'} map overlay '${id}'`)
     showOverlay(id, enabled)
     const flag = overlayPersistenceFlags[id]

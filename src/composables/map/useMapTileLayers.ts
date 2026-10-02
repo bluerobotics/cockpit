@@ -117,6 +117,7 @@ export const useMapTileLayers = (options: MapTileLayersOptions = {}): MapTileLay
       maxZoom: 19,
       maxNativeZoom: 19,
       attribution: '© GEBCO, OpenSeaMap',
+      standaloneOnly: true,
     }
     layers.overlays['Marine Profile'] = layers.marineProfile
   }
