@@ -61,6 +61,12 @@ const maxSequentialRecordingResumes = 3
 const secondsRecordedToForgetPreviousResumes = 120
 // Long enough for the operator to read why their recording is splitting, which a glance at a short one misses
 const secondsToShowRecordingResumeNotice = 15
+// How long a start waits for a stream that is still connecting, as the one just switched to, before refusing
+const secondsToWaitForVideoToStartRecording = 10
+// Longer than the default, as the operator is usually looking at the video rather than the corner a snackbar sits in
+const secondsToShowWaitForVideoNotice = 5
+// How long a stopped recording waits for its last chunks, so a stalled write costs those chunks, not the finalization
+const secondsToWaitForLastChunks = 5
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
@@ -92,7 +98,6 @@ export const useVideoStore = defineStore('video', () => {
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const lastRenamedStreamName = ref('')
-  const isRecordingAllStreams = ref(false)
   const liveProcessors = ref<{ [key: string]: LiveVideoProcessor }>({})
   const enableLiveProcessing = useBlueOsStorage('cockpit-enable-live-processing', true)
   const keepRawVideoChunksAsBackup = useBlueOsStorage('cockpit-keep-raw-video-chunks-as-backup', true)
@@ -105,6 +110,8 @@ export const useVideoStore = defineStore('video', () => {
   // alongside the tally that stops a flapping link from resuming forever. Bookkeeping, like the monitors above.
   const pendingRecordingResumes: { [key: string]: () => void } = {}
   const sequentialRecordingResumes: { [key: string]: number } = {}
+  // Streams whose recording start is waiting for their video to arrive, which a stop takes them out of
+  const recordingStartsWaitingForVideo = new Set<string>()
   const broadcastCameraActionsOverMavlink = useBlueOsStorage('cockpit-broadcast-camera-actions-over-mavlink', false)
   // Streams whose recording start we mirrored over MAVLink. The broadcast fires only on the 0->1 and 1->0
   // transitions, so recording several streams at once does not repeat the same commands.
@@ -725,6 +732,9 @@ export const useVideoStore = defineStore('video', () => {
     // ever coming back
     if (isWaitingToResumeRecording(externalId)) return
 
+    // Same for a recording start waiting for the stream's video, which a widget switching away would otherwise cut
+    if (recordingStartsWaitingForVideo.has(externalId)) return
+
     // Never tear down a stream while a recorder is attached, even if no widget references it: mediaRecorder stays
     // set through recording and the async stop() finalizer (telemetry/processing), and onstop clears it when done.
     if (activeStreams.value[externalId]?.mediaRecorder !== undefined) return
@@ -1106,6 +1116,7 @@ export const useVideoStore = defineStore('video', () => {
     // A stop the user asked for during an outage must not be undone by the resume that outage armed
     const wasWaitingToResume = isWaitingToResumeRecording(streamName)
     forgetRecordingResumes(streamName)
+    recordingStartsWaitingForVideo.delete(streamName)
 
     // Stop the recording monitor so there's no risk of receiving alerts after the recording is stopped.
     console.info(`Stopping recording monitor for stream '${streamName}'.`)
@@ -1152,27 +1163,57 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   /**
+   * Wait for a stream that is still connecting, such as one just switched to, to be ready for a recording to start on it
+   * @param {string} streamName - Name of the stream
+   * @returns {Promise<boolean>} True once the stream is ready, false if the wait timed out, a stop cancelled it, or
+   * another start is already waiting on the stream
+   */
+  const waitForStreamReadyToRecord = async (streamName: string): Promise<boolean> => {
+    const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+    // Before the repeated-start check too, so a second press is answered rather than dropped without a word
+    const waitingMsg = `Recording of '${streamLabel}' starts once its video arrives...`
+    openSnackbar({ message: waitingMsg, duration: secondsToShowWaitForVideoNotice * 1000, variant: 'info' })
+    if (recordingStartsWaitingForVideo.has(streamName)) return false
+
+    recordingStartsWaitingForVideo.add(streamName)
+    // Polled, as the track unmuting that completes the readiness is reported by no reactive source
+    const deadline = Date.now() + secondsToWaitForVideoToStartRecording * 1000
+    while (recordingStartsWaitingForVideo.has(streamName) && !isStreamReadyToRecord(streamName)) {
+      if (Date.now() > deadline) break
+      await sleep(100)
+    }
+
+    // A stop during the wait already took the stream out of the set, and nothing should start after it
+    const wasCancelled = !recordingStartsWaitingForVideo.delete(streamName)
+    if (!wasCancelled && isStreamReadyToRecord(streamName)) return true
+
+    if (!wasCancelled) {
+      alertStore.pushAlert(new Alert(AlertLevel.Error, `Stream '${streamLabel}' did not start sending video.`))
+      // Streams time out together, and a dialog naming one would replace the dialog of the one before it
+      const msg = 'A video stream did not start sending video, so it was not recorded. Check its connection.'
+      showDialog({ message: msg, variant: 'error' })
+    }
+    // Only the wait was holding a stream nothing shows, and no recorder is going to attach to it now
+    deactivateStreamIfUnused(streamName)
+    return false
+  }
+
+  /**
    * Start recording the stream
    * @param {string} streamName - Name of the stream
    */
   const startRecording = async (streamName: string): Promise<void> => {
     eventTracker.capture('Video recording start', { streamName: streamName })
-    const streamData = getStreamData(streamName)
 
     if (namesAvailableStreams.value.isEmpty()) {
       showDialog({ message: 'No streams available.', variant: 'error' })
       return
     }
 
-    if (streamData?.mediaStream === undefined) {
-      showDialog({ message: 'Media stream not defined.', variant: 'error' })
-      return
-    }
-    // The media stream is active from the moment its track is added, before the session has connected
-    if (!isStreamReadyToRecord(streamName)) {
-      showDialog({ message: 'Media stream not yet active. Wait a second and try again.', variant: 'error' })
-      return
-    }
+    const hadToWaitForVideo = !isStreamReadyToRecord(streamName)
+    if (hadToWaitForVideo && !(await waitForStreamReadyToRecord(streamName))) return
+
+    const streamData = getStreamData(streamName)!
 
     // Below the guards above, so that only a start that goes on to attach a recorder takes over a wait for the
     // stream, rather than one that is about to bail leaving nothing recording
@@ -1391,8 +1432,12 @@ export const useVideoStore = defineStore('video', () => {
     let totalLostChunks = 0
     let unexpectedProcessorErrorWarned = false
 
+    // The recorder hands over its last chunk right before it stops, and finalizing the video before that chunk reaches
+    // the live processor drops the end of the recording
+    const chunksInFlight = new Set<Promise<void>>()
+
     let chunksCount = -1
-    recorder.ondataavailable = async (e) => {
+    const handleChunk = async (e: BlobEvent): Promise<void> => {
       chunksCount++
       totalChunks++
       const chunkName = videoChunkName(recordingHash, chunksCount)
@@ -1457,6 +1502,16 @@ export const useVideoStore = defineStore('video', () => {
       delete unsavedChunkAlerts[chunkName]
     }
 
+    recorder.ondataavailable = async (e) => {
+      const handling = handleChunk(e)
+      chunksInFlight.add(handling)
+      try {
+        await handling
+      } finally {
+        chunksInFlight.delete(handling)
+      }
+    }
+
     recorder.onstop = async () => {
       // Every way a recording ends reaches onstop (Stop button, stream teardown, dropped link), so mirror the stop
       // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
@@ -1488,6 +1543,8 @@ export const useVideoStore = defineStore('video', () => {
       // Register that the recording finished
       info.dateFinish = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
+
+      await Promise.race([Promise.allSettled(chunksInFlight), sleep(secondsToWaitForLastChunks * 1000)])
 
       // Finalize live processing if active (Electron only)
       const processor = liveProcessors.value[recordingHash]
@@ -1534,6 +1591,11 @@ export const useVideoStore = defineStore('video', () => {
     broadcastRecordingStart(streamName)
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
+    // Closes the wait the operator was told about, which the alert above does not show on its own
+    if (hadToWaitForVideo) {
+      const arrivedMsg = `Video of '${streamLabel}' arrived. Recording started.`
+      openSnackbar({ message: arrivedMsg, duration: secondsToShowWaitForVideoNotice * 1000, variant: 'success' })
+    }
   }
 
   // Used to discard a file from the video recovery database
@@ -1681,19 +1743,29 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   // Video recording actions
-  const startRecordingAllStreams = (): void => {
-    const streamsThatStarted: string[] = []
-    const streamsWaitingForVideo: string[] = []
-    isRecordingAllStreams.value = true
+  // From the map directly, as isRecording would activate every stream it is asked about just to say it is not recording
+  const isRecordingOrAboutTo = (streamName: string): boolean => {
+    return (
+      activeStreams.value[streamName]?.timeRecordingStart !== undefined ||
+      isWaitingToResumeRecording(streamName) ||
+      recordingStartsWaitingForVideo.has(streamName)
+    )
+  }
 
-    namesAvailableStreams.value.forEach((streamName) => {
+  const startRecordingAllStreams = async (): Promise<void> => {
+    const streamsToStart: string[] = []
+    const streamsWaitingForVideo: string[] = []
+    // RTSP is Standalone-only, yet its streams reach Lite through the synced correspondency list, and would only
+    // hold the batch for the whole wait before failing
+    const isRecordable = (streamName: string): boolean => isElectron() || getStreamProtocol(streamName) !== 'rtsp'
+
+    namesAvailableStreams.value.filter(isRecordable).forEach((streamName) => {
       // A stream waiting out an outage is already going to be recorded, and starting it now would only fail on its
       // released media stream
       if (isWaitingToResumeRecording(streamName)) {
         streamsWaitingForVideo.push(streamName)
-      } else if (!isRecording(streamName)) {
-        startRecording(streamName)
-        streamsThatStarted.push(streamName)
+      } else if (!isRecordingOrAboutTo(streamName)) {
+        streamsToStart.push(streamName)
       }
     })
 
@@ -1704,25 +1776,37 @@ export const useVideoStore = defineStore('video', () => {
       alertStore.pushAlert(new Alert(AlertLevel.Info, waiting))
     }
 
-    if (streamsThatStarted.isEmpty()) {
+    if (streamsToStart.isEmpty()) {
       // A stream waiting for its video is neither started here nor unavailable, and is already reported above
-      if (streamsWaitingForVideo.isEmpty()) {
-        alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
+      if (!streamsWaitingForVideo.isEmpty()) return
+      if (namesAvailableStreams.value.some(isRecordingOrAboutTo)) {
+        alertStore.pushAlert(new Alert(AlertLevel.Info, 'All streams are already being recorded.'))
+        return
       }
+      alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
       return
     }
+
+    // startRecording reports its own refusals, and a stop can cancel a start that is waiting, so what started is
+    // read from the streams rather than from the starts that returned. From the map directly, as isRecording would
+    // activate again a stream a timed-out start just released.
+    await Promise.allSettled(streamsToStart.map((streamName) => startRecording(streamName)))
+    const streamsThatStarted = streamsToStart.filter(
+      (name) => activeStreams.value[name]?.timeRecordingStart !== undefined
+    )
+    if (streamsThatStarted.isEmpty()) return
+
     const msg = `Started recording all ${streamsThatStarted.length} streams: ${streamsThatStarted.join(', ')}.`
     alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
 
   const stopRecordingAllStreams = (): void => {
     const streamsThatStopped: string[] = []
-    isRecordingAllStreams.value = false
 
     namesAvailableStreams.value.forEach((streamName) => {
       // A stream waiting out an outage counts as recording here, or the stop leaves the wait to start a recording
       // moments after the user asked for everything to stop
-      if (isRecording(streamName) || isWaitingToResumeRecording(streamName)) {
+      if (isRecordingOrAboutTo(streamName)) {
         stopRecording(streamName)
         streamsThatStopped.push(streamName)
       }
@@ -1737,7 +1821,9 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   const toggleRecordingAllStreams = (): void => {
-    if (isRecordingAllStreams.value) {
+    // Read from the streams rather than kept as a flag, which a recording started or stopped elsewhere, or a start
+    // refused by its stream, would leave stale for the next press
+    if (namesAvailableStreams.value.some(isRecordingOrAboutTo)) {
       stopRecordingAllStreams()
     } else {
       startRecordingAllStreams()
