@@ -72,7 +72,7 @@ export const getPoiMarkerOpacity = (poi: ResolvedPointOfInterest): number =>
 
 /**
  * Builds a signature describing a POI marker's icon appearance. Used to avoid rebuilding the
- * Leaflet icon (which recreates its DOM element and breaks in-progress clicks) on every position
+ * marker icon (which replaces its DOM content and breaks in-progress clicks) on every position
  * update of a live-tracked POI. Carries whether the POI has a heading, not the heading itself, since
  * the direction indicator is rotated in place once it exists.
  * @param {ResolvedPointOfInterest} poi The resolved POI
