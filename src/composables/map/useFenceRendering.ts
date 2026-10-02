@@ -1,10 +1,37 @@
 import { useDebounceFn } from '@vueuse/core'
-import L from 'leaflet'
+import type { Feature, Polygon } from 'geojson'
+import type { Map as MapLibreMap, MapLayerMouseEvent, MapMouseEvent, Marker } from 'maplibre-gl'
 import { onBeforeUnmount, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
-import { ensureFenceMarkerPane, FENCE_MARKER_PANE, FENCE_PATH_CLASS } from '@/libs/map/fence-panes'
+import {
+  type FenceHandleStyle,
+  asFenceMarker,
+  ensureStripePattern,
+  fenceHandleMarker,
+  fenceLayerId,
+} from '@/libs/map/fence-layers'
+import {
+  type MarkerTooltip,
+  beforeIdForSlot,
+  bindTooltip,
+  containerPointFromClient,
+  divIconMarker,
+  eventLatLng,
+  fromLngLat,
+  lineFeature,
+  linePaint,
+  meterCircle,
+  polygonFeature,
+  removeLayersAndSource,
+  setDivIcon,
+  setLineLayer,
+  toLngLat,
+  unprojectFromContainer,
+  upsertGeoJsonSource,
+} from '@/libs/map/maplibre'
+import { distanceInMeters } from '@/libs/map/utils-map'
 import { centroidLatLng } from '@/libs/mission/general-estimates'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import type { BreachReturnPoint, FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
@@ -27,14 +54,14 @@ export interface FenceRenderingProps {
   plan?: GeoFencePlan
 }
 
-let patternInstanceCount = 0
+let rendererInstanceCount = 0
 
 /**
- * Owns the imperative Leaflet rendering of the geofence overlay — polygons,
+ * Owns the imperative map rendering of the geofence overlay — polygons,
  * circles, drag/vertex handles, the breach-return marker and the live radius
- * measure — so Leaflet stays out of the `.vue` component and the map solution
- * remains swappable. Reads the reactive `props`, the injected map context and
- * the fence store/draft, and tears every layer down on unmount.
+ * measure — so the map library stays out of the `.vue` component and the map
+ * solution remains swappable. Reads the reactive `props`, the injected map
+ * context and the fence store/draft, and tears every layer down on unmount.
  * @param {FenceRenderingProps} props Reactive props proxy from the host component.
  * @returns {void}
  */
@@ -49,12 +76,7 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   const EXCLUSION_BORDER = '#FF8800'
   const EXCLUSION_FILL_COLOR = '#FF8800'
   const EXCLUSION_FILL_OPACITY = 1
-  // SVG ids resolve document-wide, so each instance owns its own pattern
-  // elements: two Map widgets on a view would otherwise fill their exclusion
-  // fences from whichever one injected the shared id first.
-  const instanceToken = ++patternInstanceCount
-  const EXCLUSION_PATTERN_ID = `fence-exclusion-stripes-${instanceToken}`
-  const EXCLUSION_PATTERN_DIM_ID = `fence-exclusion-stripes-dim-${instanceToken}`
+  const EXCLUSION_STRIPE_OPACITY = 0.32
   const VERTEX_COLOR = '#FFFFFF'
   const VERTEX_BORDER = '#FF8800'
 
@@ -63,110 +85,49 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   // while staying clearly differentiated as inclusion/exclusion.
   const READONLY_OPACITY_FACTOR = 0.5
 
-  const polygonLayers = new Map<string, L.Polygon>()
-  const polygonVertexMarkers = new Map<string, L.CircleMarker[]>()
-  const polygonMidpointMarkers = new Map<string, L.CircleMarker[]>()
-  const polygonCenterMarkers = new Map<string, L.Marker>()
-  const circleLayers = new Map<string, L.Circle>()
-  const circleCenterMarkers = new Map<string, L.CircleMarker>()
-  const circleEdgeMarkers = new Map<string, L.CircleMarker>()
-  const injectedPatterns: SVGPatternElement[] = []
-  let breachReturnMarker: L.Marker | null = null
+  // Each renderer owns its layers, so two Map widgets on a view never draw into each other's.
+  const instanceToken = ++rendererInstanceCount
+  const shapesSourceId = fenceLayerId(`shapes-${instanceToken}`)
+  const inclusionFillId = fenceLayerId(`inclusion-fill-${instanceToken}`)
+  const inclusionLineId = fenceLayerId(`inclusion-line-${instanceToken}`)
+  const exclusionFillId = fenceLayerId(`exclusion-fill-${instanceToken}`)
+  const exclusionLineId = fenceLayerId(`exclusion-line-${instanceToken}`)
+  const radiusLineId = fenceLayerId(`radius-line-${instanceToken}`)
+  const shapeLayerIds = [inclusionFillId, inclusionLineId, exclusionFillId, exclusionLineId]
+  const fillLayerIds = [inclusionFillId, exclusionFillId]
 
-  const polygonStyle = (inclusion: boolean): L.PathOptions => {
-    const dim = props.readonly ? READONLY_OPACITY_FACTOR : 1
-    return {
-      // Tags the SVG path so the planning view's fence-mode dimming can spare
-      // fences by class instead of matching their border colors.
-      className: FENCE_PATH_CLASS,
-      color: inclusion ? INCLUSION_BORDER : EXCLUSION_BORDER,
-      weight: 2,
-      opacity: (inclusion ? 1 : 0.6) * dim,
-      fillColor: inclusion ? INCLUSION_FILL_COLOR : EXCLUSION_FILL_COLOR,
-      fillOpacity: (inclusion ? INCLUSION_FILL_OPACITY : EXCLUSION_FILL_OPACITY) * dim,
-    }
-  }
+  const polygonVertexMarkers = new Map<string, Marker[]>()
+  const polygonMidpointMarkers = new Map<string, Marker[]>()
+  const polygonCenterMarkers = new Map<string, Marker>()
+  const circleCenterMarkers = new Map<string, Marker>()
+  const circleEdgeMarkers = new Map<string, Marker>()
+  let breachReturnMarker: Marker | null = null
+  let breachReturnTooltip: MarkerTooltip | null = null
+  let layersMap: MapLibreMap | undefined
+  // The read-only look the layers were last drawn with, which also says whether the shape handlers are on.
+  let drawnReadonly: boolean | undefined
 
-  /**
-   * Lazily injects a 45° striped orange / transparent SVG `<pattern>` into the
-   * map's overlay SVG so exclusion fences can fill themselves with it. Leaflet
-   * draws all vector layers under a single SVG renderer per map, so a single
-   * pattern definition is enough for the whole layer.
-   *
-   * Two flavors are registered on demand: a "normal" pattern used by the
-   * interactive editor, and a dimmed one (50% less opaque) used by the
-   * read-only live overlay so map context stays readable underneath.
-   * @param { L.Map } targetMap The Leaflet map to inject the pattern into.
-   * @param { boolean } dim When true, registers / reuses the dimmed pattern.
-   */
-  const ensureExclusionPattern = (targetMap: L.Map, dim: boolean): void => {
-    const overlayPane = targetMap.getPanes().overlayPane
-    const svg = overlayPane?.querySelector('svg') as SVGSVGElement | null
-    if (!svg) return
-    const id = dim ? EXCLUSION_PATTERN_DIM_ID : EXCLUSION_PATTERN_ID
-    if (svg.querySelector(`#${id}`)) return
+  const dim = (): number => (props.readonly ? READONLY_OPACITY_FACTOR : 1)
+  const stripePatternName = (): string => `cockpit-fence-exclusion-stripes${props.readonly ? '-dim' : ''}`
 
-    const svgNs = 'http://www.w3.org/2000/svg'
-    let defs = svg.querySelector('defs') as SVGDefsElement | null
-    if (!defs) {
-      defs = document.createElementNS(svgNs, 'defs')
-      svg.insertBefore(defs, svg.firstChild)
-    }
-
-    const pattern = document.createElementNS(svgNs, 'pattern')
-    injectedPatterns.push(pattern)
-    pattern.setAttribute('id', id)
-    pattern.setAttribute('patternUnits', 'userSpaceOnUse')
-    pattern.setAttribute('width', '12')
-    pattern.setAttribute('height', '12')
-    pattern.setAttribute('patternTransform', 'rotate(45)')
-
-    const stripe = document.createElementNS(svgNs, 'rect')
-    stripe.setAttribute('x', '0')
-    stripe.setAttribute('y', '0')
-    stripe.setAttribute('width', '6')
-    stripe.setAttribute('height', '12')
-    stripe.setAttribute('fill', EXCLUSION_FILL_COLOR)
-    stripe.setAttribute('fill-opacity', String(0.32 * (dim ? READONLY_OPACITY_FACTOR : 1)))
-    pattern.appendChild(stripe)
-
-    defs.appendChild(pattern)
-  }
-
-  /**
-   * Applies the appropriate `fill` to the SVG path element of a fence layer.
-   * Inclusion fences get the translucent blue color (already set via
-   * `polygonStyle`); exclusion fences are repainted to reference the diagonal
-   * stripe pattern, which Leaflet's `fillColor` can't express directly.
-   * @param { L.Path } layer The Leaflet vector layer whose element should be styled.
-   * @param { boolean } inclusion Whether the underlying fence is an inclusion fence.
-   */
-  const applyFenceFill = (layer: L.Path, inclusion: boolean): void => {
-    const el = layer.getElement() as SVGPathElement | null
-    if (!el) return
-    if (inclusion) {
-      el.setAttribute('fill', INCLUSION_FILL_COLOR)
-    } else if (map.value) {
-      ensureExclusionPattern(map.value, props.readonly)
-      const patternId = props.readonly ? EXCLUSION_PATTERN_DIM_ID : EXCLUSION_PATTERN_ID
-      el.setAttribute('fill', `url(#${patternId})`)
-    }
-  }
-
-  const vertexHandleStyle = (): L.PathOptions => ({
+  const vertexHandleStyle = (radius: number): FenceHandleStyle => ({
+    radius,
     color: VERTEX_BORDER,
     fillColor: VERTEX_COLOR,
     fillOpacity: 1,
     weight: 2,
     opacity: 1,
+    className: 'fence-drag-handle',
   })
 
-  const midpointHandleStyle = (): L.PathOptions => ({
+  const midpointHandleStyle = (): FenceHandleStyle => ({
+    radius: 4,
     color: VERTEX_BORDER,
     fillColor: VERTEX_COLOR,
     fillOpacity: 0.6,
     weight: 1,
     opacity: 0.6,
+    className: 'fence-add-handle',
   })
 
   const midpointBetween = (a: FenceLatLng, b: FenceLatLng): FenceLatLng => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
@@ -177,96 +138,166 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     return `${(meters / 1000).toFixed(2)} km`
   }
 
-  let radiusPillMarker: L.Marker | null = null
-  let radiusLine: L.Polyline | null = null
+  // Draws the inclusion and exclusion layers once per map. Exclusions sit above inclusions: an inclusion fence can
+  // never cut into an exclusion one, whatever order the two were created in.
+  const ensureShapeLayers = (targetMap: MapLibreMap): void => {
+    if (targetMap.getLayer(inclusionFillId)) return
+    upsertGeoJsonSource(targetMap, shapesSourceId, { type: 'FeatureCollection', features: [] })
+    ensureStripePattern(targetMap, stripePatternName(), EXCLUSION_FILL_COLOR, EXCLUSION_STRIPE_OPACITY * dim())
+    const beforeId = beforeIdForSlot(targetMap, 'fence')
+    const inclusion = ['==', ['get', 'inclusion'], true]
+    const exclusion = ['==', ['get', 'inclusion'], false]
+    const lineLayout = { 'line-cap': 'round', 'line-join': 'round' } as const
+    targetMap.addLayer(
+      {
+        id: inclusionFillId,
+        type: 'fill',
+        source: shapesSourceId,
+        filter: inclusion as never,
+        paint: { 'fill-color': INCLUSION_FILL_COLOR, 'fill-opacity': INCLUSION_FILL_OPACITY * dim() },
+      },
+      beforeId
+    )
+    targetMap.addLayer(
+      {
+        id: inclusionLineId,
+        type: 'line',
+        source: shapesSourceId,
+        filter: inclusion as never,
+        layout: lineLayout,
+        paint: linePaint({ color: INCLUSION_BORDER, width: 2, opacity: dim() }) as never,
+      },
+      beforeId
+    )
+    targetMap.addLayer(
+      {
+        id: exclusionFillId,
+        type: 'fill',
+        source: shapesSourceId,
+        filter: exclusion as never,
+        paint: { 'fill-pattern': stripePatternName(), 'fill-opacity': EXCLUSION_FILL_OPACITY * dim() },
+      },
+      beforeId
+    )
+    targetMap.addLayer(
+      {
+        id: exclusionLineId,
+        type: 'line',
+        source: shapesSourceId,
+        filter: exclusion as never,
+        layout: lineLayout,
+        paint: linePaint({ color: EXCLUSION_BORDER, width: 2, opacity: 0.6 * dim() }) as never,
+      },
+      beforeId
+    )
+    drawnReadonly = props.readonly
+    if (!drawnReadonly) setShapeHandlers(targetMap, true)
+  }
 
-  const showRadiusMeasure = (center: L.LatLng, cursor: L.LatLng, radius: number): void => {
-    if (!map.value) return
-    ensureFenceMarkerPane(map.value as L.Map)
-
-    const latlngs: L.LatLngTuple[] = [
-      [center.lat, center.lng],
-      [cursor.lat, cursor.lng],
-    ]
-    if (radiusLine) {
-      radiusLine.setLatLngs(latlngs)
-    } else {
-      radiusLine = L.polyline(latlngs, {
-        className: FENCE_PATH_CLASS,
-        color: '#2563eb',
-        weight: 2,
-        opacity: 0.9,
-        dashArray: '10, 10',
-        interactive: false,
-      }).addTo(map.value)
+  const setShapeHandlers = (targetMap: MapLibreMap, on: boolean): void => {
+    if (on) {
+      targetMap.on('click', fillLayerIds, onShapeClick)
+      targetMap.on('mouseenter', fillLayerIds, onShapeEnter)
+      targetMap.on('mouseleave', fillLayerIds, onShapeLeave)
+      return
     }
+    targetMap.off('click', fillLayerIds, onShapeClick)
+    targetMap.off('mouseenter', fillLayerIds, onShapeEnter)
+    targetMap.off('mouseleave', fillLayerIds, onShapeLeave)
+  }
 
-    const midpoint = L.latLng((center.lat + cursor.lat) / 2, (center.lng + cursor.lng) / 2)
+  // The layers outlive a switch between read-only and editing, so the switch restyles them in place.
+  const syncReadonlyLook = (targetMap: MapLibreMap): void => {
+    if (drawnReadonly === props.readonly) return
+    ensureStripePattern(targetMap, stripePatternName(), EXCLUSION_FILL_COLOR, EXCLUSION_STRIPE_OPACITY * dim())
+    targetMap.setPaintProperty(inclusionFillId, 'fill-opacity', INCLUSION_FILL_OPACITY * dim())
+    targetMap.setPaintProperty(inclusionLineId, 'line-opacity', dim())
+    targetMap.setPaintProperty(exclusionFillId, 'fill-pattern', stripePatternName())
+    targetMap.setPaintProperty(exclusionFillId, 'fill-opacity', EXCLUSION_FILL_OPACITY * dim())
+    targetMap.setPaintProperty(exclusionLineId, 'line-opacity', 0.6 * dim())
+    setShapeHandlers(targetMap, !props.readonly)
+    drawnReadonly = props.readonly
+  }
+
+  // Selecting a shape claims the click, so the planning view does not also treat it as a click on the map.
+  const onShapeClick = (event: MapLayerMouseEvent): void => {
+    const id = event.features?.[0]?.properties?.id
+    if (typeof id !== 'string') return
+    event.preventDefault()
+    fenceDraft.setInteractive(id)
+  }
+  const onShapeEnter = (): void => {
+    if (map.value) map.value.getCanvas().style.cursor = 'pointer'
+  }
+  const onShapeLeave = (): void => {
+    if (map.value) map.value.getCanvas().style.cursor = ''
+  }
+
+  let radiusPillMarker: Marker | null = null
+
+  const showRadiusMeasure = (center: FenceLatLng, cursor: FenceLatLng, radius: number): void => {
+    if (!map.value) return
+
+    setLineLayer(map.value, radiusLineId, 'fence', lineFeature([center, cursor]), {
+      color: '#2563eb',
+      width: 2,
+      opacity: 0.9,
+      dashPattern: [10, 10],
+    })
+
+    const midpoint: FenceLatLng = [(center[0] + cursor[0]) / 2, (center[1] + cursor[1]) / 2]
     const html = `<div class="live-measure-pill">${formatRadiusShort(radius)}</div>`
-    const icon = L.divIcon({ html, className: 'live-measure-tag', iconSize: [0, 0], iconAnchor: [0, 0] })
     if (radiusPillMarker) {
-      radiusPillMarker.setLatLng(midpoint)
-      radiusPillMarker.setIcon(icon)
+      radiusPillMarker.setLngLat(toLngLat(midpoint))
+      setDivIcon(radiusPillMarker, { html, size: [0, 0], anchor: [0, 0] })
     } else {
-      radiusPillMarker = L.marker(midpoint, {
-        icon,
-        pane: FENCE_MARKER_PANE,
-        interactive: false,
-        keyboard: false,
-      }).addTo(map.value)
+      radiusPillMarker = asFenceMarker(
+        divIconMarker({ html, className: 'live-measure-tag', size: [0, 0], anchor: [0, 0] })
+      )
+      radiusPillMarker.getElement().style.pointerEvents = 'none'
+      radiusPillMarker.setLngLat(toLngLat(midpoint)).addTo(map.value)
     }
   }
 
   const hideRadiusMeasure = (): void => {
-    if (radiusPillMarker && map.value) map.value.removeLayer(radiusPillMarker)
+    radiusPillMarker?.remove()
     radiusPillMarker = null
-    if (radiusLine && map.value) map.value.removeLayer(radiusLine)
-    radiusLine = null
+    removeLayersAndSource(layersMap, [radiusLineId], radiusLineId)
   }
 
   const removePolygonHandles = (id: string): void => {
-    polygonVertexMarkers.get(id)?.forEach((m) => map.value?.removeLayer(m))
-    polygonMidpointMarkers.get(id)?.forEach((m) => map.value?.removeLayer(m))
-    const center = polygonCenterMarkers.get(id)
-    if (center && map.value) map.value.removeLayer(center)
+    polygonVertexMarkers.get(id)?.forEach((m) => m.remove())
+    polygonMidpointMarkers.get(id)?.forEach((m) => m.remove())
+    polygonCenterMarkers.get(id)?.remove()
     polygonVertexMarkers.delete(id)
     polygonMidpointMarkers.delete(id)
     polygonCenterMarkers.delete(id)
   }
 
-  const removePolygonLayer = (id: string): void => {
-    const layer = polygonLayers.get(id)
-    if (layer && map.value) map.value.removeLayer(layer)
-    polygonLayers.delete(id)
-    removePolygonHandles(id)
-  }
-
   const removeCircleHandles = (id: string): void => {
-    const center = circleCenterMarkers.get(id)
-    if (center && map.value) map.value.removeLayer(center)
+    circleCenterMarkers.get(id)?.remove()
     circleCenterMarkers.delete(id)
-    const edge = circleEdgeMarkers.get(id)
-    if (edge && map.value) map.value.removeLayer(edge)
+    circleEdgeMarkers.get(id)?.remove()
     circleEdgeMarkers.delete(id)
   }
 
-  const removeCircleLayer = (id: string): void => {
-    const layer = circleLayers.get(id)
-    if (layer && map.value) map.value.removeLayer(layer)
-    circleLayers.delete(id)
-    removeCircleHandles(id)
-  }
-
   const removeBreachReturnMarker = (): void => {
-    if (breachReturnMarker && map.value) map.value.removeLayer(breachReturnMarker)
+    breachReturnTooltip?.remove()
+    breachReturnTooltip = null
+    breachReturnMarker?.remove()
     breachReturnMarker = null
   }
 
   const clearAllLayers = (): void => {
-    Array.from(polygonLayers.keys()).forEach(removePolygonLayer)
-    Array.from(circleLayers.keys()).forEach(removeCircleLayer)
+    Array.from(polygonVertexMarkers.keys()).forEach(removePolygonHandles)
+    Array.from(polygonCenterMarkers.keys()).forEach(removePolygonHandles)
+    Array.from(circleCenterMarkers.keys()).forEach(removeCircleHandles)
     removeBreachReturnMarker()
     hideRadiusMeasure()
+    if (layersMap && drawnReadonly === false) setShapeHandlers(layersMap, false)
+    removeLayersAndSource(layersMap, shapeLayerIds, shapesSourceId)
+    layersMap = undefined
+    drawnReadonly = undefined
   }
 
   const isInteractiveShape = (id: string): boolean => !props.readonly && fenceDraft.interactiveShapeId === id
@@ -279,28 +310,43 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   /**
    * Starts a handle drag on the map: disables panning, routes pointer moves to
    * `onMove` until the pointer is released, and restores both on release.
-   * @param { (event: L.LeafletMouseEvent) => void } onMove Called on every pointer move while dragging.
+   * @param { (latLng: FenceLatLng) => void } onMove Called with the pointer coordinate on every move while dragging.
    * @param { () => void } onRelease Optional extra cleanup once the drag ends.
    */
-  const beginMapDrag = (onMove: (event: L.LeafletMouseEvent) => void, onRelease?: () => void): void => {
+  const beginMapDrag = (onMove: (latLng: FenceLatLng) => void, onRelease?: () => void): void => {
     const targetMap = map.value
     if (!targetMap) return
     releaseActiveDrag?.()
-    targetMap.dragging.disable()
+    targetMap.dragPan.disable()
+    const handleMove = (event: MapMouseEvent): void => onMove(eventLatLng(event))
     const release = (): void => {
-      targetMap.off('mousemove', onMove)
+      targetMap.off('mousemove', handleMove)
       document.removeEventListener('mouseup', release)
-      targetMap.dragging.enable()
+      targetMap.dragPan.enable()
       releaseActiveDrag = undefined
       onRelease?.()
     }
-    targetMap.on('mousemove', onMove)
-    // The release comes from the document rather than the map: Leaflet never
-    // fires the map's `mouseup` for a button released outside the container,
-    // which would leave panning disabled for good.
+    targetMap.on('mousemove', handleMove)
+    // The release comes from the document rather than the map: a button released
+    // outside the container never reaches the map, which would leave panning
+    // disabled for good.
     document.addEventListener('mouseup', release)
     releaseActiveDrag = release
   }
+
+  // Handles take the press themselves, so the map neither pans under it nor treats it as a click on the map.
+  const onHandle = (
+    marker: Marker,
+    type: 'mousedown' | 'click' | 'contextmenu',
+    handler: (e: MouseEvent) => void
+  ): void =>
+    marker.getElement().addEventListener(type, (event: MouseEvent) => {
+      event.stopPropagation()
+      handler(event)
+    })
+
+  const pointerLatLng = (event: MouseEvent): FenceLatLng | undefined =>
+    map.value ? unprojectFromContainer(map.value, containerPointFromClient(map.value, event)) : undefined
 
   const buildVertexMarkers = (polygon: FencePolygon): void => {
     if (!map.value) return
@@ -308,26 +354,19 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
 
     if (!isInteractiveShape(polygon.id)) return
 
-    const vertexMarkers: L.CircleMarker[] = polygon.vertices.map((vertex, index) => {
-      const marker = L.circleMarker(vertex as L.LatLngTuple, {
-        ...vertexHandleStyle(),
-        radius: 6,
-        pane: FENCE_MARKER_PANE,
-        className: 'fence-drag-handle',
-      })
-      marker.addTo(map.value as L.Map)
+    const vertexMarkers: Marker[] = polygon.vertices.map((vertex, index) => {
+      const marker = fenceHandleMarker(vertexHandleStyle(6)).setLngLat(toLngLat(vertex))
+      marker.addTo(map.value as MapLibreMap)
 
-      marker.on('mousedown', () => {
-        beginMapDrag((event: L.LeafletMouseEvent) => {
-          const newVertices = polygon.vertices.map(
-            (v, i): FenceLatLng => (i === index ? [event.latlng.lat, event.latlng.lng] : v)
-          )
+      onHandle(marker, 'mousedown', () => {
+        beginMapDrag((latLng) => {
+          const newVertices = polygon.vertices.map((v, i): FenceLatLng => (i === index ? latLng : v))
           fenceStore.updatePolygon(polygon.id, { vertices: newVertices })
         })
       })
 
-      marker.on('contextmenu', (event: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(event)
+      onHandle(marker, 'contextmenu', (event) => {
+        event.preventDefault()
         if (polygon.vertices.length <= 3) return
         const newVertices = polygon.vertices.filter((_, i) => i !== index)
         fenceStore.updatePolygon(polygon.id, { vertices: newVertices })
@@ -337,23 +376,18 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     })
     polygonVertexMarkers.set(polygon.id, vertexMarkers)
 
-    const midpointMarkers: L.CircleMarker[] = []
+    const midpointMarkers: Marker[] = []
     polygon.vertices.forEach((vertex, index) => {
       const next = polygon.vertices[(index + 1) % polygon.vertices.length]
       const mid = midpointBetween(vertex, next)
-      const marker = L.circleMarker(mid as L.LatLngTuple, {
-        ...midpointHandleStyle(),
-        radius: 4,
-        pane: FENCE_MARKER_PANE,
-        className: 'fence-add-handle',
-      })
-      marker.addTo(map.value as L.Map)
-      marker.on('click', (event: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(event)
+      const marker = fenceHandleMarker(midpointHandleStyle()).setLngLat(toLngLat(mid))
+      marker.addTo(map.value as MapLibreMap)
+      // The new vertex lands on the handle, not under the pointer, as a click on a small marker always reported.
+      onHandle(marker, 'click', () => {
         const insertAt = index + 1
         const newVertices: FenceLatLng[] = [
           ...polygon.vertices.slice(0, insertAt),
-          [event.latlng.lat, event.latlng.lng],
+          mid,
           ...polygon.vertices.slice(insertAt),
         ]
         fenceStore.updatePolygon(polygon.id, { vertices: newVertices })
@@ -371,22 +405,16 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
 
     const center = centroidLatLng(polygon.vertices)
     const html = `<div class="fence-center-handle"><span class="mdi mdi-cursor-move" /></div>`
-    const icon = L.divIcon({
-      html,
-      className: 'fence-center-handle-icon',
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
-    })
-    const marker = L.marker(center as L.LatLngTuple, { icon, pane: FENCE_MARKER_PANE, interactive: true })
-    marker.addTo(map.value)
+    const marker = asFenceMarker(divIconMarker({ html, className: 'fence-center-handle-icon', size: [18, 18] }))
+    marker.setLngLat(toLngLat(center)).addTo(map.value)
 
-    marker.on('mousedown', (event: L.LeafletMouseEvent) => {
-      L.DomEvent.stopPropagation(event)
-      let lastLatLng = event.latlng
-      beginMapDrag((moveEvent: L.LeafletMouseEvent) => {
-        const dLat = moveEvent.latlng.lat - lastLatLng.lat
-        const dLng = moveEvent.latlng.lng - lastLatLng.lng
-        lastLatLng = moveEvent.latlng
+    onHandle(marker, 'mousedown', (event) => {
+      let lastLatLng = pointerLatLng(event)
+      beginMapDrag((latLng) => {
+        if (!lastLatLng) return
+        const dLat = latLng[0] - lastLatLng[0]
+        const dLng = latLng[1] - lastLatLng[1]
+        lastLatLng = latLng
         const current = fenceStore.polygons.find((p) => p.id === polygon.id)
         if (!current) return
         const newVertices: FenceLatLng[] = current.vertices.map(([lat, lng]) => [lat + dLat, lng + dLng])
@@ -397,26 +425,11 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     polygonCenterMarkers.set(polygon.id, marker)
   }
 
-  const renderPolygon = (polygon: FencePolygon): void => {
-    if (!map.value) return
-    const existing = polygonLayers.get(polygon.id)
-    if (existing) {
-      existing.setLatLngs(polygon.vertices as L.LatLngExpression[])
-      existing.setStyle(polygonStyle(polygon.inclusion))
-      applyFenceFill(existing, polygon.inclusion)
-    } else {
-      const layer = L.polygon(polygon.vertices as L.LatLngExpression[], polygonStyle(polygon.inclusion))
-      layer.addTo(map.value)
-      applyFenceFill(layer, polygon.inclusion)
-      if (!props.readonly) {
-        layer.on('click', (event: L.LeafletMouseEvent) => {
-          L.DomEvent.stopPropagation(event)
-          fenceDraft.setInteractive(polygon.id)
-        })
-      }
-      polygonLayers.set(polygon.id, layer)
-    }
-    buildVertexMarkers(polygon)
+  // Where Leaflet put the radius handle: due east of the center, by the radius, on its bounds-based approximation.
+  const circleEdgeLatLng = (circle: FenceCircle): FenceLatLng => {
+    const latAccuracy = (180 * circle.radius * 2) / 40075017
+    const lngAccuracy = latAccuracy / Math.cos((Math.PI / 180) * circle.center[0])
+    return [circle.center[0], circle.center[1] + lngAccuracy]
   }
 
   const buildCircleHandles = (circle: FenceCircle): void => {
@@ -425,65 +438,33 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
 
     if (!isInteractiveShape(circle.id)) return
 
-    const centerMarker = L.circleMarker(circle.center as L.LatLngTuple, {
-      ...vertexHandleStyle(),
-      radius: 6,
-      pane: FENCE_MARKER_PANE,
-      className: 'fence-drag-handle',
-    })
+    const centerMarker = fenceHandleMarker(vertexHandleStyle(6)).setLngLat(toLngLat(circle.center))
     centerMarker.addTo(map.value)
-    centerMarker.on('mousedown', () => {
-      beginMapDrag((event: L.LeafletMouseEvent) => {
-        fenceStore.updateCircle(circle.id, { center: [event.latlng.lat, event.latlng.lng] })
+    onHandle(centerMarker, 'mousedown', () => {
+      beginMapDrag((latLng) => {
+        fenceStore.updateCircle(circle.id, { center: latLng })
       })
     })
     circleCenterMarkers.set(circle.id, centerMarker)
 
-    const edgeBounds = L.latLng(circle.center[0], circle.center[1]).toBounds(circle.radius * 2)
-    const edgeLatLng: L.LatLngTuple = [circle.center[0], edgeBounds.getEast()]
-    const edgeMarker = L.circleMarker(edgeLatLng, {
-      ...vertexHandleStyle(),
-      radius: 5,
-      pane: FENCE_MARKER_PANE,
-      className: 'fence-drag-handle',
-    })
+    const edgeMarker = fenceHandleMarker(vertexHandleStyle(5)).setLngLat(toLngLat(circleEdgeLatLng(circle)))
     edgeMarker.addTo(map.value)
-    edgeMarker.on('mousedown', () => {
-      beginMapDrag((event: L.LeafletMouseEvent) => {
-        const center = L.latLng(circle.center[0], circle.center[1])
-        const distance = center.distanceTo(event.latlng)
+    onHandle(edgeMarker, 'mousedown', () => {
+      beginMapDrag((latLng) => {
+        const distance = distanceInMeters(circle.center, latLng)
         fenceStore.updateCircle(circle.id, { radius: distance })
-        showRadiusMeasure(center, event.latlng, distance)
+        showRadiusMeasure(circle.center, latLng, distance)
       }, hideRadiusMeasure)
     })
     circleEdgeMarkers.set(circle.id, edgeMarker)
   }
 
-  const renderCircle = (circle: FenceCircle): void => {
-    if (!map.value) return
-    const existing = circleLayers.get(circle.id)
-    if (existing) {
-      existing.setLatLng(circle.center as L.LatLngTuple)
-      existing.setRadius(circle.radius)
-      existing.setStyle(polygonStyle(circle.inclusion))
-      applyFenceFill(existing, circle.inclusion)
-    } else {
-      const layer = L.circle(circle.center as L.LatLngTuple, {
-        ...polygonStyle(circle.inclusion),
-        radius: circle.radius,
-      })
-      layer.addTo(map.value)
-      applyFenceFill(layer, circle.inclusion)
-      if (!props.readonly) {
-        layer.on('click', (event: L.LeafletMouseEvent) => {
-          L.DomEvent.stopPropagation(event)
-          fenceDraft.setInteractive(circle.id)
-        })
-      }
-      circleLayers.set(circle.id, layer)
-    }
-    buildCircleHandles(circle)
-  }
+  const shapeFeatures = (polygons: FencePolygon[], circles: FenceCircle[]): Feature<Polygon>[] => [
+    ...polygons.map((polygon) => polygonFeature(polygon.vertices, { id: polygon.id, inclusion: polygon.inclusion })),
+    ...circles.map((circle) =>
+      meterCircle(circle.center, circle.radius, { id: circle.id, inclusion: circle.inclusion })
+    ),
+  ]
 
   const renderBreachReturn = (point: BreachReturnPoint | undefined): void => {
     if (!map.value) return
@@ -492,34 +473,30 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
       return
     }
     const html = `<div class="fence-breach-return">B</div>`
-    const icon = L.divIcon({ html, className: 'fence-breach-return-icon', iconSize: [22, 22], iconAnchor: [11, 11] })
+    const tooltipText = `Breach return — ${point.altitude.toFixed(1)} m`
     if (breachReturnMarker) {
-      breachReturnMarker.setLatLng(point.coordinates as L.LatLngTuple)
+      breachReturnMarker.setLngLat(toLngLat(point.coordinates))
       // Refresh the icon so any future visual changes (size, color, inner HTML)
       // surface on subsequent renders without needing to recreate the marker.
-      breachReturnMarker.setIcon(icon)
-    } else {
-      breachReturnMarker = L.marker(point.coordinates as L.LatLngTuple, {
-        icon,
-        pane: FENCE_MARKER_PANE,
-        draggable: !props.readonly,
-      })
-      breachReturnMarker.addTo(map.value)
-      if (!props.readonly) {
-        // Read latitude/altitude from the store (source of truth) instead of
-        // the captured `point` so altitude edits made after the marker is
-        // created don't get overwritten by the next drag.
-        breachReturnMarker.on('dragend', (event) => {
-          const newCoords = (event.target as L.Marker).getLatLng()
-          const currentAltitude = fenceStore.breachReturn?.altitude ?? point.altitude
-          fenceStore.setBreachReturn({ coordinates: [newCoords.lat, newCoords.lng], altitude: currentAltitude })
-        })
-      }
+      setDivIcon(breachReturnMarker, { html, size: [22, 22] })
+      breachReturnTooltip?.setContent(tooltipText)
+      return
     }
-    breachReturnMarker.bindTooltip(`Breach return — ${point.altitude.toFixed(1)} m`, {
-      direction: 'top',
-      offset: [0, -10],
-    })
+    const marker = asFenceMarker(
+      divIconMarker({ html, className: 'fence-breach-return-icon', size: [22, 22], draggable: !props.readonly })
+    )
+    marker.setLngLat(toLngLat(point.coordinates)).addTo(map.value)
+    if (!props.readonly) {
+      // Read latitude/altitude from the store (source of truth) instead of
+      // the captured `point` so altitude edits made after the marker is
+      // created don't get overwritten by the next drag.
+      marker.on('dragend', () => {
+        const currentAltitude = fenceStore.breachReturn?.altitude ?? point.altitude
+        fenceStore.setBreachReturn({ coordinates: fromLngLat(marker.getLngLat()), altitude: currentAltitude })
+      })
+    }
+    breachReturnTooltip = bindTooltip(map.value, marker, tooltipText, { direction: 'top', offset: [0, -10] })
+    breachReturnMarker = marker
   }
 
   const sourcePolygons = (): FencePolygon[] => (props.plan ? props.plan.polygons : fenceStore.polygons)
@@ -531,32 +508,33 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
 
   const syncLayers = (): void => {
     if (disposed || !map.value) return
-    ensureFenceMarkerPane(map.value as L.Map)
+    // A replaced map starts from nothing, and the old one's layers went with it.
+    if (layersMap && layersMap !== map.value) clearAllLayers()
+    layersMap = map.value
+    ensureShapeLayers(map.value)
+    syncReadonlyLook(map.value)
 
     const polys = sourcePolygons()
-    const polyIds = new Set(polys.map((p) => p.id))
-    Array.from(polygonLayers.keys()).forEach((id) => {
-      if (!polyIds.has(id)) removePolygonLayer(id)
-    })
-    polys.forEach(renderPolygon)
-
     const circs = sourceCircles()
-    const circleIds = new Set(circs.map((c) => c.id))
-    Array.from(circleLayers.keys()).forEach((id) => {
-      if (!circleIds.has(id)) removeCircleLayer(id)
-    })
-    circs.forEach(renderCircle)
+    upsertGeoJsonSource(map.value, shapesSourceId, { type: 'FeatureCollection', features: shapeFeatures(polys, circs) })
 
-    // An inclusion fence can never cut into an exclusion one, so exclusions
-    // keep the top of the stack whatever order the two were created in.
-    polys.filter((p) => !p.inclusion).forEach((p) => polygonLayers.get(p.id)?.bringToFront())
-    circs.filter((c) => !c.inclusion).forEach((c) => circleLayers.get(c.id)?.bringToFront())
+    const polyIds = new Set(polys.map((p) => p.id))
+    Array.from(new Set([...polygonVertexMarkers.keys(), ...polygonCenterMarkers.keys()])).forEach((id) => {
+      if (!polyIds.has(id)) removePolygonHandles(id)
+    })
+    polys.forEach(buildVertexMarkers)
+
+    const circleIds = new Set(circs.map((c) => c.id))
+    Array.from(circleCenterMarkers.keys()).forEach((id) => {
+      if (!circleIds.has(id)) removeCircleHandles(id)
+    })
+    circs.forEach(buildCircleHandles)
 
     renderBreachReturn(sourceBreach())
   }
 
   // Coalesce change-driven sync into one frame so vertex drags don't rebuild
-  // every Leaflet layer per `mousemove`. The initial sync below stays
+  // every handle per `mousemove`. The initial sync below stays
   // synchronous so the overlay paints on the same tick the map becomes ready.
   const debouncedSyncLayers = useDebounceFn(syncLayers, 16)
 
@@ -578,7 +556,7 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     { deep: true }
   )
 
-  // The Leaflet map outlives this overlay, so everything installed on it has to
+  // The map outlives this overlay, so everything installed on it has to
   // come back off: a debounced sync already scheduled would otherwise re-add
   // layers nothing can remove, and an unmount mid-drag would leave the map
   // unpannable.
@@ -586,7 +564,5 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     disposed = true
     releaseActiveDrag?.()
     clearAllLayers()
-    injectedPatterns.forEach((pattern) => pattern.remove())
-    injectedPatterns.length = 0
   })
 }
