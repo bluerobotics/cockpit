@@ -2862,7 +2862,7 @@ const rebuildSurveyPolygonFromPositions = (): void => {
         createSurveyPath()
       }
     ).addTo(planningMap.value!)
-    surveyPolygonVertexesMarkers.value.push(newMarker)
+    surveyPolygonVertexesMarkers.value = [...surveyPolygonVertexesMarkers.value, newMarker]
   })
 
   if (surveyPolygonVertexesPositions.value.length >= 3) drawSurveyDraftPolygon()
@@ -3821,7 +3821,7 @@ const onRemoveSurveyVertex = (index: number): void => {
     logUserAction('Removed survey polygon vertex')
     pushSurveyPolygonSnapshot()
     surveyPolygonVertexesPositions.value.splice(index, 1)
-    surveyPolygonVertexesMarkers.value.splice(index, 1)
+    surveyPolygonVertexesMarkers.value = surveyPolygonVertexesMarkers.value.filter((_, i) => i !== index)
     marker.remove()
     updatePolygon()
     updateSurveyEdgeAddMarkers()
@@ -3858,11 +3858,9 @@ const addSurveyPoint = (latlng: WaypointCoordinates, edgeIndex: number | undefin
     }
   ).addTo(toRaw(planningMap.value)!)
 
-  if (edgeIndex === undefined) {
-    surveyPolygonVertexesMarkers.value.push(newMarker)
-  } else {
-    surveyPolygonVertexesMarkers.value.splice(edgeIndex + 1, 0, newMarker)
-  }
+  const markers = [...surveyPolygonVertexesMarkers.value]
+  markers.splice(edgeIndex === undefined ? markers.length : edgeIndex + 1, 0, newMarker)
+  surveyPolygonVertexesMarkers.value = markers
 
   updatePolygon()
   updateSurveyEdgeAddMarkers()
