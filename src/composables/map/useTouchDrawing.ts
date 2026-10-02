@@ -1,7 +1,9 @@
-import L, { type Map as LeafletMap } from 'leaflet'
+import { type Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl'
 import { type ShallowRef, computed, onBeforeUnmount, shallowRef, watch } from 'vue'
 
-import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
+import { containerPointFromClient, projectToContainer, unprojectFromContainer } from '@/libs/map/maplibre'
+import { type ScreenPoint, isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
+import type { WaypointCoordinates } from '@/types/mission'
 
 /** Wiring {@link useTouchDrawing} needs from the view that draws on the map. */
 export interface UseTouchDrawingOptions {
@@ -12,19 +14,19 @@ export interface UseTouchDrawingOptions {
   /** Whether another handler already took the press, so the map is left to it. */
   isBlocked: () => boolean
   /** Lays a point down where the drawing is, which is how the first drag plants the segment's start. */
-  placePoint: (latlng: L.LatLng) => void
+  placePoint: (latlng: WaypointCoordinates) => void
 }
 
 /** Return type of {@link useTouchDrawing}. */
 export interface UseTouchDrawingReturn {
   /** Where a finger left the live line, waiting to be confirmed, or null when nothing is waiting. */
-  pendingPoint: ShallowRef<L.LatLng | null>
+  pendingPoint: ShallowRef<WaypointCoordinates | null>
   /** Forgets the point that was waiting, taking its checkmark off the map. */
   clearPendingPoint: () => void
   /** Whether the click the browser may raise out of the last drag has to be dropped instead of drawn with. */
   swallowsClick: () => boolean
-  /** Binds the gestures to a Leaflet map. */
-  initTouchDrawing: (map: LeafletMap) => void
+  /** Binds the gestures to a map. */
+  initTouchDrawing: (map: MapLibreMap) => void
   /** Unbinds everything and gives panning back. */
   destroyTouchDrawing: () => void
 }
@@ -34,7 +36,7 @@ const dragThresholdInPixels = 4
 // The checkmark stands off the point's diagonal, clear of the line ending there and of the finger that dragged it.
 const confirmOffsetInPixels = 26
 // Controls and handles that own their own presses, which a drawing gesture must not take from them.
-const ownPressSelector = '.leaflet-marker-icon, .leaflet-control, .live-measure-pill, .touch-draw-confirm'
+const ownPressSelector = '.maplibregl-marker, .maplibregl-ctrl, .live-measure-pill, .touch-draw-confirm'
 const confirmLabel = 'Confirm the point'
 
 const confirmMarkup = `
@@ -55,13 +57,13 @@ const confirmMarkup = `
 export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawingReturn => {
   const { drawsWithOneFinger, hasAnchor, isBlocked, placePoint } = options
 
-  const pendingPoint = shallowRef<L.LatLng | null>(null)
+  const pendingPoint = shallowRef<WaypointCoordinates | null>(null)
   const drawsNow = computed(drawsWithOneFinger)
 
-  let mapRef: LeafletMap | undefined
+  let mapRef: MapLibreMap | undefined
   let confirmEl: HTMLDivElement | null = null
   let pressedPointerId: number | null = null
-  let pressOrigin: L.Point | null = null
+  let pressOrigin: ScreenPoint | null = null
   let isAiming = false
   let aimedWithoutClick = false
   let panningWasEnabled = false
@@ -69,7 +71,7 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
   const positionConfirm = (): void => {
     if (!mapRef || !confirmEl || !pendingPoint.value) return
 
-    const { x, y } = mapRef.latLngToContainerPoint(pendingPoint.value)
+    const { x, y } = projectToContainer(mapRef, pendingPoint.value)
     confirmEl.style.left = `${x + confirmOffsetInPixels}px`
     confirmEl.style.top = `${y - confirmOffsetInPixels}px`
   }
@@ -88,7 +90,7 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     placePoint(point)
   }
 
-  const ensureConfirm = (map: LeafletMap): HTMLDivElement => {
+  const ensureConfirm = (map: MapLibreMap): HTMLDivElement => {
     if (confirmEl) return confirmEl
 
     const el = document.createElement('div')
@@ -104,7 +106,9 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     el.style.cursor = 'pointer'
     el.style.display = 'none'
     // The map is listening for a click on everything inside its container, and this one is not a place to draw.
-    L.DomEvent.disableClickPropagation(el)
+    ;['mousedown', 'touchstart', 'dblclick', 'contextmenu', 'click'].forEach((type) =>
+      el.addEventListener(type, (event) => event.stopPropagation())
+    )
     el.addEventListener('click', confirmPendingPoint)
     el.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return
@@ -117,7 +121,7 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     return el
   }
 
-  const holdPointForConfirmation = (latlng: L.LatLng): void => {
+  const holdPointForConfirmation = (latlng: WaypointCoordinates): void => {
     if (!mapRef) return
 
     pendingPoint.value = latlng
@@ -129,12 +133,12 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     if (!panningWasEnabled) return
 
     panningWasEnabled = false
-    mapRef?.dragging.enable()
+    mapRef?.dragPan.enable()
   }
 
-  // With its own dragging switched off, leaflet leaves the container free to be panned as a page instead, which
+  // With its own panning switched off, the map leaves the container free to be panned as a page instead, which
   // ends the gesture the line is being aimed with. The browser is told to keep its hands off it while it lasts,
-  // the same way leaflet does when it is panning the map itself.
+  // the same way the map does when it is panning itself.
   const applyTouchAction = (): void => {
     const container = mapRef?.getContainer()
     if (container) container.style.touchAction = drawsNow.value ? 'none' : ''
@@ -170,42 +174,39 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
 
     clearPendingPoint()
     pressedPointerId = event.pointerId
-    pressOrigin = mapRef.mouseEventToContainerPoint(event)
+    pressOrigin = containerPointFromClient(mapRef, event)
     isAiming = false
     // The gesture has to be read to its end even when the finger wanders off the map, which is also what keeps
     // its release from going missing and leaving panning switched off.
     mapRef.getContainer().setPointerCapture(event.pointerId)
-    panningWasEnabled = mapRef.dragging.enabled()
-    if (panningWasEnabled) mapRef.dragging.disable()
+    panningWasEnabled = mapRef.dragPan.isEnabled()
+    if (panningWasEnabled) mapRef.dragPan.disable()
   }
 
   const onPointerMove = (event: PointerEvent): void => {
     if (!mapRef || pressedPointerId !== event.pointerId || !pressOrigin) return
 
-    const containerPoint = mapRef.mouseEventToContainerPoint(event)
+    const containerPoint = containerPointFromClient(mapRef, event)
     if (!isAiming) {
-      if (containerPoint.distanceTo(pressOrigin) < dragThresholdInPixels) return
+      const moved = Math.hypot(containerPoint.x - pressOrigin.x, containerPoint.y - pressOrigin.y)
+      if (moved < dragThresholdInPixels) return
       isAiming = true
       // A segment has to start somewhere, so the spot the finger went down on becomes it.
-      if (!hasAnchor()) placePoint(mapRef.containerPointToLatLng(pressOrigin))
+      if (!hasAnchor()) placePoint(unprojectFromContainer(mapRef, [pressOrigin.x, pressOrigin.y]))
       logUserAction('Dragged the live line out with a finger')
     }
 
     // A finger produces no mousemove, so where it drags to is fired as one: the live measure, the rectangle being
     // swept and everything else already following the cursor then follow the finger too.
-    const latlng = mapRef.containerPointToLatLng(containerPoint)
-    mapRef.fire('mousemove', {
-      latlng,
-      layerPoint: mapRef.latLngToLayerPoint(latlng),
-      containerPoint,
-      originalEvent: event,
-    })
+    mapRef.fire(new MapMouseEvent('mousemove', mapRef, event))
   }
 
   const onPointerUp = (event: PointerEvent): void => {
     if (pressedPointerId !== event.pointerId) return
 
-    const aimedAt = isAiming && mapRef ? mapRef.containerPointToLatLng(mapRef.mouseEventToContainerPoint(event)) : null
+    const releasedAt = mapRef ? containerPointFromClient(mapRef, event) : undefined
+    const aimedAt =
+      isAiming && mapRef && releasedAt ? unprojectFromContainer(mapRef, [releasedAt.x, releasedAt.y]) : null
     stopPress()
     if (!aimedAt) return
 
@@ -213,7 +214,7 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     holdPointForConfirmation(aimedAt)
   }
 
-  const initTouchDrawing = (map: LeafletMap): void => {
+  const initTouchDrawing = (map: MapLibreMap): void => {
     mapRef = map
     applyTouchAction()
     const container = map.getContainer()
@@ -221,7 +222,7 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
     container.addEventListener('pointermove', onPointerMove)
     container.addEventListener('pointerup', onPointerUp)
     container.addEventListener('pointercancel', onPointerUp)
-    map.on('move zoom', positionConfirm)
+    map.on('move', positionConfirm)
   }
 
   const destroyTouchDrawing = (): void => {
@@ -235,7 +236,7 @@ export const useTouchDrawing = (options: UseTouchDrawingOptions): UseTouchDrawin
       container.removeEventListener('pointercancel', onPointerUp)
       container.style.touchAction = ''
     }
-    mapRef?.off('move zoom', positionConfirm)
+    mapRef?.off('move', positionConfirm)
     confirmEl?.remove()
     confirmEl = null
     mapRef = undefined
