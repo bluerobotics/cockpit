@@ -5,6 +5,7 @@ import {
   beforeIdForSlot,
   fromLngLat,
   fromMapLibreZoom,
+  marchingDashArray,
   overlayBoundsToImageCoordinates,
   polygonFeature,
   slottedLayerId,
@@ -68,4 +69,14 @@ test('beforeIdForSlot inserts below the first layer of a higher slot', () => {
   expect(beforeIdForSlot(map, 'raster-overlay')).toBe(slottedLayerId('mission', 'path'))
   expect(beforeIdForSlot(map, 'mission')).toBe(slottedLayerId('grid', 'lines'))
   expect(beforeIdForSlot(map, 'measure')).toBeUndefined()
+})
+
+test('marchingDashArray keeps the pattern period while moving the dashes forward', () => {
+  expect(marchingDashArray(0, 8, 8)).toEqual([8, 8, 0, 0])
+  // A quarter period forward, the line starts in the gap that used to precede the first dash.
+  expect(marchingDashArray(4, 8, 8)).toEqual([0, 4, 8, 4])
+  expect(marchingDashArray(12, 8, 8)).toEqual([4, 8, 4, 0])
+  ;[3, 7, 11, 15, 16].forEach((travelled) => {
+    expect(marchingDashArray(travelled, 8, 8).reduce((sum, length) => sum + length, 0)).toBe(16)
+  })
 })
