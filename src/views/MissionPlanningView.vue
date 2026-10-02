@@ -3665,8 +3665,11 @@ const removeSurveyEndpointMarkers = (): void => {
 
 // Small green chevron marking a survey entrance/exit, oriented perpendicular to the polygon edge it sits on:
 // it sits just outside the boundary and points inward for the entrance, outward for the exit.
-const createSurveyEndpointChevron = (position: L.LatLng, isEntrance: boolean): L.Marker => {
-  const outwardBearing = surveyEndpointEdgeBearing(surveyPolygonVertexesPositions.value, position)
+const createSurveyEndpointChevron = (position: WaypointCoordinates, isEntrance: boolean): L.Marker => {
+  const outwardBearing = surveyEndpointEdgeBearing(
+    surveyPolygonVertexesPositions.value.map((latLng): WaypointCoordinates => [latLng.lat, latLng.lng]),
+    position
+  )
   // The endpoint sits at the box center (12, 20); the glyph sits above it (outward side) with its nearest edge
   // 8px out, clearing the 5px circle by 3px. The entrance points down (inward), the exit up (outward).
   const chevronPath = isEntrance ? 'M6 7 L12 12 L18 7' : 'M6 12 L12 7 L18 12'
@@ -3824,7 +3827,9 @@ const createSurveyPath = (): void => {
     const adjustedAngle = 90 - surveyLinesAngle.value
     const result: SurveyPath = orderedSurveyPath(
       {
-        polygonPoints: surveyPolygonVertexesPositions.value,
+        polygonPoints: surveyPolygonVertexesPositions.value.map(
+          (latLng): WaypointCoordinates => [latLng.lat, latLng.lng]
+        ),
         distanceBetweenLines: distanceBetweenSurveyLines.value,
         linesAngle: adjustedAngle,
         turnaroundDistance: turnaroundDistance.value,
@@ -3861,8 +3866,8 @@ const createSurveyPath = (): void => {
     const crosshatchPath = crosshatchStart !== undefined ? result.path.slice(Math.max(0, crosshatchStart - 1)) : []
 
     surveyPreviewPath.value = {
-      firstPass: firstPassPath.map((point) => [point.lat, point.lng]),
-      crosshatch: crosshatchPath.map((point) => [point.lat, point.lng]),
+      firstPass: firstPassPath,
+      crosshatch: crosshatchPath,
     }
 
     surveyPathLayer.value = L.polyline(firstPassPath, {
@@ -3897,7 +3902,7 @@ const createSurveyPath = (): void => {
     const entrance = result.path[0]
     const exit = result.path[result.path.length - 1]
     const map = toRaw(planningMap.value)!
-    const endpointCircle = (latLng: L.LatLng): L.CircleMarker =>
+    const endpointCircle = (latLng: WaypointCoordinates): L.CircleMarker =>
       L.circleMarker(latLng, {
         radius: 5,
         color: '#ffffff99',
@@ -4078,7 +4083,7 @@ const generateWaypointsFromSurvey = (): void => {
   const adjustedAngle = 90 - surveyLinesAngle.value
   const { path: continuousPath } = orderedSurveyPath(
     {
-      polygonPoints: surveyPolygonVertexesPositions.value,
+      polygonPoints: polygonCoordinates,
       distanceBetweenLines: distanceBetweenSurveyLines.value,
       linesAngle: adjustedAngle,
       turnaroundDistance: turnaroundDistance.value,
@@ -4097,9 +4102,9 @@ const generateWaypointsFromSurvey = (): void => {
     return
   }
 
-  const newSurveyWaypoints: Waypoint[] = continuousPath.map((latLng: L.LatLng) => ({
+  const newSurveyWaypoints: Waypoint[] = continuousPath.map((coordinates) => ({
     id: uuid(),
-    coordinates: [latLng.lat, latLng.lng],
+    coordinates,
     altitude: currentWaypointAltitude.value,
     altitudeReferenceType: currentWaypointAltitudeRefType.value,
     commands: makeDefaultNavCommands(),
@@ -4281,7 +4286,7 @@ const regenerateSelectedSurveyWaypoints = (angle?: number): void => {
     const adjustedAngle = 90 - (angle || selectedSurvey.value.surveyLinesAngle)
     const { path: continuousPath } = orderedSurveyPath(
       {
-        polygonPoints: selectedSurvey.value.polygonCoordinates.map((coord) => L.latLng(coord[0], coord[1])),
+        polygonPoints: selectedSurvey.value.polygonCoordinates,
         distanceBetweenLines: selectedSurvey.value.distanceBetweenLines,
         linesAngle: adjustedAngle,
         turnaroundDistance: selectedSurvey.value.turnaroundDistance,
@@ -4305,9 +4310,9 @@ const regenerateSelectedSurveyWaypoints = (angle?: number): void => {
     const surveyAltitude = existingWaypoint?.altitude ?? currentWaypointAltitude.value
     const surveyAltitudeRefType = existingWaypoint?.altitudeReferenceType ?? currentWaypointAltitudeRefType.value
 
-    const newWaypoints: Waypoint[] = continuousPath.map((latLng: L.LatLng) => ({
+    const newWaypoints: Waypoint[] = continuousPath.map((coordinates) => ({
       id: uuid(),
-      coordinates: [latLng.lat, latLng.lng],
+      coordinates,
       altitude: surveyAltitude,
       altitudeReferenceType: surveyAltitudeRefType,
       commands: makeDefaultNavCommands(),
