@@ -65,6 +65,8 @@ const secondsToShowRecordingResumeNotice = 15
 const secondsToWaitForVideoToStartRecording = 10
 // Longer than the default, as the operator is usually looking at the video rather than the corner a snackbar sits in
 const secondsToShowWaitForVideoNotice = 5
+// How long a stopped recording waits for its last chunks, so a stalled write costs those chunks, not the finalization
+const secondsToWaitForLastChunks = 5
 
 export const useVideoStore = defineStore('video', () => {
   const missionStore = useMissionStore()
@@ -1429,8 +1431,12 @@ export const useVideoStore = defineStore('video', () => {
     let totalLostChunks = 0
     let unexpectedProcessorErrorWarned = false
 
+    // The recorder hands over its last chunk right before it stops, and finalizing the video before that chunk reaches
+    // the live processor drops the end of the recording
+    const chunksInFlight = new Set<Promise<void>>()
+
     let chunksCount = -1
-    recorder.ondataavailable = async (e) => {
+    const handleChunk = async (e: BlobEvent): Promise<void> => {
       chunksCount++
       totalChunks++
       const chunkName = videoChunkName(recordingHash, chunksCount)
@@ -1495,6 +1501,16 @@ export const useVideoStore = defineStore('video', () => {
       delete unsavedChunkAlerts[chunkName]
     }
 
+    recorder.ondataavailable = async (e) => {
+      const handling = handleChunk(e)
+      chunksInFlight.add(handling)
+      try {
+        await handling
+      } finally {
+        chunksInFlight.delete(handling)
+      }
+    }
+
     recorder.onstop = async () => {
       // Every way a recording ends reaches onstop (Stop button, stream teardown, dropped link), so mirror the stop
       // here rather than in stopRecording, otherwise the vehicle keeps recording and mirroring stays wedged off.
@@ -1526,6 +1542,8 @@ export const useVideoStore = defineStore('video', () => {
       // Register that the recording finished
       info.dateFinish = new Date()
       unprocessedVideos.value = { ...unprocessedVideos.value, ...{ [recordingHash]: info } }
+
+      await Promise.race([Promise.allSettled(chunksInFlight), sleep(secondsToWaitForLastChunks * 1000)])
 
       // Finalize live processing if active (Electron only)
       const processor = liveProcessors.value[recordingHash]
