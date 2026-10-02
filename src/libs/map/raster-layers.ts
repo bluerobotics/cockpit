@@ -33,6 +33,8 @@ export interface RasterLayerDefinition {
   attribution?: string
   /** Whether failed tiles are replaced by the procedural noise background. */
   noiseFallback?: boolean
+  /** Whether the provider sends no CORS headers, so only Standalone, which adds them, can draw its tiles. */
+  standaloneOnly?: boolean
 }
 
 /**
