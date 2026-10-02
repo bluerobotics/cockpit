@@ -1,5 +1,5 @@
 import { useResizeObserver } from '@vueuse/core'
-import type { Map as LeafletMap } from 'leaflet'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 import { shallowRef } from 'vue'
 
 /**
@@ -8,10 +8,10 @@ import { shallowRef } from 'vue'
 export interface UseMapAutoResizeReturn {
   /**
    * Starts tracking the size of the given map's container.
-   * @param {LeafletMap} map - The Leaflet instance whose container should be tracked.
+   * @param {MapLibreMap} map - The map instance whose container should be tracked.
    * @returns {void}
    */
-  observe: (map: LeafletMap) => void
+  observe: (map: MapLibreMap) => void
   /**
    * Stops tracking and releases the observer.
    * @returns {void}
@@ -20,25 +20,22 @@ export interface UseMapAutoResizeReturn {
 }
 
 /**
- * Keeps a Leaflet instance's cached container size in step with the element it is mounted on. Leaflet
- * measures its container when the map is created and afterwards only on a window resize, so a map whose
- * container grows for any other reason keeps painting the tile grid at the old size and leaves the rest
- * of the container on Leaflet's blank background. Teardown is owned here.
+ * Keeps a map instance's drawing buffer in step with the element it is mounted on. The map measures its container
+ * when it is created and afterwards only on a window resize, so a map whose container grows for any other reason
+ * keeps drawing at the old size and leaves the rest of the container blank. Teardown is owned here.
  * @param {() => void} [onResize] - Extra work to run after each recompute, such as recentering.
  * @returns {UseMapAutoResizeReturn} The observe/stop lifecycle hooks.
  */
 export const useMapAutoResize = (onResize?: () => void): UseMapAutoResizeReturn => {
-  const observedMap = shallowRef<LeafletMap | undefined>()
+  const observedMap = shallowRef<MapLibreMap | undefined>()
   const container = shallowRef<HTMLElement | undefined>()
 
   const { stop } = useResizeObserver(container, () => {
-    // The re-measure has to happen every frame, but the `moveend` Leaflet fires along with it drives
-    // heavier bookkeeping (grid overlay and scale control rebuilds), so that one event alone is coalesced.
-    observedMap.value?.invalidateSize({ animate: false, debounceMoveend: true })
+    observedMap.value?.resize()
     onResize?.()
   })
 
-  const observe = (map: LeafletMap): void => {
+  const observe = (map: MapLibreMap): void => {
     observedMap.value = map
     container.value = map.getContainer()
   }
