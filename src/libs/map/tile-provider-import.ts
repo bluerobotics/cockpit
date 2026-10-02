@@ -68,7 +68,7 @@ export const isValidTileUrlTemplate = (urlTemplate: string): boolean =>
 const highestUsableTileZoom = 24
 
 /**
- * Normalizes a user-typed maximum zoom into a zoom level Leaflet can use.
+ * Normalizes a user-typed maximum zoom into a zoom level the map can use.
  * @param {unknown} value - The raw field value, which a cleared numeric input delivers as an empty string.
  * @returns {number | undefined} The rounded, clamped zoom, or `undefined` when no usable number was given.
  */

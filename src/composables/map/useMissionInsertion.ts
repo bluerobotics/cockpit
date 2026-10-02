@@ -72,7 +72,6 @@ export const useMissionInsertion = (
 
   // Reuses the same fresh id for matching per-survey waypoint copies — survey edit mode relies
   // on those ids matching the top-level waypoints, otherwise an orphan survey path is rendered.
-  // (A plain record is used because `Map` is shadowed by Leaflet's `L.Map` import in the host.)
   const cloneMissionForPlanning = (
     mission: CockpitMission
   ): {
