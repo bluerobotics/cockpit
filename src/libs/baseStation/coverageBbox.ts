@@ -59,7 +59,7 @@ export const bboxEquals = (left: CoverageBbox, right: CoverageBbox): boolean =>
 /** Map bounds exposing their edges, as both Leaflet and MapLibre bounds do. */
 type EdgeBounds = Record<'getSouth' | 'getWest' | 'getNorth' | 'getEast', () => number>
 
-export const leafletBoundsToCoverageBbox = (bounds: EdgeBounds): CoverageBbox => ({
+export const mapBoundsToCoverageBbox = (bounds: EdgeBounds): CoverageBbox => ({
   south: bounds.getSouth(),
   west: bounds.getWest(),
   north: bounds.getNorth(),
