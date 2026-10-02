@@ -1,4 +1,4 @@
-import type * as L from 'leaflet'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 import { expect, test, vi } from 'vitest'
 
 import {
@@ -27,16 +27,38 @@ test('TargetFollower.currentCoordinates returns the followed trackable', () => {
   expect(follower.currentCoordinates()).toBeUndefined()
 })
 
-test('applyFollowZoomMode pins Leaflet zoom on the view center only while following', () => {
-  const map = { options: { scrollWheelZoom: true, doubleClickZoom: true, touchZoom: true } }
-  applyFollowZoomMode(map as unknown as L.Map, true)
-  expect(map.options.scrollWheelZoom).toBe('center')
-  expect(map.options.doubleClickZoom).toBe('center')
-  expect(map.options.touchZoom).toBe('center')
-  applyFollowZoomMode(map as unknown as L.Map, false)
-  expect(map.options.scrollWheelZoom).toBe(true)
-  expect(map.options.doubleClickZoom).toBe(true)
-  expect(map.options.touchZoom).toBe(true)
+/** A map gesture handler, mocked. */
+type MockHandler = {
+  /** Enables the handler. */
+  enable: ReturnType<typeof vi.fn>
+  /** Disables the handler. */
+  disable: ReturnType<typeof vi.fn>
+}
+
+test('applyFollowZoomMode zooms about the view center only while following', () => {
+  const handler = (): MockHandler => ({
+    enable: vi.fn(),
+    disable: vi.fn(),
+  })
+  const map = {
+    scrollZoom: handler(),
+    touchZoomRotate: handler(),
+    doubleClickZoom: handler(),
+    on: vi.fn(),
+    off: vi.fn(),
+  }
+
+  applyFollowZoomMode(map as unknown as MapLibreMap, true)
+  expect(map.scrollZoom.enable).toHaveBeenLastCalledWith({ around: 'center' })
+  expect(map.touchZoomRotate.enable).toHaveBeenLastCalledWith({ around: 'center' })
+  expect(map.doubleClickZoom.disable).toHaveBeenCalled()
+  expect(map.on).toHaveBeenCalledWith('dblclick', expect.any(Function))
+
+  applyFollowZoomMode(map as unknown as MapLibreMap, false)
+  expect(map.scrollZoom.enable).toHaveBeenLastCalledWith(undefined)
+  expect(map.touchZoomRotate.enable).toHaveBeenLastCalledWith(undefined)
+  expect(map.doubleClickZoom.enable).toHaveBeenCalled()
+  expect(map.off).toHaveBeenCalledWith('dblclick', map.on.mock.calls[0][1])
 })
 
 test('TargetFollower.enableAutoUpdate replaces an existing interval so disableAutoUpdate stops all of them', () => {
