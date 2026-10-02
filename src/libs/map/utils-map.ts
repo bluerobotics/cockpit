@@ -809,7 +809,7 @@ export const getGridSpacingFromScale = (map: L.Map): number => {
 
   // Convert distance to degrees for grid spacing
   // Approximate conversion: 1 degree ≈ 111,320 meters at equator
-  const metersPerDegree = 111320 * Math.cos(latRad)
+  const metersPerDegree = 111320 * Math.cos((center.lat * Math.PI) / 180)
   const spacing = distanceMeters / metersPerDegree
 
   return spacing
