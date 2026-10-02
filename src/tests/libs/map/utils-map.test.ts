@@ -1,8 +1,17 @@
 import type * as L from 'leaflet'
 import { expect, test, vi } from 'vitest'
 
-import { applyFollowZoomMode, isFiniteLatLng, TargetFollower } from '@/libs/map/utils-map'
+import {
+  applyFollowZoomMode,
+  distanceInMeters,
+  isFiniteLatLng,
+  orderedSurveyPath,
+  surveyEndpointEdgeBearing,
+  TargetFollower,
+} from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
+
+import surveyFixture from './fixtures/survey-paths.json'
 
 test('TargetFollower.currentCoordinates returns the followed trackable', () => {
   const home: WaypointCoordinates = [-27.5, -48.4]
@@ -56,4 +65,58 @@ test('isFiniteLatLng requires both components', () => {
   expect(isFiniteLatLng([-27.5, -48.4])).toBe(true)
   expect(isFiniteLatLng([-27.5, undefined as unknown as number])).toBe(false)
   expect(isFiniteLatLng(undefined)).toBe(false)
+})
+
+// Expected values were produced by the Leaflet-based implementation, so the survey math cannot drift when the map
+// library changes underneath it.
+const surveyPolygon: WaypointCoordinates[] = [
+  [-27.5, -48.5],
+  [-27.5, -48.497],
+  [-27.503, -48.496],
+  [-27.5032, -48.5005],
+]
+
+const surveyCases = [
+  { params: { distanceBetweenLines: 50, linesAngle: 30 }, entryCorner: 0 },
+  { params: { distanceBetweenLines: 60, linesAngle: 75, turnaroundDistance: 20 }, entryCorner: 1 },
+  { params: { distanceBetweenLines: 40, linesAngle: 10, turnaroundDistance: -10 }, entryCorner: 2 },
+  {
+    params: { distanceBetweenLines: 70, linesAngle: 45, crosshatch: true, crosshatchDistanceBetweenLines: 90 },
+    entryCorner: 5,
+  },
+]
+
+/** The reference fields only some surveys carry. */
+type ReferenceSurvey = {
+  /** First index of the crosshatch pass, when the survey has one. */
+  crosshatchStartIndex?: number
+}
+
+const expectCoordinatesClose = (actual: WaypointCoordinates[], expected: number[][]): void => {
+  expect(actual).toHaveLength(expected.length)
+  actual.forEach(([lat, lng], i) => {
+    expect(lat).toBeCloseTo(expected[i][0], 9)
+    expect(lng).toBeCloseTo(expected[i][1], 9)
+  })
+}
+
+test.each(surveyCases.map((surveyCase, index) => ({ ...surveyCase, index })))(
+  'orderedSurveyPath matches the reference survey $index',
+  ({ params, entryCorner, index }) => {
+    const expected = surveyFixture.surveys[index]
+    const result = orderedSurveyPath({ polygonPoints: surveyPolygon, ...params }, entryCorner)
+
+    expectCoordinatesClose(result.path, expected.path)
+    expect(result.turnaroundSegments).toHaveLength(expected.turnarounds.length)
+    result.turnaroundSegments.forEach((segment, i) => expectCoordinatesClose(segment, expected.turnarounds[i]))
+    expect(result.crosshatchStartIndex).toBe((expected as ReferenceSurvey).crosshatchStartIndex)
+  }
+)
+
+test('surveyEndpointEdgeBearing matches the reference bearing', () => {
+  expect(surveyEndpointEdgeBearing(surveyPolygon, [-27.5, -48.4985])).toBeCloseTo(surveyFixture.endpointBearing, 9)
+})
+
+test('distanceInMeters matches the distance Leaflet reported', () => {
+  expect(distanceInMeters([-27.5, -48.5], [-27.6, -48.3])).toBeCloseTo(surveyFixture.distance, 6)
 })
