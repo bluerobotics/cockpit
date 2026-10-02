@@ -14,7 +14,6 @@ declare module '*?url' {
   export default src
 }
 
-declare module '@vue-leaflet/vue-leaflet'
 declare module 'gamepad.js'
 declare module 'vuetify'
 declare module 'vuetify/lib/components'
