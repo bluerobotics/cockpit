@@ -1,7 +1,20 @@
 import * as turf from '@turf/turf'
 import type { Feature, Point, Polygon, Position } from 'geojson'
-import * as L from 'leaflet'
+import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl'
 
+import {
+  fitMapBounds,
+  fromLngLat,
+  fromMapLibreZoom,
+  projectToContainer,
+  removeLayersAndSource,
+  setLineLayer,
+  setMapView,
+  slottedLayerId,
+  toLngLatBounds,
+  unprojectFromContainer,
+} from '@/libs/map/maplibre'
+import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import {
   bearingBetween,
   calculateHaversineDistance,
@@ -19,29 +32,17 @@ const defaultUpdateIntervalMs = 500
 // Minimum distance, in pixels, the user must drag the map before tracking stops, so small or accidental drags don't disable following.
 const defaultUnfollowDragThresholdPx = 150
 
-// Raise wheelPxPerZoomLevel so a single wheel notch/pinch step advances exactly one zoom level
-// (Leaflet's default 60 lets a typical ~100px deltaY round up to 2 levels with zoomSnap: 1).
-export const singleStepZoomMapOptions: Pick<
-  L.MapOptions,
-  'wheelPxPerZoomLevel' | 'wheelDebounceTime' | 'zoomSnap' | 'zoomDelta'
-> = {
-  wheelPxPerZoomLevel: 100,
-  wheelDebounceTime: 100,
-  zoomSnap: 1,
-  zoomDelta: 1,
-}
-
 /**
- * Whether a map reference already holds a usable Leaflet instance, which it may not while the owning
- * component is still mounting.
- * @param {L.Map | undefined} instance - The map reference to check.
- * @returns {boolean} True when the instance exists and has a container.
+ * Whether a map reference already holds a usable map instance, which it may not while the owning component is still
+ * mounting. Owners only publish the instance once its style has loaded, so holding one means layers can be added.
+ * @param {MapLibreMap | undefined} instance - The map reference to check.
+ * @returns {boolean} True when the instance exists and has not been removed.
  */
-export const isLeafletMapReady = (instance: L.Map | undefined): instance is L.Map =>
+export const isMapReady = (instance: MapLibreMap | undefined): instance is MapLibreMap =>
   !!instance && typeof instance.getContainer === 'function' && !!instance.getContainer()
 
-// Leaflet's mean earth radius, kept so every distance the map has always shown stays the same.
-const leafletEarthRadiusMeters = 6371000
+// Mean earth radius the map has always measured with, kept so every distance it shows stays the same.
+const meanEarthRadiusMeters = 6371000
 
 /**
  * Great-circle distance between two coordinates.
@@ -50,7 +51,7 @@ const leafletEarthRadiusMeters = 6371000
  * @returns {number} The distance between the two coordinates, in meters.
  */
 export const distanceInMeters = (from: WaypointCoordinates, to: WaypointCoordinates): number =>
-  calculateHaversineDistance(from, to) * (leafletEarthRadiusMeters / earthRadiusMeters)
+  calculateHaversineDistance(from, to) * (meanEarthRadiusMeters / earthRadiusMeters)
 
 /**
  * Ground distance covered by one screen pixel on a Web Mercator map.
@@ -68,25 +69,29 @@ export type MapPointerPosition = {
   /**
    * Position relative to the map container's top-left corner, in pixels.
    */
-  containerPoint: L.Point
+  containerPoint: ScreenPoint
   /**
    * Geographic coordinate under that position.
    */
-  latlng: L.LatLng
+  latlng: WaypointCoordinates
 }
 
 /**
  * Resolves a viewport-space (client) pixel position against a map, which is what a pointer position
- * cached outside a leaflet mouse handler needs before it can be treated as a coordinate.
- * @param {L.Map} map - Map whose container the client position is measured against.
+ * cached outside a map mouse handler needs before it can be treated as a coordinate.
+ * @param {MapLibreMap} map - Map whose container the client position is measured against.
  * @param {number} clientX - Viewport-space horizontal position, in pixels.
  * @param {number} clientY - Viewport-space vertical position, in pixels.
  * @returns {MapPointerPosition} The position in container space and the coordinate under it.
  */
-export const mapPointerPositionFromClient = (map: L.Map, clientX: number, clientY: number): MapPointerPosition => {
+export const mapPointerPositionFromClient = (
+  map: MapLibreMap,
+  clientX: number,
+  clientY: number
+): MapPointerPosition => {
   const rect = map.getContainer().getBoundingClientRect()
-  const containerPoint = L.point(clientX - rect.left, clientY - rect.top)
-  return { containerPoint, latlng: map.containerPointToLatLng(containerPoint) }
+  const containerPoint = { x: clientX - rect.left, y: clientY - rect.top }
+  return { containerPoint, latlng: unprojectFromContainer(map, [containerPoint.x, containerPoint.y]) }
 }
 
 /**
@@ -259,27 +264,27 @@ export class TargetFollower {
   }
 
   /**
-   * Stops following once the user pans the map past a pixel threshold. Leaflet drag events
+   * Stops following once the user pans the map past a pixel threshold. Map drag events
    * fire only for real user gestures, never for the follower's own panning, so there is no
    * feedback loop.
-   * @param {L.Map} map - The leaflet map whose user drags should break the follow.
+   * @param {MapLibreMap} map - The map whose user drags should break the follow.
    * @param {number} thresholdPixels - Minimum drag distance, in pixels, that stops following.
    * @returns {() => void} Disposer that removes the drag listeners; call it on teardown.
    */
-  public unFollowOnUserDrag(map: L.Map, thresholdPixels = defaultUnfollowDragThresholdPx): () => void {
-    let dragStartCenter: L.LatLng | undefined
+  public unFollowOnUserDrag(map: MapLibreMap, thresholdPixels = defaultUnfollowDragThresholdPx): () => void {
+    let dragStartCenter: WaypointCoordinates | undefined
 
     const onDragStart = (): void => {
       this.isUserDragging = true
-      dragStartCenter = this.target ? map.getCenter() : undefined
+      dragStartCenter = this.target ? fromLngLat(map.getCenter()) : undefined
     }
 
     const onDragEnd = (): void => {
       this.isUserDragging = false
       if (!dragStartCenter || !this.target) return
-      const startPx = map.latLngToContainerPoint(dragStartCenter)
-      const endPx = map.latLngToContainerPoint(map.getCenter())
-      const draggedPixels = startPx.distanceTo(endPx)
+      const startPx = projectToContainer(map, dragStartCenter)
+      const endPx = projectToContainer(map, fromLngLat(map.getCenter()))
+      const draggedPixels = Math.hypot(endPx.x - startPx.x, endPx.y - startPx.y)
       dragStartCenter = undefined
       if (draggedPixels >= thresholdPixels) {
         this.unFollow()
@@ -321,75 +326,94 @@ export class TargetFollower {
 export const isFiniteLatLng = (pos: WaypointCoordinates | undefined): pos is WaypointCoordinates =>
   Array.isArray(pos) && Number.isFinite(pos[0]) && Number.isFinite(pos[1])
 
+// Double-click zoom has no option to zoom about the center, so following maps swap it for this handler.
+const centeredDoubleClickZoom = new WeakMap<MapLibreMap, (event: MapMouseEvent) => void>()
+
 /**
- * Tell Leaflet's built-in handlers to zoom about the view center while following.
+ * Make the map's built-in handlers zoom about the view center while following.
  * Unfollowed maps keep zoom-around-cursor.
- * @param {L.Map} map Leaflet map
+ * @param {MapLibreMap} map The map
  * @param {boolean} following Whether a follow target is locked
  * @returns {void}
  */
-export const applyFollowZoomMode = (map: L.Map, following: boolean): void => {
-  map.options.scrollWheelZoom = following ? 'center' : true
-  map.options.doubleClickZoom = following ? 'center' : true
-  map.options.touchZoom = following ? 'center' : true
+export const applyFollowZoomMode = (map: MapLibreMap, following: boolean): void => {
+  const around = following ? { around: 'center' as const } : undefined
+  // The handlers only take the option while being enabled, and ignore enabling once they are on.
+  map.scrollZoom.disable()
+  map.scrollZoom.enable(around)
+  map.touchZoomRotate.disable()
+  map.touchZoomRotate.enable(around)
+
+  const existing = centeredDoubleClickZoom.get(map)
+  if (following && !existing) {
+    const zoomAboutCenter = (event: MapMouseEvent): void => {
+      event.preventDefault()
+      map.easeTo({ zoom: map.getZoom() + 1, duration: 300 })
+    }
+    centeredDoubleClickZoom.set(map, zoomAboutCenter)
+    map.doubleClickZoom.disable()
+    map.on('dblclick', zoomAboutCenter)
+  } else if (!following && existing) {
+    centeredDoubleClickZoom.delete(map)
+    map.off('dblclick', existing)
+    map.doubleClickZoom.enable()
+  }
 }
 
 /**
  * Keep the follow target under the view when zoom changes, otherwise apply a plain zoom.
- * @param {L.Map} map Leaflet map
- * @param {number} zoom Target zoom
+ * @param {MapLibreMap} map The map
+ * @param {number} zoom Target zoom, on the tile scale
  * @param {WaypointCoordinates | undefined} pos Follow coordinate, if any
  * @returns {void}
  */
-export const recenterMapOnFollowTarget = (map: L.Map, zoom: number, pos: WaypointCoordinates | undefined): void => {
+export const recenterMapOnFollowTarget = (
+  map: MapLibreMap,
+  zoom: number,
+  pos: WaypointCoordinates | undefined
+): void => {
+  // A zoom the map reported itself is already applied, and writing it back would round a fractional zoom mid-scroll.
+  const newZoom = fromMapLibreZoom(map.getZoom()) === zoom ? undefined : zoom
   if (isFiniteLatLng(pos)) {
-    map.setView(pos, zoom, { animate: false })
+    setMapView(map, pos, newZoom)
     return
   }
-  map.setZoom(zoom)
+  if (newZoom !== undefined) setMapView(map, fromLngLat(map.getCenter()), newZoom)
 }
 
 /**
  * Adjusts the given map view so that all the provided waypoint coordinates
  * are visible at once. Coordinates with invalid lat/lng values are ignored.
- * @param {L.Map} map - Leaflet map instance to adjust.
+ * @param {MapLibreMap} map - Map instance to adjust.
  * @param {WaypointCoordinates[]} coordinates - List of `[latitude, longitude]` tuples to fit.
- * @param {L.FitBoundsOptions} [options] - Optional Leaflet `fitBounds` options. A sensible
- *   default padding is applied when none is provided.
  * @returns {boolean} `true` if the map view was adjusted, `false` if there were no valid
  *   coordinates to fit.
  */
-export const fitMapToWaypoints = (
-  map: L.Map,
-  coordinates: WaypointCoordinates[],
-  options?: L.FitBoundsOptions
-): boolean => {
+export const fitMapToWaypoints = (map: MapLibreMap, coordinates: WaypointCoordinates[]): boolean => {
   const validCoordinates = coordinates.filter(isFiniteLatLng)
   if (validCoordinates.length === 0) return false
 
-  const bounds = L.latLngBounds(validCoordinates.map((coord) => L.latLng(coord[0], coord[1])))
-  map.fitBounds(bounds, { padding: [20, 20], maxZoom: 22, animate: true, ...(options ?? {}) })
+  fitMapBounds(map, toLngLatBounds(validCoordinates), { padding: 20, maxZoom: 22, animate: true })
   return true
 }
 
 /**
  * Persist the live map view into the shared last-position store.
- * Prefer the Leaflet instance when present so a leave mid-gesture still records the real center/zoom.
+ * Prefer the map instance when present so a leave mid-gesture still records the real center/zoom.
  * @param { (zoom: number, center: WaypointCoordinates) => void } save Writer for the shared last-view keys.
- * @param { L.Map | undefined } map Live Leaflet map, when still mounted.
+ * @param { MapLibreMap | undefined } map Live map, when still mounted.
  * @param { number } zoom Fallback zoom from the local ref.
  * @param { WaypointCoordinates } center Fallback center from the local ref.
  * @returns { void }
  */
 export const persistLiveMapView = (
   save: (zoom: number, center: WaypointCoordinates) => void,
-  map: L.Map | undefined,
+  map: MapLibreMap | undefined,
   zoom: number,
   center: WaypointCoordinates
 ): void => {
   if (map) {
-    const { lat, lng } = map.getCenter()
-    save(map.getZoom(), [lat, lng])
+    save(fromMapLibreZoom(map.getZoom()), fromLngLat(map.getCenter()))
     return
   }
   save(zoom, center)
@@ -793,23 +817,23 @@ const moveAlongEdge = (
 }
 
 /**
- * Calculate grid spacing based on Leaflet's scale control logic
- * This ensures the grid spacing matches what the standard Leaflet scale control shows
- * @param {L.Map} map - Leaflet map instance
- * @returns {number} The grid spacing in meters
+ * Calculate grid spacing based on the scale control logic
+ * This ensures the grid spacing matches what the scale control shows
+ * @param {MapLibreMap} map - Map instance
+ * @returns {number} The grid spacing in degrees
  */
-export const getGridSpacingFromScale = (map: L.Map): number => {
+export const getGridSpacingFromScale = (map: MapLibreMap): number => {
   if (!map) throw new Error('Map instance is required')
 
   // Get map bounds and center
   const center = map.getCenter()
-  const zoom = map.getZoom()
+  const zoom = fromMapLibreZoom(map.getZoom())
 
-  // Standard scale control width in pixels (Leaflet default is 100px max)
+  // Standard scale control width in pixels (100px max)
   const maxWidth = 100
   const maxDistanceMeters = metersPerPixel(center.lat, zoom) * maxWidth
 
-  // Round to nice numbers like Leaflet scale control does
+  // Round to nice numbers like the scale control does
   const niceDistances = [
     1, 2, 3, 5, 10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000, 20000, 30000, 50000, 100000, 200000,
     300000, 500000, 1000000, 2000000, 3000000, 5000000, 10000000,
@@ -833,28 +857,19 @@ export const getGridSpacingFromScale = (map: L.Map): number => {
   return spacing
 }
 
-/**
- * Creates a coordinate grid overlay on the provided map
- * @param {L.Map} map - Leaflet map instance
- * @param {L.LayerGroup} gridLayer - Reference to store the grid layer
- * @returns {L.LayerGroup} The created grid layer
- */
-export const createGridOverlay = (map: L.Map, gridLayer?: L.LayerGroup): L.LayerGroup => {
-  if (!map) throw new Error('Map instance is required')
+const gridLayerId = slottedLayerId('grid', 'coordinate-grid')
 
-  // Remove existing grid if provided
-  if (gridLayer) {
-    map.removeLayer(gridLayer as L.Layer)
-  }
+/**
+ * Draws (or redraws, for the current view) a coordinate grid on the provided map
+ * @param {MapLibreMap} map - Map instance
+ */
+export const createGridOverlay = (map: MapLibreMap): void => {
+  if (!map) throw new Error('Map instance is required')
 
   const bounds = map.getBounds()
 
-  // Get grid configuration based on Leaflet scale control
+  // Get grid configuration based on the scale control
   const spacing = getGridSpacingFromScale(map)
-  const lineOpacity = 0.3
-  const lineWeight = 1
-
-  const newGridLayer = L.layerGroup()
 
   // Create grid lines
   const south = Math.floor(bounds.getSouth() / spacing) * spacing
@@ -862,44 +877,37 @@ export const createGridOverlay = (map: L.Map, gridLayer?: L.LayerGroup): L.Layer
   const west = Math.floor(bounds.getWest() / spacing) * spacing
   const east = Math.ceil(bounds.getEast() / spacing) * spacing
 
+  const lines: number[][][] = []
   // Horizontal lines (latitude)
   for (let lat = south; lat <= north; lat += spacing) {
-    const line = L.polyline(
-      [
-        [lat, west],
-        [lat, east],
-      ],
-      {
-        color: '#ffffff',
-        weight: lineWeight,
-        opacity: lineOpacity,
-        dashArray: '2, 4',
-        interactive: false,
-      }
-    )
-    newGridLayer.addLayer(line)
+    lines.push([
+      [west, lat],
+      [east, lat],
+    ])
   }
-
   // Vertical lines (longitude)
   for (let lng = west; lng <= east; lng += spacing) {
-    const line = L.polyline(
-      [
-        [south, lng],
-        [north, lng],
-      ],
-      {
-        color: '#ffffff',
-        weight: lineWeight,
-        opacity: lineOpacity,
-        dashArray: '2, 4',
-        interactive: false,
-      }
-    )
-    newGridLayer.addLayer(line)
+    lines.push([
+      [lng, south],
+      [lng, north],
+    ])
   }
 
-  newGridLayer.addTo(map)
-  return newGridLayer
+  setLineLayer(
+    map,
+    gridLayerId,
+    'grid',
+    { type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: lines } },
+    { color: '#ffffff', width: 1, opacity: 0.3, dashPattern: [2, 4] }
+  )
+}
+
+/**
+ * Removes the coordinate grid from the provided map
+ * @param {MapLibreMap | undefined} map - Map instance
+ */
+export const removeGridOverlay = (map: MapLibreMap | undefined): void => {
+  removeLayersAndSource(map, [gridLayerId], gridLayerId)
 }
 
 /**
@@ -977,77 +985,4 @@ export const affectedAngleTriples = (
     }
   }
   return triples
-}
-
-const layersControlActionClass = 'cockpit-leaflet-layers-action-btn'
-
-// Marks the control as carrying an action row, so the single padding rule in `global.css` can even out Leaflet's
-// asymmetric expanded padding for it without each map view repeating the same override.
-const layersControlWithActionClass = 'cockpit-leaflet-layers-with-action'
-
-/**
- * A clickable action appended to the bottom of a Leaflet layers control's list.
- */
-export interface LayersControlAction {
-  /**
-   * Button label.
-   */
-  label: string
-  /**
-   * Invoked when the action button is clicked.
-   */
-  onClick: () => void
-}
-
-/**
- * Creates a Leaflet layers control that renders a clickable action row (e.g. "Add map provider") at the bottom
- * of its list. The row is re-injected every time the control is added to a map, so it survives the hover-driven
- * add/remove cycles the map widget performs on its controls.
- * @param {Record<string, L.Layer>} baseMaps - Base layers to expose (radio section).
- * @param {Record<string, L.Layer> | undefined} overlays - Optional overlays (checkbox section).
- * @param {LayersControlAction} action - The action row to render below the layer list.
- * @returns {L.Control.Layers} The configured layers control instance.
- */
-export const createLayersControlWithAction = (
-  baseMaps: Record<string, L.Layer>,
-  overlays: Record<string, L.Layer> | undefined,
-  action: LayersControlAction
-): L.Control.Layers => {
-  const ExtendedLayersControl = L.Control.Layers.extend({
-    onAdd(this: L.Control.Layers, map: L.Map): HTMLElement {
-      const baseOnAdd = L.Control.Layers.prototype.onAdd as (m: L.Map) => HTMLElement
-      const container = baseOnAdd.call(this, map)
-      container.classList.add(layersControlWithActionClass)
-      const list = container.querySelector('.leaflet-control-layers-list') as HTMLElement | null
-      if (!list) return container
-      list.querySelectorAll('.' + layersControlActionClass).forEach((el) => el.remove())
-
-      const separator = document.createElement('div')
-      separator.className = 'leaflet-control-layers-separator'
-
-      const button = document.createElement('button')
-      button.className = layersControlActionClass
-      button.type = 'button'
-      button.textContent = action.label
-      Object.assign(button.style, {
-        display: 'block',
-        width: '100%',
-        boxSizing: 'border-box',
-        padding: '6px 8px',
-        marginTop: '6px',
-        borderRadius: '4px',
-        background: '#FFFFFF22',
-        cursor: 'pointer',
-        color: '#fff',
-        boxShadow: '1px 1px 2px 0 rgba(0, 0, 0, 0.2)',
-      } satisfies Partial<CSSStyleDeclaration>)
-      L.DomEvent.disableClickPropagation(button)
-      L.DomEvent.on(button, 'click', action.onClick)
-
-      list.appendChild(separator)
-      list.appendChild(button)
-      return container
-    },
-  })
-  return new (ExtendedLayersControl as unknown as typeof L.Control.Layers)(baseMaps, overlays)
 }
