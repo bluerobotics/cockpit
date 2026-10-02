@@ -30,7 +30,7 @@
   </div>
 
   <teleport to="body">
-    <InteractionDialog v-model="showCalibrationModal" max-width="1000px" variant="text-only" persistent>
+    <InteractionDialog v-model="showCalibrationModal" max-width="1000px" variant="text-only" persistent backdrop>
       <template #title>
         <div class="flex justify-center w-full font-bold mt-1 relative">
           Joystick Calibration
@@ -40,7 +40,7 @@
         </div>
       </template>
       <template #content>
-        <div class="flex flex-col items-center gap-2 p-1 -mt-4 mb-2">
+        <div class="flex flex-col items-center gap-2 p-1 -mt-8 mb-2">
           <!-- Info panel for instructions -->
           <v-expand-transition>
             <div v-if="showInstructions" class="help-panel mb-4 p-4 rounded bg-white/5 w-full">
@@ -95,13 +95,10 @@
             </div>
           </div>
           <!-- Deadband Calibration Section -->
-          <div class="w-full">
+          <div v-if="isCalibrating && calibratingAxis === null" class="w-full">
             <div class="flex items-center justify-between mb-2">
-              <span v-if="isCalibrating && calibratingAxis === null" class="text-xs text-blue-400 ml-2">
-                Calibrating all axes...
-              </span>
+              <span class="text-xs text-blue-400 ml-2"> Calibrating all inputs... </span>
               <v-progress-linear
-                v-if="isCalibrating && calibratingAxis === null"
                 :model-value="((Date.now() - calibrationStartTime) / 5000) * 100"
                 color="primary"
                 height="4"
@@ -111,13 +108,15 @@
             </div>
           </div>
           <!-- Deadband Axis Panels -->
-          <div class="grid grid-rows-2 grid-cols-3 grid-flow-row gap-x-6 gap-y-6 w-full my-2">
+          <div class="grid grid-rows-2 grid-cols-3 grid-flow-row gap-[18px] w-full -mt-1 mb-2">
             <div
-              v-for="(_, index) in controllerStore.currentMainJoystick?.state.axes ?? []"
+              v-for="index in calibrationPanels"
               :key="index"
               class="border border-gray-700/60 rounded-lg py-2 px-4 bg-gray-900/60 flex flex-col"
             >
-              <div class="flex w-full justify-center text-lg font-bold text-white mb-3">Axis {{ index }}</div>
+              <div class="flex w-full justify-center text-lg font-bold text-white mb-0.5 capitalize">
+                {{ inputName(index) }}
+              </div>
               <div class="w-full h-40 relative">
                 <svg
                   :id="`deadband-svg-${index}`"
@@ -131,10 +130,10 @@
 
                   <!-- Axis labels (rendered inside the viewBox so they always align with the gridlines) -->
                   <text x="102" y="9" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="start">
-                    out: {{ numberToTwoDigitsSigned(processedAxisValues[index]) }}
+                    out: {{ numberToTwoDigitsSigned(processedInputValues[index]) }}
                   </text>
                   <text x="198" y="56" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="end">
-                    in: {{ numberToTwoDigitsSigned(rawAxisValues[index]) }}
+                    in: {{ numberToTwoDigitsSigned(rawInputValues[index]) }}
                   </text>
 
                   <!-- Deadband region -->
@@ -173,17 +172,17 @@
 
                   <!-- Current value indicator -->
                   <circle
-                    :cx="100 + (rawAxisValues[index] ?? 0) * 100"
-                    :cy="60 - processedAxisValues[index] * 50"
+                    :cx="100 + (rawInputValues[index] ?? 0) * 100"
+                    :cy="60 - processedInputValues[index] * 50"
                     r="4"
                     fill="#3b82f6"
                   />
 
                   <!-- Vertical line (input) -->
                   <line
-                    :x1="100 + (rawAxisValues[index] ?? 0) * 100"
+                    :x1="100 + (rawInputValues[index] ?? 0) * 100"
                     y1="0"
-                    :x2="100 + (rawAxisValues[index] ?? 0) * 100"
+                    :x2="100 + (rawInputValues[index] ?? 0) * 100"
                     y2="120"
                     stroke="#3b82f6"
                     stroke-width="1"
@@ -193,31 +192,65 @@
                   <!-- Horizontal line (output) -->
                   <line
                     x1="0"
-                    :y1="60 - processedAxisValues[index] * 50"
+                    :y1="60 - processedInputValues[index] * 50"
                     x2="200"
-                    :y2="60 - processedAxisValues[index] * 50"
+                    :y2="60 - processedInputValues[index] * 50"
                     stroke="#3b82f6"
                     stroke-width="1"
                     stroke-dasharray="2,2"
                   />
                 </svg>
               </div>
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center justify-between mt-3 mb-2">
                 <div class="flex items-center gap-2 w-full">
-                  <span class="text-xs text-gray-300">Deadband: </span>
+                  <span
+                    class="text-xs"
+                    :class="currentCalibration.deadband.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
+                  >
+                    Deadband:
+                  </span>
                   <div class="w-full" />
-                  <v-text-field
-                    v-model.number="deadzoneThresholds[index]"
-                    type="number"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    density="compact"
-                    hide-details
-                    class="min-w-20"
-                    variant="outlined"
-                    :disabled="!currentCalibration.deadband.enabled"
-                  />
+                  <div
+                    class="group relative flex w-20 shrink-0 bg-[#FFFFFF11]"
+                    :class="{ 'opacity-40': !currentCalibration.deadband.enabled }"
+                  >
+                    <input
+                      v-model.number="deadzoneThresholds[index]"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      class="calibration-input w-full min-w-0 px-2 group-focus-within:pr-7 py-1 text-[13px] text-white bg-transparent disabled:cursor-not-allowed"
+                      :disabled="!currentCalibration.deadband.enabled"
+                      :aria-label="`Deadband for ${inputName(index)}`"
+                    />
+                    <div class="absolute inset-y-0 right-0 hidden group-focus-within:flex flex-col" @mousedown.prevent>
+                      <v-btn
+                        icon
+                        variant="text"
+                        rounded="0"
+                        :width="24"
+                        class="flex-1 !h-0 min-h-0"
+                        :aria-label="`Increase deadband for ${inputName(index)}`"
+                        :disabled="!currentCalibration.deadband.enabled || deadzoneThresholds[index] >= 1"
+                        @click="stepDeadband(index, 1)"
+                      >
+                        <v-icon size="18">mdi-menu-up</v-icon>
+                      </v-btn>
+                      <v-btn
+                        icon
+                        variant="text"
+                        rounded="0"
+                        :width="24"
+                        class="flex-1 !h-0 min-h-0"
+                        :aria-label="`Decrease deadband for ${inputName(index)}`"
+                        :disabled="!currentCalibration.deadband.enabled || deadzoneThresholds[index] <= 0"
+                        @click="stepDeadband(index, -1)"
+                      >
+                        <v-icon size="18">mdi-menu-down</v-icon>
+                      </v-btn>
+                    </div>
+                  </div>
                   <v-btn
                     size="x-small"
                     variant="text"
@@ -229,8 +262,13 @@
                   </v-btn>
                 </div>
               </div>
-              <div class="flex items-center justify-between mb-2 w-full">
-                <span class="text-xs text-gray-300">Exponential: </span>
+              <div class="flex items-center justify-between mb-px w-full">
+                <span
+                  class="text-xs"
+                  :class="currentCalibration.exponential.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
+                >
+                  Exponential:
+                </span>
                 <div class="w-full" />
                 <v-slider
                   v-model="exponentialFactors[index]"
@@ -243,7 +281,12 @@
                   color="white"
                   :disabled="!currentCalibration.exponential.enabled"
                 />
-                <span class="text-xs text-gray-300 w-8 text-end">{{ exponentialFactors[index].toFixed(1) }}</span>
+                <span
+                  class="text-xs w-8 text-end"
+                  :class="currentCalibration.exponential.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
+                >
+                  {{ exponentialFactors[index].toFixed(1) }}
+                </span>
                 <v-btn
                   size="x-small"
                   variant="text"
@@ -256,14 +299,28 @@
               </div>
             </div>
           </div>
+          <p v-if="analogButtons.size === 0" class="text-xs text-gray-400">
+            Analog triggers get a card here once pressed partway. On/off buttons have no calibration.
+          </p>
         </div>
       </template>
       <template #actions>
-        <v-btn variant="text" @click="cancelCalibration">Cancel</v-btn>
-        <div class="w-full" />
-        <v-btn variant="text" :disabled="isCalibrating" @click="startCalibration()"> Auto calibrate deadzones </v-btn>
-
-        <v-btn variant="text" :disabled="!allowSavingCalibration" @click="saveCalibration">Save</v-btn>
+        <div class="flex w-full justify-between items-center px-1 py-2">
+          <v-btn variant="text" size="small" @click="cancelCalibration">Cancel</v-btn>
+          <div class="flex gap-x-10">
+            <v-btn variant="text" size="small" :disabled="isCalibrating" @click="startCalibration()">
+              Auto calibrate deadzones
+            </v-btn>
+            <v-btn
+              size="small"
+              class="bg-[#FFFFFF22] text-white"
+              :disabled="!allowSavingCalibration"
+              @click="saveCalibration"
+            >
+              Save
+            </v-btn>
+          </div>
+        </div>
       </template>
     </InteractionDialog>
   </teleport>
@@ -275,16 +332,20 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import { JoystickModel } from '@/libs/joystick/manager'
+import { OtherProtocol } from '@/libs/joystick/protocols/other'
 import { round } from '@/libs/utils'
 import { useControllerStore } from '@/stores/controller'
-import { type JoystickCalibration } from '@/types/joystick'
+import { type JoystickCalibration, JoystickAxis, JoystickButton } from '@/types/joystick'
 
 const controllerStore = useControllerStore()
 
 const showCalibrationModal = ref(false)
+// Per-input arrays hold every axis first, then every button (by raw gamepad index, as calibration is applied)
+const numAxes = ref(0)
 const exponentialFactors = ref<number[]>([])
-const rawAxisValues = ref<number[]>([])
-const processedAxisValues = ref<number[]>([])
+const rawInputValues = ref<number[]>([])
+const processedInputValues = ref<number[]>([])
+const analogButtons = ref(new Set<number>())
 const allowSavingCalibration = ref(false)
 const deadzoneThresholds = ref<number[]>([])
 const isCalibrating = ref(false)
@@ -308,25 +369,69 @@ const currentCalibration = computed<JoystickCalibration>({
   },
 })
 
+const currentButtonValues = (): number[] =>
+  controllerStore.currentMainJoystick?.gamepad.buttons.map((button) => button.value) ?? []
+
+// The standard layout is the only one that says which buttons are the triggers
+const standardTriggers = computed<number[]>(() =>
+  controllerStore.currentMainJoystick?.gamepad.mapping === 'standard' ? [JoystickButton.B6, JoystickButton.B7] : []
+)
+
+// SDL game controllers also mirror the triggers as axes 4 and 5, which only get a second card when mapped
+const hiddenTriggerAxes = computed<number[]>(() => {
+  if (!standardTriggers.value.length || !controllerStore.currentMainJoystick?.gamepad.id.includes('(SDL ')) return []
+  const { axesCorrespondencies } = controllerStore.protocolMapping
+  return [JoystickAxis.A4, JoystickAxis.A5].filter((axis) => {
+    const actionId = axesCorrespondencies[axis]?.action?.id
+    return actionId === undefined || actionId === OtherProtocol.no_function
+  })
+})
+
+const inputName = (index: number): string => {
+  if (index < numAxes.value) return `axis ${index}`
+  const button = index - numAxes.value
+  return standardTriggers.value.includes(button) ? `trigger ${button}` : `button ${button}`
+}
+
+const calibrationPanels = computed<number[]>(() => [
+  ...Array.from({ length: numAxes.value }, (_, index) => index).filter(
+    (index) => !hiddenTriggerAxes.value.includes(index)
+  ),
+  ...[...analogButtons.value].sort((a, b) => a - b).map((button) => numAxes.value + button),
+])
+
+const savedOrFilled = (saved: number[], length: number, fill: number): number[] =>
+  Array.from({ length }, (_, index) => saved[index] ?? fill)
+
 const openCalibrationModal = (): void => {
   logUserAction('Opened joystick calibration dialog')
   showCalibrationModal.value = true
-  const numAxes = controllerStore.currentMainJoystick?.state.axes.length ?? 0
-  exponentialFactors.value =
-    currentCalibration.value.exponential.factors.axes.length === numAxes
-      ? [...currentCalibration.value.exponential.factors.axes]
-      : Array(numAxes).fill(1.0)
-  deadzoneThresholds.value =
-    currentCalibration.value.deadband.thresholds.axes.length === numAxes
-      ? [...currentCalibration.value.deadband.thresholds.axes]
-      : Array(numAxes).fill(0.05)
-  rawAxisValues.value = Array(numAxes).fill(0)
-  processedAxisValues.value = Array(numAxes).fill(0)
+  numAxes.value = controllerStore.currentMainJoystick?.state.axes.length ?? 0
+  const numButtons = currentButtonValues().length
+  const { deadband, exponential } = currentCalibration.value
+  exponentialFactors.value = [
+    ...savedOrFilled(exponential.factors.axes, numAxes.value, 1.0),
+    ...savedOrFilled(exponential.factors.buttons, numButtons, 1.0),
+  ]
+  deadzoneThresholds.value = [
+    ...savedOrFilled(deadband.thresholds.axes, numAxes.value, 0.05),
+    ...savedOrFilled(deadband.thresholds.buttons, numButtons, 0),
+  ]
+  const calibratedButtons = Array.from({ length: numButtons }, (_, button) => button).filter((button) => {
+    const index = numAxes.value + button
+    return deadzoneThresholds.value[index] !== 0 || exponentialFactors.value[index] !== 1
+  })
+  analogButtons.value = new Set([
+    ...calibratedButtons,
+    ...standardTriggers.value.filter((button) => button < numButtons),
+  ])
+  rawInputValues.value = Array(numAxes.value + numButtons).fill(0)
+  processedInputValues.value = Array(numAxes.value + numButtons).fill(0)
   allowSavingCalibration.value = true
 }
 
 const startCalibration = (axisIndex?: number): void => {
-  logUserAction(`Started deadband auto-calibration (${axisIndex === undefined ? 'all axes' : `axis ${axisIndex}`})`)
+  logUserAction(`Started deadband auto-calibration (${axisIndex === undefined ? 'all inputs' : inputName(axisIndex)})`)
   isCalibrating.value = true
   calibrationStartTime.value = Date.now()
   calibratingAxis.value = axisIndex ?? null
@@ -344,8 +449,10 @@ const cancelCalibration = (): void => {
 
 const saveCalibration = (): void => {
   logUserAction('Saved joystick calibration')
-  currentCalibration.value.deadband.thresholds.axes = [...deadzoneThresholds.value]
-  currentCalibration.value.exponential.factors.axes = [...exponentialFactors.value]
+  currentCalibration.value.deadband.thresholds.axes = deadzoneThresholds.value.slice(0, numAxes.value)
+  currentCalibration.value.deadband.thresholds.buttons = deadzoneThresholds.value.slice(numAxes.value)
+  currentCalibration.value.exponential.factors.axes = exponentialFactors.value.slice(0, numAxes.value)
+  currentCalibration.value.exponential.factors.buttons = exponentialFactors.value.slice(numAxes.value)
   showCalibrationModal.value = false
 }
 
@@ -362,12 +469,21 @@ const setExponentialEnabled = (value: boolean | null): void => {
 }
 
 const resetDeadband = (index: number): void => {
-  logUserAction(`Reset deadband for axis ${index}`)
+  logUserAction(`Reset deadband for ${inputName(index)}`)
   deadzoneThresholds.value[index] = 0
 }
 
+const stepDeadband = (index: number, direction: 1 | -1): void => {
+  const threshold = Math.min(
+    1,
+    Math.max(0, round((Number(deadzoneThresholds.value[index]) || 0) + direction * 0.01, 2))
+  )
+  deadzoneThresholds.value[index] = threshold
+  logUserAction(`Stepped deadband for ${inputName(index)} to ${threshold}`)
+}
+
 const resetExponential = (index: number): void => {
-  logUserAction(`Reset exponential factor for axis ${index}`)
+  logUserAction(`Reset exponential factor for ${inputName(index)}`)
   exponentialFactors.value[index] = 1.0
 }
 
@@ -461,7 +577,7 @@ function onDeadbandRegionMouseMove(event: MouseEvent): void {
 function onDeadbandRegionMouseUp(): void {
   if (draggingDeadbandAxis.value !== null) {
     const axisIndex = draggingDeadbandAxis.value
-    logUserAction(`Adjusted deadband for axis ${axisIndex} to ${deadzoneThresholds.value[axisIndex]}`)
+    logUserAction(`Adjusted deadband for ${inputName(axisIndex)} to ${deadzoneThresholds.value[axisIndex]}`)
   }
   draggingDeadbandAxis.value = null
   document.body.style.userSelect = ''
@@ -471,6 +587,7 @@ function onDeadbandRegionMouseUp(): void {
 watch(
   [
     () => controllerStore.currentMainJoystick?.state.axes,
+    currentButtonValues,
     () => [...exponentialFactors.value],
     () => [...deadzoneThresholds.value],
     () => currentCalibration.value.deadband.enabled,
@@ -481,27 +598,33 @@ watch(
   ],
   () => {
     const axes = controllerStore.currentMainJoystick?.state.axes ?? []
+    const buttons = currentButtonValues()
+    buttons.forEach((value, button) => {
+      if (value > 0 && value < 1) analogButtons.value.add(button)
+    })
+    const inputs = [...axes.map((axis) => axis ?? 0), ...buttons]
     const deadbandEnabled = currentCalibration.value.deadband.enabled
     const exponentialEnabled = currentCalibration.value.exponential.enabled
-    rawAxisValues.value = axes.map((axis) => axis ?? 0)
-    processedAxisValues.value = axes.map((value, index) => {
+    rawInputValues.value = inputs
+    processedInputValues.value = inputs.map((value, index) => {
       const deadband = deadzoneThresholds.value[index] ?? 0
       const factor = exponentialFactors.value[index] ?? 1.0
-      return applyDeadbandAndExponential(value ?? 0, deadband, factor, deadbandEnabled, exponentialEnabled)
+      return applyDeadbandAndExponential(value, deadband, factor, deadbandEnabled, exponentialEnabled)
     })
     // Deadband calibration logic
     if (isCalibrating.value) {
       const elapsed = Date.now() - calibrationStartTime.value
-      axes.forEach((value, index) => {
+      // Hidden digital buttons are skipped, as a press during calibration would give them a deadband of 1
+      calibrationPanels.value.forEach((index) => {
         if (calibratingAxis.value === null || calibratingAxis.value === index) {
-          const deviation = Math.abs(value ?? 0)
+          const deviation = Math.abs(inputs[index] ?? 0)
           maxDeviations.value[index] = Math.max(maxDeviations.value[index] ?? 0, deviation)
         }
       })
       if (elapsed >= 5000) {
         isCalibrating.value = false
         // Set the deadzone threshold to the maximum deviation plus a small buffer
-        axes.forEach((_, index) => {
+        calibrationPanels.value.forEach((index) => {
           if (calibratingAxis.value === null || calibratingAxis.value === index) {
             deadzoneThresholds.value[index] = Math.min(1, round(maxDeviations.value[index], 2) ?? 0)
           }
@@ -537,3 +660,15 @@ onBeforeUnmount(() => {
   window.removeEventListener('mouseup', onDeadbandRegionMouseUp)
 })
 </script>
+
+<style scoped>
+.calibration-input[type='number']::-webkit-inner-spin-button,
+.calibration-input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.calibration-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+</style>
