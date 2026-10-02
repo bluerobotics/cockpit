@@ -329,7 +329,7 @@
               v-model="customTileUrlDraft"
               label="Tile URL"
               placeholder="https://tiles.example.com/{z}/{x}/{y}.png"
-              hint="Leaflet TileLayer URL with {z}, {x}, {y} placeholders. Add an API key to the URL itself if your provider requires one."
+              hint="Map tile URL with {z}, {x}, {y} placeholders. Add an API key to the URL itself if your provider requires one."
               persistent-hint
               variant="outlined"
               density="compact"
