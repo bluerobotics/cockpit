@@ -1,6 +1,6 @@
-import type { Map as MapLibreMap, Marker } from 'maplibre-gl'
+import type { DataDrivenPropertyValueSpecification, Map as MapLibreMap, Marker } from 'maplibre-gl'
 
-import { divIconMarker, slottedLayerId } from '@/libs/map/maplibre'
+import { divIconMarker, slotOfLayerId, slottedLayerId } from '@/libs/map/maplibre'
 
 /**
  * Class on every geofence marker element, both the committed handles and the ones drawn while a fence is in
@@ -119,4 +119,37 @@ export const ensureStripePattern = (map: MapLibreMap, name: string, color: strin
     }
   }
   map.addImage(name, { width: size, height: size, data })
+}
+
+// The slots whose vectors shared the overlay pane with the fences, which is what fence-mode dimming faded.
+const dimmedSlots = ['coverage', 'mission', 'survey-area', 'survey', 'grid']
+type OpacityProperty = 'fill-opacity' | 'line-opacity' | 'circle-opacity' | 'circle-stroke-opacity'
+const opacityProperties: Record<string, OpacityProperty[]> = {
+  fill: ['fill-opacity'],
+  line: ['line-opacity'],
+  circle: ['circle-opacity', 'circle-stroke-opacity'],
+}
+
+/**
+ * Fades the map's non-fence vector layers, so the fences being edited stand out, and returns how to undo it.
+ * @param {MapLibreMap} map - The map to dim.
+ * @param {number} factor - Opacity multiplier, in [0, 1].
+ * @returns {() => void} Restores the opacities the layers had.
+ */
+export const dimNonFenceLayers = (map: MapLibreMap, factor: number): (() => void) => {
+  const restores: (() => void)[] = []
+  map.getLayersOrder().forEach((id) => {
+    if (isFenceLayerId(id) || !dimmedSlots.includes(slotOfLayerId(id))) return
+    const type = map.getLayer(id)?.type
+    ;(opacityProperties[type ?? ''] ?? []).forEach((property) => {
+      const original = (map.getPaintProperty(id, property) ?? 1) as DataDrivenPropertyValueSpecification<number>
+      // A data-driven opacity is scaled as an expression, so each feature keeps its own share of the fade.
+      const dimmed = (
+        typeof original === 'number' ? original * factor : ['*', factor, original]
+      ) as DataDrivenPropertyValueSpecification<number>
+      map.setPaintProperty(id, property, dimmed)
+      restores.push(() => map.getLayer(id) && map.setPaintProperty(id, property, original))
+    })
+  })
+  return () => restores.forEach((restore) => restore())
 }
