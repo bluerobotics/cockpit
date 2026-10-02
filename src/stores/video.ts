@@ -1772,9 +1772,12 @@ export const useVideoStore = defineStore('video', () => {
 
     if (streamsToStart.isEmpty()) {
       // A stream waiting for its video is neither started here nor unavailable, and is already reported above
-      if (streamsWaitingForVideo.isEmpty()) {
-        alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
+      if (!streamsWaitingForVideo.isEmpty()) return
+      if (namesAvailableStreams.value.some(isRecordingOrAboutTo)) {
+        alertStore.pushAlert(new Alert(AlertLevel.Info, 'All streams are already being recorded.'))
+        return
       }
+      alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
       return
     }
 
