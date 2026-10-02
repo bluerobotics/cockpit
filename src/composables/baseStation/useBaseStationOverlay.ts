@@ -1,12 +1,17 @@
 import '@/styles/baseStationOverlay.css'
 
 import { useDebounceFn } from '@vueuse/core'
-import L from 'leaflet'
+import type { Feature, Geometry } from 'geojson'
+import type { Map as MapLibreMap, MapMouseEvent, Marker } from 'maplibre-gl'
 import { type Ref, type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { openSnackbar } from '@/composables/snackbar'
-import { createCellIdHeatLayer, mobileHeatmapRadiusFraction } from '@/libs/baseStation/cellIdHeatLayer'
+import {
+  type CellIdHeatLayerInstance,
+  createCellIdHeatLayer,
+  mobileHeatmapRadiusFraction,
+} from '@/libs/baseStation/cellIdHeatLayer'
 import {
   aimingArcLatLngs,
   bearingBetween,
@@ -18,7 +23,7 @@ import {
   bboxContains,
   bboxEquals,
   bboxIntersects,
-  leafletBoundsToCoverageBbox,
+  mapBoundsToCoverageBbox,
   overpassBboxAround,
   trimCacheEntries,
 } from '@/libs/baseStation/coverageBbox'
@@ -44,6 +49,26 @@ import {
   overpassBearing,
   overpassLabelParts,
 } from '@/libs/baseStation/overpass'
+import {
+  beforeIdForSlot,
+  containerPointFromClient,
+  divIconMarker,
+  eventLatLng,
+  fromLngLat,
+  lineFeature,
+  meterCircle,
+  polygonFeature,
+  projectToContainer,
+  removeLayersAndSource,
+  setDivIcon,
+  slottedLayerId,
+  toLngLat,
+  unprojectFromContainer,
+  upsertGeoJsonSource,
+} from '@/libs/map/maplibre'
+import { addRasterLayer } from '@/libs/map/raster-layers'
+import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
+import { isMapReady } from '@/libs/map/utils-map'
 import { escapeHtml, isElectron } from '@/libs/utils'
 import {
   type BaseStationConfig,
@@ -117,20 +142,67 @@ const baseStationMarkerHtml = (label: string, color: string): string => `
 
 let overlayInstanceCount = 0
 
+/** Something drawn on the map, and the way to take it off. */
+type RemovableDrawing = {
+  /** Removes the drawing from the map. */
+  remove: () => void
+}
+
+/** A coordinate and the container point it was drawn at. */
+type PanOrigin = {
+  /** The coordinate. */
+  lngLat: ReturnType<MapLibreMap['getCenter']>
+  /** Where it was drawn, in container pixels. */
+  point: ScreenPoint
+}
+
+/** How a group of coverage shapes is stroked; every shape in it shares the stroke width and dash pattern. */
+type ShapeGroupStroke = {
+  /** Stroke width, in pixels, or 0 for unstroked shapes. */
+  weight: number
+  /** Dash pattern, in pixels. */
+  dashPattern?: number[]
+}
+
+/** How one coverage shape is painted. */
+type ShapePaint = {
+  /** Stroke color. */
+  color: string
+  /** Stroke opacity. */
+  opacity?: number
+  /** Fill color, for areas. */
+  fillColor?: string
+  /** Fill opacity, for areas. */
+  fillOpacity?: number
+}
+
+const paintedShape = (feature: Feature<Geometry>, paint: ShapePaint): Feature<Geometry> => ({
+  ...feature,
+  properties: {
+    color: paint.color,
+    opacity: paint.opacity ?? 1,
+    fillColor: paint.fillColor ?? paint.color,
+    fillOpacity: paint.fillOpacity ?? 0.2,
+  },
+})
+
+// Custom coverage overlays were always hidden past zoom 18, the tile-layer default they were first drawn with.
+const customCoverageMaxZoom = 18
+
 // The map widget can be placed several times, and the coverage data, its cache and the position
 // it is fetched for are all app-wide, so a single instance fetches while the others draw from the
 // shared cache: otherwise every extra map repeats the same requests to the public tower services.
 const coverageDataOwner = shallowRef<symbol | null>(null)
 
 /**
- * Renders the base-station marker, antenna coverage and tether circle on a Leaflet map and
+ * Renders the base-station marker, antenna coverage and tether circle on a map and
  * keeps them in sync with the {@link useBaseStation} state. Mounting and unmounting are
  * handled automatically.
- * @param {ShallowRef<L.Map | undefined>} map Reactive reference to the Leaflet map instance.
+ * @param {ShallowRef<MapLibreMap | undefined>} map Reactive reference to the map instance.
  * @param {Ref<boolean>} mapReady Reactive flag that becomes true once the map is initialized.
  * @returns {void}
  */
-export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapReady: Ref<boolean>): void => {
+export const useBaseStationOverlay = (map: ShallowRef<MapLibreMap | undefined>, mapReady: Ref<boolean>): void => {
   const store = useBaseStation()
 
   const overlayId = Symbol('baseStationOverlay')
@@ -141,15 +213,12 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   // instance namespaces its ids to keep a second map's labels off the first map's geometry.
   const overlayInstanceIndex = ++overlayInstanceCount
 
-  const marker = shallowRef<L.Marker | undefined>()
-  const coverageLayer = shallowRef<L.LayerGroup | undefined>()
-  const coverageSteps = shallowRef<(L.Circle | L.Polygon)[]>([])
-  const coverageAntennaType = shallowRef<AntennaType | undefined>()
-  const tetherLayer = shallowRef<L.Circle | undefined>()
-  const bearingHandle = shallowRef<L.Marker | undefined>()
-  const bearingLine = shallowRef<L.Polyline | undefined>()
-  const aimingArc = shallowRef<L.Polyline | undefined>()
-  const mobileCoverageLayer = shallowRef<L.Layer | undefined>()
+  const marker = shallowRef<Marker | undefined>()
+  const bearingHandle = shallowRef<Marker | undefined>()
+  // What the mobile coverage is currently drawn as: a shape group, a raster overlay or a heatmap, each removable.
+  const mobileCoverageLayer = shallowRef<RemovableDrawing | undefined>()
+  // The map the shape groups were drawn on, so their teardown still reaches it once the map ref has moved on.
+  let shapesMap: MapLibreMap | undefined
   const cachedOpenCellIdSites = shallowRef<OpenCellIdSite[] | null>(null)
   const cachedOverpassTowers = shallowRef<OverpassTower[] | null>(null)
 
@@ -171,8 +240,55 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   let lastMarkerLabel: string | null = null
   let lastMarkerColor: string | null = null
 
+  const shapeGroupId = (name: string): string =>
+    slottedLayerId('coverage', `base-station-${overlayInstanceIndex}-${name}`)
+
+  // Draws a group of coverage shapes (areas and lines) as one source, painting each from its own properties.
+  const setShapeGroup = (name: string, features: Feature<Geometry>[], stroke: ShapeGroupStroke): void => {
+    if (!map.value) return
+    shapesMap = map.value
+    const id = shapeGroupId(name)
+    upsertGeoJsonSource(map.value, id, { type: 'FeatureCollection', features })
+    if (map.value.getLayer(`${id}-fill`)) return
+    const beforeId = beforeIdForSlot(map.value, 'coverage')
+    map.value.addLayer(
+      {
+        id: `${id}-fill`,
+        type: 'fill',
+        source: id,
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'fill-color': ['get', 'fillColor'], 'fill-opacity': ['get', 'fillOpacity'] },
+      },
+      beforeId
+    )
+    if (stroke.weight <= 0) return
+    map.value.addLayer(
+      {
+        id: `${id}-line`,
+        type: 'line',
+        source: id,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-opacity': ['get', 'opacity'],
+          'line-width': stroke.weight,
+          // MapLibre measures dashes in line widths rather than pixels.
+          ...(stroke.dashPattern
+            ? { 'line-dasharray': stroke.dashPattern.map((length) => length / stroke.weight) }
+            : {}),
+        },
+      },
+      beforeId
+    )
+  }
+
+  const removeShapeGroup = (name: string): void => {
+    const id = shapeGroupId(name)
+    removeLayersAndSource(shapesMap ?? map.value, [`${id}-fill`, `${id}-line`], id)
+  }
+
   const attachMapDropHandlers = (): void => {
-    if (!(map.value instanceof L.Map)) return
+    if (!isMapReady(map.value)) return
     detachMapDropHandlers?.()
     const container = map.value.getContainer()
     const onDragOver = (event: DragEvent): void => {
@@ -183,10 +299,8 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     const onDrop = (event: DragEvent): void => {
       if (!event.dataTransfer?.types.includes(MOBILE_COVERAGE_FETCH_DROP_MIME) || !map.value) return
       event.preventDefault()
-      const rect = container.getBoundingClientRect()
-      const point = L.point(event.clientX - rect.left, event.clientY - rect.top)
-      const latLng = map.value.containerPointToLatLng(point)
-      void fetchAndAppendMobileCoverage([latLng.lat, latLng.lng])
+      const point = containerPointFromClient(map.value, event)
+      void fetchAndAppendMobileCoverage(unprojectFromContainer(map.value, [point.x, point.y]))
     }
     container.addEventListener('dragover', onDragOver)
     container.addEventListener('drop', onDrop)
@@ -203,14 +317,15 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   const TARGET_CURSOR_URL = `url('data:image/svg+xml;utf8,${encodeURIComponent(TARGET_CURSOR_SVG)}') 12 12, crosshair`
 
   const attachTargetToolHandlers = (): void => {
-    if (!(map.value instanceof L.Map)) return
+    if (!isMapReady(map.value)) return
     detachTargetToolHandlers?.()
-    const container = map.value.getContainer()
+    // The canvas container is where the map sets its own grab cursor, so the target cursor has to go there too.
+    const container = map.value.getCanvasContainer()
     const previousCursor = container.style.cursor
     container.style.cursor = TARGET_CURSOR_URL
-    const onMapClick = (event: L.LeafletMouseEvent): void => {
+    const onMapClick = (event: MapMouseEvent): void => {
       store.mobileCoverageTargetToolActive = false
-      void fetchAndAppendMobileCoverage([event.latlng.lat, event.latlng.lng])
+      void fetchAndAppendMobileCoverage(eventLatLng(event))
     }
     map.value.on('click', onMapClick)
     detachTargetToolHandlers = () => {
@@ -218,10 +333,6 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       map.value?.off('click', onMapClick)
       detachTargetToolHandlers = null
     }
-  }
-
-  const removeLayer = (layer: L.Layer | undefined): void => {
-    if (layer && map.value) map.value.removeLayer(layer)
   }
 
   const clearLoadedMobileCoverageData = (): void => {
@@ -294,7 +405,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       clearTimeout(mobileCoverageDebounce)
       mobileCoverageDebounce = null
     }
-    const visibleArea = leafletBoundsToCoverageBbox(map.value.getBounds())
+    const visibleArea = mapBoundsToCoverageBbox(map.value.getBounds())
     const openCellIdBefore = store.mobileCoverageCache.openCellId.length
     const overpassBefore = store.mobileCoverageCache.osmOverpass.length
     store.mobileCoverageCache.openCellId = store.mobileCoverageCache.openCellId.filter(
@@ -417,61 +528,45 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     ])
   }
 
-  const buildMarkerIcon = (label: string, color: string): L.DivIcon =>
-    L.divIcon({
-      className: 'base-station-marker-icon',
-      html: baseStationMarkerHtml(label, color),
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    })
-
-  const buildBearingHandleIcon = (): L.DivIcon =>
-    L.divIcon({
-      className: 'base-station-bearing-handle',
-      html: '<div class="base-station-bearing-handle-dot"></div>',
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
-    })
-
   const ensureMarker = (config: BaseStationConfig): void => {
     if (!map.value || !config.position) return
     const markerLabel = config.name.trim()
     if (marker.value) {
-      marker.value.setLatLng(config.position)
-      // setIcon during a drag rebuilds the DOM element Leaflet is tracking and stops the drag
-      // after the first few pixels, so only rebuild when the icon definition actually changed.
+      marker.value.setLngLat(toLngLat(config.position))
+      // Only redraw the icon when its definition actually changed, so a drag is not handed a fresh element
+      // on every step.
       if (markerLabel !== lastMarkerLabel || config.coverageColor !== lastMarkerColor) {
-        marker.value.setIcon(buildMarkerIcon(markerLabel, config.coverageColor))
+        setDivIcon(marker.value, { html: baseStationMarkerHtml(markerLabel, config.coverageColor), size: [24, 24] })
         lastMarkerLabel = markerLabel
         lastMarkerColor = config.coverageColor
       }
       return
     }
-    const m = L.marker(config.position, {
-      icon: buildMarkerIcon(markerLabel, config.coverageColor),
+    const m = divIconMarker({
+      className: 'base-station-marker-icon',
+      html: baseStationMarkerHtml(markerLabel, config.coverageColor),
+      size: [24, 24],
       draggable: true,
-      zIndexOffset: 600,
-      // The marker owns its own right-click popup; don't propagate to the map context menu.
-      bubblingMouseEvents: false,
     })
+    m.getElement().style.zIndex = '600'
     lastMarkerLabel = markerLabel
     lastMarkerColor = config.coverageColor
-    m.on('drag', (event: L.LeafletEvent) => {
-      const { lat, lng } = (event.target as L.Marker).getLatLng()
-      draggedPosition.value = [lat, lng]
+    m.on('drag', () => {
+      draggedPosition.value = fromLngLat(m.getLngLat())
     })
-    m.on('dragend', (event: L.LeafletEvent) => {
-      const { lat, lng } = (event.target as L.Marker).getLatLng()
+    m.on('dragend', () => {
       draggedPosition.value = null
-      store.setPosition([lat, lng])
+      store.setPosition(fromLngLat(m.getLngLat()))
     })
-    m.on('contextmenu', (event: L.LeafletMouseEvent) => {
-      L.DomEvent.stopPropagation(event)
-      event.originalEvent.stopPropagation()
-      event.originalEvent.preventDefault()
-      store.openContextPopup(event.originalEvent.clientX, event.originalEvent.clientY)
+    // The marker owns its own right-click popup; don't propagate to the map context menu.
+    const element = m.getElement()
+    element.addEventListener('contextmenu', (event: MouseEvent) => {
+      event.stopPropagation()
+      event.preventDefault()
+      store.openContextPopup(event.clientX, event.clientY)
     })
-    m.addTo(map.value)
+    element.addEventListener('click', (event: MouseEvent) => event.stopPropagation())
+    m.setLngLat(toLngLat(config.position)).addTo(map.value)
     marker.value = m
   }
 
@@ -510,12 +605,12 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     osmLabelSvgEl = null
   }
 
-  const pointOnArc = (center: L.Point, radiusPx: number, angleDeg: number): L.Point => {
+  const pointOnArc = (center: ScreenPoint, radiusPx: number, angleDeg: number): ScreenPoint => {
     const radians = ((angleDeg - 90) * Math.PI) / 180
-    return L.point(center.x + radiusPx * Math.cos(radians), center.y + radiusPx * Math.sin(radians))
+    return { x: center.x + radiusPx * Math.cos(radians), y: center.y + radiusPx * Math.sin(radians) }
   }
 
-  const svgArcPath = (center: L.Point, radiusPx: number, startDeg: number, endDeg: number): string => {
+  const svgArcPath = (center: ScreenPoint, radiusPx: number, startDeg: number, endDeg: number): string => {
     let normalizedEnd = endDeg
     while (normalizedEnd <= startDeg) normalizedEnd += 360
     const start = pointOnArc(center, radiusPx, startDeg)
@@ -538,9 +633,9 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
 
     labels.forEach((labelSpec) => {
       const center = labelSpec.center
-      const centerPoint = map.value!.latLngToContainerPoint(center)
-      const radiusPoint = map.value!.latLngToContainerPoint(bearingHandlePosition(center, labelSpec.rangeMeters, 90))
-      const radiusPx = centerPoint.distanceTo(radiusPoint) * OSM_LABEL_RIM_INSET
+      const centerPoint = projectToContainer(map.value!, center)
+      const radiusPoint = projectToContainer(map.value!, bearingHandlePosition(center, labelSpec.rangeMeters, 90))
+      const radiusPx = Math.hypot(radiusPoint.x - centerPoint.x, radiusPoint.y - centerPoint.y) * OSM_LABEL_RIM_INSET
       if (radiusPx < 24) return
 
       const pathStart =
@@ -591,13 +686,14 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   const bindCoverageLabelRerender = (labels: OsmCoverageLabelSpec[]): void => {
     if (!map.value || labels.length === 0) return
     const mapInstance = map.value
-    let panPixelOrigin: L.Point | null = null
+    // Where the view center was drawn when the move started, which the labels are translated against.
+    let panOrigin: PanOrigin | null = null
     let zooming = false
     let unbound = false
 
     const rebuild = (): void => {
       if (unbound) return
-      panPixelOrigin = null
+      panOrigin = null
       zooming = false
       if (osmLabelOverlayEl) {
         osmLabelOverlayEl.style.transform = ''
@@ -606,15 +702,18 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       renderOsmCoverageLabels(labels)
     }
     const onMoveStart = (): void => {
-      panPixelOrigin = mapInstance.getPixelOrigin()
+      const lngLat = mapInstance.getCenter()
+      panOrigin = { lngLat, point: mapInstance.project(lngLat) }
     }
     const onMove = (): void => {
-      if (!osmLabelOverlayEl || panPixelOrigin === null || zooming) return
-      const delta = panPixelOrigin.subtract(mapInstance.getPixelOrigin())
-      osmLabelOverlayEl.style.transform = `translate(${delta.x}px, ${delta.y}px)`
+      if (!osmLabelOverlayEl || panOrigin === null || zooming) return
+      const point = mapInstance.project(panOrigin.lngLat)
+      osmLabelOverlayEl.style.transform = `translate(${point.x - panOrigin.point.x}px, ${
+        point.y - panOrigin.point.y
+      }px)`
     }
     // A zoom rescales the rings the labels sit on, so no translation can keep them aligned;
-    // they stay hidden until `moveend`, which Leaflet fires at the end of a zoom too.
+    // they stay hidden until `moveend`, which the map fires at the end of a zoom too.
     const onZoomStart = (): void => {
       zooming = true
       if (osmLabelOverlayEl) osmLabelOverlayEl.style.visibility = 'hidden'
@@ -643,19 +742,17 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     if (!map.value) return
     const filteredSites = filterOpenCellIdSites(sites, config.mobileCoverage.openCellIdOperator)
     if (filteredSites.length === 0) return
-    const group = L.layerGroup()
+    const rings: Feature<Geometry>[] = []
     const labels: OsmCoverageLabelSpec[] = []
     filteredSites.forEach((site, index) => {
-      L.circle([site.lat, site.lon], {
-        radius: site.rangeMeters,
-        color: config.coverageColor,
-        weight: 1,
-        dashArray: '5 5',
-        opacity: config.mobileCoverage.overlayOpacity,
-        fillColor: config.coverageColor,
-        fillOpacity: OPENCELLID_RING_FILL_OPACITY * config.mobileCoverage.overlayOpacity,
-        interactive: false,
-      }).addTo(group)
+      rings.push(
+        paintedShape(meterCircle([site.lat, site.lon], site.rangeMeters), {
+          color: config.coverageColor,
+          opacity: config.mobileCoverage.overlayOpacity,
+          fillColor: config.coverageColor,
+          fillOpacity: OPENCELLID_RING_FILL_OPACITY * config.mobileCoverage.overlayOpacity,
+        })
+      )
       labels.push({
         id: `open-cell-id-label-${overlayInstanceIndex}-${index}`,
         center: [site.lat, site.lon],
@@ -666,8 +763,8 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
         color: config.coverageColor,
       })
     })
-    group.addTo(map.value)
-    mobileCoverageLayer.value = group
+    setShapeGroup('mobile', rings, { weight: 1, dashPattern: [5, 5] })
+    mobileCoverageLayer.value = { remove: () => removeShapeGroup('mobile') }
     if (!config.mobileCoverage.showRingLabels) return
     renderOsmCoverageLabels(labels)
     bindCoverageLabelRerender(labels)
@@ -675,83 +772,46 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
 
   const updateCoverage = (config: BaseStationConfig): void => {
     if (!map.value || !store.showCoverage || !config.position || config.commsType !== BaseStationCommsType.RadioLink) {
-      removeLayer(coverageLayer.value)
-      coverageLayer.value = undefined
-      coverageSteps.value = []
-      coverageAntennaType.value = undefined
+      removeShapeGroup('coverage')
       return
     }
 
     const position = config.position
     const isOmni = config.antenna.type === AntennaType.Omni
     const rangeMeters = effectiveAntennaRangeMeters(config)
-    const stepStyle = {
+    const stepPaint: ShapePaint = {
       color: config.coverageColor,
-      weight: 0,
       fillColor: config.coverageColor,
       fillOpacity: COVERAGE_STEP_OPACITY * config.coverageOpacity,
-      interactive: false,
     }
     const stepRadius = (step: number): number => (rangeMeters * step) / COVERAGE_GRADIENT_STEPS
 
-    // Recreating every gradient layer on each config change thrashes Leaflet during a bearing
-    // drag, so reuse the existing step layers in place and only rebuild when the shape changes.
-    const canUpdateInPlace =
-      coverageLayer.value !== undefined &&
-      coverageAntennaType.value === config.antenna.type &&
-      coverageSteps.value.length === COVERAGE_GRADIENT_STEPS
-
-    if (canUpdateInPlace) {
-      coverageSteps.value.forEach((layer, index) => {
-        const radius = stepRadius(index + 1)
-        if (isOmni) {
-          const circle = layer as L.Circle
-          circle.setLatLng(position)
-          circle.setRadius(radius)
-          circle.setStyle(stepStyle)
-        } else {
-          const polygon = layer as L.Polygon
-          polygon.setLatLngs(sectorPolygonLatLngs(position, radius, config.antenna.bearing, config.antenna.beamwidth))
-          polygon.setStyle(stepStyle)
-        }
-      })
-      return
-    }
-
-    removeLayer(coverageLayer.value)
-    const group = L.layerGroup()
-    const steps: (L.Circle | L.Polygon)[] = []
+    // The steps are features of one source whose data is replaced in place, so a bearing drag does not rebuild
+    // any layer.
+    const steps: Feature<Geometry>[] = []
     for (let step = 1; step <= COVERAGE_GRADIENT_STEPS; step++) {
       const radius = stepRadius(step)
-      const layer = isOmni
-        ? L.circle(position, { ...stepStyle, radius })
-        : L.polygon(sectorPolygonLatLngs(position, radius, config.antenna.bearing, config.antenna.beamwidth), stepStyle)
-      layer.addTo(group)
-      steps.push(layer)
+      const shape = isOmni
+        ? meterCircle(position, radius)
+        : polygonFeature(sectorPolygonLatLngs(position, radius, config.antenna.bearing, config.antenna.beamwidth))
+      steps.push(paintedShape(shape, stepPaint))
     }
-    group.addTo(map.value)
-    coverageLayer.value = group
-    coverageSteps.value = steps
-    coverageAntennaType.value = config.antenna.type
+    setShapeGroup('coverage', steps, { weight: 0 })
   }
 
   const updateTether = (config: BaseStationConfig): void => {
-    removeLayer(tetherLayer.value)
-    tetherLayer.value = undefined
+    if (!map.value || !store.showCoverage || !config.position || config.commsType !== BaseStationCommsType.Tethered) {
+      removeShapeGroup('tether')
+      return
+    }
 
-    if (!map.value || !store.showCoverage || !config.position) return
-    if (config.commsType !== BaseStationCommsType.Tethered) return
-
-    tetherLayer.value = L.circle(config.position, {
-      radius: config.tetherLengthMeters,
+    const tether = paintedShape(meterCircle(config.position, config.tetherLengthMeters), {
       color: config.coverageColor,
-      weight: 1,
       opacity: config.coverageOpacity,
       fillColor: config.coverageColor,
       fillOpacity: 0.1 * config.coverageOpacity,
-      dashArray: '4 4',
-      interactive: false,
-    }).addTo(map.value)
+    })
+    setShapeGroup('tether', [tether], { weight: 1, dashPattern: [4, 4] })
   }
 
   const updateBearingHandle = (config: BaseStationConfig): void => {
@@ -763,73 +823,52 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       config.antenna.type !== AntennaType.Omni
 
     if (!shouldShow) {
-      removeLayer(bearingHandle.value)
-      removeLayer(bearingLine.value)
-      removeLayer(aimingArc.value)
+      bearingHandle.value?.remove()
       bearingHandle.value = undefined
-      bearingLine.value = undefined
-      aimingArc.value = undefined
+      removeShapeGroup('aiming')
       return
     }
 
     const rangeMeters = effectiveAntennaRangeMeters(config)
     const handleLatLng = bearingHandlePosition(config.position!, rangeMeters, config.antenna.bearing)
-    const lineLatLngs = [config.position!, handleLatLng] as L.LatLngExpression[]
     const arcLatLngs = aimingArcLatLngs(config.position!, rangeMeters, config.antenna.bearing)
-    const lineOpacity = 0.3 * config.coverageOpacity
-    const arcOpacity = 0.25 * config.coverageOpacity
+    setShapeGroup(
+      'aiming',
+      [
+        paintedShape(lineFeature([config.position!, handleLatLng]), {
+          color: config.coverageColor,
+          opacity: 0.3 * config.coverageOpacity,
+        }),
+        paintedShape(lineFeature(arcLatLngs), { color: config.coverageColor, opacity: 0.25 * config.coverageOpacity }),
+      ],
+      { weight: 1, dashPattern: [6, 4] }
+    )
 
-    if (bearingLine.value) {
-      bearingLine.value.setLatLngs(lineLatLngs)
-      bearingLine.value.setStyle({ color: config.coverageColor, opacity: lineOpacity })
-    } else {
-      bearingLine.value = L.polyline(lineLatLngs, {
-        color: config.coverageColor,
-        weight: 1,
-        dashArray: '6 4',
-        opacity: lineOpacity,
-        interactive: false,
-      }).addTo(map.value!)
-    }
-
-    if (aimingArc.value) {
-      aimingArc.value.setLatLngs(arcLatLngs)
-      aimingArc.value.setStyle({ color: config.coverageColor, opacity: arcOpacity })
-    } else {
-      aimingArc.value = L.polyline(arcLatLngs, {
-        color: config.coverageColor,
-        weight: 1,
-        dashArray: '6 4',
-        opacity: arcOpacity,
-        interactive: false,
-      }).addTo(map.value!)
-    }
-
-    // Update in place; recreating during drag would destroy the handle Leaflet is tracking
+    // Update in place; recreating during drag would destroy the handle being dragged
     // and stop the rotation after a single drag step.
     if (bearingHandle.value) {
-      bearingHandle.value.setLatLng(handleLatLng)
+      bearingHandle.value.setLngLat(toLngLat(handleLatLng))
       return
     }
 
-    const handle = L.marker(handleLatLng, {
-      icon: buildBearingHandleIcon(),
+    const handle = divIconMarker({
+      className: 'base-station-bearing-handle',
+      html: '<div class="base-station-bearing-handle-dot"></div>',
+      size: [18, 18],
       draggable: true,
-      zIndexOffset: 700,
-      bubblingMouseEvents: true,
     })
-    handle.on('drag', (event: L.LeafletEvent) => {
+    handle.getElement().style.zIndex = '700'
+    handle.on('drag', () => {
       const center = store.config.position
       if (!center) return
-      const { lat, lng } = (event.target as L.Marker).getLatLng()
-      draggedBearing.value = bearingBetween(center, [lat, lng])
+      draggedBearing.value = bearingBetween(center, fromLngLat(handle.getLngLat()))
     })
     handle.on('dragend', () => {
       const bearing = draggedBearing.value
       draggedBearing.value = null
       if (bearing !== null) store.setBearing(bearing)
     })
-    handle.addTo(map.value!)
+    handle.setLngLat(toLngLat(handleLatLng)).addTo(map.value!)
     bearingHandle.value = handle
   }
 
@@ -843,7 +882,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       mobileCoverageTargetToolController = null
     }
     teardownOsmLabelOverlay()
-    removeLayer(mobileCoverageLayer.value)
+    mobileCoverageLayer.value?.remove()
     mobileCoverageLayer.value = undefined
   }
 
@@ -867,7 +906,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     const filteredSites = filterOpenCellIdSites(sites, config.mobileCoverage.openCellIdOperator)
     if (filteredSites.length === 0) return
 
-    const heat = createCellIdHeatLayer({
+    const heat: CellIdHeatLayerInstance = createCellIdHeatLayer({
       sites: filteredSites,
       radiusFraction: mobileHeatmapRadiusFraction(config),
       opacity: config.mobileCoverage.overlayOpacity,
@@ -902,7 +941,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     const filtered = selectedOperator ? towers.filter((t) => t.operator === selectedOperator) : towers
     if (filtered.length === 0) return
 
-    const group = L.layerGroup()
+    const shapes: Feature<Geometry>[] = []
     const labels: OsmCoverageLabelSpec[] = []
 
     filtered.forEach((tower) => {
@@ -912,28 +951,18 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       const rangeMeters = overpassRangeMeters(tower.tags)
       const color = operatorColor(tower.operator)
 
-      if (bearing === null || beamwidth >= 360) {
-        L.circle(center, {
-          radius: rangeMeters,
+      const shape =
+        bearing === null || beamwidth >= 360
+          ? meterCircle(center, rangeMeters)
+          : polygonFeature(sectorPolygonLatLngs(center, rangeMeters, bearing, beamwidth))
+      shapes.push(
+        paintedShape(shape, {
           color,
-          weight: 1,
-          dashArray: '5 5',
           opacity: OSM_COVERAGE_STROKE_OPACITY * config.mobileCoverage.overlayOpacity,
           fillColor: color,
           fillOpacity: OSM_COVERAGE_FILL_OPACITY * config.mobileCoverage.overlayOpacity,
-          interactive: false,
-        }).addTo(group)
-      } else {
-        L.polygon(sectorPolygonLatLngs(center, rangeMeters, bearing, beamwidth), {
-          color,
-          weight: 1,
-          dashArray: '5 5',
-          opacity: OSM_COVERAGE_STROKE_OPACITY * config.mobileCoverage.overlayOpacity,
-          fillColor: color,
-          fillOpacity: OSM_COVERAGE_FILL_OPACITY * config.mobileCoverage.overlayOpacity,
-          interactive: false,
-        }).addTo(group)
-      }
+        })
+      )
 
       labels.push({
         id: `osm-coverage-label-${overlayInstanceIndex}-${tower.id}`,
@@ -946,8 +975,8 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       })
     })
 
-    group.addTo(map.value)
-    mobileCoverageLayer.value = group
+    setShapeGroup('mobile', shapes, { weight: 1, dashPattern: [5, 5] })
+    mobileCoverageLayer.value = { remove: () => removeShapeGroup('mobile') }
     if (!config.mobileCoverage.showRingLabels) return
     renderOsmCoverageLabels(labels)
     bindCoverageLabelRerender(labels)
@@ -956,7 +985,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   const renderMobileCoverage = async (config: BaseStationConfig): Promise<void> => {
     teardownRenderedMobileCoverage()
 
-    if (!(map.value instanceof L.Map) || !config.enabled || !config.position) return
+    if (!isMapReady(map.value) || !config.enabled || !config.position) return
     if (!config.showSignalOnMap) return
     if (config.commsType !== BaseStationCommsType.MobileData) return
 
@@ -964,7 +993,21 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     if (provider === MobileCoverageProvider.Custom) {
       const url = config.mobileCoverage.customTileUrl.trim()
       if (!url) return
-      mobileCoverageLayer.value = L.tileLayer(url, { opacity: config.mobileCoverage.overlayOpacity }).addTo(map.value)
+      const coverageMap = map.value
+      const id = addRasterLayer(
+        coverageMap,
+        {
+          id: `base-station-${overlayInstanceIndex}-custom`,
+          label: 'Mobile coverage',
+          template: url,
+          subdomains: ['a', 'b', 'c'],
+          maxZoom: customCoverageMaxZoom,
+          maxNativeZoom: customCoverageMaxZoom,
+        },
+        { slot: 'coverage', visible: true }
+      )
+      coverageMap.setPaintProperty(id, 'raster-opacity', config.mobileCoverage.overlayOpacity)
+      mobileCoverageLayer.value = { remove: () => removeLayersAndSource(coverageMap, [id], id) }
       return
     }
 
@@ -1164,8 +1207,20 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     }
   }
 
+  const removeDrawnStation = (): void => {
+    marker.value?.remove()
+    bearingHandle.value?.remove()
+    removeShapeGroup('coverage')
+    removeShapeGroup('tether')
+    removeShapeGroup('aiming')
+    marker.value = undefined
+    bearingHandle.value = undefined
+    lastMarkerLabel = null
+    lastMarkerColor = null
+  }
+
   const refreshAll = (): void => {
-    if (!mapReady.value || !(map.value instanceof L.Map)) return
+    if (!mapReady.value || !isMapReady(map.value)) return
     const config =
       draggedPosition.value !== null || draggedBearing.value !== null
         ? {
@@ -1176,21 +1231,8 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
         : store.config
 
     if (!config.enabled || !config.position) {
-      removeLayer(marker.value)
-      removeLayer(coverageLayer.value)
-      removeLayer(tetherLayer.value)
-      removeLayer(bearingHandle.value)
-      removeLayer(bearingLine.value)
-      removeLayer(aimingArc.value)
+      removeDrawnStation()
       teardownMobileCoverageData()
-      marker.value = undefined
-      coverageLayer.value = undefined
-      tetherLayer.value = undefined
-      bearingHandle.value = undefined
-      bearingLine.value = undefined
-      aimingArc.value = undefined
-      lastMarkerLabel = null
-      lastMarkerColor = null
       return
     }
 
@@ -1211,7 +1253,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   )
   // Geometry-relevant fields only; mobile-coverage overlay has its own watcher above and
   // is intentionally excluded so live edits to API keys / opacity / labels don't rebuild
-  // every Leaflet layer in the overlay.
+  // every layer in the overlay.
   watch(
     () => [
       store.config.enabled,
@@ -1308,7 +1350,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   watch(
     () => [mapReady.value, store.mobileCoverageTargetToolActive] as const,
     ([ready, active]) => {
-      if (!ready || !(map.value instanceof L.Map)) return
+      if (!ready || !isMapReady(map.value)) return
       if (active) attachTargetToolHandlers()
       else detachTargetToolHandlers?.()
     },
@@ -1320,17 +1362,6 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     detachMapDropHandlers?.()
     detachTargetToolHandlers?.()
     teardownMobileCoverageData()
-    removeLayer(marker.value)
-    removeLayer(coverageLayer.value)
-    removeLayer(tetherLayer.value)
-    removeLayer(bearingHandle.value)
-    removeLayer(bearingLine.value)
-    removeLayer(aimingArc.value)
-    marker.value = undefined
-    coverageLayer.value = undefined
-    tetherLayer.value = undefined
-    bearingHandle.value = undefined
-    bearingLine.value = undefined
-    aimingArc.value = undefined
+    removeDrawnStation()
   })
 }
