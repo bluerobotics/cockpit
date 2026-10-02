@@ -1210,7 +1210,8 @@ export const useVideoStore = defineStore('video', () => {
       return
     }
 
-    if (!isStreamReadyToRecord(streamName) && !(await waitForStreamReadyToRecord(streamName))) return
+    const hadToWaitForVideo = !isStreamReadyToRecord(streamName)
+    if (hadToWaitForVideo && !(await waitForStreamReadyToRecord(streamName))) return
 
     const streamData = getStreamData(streamName)!
 
@@ -1590,6 +1591,11 @@ export const useVideoStore = defineStore('video', () => {
     broadcastRecordingStart(streamName)
 
     alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
+    // Closes the wait the operator was told about, which the alert above does not show on its own
+    if (hadToWaitForVideo) {
+      const arrivedMsg = `Video of '${streamLabel}' arrived. Recording started.`
+      openSnackbar({ message: arrivedMsg, duration: secondsToShowWaitForVideoNotice * 1000, variant: 'success' })
+    }
   }
 
   // Used to discard a file from the video recovery database
