@@ -2,13 +2,15 @@ import * as turf from '@turf/turf'
 import type { Feature, LineString, Polygon } from 'geojson'
 import {
   type GeoJSONSource,
+  type IControl,
   type LngLatBoundsLike,
   type LngLatLike,
-  type MapMouseEvent,
   type Marker,
   type PointLike,
   Map as MapLibreMap,
-  Popup,
+  MapMouseEvent,
+  Marker as MarkerClass,
+  ScaleControl,
   setWorkerUrl,
 } from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
@@ -110,11 +112,11 @@ export const projectToContainer = (map: MapLibreMap, coordinates: WaypointCoordi
 /**
  * Coordinate under a position in the map container's pixel space.
  * @param {MapLibreMap} map - The map to unproject on.
- * @param {PointLike} point - The position relative to the container's top-left corner, in pixels.
+ * @param {PointLike | ScreenPoint} point - The position relative to the container's top-left corner, in pixels.
  * @returns {WaypointCoordinates} The `[latitude, longitude]` at that position.
  */
-export const unprojectFromContainer = (map: MapLibreMap, point: PointLike): WaypointCoordinates =>
-  fromLngLat(map.unproject(point))
+export const unprojectFromContainer = (map: MapLibreMap, point: PointLike | ScreenPoint): WaypointCoordinates =>
+  fromLngLat(map.unproject(Array.isArray(point) ? point : [point.x, point.y]))
 
 /**
  * Position of a mouse or pointer event relative to the map container's top-left corner.
@@ -259,90 +261,137 @@ export const meterCircle = (
 })
 
 /**
- * Where a hover tooltip opens relative to its marker.
+ * Where a tooltip opens relative to its marker. `auto` picks right or left, whichever side of the map center the
+ * marker is not on, as Leaflet did.
  */
-export type HoverTooltipDirection = 'top' | 'right' | 'bottom' | 'left'
+export type TooltipDirection = 'top' | 'right' | 'bottom' | 'left' | 'center' | 'auto'
 
-const tooltipAnchorFor: Record<HoverTooltipDirection, 'bottom' | 'left' | 'top' | 'right'> = {
-  top: 'bottom',
-  right: 'left',
-  bottom: 'top',
-  left: 'right',
-}
+const tooltipDirections = ['top', 'right', 'bottom', 'left', 'center'] as const
 
 /**
- * Options for {@link bindHoverTooltip}.
+ * Options for {@link bindTooltip}.
  */
-export interface HoverTooltipOptions {
-  /** Extra class names for the tooltip, which carry its styling. */
+export interface TooltipOptions {
+  /** Extra class names for the tooltip element, which carry its styling. */
   className?: string
   /** Offset from the marker, in pixels. */
   offset?: [number, number]
-  /** Side of the marker the tooltip opens on. */
-  direction?: HoverTooltipDirection
+  /** Side of the marker the tooltip opens on. Defaults to `auto`. */
+  direction?: TooltipDirection
+  /** Whether the tooltip is always shown, rather than only while the pointer is over the marker. */
+  permanent?: boolean
+  /** Initial opacity. */
+  opacity?: number
 }
 
 /**
- * A hover tooltip attached to a marker, with a way to change its content and to detach it.
+ * A tooltip attached to a marker, with ways to change it and to detach it.
  */
-export interface HoverTooltip {
-  /** Replaces the tooltip content, whether or not it is open. */
+export interface MarkerTooltip {
+  /** Replaces the tooltip content, whether or not it is shown. */
   setContent: (html: string) => void
-  /** The tooltip element while it is open. */
-  getElement: () => HTMLElement | undefined
+  /** Changes the tooltip opacity. */
+  setOpacity: (opacity: number) => void
+  /** The tooltip element, which exists whether or not it is shown. */
+  getElement: () => HTMLElement
   /** Removes the tooltip and its listeners. */
   remove: () => void
 }
 
 /**
- * Shows a tooltip while the pointer is over a marker, as Leaflet's non-permanent tooltips did.
+ * Attaches a Leaflet-style tooltip to a marker: a plain element carrying the given class names, styled by the global
+ * `.cockpit-tooltip` rules, drawn above the markers and never taking the pointer.
  * @param {MapLibreMap} map - The map the marker is on.
  * @param {Marker} marker - The marker to attach to.
  * @param {string} html - The tooltip content.
- * @param {HoverTooltipOptions} [options] - Styling and placement.
- * @returns {HoverTooltip} Handle to update or detach the tooltip.
+ * @param {TooltipOptions} [options] - Styling, placement and permanence.
+ * @returns {MarkerTooltip} Handle to update or detach the tooltip.
  */
-export const bindHoverTooltip = (
+export const bindTooltip = (
   map: MapLibreMap,
   marker: Marker,
   html: string,
-  options: HoverTooltipOptions = {}
-): HoverTooltip => {
-  let content = html
-  const popup = new Popup({
-    closeButton: false,
-    closeOnClick: false,
-    closeOnMove: false,
-    focusAfterOpen: false,
-    maxWidth: 'none',
-    anchor: tooltipAnchorFor[options.direction ?? 'right'],
-    offset: options.offset ?? [0, 0],
-    className: ['cockpit-hover-tooltip', options.className].filter(Boolean).join(' '),
-  })
-  const element = marker.getElement()
+  options: TooltipOptions = {}
+): MarkerTooltip => {
+  const element = document.createElement('div')
+  element.innerHTML = html
+  // MapLibre adds its own classes to marker elements, so these are added rather than assigned.
+  element.classList.add('cockpit-tooltip', ...(options.className?.split(/\s+/).filter(Boolean) ?? []))
+  // Pinned by its top-left corner so the placement below can follow Leaflet's tooltip arithmetic exactly.
+  // The opacity goes through the marker, which rewrites the element's inline opacity whenever it repositions.
+  const tooltip = new MarkerClass({ element, anchor: 'top-left', opacity: String(options.opacity ?? 1) })
+  let shown = false
+
+  // Leaflet's Tooltip._setPosition: the offset is added on every side except an automatic flip to the left, which
+  // mirrors it so the tooltip keeps the same distance from the marker.
+  const place = (): void => {
+    let direction = options.direction ?? 'auto'
+    let mirrored = false
+    if (direction === 'auto') {
+      const markerX = map.project(marker.getLngLat()).x
+      direction = markerX < map.getContainer().clientWidth / 2 ? 'right' : 'left'
+      mirrored = direction === 'left'
+    }
+    tooltipDirections.forEach((side) => element.classList.toggle(`cockpit-tooltip-${side}`, side === direction))
+    tooltip.setLngLat(marker.getLngLat())
+    const width = element.offsetWidth
+    const height = element.offsetHeight
+    const [offsetX, offsetY] = options.offset ?? [0, 0]
+    const corner: Record<Exclude<TooltipDirection, 'auto'>, [number, number]> = {
+      top: [-width / 2, -height],
+      bottom: [-width / 2, 0],
+      center: [-width / 2, -height / 2],
+      right: [0, -height / 2],
+      left: [mirrored ? -width - 2 * offsetX : -width, -height / 2],
+    }
+    const [x, y] = corner[direction]
+    tooltip.setOffset([x + offsetX, y + offsetY])
+  }
   const show = (): void => {
-    popup.setLngLat(marker.getLngLat()).setHTML(content).addTo(map)
+    if (!shown) tooltip.setLngLat(marker.getLngLat()).addTo(map)
+    shown = true
+    // Placement measures the element, which only has a size once it is on the map.
+    place()
   }
   const hide = (): void => {
-    popup.remove()
+    tooltip.remove()
+    shown = false
   }
   const follow = (): void => {
-    if (popup.isOpen()) popup.setLngLat(marker.getLngLat())
+    if (shown) tooltip.setLngLat(marker.getLngLat())
   }
-  element.addEventListener('mouseenter', show)
-  element.addEventListener('mouseleave', hide)
+
+  const markerElement = marker.getElement()
+  if (options.permanent) {
+    show()
+  } else {
+    markerElement.addEventListener('mouseenter', show)
+    markerElement.addEventListener('mouseleave', hide)
+  }
   marker.on('drag', follow)
+  // Keeps the tooltip on the marker when its owner moves it with setLngLat.
+  const originalSetLngLat = marker.setLngLat.bind(marker)
+  marker.setLngLat = (lngLat) => {
+    originalSetLngLat(lngLat)
+    follow()
+    return marker
+  }
+
   return {
     setContent: (newHtml) => {
-      content = newHtml
-      if (popup.isOpen()) popup.setHTML(newHtml)
+      element.innerHTML = newHtml
+      if (shown) place()
     },
-    getElement: () => (popup.isOpen() ? popup.getElement() : undefined),
+    setOpacity: (opacity) => {
+      tooltip.setOpacity(String(opacity))
+    },
+    getElement: () => element,
     remove: () => {
-      element.removeEventListener('mouseenter', show)
-      element.removeEventListener('mouseleave', hide)
+      markerElement.removeEventListener('mouseenter', show)
+      markerElement.removeEventListener('mouseleave', hide)
       marker.off('drag', follow)
-      popup.remove()
+      marker.setLngLat = originalSetLngLat
+      hide()
     },
   }
 }
@@ -451,3 +500,182 @@ export const mapView = (map: MapLibreMap): MapViewState => ({
   center: fromLngLat(map.getCenter()),
   zoom: fromMapLibreZoom(map.getZoom()),
 })
+
+/**
+ * How a line is drawn, in the terms Leaflet paths used: pixel widths and pixel dash patterns.
+ */
+export interface LineStyle {
+  /** Stroke color. */
+  color: string
+  /** Stroke width, in pixels. Leaflet's default was 3. */
+  width?: number
+  /** Stroke opacity. */
+  opacity?: number
+  /** Dash pattern, in pixels, as Leaflet's `dashArray` took it. */
+  dashPattern?: number[]
+  /** Blur, in pixels. */
+  blur?: number
+  /** Offset, in pixels, for drop shadows. */
+  translate?: [number, number]
+}
+
+const defaultLineWidth = 3
+
+/**
+ * MapLibre paint properties for a line style.
+ * @param {LineStyle} style - The style to convert.
+ * @returns {Record<string, unknown>} The `line-*` paint properties.
+ */
+export const linePaint = (style: LineStyle): Record<string, unknown> => {
+  const width = style.width ?? defaultLineWidth
+  return {
+    'line-color': style.color,
+    'line-width': width,
+    'line-opacity': style.opacity ?? 1,
+    // MapLibre measures dashes in line widths rather than pixels.
+    ...(style.dashPattern ? { 'line-dasharray': style.dashPattern.map((length) => length / width) } : {}),
+    ...(style.blur ? { 'line-blur': style.blur } : {}),
+    ...(style.translate ? { 'line-translate': style.translate } : {}),
+  }
+}
+
+/**
+ * Draws GeoJSON data as a line layer, creating the source and layer on first use and replacing the data afterwards.
+ * @param {MapLibreMap} map - The map to draw on.
+ * @param {string} id - Id of the source and layer, usually from {@link slottedLayerId}.
+ * @param {MapLayerSlot} slot - Stacking slot to insert the layer in.
+ * @param {GeoJSON.GeoJSON} data - The lines to draw.
+ * @param {LineStyle} style - How to draw them.
+ */
+export const setLineLayer = (
+  map: MapLibreMap,
+  id: string,
+  slot: MapLayerSlot,
+  data: GeoJSON.GeoJSON,
+  style: LineStyle
+): void => {
+  upsertGeoJsonSource(map, id, data)
+  if (map.getLayer(id)) return
+  map.addLayer(
+    {
+      id,
+      type: 'line',
+      source: id,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: linePaint(style) as never,
+    },
+    beforeIdForSlot(map, slot)
+  )
+}
+
+/**
+ * A line some composable drew, described well enough for another one to redraw over it in its place.
+ */
+export interface DrawnLine {
+  /** Id of the line's layer. */
+  layerId: string
+  /** The line's current vertices. */
+  coordinates: () => WaypointCoordinates[]
+  /** How the line is drawn. */
+  style: LineStyle
+}
+
+/**
+ * Options for {@link divIconMarker}, mirroring Leaflet's `divIcon`.
+ */
+export interface DivIconMarkerOptions {
+  /** Inner HTML of the marker element. */
+  html?: string
+  /** Class names of the marker element, which carry its styling. */
+  className?: string
+  /** Element size, in pixels. */
+  size: [number, number]
+  /** Point of the element placed on the coordinate, in pixels from its top-left corner. Defaults to its center. */
+  anchor?: [number, number]
+  /** Whether the user can drag the marker. */
+  draggable?: boolean
+}
+
+/**
+ * A marker drawn as an HTML element of a given size, the way Leaflet's `divIcon` markers were.
+ * @param {DivIconMarkerOptions} options - Element content, styling, size and anchor.
+ * @returns {Marker} The marker, not yet on a map.
+ */
+export const divIconMarker = (options: DivIconMarkerOptions): Marker => {
+  const element = document.createElement('div')
+  if (options.className) element.classList.add(...options.className.split(/\s+/).filter(Boolean))
+  if (options.html) element.innerHTML = options.html
+  const [width, height] = options.size
+  element.style.width = `${width}px`
+  element.style.height = `${height}px`
+  const [anchorX, anchorY] = options.anchor ?? [width / 2, height / 2]
+  const marker = new MarkerClass({
+    element,
+    anchor: 'center',
+    offset: [width / 2 - anchorX, height / 2 - anchorY],
+    draggable: options.draggable ?? false,
+  })
+
+  // MapLibre drags a marker with any button and ends the drag only on a mouseup over the map, so a right-click, or a
+  // release over a panel beside the map, left the marker following the pointer. Leaflet dragged with the primary
+  // button alone and ended on a mouseup anywhere, which is restored here.
+  let owner: MapLibreMap | undefined
+  const addTo = marker.addTo.bind(marker)
+  marker.addTo = (map) => {
+    owner = map
+    return addTo(map)
+  }
+  element.addEventListener('mousedown', (event) => {
+    if (!marker.isDraggable()) return
+    if (event.button !== 0) {
+      event.stopPropagation()
+      return
+    }
+    const release = (up: MouseEvent): void => {
+      if (owner && !owner.getCanvasContainer().contains(up.target as Node)) {
+        owner.fire(new MapMouseEvent('mouseup', owner, up))
+      }
+    }
+    window.addEventListener('mouseup', release, { once: true })
+  })
+  return marker
+}
+
+/**
+ * Replaces the content and size of a marker created by {@link divIconMarker}, as Leaflet's `setIcon` did, while
+ * keeping the element (and the listeners attached to it).
+ * @param {Marker} marker - The marker to restyle.
+ * @param {Omit<DivIconMarkerOptions, 'draggable' | 'className'>} options - The new content, size and anchor.
+ */
+export const setDivIcon = (marker: Marker, options: Omit<DivIconMarkerOptions, 'draggable' | 'className'>): void => {
+  const element = marker.getElement()
+  const [width, height] = options.size
+  element.innerHTML = options.html ?? ''
+  element.style.width = `${width}px`
+  element.style.height = `${height}px`
+  const [anchorX, anchorY] = options.anchor ?? [width / 2, height / 2]
+  marker.setOffset([width / 2 - anchorX, height / 2 - anchorY])
+}
+
+/**
+ * A metric scale bar of at most 100 pixels, laid out as Leaflet's was: a `cockpit-scale-control` container holding a
+ * `cockpit-scale-line` bar, so the maps can frame the container and keep the bar's own look.
+ * @returns {IControl} The control, to add to a map's control corner.
+ */
+export const framedScaleControl = (): IControl => {
+  const scale = new ScaleControl({ maxWidth: 100, unit: 'metric' })
+  const container = document.createElement('div')
+  container.className = 'maplibregl-ctrl cockpit-scale-control'
+  return {
+    onAdd: (map) => {
+      const line = scale.onAdd(map)
+      line.classList.add('cockpit-scale-line')
+      container.replaceChildren(line)
+      return container
+    },
+    onRemove: () => {
+      scale.onRemove()
+      container.remove()
+    },
+  }
+}
