@@ -434,7 +434,6 @@ export const createMap = (container: HTMLElement, options: CreateMapOptions): Ma
     zoomSnap: 1,
     dragRotate: false,
     pitchWithRotate: false,
-    boxZoom: false,
     attributionControl: options.attribution ? { compact: false } : false,
   })
   map.touchZoomRotate.disableRotation()
