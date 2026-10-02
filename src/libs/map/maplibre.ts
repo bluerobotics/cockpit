@@ -593,6 +593,8 @@ export interface DivIconMarkerOptions {
   anchor?: [number, number]
   /** Whether the user can drag the marker. */
   draggable?: boolean
+  /** Whether the element turns with a rotated map rather than staying upright. */
+  rotatesWithMap?: boolean
 }
 
 /**
@@ -613,6 +615,7 @@ export const divIconMarker = (options: DivIconMarkerOptions): Marker => {
     anchor: 'center',
     offset: [width / 2 - anchorX, height / 2 - anchorY],
     draggable: options.draggable ?? false,
+    rotationAlignment: options.rotatesWithMap ? 'map' : 'auto',
   })
 
   // MapLibre drags a marker with any button and ends the drag only on a mouseup over the map, so a right-click, or a
@@ -644,9 +647,13 @@ export const divIconMarker = (options: DivIconMarkerOptions): Marker => {
  * Replaces the content and size of a marker created by {@link divIconMarker}, as Leaflet's `setIcon` did, while
  * keeping the element (and the listeners attached to it).
  * @param {Marker} marker - The marker to restyle.
- * @param {Omit<DivIconMarkerOptions, 'draggable' | 'className'>} options - The new content, size and anchor.
+ * @param {Omit<DivIconMarkerOptions, 'draggable' | 'className' | 'rotatesWithMap'>} options - The new content, size and
+ *   anchor.
  */
-export const setDivIcon = (marker: Marker, options: Omit<DivIconMarkerOptions, 'draggable' | 'className'>): void => {
+export const setDivIcon = (
+  marker: Marker,
+  options: Omit<DivIconMarkerOptions, 'draggable' | 'className' | 'rotatesWithMap'>
+): void => {
   const element = marker.getElement()
   const [width, height] = options.size
   element.innerHTML = options.html ?? ''

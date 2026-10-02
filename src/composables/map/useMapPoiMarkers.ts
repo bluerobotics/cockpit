@@ -186,7 +186,12 @@ export const useMapPoiMarkers = (
     if (!isMapReady(map.value)) return
     markersMap = map.value
 
-    const marker = divIconMarker({ ...poiIconConfig(poi), draggable: draggable && !poi.isLiveTracked })
+    // Turning with the map keeps the heading tip pointing where the PoI faces on a rotated map.
+    const marker = divIconMarker({
+      ...poiIconConfig(poi),
+      draggable: draggable && !poi.isLiveTracked,
+      rotatesWithMap: true,
+    })
       .setLngLat(toLngLat(poi.coordinates))
       .setOpacity(String(getPoiMarkerOpacity(poi)))
       .addTo(map.value)
