@@ -2,15 +2,12 @@ import { v4 as uuid4 } from 'uuid'
 import { toRaw } from 'vue'
 
 import { blankViewsGroup, defaultProfileVehicleCorrespondency, widgetProfiles } from '@/assets/defaults'
-import {
-  blankMapping,
-  cockpitStandardToProtocols,
-  defaultProtocolMappingVehicleCorrespondency,
-} from '@/assets/joystick-profiles'
+import { blankMapping } from '@/assets/joystick-profiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { getDefaultMapping, isAxisRangeOffDefault } from '@/libs/joystick/default-mappings'
 import { OtherProtocol } from '@/libs/joystick/protocols/other'
 import { toPlain } from '@/libs/utils'
-import type { JoystickProtocolActionsMapping } from '@/types/joystick'
+import type { AxisCorrespondence, JoystickProtocolActionsMapping } from '@/types/joystick'
 import type { Profile, View } from '@/types/widgets'
 
 // toRaw keeps the JSON walk untracked: buildViewsGroupAfterImport runs inside a computed
@@ -46,12 +43,6 @@ const getDefaultViewsGroup = (vehicleType: MavType): Profile | undefined => {
   // @ts-ignore: We know that the value is a string
   const hash = defaultProfileVehicleCorrespondency[vehicleType]
   return widgetProfiles.find((p) => p.hash === hash)
-}
-
-const getDefaultMapping = (vehicleType: MavType): JoystickProtocolActionsMapping | undefined => {
-  // @ts-ignore: We know that the value is a string
-  const hash = defaultProtocolMappingVehicleCorrespondency[vehicleType]
-  return cockpitStandardToProtocols.find((m) => m.hash === hash)
 }
 
 export const isViewsGroupBlank = (profile: Profile): boolean => {
@@ -195,9 +186,6 @@ export const countMissingDefaultAxisFunctions = (
   return missing
 }
 
-type AxisCorrespondence =
-  JoystickProtocolActionsMapping['axesCorrespondencies'][keyof JoystickProtocolActionsMapping['axesCorrespondencies']]
-
 /**
  * For each default axis function present in the user's mapping, checks whether the user's axis
  * range (min/max) is within {@link axisRangeTolerance} of the default. Default functions that the
@@ -226,13 +214,7 @@ export const countAxisFunctionRangeMismatches = (
     if (defaultCorr.action.id === OtherProtocol.no_function) continue
     const currentCorr = currentCorrByFunctionId.get(defaultCorr.action.id)
     if (!currentCorr) continue
-    const tolerance = axisRangeTolerance * Math.abs(defaultCorr.max - defaultCorr.min)
-    if (
-      Math.abs(currentCorr.min - defaultCorr.min) > tolerance ||
-      Math.abs(currentCorr.max - defaultCorr.max) > tolerance
-    ) {
-      mismatches++
-    }
+    if (isAxisRangeOffDefault(currentCorr, defaultCorr, axisRangeTolerance)) mismatches++
   }
   return mismatches
 }

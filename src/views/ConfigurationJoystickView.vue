@@ -319,6 +319,7 @@
                         <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Min</p></th>
                         <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
                         <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
+                        <th class="w-[80px]"></th>
                       </tr>
                       <p v-if="axisTableItems.length === 0" class="fixed top-[67%] left-[40%]">
                         Press a key or move an axis
@@ -351,17 +352,18 @@
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].min"
+                            :model-value="axisMapping(item.id as JoystickAxis).min"
                             type="number"
                             density="compact"
                             variant="plain"
                             hide-details
                             class="ml-4"
+                            @update:model-value="(v) => editAxisRange(item.id as JoystickAxis, 'min', v)"
                           />
                         </td>
                         <td class="w-[120px] text-center">
                           <v-select
-                            v-model="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].action"
+                            :model-value="axisMapping(item.id as JoystickAxis).action"
                             :items="filteredAndSortedAxisActions"
                             item-title="name"
                             hide-details
@@ -370,16 +372,27 @@
                             variant="plain"
                             theme="dark"
                             return-object
+                            @update:model-value="(a) => editAxisAction(item.id as JoystickAxis, a)"
                           />
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            v-model.number="selectedProfileAxesCorrespondencies[item.id as JoystickAxis].max"
+                            :model-value="axisMapping(item.id as JoystickAxis).max"
                             type="number"
                             density="compact"
                             variant="plain"
                             hide-details
                             class="ml-4"
+                            @update:model-value="(v) => editAxisRange(item.id as JoystickAxis, 'max', v)"
+                          />
+                        </td>
+                        <td class="w-[80px]">
+                          <AxisDraftActions
+                            :dirty="isAxisDirty(item.id as JoystickAxis)"
+                            :can-save="canSaveAxis(item.id as JoystickAxis)"
+                            :blocking-axis="blockingAxis(item.id as JoystickAxis)"
+                            @save="requestAxisSave(item.id as JoystickAxis)"
+                            @revert="revertAxisDraft(item.id as JoystickAxis)"
                           />
                         </td>
                       </tr>
@@ -620,16 +633,17 @@
               }}
             </v-icon>
             <v-text-field
-              v-model.number="selectedProfileAxesCorrespondencies[input.id].min"
+              :model-value="axisMapping(input.id).min"
               class="bg-transparent w-[110px]"
               label="Min"
               type="number"
               density="compact"
               variant="outlined"
               hide-details
+              @update:model-value="(v) => editAxisRange(input.id, 'min', v)"
             />
             <v-select
-              v-model="selectedProfileAxesCorrespondencies[input.id].action"
+              :model-value="axisMapping(input.id).action"
               :items="filteredAndSortedAxisActions"
               item-title="name"
               hide-details
@@ -638,15 +652,25 @@
               class="bg-transparent w-[120px] mx-2"
               theme="dark"
               return-object
+              @update:model-value="(a) => editAxisAction(input.id, a)"
             />
             <v-text-field
-              v-model.number="selectedProfileAxesCorrespondencies[input.id].max"
+              :model-value="axisMapping(input.id).max"
               class="bg-transparent w-[110px]"
               label="Max"
               type="number"
               density="compact"
               variant="outlined"
               hide-details
+              @update:model-value="(v) => editAxisRange(input.id, 'max', v)"
+            />
+            <AxisDraftActions
+              :dirty="isAxisDirty(input.id)"
+              :can-save="canSaveAxis(input.id)"
+              :blocking-axis="blockingAxis(input.id)"
+              class="ml-2"
+              @save="requestAxisSave(input.id)"
+              @revert="revertAxisDraft(input.id)"
             />
           </div>
         </div>
@@ -657,6 +681,18 @@
         </div>
       </template>
     </InteractionDialog>
+    <AxisRangeWarningDialog
+      v-if="rangeWarning"
+      :axis="rangeWarning.axis"
+      :action-name="axisMapping(rangeWarning.axis).action.name"
+      :vehicle-type-name="rangeWarning.vehicleName"
+      :min="axisMapping(rangeWarning.axis).min"
+      :max="axisMapping(rangeWarning.axis).max"
+      :default-min="rangeWarning.defaultMapping.min"
+      :default-max="rangeWarning.defaultMapping.max"
+      @use-defaults="saveAxisWithDefaultRange"
+      @keep-values="saveAxisKeepingRange"
+    />
   </teleport>
 </template>
 
@@ -667,10 +703,13 @@ import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from
 import Button from '@/components/Button.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
+import AxisDraftActions from '@/components/joysticks/AxisDraftActions.vue'
+import AxisRangeWarningDialog from '@/components/joysticks/AxisRangeWarningDialog.vue'
 import AxisVisualization from '@/components/joysticks/AxisVisualization.vue'
 import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
+import { useAxisMappingDrafts } from '@/composables/useAxisMappingDrafts'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
@@ -680,10 +719,12 @@ import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
+import { vehicleTypeName } from '@/migration/default-profile-importer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import {
+  type AxisCorrespondence,
   type Joystick,
   type JoystickInput,
   type ProtocolAction,
@@ -700,7 +741,8 @@ import {
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
-const { globalAddress } = useMainVehicleStore()
+const mainVehicleStore = useMainVehicleStore()
+const { globalAddress } = mainVehicleStore
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
 
@@ -1056,6 +1098,75 @@ const selectedProfileButtonsCorrespondencies = computed(() => controllerStore.pr
 const closeInputMappingDialog = (): void => {
   logUserAction('Closed input mapping dialog')
   inputClickedDialog.value = false
+}
+
+const { axisMapping, isAxisDirty, editAxis, blockingAxis, canSaveAxis, offDefaultRange, saveAxis, revertAxis } =
+  useAxisMappingDrafts()
+
+const editAxisRange = (axis: JoystickAxis, endpoint: 'min' | 'max', value: unknown): void => {
+  // An emptied field is NaN rather than 0, so it blocks the save instead of silently becoming a valid range.
+  editAxis(axis, { [endpoint]: value === '' ? NaN : Number(value) })
+}
+
+const editAxisAction = (axis: JoystickAxis, action: ProtocolAction): void => {
+  logUserAction(`Selected function '${action.name}' for axis ${axis}`)
+  editAxis(axis, { action })
+}
+
+const rangeWarning = ref<{
+  /** Axis waiting to be saved */
+  axis: JoystickAxis
+  /** Vehicle default for the axis' function */
+  defaultMapping: AxisCorrespondence
+  /** Friendly name of the vehicle the default belongs to */
+  vehicleName: string
+}>()
+
+// A sync or an import can drop the pending edit while the warning is open, leaving nothing for it to save.
+watch(
+  () => rangeWarning.value && !isAxisDirty(rangeWarning.value.axis),
+  (editDiscarded) => {
+    if (editDiscarded) rangeWarning.value = undefined
+  }
+)
+
+const commitAxis = (axis: JoystickAxis, range?: Pick<AxisCorrespondence, 'min' | 'max'>): void => {
+  saveAxis(axis, range)
+  const { action, min, max } = axisMapping(axis)
+  logUserAction(`Saved axis ${axis} mapping ('${action.name}', ${min} / ${max})`)
+  openSnackbar({ message: `Axis ${axis} saved: '${action.name}' (${min} / ${max}).`, variant: 'success' })
+}
+
+const requestAxisSave = (axis: JoystickAxis): void => {
+  const defaultMapping = offDefaultRange(axis)
+  const vehicleType = mainVehicleStore.vehicleType
+  if (defaultMapping === undefined || vehicleType === undefined) {
+    commitAxis(axis)
+    return
+  }
+  logUserAction(`Opened the unusual axis range warning for axis ${axis}`)
+  rangeWarning.value = { axis, defaultMapping, vehicleName: vehicleTypeName(vehicleType) }
+}
+
+const revertAxisDraft = (axis: JoystickAxis): void => {
+  logUserAction(`Reverted unsaved changes on axis ${axis}`)
+  revertAxis(axis)
+}
+
+const saveAxisWithDefaultRange = (): void => {
+  if (!rangeWarning.value) return
+  const { axis, defaultMapping } = rangeWarning.value
+  logUserAction(`Chose the vehicle default range for axis ${axis}`)
+  rangeWarning.value = undefined
+  commitAxis(axis, { min: defaultMapping.min, max: defaultMapping.max })
+}
+
+const saveAxisKeepingRange = (): void => {
+  if (!rangeWarning.value) return
+  const { axis } = rangeWarning.value
+  logUserAction(`Chose to keep a range far from the vehicle default for axis ${axis}`)
+  rangeWarning.value = undefined
+  commitAxis(axis)
 }
 
 const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
