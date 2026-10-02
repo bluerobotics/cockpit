@@ -2,6 +2,7 @@
 import { settingsManager } from '@/libs/settings-management'
 
 import 'floating-vue/dist/style.css'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import '@/libs/system-logging'
 
