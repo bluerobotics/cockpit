@@ -181,6 +181,7 @@ import HttpRequestActionConfig from '@/components/configuration/HttpRequestActio
 import JavascriptActionConfig from '@/components/configuration/JavascriptActionConfig.vue'
 import MavlinkMessageActionConfig from '@/components/configuration/MavlinkMessageActionConfig.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { openActionErrorSnackbar } from '@/composables/snackbar'
 import { getActionLink } from '@/libs/actions/action-links'
 import { getAllJavascriptActionConfigs, registerJavascriptActionConfig } from '@/libs/actions/free-javascript'
 import { getAllHttpRequestActionConfigs, registerHttpRequestActionConfig } from '@/libs/actions/http-request'
@@ -290,7 +291,7 @@ const editAction = (item: ActionConfig): void => {
 
 const runAction = (item: ActionConfig): void => {
   logUserAction(`Ran action '${item.name}'`)
-  executeActionCallback(item.id)
+  executeActionCallback(item.id, openActionErrorSnackbar)
 }
 
 const exportAction = (item: ActionConfig): void => {
