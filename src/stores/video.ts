@@ -51,7 +51,7 @@ import {
 import { videoChunkName, videoFilename, videoSubtitlesFilename, videoThumbnailFilename } from '@/utils/video'
 
 import { useAlertStore } from './alert'
-const { openSnackbar } = useSnackbar()
+const { openSnackbar, closeSnackbar } = useSnackbar()
 
 // How long a recording cut by a video outage waits for its stream before the stop is reported as final
 const secondsToWaitForStreamToResumeRecording = 120
@@ -1492,6 +1492,13 @@ export const useVideoStore = defineStore('video', () => {
       // Finalize live processing if active (Electron only)
       const processor = liveProcessors.value[recordingHash]
       if (processor) {
+        // Finishing the file takes as long as a full copy of it, so mark the wait instead of leaving the operator
+        // with an idle recorder button and no sign that Cockpit is still working.
+        const processingSnackbarId = openSnackbar({
+          message: 'Finishing the recording. This can take a while for long videos.',
+          variant: 'info',
+          persistent: true,
+        })
         try {
           await processor.stopProcessing()
           openSnackbar({
@@ -1504,6 +1511,7 @@ export const useVideoStore = defineStore('video', () => {
           console.error('Failed to process video:', error)
           alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamName}.`))
         } finally {
+          closeSnackbar(processingSnackbarId)
           delete liveProcessors.value[recordingHash]
         }
       }
