@@ -1,0 +1,100 @@
+/* Shared look of every Cockpit map: the Cesium canvas fills its container, markers and controls sit over it, and the
+   stacking and control styling reproduce what Leaflet drew, so the views keep their look. */
+.cockpit-map {
+  position: relative;
+  overflow: hidden;
+  outline: none;
+  font: 12px / 1.5 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+
+.cockpit-map-canvas-container,
+.cockpit-map-canvas-container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.cockpit-map-canvas-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Cesium's own credits (its logo among them) are replaced by the attribution of the visible layers. */
+.cockpit-map .cesium-widget-credits {
+  display: none;
+}
+
+.cockpit-map-marker-pane {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cockpit-map-marker-pane > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+}
+
+.cockpit-map-zoom-box {
+  position: absolute;
+  z-index: 800;
+  border: 2px dotted #38f;
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+/* Controls stay above everything drawn over the map (tooltips, label and heatmap overlays), as they always did. */
+.cockpit-map-control-container > div {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.cockpit-map-ctrl-top-left {
+  top: 0;
+  left: 0;
+}
+
+.cockpit-map-ctrl-top-right {
+  top: 0;
+  right: 0;
+}
+
+.cockpit-map-ctrl-bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.cockpit-map-ctrl-bottom-right {
+  bottom: 0;
+  right: 0;
+}
+
+.cockpit-map-ctrl {
+  clear: both;
+  pointer-events: auto;
+}
+
+.cockpit-map-ctrl-top-left .cockpit-map-ctrl,
+.cockpit-map-ctrl-bottom-left .cockpit-map-ctrl {
+  float: left;
+  margin-left: 10px;
+}
+
+.cockpit-map-ctrl-top-right .cockpit-map-ctrl,
+.cockpit-map-ctrl-bottom-right .cockpit-map-ctrl {
+  float: right;
+  margin-right: 10px;
+}
+
+.cockpit-map-ctrl-top-left .cockpit-map-ctrl,
+.cockpit-map-ctrl-top-right .cockpit-map-ctrl {
+  margin-top: 10px;
+}
+
+.cockpit-map-ctrl-bottom-left .cockpit-map-ctrl,
+.cockpit-map-ctrl-bottom-right .cockpit-map-ctrl {
+  margin-bottom: 10px;
+}

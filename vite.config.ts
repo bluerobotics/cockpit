@@ -1,6 +1,7 @@
 import vue from '@vitejs/plugin-vue'
+import fs from 'fs'
 import path from 'path'
-import { defineConfig } from 'vite'
+import { type Plugin, defineConfig } from 'vite'
 import electron, { startup, treeKillSync } from 'vite-plugin-electron'
 import { VitePWA } from 'vite-plugin-pwa'
 import vuetify from 'vite-plugin-vuetify'
@@ -12,6 +13,48 @@ import { getVersion } from './src/libs/non-browser-utils'
 const isElectron = process.env.ELECTRON === 'true'
 const isBuilding = process.argv.includes('build')
 const isLibrary = process.env.BUILD_MODE === 'library'
+
+// CesiumJS loads its workers, textures and third-party code at runtime from `CESIUM_BASE_URL`, so those directories
+// are served from the package in development and copied next to the build.
+const cesiumRuntimeDirectories = ['Workers', 'Assets', 'ThirdParty', 'Widgets']
+const cesiumBuildPath = path.resolve(__dirname, 'node_modules/cesium/Build/Cesium')
+// Module workers and WebAssembly are refused without these types.
+const cesiumContentTypes: Record<string, string> = {
+  '.js': 'text/javascript',
+  '.json': 'application/json',
+  '.wasm': 'application/wasm',
+  '.css': 'text/css',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+}
+const cesiumRuntimeAssets = (): Plugin => {
+  let outDir = 'dist'
+  return {
+    name: 'cockpit-cesium-runtime-assets',
+    configResolved: (config) => {
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    configureServer: (server) => {
+      server.middlewares.use('/cesium', (request, response, next) => {
+        const relativePath = decodeURIComponent((request.url ?? '').split('?')[0])
+        const filePath = path.join(cesiumBuildPath, relativePath)
+        if (!filePath.startsWith(cesiumBuildPath) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+          next()
+          return
+        }
+        const contentType = cesiumContentTypes[path.extname(filePath)]
+        if (contentType) response.setHeader('Content-Type', contentType)
+        fs.createReadStream(filePath).pipe(response)
+      })
+    },
+    closeBundle: () => {
+      cesiumRuntimeDirectories.forEach((directory) => {
+        fs.cpSync(path.join(cesiumBuildPath, directory), path.join(outDir, 'cesium', directory), { recursive: true })
+      })
+    },
+  }
+}
 
 // Base configuration that will be merged
 const baseConfig = {
@@ -44,6 +87,7 @@ const baseConfig = {
         },
       ]),
     vue(),
+    !isLibrary && cesiumRuntimeAssets(),
     vuetify({
       autoImport: true,
     }),
