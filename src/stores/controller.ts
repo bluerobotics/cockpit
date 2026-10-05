@@ -294,6 +294,7 @@ export const useControllerStore = defineStore('controller', () => {
     const joystick = joysticks.value.get(event.index)
     if (joystick === undefined) return
     joystick.gamepad = event.gamepad
+    joystick.rawCalibratedState = event.calibratedState
 
     const joystickModel = joystick.model || JoystickModel.Unknown
     joystick.gamepadToCockpitMap = cockpitStdMappings.value[joystickModel]

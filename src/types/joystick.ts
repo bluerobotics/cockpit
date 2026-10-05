@@ -43,6 +43,7 @@ export class Joystick {
   gamepad: Gamepad
   gamepadToCockpitMap: GamepadToCockpitStdMapping | undefined = undefined
   model = JoystickModel.Unknown
+  rawCalibratedState: JoystickState = { axes: [], buttons: [] }
 
   /**
    * Create joystick component
@@ -57,18 +58,42 @@ export class Joystick {
    * @returns {JoystickState}
    */
   get state(): JoystickState {
+    return this.toCockpitLayout(
+      this.gamepad.axes,
+      this.gamepad.buttons.map((button) => button.value)
+    )
+  }
+
+  /**
+   * Returns the axes and buttons with calibration applied, as forwarded to the vehicle
+   * @returns {JoystickState}
+   */
+  get calibratedState(): JoystickState {
+    return this.toCockpitLayout(this.rawCalibratedState.axes, this.rawCalibratedState.buttons)
+  }
+
+  /**
+   * Reorder raw device inputs into Cockpit's standard layout, following the model's profile
+   * @param {ReadonlyArray<number | undefined>} rawAxes Axis values by device index
+   * @param {ReadonlyArray<number | undefined>} rawButtons Button values by device index
+   * @returns {JoystickState} The inputs in the standard layout
+   */
+  private toCockpitLayout(
+    rawAxes: ReadonlyArray<number | undefined>,
+    rawButtons: ReadonlyArray<number | undefined>
+  ): JoystickState {
     let buttons =
       this.gamepadToCockpitMap?.buttons.map((idx) => {
-        if (idx === null || this.gamepad.buttons[idx] === undefined) return undefined
-        return this.gamepad.buttons[idx].value
+        if (idx === null || rawButtons[idx] === undefined) return undefined
+        return rawButtons[idx]
       }) || []
 
     buttons = buttons.filter((button) => button !== undefined)
 
     let axes =
       this.gamepadToCockpitMap?.axes.map((idx) => {
-        if (idx === null || this.gamepad.axes[idx] === undefined) return undefined
-        return this.gamepad.axes[idx]
+        if (idx === null || rawAxes[idx] === undefined) return undefined
+        return rawAxes[idx]
       }) || []
 
     axes = axes.filter((axis) => axis !== undefined)
