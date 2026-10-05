@@ -4,8 +4,6 @@ import { type RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-rou
 import { aboutSlug, editModeSlug, menuPages } from '@/libs/menu-pages'
 import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
-import MissionPlanningView from '../views/MissionPlanningView.vue'
-
 declare module 'vue-router' {
   /**
    * Menu destination each route stands for, so consumers can read it off the route instead of parsing its path.
@@ -85,7 +83,9 @@ const router = createRouter({
     {
       path: '/mission-planning',
       name: 'Mission planning',
-      component: MissionPlanningView,
+      // Mounted in App.vue like Flight, so that importing the router (as the programmatic dialogs do) does not import
+      // the view and every store it reaches, which ties most of the tree into one import cycle.
+      component: rendersNothing,
       children: menuRoutes('/mission-planning'),
     },
     {
