@@ -181,8 +181,31 @@ export const useControllerStore = defineStore('controller', () => {
   joystickManager.onJoystickConnectionUpdate((event) => processJoystickConnectionEvent(event))
   joystickManager.onJoystickStateUpdate((event) => processJoystickStateEvent(event))
 
+  const runOtherSourcesCheck = async (): Promise<void> => {
+    // Check if other GCS is sending MANUAL_CONTROL messages
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    const otherSourceDetected = await checkForOtherManualControlSources(vehicleAddress)
+    otherSourcesCheck = 'done'
+
+    // The wait above is unbounded, so the user may have moved the forwarding switch by hand in the meantime. That's
+    // a deliberate action, and a check that only now came back should not undo it — but the warning is still worth
+    // showing, and a detected conflict blocks the automatic re-enables the user did not ask for.
+    if (otherSourceDetected) {
+      console.warn('Other GCS sending MANUAL_CONTROL messages detected.')
+      otherSourceWasDetected = true
+      if (!userChangedForwarding) enableForwarding.value = false
+      updateForwardingPrevention()
+
+      showOtherControlStationWarning.value = true
+    } else if (!userChangedForwarding) {
+      console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
+      enableForwarding.value = true
+    }
+  }
+
   const processJoystickConnectionEvent = async (event: JoysticksMap): Promise<void> => {
     const newMap = new Map(Array.from(event).map(([index, gamepad]) => [index, new Joystick(gamepad)]))
+    let shouldCheckOtherSources = false
 
     // Add new joysticks
     for (const [index, joystick] of newMap) {
@@ -204,26 +227,7 @@ export const useControllerStore = defineStore('controller', () => {
       if (otherSourcesCheck === 'running') continue
       otherSourcesCheck = 'running'
       userChangedForwarding = false
-
-      // Check if other GCS is sending MANUAL_CONTROL messages
-      const vehicleAddress = await mainVehicleStore.getVehicleAddress()
-      const otherSourceDetected = await checkForOtherManualControlSources(vehicleAddress)
-      otherSourcesCheck = 'done'
-
-      // The wait above is unbounded, so the user may have moved the forwarding switch by hand in the meantime. That's
-      // a deliberate action, and a check that only now came back should not undo it — but the warning is still worth
-      // showing, and a detected conflict blocks the automatic re-enables the user did not ask for.
-      if (otherSourceDetected) {
-        console.warn('Other GCS sending MANUAL_CONTROL messages detected.')
-        otherSourceWasDetected = true
-        if (!userChangedForwarding) enableForwarding.value = false
-        updateForwardingPrevention()
-
-        showOtherControlStationWarning.value = true
-      } else if (!userChangedForwarding) {
-        console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
-        enableForwarding.value = true
-      }
+      shouldCheckOtherSources = true
     }
 
     // Remove joysticks that doesn't not exist anymore
@@ -262,6 +266,8 @@ export const useControllerStore = defineStore('controller', () => {
         joystickCalibrationOptions.value[currentMainJoystick.value.model] = newCalibration
       }
     }
+
+    if (shouldCheckOtherSources) await runOtherSourcesCheck()
   }
 
   // Disable joystick forwarding if the window/tab is not visible (except on Electron)
