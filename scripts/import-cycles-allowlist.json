@@ -1,0 +1,12 @@
+[
+  ["src/components/ArmSafetyDialog.vue", "src/composables/armSafetyDialog.ts", "src/composables/menuRouting.ts"],
+  ["src/components/InteractionDialog.vue", "src/composables/interactionDialog.ts"],
+  [
+    "src/components/UserNameInputDialog.vue",
+    "src/composables/usernamePrompDialog.ts",
+    "src/libs/slide-to-confirm.ts",
+    "src/stores/controller.ts",
+    "src/stores/mainVehicle.ts",
+    "src/stores/mission.ts"
+  ]
+]
