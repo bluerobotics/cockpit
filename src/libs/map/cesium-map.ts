@@ -973,6 +973,16 @@ export class CockpitMap {
   }
 
   /**
+   * Marches the dashes of a vector layer's dashed lines, which is how a line shows its direction of travel.
+   * @param {string} id - The layer id.
+   * @param {number} travelled - How far the dashes have moved along their lines, in pixels.
+   */
+  marchVectorDashes(id: string, travelled: number): void {
+    this.vectors.get(id)?.marchDashes(travelled)
+    this.requestRender()
+  }
+
+  /**
    * The vector layers drawn, with the slot each stacks in.
    * @returns {{ id: string, slot: MapLayerSlot }[]} The layers.
    */

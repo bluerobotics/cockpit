@@ -1,5 +1,6 @@
 import * as turf from '@turf/turf'
 import {
+  type Polyline,
   type Scene,
   ArcType,
   Cartesian3,
@@ -182,10 +183,12 @@ const defaultLineWidth = 3
 /**
  * Cesium's 16-bit dash mask for a Leaflet pixel dash pattern, and the pixel length the mask spans.
  * @param {number[]} pattern - Alternating dash and gap lengths, in pixels.
+ * @param {number} [travelled] - How far the dashes have marched forward along the line, in pixels.
  * @returns {{ dashLength: number, dashPattern: number }} The mask and its length.
  */
 export const dashMask = (
-  pattern: number[]
+  pattern: number[],
+  travelled = 0
 ): {
   /** Pixel length of the whole pattern. */ dashLength: number
   /** The 16-bit on/off mask. */ dashPattern: number
@@ -194,7 +197,8 @@ export const dashMask = (
   const total = lengths.reduce((sum, length) => sum + length, 0)
   let mask = 0
   for (let bit = 0; bit < 16; bit++) {
-    let position = ((bit + 0.5) / 16) * total
+    // Marching forward by `travelled` means the line now starts that far back into the pattern.
+    let position = (((((bit + 0.5) / 16) * total - travelled) % total) + total) % total
     let on = true
     for (const length of lengths) {
       if (position < length) break
@@ -226,6 +230,8 @@ export class VectorLayer {
   private features: VectorFeature[] = []
   private opacityFactor = 1
   private stripeZoom: number | undefined
+  private dashedLines: { /** The dashed line. */ line: Polyline; /** Its pixel pattern. */ pattern: number[] }[] = []
+  private dashTravelled = 0
 
   /**
    * Creates the layer's primitives in a scene.
@@ -289,6 +295,17 @@ export class VectorLayer {
   }
 
   /**
+   * Moves the dashes of the layer's dashed lines forward, in place, so they can march every frame without a rebuild.
+   * @param {number} travelled - How far the dashes have moved along their lines, in pixels.
+   */
+  marchDashes(travelled: number): void {
+    this.dashTravelled = travelled
+    this.dashedLines.forEach(({ line, pattern }) => {
+      line.material.uniforms.dashPattern = dashMask(pattern, travelled).dashPattern
+    })
+  }
+
+  /**
    * Redraws striped areas when the zoom changed enough for their stripes to drift from their pixel spacing.
    */
   refreshForZoom(): void {
@@ -324,6 +341,7 @@ export class VectorLayer {
     this.points.removeAll()
     this.clearPolygons()
     this.stripeZoom = undefined
+    this.dashedLines = []
 
     const plainAreas: GeometryInstance[] = []
     this.features.forEach((feature) => {
@@ -333,14 +351,20 @@ export class VectorLayer {
         if (feature.coordinates.length < 2) return
         const { style } = feature
         const color = cssColor(style.color, (style.opacity ?? 1) * factor)
-        this.polylines.add({
+        const pattern = style.dashPattern
+        const line = this.polylines.add({
           id: key,
           positions: feature.coordinates.map((coordinates) => toCartesian(coordinates, height + lineLift)),
           width: style.width ?? defaultLineWidth,
-          material: style.dashPattern
-            ? Material.fromType('PolylineDash', { color, gapColor: Color.TRANSPARENT, ...dashMask(style.dashPattern) })
+          material: pattern
+            ? Material.fromType('PolylineDash', {
+                color,
+                gapColor: Color.TRANSPARENT,
+                ...dashMask(pattern, this.dashTravelled),
+              })
             : Material.fromType('Color', { color }),
         })
+        if (pattern) this.dashedLines.push({ line, pattern })
       } else if (feature.type === 'point') {
         const { style } = feature
         this.points.add({
