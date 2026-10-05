@@ -1,8 +1,10 @@
 // eslint-disable-next-line simple-import-sort/imports -- The settings manager must be imported before any other system, as they can depend on it
 import { settingsManager } from '@/libs/settings-management'
 
+import 'cesium/Build/Cesium/Widgets/widgets.css'
 import 'floating-vue/dist/style.css'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
+import '@/styles/map.css'
 import '@/libs/system-logging'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
