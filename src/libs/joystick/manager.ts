@@ -5,6 +5,7 @@ import {
   type JoystickState,
   convertSDLControllerStateToGamepadState,
   convertSDLJoystickStateToGamepadState,
+  withTriggerAxes,
 } from '@/types/joystick'
 import { JoystickMapVidPid, JoystickModel } from '@/types/joystick-model-defs'
 
@@ -15,6 +16,13 @@ import { applyCalibration } from './calibration'
 export { JoystickModel }
 
 export const joystickCalibrationOptionsKey = 'cockpit-joystick-calibration-options'
+
+/**
+ * Whether the gamepad uses the standard layout, whose analog triggers are reported both as axes and as buttons
+ * @param {Gamepad} gamepad The gamepad to check
+ * @returns {boolean} True when each trigger in `standardTriggerAxes` has its axis
+ */
+export const hasTriggerAxes = (gamepad: Gamepad): boolean => gamepad.mapping === 'standard'
 
 /**
  * Possible events from GamepadListener
@@ -441,7 +449,11 @@ class JoystickManager {
     // Add new gamepads to the list
     for (const gamepad of gamepadConnectionsState) {
       if (gamepad && !this.joysticks.has(gamepad.index)) {
-        this.joysticks.set(gamepad.index, gamepad)
+        const rawButtons = gamepad.buttons.map((button) => button.value)
+        const connected = hasTriggerAxes(gamepad)
+          ? this.withAxes(gamepad, withTriggerAxes(gamepad.axes, rawButtons))
+          : gamepad
+        this.joysticks.set(gamepad.index, connected)
         this.enabledJoysticks.push(gamepad.index)
         console.log(`Joystick ${gamepad.index} connected.`)
         joystickConnectionsChanged = true
@@ -530,8 +542,9 @@ class JoystickManager {
 
       const previousState = this.previousGamepadState.get(gamepad.index)
 
-      const rawAxes = [...gamepad.axes]
       const rawButtons = gamepad.buttons.map((button) => button.value)
+      const triggerAxes = hasTriggerAxes(gamepad)
+      const rawAxes = triggerAxes ? withTriggerAxes(gamepad.axes, rawButtons) : [...gamepad.axes]
       let shouldEmitStateEvent = false
 
       if (previousState) {
@@ -554,7 +567,7 @@ class JoystickManager {
       if (shouldEmitStateEvent) {
         this.emitStateEvent({
           index: gamepad.index,
-          gamepad: gamepad,
+          gamepad: triggerAxes ? this.withAxes(gamepad, rawAxes) : gamepad,
           calibratedState: this.buildCalibratedState(rawAxes, rawButtons, joystickModel),
         })
       }
@@ -562,6 +575,25 @@ class JoystickManager {
 
     // Continue polling
     this.animationFrameId = requestAnimationFrame(() => this.pollGamepadsStates(interval))
+  }
+
+  /**
+   * Copy a browser gamepad with different axes, as its own fields are read-only getters that cannot be spread
+   * @param {Gamepad} gamepad The gamepad reported by the browser
+   * @param {number[]} axes The axis values to report instead
+   * @returns {Gamepad} A plain gamepad object with the given axes
+   */
+  private withAxes(gamepad: Gamepad, axes: number[]): Gamepad {
+    return {
+      id: gamepad.id,
+      index: gamepad.index,
+      connected: gamepad.connected,
+      timestamp: gamepad.timestamp,
+      mapping: gamepad.mapping,
+      axes,
+      buttons: gamepad.buttons,
+      vibrationActuator: gamepad.vibrationActuator,
+    }
   }
 
   /**

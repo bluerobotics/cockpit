@@ -503,6 +503,38 @@ export type JoystickSdlStandardToGamepadStandard = {
 }
 
 /**
+ * An analog trigger of a standard-layout gamepad, reported both as an axis and as a button carrying the same value
+ */
+export interface TriggerAxis {
+  /**
+   * Axis index of the trigger, which owns its calibration
+   */
+  axis: JoystickAxis
+  /**
+   * Button index of the trigger in the standard layout, which follows the axis
+   */
+  button: JoystickButton
+}
+
+export const standardTriggerAxes: TriggerAxis[] = [
+  { axis: JoystickAxis.A4, button: JoystickButton.B6 },
+  { axis: JoystickAxis.A5, button: JoystickButton.B7 },
+]
+
+/**
+ * Report a standard-layout gamepad's analog triggers also as axes 4 and 5, as SDL game controllers already do, so
+ * every controller exposes them the same way. Values keep the trigger's 0 to 1 range.
+ * @param {ReadonlyArray<number>} axes Axis values reported by the device
+ * @param {ReadonlyArray<number>} buttons Button values reported by the device
+ * @returns {number[]} The axis values with the triggers in place
+ */
+export const withTriggerAxes = (axes: ReadonlyArray<number>, buttons: ReadonlyArray<number>): number[] => {
+  const withTriggers = [...axes]
+  standardTriggerAxes.forEach(({ axis, button }) => (withTriggers[axis] = buttons[button] ?? 0))
+  return Array.from(withTriggers, (value) => value ?? 0)
+}
+
+/**
  * Convert SDL controller state to Gamepad state, using the default mapping for both
  * @param {SDLControllerState} sdlState - SDL controller state
  * @returns {JoystickState} Gamepad state
