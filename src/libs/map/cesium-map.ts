@@ -18,6 +18,7 @@ import {
   WebMercatorProjection,
 } from 'cesium'
 
+import type { MapMarker } from '@/libs/map/cesium-marker'
 import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import type { WaypointCoordinates } from '@/types/mission'
 
@@ -328,6 +329,7 @@ export class CockpitMap {
   private readonly entityFeatures = new WeakMap<Entity, MapFeature>()
   private readonly controlCorners = new Map<MapControlCorner, HTMLElement>()
   private readonly imagery = new Map<string, ImageryEntry>()
+  private readonly markers = new Set<MapMarker>()
   private readonly cleanups: (() => void)[] = []
   private hoveredLayers = new Set<string>()
   private hoverFrame: number | undefined
@@ -785,6 +787,24 @@ export class CockpitMap {
    */
   isZooming(): boolean {
     return this.zooming
+  }
+
+  // ---- Markers ----
+
+  /**
+   * Starts keeping a marker over its coordinate. {@link MapMarker.addTo} calls this.
+   * @param {MapMarker} marker - The marker.
+   */
+  addMarker(marker: MapMarker): void {
+    this.markers.add(marker)
+  }
+
+  /**
+   * Stops keeping a marker over its coordinate. {@link MapMarker.remove} calls this.
+   * @param {MapMarker} marker - The marker.
+   */
+  removeMarker(marker: MapMarker): void {
+    this.markers.delete(marker)
   }
 
   // ---- Imagery ----
@@ -1303,6 +1323,7 @@ export class CockpitMap {
     let lastCanvasWidth = this.canvasWidth()
     this.cleanups.push(
       this.widget.scene.postRender.addEventListener(() => {
+        this.markers.forEach((marker) => marker.updatePosition())
         const canvasWidth = this.canvasWidth()
         if (canvasWidth === lastCanvasWidth) return
         lastCanvasWidth = canvasWidth
