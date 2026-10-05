@@ -1,118 +1,239 @@
-import { type Control, type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
-import { watch } from 'vue'
+import { type ComputedRef, computed, ref, watch } from 'vue'
 
+import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import type { MapTileLayers } from '@/composables/map/useMapTileLayers'
-import { goToMenuPage } from '@/composables/menuRouting'
-import { createLayersControlWithAction } from '@/libs/map/utils-map'
-import { useAppInterfaceStore } from '@/stores/appInterface'
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
+import {
+  type RasterLayerDefinition,
+  addRasterLayer,
+  rasterLayerId,
+  refreshRasterLayerTiles,
+  setRasterLayerVisible,
+} from '@/libs/map/raster-layers'
 import { useMissionStore } from '@/stores/mission'
-import { SubMenuComponentName } from '@/types/general'
 import type { MapTileProvider } from '@/types/mission'
 
 type OverlayPersistenceFlag = 'userLastMapShowSeamarks' | 'userLastMapShowMarineProfile'
 
-// Maps each overlay's layer-control label to the mission-store flag that persists its toggle.
+// Maps each overlay's layer-selector label to the mission-store flag that persists its toggle.
 const overlayPersistenceFlags: Record<string, OverlayPersistenceFlag> = {
   'Seamarks': 'userLastMapShowSeamarks',
   'Marine Profile': 'userLastMapShowMarineProfile',
 }
 
+const customEntryPrefix = 'custom:'
+
+// Shown when the preferred base map is unavailable, as it always was.
+const esriProvider: MapTileProvider = 'Esri World Imagery'
+
 /**
- * Helpers to seed and persist a map's base-map and overlay selection.
+ * One row of the map layer selector.
  */
-export interface MapTileLayerSelection {
+export interface MapLayerSelectorEntry {
   /**
-   * Resolves the built-in base map the user's settings ask for: the configured default, or the last
-   * selected one when the default is "Use last selected".
+   * Id the selector reports back when the row is picked.
    */
-  preferredBaseLayer: () => L.TileLayer
+  id: string
   /**
-   * Builds the map's initial base layer plus any overlays the user last had enabled.
+   * Name shown for the row.
    */
-  getInitialLayers: () => Layer[]
+  label: string
   /**
-   * Builds the leaflet layer control listing the base maps and overlays.
+   * Whether the layer is currently shown.
    */
-  createLayerControl: () => Control.Layers
-  /**
-   * Wires base-layer and overlay selection persistence and the default-provider watch to a map.
-   */
-  registerLayerSync: (map: LeafletMap) => void
+  active: boolean
 }
 
 /**
- * Syncs a leaflet map's base-map and overlay selection with the mission store, restoring the
- * user's last choice on load and persisting it on change. Complements the `useMapTileLayers`
- * factory, which only builds the layers.
- * @param {MapTileLayers} tileLayers - The layers built by `useMapTileLayers`.
- * @returns {MapTileLayerSelection} Helpers to seed the initial layers, build the layer control, and register persistence.
+ * A map's base-map and overlay selection.
  */
-export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLayerSelection => {
-  const missionStore = useMissionStore()
-  const interfaceStore = useAppInterfaceStore()
-  const { baseMaps, overlays, esri } = tileLayers
+export interface MapTileLayerSelection {
+  /**
+   * The base maps the selector offers, built-in ones first and then the custom providers.
+   */
+  baseLayers: ComputedRef<MapLayerSelectorEntry[]>
+  /**
+   * The tile overlays the selector offers.
+   */
+  overlays: ComputedRef<MapLayerSelectorEntry[]>
+  /**
+   * Draws the tile layers on a map, restoring the user's last choice, and keeps them in sync with the settings.
+   */
+  init: (map: CockpitMap) => void
+  /**
+   * Shows a base map the user picked in the selector, and persists the choice.
+   */
+  selectBaseLayer: (id: string) => void
+  /**
+   * Shows or hides an overlay the user toggled in the selector, and persists the choice.
+   */
+  setOverlayEnabled: (id: string, enabled: boolean) => void
+  /**
+   * Stops syncing and removes the tile layers from the map.
+   */
+  destroy: () => void
+}
 
-  const preferredBaseLayer = (): L.TileLayer => {
-    const preferredProvider =
+/**
+ * Draws a map's tile layers and syncs its base-map and overlay selection with the mission store, restoring the user's
+ * last choice on load and persisting the ones made in the layer selector. Complements the `useMapTileLayers` factory,
+ * which only defines the layers.
+ * @param {MapTileLayers} tileLayers - The layers defined by `useMapTileLayers`.
+ * @param {() => NoiseTileOptions} fallbackOptions - The noise background drawn under failed base-map tiles.
+ * @returns {MapTileLayerSelection} The selector rows and the methods to bind, change and tear down the selection.
+ */
+export const useMapTileLayerSelection = (
+  tileLayers: MapTileLayers,
+  fallbackOptions: () => NoiseTileOptions
+): MapTileLayerSelection => {
+  const missionStore = useMissionStore()
+  const customProviders = useCustomTileProviders()
+  const { baseMaps, overlays: overlayDefinitions, extraOsm } = tileLayers
+
+  const activeBuiltIn = ref<MapTileProvider | undefined>()
+  const enabledOverlays = ref<string[]>([])
+  const stopWatches: (() => void)[] = []
+  let mapRef: CockpitMap | undefined
+
+  const preferredBuiltInProvider = (): MapTileProvider => {
+    const preferred =
       missionStore.defaultMapTileProvider === 'Use last selected'
         ? missionStore.userLastMapTileProvider
         : missionStore.defaultMapTileProvider
-    return baseMaps[preferredProvider] || esri
+    return baseMaps[preferred] ? preferred : esriProvider
   }
 
-  const getInitialLayers = (): Layer[] => {
-    const layers: Layer[] = [preferredBaseLayer()]
-    Object.entries(overlays).forEach(([name, layer]) => {
-      const flag = overlayPersistenceFlags[name]
-      if (flag && missionStore[flag]) layers.push(layer)
-    })
-    return layers
-  }
+  const fallbackDefinitions = (): RasterLayerDefinition[] =>
+    [...Object.values(baseMaps), ...(extraOsm ? [extraOsm] : [])].filter((definition) => definition.noiseFallback)
 
-  const createLayerControl = (): Control.Layers =>
-    createLayersControlWithAction(baseMaps, overlays, {
-      label: 'Add map provider',
-      onClick: () => {
-        logUserAction('Opened custom map providers from the map layer selector')
-        interfaceStore.mapCustomProvidersExpandRequested = true
-        goToMenuPage(SubMenuComponentName.ToolsMap)
-      },
-    })
-
-  const registerLayerSync = (map: LeafletMap): void => {
-    // These layers-control events only fire from user clicks on the control, so logging here reflects a real
-    // interaction (programmatic base/overlay changes go through map.addLayer/removeLayer, not the control).
-    map.on('baselayerchange', (event: LayersControlEvent) => {
-      logUserAction(`Switched map base layer to '${event.name}'`)
-      // Matched by layer identity because a custom provider may carry the same label as a built-in one. Custom
-      // providers are added to the control at runtime and persist by id in useCustomTileProviders.
-      const builtIn = Object.entries(baseMaps).find(([, layer]) => layer === event.layer)
-      if (!builtIn) return
-      missionStore.userLastMapTileProvider = builtIn[0] as MapTileProvider
-      missionStore.userLastCustomMapProviderId = null
-    })
-
-    const persistOverlay = (name: string, enabled: boolean): void => {
-      logUserAction(`${enabled ? 'Enabled' : 'Disabled'} map overlay '${name}'`)
-      const flag = overlayPersistenceFlags[name]
-      if (flag) missionStore[flag] = enabled
+  const showBuiltIn = (provider: MapTileProvider | undefined): void => {
+    activeBuiltIn.value = provider
+    if (!mapRef) return
+    for (const [name, definition] of Object.entries(baseMaps)) {
+      setRasterLayerVisible(mapRef, rasterLayerId('base', definition.id), name === provider)
     }
-    map.on('overlayadd', (event: LayersControlEvent) => persistOverlay(event.name, true))
-    map.on('overlayremove', (event: LayersControlEvent) => persistOverlay(event.name, false))
+  }
 
-    watch(
-      () => missionStore.defaultMapTileProvider,
-      (newPref) => {
-        if (newPref === 'Use last selected') return
-        const targetLayer = baseMaps[newPref]
-        if (!targetLayer) return
-        Object.values(baseMaps).forEach((layer) => {
-          if (layer !== targetLayer && map.hasLayer(layer)) map.removeLayer(layer)
-        })
-        if (!map.hasLayer(targetLayer)) map.addLayer(targetLayer)
-      }
+  const showOverlay = (name: string, enabled: boolean): void => {
+    enabledOverlays.value = enabled
+      ? [...new Set([...enabledOverlays.value, name])]
+      : enabledOverlays.value.filter((overlay) => overlay !== name)
+    const definition = overlayDefinitions[name]
+    if (mapRef && definition) setRasterLayerVisible(mapRef, rasterLayerId('raster-overlay', definition.id), enabled)
+  }
+
+  const baseLayers = computed<MapLayerSelectorEntry[]>(() => [
+    ...Object.keys(baseMaps).map((name) => ({
+      id: name,
+      label: name,
+      active: !customProviders.activeId.value && activeBuiltIn.value === name,
+    })),
+    ...customProviders.entries.value.map((entry) => ({
+      id: `${customEntryPrefix}${entry.id}`,
+      label: entry.label,
+      active: customProviders.activeId.value === entry.id,
+    })),
+  ])
+
+  const overlays = computed<MapLayerSelectorEntry[]>(() =>
+    Object.keys(overlayDefinitions).map((name) => ({
+      id: name,
+      label: name,
+      active: enabledOverlays.value.includes(name),
+    }))
+  )
+
+  const init = (map: CockpitMap): void => {
+    mapRef = map
+    const fallback = fallbackOptions()
+    const initialProvider = preferredBuiltInProvider()
+
+    // The extra OSM layer goes under the base maps, where Leaflet's layer control z-indexes left it, showing only
+    // through gaps in the selected one.
+    if (extraOsm) addRasterLayer(map, extraOsm, { slot: 'base', visible: true, fallback })
+    for (const [name, definition] of Object.entries(baseMaps)) {
+      addRasterLayer(map, definition, { slot: 'base', visible: name === initialProvider, fallback })
+    }
+    activeBuiltIn.value = initialProvider
+
+    for (const [name, definition] of Object.entries(overlayDefinitions)) {
+      const flag = overlayPersistenceFlags[name]
+      const enabled = Boolean(flag && missionStore[flag])
+      addRasterLayer(map, definition, { slot: 'raster-overlay', visible: enabled })
+      if (enabled) enabledOverlays.value = [...enabledOverlays.value, name]
+    }
+
+    customProviders.init(map, () => showBuiltIn(preferredBuiltInProvider()))
+
+    // Restore the custom provider the user last selected, replacing the built-in base map seeded above. An explicit
+    // default provider outranks the last selection, the same way `preferredBuiltInProvider` treats it.
+    const lastCustomId = missionStore.userLastCustomMapProviderId
+    if (missionStore.defaultMapTileProvider === 'Use last selected' && lastCustomId) {
+      customProviders.select(lastCustomId)
+      if (customProviders.activeId.value) showBuiltIn(undefined)
+    }
+
+    stopWatches.push(
+      watch(
+        () => missionStore.defaultMapTileProvider,
+        (preference) => {
+          if (preference === 'Use last selected' || !baseMaps[preference]) return
+          customProviders.select(undefined)
+          missionStore.userLastCustomMapProviderId = null
+          showBuiltIn(preference)
+        }
+      ),
+      // Settings tweaks to the noise background apply to the tiles already drawn, not only to the next ones.
+      watch(fallbackOptions, (options) => {
+        if (!mapRef) return
+        for (const definition of fallbackDefinitions()) {
+          refreshRasterLayerTiles(mapRef, rasterLayerId('base', definition.id), definition, { fallback: options })
+        }
+      })
     )
   }
 
-  return { preferredBaseLayer, getInitialLayers, createLayerControl, registerLayerSync }
+  const selectBaseLayer = (id: string): void => {
+    if (id.startsWith(customEntryPrefix)) {
+      const providerId = id.slice(customEntryPrefix.length)
+      const label = customProviders.entries.value.find((entry) => entry.id === providerId)?.label ?? providerId
+      logUserAction(`Switched map base layer to '${label}'`)
+      showBuiltIn(undefined)
+      customProviders.select(providerId, true)
+      missionStore.userLastCustomMapProviderId = providerId
+      return
+    }
+    const provider = id as MapTileProvider
+    if (!baseMaps[provider]) return
+    logUserAction(`Switched map base layer to '${provider}'`)
+    customProviders.select(undefined)
+    showBuiltIn(provider)
+    missionStore.userLastMapTileProvider = provider
+    missionStore.userLastCustomMapProviderId = null
+  }
+
+  const setOverlayEnabled = (id: string, enabled: boolean): void => {
+    if (!overlayDefinitions[id]) return
+    logUserAction(`${enabled ? 'Enabled' : 'Disabled'} map overlay '${id}'`)
+    showOverlay(id, enabled)
+    const flag = overlayPersistenceFlags[id]
+    if (flag) missionStore[flag] = enabled
+  }
+
+  const destroy = (): void => {
+    stopWatches.splice(0).forEach((stop) => stop())
+    customProviders.destroy()
+    if (mapRef) {
+      const ids = [
+        ...Object.values(baseMaps).map((definition) => rasterLayerId('base', definition.id)),
+        ...(extraOsm ? [rasterLayerId('base', extraOsm.id)] : []),
+        ...Object.values(overlayDefinitions).map((definition) => rasterLayerId('raster-overlay', definition.id)),
+      ]
+      ids.forEach((id) => mapRef?.removeImagery(id))
+    }
+    mapRef = undefined
+  }
+
+  return { baseLayers, overlays, init, selectBaseLayer, setOverlayEnabled, destroy }
 }
