@@ -1,7 +1,9 @@
-import L, { type Map as LeafletMap } from 'leaflet'
 import { type Ref, onBeforeUnmount, ref } from 'vue'
 
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import type { MapMarker } from '@/libs/map/cesium-marker'
 import {
+  type ScreenPoint,
   closestPolygonEdge,
   draggedEdgeEndpoints,
   edgeResizeCursor,
@@ -16,9 +18,9 @@ import type { WaypointCoordinates } from '@/types/mission'
  */
 export interface UseSurveyEdgeDraggingOptions {
   /** The draft polygon's vertices, in the order they are drawn. */
-  vertices: Ref<L.LatLng[]>
+  vertices: Ref<WaypointCoordinates[]>
   /** Reads the draggable markers standing on those vertices, which the moved edge is carried by. */
-  markers: () => L.Marker[]
+  markers: () => MapMarker[]
   /** Whether the polygon can be edited right now. */
   isEditable: () => boolean
   /** Called once per drag, before the first move, so the polygon can be snapshotted for undo. */
@@ -37,8 +39,8 @@ export interface UseSurveyEdgeDraggingReturn {
   isEdgePressed: Ref<boolean>
   /** Whether an edge is being dragged. */
   isDraggingEdge: Ref<boolean>
-  /** Binds the edge handling to a Leaflet map. */
-  initEdgeDragging: (map: LeafletMap) => void
+  /** Binds the edge handling to a map. */
+  initEdgeDragging: (map: CockpitMap) => void
   /** Unbinds everything and gives the cursor back. */
   destroyEdgeDragging: () => void
 }
@@ -54,7 +56,7 @@ const dragThresholdInPixels = 4
  * on, and pressing and dragging it carries the edge with the pointer. A rectangle's edge is held to its own
  * normal, since its dimensions are read back from its corners and only survive while they stay square.
  *
- * Pointer events drive this rather than Leaflet's mouse events because a touch drag never produces a
+ * Pointer events drive this rather than the map's mouse events because a touch drag never produces a
  * `mousemove`, which is what limits the polygon's own drag to a mouse.
  * @param {UseSurveyEdgeDraggingOptions} options - The polygon to edit and the callbacks to report edits through.
  * @returns {UseSurveyEdgeDraggingReturn} Drag state plus the methods to bind and unbind the map.
@@ -65,19 +67,18 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
   const isEdgePressed = ref(false)
   const isDraggingEdge = ref(false)
 
-  let mapRef: LeafletMap | undefined
+  let mapRef: CockpitMap | undefined
   let pressedEdge: number | null = null
-  let pressOrigin: L.Point | null = null
+  let pressOrigin: ScreenPoint | null = null
   let pressedEdgeEndpoints: [WaypointCoordinates, WaypointCoordinates] | null = null
   let dragOrigin: WaypointCoordinates | null = null
   let holdEdgeSquare = false
   let panningWasEnabled = false
   let cursorBeforeHover: string | null = null
 
-  const asCoordinates = (latLng: L.LatLng): WaypointCoordinates => [latLng.lat, latLng.lng]
-
+  // The canvas container is where the map sets its own cursors, so this one has to go there to show.
   const setCursor = (cursor: string | null): void => {
-    const container = mapRef?.getContainer()
+    const container = mapRef?.getCanvasContainer()
     if (!container) return
 
     if (cursor === null) {
@@ -100,21 +101,21 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
     const grabsByAddMarker = event.pointerType !== 'mouse' && isOverEdgeAddMarker(event.target)
     if (isOverSurveyHandle(event.target) && !grabsByAddMarker) return null
 
-    const points = vertices.value.map((latLng) => mapRef!.latLngToContainerPoint(latLng))
-    return closestPolygonEdge(points, mapRef.mouseEventToContainerPoint(event), grabToleranceInPixels)
+    const points = vertices.value.map((latLng) => mapRef!.project(latLng))
+    return closestPolygonEdge(points, mapRef.pointFromClient(event), grabToleranceInPixels)
   }
 
   const cursorForEdge = (edgeIndex: number): string => {
     const points = vertices.value
-    const start = mapRef!.latLngToContainerPoint(points[edgeIndex])
-    const end = mapRef!.latLngToContainerPoint(points[(edgeIndex + 1) % points.length])
+    const start = mapRef!.project(points[edgeIndex])
+    const end = mapRef!.project(points[(edgeIndex + 1) % points.length])
     return edgeResizeCursor(start, end)
   }
 
   const releasePress = (): void => {
     if (pressedEdge === null) return
 
-    if (panningWasEnabled) mapRef?.dragging.enable()
+    if (panningWasEnabled) mapRef?.dragPan.enable()
     pressedEdge = null
     pressOrigin = null
     pressedEdgeEndpoints = null
@@ -132,16 +133,16 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
 
     const points = vertices.value
     pressedEdge = edgeIndex
-    pressOrigin = mapRef.mouseEventToContainerPoint(event)
-    pressedEdgeEndpoints = [asCoordinates(points[edgeIndex]), asCoordinates(points[(edgeIndex + 1) % points.length])]
-    dragOrigin = asCoordinates(mapRef.containerPointToLatLng(mapRef.mouseEventToContainerPoint(event)))
+    pressOrigin = mapRef.pointFromClient(event)
+    pressedEdgeEndpoints = [points[edgeIndex], points[(edgeIndex + 1) % points.length]]
+    dragOrigin = mapRef.unproject({ x: pressOrigin.x, y: pressOrigin.y })
     // Decided once per drag, so a free-form polygon dragged through squareness does not suddenly lock up.
-    holdEdgeSquare = isRectangle(points.map(asCoordinates))
+    holdEdgeSquare = isRectangle(points)
     isEdgePressed.value = true
 
     // Panning must not follow the same press, and on touch there is nothing else keeping the map still.
-    panningWasEnabled = mapRef.dragging.enabled()
-    if (panningWasEnabled) mapRef.dragging.disable()
+    panningWasEnabled = mapRef.dragPan.isEnabled()
+    if (panningWasEnabled) mapRef.dragPan.disable()
     mapRef.getContainer().setPointerCapture(event.pointerId)
   }
 
@@ -153,9 +154,9 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
     }
     if (!mapRef || !pressOrigin || !pressedEdgeEndpoints || !dragOrigin) return
 
-    const containerPoint = mapRef.mouseEventToContainerPoint(event)
+    const containerPoint = mapRef.pointFromClient(event)
     if (!isDraggingEdge.value) {
-      if (containerPoint.distanceTo(pressOrigin) < dragThresholdInPixels) return
+      if (Math.hypot(containerPoint.x - pressOrigin.x, containerPoint.y - pressOrigin.y) < dragThresholdInPixels) return
       isDraggingEdge.value = true
       setCursor(cursorForEdge(pressedEdge))
       onDragStart()
@@ -165,7 +166,7 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
     const edgeMarkers = markers()
     if (edgeMarkers.length < 3) return
 
-    const pointer = asCoordinates(mapRef.containerPointToLatLng(containerPoint))
+    const pointer = mapRef.unproject({ x: containerPoint.x, y: containerPoint.y })
     const [start, end] = draggedEdgeEndpoints(pressedEdgeEndpoints, [dragOrigin, pointer], holdEdgeSquare)
     edgeMarkers[pressedEdge].setLatLng(start)
     edgeMarkers[(pressedEdge + 1) % edgeMarkers.length].setLatLng(end)
@@ -186,7 +187,7 @@ export const useSurveyEdgeDragging = (options: UseSurveyEdgeDraggingOptions): Us
     if (pressedEdge === null) setCursor(null)
   }
 
-  const initEdgeDragging = (map: LeafletMap): void => {
+  const initEdgeDragging = (map: CockpitMap): void => {
     mapRef = map
     const container = map.getContainer()
     container.addEventListener('pointerdown', onPointerDown)
