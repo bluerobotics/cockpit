@@ -39,7 +39,7 @@ import { dataLakeInputRegex } from '@/libs/utils-data-lake'
 /**
  * Data lake completion behavior type
  * - 'use-bracket-parser': Completes {{variableId}} syntax (for expressions parsed later)
- * - 'use-api-function': Replaces {{ with window.cockpit.getDataLakeVariableData('id')
+ * - 'use-api-function': Replaces {{ with cockpit.getDataLakeVariableData('id')
  */
 export type DataLakeCompletionType = 'use-bracket-parser' | 'use-api-function'
 
@@ -204,7 +204,7 @@ function registerCompletionProviders(): void {
             label: variable.name || id,
             kind: monaco.languages.CompletionItemKind.Variable,
             documentation: `${variable.type}${variable.description ? ` - ${variable.description}` : ''} (${id})`,
-            insertText: `window.cockpit.getDataLakeVariableData('${id}')`,
+            insertText: `cockpit.getDataLakeVariableData('${id}')`,
             filterText: `{{${variable.name || id}`,
             range,
           })),
@@ -444,7 +444,7 @@ export interface EditorOptions {
   /**
    * Type of data lake variable completion behavior.
    * - 'use-bracket-parser': Completes {{variableId}} syntax (for expressions parsed later)
-   * - 'use-api-function': Replaces {{ with window.cockpit.getDataLakeVariableData('id')
+   * - 'use-api-function': Replaces {{ with cockpit.getDataLakeVariableData('id')
    * - undefined: No data lake completions
    */
   dataLakeCompletionType?: DataLakeCompletionType
