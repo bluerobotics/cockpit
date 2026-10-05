@@ -1,5 +1,4 @@
 import {
-  type Entity,
   type ImageryProvider,
   CameraEventType,
   Cartesian2,
@@ -18,9 +17,14 @@ import {
   WebMercatorProjection,
 } from 'cesium'
 
+import { attributionControl } from '@/libs/map/cesium-controls'
 import type { MapMarker } from '@/libs/map/cesium-marker'
+import { type VectorFeature, VectorLayer } from '@/libs/map/cesium-vectors'
+import { type MapLayerSlot, mapLayerSlots } from '@/libs/map/map-slots'
 import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import type { WaypointCoordinates } from '@/types/mission'
+
+export { type MapLayerSlot, mapLayerSlots, slotHeight } from '@/libs/map/map-slots'
 
 // Cesium fetches its workers, textures and third-party code from here; the build serves them at `cesium/`.
 ;(window as unknown as Record<string, string>).CESIUM_BASE_URL ??= new URL('cesium/', document.baseURI).href
@@ -87,38 +91,6 @@ export const boundsOf = (coordinates: WaypointCoordinates[]): [WaypointCoordinat
     [Math.max(...lats), Math.max(...lngs)],
   ]
 }
-
-/**
- * Ordered stacking slots for everything drawn on the map. These replace Leaflet's panes: each slot is drawn at its own
- * small height, which Cesium's straight-down 2D view shows at the same place but depth-tests in this order, so
- * stacking stays fixed whatever order the composables draw in.
- */
-export const mapLayerSlots = [
-  'base',
-  'raster-overlay',
-  'geotiff',
-  'coverage',
-  'fence',
-  'mission',
-  'survey-area',
-  'survey',
-  'vehicle-path',
-  'survey-legs',
-  'grid',
-  'measure',
-] as const
-
-/**
- * One of the map's stacking slots.
- */
-export type MapLayerSlot = (typeof mapLayerSlots)[number]
-
-/**
- * Height, in meters, at which a slot's vectors are drawn. Only the order matters, as the 2D view has no parallax.
- * @param {MapLayerSlot} slot - The stacking slot.
- * @returns {number} The height to draw at.
- */
-export const slotHeight = (slot: MapLayerSlot): number => (mapLayerSlots.indexOf(slot) + 1) * 2
 
 /** A map bounds in Cockpit's terms, also exposing its edges the way Leaflet's bounds did. */
 export interface MapBounds {
@@ -326,7 +298,8 @@ export class CockpitMap {
   private readonly pointerHandlers = new Map<string, Set<PointerHandler>>()
   private readonly layerHandlers = new Map<string, Map<string, Set<PointerHandler>>>()
   private readonly viewHandlers = new Map<MapViewEventType, Set<ViewHandler>>()
-  private readonly entityFeatures = new WeakMap<Entity, MapFeature>()
+  private readonly pickedFeatures = new WeakMap<object, MapFeature>()
+  private readonly vectors = new Map<string, VectorLayer>()
   private readonly controlCorners = new Map<MapControlCorner, HTMLElement>()
   private readonly imagery = new Map<string, ImageryEntry>()
   private readonly markers = new Set<MapMarker>()
@@ -444,6 +417,12 @@ export class CockpitMap {
       () => (this.boxZoomEnabled = false),
       () => this.boxZoomEnabled
     )
+
+    if (options.attribution) {
+      const attribution = attributionControl(this)
+      this.addControl(attribution.element, 'bottom-right')
+      this.cleanups.push(attribution.remove)
+    }
 
     this.listenToPointer()
     this.listenToCamera()
@@ -927,15 +906,101 @@ export class CockpitMap {
     this.fireView({ type: 'layers' })
   }
 
+  // ---- Vectors ----
+
+  /**
+   * Ground meters one pixel spans at the map center.
+   * @returns {number} Meters per pixel.
+   */
+  metersPerPixel(): number {
+    const center = this.getCenter()
+    return (this.frustumWidth() / this.canvasWidth()) * Math.cos((center[0] * Math.PI) / 180)
+  }
+
+  /**
+   * Draws vector features in a stacking slot, replacing whatever the layer drew before.
+   * @param {string} id - An id unique within the map, which layer-scoped events refer to.
+   * @param {MapLayerSlot} slot - The stacking slot.
+   * @param {VectorFeature[]} features - The lines, areas and dots to draw.
+   */
+  setVectors(id: string, slot: MapLayerSlot, features: VectorFeature[]): void {
+    if (this.removed) return
+    let layer = this.vectors.get(id)
+    if (!layer) {
+      // A new layer goes just above the highest one already in its slot, which keeps creation order within the slot
+      // and stays well below the next slot (ten meters up) for any realistic number of layers.
+      const lifts = [...this.vectors.values()].filter((other) => other.slot === slot).map((other) => other.lift)
+      layer = new VectorLayer(
+        this.widget.scene,
+        id,
+        slot,
+        lifts.length ? Math.max(...lifts) + 0.1 : 0,
+        (key, feature) => this.registerFeature(key, feature),
+        () => this.getZoom(),
+        () => this.metersPerPixel()
+      )
+      this.vectors.set(id, layer)
+    }
+    layer.set(features)
+  }
+
+  /**
+   * Whether a vector layer exists.
+   * @param {string} id - The layer id.
+   * @returns {boolean} True when it was drawn and not removed.
+   */
+  hasVectors(id: string): boolean {
+    return this.vectors.has(id)
+  }
+
+  /**
+   * Shows or hides a vector layer.
+   * @param {string} id - The layer id.
+   * @param {boolean} visible - Whether to show it.
+   */
+  setVectorsVisible(id: string, visible: boolean): void {
+    this.vectors.get(id)?.setVisible(visible)
+    this.requestRender()
+  }
+
+  /**
+   * Fades a vector layer, for dimming it behind something being edited.
+   * @param {string} id - The layer id.
+   * @param {number} factor - Opacity multiplier, from 0 to 1.
+   */
+  setVectorsOpacityFactor(id: string, factor: number): void {
+    this.vectors.get(id)?.setOpacityFactor(factor)
+  }
+
+  /**
+   * The vector layers drawn, with the slot each stacks in.
+   * @returns {{ id: string, slot: MapLayerSlot }[]} The layers.
+   */
+  vectorLayers(): { /** The layer id. */ id: string; /** Its stacking slot. */ slot: MapLayerSlot }[] {
+    return [...this.vectors.values()].map((layer) => ({ id: layer.id, slot: layer.slot }))
+  }
+
+  /**
+   * Removes a vector layer, if it is still there.
+   * @param {string} id - The layer id.
+   */
+  removeVectors(id: string): void {
+    const layer = this.vectors.get(id)
+    if (!layer) return
+    this.vectors.delete(id)
+    if (!this.removed) layer.destroy()
+    this.requestRender()
+  }
+
   // ---- Features, for layer-scoped events ----
 
   /**
-   * Records which layer an entity draws, so layer-scoped events can report it.
-   * @param {Entity} entity - The entity.
+   * Records what a picked primitive id belongs to, so layer-scoped events can report it.
+   * @param {object} key - The id the primitive was drawn with.
    * @param {MapFeature} feature - Its layer and properties.
    */
-  registerFeature(entity: Entity, feature: MapFeature): void {
-    this.entityFeatures.set(entity, feature)
+  registerFeature(key: object, feature: MapFeature): void {
+    this.pickedFeatures.set(key, feature)
   }
 
   /**
@@ -948,7 +1013,7 @@ export class CockpitMap {
     const position = new Cartesian2(point.x, point.y)
     const picked = all ? this.widget.scene.drillPick(position, 8) : [this.widget.scene.pick(position)]
     return picked
-      .map((object) => (object?.id ? this.entityFeatures.get(object.id as Entity) : undefined))
+      .map((object) => (object?.id && typeof object.id === 'object' ? this.pickedFeatures.get(object.id) : undefined))
       .filter((feature): feature is MapFeature => feature !== undefined)
   }
 
@@ -1312,6 +1377,7 @@ export class CockpitMap {
       if (this.dragging || this.animationFrame !== undefined) return
       if (this.zooming) {
         this.zooming = false
+        this.vectors.forEach((layer) => layer.refreshForZoom())
         this.fireView({ type: 'zoomend' })
       }
       if (this.moving) {
