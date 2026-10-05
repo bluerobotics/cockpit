@@ -68,47 +68,47 @@ export const JoystickMapVidPid: Map<string, JoystickModel> = new Map([
 export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToCockpitStdMapping } = {
   [JoystickModel.DualSense]: {
     name: 'DualSense',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
   },
   [JoystickModel.DualShock4]: {
     name: 'DualShock4',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
   },
   [JoystickModel.IpegaPG9023]: {
     name: 'Ipega9023',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
   },
   [JoystickModel.XboxOne_Wireless]: {
     name: 'Xbox One Wireless',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },
   [JoystickModel.XboxOne_Wired]: {
     name: 'Xbox One (wired)',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },
   [JoystickModel.XboxOneS_Bluetooth]: {
     name: 'Xbox One S (bluetooth)',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },
   [JoystickModel.XboxController_Bluetooth]: {
     name: 'Xbox Controller (bluetooth)',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 16],
   },
   [JoystickModel.XboxController_Wired]: {
     name: 'Xbox Controller (wired)',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },
   [JoystickModel.XboxController_360]: {
     name: JoystickModel.XboxController_360,
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },
   [JoystickModel.LogitechExtreme3DPro]: {
@@ -118,12 +118,12 @@ export const availableGamepadToCockpitMaps: { [key in JoystickModel]: GamepadToC
   },
   [JoystickModel.SteamDeckLCD]: {
     name: 'Steam Deck LCD',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },
   [JoystickModel.SteamDeckOLED]: {
     name: 'Steam Deck OLED',
-    axes: [0, 1, 2, 3],
+    axes: [0, 1, 2, 3, 4, 5],
     buttons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
   },
   [JoystickModel.EightBitDoUltimate2C]: {
