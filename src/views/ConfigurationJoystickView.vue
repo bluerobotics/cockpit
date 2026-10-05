@@ -1059,10 +1059,10 @@ const closeInputMappingDialog = (): void => {
 }
 
 const scaledAxisValue = (joystick: Joystick, axisId: JoystickAxis): number => {
-  const rawValue = joystick.state.axes[axisId] || 0
+  const calibratedValue = joystick.calibratedState.axes[axisId] || 0
   const min = selectedProfileAxesCorrespondencies.value[axisId]?.min ?? -1
   const max = selectedProfileAxesCorrespondencies.value[axisId]?.max ?? +1
-  return scale(rawValue, -1, 1, min, max)
+  return scale(calibratedValue, -1, 1, min, max)
 }
 
 const openVehicleDefaultsImportModal = (): void => {
