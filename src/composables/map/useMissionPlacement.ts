@@ -1,8 +1,19 @@
-import L from 'leaflet'
 import { type Ref, type ShallowRef, onScopeDispose, ref, shallowRef, toRaw, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import type { MapPointerEvent } from '@/libs/map/cesium-map'
+import type { MapMarker } from '@/libs/map/cesium-marker'
+import { divIconMarker } from '@/libs/map/cesium-marker'
+import {
+  type LineStyle,
+  type VectorFeature,
+  lineFeature,
+  pointFeature,
+  polygonFeature,
+} from '@/libs/map/cesium-vectors'
 import { type ScreenPanelFootprint, positionPanelNearBounds, screenBounds } from '@/libs/map/screen-placement'
+import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import {
   type GeoAnchor,
   type LocalMetersBounds,
@@ -57,42 +68,87 @@ type PreviewGeometry = {
 }
 
 /**
- * Leaflet layers backing the placement preview, held so each frame can reassign their geometry
- * instead of removing and re-adding them.
+ * Handles backing the placement preview, held so each frame can move them instead of removing and re-adding them.
+ * The preview's shapes are map layers whose data is replaced per frame instead.
  */
 type PreviewLayers = {
   /**
-   * One polygon per survey, matching {@link PreviewGeometry.surveyPolygons}.
+   * The map the preview is drawn on.
    */
-  surveyPolygons: L.Polygon[]
-  /**
-   * One marker per survey waypoint, matching {@link PreviewGeometry.surveyWaypoints}.
-   */
-  surveyWaypoints: L.CircleMarker[]
-  /**
-   * Dashed line through the top-level waypoints, absent for single-waypoint missions.
-   */
-  route: L.Polyline | null
-  /**
-   * One marker per top-level waypoint, matching {@link PreviewGeometry.waypoints}.
-   */
-  waypoints: L.CircleMarker[]
-  /**
-   * Draggable bounding box; also the source of {@link getPlacementBounds}.
-   */
-  boundsPolygon: L.Polygon | null
+  map: CockpitMap
   /**
    * The four corner scale handles, matching {@link PreviewGeometry.corners}.
    */
-  scaleHandles: L.Marker[]
-  /**
-   * Dashed line joining the rotation handle to the top edge.
-   */
-  rotationStem: L.Polyline | null
+  scaleHandles: MapMarker[]
   /**
    * The rotation handle itself.
    */
-  rotationHandle: L.Marker | null
+  rotationHandle: MapMarker | null
+}
+
+const PREVIEW_COLOR = '#FFD54F'
+const previewLayerId = (name: string): string => `measure::mission-placement-${name}`
+// Created in this order, which is the order they stack in: the box and its handles above the mission they frame.
+const previewIds = {
+  surveyPolygons: previewLayerId('survey-polygons'),
+  surveyWaypoints: previewLayerId('survey-waypoints'),
+  route: previewLayerId('route'),
+  waypoints: previewLayerId('waypoints'),
+  bounds: previewLayerId('bounds'),
+  rotationStem: previewLayerId('rotation-stem'),
+} as const
+
+/** Fill of a preview part's polygons. */
+type PreviewFill = {
+  /** Fill color. */
+  color: string
+  /** Fill opacity. */
+  opacity: number
+}
+
+/** Look of a preview part's points, in the terms of Leaflet's circle markers. */
+type PreviewDots = {
+  /** Radius, in pixels, with the stroke centered on it. */
+  radius: number
+  /** Stroke color. */
+  stroke: string
+  /** Stroke width, in pixels. */
+  strokeWidth: number
+  /** Fill opacity; the fill color comes from each point's `fill` property. */
+  fillOpacity: number
+}
+
+/** One shape of a preview part: an area, a line, or a dot with its own fill color. */
+type PreviewShape =
+  | {
+      /** An area. */
+      kind: 'area'
+      /** Its ring. */
+      ring: WaypointCoordinates[]
+    }
+  | {
+      /** A line. */
+      kind: 'line'
+      /** Its vertices. */
+      coordinates: WaypointCoordinates[]
+    }
+  | {
+      /** A dot. */
+      kind: 'point'
+      /** Where it is. */
+      coordinates: WaypointCoordinates
+      /** Its fill color, white when unset. */
+      fill?: string
+    }
+
+/** How one part of the placement preview is drawn. */
+type PreviewPaint = {
+  /** Fill of polygons, when the part has any. */
+  fill?: PreviewFill
+  /** Stroke of lines and polygon outlines. */
+  line?: LineStyle
+  /** Look of points. */
+  circle?: PreviewDots
 }
 
 // Corner order matches PreviewGeometry.corners: NW, NE, SE, SW.
@@ -141,16 +197,16 @@ type RotationDragInitial = {
 }
 
 /**
- * Owns the interactive "free placement" mode for a saved mission on a leaflet map: drag to move,
+ * Owns the interactive "free placement" mode for a saved mission on a map: drag to move,
  * corner handles to scale, top handle to rotate, then confirm or cancel. The composable manages
  * its own preview layers, mouse listeners, and animation-frame coalescing; the host view only
  * provides the map ref, a confirm callback, and an optional click-suppression hook.
- * @param {Ref<L.Map | null | undefined> | ShallowRef<L.Map | undefined>} mapRef - Reactive reference to the leaflet map the placement runs on.
+ * @param {Ref<CockpitMap | null | undefined> | ShallowRef<CockpitMap | undefined>} mapRef - Reactive reference to the map the placement runs on.
  * @param {UseMissionPlacementOptions} options - Confirm callback and view-side hooks.
  * @returns {object} State refs and actions used by the host view's template and event wiring.
  */
 export const useMissionPlacement = (
-  mapRef: Ref<L.Map | null | undefined> | ShallowRef<L.Map | undefined>,
+  mapRef: Ref<CockpitMap | null | undefined> | ShallowRef<CockpitMap | undefined>,
   options: UseMissionPlacementOptions
 ): {
   /**
@@ -208,8 +264,8 @@ export const useMissionPlacement = (
 } => {
   const isPlacingMission = ref(false)
   const placementMission = ref<CockpitMission | null>(null)
-  const placementAnchorOriginal = ref<L.LatLng>(L.latLng(0, 0))
-  const placementAnchorCurrent = ref<L.LatLng>(L.latLng(0, 0))
+  const placementAnchorOriginal = ref<GeoAnchor>({ lat: 0, lng: 0 })
+  const placementAnchorCurrent = ref<GeoAnchor>({ lat: 0, lng: 0 })
   const placementScaleXPercent = ref(100)
   const placementScaleYPercent = ref(100)
   const placementRotationDeg = ref(0)
@@ -219,7 +275,7 @@ export const useMissionPlacement = (
   const placementToolbarStyle = ref<Record<string, string>>({ display: 'none' })
   const previewLayers = shallowRef<PreviewLayers | null>(null)
 
-  let placementDragStartLatLng: L.LatLng | null = null
+  let placementDragStartLatLng: GeoAnchor | null = null
   let placementRebuildRafHandle: number | null = null
   let scaleDragInitial: ScaleDragInitial | null = null
   let rotationDragInitial: RotationDragInitial | null = null
@@ -270,79 +326,87 @@ export const useMissionPlacement = (
       : 0
   }
 
-  // Reuses the bounding polygon's lat/lng bounds (already kept in sync with the transform) to
-  // avoid re-projecting every coordinate on each map move/zoom.
-  const getPlacementBounds = (): L.LatLngBounds | null => {
-    const polygonBounds = previewLayers.value?.boundsPolygon?.getBounds()
-    if (polygonBounds) return polygonBounds
-    if (!placementMission.value) return null
-    const wpCoords = placementMission.value.waypoints.map((w) => transformCoord(w.coordinates))
-    const surveyCoords =
-      placementMission.value.surveys?.flatMap((s) => s.polygonCoordinates.map((c) => transformCoord(c))) ?? []
-    const allCoords = [...wpCoords, ...surveyCoords]
-    if (allCoords.length === 0) return null
-    return L.latLngBounds(allCoords.map((c) => L.latLng(c[0], c[1])))
+  // The preview's extent, as `[[south, west], [north, east]]`: the bounding box once drawn, else every placed point.
+  let lastBoxCorners: WaypointCoordinates[] | null = null
+  const getPlacementBounds = (): [WaypointCoordinates, WaypointCoordinates] | null => {
+    let coords = lastBoxCorners
+    if (!coords && placementMission.value) {
+      const wpCoords = placementMission.value.waypoints.map((w) => transformCoord(w.coordinates))
+      const surveyCoords =
+        placementMission.value.surveys?.flatMap((s) => s.polygonCoordinates.map((c) => transformCoord(c))) ?? []
+      coords = [...wpCoords, ...surveyCoords]
+    }
+    if (!coords || coords.length === 0) return null
+    const lats = coords.map((c) => c[0])
+    const lngs = coords.map((c) => c[1])
+    return [
+      [Math.min(...lats), Math.min(...lngs)],
+      [Math.max(...lats), Math.max(...lngs)],
+    ]
   }
 
-  const onPlacementMouseDown = (event: L.LeafletMouseEvent): void => {
+  const asGeo = (coords: WaypointCoordinates): GeoAnchor => ({ lat: coords[0], lng: coords[1] })
+
+  // The box takes the press from the map, so the gesture drags the mission instead of panning.
+  const onPlacementMouseDown = (event: MapPointerEvent): void => {
     if (!isPlacingMission.value) return
-    placementDragStartLatLng = event.latlng
-    mapRef.value?.dragging.disable()
+    event.preventDefault()
+    event.originalEvent.stopPropagation()
+    placementDragStartLatLng = asGeo(event.latLng)
+    mapRef.value?.dragPan.disable()
     mapRef.value?.on('mousemove', onPlacementMouseMove)
     mapRef.value?.on('mouseup', onPlacementMouseUp)
-    L.DomEvent.stopPropagation(event.originalEvent)
-    L.DomEvent.preventDefault(event.originalEvent)
   }
 
-  const onPlacementMouseMove = (event: L.LeafletMouseEvent): void => {
+  const onPlacementMouseMove = (event: MapPointerEvent): void => {
     if (!placementDragStartLatLng) return
-    const dLat = event.latlng.lat - placementDragStartLatLng.lat
-    const dLng = event.latlng.lng - placementDragStartLatLng.lng
-    placementAnchorCurrent.value = L.latLng(
-      placementAnchorCurrent.value.lat + dLat,
-      placementAnchorCurrent.value.lng + dLng
-    )
-    placementDragStartLatLng = event.latlng
+    const pointer = asGeo(event.latLng)
+    const dLat = pointer.lat - placementDragStartLatLng.lat
+    const dLng = pointer.lng - placementDragStartLatLng.lng
+    placementAnchorCurrent.value = {
+      lat: placementAnchorCurrent.value.lat + dLat,
+      lng: placementAnchorCurrent.value.lng + dLng,
+    }
+    placementDragStartLatLng = pointer
     schedulePlacementPreviewRebuild()
-    L.DomEvent.stopPropagation(event.originalEvent)
   }
 
-  const onPlacementMouseUp = (event: L.LeafletMouseEvent): void => {
+  const onPlacementMouseUp = (event: MapPointerEvent): void => {
     placementDragStartLatLng = null
-    mapRef.value?.dragging.enable()
+    mapRef.value?.dragPan.enable()
     mapRef.value?.off('mousemove', onPlacementMouseMove)
     mapRef.value?.off('mouseup', onPlacementMouseUp)
-    L.DomEvent.stopPropagation(event.originalEvent)
-    L.DomEvent.preventDefault(event.originalEvent)
+    event.preventDefault()
   }
 
-  const onScaleHandleMouseDown = (event: L.LeafletMouseEvent, cornerLocal: LocalMetersPoint): void => {
+  const onScaleHandleMouseDown = (event: MouseEvent, cornerLocal: LocalMetersPoint): void => {
     if (!isPlacingMission.value || !mapRef.value) return
     scaleDragInitial = {
       cornerLocal: { ...cornerLocal },
       initialScaleX: placementScaleXPercent.value || 100,
       initialScaleY: placementScaleYPercent.value || 100,
     }
-    mapRef.value.dragging.disable()
+    mapRef.value.dragPan.disable()
     mapRef.value.on('mousemove', onScaleHandleMouseMove)
     mapRef.value.on('mouseup', onScaleHandleMouseUp)
-    L.DomEvent.stopPropagation(event.originalEvent)
-    L.DomEvent.preventDefault(event.originalEvent)
+    event.stopPropagation()
+    event.preventDefault()
   }
 
-  const onScaleHandleMouseMove = (event: L.LeafletMouseEvent): void => {
+  const onScaleHandleMouseMove = (event: MapPointerEvent): void => {
     if (!scaleDragInitial || !mapRef.value) return
     const target = placementAnchorCurrent.value
     const metersPerDegLngTarget = METERS_PER_DEGREE_LAT * Math.cos((target.lat * Math.PI) / 180)
 
     // Mouse position in the rotated current frame (meters relative to the current anchor).
-    const mouseEastRot = (event.latlng.lng - target.lng) * metersPerDegLngTarget
-    const mouseNorthRot = (event.latlng.lat - target.lat) * METERS_PER_DEGREE_LAT
+    const pointer = asGeo(event.latLng)
+    const mouseEastRot = (pointer.lng - target.lng) * metersPerDegLngTarget
+    const mouseNorthRot = (pointer.lat - target.lat) * METERS_PER_DEGREE_LAT
 
     // Express the mouse in the original mission local frame so it lines up with the captured corner.
     const mouseLocal = unrotateToOriginalLocal(mouseEastRot, mouseNorthRot, placementRotationDeg.value)
     const { cornerLocal, initialScaleX, initialScaleY } = scaleDragInitial
-    const isShift = (event.originalEvent as MouseEvent).shiftKey
+    const isShift = event.originalEvent.shiftKey
 
     if (isShift) {
       // Proportional: project the mouse onto the line from the centroid through the captured corner;
@@ -376,40 +440,41 @@ export const useMissionPlacement = (
         placementScaleYPercent.value = initialScaleY
       }
     }
-    L.DomEvent.stopPropagation(event.originalEvent)
   }
 
-  const onScaleHandleMouseUp = (event: L.LeafletMouseEvent): void => {
+  const onScaleHandleMouseUp = (event: MapPointerEvent): void => {
     scaleDragInitial = null
-    mapRef.value?.dragging.enable()
+    mapRef.value?.dragPan.enable()
     mapRef.value?.off('mousemove', onScaleHandleMouseMove)
     mapRef.value?.off('mouseup', onScaleHandleMouseUp)
-    L.DomEvent.stopPropagation(event.originalEvent)
-    L.DomEvent.preventDefault(event.originalEvent)
+    event.preventDefault()
   }
 
-  const onRotationHandleMouseDown = (event: L.LeafletMouseEvent): void => {
+  const anchorPoint = (map: CockpitMap): ScreenPoint =>
+    map.project([placementAnchorCurrent.value.lat, placementAnchorCurrent.value.lng])
+
+  const onRotationHandleMouseDown = (event: MouseEvent): void => {
     if (!isPlacingMission.value || !mapRef.value) return
     const map = mapRef.value
-    const anchorPt = map.latLngToContainerPoint(placementAnchorCurrent.value)
-    const mousePt = map.latLngToContainerPoint(event.latlng)
+    const anchorPt = anchorPoint(map)
+    const mousePt = map.pointFromClient(event)
     const dx = mousePt.x - anchorPt.x
     const dy = mousePt.y - anchorPt.y
     // Angle clockwise from screen-north (negative y direction).
     const initialAngleRad = Math.atan2(dx, -dy)
     rotationDragInitial = { initialRotation: placementRotationDeg.value || 0, initialAngleRad }
-    map.dragging.disable()
+    map.dragPan.disable()
     map.on('mousemove', onRotationHandleMouseMove)
     map.on('mouseup', onRotationHandleMouseUp)
-    L.DomEvent.stopPropagation(event.originalEvent)
-    L.DomEvent.preventDefault(event.originalEvent)
+    event.stopPropagation()
+    event.preventDefault()
   }
 
-  const onRotationHandleMouseMove = (event: L.LeafletMouseEvent): void => {
+  const onRotationHandleMouseMove = (event: MapPointerEvent): void => {
     if (!rotationDragInitial || !mapRef.value) return
     const map = mapRef.value
-    const anchorPt = map.latLngToContainerPoint(placementAnchorCurrent.value)
-    const mousePt = map.latLngToContainerPoint(event.latlng)
+    const anchorPt = anchorPoint(map)
+    const mousePt = event.point
     const dx = mousePt.x - anchorPt.x
     const dy = mousePt.y - anchorPt.y
     const currentAngleRad = Math.atan2(dx, -dy)
@@ -418,37 +483,64 @@ export const useMissionPlacement = (
     while (newRotation > 180) newRotation -= 360
     while (newRotation <= -180) newRotation += 360
     placementRotationDeg.value = Math.round(newRotation)
-    L.DomEvent.stopPropagation(event.originalEvent)
   }
 
-  const onRotationHandleMouseUp = (event: L.LeafletMouseEvent): void => {
+  const onRotationHandleMouseUp = (event: MapPointerEvent): void => {
     rotationDragInitial = null
-    mapRef.value?.dragging.enable()
+    mapRef.value?.dragPan.enable()
     mapRef.value?.off('mousemove', onRotationHandleMouseMove)
     mapRef.value?.off('mouseup', onRotationHandleMouseUp)
-    L.DomEvent.stopPropagation(event.originalEvent)
-    L.DomEvent.preventDefault(event.originalEvent)
+    event.preventDefault()
+  }
+
+  const onBoundsEnter = (): void => {
+    if (mapRef.value) mapRef.value.getCanvasContainer().style.cursor = 'grab'
+  }
+  const onBoundsLeave = (): void => {
+    if (mapRef.value) mapRef.value.getCanvasContainer().style.cursor = ''
   }
 
   const clearPlacementLayers = (): void => {
     const layers = previewLayers.value
     if (!layers) return
-    layers.boundsPolygon?.off('mousedown', onPlacementMouseDown)
-    layers.rotationHandle?.off('mousedown', onRotationHandleMouseDown)
-    layers.scaleHandles.forEach((handle) => handle.off('mousedown'))
-    const all: (L.Layer | null)[] = [
-      ...layers.surveyPolygons,
-      ...layers.surveyWaypoints,
-      layers.route,
-      ...layers.waypoints,
-      layers.boundsPolygon,
-      ...layers.scaleHandles,
-      layers.rotationStem,
-      layers.rotationHandle,
-    ]
-    all.forEach((layer) => layer && mapRef.value?.removeLayer(layer))
+    const { map } = layers
+    map.offLayer('mousedown', previewIds.bounds, onPlacementMouseDown)
+    map.offLayer('mouseenter', previewIds.bounds, onBoundsEnter)
+    map.offLayer('mouseleave', previewIds.bounds, onBoundsLeave)
+    onBoundsLeave()
+    layers.scaleHandles.forEach((handle) => handle.remove())
+    layers.rotationHandle?.remove()
+    Object.values(previewIds).forEach((id) => map.removeVectors(id))
+    lastBoxCorners = null
     previewLayers.value = null
   }
+
+  // Draws one part of the preview as a layer of its own, replacing what it drew before.
+  const setPreviewShapes = (map: CockpitMap, id: string, shapes: PreviewShape[], paint: PreviewPaint): void => {
+    const features: VectorFeature[] = shapes.flatMap((shape): VectorFeature[] => {
+      if (shape.kind === 'point') {
+        if (!paint.circle) return []
+        const { radius, stroke, strokeWidth, fillOpacity } = paint.circle
+        // The dots were drawn with the stroke centered on the radius, so they reached half the stroke past it.
+        const style = {
+          radius: radius - strokeWidth / 2,
+          fillColor: shape.fill ?? '#FFFFFF',
+          fillOpacity,
+          color: stroke,
+        }
+        return [pointFeature(shape.coordinates, { ...style, weight: strokeWidth })]
+      }
+      if (shape.kind === 'line') return paint.line ? [lineFeature(shape.coordinates, paint.line)] : []
+      return [
+        ...(paint.fill ? [polygonFeature(shape.ring, paint.fill)] : []),
+        ...(paint.line ? [lineFeature([...shape.ring, shape.ring[0]], paint.line)] : []),
+      ]
+    })
+    map.setVectors(id, 'measure', features)
+  }
+
+  const pointShapes = (coords: WaypointCoordinates[], fill?: (index: number) => string): PreviewShape[] =>
+    coords.map((coordinates, index) => ({ kind: 'point', coordinates, fill: fill?.(index) }))
 
   // Coalesces rapid placement updates so the preview rebuilds at most once per animation frame.
   const schedulePlacementPreviewRebuild = (): void => {
@@ -509,143 +601,106 @@ export const useMissionPlacement = (
     // so it always sits perpendicular to the top edge.
     const topCenterE = (cornersLocal[0].east + cornersLocal[1].east) / 2
     const topCenter = transformLocal(topCenterE, cornersLocal[0].north)
-    const topCenterPt = map.latLngToContainerPoint(L.latLng(topCenter))
+    const topCenterPt = map.project(topCenter)
     const theta = safeRotationRad(placementRotationDeg.value)
     // Local "north" (0, +1) becomes (sin θ, -cos θ) in screen space.
-    const rotHandlePt = L.point(
-      topCenterPt.x + PREVIEW.rotationHandleOffsetPx * Math.sin(theta),
-      topCenterPt.y - PREVIEW.rotationHandleOffsetPx * Math.cos(theta)
-    )
-    const rotHandleLatLng = map.containerPointToLatLng(rotHandlePt)
+    const rotHandlePt: ScreenPoint = {
+      x: topCenterPt.x + PREVIEW.rotationHandleOffsetPx * Math.sin(theta),
+      y: topCenterPt.y - PREVIEW.rotationHandleOffsetPx * Math.cos(theta),
+    }
 
     geometry.topCenter = topCenter
-    geometry.rotationHandle = [rotHandleLatLng.lat, rotHandleLatLng.lng]
+    geometry.rotationHandle = map.unproject(rotHandlePt)
     return geometry
+  }
+
+  // Replaces every shape's data from the geometry; the shape layers are created on the first call.
+  const drawPreviewShapes = (map: CockpitMap, geometry: PreviewGeometry): void => {
+    setPreviewShapes(
+      map,
+      previewIds.surveyPolygons,
+      geometry.surveyPolygons.map((ring) => ({ kind: 'area', ring })),
+      {
+        fill: { color: PREVIEW_COLOR, opacity: 0.18 },
+        line: { color: PREVIEW_COLOR, width: 2, opacity: 1, dashPattern: [6, 4] },
+      }
+    )
+    setPreviewShapes(map, previewIds.surveyWaypoints, pointShapes(geometry.surveyWaypoints), {
+      circle: { radius: 3, stroke: '#000000', strokeWidth: 1, fillOpacity: 0.85 },
+    })
+    const route: PreviewShape[] =
+      geometry.waypoints.length > 1 ? [{ kind: 'line', coordinates: geometry.waypoints }] : []
+    setPreviewShapes(map, previewIds.route, route, {
+      line: { color: PREVIEW_COLOR, width: 3, opacity: 0.9, dashPattern: [8, 6] },
+    })
+    const lastIndex = geometry.waypoints.length - 1
+    const waypointFill = (index: number): string =>
+      index === 0 ? '#4CAF50' : index === lastIndex ? '#F44336' : '#FFFFFF'
+    setPreviewShapes(map, previewIds.waypoints, pointShapes(geometry.waypoints, waypointFill), {
+      circle: { radius: 6, stroke: '#000000', strokeWidth: 1, fillOpacity: 0.95 },
+    })
+
+    lastBoxCorners = geometry.corners
+    const hasBox = Boolean(geometry.corners && geometry.topCenter && geometry.rotationHandle)
+    setPreviewShapes(map, previewIds.bounds, hasBox ? [{ kind: 'area', ring: geometry.corners! }] : [], {
+      fill: { color: '#FFFFFF', opacity: 0.04 },
+      line: { color: '#FFFFFF', width: 1, opacity: 0.6, dashPattern: [4, 4] },
+    })
+    setPreviewShapes(
+      map,
+      previewIds.rotationStem,
+      hasBox ? [{ kind: 'line', coordinates: [geometry.rotationHandle!, geometry.topCenter!] }] : [],
+      { line: { color: '#FFFFFF', width: 2, opacity: 0.7, dashPattern: [2, 4] } }
+    )
+  }
+
+  const handleMarker = (html: string, size: number, at: WaypointCoordinates): MapMarker => {
+    const marker = divIconMarker({ html, size: [size, size] })
+    marker.getElement().addEventListener('click', (event) => event.stopPropagation())
+    return marker.setLatLng(at)
   }
 
   const createPreviewLayers = (geometry: PreviewGeometry): void => {
     const map = mapRef.value
     if (!map) return
 
-    const layers: PreviewLayers = {
-      surveyPolygons: geometry.surveyPolygons.map((ring) =>
-        L.polygon(ring, {
-          color: '#FFD54F',
-          fillColor: '#FFD54F',
-          fillOpacity: 0.18,
-          weight: 2,
-          dashArray: '6 4',
-          interactive: false,
-        }).addTo(map)
-      ),
-      surveyWaypoints: geometry.surveyWaypoints.map((coord) =>
-        L.circleMarker(coord, {
-          radius: 3,
-          color: '#000000',
-          weight: 1,
-          fillColor: '#FFFFFF',
-          fillOpacity: 0.85,
-          interactive: false,
-        }).addTo(map)
-      ),
-      route:
-        geometry.waypoints.length > 1
-          ? L.polyline(geometry.waypoints, {
-              color: '#FFD54F',
-              weight: 3,
-              opacity: 0.9,
-              dashArray: '8 6',
-              interactive: false,
-            }).addTo(map)
-          : null,
-      waypoints: geometry.waypoints.map((coord, index) =>
-        L.circleMarker(coord, {
-          radius: 6,
-          color: '#000000',
-          weight: 1,
-          fillColor: index === 0 ? '#4CAF50' : index === geometry.waypoints.length - 1 ? '#F44336' : '#FFFFFF',
-          fillOpacity: 0.95,
-          interactive: false,
-        }).addTo(map)
-      ),
-      boundsPolygon: null,
-      scaleHandles: [],
-      rotationStem: null,
-      rotationHandle: null,
-    }
+    drawPreviewShapes(map, geometry)
+    const layers: PreviewLayers = { map, scaleHandles: [], rotationHandle: null }
 
     const cornersLocal = cornersInOriginalLocalFrame()
     if (geometry.corners && geometry.topCenter && geometry.rotationHandle && cornersLocal) {
-      const boundsPolygon = L.polygon(geometry.corners, {
-        color: '#FFFFFF',
-        weight: 1,
-        opacity: 0.6,
-        fillOpacity: 0.04,
-        dashArray: '4 4',
-        interactive: true,
-        bubblingMouseEvents: false,
-      }).addTo(map)
-      boundsPolygon.on('mousedown', onPlacementMouseDown)
-      const polyEl = boundsPolygon.getElement() as SVGElement | null
-      if (polyEl) polyEl.style.cursor = 'grab'
-      layers.boundsPolygon = boundsPolygon
+      map.onLayer('mousedown', previewIds.bounds, onPlacementMouseDown)
+      map.onLayer('mouseenter', previewIds.bounds, onBoundsEnter)
+      map.onLayer('mouseleave', previewIds.bounds, onBoundsLeave)
 
       layers.scaleHandles = cornersLocal.map((cornerLocal, idx) => {
-        const handle = L.marker(geometry.corners![idx], {
-          icon: L.divIcon({
-            html:
-              `<div style="width: 12px; height: 12px; background: transparent; border: 2px solid #ffffff; ` +
-              `box-shadow: 0 0 4px rgba(0,0,0,0.7); cursor: ${CORNER_CURSORS[idx]};"></div>`,
-            className: '',
-            iconSize: [12, 12],
-            iconAnchor: [6, 6],
-          }),
-          interactive: true,
-          bubblingMouseEvents: false,
-          keyboard: false,
-        }).addTo(map)
-        handle.on('mousedown', (event: L.LeafletMouseEvent) => onScaleHandleMouseDown(event, cornerLocal))
-        return handle
+        const handle = handleMarker(
+          `<div style="width: 12px; height: 12px; background: transparent; border: 2px solid #ffffff; ` +
+            `box-shadow: 0 0 4px rgba(0,0,0,0.7); cursor: ${CORNER_CURSORS[idx]};"></div>`,
+          12,
+          geometry.corners![idx]
+        )
+        handle.getElement().addEventListener('mousedown', (event) => onScaleHandleMouseDown(event, cornerLocal))
+        return handle.addTo(map)
       })
 
-      layers.rotationStem = L.polyline([geometry.rotationHandle, geometry.topCenter], {
-        color: '#FFFFFF',
-        weight: 2,
-        opacity: 0.7,
-        dashArray: '2 4',
-        interactive: false,
-      }).addTo(map)
-
-      const rotationHandle = L.marker(geometry.rotationHandle, {
-        icon: L.divIcon({
-          html:
-            `<div style="width: 16px; height: 16px; background: transparent; border: 2px solid #ffffff; ` +
-            `border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.7); cursor: grab;"></div>`,
-          className: '',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
-        }),
-        interactive: true,
-        bubblingMouseEvents: false,
-        keyboard: false,
-      }).addTo(map)
-      rotationHandle.on('mousedown', onRotationHandleMouseDown)
-      layers.rotationHandle = rotationHandle
+      const rotationHandle = handleMarker(
+        `<div style="width: 16px; height: 16px; background: transparent; border: 2px solid #ffffff; ` +
+          `border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.7); cursor: grab;"></div>`,
+        16,
+        geometry.rotationHandle
+      )
+      rotationHandle.getElement().addEventListener('mousedown', onRotationHandleMouseDown)
+      layers.rotationHandle = rotationHandle.addTo(map)
     }
 
     previewLayers.value = layers
   }
 
   const applyPreviewGeometry = (geometry: PreviewGeometry, layers: PreviewLayers): void => {
-    geometry.surveyPolygons.forEach((ring, idx) => layers.surveyPolygons[idx]?.setLatLngs(ring))
-    geometry.surveyWaypoints.forEach((coord, idx) => layers.surveyWaypoints[idx]?.setLatLng(coord))
-    layers.route?.setLatLngs(geometry.waypoints)
-    geometry.waypoints.forEach((coord, idx) => layers.waypoints[idx]?.setLatLng(coord))
-
+    drawPreviewShapes(layers.map, geometry)
     if (!geometry.corners || !geometry.topCenter || !geometry.rotationHandle) return
-    layers.boundsPolygon?.setLatLngs(geometry.corners)
     geometry.corners.forEach((coord, idx) => layers.scaleHandles[idx]?.setLatLng(coord))
-    layers.rotationStem?.setLatLngs([geometry.rotationHandle, geometry.topCenter])
     layers.rotationHandle?.setLatLng(geometry.rotationHandle)
   }
 
@@ -658,8 +713,9 @@ export const useMissionPlacement = (
       return
     }
     const container = map.getContainer()
-    const ne = map.latLngToContainerPoint(bounds.getNorthEast())
-    const sw = map.latLngToContainerPoint(bounds.getSouthWest())
+    const [[south, west], [north, east]] = bounds
+    const ne = map.project([north, east])
+    const sw = map.project([south, west])
     const pos = positionPanelNearBounds(
       screenBounds([
         { x: ne.x, y: ne.y },
@@ -694,8 +750,8 @@ export const useMissionPlacement = (
 
     // Anchor the centroid to the current map center so the preview lands inside the viewport.
     const centroid = computeMissionLocation(placementMission.value)
-    placementAnchorOriginal.value = L.latLng(centroid[0], centroid[1])
-    placementAnchorCurrent.value = mapRef.value.getCenter()
+    placementAnchorOriginal.value = asGeo(centroid)
+    placementAnchorCurrent.value = asGeo(mapRef.value.getCenter())
     placementScaleXPercent.value = 100
     placementScaleYPercent.value = 100
     placementRotationDeg.value = 0
@@ -714,8 +770,8 @@ export const useMissionPlacement = (
     clearPlacementLayers()
     isPlacingMission.value = false
     placementMission.value = null
-    placementAnchorOriginal.value = L.latLng(0, 0)
-    placementAnchorCurrent.value = L.latLng(0, 0)
+    placementAnchorOriginal.value = { lat: 0, lng: 0 }
+    placementAnchorCurrent.value = { lat: 0, lng: 0 }
     placementScaleXPercent.value = 100
     placementScaleYPercent.value = 100
     placementRotationDeg.value = 0
@@ -728,7 +784,7 @@ export const useMissionPlacement = (
       cancelAnimationFrame(placementRebuildRafHandle)
       placementRebuildRafHandle = null
     }
-    mapRef.value?.dragging.enable()
+    mapRef.value?.dragPan.enable()
     mapRef.value?.off('mousemove', onPlacementMouseMove)
     mapRef.value?.off('mouseup', onPlacementMouseUp)
     mapRef.value?.off('mousemove', onScaleHandleMouseMove)
@@ -788,25 +844,24 @@ export const useMissionPlacement = (
   }
 
   // Also rebuild the preview when the host map reaches a new zoom level so handle screen
-  // offsets recompute correctly. The host's template ref briefly holds the underlying DOM
-  // element before Leaflet replaces it with the L.Map instance, so guard every call.
-  const hookMap = (map: L.Map): void => {
+  // offsets recompute correctly.
+  const hookMap = (map: CockpitMap): void => {
     map.on('zoomend', onZoomEnd)
-    map.on('drag zoom move', onMapMove)
+    map.on('move', onMapMove)
   }
-  const unhookMap = (map: L.Map): void => {
+  const unhookMap = (map: CockpitMap): void => {
     map.off('zoomend', onZoomEnd)
-    map.off('drag zoom move', onMapMove)
+    map.off('move', onMapMove)
   }
 
   watch(mapRef, (map, prevMap) => {
-    if (prevMap instanceof L.Map) unhookMap(prevMap)
-    if (map instanceof L.Map) hookMap(map)
+    if (prevMap) unhookMap(prevMap)
+    if (map) hookMap(map)
   })
-  if (mapRef.value instanceof L.Map) hookMap(mapRef.value)
+  if (mapRef.value) hookMap(mapRef.value)
 
   onScopeDispose(() => {
-    if (mapRef.value instanceof L.Map) unhookMap(mapRef.value)
+    if (mapRef.value) unhookMap(mapRef.value)
     cancelFreePlacement()
   })
 
