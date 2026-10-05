@@ -39,7 +39,7 @@
                 <input
                   type="number"
                   step="0.000001"
-                  :value="vertex.lat"
+                  :value="vertex[0]"
                   class="text-right w-[130px] bg-transparent h-[15px] border-transparent focus:outline-none text-[11px]"
                   @input="updateLat(index, $event)"
                 />
@@ -50,7 +50,7 @@
                 <input
                   type="number"
                   step="0.000001"
-                  :value="vertex.lng"
+                  :value="vertex[1]"
                   class="text-right w-[130px] bg-transparent h-[15px] border-transparent focus:outline-none text-[11px]"
                   @input="updateLng(index, $event)"
                 />
@@ -65,10 +65,9 @@
 </template>
 
 <script setup lang="ts">
-import L from 'leaflet'
-
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import type { WaypointCoordinates } from '@/types/mission'
 
 const interfaceStore = useAppInterfaceStore()
 
@@ -76,18 +75,18 @@ const props = defineProps<{
   /**
    * The vertices of the survey polygon
    */
-  vertexes: L.LatLng[]
+  vertexes: WaypointCoordinates[]
 }>()
 
 const emit = defineEmits<{
-  (event: 'updateVertex', index: number, latlng: L.LatLng): void
+  (event: 'updateVertex', index: number, latlng: WaypointCoordinates): void
   (event: 'removeVertex', index: number): void
 }>()
 
 const updateLat = (index: number, event: Event): void => {
   const val = parseFloat((event.target as HTMLInputElement).value)
   if (!isNaN(val)) {
-    const newLatLng = L.latLng(val, props.vertexes[index].lng)
+    const newLatLng: WaypointCoordinates = [val, props.vertexes[index][1]]
     emit('updateVertex', index, newLatLng)
   }
 }
@@ -95,7 +94,7 @@ const updateLat = (index: number, event: Event): void => {
 const updateLng = (index: number, event: Event): void => {
   const val = parseFloat((event.target as HTMLInputElement).value)
   if (!isNaN(val)) {
-    const newLatLng = L.latLng(props.vertexes[index].lat, val)
+    const newLatLng: WaypointCoordinates = [props.vertexes[index][0], val]
     emit('updateVertex', index, newLatLng)
   }
 }
