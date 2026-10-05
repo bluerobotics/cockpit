@@ -1,3 +1,5 @@
+import type { ExternalPoi, ExternalPoiUpdate } from '@/libs/poi/external-api'
+
 import { CallbackRateLimiter } from './callback-rate-limiter'
 
 /**
@@ -40,4 +42,34 @@ export function listenToDatalakeVariable(variableId: string, callback: (data: an
       }
     }
   })
+}
+
+/**
+ * Adds a point of interest to Cockpit. Ignored, with a warning in Cockpit's logs, if the id is already in use or
+ * Cockpit has not finished syncing with the vehicle yet.
+ * @param {ExternalPoi} poi - The point of interest. Its id is yours to choose, to update or remove it later
+ * @example
+ * ```typescript
+ * addPointOfInterest({ id: 'target-1', name: 'Target 1', latitude: -27.59, longitude: -48.55, icon: 'mdi-flag' })
+ * ```
+ */
+export function addPointOfInterest(poi: ExternalPoi): void {
+  window.parent.postMessage({ type: 'cockpit:addPointOfInterest', poi }, '*')
+}
+
+/**
+ * Changes the given fields of a point of interest. Latitude and longitude have to be sent together. Every update
+ * is saved and synced to the vehicle, so use it for occasional changes rather than to stream a position.
+ * @param {ExternalPoiUpdate} poi - The id of the point of interest and the fields to change
+ */
+export function updatePointOfInterest(poi: ExternalPoiUpdate): void {
+  window.parent.postMessage({ type: 'cockpit:updatePointOfInterest', poi }, '*')
+}
+
+/**
+ * Removes a point of interest from Cockpit.
+ * @param {string} id - The id of the point of interest
+ */
+export function removePointOfInterest(id: string): void {
+  window.parent.postMessage({ type: 'cockpit:removePointOfInterest', id }, '*')
 }

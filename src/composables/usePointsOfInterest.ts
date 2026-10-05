@@ -1,8 +1,11 @@
 import { type ComputedRef, computed, reactive, watch } from 'vue'
+import { z } from 'zod'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
+import { listenToGenericWebSocketJsonMessages } from '@/libs/generic-websocket'
+import { type ExternalPoiCommand, externalPoiCommandSchema, isExternalPoiCommand } from '@/libs/poi/external-api'
 import {
   poiHeadingVariableId,
   poiLatitudeVariableId,
@@ -102,6 +105,10 @@ interface PointsOfInterestState {
   removePointOfInterest: (id: string) => void
   /** Moves a POI to a static position (used for drag interactions) */
   movePointOfInterest: (id: string, newCoordinates: PointOfInterestCoordinates) => void
+  /** Applies a validated POI command from external software, throwing when it cannot be applied */
+  applyExternalPoiCommand: (command: ExternalPoiCommand) => void
+  /** Applies a message from external software if it is a POI command, logging why when it cannot be */
+  handleExternalPoiMessage: (message: unknown) => void
 }
 
 let state: PointsOfInterestState | undefined
@@ -283,6 +290,53 @@ const createState = (): PointsOfInterestState => {
     })
   }
 
+  // External software writes with nobody watching, so it waits until the vehicle's copy of the list has been
+  // read; writing earlier would replace POIs other operators saved on the vehicle with this machine's copy.
+  // Every connection re-runs the sync, so the gate closes again on each one. A failed sync still opens it, as
+  // the settings manager intends for every listener of that event, or a vehicle without BlueOS would block it.
+  let vehicleSyncCompleted = false
+  window.addEventListener('vehicle-online', () => (vehicleSyncCompleted = false))
+  window.addEventListener('vehicle-sync-complete', () => (vehicleSyncCompleted = true))
+
+  const applyExternalPoiCommand = (command: ExternalPoiCommand): void => {
+    if (!vehicleSyncCompleted) throw new Error('Cockpit has not finished syncing with the vehicle yet.')
+    const id = command.type === 'cockpit:removePointOfInterest' ? command.id : command.poi.id
+    const exists = validPointsOfInterest.value.some((poi) => poi.id === id)
+    if (command.type === 'cockpit:addPointOfInterest') {
+      if (exists) throw new Error(`POI '${id}' already exists.`)
+      const { latitude, longitude } = command.poi
+      addPointOfInterest({ ...command.poi, fallbackCoordinates: [latitude, longitude], timestamp: Date.now() })
+      return
+    }
+
+    if (!exists) throw new Error(`POI '${id}' does not exist.`)
+    if (command.type === 'cockpit:removePointOfInterest') {
+      removePointOfInterest(id)
+      return
+    }
+    const { latitude, longitude } = command.poi
+    const moved: Partial<PointOfInterest> =
+      latitude === undefined || longitude === undefined ? {} : { fallbackCoordinates: [latitude, longitude] }
+    updatePointOfInterest(id, { ...command.poi, ...moved })
+  }
+
+  const handleExternalPoiMessage = (message: unknown): void => {
+    if (!isExternalPoiCommand(message)) return
+    const parsed = externalPoiCommandSchema.safeParse(message)
+    if (!parsed.success) {
+      console.warn(`[PointsOfInterest] Ignoring invalid external command. ${z.prettifyError(parsed.error)}`)
+      return
+    }
+    try {
+      applyExternalPoiCommand(parsed.data)
+    } catch (error) {
+      console.warn(`[PointsOfInterest] Ignoring external command. ${(error as Error).message}`)
+    }
+  }
+
+  // The singleton outlives every consumer, so this listener is never removed.
+  listenToGenericWebSocketJsonMessages(handleExternalPoiMessage)
+
   return {
     pointsOfInterest: validPointsOfInterest,
     resolvedPointsOfInterest,
@@ -290,6 +344,8 @@ const createState = (): PointsOfInterestState => {
     updatePointOfInterest,
     removePointOfInterest,
     movePointOfInterest,
+    applyExternalPoiCommand,
+    handleExternalPoiMessage,
   }
 }
 

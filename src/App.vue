@@ -190,6 +190,7 @@ import {
 } from './composables/menuRouting'
 import { useSnackbar } from './composables/snackbar'
 import { useMcpBridge } from './composables/useMcpBridge'
+import { usePointsOfInterest } from './composables/usePointsOfInterest'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
 import { useAppInterfaceStore } from './stores/appInterface'
@@ -255,6 +256,9 @@ useVehicleDefaultsAutoImport()
 useCustomTileProviderVehicleSync()
 
 useMcpBridge()
+
+// Created at boot so external software can manage points of interest before any map is mounted.
+usePointsOfInterest()
 
 // Keep the main menu and the address showing the same destination.
 useMenuRouteSync()

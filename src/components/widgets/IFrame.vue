@@ -252,6 +252,7 @@ import { computed, inject, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } 
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
 import { openSnackbar } from '@/composables/snackbar'
+import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { widgetDraggingKey, widgetLivePositionKey, widgetLiveSizeKey } from '@/composables/useWidgetGeometry'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { isValidURL } from '@/libs/utils'
@@ -678,7 +679,11 @@ const handleBaseUrlToggle = (useBaseUrl: boolean): void => {
 // Listener ids of the data lake variables the embedded content subscribed to, by variable
 const apiListenerIds = new Map<string, string>()
 
+const { handleExternalPoiMessage } = usePointsOfInterest()
+
 const apiEventCallback = (event: MessageEvent): void => {
+  // Every iframe widget hears every message, so only the one embedding the sender applies a command.
+  if (event.source === iframe.value?.contentWindow) handleExternalPoiMessage(event.data)
   if (event.data.type !== 'cockpit:listenToDatalakeVariables') {
     return
   }
