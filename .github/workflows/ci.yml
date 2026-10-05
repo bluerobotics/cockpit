@@ -140,6 +140,9 @@ jobs:
       - name: Check the complexity report fetcher
         run: .github/scripts/fetch-complexity-report.sh --self-check
 
+      - name: Check the import cycle finder
+        run: node scripts/import-cycles.mjs --self-check
+
       - name: Install, lint, typecheck, and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000

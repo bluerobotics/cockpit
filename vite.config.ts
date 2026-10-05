@@ -5,6 +5,7 @@ import electron, { startup, treeKillSync } from 'vite-plugin-electron'
 import { VitePWA } from 'vite-plugin-pwa'
 import vuetify from 'vite-plugin-vuetify'
 
+import { importCycleGuard } from './scripts/import-cycles.mjs'
 import { getVersion } from './src/libs/non-browser-utils'
 
 // Check if we're running in Electron mode or building the application
@@ -55,6 +56,7 @@ const baseConfig = {
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       }),
+    !isLibrary && importCycleGuard(__dirname),
   ].filter(Boolean),
   define: {
     'process.env': {},
