@@ -54,7 +54,17 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[280px] overflow-auto">
+              <div v-if="availableModifierKeys" class="w-full flex justify-start -mt-1 pb-1 pl-5">
+                <v-switch
+                  :model-value="controllerStore.holdLastInputWhenWindowHidden"
+                  label="Hold last joystick input when window is hidden (tab changed or window minimized)"
+                  density="compact"
+                  hide-details
+                  @update:model-value="setHoldLastInputWhenWindowHidden"
+                />
+              </div>
+              <v-divider v-if="availableModifierKeys" class="mx-8 mt-[5px] mb-[13px] opacity-10" />
+              <div class="flex flex-col items-center">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -69,21 +79,13 @@
                     </p>
                   </div>
 
-                  <div v-if="availableModifierKeys" class="flex flex-row items-center mt-2 mb-3">
-                    <v-switch
-                      :model-value="controllerStore.holdLastInputWhenWindowHidden"
-                      label="Hold last joystick input when window is hidden (tab changed or window minimized)"
-                      class="scale-[85%] -mb-4"
-                      @update:model-value="setHoldLastInputWhenWindowHidden"
-                    />
-                  </div>
                   <div class="flex w-full justify-center mb-2">
                     <span class="text-lg font-medium" :class="{ 'text-sm': interfaceStore.isOnSmallScreen }">
                       {{ controllerStore.protocolMapping.name }}
                     </span>
                   </div>
                 </div>
-                <div class="flex w-full h-[47px]">
+                <div class="flex w-full h-[47px] mb-6">
                   <v-tabs
                     :model-value="currentTabVIew"
                     class="w-full h-full my-3 rounded-lg elevation-2 bg-[#FFFFFF23]"
@@ -172,7 +174,7 @@
                   :key="key"
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
+                  <p class="text-md font-semibold mt-[10px]">{{ joystick.model }} controller</p>
                   <div class="flex items-center gap-2 -mb-8">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
@@ -290,7 +292,9 @@
                   :key="key"
                   class="w-full flex-centered flex-column"
                 >
-                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <span class="text-md font-semibold w-full text-center mt-[10px]"
+                    >{{ joystick.model }} controller</span
+                  >
                   <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
