@@ -1,4 +1,6 @@
+import type { CockpitMap } from '@/libs/map/cesium-map'
 import { type MapMarker, divIconMarker } from '@/libs/map/cesium-marker'
+import type { MapLayerSlot } from '@/libs/map/map-slots'
 
 /**
  * Class on every geofence marker element, both the committed handles and the ones drawn while a fence is in
@@ -81,4 +83,19 @@ export const asFenceMarker = (marker: MapMarker): MapMarker => {
   element.classList.add(FENCE_MARKER_CLASS)
   element.style.zIndex = fenceMarkerZIndex
   return marker
+}
+
+// The slots whose vectors shared the overlay pane with the fences, which is what fence-mode dimming faded.
+const dimmedSlots: MapLayerSlot[] = ['coverage', 'mission', 'survey-area', 'survey', 'grid']
+
+/**
+ * Fades the map's non-fence vector layers, so the fences being edited stand out, and returns how to undo it.
+ * @param {CockpitMap} map - The map to dim.
+ * @param {number} factor - Opacity multiplier, in [0, 1].
+ * @returns {() => void} Restores the opacities the layers had.
+ */
+export const dimNonFenceLayers = (map: CockpitMap, factor: number): (() => void) => {
+  const dimmed = map.vectorLayers().filter(({ id, slot }) => !isFenceLayerId(id) && dimmedSlots.includes(slot))
+  dimmed.forEach(({ id }) => map.setVectorsOpacityFactor(id, factor))
+  return () => dimmed.forEach(({ id }) => map.setVectorsOpacityFactor(id, 1))
 }
