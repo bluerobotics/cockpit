@@ -77,12 +77,12 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
-import L, { type LatLngTuple } from 'leaflet'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
-import { clampPointToCircle, isInsideCircle, rotatePointAroundCenter } from '@/libs/map/minimap-geometry'
+import { clampPointToCircle, isInsideCircle } from '@/libs/map/minimap-geometry'
+import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import { TargetFollower, WhoToFollow } from '@/libs/map/utils-map'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { formatDistance } from '@/libs/units'
@@ -160,11 +160,6 @@ interface Props {
    */
   boundary?: 'rectangle' | 'circle'
   /**
-   * Rotation applied to the map container, in degrees (positive clockwise). Only the rotating minimap sets
-   * it; the arrows sit outside the container, so they have to follow its spin themselves.
-   */
-  bearing?: number
-  /**
    * Whether clicking a pin acts on the map. Defaults to true. A map that stays centered on a tracked target
    * cannot honour either action, so it opts out and the pins become pure indicators.
    */
@@ -200,7 +195,7 @@ const homeEdgeArrow = ref<TargetEdgeArrow | null>(null)
 const baseStationEdgeArrow = ref<TargetEdgeArrow | null>(null)
 
 const calculateMapEdgesIntersections = (
-  centerPoint: L.Point,
+  centerPoint: ScreenPoint,
   distanceX: number,
   distanceY: number,
   width: number,
@@ -362,10 +357,9 @@ const circleInset = 24
 
 // Clamp an off-screen target to the circle inscribed in the container. Returns null when the target is
 // visible (inside the circle) or the container is too small to hold one.
-const computeCircularArrow = (targetPoint: L.Point, width: number, height: number): CircleArrow | null => {
+const computeCircularArrow = (onScreenPoint: ScreenPoint, width: number, height: number): CircleArrow | null => {
   const center = { x: width / 2, y: height / 2 }
   const radius = Math.min(width, height) / 2 - circleInset
-  const onScreenPoint = rotatePointAroundCenter(center, targetPoint, props.bearing ?? 0)
   if (radius <= 0 || isInsideCircle(center, onScreenPoint, radius)) return null
   const clamped = clampPointToCircle(center, onScreenPoint, radius)
   return {
@@ -381,7 +375,7 @@ const calculateTargetEdgeArrow = (
   targetColor: string,
   menuBand: MenuTriggerBand | null
 ): TargetEdgeArrow | null => {
-  if (!props.mapReady || !map.value || !(map.value instanceof L.Map) || !targetPosition) {
+  if (!props.mapReady || !map.value || !targetPosition) {
     return null
   }
 
@@ -390,22 +384,9 @@ const calculateTargetEdgeArrow = (
     return null
   }
 
-  let bounds: L.LatLngBounds
-  let containerSize: L.Point
-  let center: L.LatLng
-
-  try {
-    bounds = map.value.getBounds()
-    containerSize = map.value.getSize()
-    center = map.value.getCenter()
-  } catch {
-    return null
-  }
-
-  const targetLatLng = L.latLng(targetPosition[0], targetPosition[1])
-
-  const width = containerSize.x
-  const height = containerSize.y
+  const width = container.clientWidth
+  const height = container.clientHeight
+  const center = map.value.getCenter()
   const isFullscreen = props.forceFullScreen || (props.widget ? widgetStore.isFullScreen(props.widget) : false)
   const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
   const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
@@ -413,20 +394,13 @@ const calculateTargetEdgeArrow = (
   const validYMax = bottomEdgeY
   const cornerThreshold = 40
 
-  let targetPoint: L.Point
-  let centerPoint: L.Point
-
-  try {
-    targetPoint = map.value.latLngToContainerPoint(targetLatLng)
-    centerPoint = map.value.latLngToContainerPoint(center)
-  } catch {
-    return null
-  }
+  const targetPoint = map.value.project(targetPosition)
+  const centerPoint = map.value.project(center)
 
   if (props.boundary === 'circle') {
     const circleArrow = computeCircularArrow(targetPoint, width, height)
     if (!circleArrow) return null
-    const circleDistanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
+    const circleDistanceMeters = calculateHaversineDistance(center, targetPosition)
     return {
       style: circleArrow.style,
       angle: circleArrow.angleDeg + 90,
@@ -436,17 +410,11 @@ const calculateTargetEdgeArrow = (
   }
 
   // Check if target is visible on the map (within container bounds)
-  if (
-    targetPoint.x >= 0 &&
-    targetPoint.x <= width &&
-    targetPoint.y >= validYMin &&
-    targetPoint.y <= validYMax &&
-    bounds.contains(targetLatLng)
-  ) {
+  if (targetPoint.x >= 0 && targetPoint.x <= width && targetPoint.y >= validYMin && targetPoint.y <= validYMax) {
     return null
   }
 
-  const distanceMeters = calculateHaversineDistance([center.lat, center.lng], targetPosition)
+  const distanceMeters = calculateHaversineDistance(center, targetPosition)
   const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
 
   const distanceX = targetPoint.x - centerPoint.x
@@ -512,7 +480,7 @@ const calculateTargetEdgeArrow = (
 
 // Calculate POI arrow angle and position to be placed on the edges of the map
 const calculatePoiEdgeArrows = (): void => {
-  if (!props.showPoiArrows || !props.mapReady || !map.value || !(map.value instanceof L.Map)) {
+  if (!props.showPoiArrows || !props.mapReady || !map.value) {
     poiEdgeArrows.value = []
     return
   }
@@ -524,19 +492,9 @@ const calculatePoiEdgeArrows = (): void => {
   }
   const menuBand = menuTriggerBand(container)
 
-  let containerSize: L.Point
-  let center: L.LatLng
-
-  try {
-    containerSize = map.value.getSize()
-    center = map.value.getCenter()
-  } catch {
-    poiEdgeArrows.value = []
-    return
-  }
-
-  const width = containerSize.x
-  const height = containerSize.y
+  const width = container.clientWidth
+  const height = container.clientHeight
+  const center = map.value.getCenter()
   const isFullscreen = props.forceFullScreen || (props.widget ? widgetStore.isFullScreen(props.widget) : false)
   const topEdgeY = isFullscreen ? widgetStore.currentTopBarHeightPixels : 0
   const bottomEdgeY = isFullscreen ? height - widgetStore.currentBottomBarHeightPixels : height
@@ -546,23 +504,15 @@ const calculatePoiEdgeArrows = (): void => {
   const arrows: PoiEdgeArrow[] = []
 
   resolvedPointsOfInterest.value.forEach((poi) => {
-    const poiLatLng = L.latLng(poi.coordinates[0], poi.coordinates[1])
     if (!map.value) return
 
-    let poiPoint: L.Point
-    let centerPoint: L.Point
-
-    try {
-      poiPoint = map.value.latLngToContainerPoint(poiLatLng)
-      centerPoint = map.value.latLngToContainerPoint(center)
-    } catch {
-      return
-    }
+    const poiPoint = map.value.project(poi.coordinates)
+    const centerPoint = map.value.project(center)
 
     if (props.boundary === 'circle') {
       const circleArrow = computeCircularArrow(poiPoint, width, height)
       if (!circleArrow) return
-      const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
+      const distanceMeters = calculateHaversineDistance(center, poi.coordinates)
       const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
       arrows.push({
         poiId: poi.id,
@@ -587,7 +537,7 @@ const calculatePoiEdgeArrows = (): void => {
       return
     }
 
-    const distanceMeters = calculateHaversineDistance([center.lat, center.lng], poi.coordinates)
+    const distanceMeters = calculateHaversineDistance(center, poi.coordinates)
     const distanceText = formatDistance(distanceMeters, interfaceStore.displayUnitPreferences)
 
     const distanceX = poiPoint.x - centerPoint.x
@@ -655,7 +605,7 @@ const calculatePoiEdgeArrows = (): void => {
 }
 
 const calculateTargetArrows = (): void => {
-  const container = map.value instanceof L.Map ? map.value.getContainer() : undefined
+  const container = map.value?.getContainer()
   const menuBand = container ? menuTriggerBand(container) : null
   vehicleEdgeArrow.value = calculateTargetEdgeArrow(props.vehiclePosition, 'Vehicle', '#1e498f', menuBand)
   homeEdgeArrow.value = calculateTargetEdgeArrow(props.home, 'Home', '#1e498f', menuBand)
@@ -679,7 +629,7 @@ watch(
     () => interfaceStore.isOnSmallScreen,
   ],
   () => {
-    if (!props.mapReady || !(map.value instanceof L.Map)) return
+    if (!props.mapReady || !map.value) return
     debouncedUpdateArrows()
     debouncedUpdateTargetArrows()
   }
@@ -691,7 +641,7 @@ const centerMapOnPoi = (poiId: string): void => {
   const poi = resolvedPointsOfInterest.value.find((p) => p.id === poiId)
   if (!poi) return
 
-  map.value.setView(poi.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
+  map.value.easeTo({ center: poi.coordinates })
 }
 
 const handleVehicleArrowClick = (): void => {
@@ -722,7 +672,7 @@ watch(
 watch(
   [() => props.mapCenter, () => props.zoom],
   () => {
-    if (props.mapReady && map.value && map.value instanceof L.Map) {
+    if (props.mapReady && map.value) {
       debouncedUpdateArrows()
       throttledUpdateTargetArrows()
     }
@@ -735,7 +685,7 @@ watch(
 watch(
   () => resolvedPointsOfInterest.value,
   () => {
-    if (props.mapReady && map.value && map.value instanceof L.Map) {
+    if (props.mapReady && map.value) {
       throttledUpdateArrows()
     }
   }
@@ -744,7 +694,7 @@ watch(
 watch(
   () => props.mapReady,
   (ready) => {
-    if (ready && map.value && map.value instanceof L.Map) {
+    if (ready && map.value) {
       debouncedUpdateArrows()
       debouncedUpdateTargetArrows()
     }
@@ -755,18 +705,8 @@ watch(
 watch(
   () => props.showPoiArrows,
   (show) => {
-    if (show && props.mapReady && map.value && map.value instanceof L.Map) {
+    if (show && props.mapReady && map.value) {
       debouncedUpdateArrows()
-    }
-  }
-)
-
-// A rotating map moves the pins around its edge without moving the view, so no map event announces it.
-watch(
-  () => props.bearing,
-  () => {
-    if (props.mapReady && map.value && map.value instanceof L.Map) {
-      throttledUpdateArrows()
     }
   }
 )
@@ -783,7 +723,7 @@ watch(
     () => props.zoom,
   ],
   () => {
-    if (props.mapReady && map.value && map.value instanceof L.Map) {
+    if (props.mapReady && map.value) {
       throttledUpdateTargetArrows()
     }
   },
@@ -801,7 +741,7 @@ watch(
       moveHandler = null
     }
 
-    if (mapInstance && ready && mapInstance instanceof L.Map) {
+    if (mapInstance && ready) {
       moveHandler = (): void => {
         throttledUpdateArrows()
         throttledUpdateTargetArrows()

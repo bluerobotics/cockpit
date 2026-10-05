@@ -1,13 +1,18 @@
 import { useThrottleFn } from '@vueuse/core'
-import L, { type LatLngTuple } from 'leaflet'
 import { type ComputedRef, type Ref, type ShallowRef, computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { customTileProviderSignature, useCustomTileProviderLayer } from '@/composables/map/useCustomTileProviderLayer'
+import {
+  type MountedCustomTileProviderLayer,
+  customTileProviderSignature,
+  useCustomTileProviderLayer,
+} from '@/composables/map/useCustomTileProviderLayer'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { provideMapContext } from '@/composables/map/useMapContext'
 import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
+import { type CockpitMap, createMap } from '@/libs/map/cesium-map'
 import { buildRadialFadeMask } from '@/libs/map/minimap-geometry'
-import { singleStepZoomMapOptions } from '@/libs/map/utils-map'
+import { addRasterLayer } from '@/libs/map/raster-layers'
+import { applyFollowZoomMode } from '@/libs/map/utils-map'
 import { useMissionStore } from '@/stores/mission'
 import type { MapTileProvider, WaypointCoordinates } from '@/types/mission'
 
@@ -39,16 +44,14 @@ export interface UseMiniMapOptions {
  * Handles exposed by the minimap composable.
  */
 export interface UseMiniMapReturn {
-  /** The Leaflet map instance, available once `init` has run. */
-  map: ShallowRef<L.Map | undefined>
+  /** The map instance, available once `init` has run and its style has loaded. */
+  map: ShallowRef<CockpitMap | undefined>
   /** True once the map is created and ready for descendant overlays. */
   mapReady: Ref<boolean>
   /** Current map zoom level, kept in sync with user zooming. */
   zoom: Ref<number>
   /** The zoom the operator chose, excluding the offline overview override, for consumers that persist it. */
   operatorZoom: ComputedRef<number>
-  /** Rotation currently applied to the map, in degrees (positive clockwise); 0 when north-up. */
-  bearing: Ref<number>
   /**
    * Creates the rotating map on the given element and starts following the vehicle.
    * @param {HTMLElement} element - The container element to mount the map on.
@@ -64,7 +67,7 @@ export interface UseMiniMapReturn {
 
 /**
  * Creates a vehicle-centered, heading-up rotating minimap: a circular map with a radial edge fade that
- * always keeps the vehicle at its center. Leaflet stays behind this composable, and the map context is
+ * always keeps the vehicle at its center. The map library stays behind this composable, and the map context is
  * provided so POI markers and edge indicators can attach as descendants. Teardown is owned here.
  * @param {UseMiniMapOptions} options - Reactive getters for position, heading and appearance.
  * @returns {UseMiniMapReturn} The map instance, readiness flag, and init/destroy lifecycle hooks.
@@ -75,12 +78,21 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   const bearing = ref(0)
   const tileLayers = useMapTileLayers()
   const missionStore = useMissionStore()
-  const { createLayer } = useCustomTileProviderLayer()
-  let currentBaseLayer: L.Layer | undefined
-  let closeCurrentBaseLayer: (() => void) | undefined
+  const { mountLayer } = useCustomTileProviderLayer()
+  let currentBaseLayerId: string | undefined
+  let currentCustomLayer: MountedCustomTileProviderLayer | undefined
   let currentBaseLayerSignature: string | undefined
   let disposed = false
+  // Held from creation, while `map` is only published once the style has loaded.
+  let mapInstance: CockpitMap | undefined
   const { observe: observeMapResize, stop: stopObservingMapResize } = useMapAutoResize(() => recenter())
+
+  const clearBaseLayer = (): void => {
+    currentCustomLayer?.close()
+    currentCustomLayer = undefined
+    if (map.value && currentBaseLayerId) map.value.setImageryVisible(currentBaseLayerId, false)
+    currentBaseLayerId = undefined
+  }
 
   // A custom provider's layer is built from its metadata, so the signature (rather than the plain selection)
   // is what tells us to rebuild it after an edit. Built-in layers are prebuilt, so their name is enough.
@@ -92,17 +104,21 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
     const signature = custom ? customTileProviderSignature(custom) : selection
     if (signature === currentBaseLayerSignature) return
 
-    currentBaseLayer?.remove()
-    closeCurrentBaseLayer?.()
-    const next = custom ? createLayer(custom) : { layer: builtIn ?? tileLayers.esri, close: undefined }
-    next.layer.addTo(map.value)
-    currentBaseLayer = next.layer
-    closeCurrentBaseLayer = next.close
+    clearBaseLayer()
+    if (custom) {
+      currentCustomLayer = mountLayer(map.value, custom, { slot: 'base', visible: true })
+      currentBaseLayerId = currentCustomLayer.id
+    } else {
+      // The MiniMap draws no noise background under failed tiles, unlike the larger maps.
+      currentBaseLayerId = addRasterLayer(map.value, builtIn ?? tileLayers.esri, { slot: 'base', visible: true })
+      map.value.setImageryVisible(currentBaseLayerId, true)
+    }
     currentBaseLayerSignature = signature
   }
 
+  // Applied to the instance from creation, so the map never shows as a square before its style loads.
   const applyFadeMask = (): void => {
-    const container = map.value?.getContainer()
+    const container = mapInstance?.getContainer()
     if (!container) return
     const mask = buildRadialFadeMask(options.edgeFadeAmount())
     container.style.setProperty('-webkit-mask-image', mask)
@@ -112,7 +128,7 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   const recenter = (): void => {
     const position = options.vehiclePosition()
     if (!map.value || !position) return
-    map.value.setView(position as LatLngTuple, map.value.getZoom(), { animate: false })
+    map.value.jumpTo(position)
   }
 
   // Working zoom set aside while the overview level is forced, so reconnecting restores it.
@@ -127,10 +143,10 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   // has no imagery and would otherwise leave the dimmed disc blank gray.
   const applyOfflineView = (): void => {
     if (!map.value) return
-    map.value.invalidateSize({ animate: false })
+    map.value.resize()
     if (options.vehiclePosition()) return
     zoomBeforeOverview.value ??= map.value.getZoom()
-    map.value.setView(map.value.getCenter(), offlineOverviewZoom, { animate: false })
+    map.value.jumpTo(map.value.getCenter(), offlineOverviewZoom)
   }
 
   // Heading-up: negate the heading so the vehicle's travel direction ends up pointing to the widget top.
@@ -139,12 +155,11 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   let bearingRaf: number | undefined
   let animatingBearing = false
 
-  // The map spins as a whole: the CSS variable drives one `rotate()` on the Leaflet container, so tiles,
-  // vector layers and markers turn together and stay consistent without Leaflet knowing it is rotated. A
-  // rotated rectangle keeps its inradius, so the circle the mask cuts stays covered at every angle.
+  // `bearing` is the clockwise turn applied to the map content, so the map's own bearing (the compass direction at
+  // the top of the view) is its opposite.
   const setBearing = (theta: number): void => {
     bearing.value = theta
-    map.value?.getContainer().style.setProperty('--minimap-bearing', `${theta}deg`)
+    map.value?.setBearing(-theta)
   }
 
   const applyBearing = (): void => setBearing(targetBearing())
@@ -191,43 +206,39 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
   const throttledFollow = useThrottleFn(followBearing, 16)
 
   const init = (element: HTMLElement): void => {
-    if (map.value || disposed) return
+    if (mapInstance || disposed) return
 
     const initialCenter = options.vehiclePosition() ?? ([0, 0] as WaypointCoordinates)
-    const instance = L.map(element, {
-      center: initialCenter as LatLngTuple,
-      zoom: options.defaultZoom(),
-      zoomControl: false,
-      attributionControl: false,
-      dragging: false,
-      // Leaflet reads pointer coordinates off the unrotated container, so anchoring a zoom on the pointer
-      // would drift once the map is turned. Zooming to the center is also what an always-centered map wants
-      // anyway, and box zoom and the arrow keys have no meaning on a map that cannot be panned.
-      scrollWheelZoom: 'center',
-      doubleClickZoom: 'center',
-      touchZoom: 'center',
-      boxZoom: false,
-      keyboard: false,
-      ...singleStepZoomMapOptions,
-    })
+    const instance = createMap(element, { center: initialCenter, zoom: options.defaultZoom(), rotatable: true })
+    // Zooming to the center is what an always-centered map wants, and box zoom and the arrow keys have no meaning
+    // on a map that cannot be panned.
+    instance.dragPan.disable()
+    instance.boxZoom.disable()
+    instance.keyboard.disable()
+    applyFollowZoomMode(instance, true)
 
-    map.value = instance
-    mapReady.value = true
+    instance.once('load', () => {
+      if (disposed) return
+      map.value = instance
+      mapReady.value = true
 
-    applyTileProvider()
+      applyTileProvider()
 
-    zoom.value = instance.getZoom()
-    instance.on('zoomend', () => {
       zoom.value = instance.getZoom()
+      instance.on('zoomend', () => {
+        zoom.value = instance.getZoom()
+      })
+
+      applyFadeMask()
+      applyBearing()
+
+      if (!options.vehicleOnline()) applyOfflineView()
     })
-
+    mapInstance = instance
     applyFadeMask()
-    applyBearing()
-
-    if (!options.vehicleOnline()) applyOfflineView()
 
     // Widgets resize by viewport fraction without firing a window resize, so observe the element and let
-    // Leaflet recompute its size (and recenter) whenever the container changes.
+    // the map recompute its size (and recenter) whenever the container changes.
     observeMapResize(instance)
   }
 
@@ -236,15 +247,14 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
     if (bearingRaf) cancelAnimationFrame(bearingRaf)
     bearingRaf = undefined
     stopObservingMapResize()
-    if (map.value) {
-      map.value.remove()
-      map.value = undefined
-    }
-    closeCurrentBaseLayer?.()
-    closeCurrentBaseLayer = undefined
-    currentBaseLayer = undefined
+    currentCustomLayer?.close()
+    currentCustomLayer = undefined
+    currentBaseLayerId = undefined
     currentBaseLayerSignature = undefined
     mapReady.value = false
+    map.value = undefined
+    mapInstance?.remove()
+    mapInstance = undefined
   }
 
   watch(() => options.vehiclePosition(), throttledRecenter)
@@ -263,7 +273,9 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
     () => options.vehicleOnline(),
     (online) => {
       if (online) {
-        if (zoomBeforeOverview.value !== undefined) map.value?.setZoom(zoomBeforeOverview.value)
+        if (zoomBeforeOverview.value !== undefined && map.value) {
+          map.value.jumpTo(map.value.getCenter(), zoomBeforeOverview.value)
+        }
         zoomBeforeOverview.value = undefined
       } else {
         applyOfflineView()
@@ -273,5 +285,5 @@ export const useMiniMap = (options: UseMiniMapOptions): UseMiniMapReturn => {
 
   onBeforeUnmount(destroy)
 
-  return { map, mapReady, zoom, operatorZoom, bearing, init, destroy }
+  return { map, mapReady, zoom, operatorZoom, init, destroy }
 }
