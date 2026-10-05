@@ -421,6 +421,14 @@
                   Messages should be in the format <span class="font-mono">variableName=value</span>, one per message.
                 </li>
                 <li>
+                  JSON messages add, update or remove points of interest instead, for example:
+                  <span class="font-mono">{{ examplePoiWebSocketMessage }}</span
+                  >. Update with <span class="font-mono">cockpit:updatePointOfInterest</span> and the fields to change,
+                  or remove with <span class="font-mono">{{ exampleRemovePoiWebSocketMessage }}</span
+                  >. Every change is synced to the vehicle, so send occasional updates rather than a stream of
+                  positions.
+                </li>
+                <li>
                   You can use data-lake variables to compose the URL, for example:
                   <span class="font-mono">{{ exampleGenericWebSocketUrl }}</span>
                 </li>
@@ -1047,6 +1055,11 @@ const addNewSecondaryVehicle = (): void => {
 
 // Generic WebSocket connections
 const exampleGenericWebSocketUrl = 'ws://{{ vehicle-address }}:1234'
+const examplePoiWebSocketMessage = JSON.stringify({
+  type: 'cockpit:addPointOfInterest',
+  poi: { id: 'target-1', name: 'Target 1', latitude: -27.5935, longitude: -48.5585 },
+})
+const exampleRemovePoiWebSocketMessage = JSON.stringify({ type: 'cockpit:removePointOfInterest', id: 'target-1' })
 const genericWebSocketConnections = ref<Record<string, GenericWebSocketConnection>>({})
 const newGenericWebSocketUrl = ref(exampleGenericWebSocketUrl)
 let unsubscribeGenericWebSocket: (() => void) | null = null

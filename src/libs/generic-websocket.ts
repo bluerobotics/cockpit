@@ -35,6 +35,7 @@ const persistentConnectionsKey = 'cockpit-generic-websocket-connections'
 const connections: Record<string, GenericWebSocketConnection> = {}
 const sockets: Record<string, WebSocket | null> = {}
 const connectionListeners: Record<string, (connections: Record<string, GenericWebSocketConnection>) => void> = {}
+const jsonMessageListeners = new Set<(message: unknown) => void>()
 
 let listenerIdCounter = 0
 
@@ -208,6 +209,11 @@ const connectToWebSocket = (url: string): void => {
     socket.onmessage = (event: MessageEvent) => {
       try {
         const message = typeof event.data === 'string' ? event.data : event.data.toString()
+        if (message.trimStart().startsWith('{')) {
+          const parsedMessage: unknown = JSON.parse(message)
+          jsonMessageListeners.forEach((listener) => listener(parsedMessage))
+          return
+        }
         parseAndInjectMessage(message)
       } catch (error) {
         logError('Error processing message:', error)
@@ -302,6 +308,17 @@ export const listenToGenericWebSocketConnections = (
   return () => {
     delete connectionListeners[listenerId]
   }
+}
+
+/**
+ * Subscribe to JSON messages (those starting with '{') received on any generic WebSocket connection.
+ * They carry commands rather than data-lake values, so they are not injected into the data lake.
+ * @param {(message: unknown) => void} listener Function called with each parsed message
+ * @returns {() => void} A function to unsubscribe
+ */
+export const listenToGenericWebSocketJsonMessages = (listener: (message: unknown) => void): (() => void) => {
+  jsonMessageListeners.add(listener)
+  return () => jsonMessageListeners.delete(listener)
 }
 
 // Initialize: load persisted connections on module load
