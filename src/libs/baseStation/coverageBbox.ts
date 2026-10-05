@@ -56,10 +56,10 @@ export const bboxIntersects = (left: CoverageBbox, right: CoverageBbox): boolean
 export const bboxEquals = (left: CoverageBbox, right: CoverageBbox): boolean =>
   left.south === right.south && left.west === right.west && left.north === right.north && left.east === right.east
 
-/** Map bounds exposing their edges, as both Leaflet and MapLibre bounds do. */
+/** Map bounds exposing their edges, as both Leaflet's bounds and the Cesium map's do. */
 type EdgeBounds = Record<'getSouth' | 'getWest' | 'getNorth' | 'getEast', () => number>
 
-export const leafletBoundsToCoverageBbox = (bounds: EdgeBounds): CoverageBbox => ({
+export const mapBoundsToCoverageBbox = (bounds: EdgeBounds): CoverageBbox => ({
   south: bounds.getSouth(),
   west: bounds.getWest(),
   north: bounds.getNorth(),

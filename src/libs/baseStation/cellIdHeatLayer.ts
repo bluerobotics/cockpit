@@ -1,6 +1,7 @@
-import L from 'leaflet'
-
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import type { BaseStationConfig } from '@/types/baseStation'
+import type { WaypointCoordinates } from '@/types/mission'
 
 // Slider 0% → blob radius is 5% of the cell range, slider 100% → full range. Linear blend
 // between the two so the slider has visible effect at every zoom level.
@@ -27,8 +28,17 @@ const TILE_SIZE_PX = 256
 /* eslint-disable jsdoc/require-jsdoc -- helper return shapes; their property names are self-describing. */
 export type HeatmapSite = { lat: number; lon: number; rangeMeters: number }
 export type CellIdHeatLayerOptions = { sites: HeatmapSite[]; radiusFraction: number; opacity: number }
-export type CellIdHeatLayerInstance = L.Layer
 /* eslint-enable jsdoc/require-jsdoc */
+
+/**
+ * A heatmap drawn over a map, and the way to take it off.
+ */
+export interface CellIdHeatLayerInstance {
+  /** Draws the heatmap over the map and keeps it aligned with the view. */
+  addTo: (map: CockpitMap) => CellIdHeatLayerInstance
+  /** Removes the heatmap and its listeners. */
+  remove: () => void
+}
 
 let cachedHeatGradientLut: Uint8ClampedArray | null = null
 const heatmapGradientLut = (): Uint8ClampedArray => {
@@ -46,99 +56,177 @@ const heatmapGradientLut = (): Uint8ClampedArray => {
   return cachedHeatGradientLut
 }
 
-const metersPerPixelAt = (mapInstance: L.Map, lat: number): number => {
+const metersPerPixelAt = (mapInstance: CockpitMap, lat: number): number => {
   const pixelsAcrossEquator = TILE_SIZE_PX * 2 ** mapInstance.getZoom()
   return (EARTH_CIRCUMFERENCE_M * Math.cos((lat * Math.PI) / 180)) / pixelsAcrossEquator
 }
 
-/* eslint-disable jsdoc/require-jsdoc -- internal layer fields, kept private to this module. */
-type CellIdHeatLayerInternal = L.Layer & {
-  _map?: L.Map
-  _canvas?: HTMLCanvasElement
-  _heatOptions: CellIdHeatLayerOptions
-  _frame?: number
-  _throttledReset?: () => void
-  _reset: () => void
-  _scheduleRedraw: () => void
-  _redraw: () => void
+/** A coordinate and the container point it was drawn at. */
+interface PanOrigin {
+  /** The coordinate. */
+  latLng: WaypointCoordinates
+  /** Where it was drawn, in container pixels. */
+  point: ScreenPoint
 }
-/* eslint-enable jsdoc/require-jsdoc */
 
-// Custom Leaflet layer that renders the OpenCellID heatmap on a single canvas, with cumulative
-// alpha → cool-to-warm color mapping. Built to replace the (uninstalled) `leaflet.heat` plugin
-// so we can keep per-cell radius, eliminate canvas-edge clipping, and apply layer opacity once
-// without it bleeding into the color ramp.
-const CellIdHeatLayer = L.Layer.extend({
-  /* eslint-disable jsdoc/require-jsdoc -- Leaflet layer prototype methods, not exported API. */
-  initialize(this: CellIdHeatLayerInternal, options: CellIdHeatLayerOptions) {
-    this._heatOptions = { ...options }
-  },
-  onAdd(this: CellIdHeatLayerInternal, mapInstance: L.Map) {
-    this._map = mapInstance
-    const canvas = L.DomUtil.create('canvas', 'leaflet-cellid-heat-layer leaflet-zoom-hide')
+/**
+ * Renders the OpenCellID heatmap on a single canvas laid over the map, with cumulative alpha mapped to a
+ * cool-to-warm color ramp. Built to replace the (uninstalled) `leaflet.heat` plugin so we can keep per-cell radius,
+ * eliminate canvas-edge clipping, and apply layer opacity once without it bleeding into the color ramp.
+ */
+class CellIdHeatLayer implements CellIdHeatLayerInstance {
+  private map?: CockpitMap
+  private canvas?: HTMLCanvasElement
+  private frame?: number
+  // Where the view center was drawn when the current move started, so a pan can slide the canvas along.
+  private panOrigin?: PanOrigin
+  private zooming = false
+  private resizeTimer?: ReturnType<typeof setTimeout>
+  private resizePending = false
+  private readonly onMoveStart = (): void => {
+    if (!this.map) return
+    const latLng = this.map.getCenter()
+    this.panOrigin = { latLng, point: this.map.project(latLng) }
+  }
+  // A pan slides the drawn heatmap along instead of redrawing it, which waits for the end of the move.
+  private readonly onMove = (): void => {
+    if (!this.map || !this.canvas || !this.panOrigin || this.zooming) return
+    const point = this.map.project(this.panOrigin.latLng)
+    this.canvas.style.transform = `translate(${point.x - this.panOrigin.point.x}px, ${
+      point.y - this.panOrigin.point.y
+    }px)`
+  }
+  // A zoom rescales every blob, so no translation keeps it aligned; it stays hidden until the move ends.
+  private readonly onZoomStart = (): void => {
+    this.zooming = true
+    if (this.canvas) this.canvas.style.visibility = 'hidden'
+  }
+  private readonly onMoveEnd = (): void => this.reset()
+  // Resets at once, then at most once per 200ms while resizes keep coming, finishing on the last one.
+  private readonly onResize = (): void => {
+    if (this.resizeTimer !== undefined) {
+      this.resizePending = true
+      return
+    }
+    this.reset()
+    const settle = (): void => {
+      this.resizeTimer = undefined
+      if (!this.resizePending) return
+      this.resizePending = false
+      this.onResize()
+    }
+    this.resizeTimer = setTimeout(settle, 200)
+  }
+
+  /**
+   * Prepares a heatmap for the given sites, drawn once it is added to a map.
+   * @param {CellIdHeatLayerOptions} options - The sites, blob size and opacity.
+   */
+  constructor(private readonly options: CellIdHeatLayerOptions) {}
+
+  /**
+   * Draws the heatmap over the map and keeps it aligned with the view.
+   * @param {CockpitMap} mapInstance - The map to draw over.
+   * @returns {this} The heatmap.
+   */
+  addTo(mapInstance: CockpitMap): this {
+    this.map = mapInstance
+    const canvas = document.createElement('canvas')
+    canvas.className = 'cockpit-cellid-heat-layer'
     canvas.style.position = 'absolute'
+    canvas.style.top = '0'
+    canvas.style.left = '0'
     canvas.style.pointerEvents = 'none'
-    canvas.style.opacity = String(this._heatOptions.opacity)
-    this._canvas = canvas
-    mapInstance.getPanes().overlayPane.appendChild(canvas)
+    canvas.style.opacity = String(this.options.opacity)
+    this.canvas = canvas
+    // Right above the map drawing and below the markers, which share its container.
+    const container = mapInstance.getCanvasContainer()
+    container.insertBefore(canvas, mapInstance.getCanvas().nextSibling)
+    mapInstance.on('movestart', this.onMoveStart)
+    mapInstance.on('move', this.onMove)
+    mapInstance.on('zoomstart', this.onZoomStart)
+    mapInstance.on('moveend', this.onMoveEnd)
     // A container resize arrives once per frame while the map widget is being dragged to a new size,
     // so that one event is throttled instead of sweeping the whole canvas on every frame.
-    this._throttledReset = L.Util.throttle(this._reset, 200, this)
-    mapInstance.on('moveend viewreset zoomend', this._reset, this)
-    mapInstance.on('resize', this._throttledReset, this)
-    this._reset()
+    mapInstance.on('resize', this.onResize)
+    this.reset()
     return this
-  },
-  onRemove(this: CellIdHeatLayerInternal, mapInstance: L.Map) {
-    if (this._frame !== undefined) {
-      cancelAnimationFrame(this._frame)
-      this._frame = undefined
+  }
+
+  /**
+   * Removes the heatmap and its listeners.
+   */
+  remove(): void {
+    if (this.frame !== undefined) {
+      cancelAnimationFrame(this.frame)
+      this.frame = undefined
     }
-    mapInstance.getPanes().overlayPane.removeChild(this._canvas!)
-    mapInstance.off('moveend viewreset zoomend', this._reset, this)
-    if (this._throttledReset) mapInstance.off('resize', this._throttledReset, this)
-    this._throttledReset = undefined
-    this._canvas = undefined
-    return this
-  },
-  _reset(this: CellIdHeatLayerInternal) {
-    if (!this._map || !this._canvas) return
-    const topLeft = this._map.containerPointToLayerPoint([0, 0])
-    L.DomUtil.setPosition(this._canvas, topLeft)
-    const size = this._map.getSize()
-    if (this._canvas.width !== size.x) this._canvas.width = size.x
-    if (this._canvas.height !== size.y) this._canvas.height = size.y
-    this._scheduleRedraw()
-  },
-  _scheduleRedraw(this: CellIdHeatLayerInternal) {
+    if (this.resizeTimer !== undefined) clearTimeout(this.resizeTimer)
+    this.resizeTimer = undefined
+    this.resizePending = false
+    this.canvas?.remove()
+    this.canvas = undefined
+    if (this.map) {
+      this.map.off('movestart', this.onMoveStart)
+      this.map.off('move', this.onMove)
+      this.map.off('zoomstart', this.onZoomStart)
+      this.map.off('moveend', this.onMoveEnd)
+      this.map.off('resize', this.onResize)
+    }
+    this.map = undefined
+  }
+
+  /**
+   * Re-fits the canvas to the map container and redraws it for the current view.
+   */
+  private reset(): void {
+    if (!this.map || !this.canvas) return
+    this.panOrigin = undefined
+    this.zooming = false
+    this.canvas.style.transform = ''
+    this.canvas.style.visibility = ''
+    const container = this.map.getContainer()
+    if (this.canvas.width !== container.clientWidth) this.canvas.width = container.clientWidth
+    if (this.canvas.height !== container.clientHeight) this.canvas.height = container.clientHeight
+    this.scheduleRedraw()
+  }
+
+  /**
+   * Queues one redraw for the next frame.
+   */
+  private scheduleRedraw(): void {
     // Coalesce the costly full-canvas getImageData/putImageData sweep to one run per frame so a
     // burst of pan/zoom events doesn't repaint every pixel multiple times in the same frame.
-    if (this._frame !== undefined) cancelAnimationFrame(this._frame)
-    this._frame = requestAnimationFrame(() => {
-      this._frame = undefined
-      this._redraw()
+    if (this.frame !== undefined) cancelAnimationFrame(this.frame)
+    this.frame = requestAnimationFrame(() => {
+      this.frame = undefined
+      this.redraw()
     })
-  },
-  _redraw(this: CellIdHeatLayerInternal) {
-    if (!this._map || !this._canvas) return
-    const ctx = this._canvas.getContext('2d')
+  }
+
+  /**
+   * Draws the heatmap for the current view.
+   */
+  private redraw(): void {
+    if (!this.map || !this.canvas) return
+    const ctx = this.canvas.getContext('2d')
     if (!ctx) return
-    const size = this._map.getSize()
+    const size = { x: this.canvas.width, y: this.canvas.height }
     ctx.clearRect(0, 0, size.x, size.y)
-    if (this._heatOptions.sites.length === 0) return
+    if (this.options.sites.length === 0) return
     // Stage 1: accumulate per-cell radial gradients on the alpha channel. Using `lighter`
     // makes overlapping cells brighten cumulatively → density per pixel.
     ctx.globalCompositeOperation = 'lighter'
-    const mpp = metersPerPixelAt(this._map, this._map.getCenter().lat)
+    const mpp = metersPerPixelAt(this.map, this.map.getCenter()[0])
     // Union of the rects the gradients cover, so stage 2 walks only those pixels: cells usually
     // occupy a fraction of the viewport, and the rest of it is transparent either way.
     let dirtyLeft = size.x
     let dirtyTop = size.y
     let dirtyRight = 0
     let dirtyBottom = 0
-    this._heatOptions.sites.forEach((site) => {
-      const center = this._map!.latLngToContainerPoint([site.lat, site.lon])
-      const radiusPx = Math.max(2, (site.rangeMeters * this._heatOptions.radiusFraction) / mpp)
+    this.options.sites.forEach((site) => {
+      const center = this.map!.project([site.lat, site.lon])
+      const radiusPx = Math.max(2, (site.rangeMeters * this.options.radiusFraction) / mpp)
       if (
         center.x + radiusPx < 0 ||
         center.x - radiusPx > size.x ||
@@ -174,19 +262,16 @@ const CellIdHeatLayer = L.Layer.extend({
       data[i + 3] = lut[lutIdx + 3]
     }
     ctx.putImageData(img, dirtyLeft, dirtyTop)
-  },
-  /* eslint-enable jsdoc/require-jsdoc */
-})
+  }
+}
 
 /**
  * Instantiate a {@link CellIdHeatLayer}.
  * @param {CellIdHeatLayerOptions} options Layer options.
- * @returns {CellIdHeatLayerInstance} Leaflet layer instance.
+ * @returns {CellIdHeatLayerInstance} The heatmap, ready to add to a map.
  */
-export const createCellIdHeatLayer = (options: CellIdHeatLayerOptions): CellIdHeatLayerInstance => {
-  const Ctor = CellIdHeatLayer as unknown as new (opts: CellIdHeatLayerOptions) => CellIdHeatLayerInstance
-  return new Ctor(options)
-}
+export const createCellIdHeatLayer = (options: CellIdHeatLayerOptions): CellIdHeatLayerInstance =>
+  new CellIdHeatLayer(options)
 
 /**
  * Resolve the heatmap radius fraction for the active config + intensity boost.
