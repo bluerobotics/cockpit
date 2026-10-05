@@ -1,5 +1,9 @@
-import L, { type LatLngTuple, type Map, type Marker, type MarkerOptions } from 'leaflet'
 import { type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
+
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import type { MapMarker } from '@/libs/map/cesium-marker'
+import { type MarkerTooltip, bindTooltip, divIconMarker } from '@/libs/map/cesium-marker'
+import type { WaypointCoordinates } from '@/types/mission'
 
 const VEHICLE_ICON_SIZE_PX = 64
 
@@ -8,78 +12,74 @@ const VEHICLE_ICON_SIZE_PX = 64
  */
 export interface UseMapVehicleMarkerOptions {
   /** The vehicle's current position, or undefined while it is unknown. */
-  position: () => LatLngTuple | undefined
-  /** Marker image representing the connected vehicle's type. */
+  position: () => WaypointCoordinates | undefined
+  /** MapMarker image representing the connected vehicle's type. */
   iconUrl: () => string
   /** Tooltip body, rebuilt whenever the telemetry behind it changes. */
   tooltipContent: () => string
   /** Vehicle heading in degrees, applied as the icon's rotation. */
   headingInDegrees: () => number
-  /** Leaflet class name for the tooltip, so each map keeps its own styling. */
+  /** Class name for the tooltip, so each map keeps its own styling. */
   tooltipClassName: string
-  /** Pane to draw the marker in; Leaflet's own marker pane when omitted. */
-  paneName?: string
-  /** CSS z-index given to `paneName`, applied only when the composable has to create that pane. */
-  paneZIndex?: string
+  /** Stacking order of the marker among the map's other markers, which otherwise stack in creation order. */
+  zIndex?: number
 }
 
 /**
  * Draws the vehicle on the given map and keeps its position, rotation and tooltip in sync, so the map
  * widget and the planning view share one copy of the marker logic instead of each keeping its own. The
  * marker appears as soon as both the map and a position exist, rather than on the next position change.
- * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; the marker appears once available.
+ * @param {ShallowRef<CockpitMap | undefined>} map - The map to draw on; the marker appears once available.
  * @param {UseMapVehicleMarkerOptions} options - Reactive getters for the position, icon, tooltip and heading.
- * @returns {ShallowRef<Marker | undefined>} The marker, undefined until the map and a position exist.
+ * @returns {ShallowRef<MapMarker | undefined>} The marker, undefined until the map and a position exist.
  */
 export const useMapVehicleMarker = (
-  map: ShallowRef<Map | undefined>,
+  map: ShallowRef<CockpitMap | undefined>,
   options: UseMapVehicleMarkerOptions
-): ShallowRef<Marker | undefined> => {
-  const marker = shallowRef<Marker>()
+): ShallowRef<MapMarker | undefined> => {
+  const marker = shallowRef<MapMarker>()
+  let tooltip: MarkerTooltip | undefined
 
   const applyTooltipAndRotation = (content: string, headingInDegrees: number): void => {
     if (!marker.value) return
 
-    marker.value.getTooltip()?.setContent(content)
+    tooltip?.setContent(content)
 
-    const iconElement = marker.value.getElement()?.querySelector('img')
+    const iconElement = marker.value.getElement().querySelector('img')
     if (iconElement) iconElement.style.transform = `rotate(${headingInDegrees}deg)`
   }
 
-  const create = (position: LatLngTuple): void => {
+  const create = (position: WaypointCoordinates): void => {
     if (!map.value) return
 
-    const markerOptions: MarkerOptions = {
-      icon: L.divIcon({
-        className: 'vehicle-marker',
-        html: `<img src="${options.iconUrl()}" style="width: ${VEHICLE_ICON_SIZE_PX}px; height: ${VEHICLE_ICON_SIZE_PX}px;">`,
-        iconSize: [VEHICLE_ICON_SIZE_PX, VEHICLE_ICON_SIZE_PX],
-        iconAnchor: [VEHICLE_ICON_SIZE_PX / 2, VEHICLE_ICON_SIZE_PX / 2],
-      }),
-    }
+    marker.value = divIconMarker({
+      className: 'vehicle-marker',
+      html: `<img src="${options.iconUrl()}" style="width: ${VEHICLE_ICON_SIZE_PX}px; height: ${VEHICLE_ICON_SIZE_PX}px;">`,
+      size: [VEHICLE_ICON_SIZE_PX, VEHICLE_ICON_SIZE_PX],
+    })
+    if (options.zIndex !== undefined) marker.value.getElement().style.zIndex = String(options.zIndex)
+    marker.value.setLatLng(position).addTo(map.value)
+    tooltip = bindTooltip(map.value, marker.value, 'No data available', {
+      className: options.tooltipClassName,
+      offset: [40, 0],
+    })
+  }
 
-    // Leaflet copies every own key of the options object, so a `pane: undefined` would replace its default
-    // marker pane and leave the icon with nowhere to attach.
-    if (options.paneName) {
-      if (!map.value.getPane(options.paneName)) {
-        const pane = map.value.createPane(options.paneName)
-        if (options.paneZIndex) pane.style.zIndex = options.paneZIndex
-      }
-      markerOptions.pane = options.paneName
-    }
-
-    marker.value = L.marker(position, markerOptions)
-    marker.value.bindTooltip(
-      L.tooltip({ content: 'No data available', className: options.tooltipClassName, offset: [40, 0] })
-    )
-    map.value.addLayer(marker.value)
+  const remove = (): void => {
+    tooltip?.remove()
+    tooltip = undefined
+    marker.value?.remove()
+    marker.value = undefined
   }
 
   // Driven by the map as well as the position, and immediate, so a vehicle that is already connected and
   // holding station gets its marker on mount instead of waiting for its coordinates to change.
   watch(
     [() => options.position(), map],
-    () => {
+    ([, instance], [, previousInstance]) => {
+      // A marker belongs to the map it was added to, so a replaced map gets a new one.
+      if (previousInstance && instance !== previousInstance) remove()
+
       const position = options.position()
       if (!map.value || !position) return
 
@@ -99,10 +99,7 @@ export const useMapVehicleMarker = (
     applyTooltipAndRotation(content, heading)
   )
 
-  onBeforeUnmount(() => {
-    if (marker.value && map.value) map.value.removeLayer(marker.value)
-    marker.value = undefined
-  })
+  onBeforeUnmount(remove)
 
   return marker
 }
