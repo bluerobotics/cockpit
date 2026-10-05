@@ -3,12 +3,14 @@ import { onBeforeUnmount } from 'vue'
 import { z } from 'zod'
 
 import { type McpTool, defineMcpTool, libMcpTools, mcpToolDefinition } from '@/libs/mcp/tools'
+import { externalPoiIdSchema, externalPoiSchema, externalPoiUpdateSchema } from '@/libs/poi/external-api'
 import { isElectron } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { McpToolCall } from '@/types/mcp'
 import { type Widget, WidgetType } from '@/types/widgets'
 
 import { openSnackbar } from './snackbar'
+import { usePointsOfInterest } from './usePointsOfInterest'
 
 const errorMessage = (error: unknown): string => {
   if (error instanceof z.ZodError) return z.prettifyError(error)
@@ -155,6 +157,62 @@ const widgetTools = (): McpTool[] => {
   ]
 }
 
+const poiTools = (): McpTool[] => {
+  const { pointsOfInterest, applyExternalPoiCommand } = usePointsOfInterest()
+
+  return [
+    defineMcpTool({
+      name: 'list_points_of_interest',
+      title: 'List points of interest',
+      description:
+        'List the points of interest on the map. A string latitude, longitude or heading is a live data-lake ' +
+        'expression rather than a fixed value.',
+      readOnly: true,
+      runsCode: false,
+      input: z.object({}),
+      run: () => pointsOfInterest.value,
+    }),
+    defineMcpTool({
+      name: 'add_point_of_interest',
+      title: 'Add point of interest',
+      description: 'Add a point of interest to the map, under an id you choose to update or remove it later.',
+      readOnly: false,
+      runsCode: false,
+      input: externalPoiSchema,
+      run: (poi) => {
+        applyExternalPoiCommand({ type: 'cockpit:addPointOfInterest', poi })
+        return { added: poi.id }
+      },
+    }),
+    defineMcpTool({
+      name: 'update_point_of_interest',
+      title: 'Update point of interest',
+      description:
+        'Change the given fields of a point of interest, leaving the others as they are. Latitude and longitude ' +
+        'are sent together, and replace any live expression with a fixed position.',
+      readOnly: false,
+      runsCode: false,
+      input: externalPoiUpdateSchema,
+      run: (poi) => {
+        applyExternalPoiCommand({ type: 'cockpit:updatePointOfInterest', poi })
+        return { updated: poi.id }
+      },
+    }),
+    defineMcpTool({
+      name: 'remove_point_of_interest',
+      title: 'Remove point of interest',
+      description: 'Remove a point of interest from the map.',
+      readOnly: false,
+      runsCode: false,
+      input: z.object({ id: externalPoiIdSchema }),
+      run: ({ id }) => {
+        applyExternalPoiCommand({ type: 'cockpit:removePointOfInterest', id })
+        return { removed: id }
+      },
+    }),
+  ]
+}
+
 /**
  * Offer Cockpit's tools to agents through the MCP server that the Electron main process runs
  */
@@ -162,7 +220,7 @@ export const useMcpBridge = (): void => {
   const api = window.electronAPI
   if (!isElectron() || api === undefined) return
 
-  const tools: McpTool[] = [...libMcpTools, ...widgetTools()]
+  const tools: McpTool[] = [...libMcpTools, ...widgetTools(), ...poiTools()]
 
   const handleCall = async ({ callId, name, args }: McpToolCall): Promise<void> => {
     const tool = tools.find((t) => t.name === name)
