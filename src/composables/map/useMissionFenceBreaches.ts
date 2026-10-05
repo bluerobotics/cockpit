@@ -1,10 +1,10 @@
 import { watchDebounced } from '@vueuse/core'
-import type { Map } from 'leaflet'
 import { type ComputedRef, type Ref, type ShallowRef, computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { closeSnackbar, openSnackbar } from '@/composables/snackbar'
 import type { BreachReason, MissionBreachReport, MissionFenceBreachReports } from '@/libs/geo-fence'
-import { fitMapToWaypoints, isLeafletMapReady } from '@/libs/map/utils-map'
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import { fitMapToWaypoints, isMapReady } from '@/libs/map/utils-map'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
@@ -46,12 +46,12 @@ export interface UseMissionFenceBreachesReturn {
 /**
  * Keeps a mission checked against the geofences that apply to it, telling the caller which
  * waypoints breach which fence and why, and warning the operator while any of them does.
- * @param {ShallowRef<Map | undefined>} map - The Leaflet map the breaching waypoints are framed on.
+ * @param {ShallowRef<CockpitMap | undefined>} map - The map the breaching waypoints are framed on.
  * @param {UseMissionFenceBreachesOptions} options - The waypoints to check and the marker refresher.
  * @returns {UseMissionFenceBreachesReturn} The reports, the breach count, the per-waypoint reason and the helpers.
  */
 export const useMissionFenceBreaches = (
-  map: ShallowRef<Map | undefined>,
+  map: ShallowRef<CockpitMap | undefined>,
   options: UseMissionFenceBreachesOptions
 ): UseMissionFenceBreachesReturn => {
   const fenceStore = useGeoFenceStore()
@@ -98,8 +98,8 @@ export const useMissionFenceBreaches = (
   const focusBreaches = (): void => {
     logUserAction('Focused the map on the waypoints breaching the geofence')
     const coordinates = breachedCoordinates()
-    if (!isLeafletMapReady(map.value)) return
-    fitMapToWaypoints(map.value, coordinates, { padding: [80, 80], maxZoom: 18 })
+    if (!isMapReady(map.value)) return
+    fitMapToWaypoints(map.value, coordinates, { padding: 80, maxZoom: 18 })
   }
 
   const recheck = (): void => {

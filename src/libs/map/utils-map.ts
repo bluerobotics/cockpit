@@ -1,7 +1,7 @@
 import * as turf from '@turf/turf'
 import type { Feature, Point, Polygon, Position } from 'geojson'
 
-import { type CockpitMap, type MapPointerEvent, boundsOf } from '@/libs/map/cesium-map'
+import { type CockpitMap, type FitBoundsOptions, type MapPointerEvent, boundsOf } from '@/libs/map/cesium-map'
 import { lineFeature } from '@/libs/map/cesium-vectors'
 import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import {
@@ -371,14 +371,19 @@ export const recenterMapOnFollowTarget = (
  * are visible at once. Coordinates with invalid lat/lng values are ignored.
  * @param {CockpitMap} map - Map instance to adjust.
  * @param {WaypointCoordinates[]} coordinates - List of `[latitude, longitude]` tuples to fit.
+ * @param {FitBoundsOptions} [options] - Overrides for the default padding, zoom limit and animation.
  * @returns {boolean} `true` if the map view was adjusted, `false` if there were no valid
  *   coordinates to fit.
  */
-export const fitMapToWaypoints = (map: CockpitMap, coordinates: WaypointCoordinates[]): boolean => {
+export const fitMapToWaypoints = (
+  map: CockpitMap,
+  coordinates: WaypointCoordinates[],
+  options?: FitBoundsOptions
+): boolean => {
   const validCoordinates = coordinates.filter(isFiniteLatLng)
   if (validCoordinates.length === 0) return false
 
-  map.fitBounds(boundsOf(validCoordinates), { padding: 20, maxZoom: 22, animate: true })
+  map.fitBounds(boundsOf(validCoordinates), { padding: 20, maxZoom: 22, animate: true, ...options })
   return true
 }
 
