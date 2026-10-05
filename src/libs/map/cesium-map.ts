@@ -1,5 +1,6 @@
 import {
   type Entity,
+  type ImageryProvider,
   CameraEventType,
   Cartesian2,
   Cartesian3,
@@ -8,6 +9,7 @@ import {
   Color,
   Ellipsoid,
   EllipsoidTerrainProvider,
+  ImageryLayer,
   MapMode2D,
   Math as CesiumMath,
   SceneMode,
@@ -157,6 +159,7 @@ export type MapViewEventType =
   | 'drag'
   | 'dragend'
   | 'resize'
+  | 'layers'
   | 'remove'
 
 /** A feature of a vector layer, as a layer-scoped event reports it. */
@@ -251,12 +254,38 @@ export interface CreateMapOptions {
   rotatable?: boolean
 }
 
+/** Options for {@link CockpitMap.addImagery}. */
+export interface ImageryOptions {
+  /** Whether the layer starts visible. */
+  visible?: boolean
+  /** Opacity, from 0 to 1. */
+  opacity?: number
+  /** Shallowest tile-scale zoom the layer shows at. */
+  minZoom?: number
+  /** Deepest tile-scale zoom the layer shows at. */
+  maxZoom?: number
+  /** Attribution shown while the layer is visible. */
+  attribution?: string
+}
+
 /**
  * Scene settings Cesium reads but leaves out of its typings.
  */
 interface SceneInternals {
   /** How long, in milliseconds, the camera has to stay still before `moveEnd` is raised. */
   cameraEventWaitTime: number
+}
+
+/**
+ * Imagery drawn on the map, with what is needed to rebuild it with another provider.
+ */
+interface ImageryEntry {
+  /** The Cesium layer drawing the imagery. */
+  layer: ImageryLayer
+  /** The slot it stacks in. */
+  slot: MapLayerSlot
+  /** How it was added, kept to rebuild it with another provider. */
+  options: ImageryOptions
 }
 
 /** A corner of the map where controls stack. */
@@ -298,6 +327,7 @@ export class CockpitMap {
   private readonly viewHandlers = new Map<MapViewEventType, Set<ViewHandler>>()
   private readonly entityFeatures = new WeakMap<Entity, MapFeature>()
   private readonly controlCorners = new Map<MapControlCorner, HTMLElement>()
+  private readonly imagery = new Map<string, ImageryEntry>()
   private readonly cleanups: (() => void)[] = []
   private hoveredLayers = new Set<string>()
   private hoverFrame: number | undefined
@@ -757,6 +787,126 @@ export class CockpitMap {
     return this.zooming
   }
 
+  // ---- Imagery ----
+
+  /**
+   * Draws raster imagery in a stacking slot, above the imagery of lower slots and of the same slot added earlier.
+   * @param {string} id - An id unique within the map.
+   * @param {MapLayerSlot} slot - The stacking slot.
+   * @param {ImageryProvider} provider - Where the imagery comes from.
+   * @param {ImageryOptions} [options] - Visibility, opacity, zoom range and attribution.
+   */
+  addImagery(id: string, slot: MapLayerSlot, provider: ImageryProvider, options: ImageryOptions = {}): void {
+    if (this.imagery.has(id)) return
+    const layer = new ImageryLayer(provider, {
+      show: options.visible ?? true,
+      alpha: options.opacity ?? 1,
+      minimumTerrainLevel: options.minZoom,
+      maximumTerrainLevel: options.maxZoom,
+    })
+    const slotIndex = mapLayerSlots.indexOf(slot)
+    const below = [...this.imagery.values()].filter((entry) => mapLayerSlots.indexOf(entry.slot) <= slotIndex).length
+    this.widget.imageryLayers.add(layer, below)
+    this.imagery.set(id, { layer, slot, options })
+    this.imageryChanged()
+  }
+
+  /**
+   * Swaps the provider of imagery added with {@link addImagery}, keeping its place, visibility and opacity. This is
+   * how its tiles are reloaded after their loading options changed.
+   * @param {string} id - The imagery id.
+   * @param {ImageryProvider} provider - The new provider.
+   */
+  setImageryProvider(id: string, provider: ImageryProvider): void {
+    const entry = this.imagery.get(id)
+    if (!entry) return
+    const index = this.widget.imageryLayers.indexOf(entry.layer)
+    const layer = new ImageryLayer(provider, {
+      show: entry.layer.show,
+      alpha: entry.layer.alpha,
+      minimumTerrainLevel: entry.options.minZoom,
+      maximumTerrainLevel: entry.options.maxZoom,
+    })
+    this.widget.imageryLayers.remove(entry.layer, true)
+    this.widget.imageryLayers.add(layer, index)
+    entry.layer = layer
+    this.imageryChanged()
+  }
+
+  /**
+   * Shows or hides imagery added with {@link addImagery}.
+   * @param {string} id - The imagery id.
+   * @param {boolean} visible - Whether to show it.
+   */
+  setImageryVisible(id: string, visible: boolean): void {
+    const entry = this.imagery.get(id)
+    if (!entry || entry.layer.show === visible) return
+    entry.layer.show = visible
+    this.imageryChanged()
+  }
+
+  /**
+   * Whether imagery added with {@link addImagery} is shown.
+   * @param {string} id - The imagery id.
+   * @returns {boolean} True when it exists and is visible.
+   */
+  isImageryVisible(id: string): boolean {
+    return this.imagery.get(id)?.layer.show ?? false
+  }
+
+  /**
+   * Changes the opacity of imagery added with {@link addImagery}.
+   * @param {string} id - The imagery id.
+   * @param {number} opacity - Opacity, from 0 to 1.
+   */
+  setImageryOpacity(id: string, opacity: number): void {
+    const entry = this.imagery.get(id)
+    if (!entry) return
+    entry.layer.alpha = opacity
+    this.requestRender()
+  }
+
+  /**
+   * Whether imagery with an id is on the map.
+   * @param {string} id - The imagery id.
+   * @returns {boolean} True when it was added and not removed.
+   */
+  hasImagery(id: string): boolean {
+    return this.imagery.has(id)
+  }
+
+  /**
+   * Removes imagery added with {@link addImagery}, if it is still there.
+   * @param {string} id - The imagery id.
+   */
+  removeImagery(id: string): void {
+    const entry = this.imagery.get(id)
+    if (!entry) return
+    this.imagery.delete(id)
+    if (!this.removed) this.widget.imageryLayers.remove(entry.layer, true)
+    this.imageryChanged()
+  }
+
+  /**
+   * Attributions of the imagery currently shown, in stacking order from the bottom.
+   * @returns {string[]} The attribution strings, without repeats.
+   */
+  visibleAttributions(): string[] {
+    const attributions = [...this.imagery.values()]
+      .filter((entry) => entry.layer.show && entry.options.attribution)
+      .sort((a, b) => this.widget.imageryLayers.indexOf(a.layer) - this.widget.imageryLayers.indexOf(b.layer))
+      .map((entry) => entry.options.attribution as string)
+    return [...new Set(attributions)]
+  }
+
+  /**
+   * Redraws after the imagery changed and tells listeners, such as the attribution control.
+   */
+  private imageryChanged(): void {
+    this.requestRender()
+    this.fireView({ type: 'layers' })
+  }
+
   // ---- Features, for layer-scoped events ----
 
   /**
@@ -878,6 +1028,7 @@ export class CockpitMap {
       'drag',
       'dragend',
       'resize',
+      'layers',
       'remove',
     ].includes(type)
   }
