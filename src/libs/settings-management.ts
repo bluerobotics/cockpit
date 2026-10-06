@@ -216,6 +216,7 @@ export class SettingsManager {
     this.vehicle = vehicle || new BlueOSVehicleAdapter()
     console.log('[SettingsManager]', 'Initializing settings manager.')
     this.initLocalSettings()
+    this.lastLocalUserVehicleSettings = { ...this.getSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId) }
     this.initialLoadingComplete = true
     console.log('[SettingsManager]', 'Settings manager initialized.')
   }
@@ -1314,7 +1315,6 @@ export class SettingsManager {
     console.log('[SettingsManager]', 'Handling storage change!')
     // Invalidate cache to force reload from localStorage
     this.cachedSettings = null
-    const newSettings = this.getLocalSettings()
     const userVehicleSettings = this.getSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId)
     if (isEqual(this.lastLocalUserVehicleSettings, userVehicleSettings)) {
       console.log('[SettingsManager]', 'No changes in local settings. Skipping.')
@@ -1322,11 +1322,7 @@ export class SettingsManager {
     }
 
     console.log('[SettingsManager]', 'Local settings changed externally!')
-    Object.keys(newSettings).forEach((key) => {
-      if (userVehicleSettings[key] !== this.lastLocalUserVehicleSettings[key]) {
-        this.notifyListenersAboutKeyChange(key, userVehicleSettings[key])
-      }
-    })
+    this.notifyAllListenersAboutSettingsChange()
 
     if (this.hasVehicleAddress()) {
       this.pushSettingsToVehicleUpdateQueue(
