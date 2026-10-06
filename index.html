@@ -37,6 +37,7 @@
             align-items: center;
             justify-content: center;
             gap: 2.5rem;
+            user-select: none;
         }
 
         #loading-logo {
@@ -62,7 +63,7 @@
 <body>
     <div id="non-app-main">
         <div id="loading-screen">
-            <img src="/cockpit-name-logo.png" alt="Cockpit" id="loading-logo" style="margin-right: 2rem;"/>
+            <img src="/cockpit-name-logo.png" alt="Cockpit" id="loading-logo" draggable="false" style="margin-right: 2rem;"/>
             <div id="loading-spinner" style="margin-left: 2rem;"></div>
         </div>
     </div>
