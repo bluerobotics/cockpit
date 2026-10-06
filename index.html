@@ -37,6 +37,9 @@
             align-items: center;
             justify-content: center;
             gap: 2.5rem;
+            -webkit-user-select: none;
+               -moz-user-select: none;
+                    user-select: none;
         }
 
         #loading-logo {
@@ -57,14 +60,14 @@
             to { transform: rotate(360deg); }
         }
     </style>
-  <script type="module" crossorigin src="./assets/index-Cw4XtvfT.js"></script>
+  <script type="module" crossorigin src="./assets/index-BMuJdHx_.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-C9smVY93.css">
 <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body>
     <div id="non-app-main">
         <div id="loading-screen">
-            <img src="./cockpit-name-logo.png" alt="Cockpit" id="loading-logo" style="margin-right: 2rem;"/>
+            <img src="./cockpit-name-logo.png" alt="Cockpit" id="loading-logo" draggable="false" style="margin-right: 2rem;"/>
             <div id="loading-spinner" style="margin-left: 2rem;"></div>
         </div>
     </div>
