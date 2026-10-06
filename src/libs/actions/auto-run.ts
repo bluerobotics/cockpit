@@ -34,6 +34,7 @@ const intervalTimers: Record<string, number> = {}
 export function getAllAutoRunConfigs(): AutoRunStorage {
   const storedConfig = settingsManager.getKeyValue(STORAGE_KEY)
   if (storedConfig === undefined) return {}
+  if (typeof storedConfig === 'string') return JSON.parse(storedConfig) as AutoRunStorage
   return storedConfig as AutoRunStorage
 }
 
@@ -82,7 +83,7 @@ export function removeAutoRunConfig(actionId: string): void {
   const allConfigs = getAllAutoRunConfigs()
   if (allConfigs[actionId]) {
     delete allConfigs[actionId]
-    settingsManager.setKeyValue(STORAGE_KEY, JSON.stringify(allConfigs))
+    settingsManager.setKeyValue(STORAGE_KEY, allConfigs)
   }
 
   // Clear any existing interval timer
