@@ -56,6 +56,9 @@ const stateCheckInterval = 50 // ms
  */
 export function loadSDL(): SDLModule {
   try {
+    // SDL is only here for joysticks, and its Cocoa video driver drains the macOS event queue on every poll,
+    // which can leave the window ignoring single clicks until Cockpit is restarted.
+    process.env.SDL_VIDEODRIVER = 'dummy'
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const module = require('@kmamal/sdl')
 
