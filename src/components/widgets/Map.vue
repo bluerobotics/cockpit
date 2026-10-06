@@ -89,7 +89,16 @@
         :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
         @center-on-mission="centerOnMission"
       />
-      <MapNorthIndicator v-if="showButtons" class="north-indicator" />
+      <button
+        v-if="showButtons"
+        type="button"
+        class="north-indicator"
+        aria-label="Reset the map to north-up and flat"
+        title="Reset the map to north-up and flat"
+        @click="resetMapOrientation"
+      >
+        <MapNorthIndicator :style="{ transform: `rotateX(${mapPitch}deg) rotate(${-mapBearing}deg)` }" />
+      </button>
       <PoiMapArrows
         :map-ready="mapReady"
         :show-poi-arrows="widget.options.showPoiArrows"
@@ -314,6 +323,7 @@ import { type MapControl, scaleControl, zoomControl } from '@/libs/map/cesium-co
 import { type CockpitMap, type MapPointerEvent, createMap } from '@/libs/map/cesium-map'
 import { type MapMarker, type MarkerTooltip, bindTooltip, divIconMarker, setDivIcon } from '@/libs/map/cesium-marker'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
+import { type RightClickGate, rightClickGate } from '@/libs/map/right-click'
 import {
   applyFollowZoomMode,
   createGridOverlay,
@@ -682,6 +692,15 @@ const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
 
 let stopUnFollowOnUserDrag: (() => void) | undefined
+let rightClick: RightClickGate | undefined
+
+// The north indicator turns and leans with the map, and puts it back north-up and flat when clicked.
+const mapBearing = ref(0)
+const mapPitch = ref(0)
+const resetMapOrientation = (): void => {
+  map.value?.resetNorthPitch()
+  logUserAction('Reset the map to north-up and flat')
+}
 
 // Show buttons when the mouse is over the widget
 const mapBase = ref<HTMLElement>()
@@ -774,8 +793,9 @@ onMounted(() => {
 
   mapBase.value?.addEventListener('touchstart', onTouchStart, { passive: true })
   mapBase.value?.addEventListener('touchend', onTouchEnd, { passive: true })
+  if (mapBase.value) rightClick = rightClickGate(mapBase.value)
   if (!mapContainer.value) return
-  const instance = createMap(mapContainer.value, { center: mapCenter.value, zoom: zoom.value })
+  const instance = createMap(mapContainer.value, { center: mapCenter.value, zoom: zoom.value, tiltable: true })
   mapInstance = instance
   observeMapResize(instance)
   // The map is published to everything that draws once its first frame is up, so layers never land on a map still being built.
@@ -785,6 +805,10 @@ onMounted(() => {
 const onMapLoaded = async (instance: CockpitMap): Promise<void> => {
   if (mapInstance !== instance) return
   map.value = instance
+  instance.on('move', () => {
+    mapBearing.value = instance.getBearing()
+    mapPitch.value = instance.getPitch()
+  })
 
   // Expose the map instance to descendant components via the map context
   mapContext.map.value = instance
@@ -897,18 +921,24 @@ watch(
   () => missionStore.mapOverlayFocusRequest.revision,
   () => mapOverlays.zoomToOverlay(missionStore.mapOverlayFocusRequest.id)
 )
+const openMapContextMenu = async (event: MouseEvent): Promise<void> => {
+  if (!map.value) return
+  poiPopupRef.value?.close()
+
+  const point = map.value.pointFromClient(event)
+  clickedLocation.value = map.value.unproject({ x: point.x, y: point.y })
+
+  await openContextMenuAt(event, null)
+}
+
 const handleContextMenu = {
-  open: async (event: MouseEvent): Promise<void> => {
+  open: (event: MouseEvent): void => {
     if (!map.value || isPinching.value || isDragging.value || isBoxPress.value) return
     event.preventDefault()
     event.stopPropagation()
 
-    poiPopupRef.value?.close()
-
-    const point = map.value.pointFromClient(event)
-    clickedLocation.value = map.value.unproject({ x: point.x, y: point.y })
-
-    await openContextMenuAt(event, null)
+    // A right drag turns the map, so the menu waits to tell it from a right click.
+    rightClick?.whenClick(event, () => void openMapContextMenu(event))
   },
   close: () => hideContextMenuAndMarker(),
 }
@@ -1065,6 +1095,7 @@ onBeforeUnmount(() => {
 
   targetFollower.disableAutoUpdate()
   stopUnFollowOnUserDrag?.()
+  rightClick?.dispose()
   window.removeEventListener('keydown', onKeydown)
 
   mapOverlays.destroyOverlays()

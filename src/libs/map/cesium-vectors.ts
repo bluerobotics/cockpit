@@ -232,6 +232,7 @@ export class VectorLayer {
   private stripeZoom: number | undefined
   private dashedLines: { /** The dashed line. */ line: Polyline; /** Its pixel pattern. */ pattern: number[] }[] = []
   private dashTravelled = 0
+  private drawnHeightScale = 1
 
   /**
    * Creates the layer's primitives in a scene.
@@ -243,6 +244,8 @@ export class VectorLayer {
    * @param {(key: object, feature: MapFeature) => void} register - Records what each picked primitive belongs to.
    * @param {() => number} zoom - The map's current zoom, which sizes stripes in pixels.
    * @param {() => number} metersPerPixel - Ground meters per pixel at the map center, for the same purpose.
+   * @param {() => number} heightScale - Multiplier on the stacking heights, which a tilted map keeps below a pixel so
+   *   the layers do not visibly float.
    */
   constructor(
     private readonly scene: Scene,
@@ -251,7 +254,8 @@ export class VectorLayer {
     readonly lift: number,
     private readonly register: (key: object, feature: MapFeature) => void,
     private readonly zoom: () => number,
-    private readonly metersPerPixel: () => number
+    private readonly metersPerPixel: () => number,
+    private readonly heightScale: () => number = () => 1
   ) {
     scene.primitives.add(this.polylines)
     scene.primitives.add(this.points)
@@ -306,11 +310,13 @@ export class VectorLayer {
   }
 
   /**
-   * Redraws striped areas when the zoom changed enough for their stripes to drift from their pixel spacing.
+   * Redraws when the zoom changed enough for striped areas to drift from their pixel spacing, or for the stacking
+   * heights to drift from their scale.
    */
   refreshForZoom(): void {
-    if (this.stripeZoom === undefined || Math.abs(this.zoom() - this.stripeZoom) < 0.05) return
-    this.redraw()
+    const stripesDrifted = this.stripeZoom !== undefined && Math.abs(this.zoom() - this.stripeZoom) >= 0.05
+    const heightsDrifted = Math.abs(this.heightScale() / this.drawnHeightScale - 1) > 0.5
+    if (stripesDrifted || heightsDrifted) this.redraw()
   }
 
   /**
@@ -334,7 +340,8 @@ export class VectorLayer {
    * Rebuilds the primitives from the current features.
    */
   private redraw(): void {
-    const height = slotHeight(this.slot) + this.lift
+    const scale = (this.drawnHeightScale = this.heightScale())
+    const height = (slotHeight(this.slot) + this.lift) * scale
     const visible = this.isVisible()
     const factor = this.opacityFactor
     this.polylines.removeAll()
@@ -354,7 +361,7 @@ export class VectorLayer {
         const pattern = style.dashPattern
         const line = this.polylines.add({
           id: key,
-          positions: feature.coordinates.map((coordinates) => toCartesian(coordinates, height + lineLift)),
+          positions: feature.coordinates.map((coordinates) => toCartesian(coordinates, height + lineLift * scale)),
           width: style.width ?? defaultLineWidth,
           material: pattern
             ? Material.fromType('PolylineDash', {
@@ -369,7 +376,7 @@ export class VectorLayer {
         const { style } = feature
         this.points.add({
           id: key,
-          position: toCartesian(feature.coordinates, height + pointLift),
+          position: toCartesian(feature.coordinates, height + pointLift * scale),
           pixelSize: style.radius * 2,
           color: cssColor(style.fillColor, (style.fillOpacity ?? 1) * factor),
           outlineColor: cssColor(style.color ?? style.fillColor, (style.opacity ?? 1) * factor),

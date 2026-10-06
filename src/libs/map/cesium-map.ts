@@ -1,5 +1,6 @@
 import {
   type ImageryProvider,
+  type PerspectiveFrustum,
   CameraEventType,
   Cartesian2,
   Cartesian3,
@@ -9,6 +10,7 @@ import {
   Ellipsoid,
   EllipsoidTerrainProvider,
   ImageryLayer,
+  KeyboardEventModifier,
   MapMode2D,
   Math as CesiumMath,
   SceneMode,
@@ -225,6 +227,8 @@ export interface CreateMapOptions {
   attribution?: boolean
   /** Whether the map can turn, for maps that follow a heading. Others stay north-up. */
   rotatable?: boolean
+  /** Whether the user can rotate and tilt the map. Others stay north-up and flat. */
+  tiltable?: boolean
 }
 
 /** Options for {@link CockpitMap.addImagery}. */
@@ -261,6 +265,14 @@ interface ImageryEntry {
   options: ImageryOptions
 }
 
+/** Where a tilted camera looks. */
+interface TiltedCenter {
+  /** The `[latitude, longitude]` at the center of the canvas. */
+  center: WaypointCoordinates
+  /** The camera's distance to it, in Columbus view meters. */
+  distance: number
+}
+
 /** A corner of the map where controls stack. */
 export type MapControlCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
@@ -274,6 +286,10 @@ const moveEndWaitSeconds = 0.05
 const wheelPixelsPerZoomLevel = 100
 // Wheel events at least this large are mouse notches, which step one level, rather than a trackpad's trickle.
 const wheelNotchPixels = 40
+// How far a tiltable map leans from straight down, at most, as MapLibre allows.
+const maximumTiltDegrees = 60
+// Stacking height, per meter of slot height, in pixels of a tilted map: the top slot rises well under a pixel.
+const tiltedHeightPixelsPerMeter = 0.005
 
 const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3
 
@@ -321,6 +337,8 @@ export class CockpitMap {
   private keyboardEnabled = true
   private boxZoomEnabled = true
   private removed = false
+  private readonly tiltable: boolean
+  private heldContextMenu: MouseEvent | undefined
 
   /**
    * Creates the map in a container and moves it to its initial view.
@@ -330,9 +348,11 @@ export class CockpitMap {
   constructor(readonly container: HTMLElement, options: CreateMapOptions) {
     container.classList.add('cockpit-map')
     container.tabIndex = 0
+    this.tiltable = options.tiltable ?? false
     const creditContainer = document.createElement('div')
     this.widget = new CesiumWidget(container, {
-      sceneMode: SceneMode.SCENE2D,
+      // Columbus view is the same flat Web Mercator map, seen through a camera that can lean.
+      sceneMode: this.tiltable ? SceneMode.COLUMBUS_VIEW : SceneMode.SCENE2D,
       mapProjection: projection,
       mapMode2D: options.rotatable ? MapMode2D.ROTATE : MapMode2D.INFINITE_SCROLL,
       baseLayer: false,
@@ -361,10 +381,18 @@ export class CockpitMap {
     this.buildControlCorners()
 
     const controller = scene.screenSpaceCameraController
-    controller.enableTilt = false
+    controller.enableTilt = this.tiltable
     controller.enableLook = false
     controller.translateEventTypes = CameraEventType.LEFT_DRAG
-    controller.tiltEventTypes = []
+    // Right or Ctrl+left drag turns and leans the map as in MapLibre; the middle button is the zoom box's.
+    controller.tiltEventTypes = this.tiltable
+      ? [
+          CameraEventType.RIGHT_DRAG,
+          { eventType: CameraEventType.LEFT_DRAG, modifier: KeyboardEventModifier.CTRL },
+          CameraEventType.PINCH,
+        ]
+      : []
+    controller.maximumTiltAngle = CesiumMath.toRadians(maximumTiltDegrees)
     controller.lookEventTypes = []
     controller.rotateEventTypes = []
     // Zooming stops when the input stops, as it did with Leaflet; a glide after the wheel reads as a correction.
@@ -499,12 +527,63 @@ export class CockpitMap {
   }
 
   /**
-   * Width of the 2D camera's view, in Web Mercator meters.
+   * Width of the view at the map center, in Web Mercator meters: the 2D camera's frustum width, or what the canvas
+   * width spans at the ground point a tilted camera looks at.
    * @returns {number} The frustum width.
    */
   private frustumWidth(): number {
+    if (this.tiltable) return this.tiltedCenter().distance / this.rangePerFrustumWidth()
     const frustum = this.widget.camera.frustum as unknown as Record<'left' | 'right', number>
     return frustum.right - frustum.left
+  }
+
+  /**
+   * Distance from a tilted camera to the ground it looks at, per Web Mercator meter of view width at that point.
+   * @returns {number} The ratio.
+   */
+  private rangePerFrustumWidth(): number {
+    const fovy = (this.widget.camera.frustum as PerspectiveFrustum).fovy ?? CesiumMath.PI_OVER_THREE
+    return this.canvasHeight() / (2 * Math.tan(fovy / 2) * this.canvasWidth())
+  }
+
+  /**
+   * Where a tilted camera's line of sight meets the ground. Columbus view's world frame holds the height in `x` and the
+   * Web Mercator easting and northing in `y` and `z`.
+   * @returns {TiltedCenter} The coordinate there and the camera's distance to it.
+   */
+  private tiltedCenter(): TiltedCenter {
+    const camera = this.widget.camera
+    const ray = camera.getPickRay(new Cartesian2(this.canvasWidth() / 2, this.canvasHeight() / 2))
+    const origin = ray?.origin ?? camera.position
+    // Leaning is capped well short of the horizon, so the line of sight always comes down; this only guards the math.
+    const distance = ray && ray.direction.x < -1e-9 ? -origin.x / ray.direction.x : Math.max(origin.x, 1)
+    const easting = ray ? origin.y + ray.direction.y * distance : origin.y
+    const northing = ray ? origin.z + ray.direction.z * distance : origin.z
+    return { center: fromMercator(easting, northing), distance }
+  }
+
+  /**
+   * Puts a tilted camera over a view.
+   * @param {WaypointCoordinates} center - The coordinate to look at.
+   * @param {number} zoom - The tile-scale zoom at that point.
+   * @param {number} heading - Radians clockwise from north.
+   * @param {number} pitch - Radians from the horizontal, negative looking down.
+   */
+  private applyTiltedView(center: WaypointCoordinates, zoom: number, heading: number, pitch: number): void {
+    const range = frustumWidthForZoom(this.clampZoom(zoom), this.canvasWidth()) * this.rangePerFrustumWidth()
+    const target = toMercator(center)
+    const behind = range * Math.cos(pitch)
+    // Given in Web Mercator meters, since a zoomed-out camera can stand past the map's edge, where a latitude clamps.
+    this.widget.camera.setView({
+      destination: new Cartesian3(
+        target.x - Math.sin(heading) * behind,
+        target.y - Math.cos(heading) * behind,
+        -range * Math.sin(pitch)
+      ),
+      convert: false,
+      orientation: { heading, pitch, roll: 0 },
+    })
+    this.requestRender()
   }
 
   /**
@@ -536,12 +615,13 @@ export class CockpitMap {
    * @returns {WaypointCoordinates} The `[latitude, longitude]`.
    */
   getCenter(): WaypointCoordinates {
+    if (this.tiltable) return this.tiltedCenter().center
     const position = this.widget.camera.position
     return fromMercator(position.x, position.y)
   }
 
   /**
-   * The map's heading, for maps created rotatable.
+   * The map's heading, for maps created rotatable or tiltable.
    * @returns {number} Degrees clockwise from north.
    */
   getBearing(): number {
@@ -549,16 +629,53 @@ export class CockpitMap {
   }
 
   /**
+   * How far the map leans from straight down.
+   * @returns {number} Degrees, zero for a flat map.
+   */
+  getPitch(): number {
+    return CesiumMath.toDegrees(this.widget.camera.pitch) + 90
+  }
+
+  /**
    * Turns a rotatable map to a heading, keeping its center and zoom.
    * @param {number} bearing - Degrees clockwise from north.
    */
   setBearing(bearing: number): void {
+    if (this.tiltable) {
+      this.applyTiltedView(this.getCenter(), this.getZoom(), CesiumMath.toRadians(bearing), this.widget.camera.pitch)
+      return
+    }
     const center = this.getCenter()
     this.widget.camera.setView({
       destination: Cartesian3.fromDegrees(center[1], center[0], this.frustumWidth()),
       orientation: { heading: CesiumMath.toRadians(bearing), pitch: -CesiumMath.PI_OVER_TWO, roll: 0 },
     })
     this.requestRender()
+  }
+
+  /**
+   * Turns the map back to north-up and straight down, as the compass button does.
+   */
+  resetNorthPitch(): void {
+    if (!this.tiltable) {
+      this.setBearing(0)
+      return
+    }
+    this.stopAnimation()
+    const camera = this.widget.camera
+    const center = this.getCenter()
+    const zoom = this.getZoom()
+    const startHeading = CesiumMath.negativePiToPi(camera.heading)
+    const startLean = camera.pitch + CesiumMath.PI_OVER_TWO
+    const start = performance.now()
+    const step = (now: number): void => {
+      if (this.removed) return
+      const t = Math.min(Math.max((now - start) / 300, 0), 1)
+      const remaining = 1 - easeOutCubic(t)
+      this.applyTiltedView(center, zoom, startHeading * remaining, startLean * remaining - CesiumMath.PI_OVER_TWO)
+      this.animationFrame = t < 1 ? requestAnimationFrame(step) : undefined
+    }
+    this.animationFrame = requestAnimationFrame(step)
   }
 
   /**
@@ -661,6 +778,10 @@ export class CockpitMap {
    * @param {number} zoom - The tile-scale zoom.
    */
   private applyView(center: WaypointCoordinates, zoom: number): void {
+    if (this.tiltable) {
+      this.applyTiltedView(center, zoom, this.widget.camera.heading, this.widget.camera.pitch)
+      return
+    }
     // In 2D, the destination height becomes the frustum width, which is how the zoom is set.
     const width = frustumWidthForZoom(this.clampZoom(zoom), this.canvasWidth())
     this.widget.camera.setView({ destination: Cartesian3.fromDegrees(center[1], center[0], width) })
@@ -937,7 +1058,8 @@ export class CockpitMap {
         lifts.length ? Math.max(...lifts) + 0.1 : 0,
         (key, feature) => this.registerFeature(key, feature),
         () => this.getZoom(),
-        () => this.metersPerPixel()
+        () => this.metersPerPixel(),
+        () => (this.tiltable ? (this.frustumWidth() / this.canvasWidth()) * tiltedHeightPixelsPerMeter : 1)
       )
       this.vectors.set(id, layer)
     }
@@ -1232,7 +1354,9 @@ export class CockpitMap {
       }
       const point = this.pointFromClient(event)
       const moved = Math.hypot(point.x - this.pressPoint.x, point.y - this.pressPoint.y)
-      if (!this.dragging && moved > clickTolerancePixels && !event.shiftKey) {
+      // Ctrl+drag turns a tiltable map instead of panning it.
+      const turning = this.tiltable && event.ctrlKey
+      if (!this.dragging && moved > clickTolerancePixels && !event.shiftKey && !turning) {
         this.dragging = true
         this.fireView({ type: 'dragstart', originalEvent: event })
       }
@@ -1240,6 +1364,13 @@ export class CockpitMap {
     })
     this.listen(window, 'pointerup', (event) => {
       if (event.pointerType === 'touch') return
+      const heldContextMenu = this.heldContextMenu
+      this.heldContextMenu = undefined
+      if (heldContextMenu && this.pressPoint) {
+        const point = this.pointFromClient(event)
+        const moved = Math.hypot(point.x - this.pressPoint.x, point.y - this.pressPoint.y)
+        if (moved <= clickTolerancePixels) this.dispatchPointer('contextmenu', heldContextMenu)
+      }
       const wasPressed = this.pressPoint !== undefined
       if (wasPressed && element.contains(event.target as Node)) this.dispatchPointer('mouseup', event)
       if (this.dragging) {
@@ -1263,6 +1394,15 @@ export class CockpitMap {
     })
     this.listen(element, 'contextmenu', (event) => {
       event.preventDefault()
+      // A right drag turns a tiltable map rather than opening the menu. Where the menu comes with the press (macOS),
+      // it waits for the release to tell which one it was.
+      if (this.tiltable && this.pressButton === 2) {
+        this.heldContextMenu = event
+        return
+      }
+      const point = this.pointFromClient(event)
+      const press = this.pressPoint
+      if (this.tiltable && press && Math.hypot(point.x - press.x, point.y - press.y) > clickTolerancePixels) return
       this.dispatchPointer('contextmenu', event)
     })
     this.listen(element, 'mouseleave', (event) => {
@@ -1425,8 +1565,16 @@ export class CockpitMap {
    * Sets Cesium's zoom limits from the map's tile-scale ones for the current canvas size.
    */
   private applyZoomLimits(): void {
-    // Cesium bounds 2D zooming by the frustum's larger side, which depends on the canvas size.
     const controller = this.widget.scene.screenSpaceCameraController
+    if (this.tiltable) {
+      // Columbus view bounds the camera's height, which is its distance to the ground when looking straight down.
+      controller.minimumZoomDistance =
+        frustumWidthForZoom(mapZoomLimits.max, this.canvasWidth()) * this.rangePerFrustumWidth()
+      controller.maximumZoomDistance =
+        frustumWidthForZoom(mapZoomLimits.min, this.canvasWidth()) * this.rangePerFrustumWidth()
+      return
+    }
+    // Cesium bounds 2D zooming by the frustum's larger side, which depends on the canvas size.
     const longestSide = Math.max(this.canvasWidth(), this.canvasHeight())
     controller.minimumZoomDistance = frustumWidthForZoom(mapZoomLimits.max, longestSide)
     controller.maximumZoomDistance = frustumWidthForZoom(mapZoomLimits.min, longestSide)

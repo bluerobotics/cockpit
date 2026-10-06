@@ -11,7 +11,7 @@ export interface MapMarkerOptions {
   draggable?: boolean
   /** Rotation of the element, in degrees clockwise. */
   rotation?: number
-  /** Whether the rotation is relative to the map's north rather than the screen's top. */
+  /** Whether the element turns with the map's north and lies on the map when it leans, rather than facing the screen. */
   rotatesWithMap?: boolean
   /** Opacity of the element. */
   opacity?: number
@@ -192,9 +192,11 @@ export class MapMarker {
     }
     this.element.style.visibility = ''
     const rotation = this.rotatesWithMap ? this.rotation - this.map.getBearing() : this.rotation
+    const pitch = this.rotatesWithMap ? this.map.getPitch() : 0
     const [offsetX, offsetY] = this.offset
     this.element.style.transform =
       `translate(${point.x + offsetX}px, ${point.y + offsetY}px) translate(-50%, -50%)` +
+      (pitch ? ` rotateX(${pitch}deg)` : '') +
       (rotation ? ` rotate(${rotation}deg)` : '')
   }
 
