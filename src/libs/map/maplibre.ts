@@ -406,13 +406,15 @@ export interface CreateMapOptions {
   zoom: number
   /** Whether to show the attribution of the visible sources. */
   attribution?: boolean
+  /** Whether the user can rotate and tilt the map. Others stay north-up and flat. */
+  tiltable?: boolean
 }
 
 let workerConfigured = false
 
 /**
- * Creates a north-up, flat MapLibre map. Scroll and pinch zoom freely, while the buttons, keyboard and double-click
- * step by whole tile levels.
+ * Creates a MapLibre map, north-up and flat unless created tiltable. Scroll and pinch zoom freely, while the buttons,
+ * keyboard and double-click step by whole tile levels.
  * @param {HTMLElement} container - The element to draw the map into.
  * @param {CreateMapOptions} options - Initial view and controls.
  * @returns {MapLibreMap} The created map.
@@ -430,15 +432,17 @@ export const createMap = (container: HTMLElement, options: CreateMapOptions): Ma
     zoom: toMapLibreZoom(options.zoom),
     minZoom: toMapLibreZoom(0),
     maxZoom: toMapLibreZoom(23),
-    maxPitch: 0,
+    maxPitch: options.tiltable ? 60 : 0,
     zoomSnap: 1,
-    dragRotate: false,
-    pitchWithRotate: false,
+    dragRotate: !!options.tiltable,
+    pitchWithRotate: !!options.tiltable,
     attributionControl: options.attribution ? { compact: false } : false,
   })
-  map.touchZoomRotate.disableRotation()
-  map.touchPitch.disable()
-  map.keyboard.disableRotation()
+  if (!options.tiltable) {
+    map.touchZoomRotate.disableRotation()
+    map.touchPitch.disable()
+    map.keyboard.disableRotation()
+  }
 
   return map
 }

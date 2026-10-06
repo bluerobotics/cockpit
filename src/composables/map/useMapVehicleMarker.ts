@@ -55,6 +55,7 @@ export const useMapVehicleMarker = (
       className: 'vehicle-marker',
       html: `<img src="${options.iconUrl()}" style="width: ${VEHICLE_ICON_SIZE_PX}px; height: ${VEHICLE_ICON_SIZE_PX}px;">`,
       size: [VEHICLE_ICON_SIZE_PX, VEHICLE_ICON_SIZE_PX],
+      rotatesWithMap: true,
     })
     if (options.zIndex !== undefined) marker.value.getElement().style.zIndex = String(options.zIndex)
     marker.value.setLngLat(toLngLat(position)).addTo(map.value)
