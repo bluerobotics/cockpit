@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-between h-[20px]">
-    <div class="w-[50px]">
+    <div class="w-[40px]">
       <div
         v-if="rawValue < 0"
         class="w-full h-full bg-[#2c99ce] origin-right"
@@ -11,7 +11,7 @@
       <p>{{ rawValue.toFixed(2) }}</p>
       <p class="text-[10px]">{{ processedValue.toFixed(2) }}</p>
     </div>
-    <div class="w-[50px]">
+    <div class="w-[40px]">
       <div
         v-if="rawValue > 0"
         class="w-full h-full bg-[#2c99ce] origin-left"
