@@ -54,7 +54,7 @@
               </div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center h-[280px] overflow-auto">
+              <div class="flex flex-col items-center">
                 <div class="flex flex-col items-center">
                   <div
                     v-if="
@@ -83,10 +83,10 @@
                     </span>
                   </div>
                 </div>
-                <div class="flex w-full h-[47px]">
+                <div class="flex w-full h-[47px] mt-3 mb-7">
                   <v-tabs
                     :model-value="currentTabVIew"
-                    class="w-full h-full my-3 rounded-lg elevation-2 bg-[#FFFFFF23]"
+                    class="w-full h-full rounded-lg elevation-2 bg-[#FFFFFF23]"
                     theme="dark"
                     @update:model-value="setTabView"
                   >
@@ -172,7 +172,7 @@
                   :key="key"
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
-                  <p class="text-md font-semibold -mt-8">{{ joystick.model }} controller</p>
+                  <p class="text-md font-semibold">{{ joystick.model }} controller</p>
                   <div class="flex items-center gap-2 -mb-8">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
@@ -290,7 +290,7 @@
                   :key="key"
                   class="w-full flex-centered flex-column"
                 >
-                  <span class="text-md font-semibold w-full text-center -mt-8">{{ joystick.model }} controller</span>
+                  <span class="text-md font-semibold w-full text-center">{{ joystick.model }} controller</span>
                   <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
