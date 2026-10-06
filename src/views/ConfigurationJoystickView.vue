@@ -313,7 +313,7 @@
                   </div>
                   <v-data-table
                     :items="axisTableItems"
-                    class="elevation-1 bg-transparent rounded-lg mb-[20px]"
+                    class="elevation-1 bg-transparent rounded-lg mb-[20px] [&_td]:!px-2 [&_th]:!px-2 [&_td:first-child]:!pl-4 [&_th:first-child]:!pl-4"
                     theme="dark"
                     no-data-text=""
                     :style="interfaceStore.globalGlassMenuStyles"
@@ -326,7 +326,7 @@
                         <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Min</p></th>
                         <th class="w-[120px] text-center"><p class="text-[16px] font-bold">Axis</p></th>
                         <th class="w-[110px] text-center"><p class="text-[16px] font-bold">Max</p></th>
-                        <th class="w-[104px]"></th>
+                        <th class="w-[96px] text-center"><p class="text-[16px] font-bold">Actions</p></th>
                       </tr>
                       <p v-if="axisTableItems.length === 0" class="fixed top-[67%] left-[40%]">
                         Press a key or move an axis
@@ -364,7 +364,7 @@
                             density="compact"
                             variant="plain"
                             hide-details
-                            class="ml-4"
+                            class="min-w-[96px] [&_input]:text-center"
                             @update:model-value="(v) => editAxisRange(item.id as JoystickAxis, 'min', v)"
                           />
                         </td>
@@ -374,7 +374,7 @@
                             :items="filteredAndSortedAxisActions"
                             item-title="name"
                             hide-details
-                            class="mb-2"
+                            class="mb-2 min-w-[140px] [&_.v-select\_\_selection]:grow [&_.v-select\_\_selection]:justify-center"
                             density="compact"
                             variant="plain"
                             theme="dark"
@@ -389,7 +389,7 @@
                             density="compact"
                             variant="plain"
                             hide-details
-                            class="ml-4"
+                            class="min-w-[96px] [&_input]:text-center"
                             @update:model-value="(v) => editAxisRange(item.id as JoystickAxis, 'max', v)"
                           />
                         </td>
