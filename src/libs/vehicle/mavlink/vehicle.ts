@@ -1708,7 +1708,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       cameraTiltLegacy: { id: 'cameraTiltDeg', name: '(Legacy) Camera Tilt Degrees', type: 'number', unit: 'deg' },
       autopilotSystemId: { id: 'autopilotSystemId', name: 'Autopilot System ID', type: 'number' },
       cameraTilt: { id: `${vehiclePath}/cameraTiltDeg`, name: `Camera Tilt [degrees] (${vehicleName})`, type: 'number', unit: 'deg' },
-      celsius2Temperature: { id: 'celsius2TemperatureC', name: 'Celsius 2 Temperature [°C]', type: 'number', unit: 'degC' },
+      celsius2Temperature: { id: 'celsius2TemperatureC', name: 'Celsius (TMP119) Temperature [°C]', type: 'number', unit: 'degC' },
       networkLatencyMs: { id: `${vehiclePath}/networkLatencyMs`, name: `Network Latency [ms] (${vehicleName})`, type: 'number', unit: 'ms' },
     }
     /* eslint-enable vue/max-len, prettier/prettier, max-len */
