@@ -123,34 +123,33 @@
           </div>
         </v-window-item>
         <v-window-item :value="2" class="h-full w-full">
-          <div
-            ref="subMenuScrollContainerRef"
-            class="flex flex-col w-full max-h-[95vh] justify-between overflow-y-auto scrollbar-hide"
-          >
-            <GlassButton
-              v-for="menuitem in currentSubMenu"
-              :key="menuitem.title"
-              :label="simplifiedMainMenu ? undefined : menuitem.title"
-              :label-class="menuLabelSize"
-              :tooltip="simplifiedMainMenu ? menuitem.title : undefined"
-              :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
-              :icon="menuitem.icon"
-              :selected="activeMenuPage === menuitem.componentName"
-              variant="uncontained"
-              :height="buttonSize * 0.45"
-              :icon-size="buttonSize * 0.5"
-              :style="
-                interfaceStore.highlightedComponent === menuitem.title && {
-                  animation: 'highlightBackground 0.5s alternate 50',
-                  borderRadius: '4px',
-                }
-              "
-              @click="toggleMenuPage(menuitem.componentName)"
-              ><template #content>
-                <div v-if="activeMenuPage === menuitem.componentName" class="arrow-left"></div>
-              </template>
-            </GlassButton>
-            <div class="flex flex-col justify-center align-center pb-1">
+          <div ref="subMenuContainerRef" class="flex flex-col w-full max-h-[95vh]">
+            <div ref="subMenuScrollContainerRef" class="min-h-0 overflow-y-auto scrollbar-hide">
+              <GlassButton
+                v-for="menuitem in currentSubMenu"
+                :key="menuitem.title"
+                :label="simplifiedMainMenu ? undefined : menuitem.title"
+                :label-class="menuLabelSize"
+                :tooltip="simplifiedMainMenu ? menuitem.title : undefined"
+                :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
+                :icon="menuitem.icon"
+                :selected="activeMenuPage === menuitem.componentName"
+                variant="uncontained"
+                :height="buttonSize * 0.45"
+                :icon-size="buttonSize * 0.5"
+                :style="
+                  interfaceStore.highlightedComponent === menuitem.title && {
+                    animation: 'highlightBackground 0.5s alternate 50',
+                    borderRadius: '4px',
+                  }
+                "
+                @click="toggleMenuPage(menuitem.componentName)"
+                ><template #content>
+                  <div v-if="activeMenuPage === menuitem.componentName" class="arrow-left"></div>
+                </template>
+              </GlassButton>
+            </div>
+            <div class="flex flex-col shrink-0 justify-center align-center pb-1">
               <v-divider width="70%" />
               <GlassButton
                 :label-class="menuLabelSize"
@@ -167,7 +166,11 @@
           </div>
         </v-window-item>
       </v-window>
-      <div v-if="hasOverflow" class="overflow-indicator">
+      <div
+        v-if="hasOverflow"
+        class="overflow-indicator"
+        :style="interfaceStore.mainMenuCurrentStep === 2 ? { height: `${subMenuScrollHeight}px` } : undefined"
+      >
         <v-icon class="overflow-icon -mt-[11px]" :style="{ opacity: isScrolledToTop ? 0 : 1 }">
           mdi-arrow-up-bold
         </v-icon>
@@ -179,7 +182,14 @@
   </transition>
 </template>
 <script setup lang="ts">
-import { onClickOutside, useDebounceFn, useFullscreen, useResizeObserver, useWindowSize } from '@vueuse/core'
+import {
+  onClickOutside,
+  useDebounceFn,
+  useElementSize,
+  useFullscreen,
+  useResizeObserver,
+  useWindowSize,
+} from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -224,7 +234,9 @@ const emit = defineEmits<{
 const showSubMenu = ref(false)
 const mainMenu = ref<HTMLElement | null>(null)
 const scrollContainerRef = ref<HTMLElement | null>(null)
+const subMenuContainerRef = ref<HTMLElement | null>(null)
 const subMenuScrollContainerRef = ref<HTMLElement | null>(null)
+const { height: subMenuScrollHeight } = useElementSize(subMenuScrollContainerRef)
 
 const containerRectMain = ref({ width: 0, height: 0 })
 const containerRectSub = ref({ width: 0, height: 0 })
@@ -270,7 +282,7 @@ useResizeObserver(scrollContainerRef, (entries) => {
   }
 })
 
-useResizeObserver(subMenuScrollContainerRef, (entries) => {
+useResizeObserver(subMenuContainerRef, (entries) => {
   if (entries.length) {
     containerRectSub.value = {
       width: entries[0].contentRect.width,
@@ -502,7 +514,7 @@ const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscree
   justify-content: space-between;
   height: 100%;
   width: 1px;
-  bottom: 0;
+  top: 0;
   opacity: 0.9;
   z-index: 9999;
   margin-left: 40px;
