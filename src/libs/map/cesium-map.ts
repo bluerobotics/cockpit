@@ -24,6 +24,7 @@ import type { MapMarker } from '@/libs/map/cesium-marker'
 import { type VectorFeature, VectorLayer } from '@/libs/map/cesium-vectors'
 import { type MapLayerSlot, mapLayerSlots } from '@/libs/map/map-slots'
 import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
+import { terrariumTerrainProvider } from '@/libs/map/terrain'
 import type { WaypointCoordinates } from '@/types/mission'
 
 export { type MapLayerSlot, mapLayerSlots, slotHeight } from '@/libs/map/map-slots'
@@ -339,6 +340,7 @@ export class CockpitMap {
   private removed = false
   private readonly tiltable: boolean
   private heldContextMenu: MouseEvent | undefined
+  private terrainShown = false
 
   /**
    * Creates the map in a container and moves it to its initial view.
@@ -679,6 +681,19 @@ export class CockpitMap {
   }
 
   /**
+   * Shows or hides 3D terrain, which only stands out once the map leans.
+   * @param {boolean} enabled - Whether to show terrain.
+   */
+  setTerrain(enabled: boolean): void {
+    if (enabled === this.terrainShown) return
+    this.terrainShown = enabled
+    this.widget.scene.globe.terrainProvider = enabled
+      ? terrariumTerrainProvider(() => this.requestRender())
+      : new EllipsoidTerrainProvider()
+    this.requestRender()
+  }
+
+  /**
    * The area the map shows.
    * @returns {MapBounds} Its bounds.
    */
@@ -710,9 +725,12 @@ export class CockpitMap {
    * @returns {ScreenPoint} The position relative to the container's top-left corner, in pixels.
    */
   project(coordinates: WaypointCoordinates): ScreenPoint {
+    const ground = this.terrainShown
+      ? this.widget.scene.globe.getHeight(Cartographic.fromDegrees(coordinates[1], coordinates[0])) ?? 0
+      : 0
     const position = SceneTransforms.worldToWindowCoordinates(
       this.widget.scene,
-      Cartesian3.fromDegrees(coordinates[1], coordinates[0])
+      Cartesian3.fromDegrees(coordinates[1], coordinates[0], ground)
     )
     return position ? { x: position.x, y: position.y } : { x: Number.NaN, y: Number.NaN }
   }
@@ -723,7 +741,9 @@ export class CockpitMap {
    * @returns {WaypointCoordinates} The `[latitude, longitude]` at that position.
    */
   unproject(point: ScreenPoint): WaypointCoordinates {
-    const cartesian = this.widget.camera.pickEllipsoid(new Cartesian2(point.x, point.y))
+    const { camera, scene } = this.widget
+    const ray = this.terrainShown ? camera.getPickRay(new Cartesian2(point.x, point.y)) : undefined
+    const cartesian = (ray && scene.globe.pick(ray, scene)) ?? camera.pickEllipsoid(new Cartesian2(point.x, point.y))
     if (!cartesian) return this.getCenter()
     const cartographic = Ellipsoid.WGS84.cartesianToCartographic(cartesian)
     return [CesiumMath.toDegrees(cartographic.latitude), CesiumMath.toDegrees(cartographic.longitude)]
