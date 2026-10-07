@@ -7,6 +7,7 @@ import path from 'path'
 
 import { type PiperVoiceStatus, type TtsDownloadResult, defaultPiperVoiceKey, piperVoices } from '../../types/tts'
 import { type VoiceModel, downloadedVoicesDir, getPiperRuntime, resolveVoiceModel } from './piper-tts-path'
+import { pronunciations } from './tts-pronunciations'
 
 const runningProcesses = new Set<ChildProcess>()
 
@@ -101,7 +102,14 @@ const synthesize = async (text: string, voiceKey: string): Promise<Buffer | null
   const voice: VoiceModel | null = resolveVoiceModel(voiceKey)
   if (!voice) return null
 
-  const spoken = text.replace(/\s+/g, ' ').trim()
+  // Underscores only come from parameter names, whose parts are then looked up like any other word. A spelled-out
+  // acronym loses its last dot before a digit, which Piper would read as "point" ("E.K.F3", not "E.K.F.3").
+  const spoken = text
+    .replace(/_/g, ' ')
+    .replace(/[A-Za-z]+/g, (word) => pronunciations.get(word) ?? word)
+    .replace(/(?<=[A-Z])\.(?=\d)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
   if (!spoken) return null
 
   const outputFile = path.join(app.getPath('temp'), `cockpit-tts-${randomUUID()}.wav`)
