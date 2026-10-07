@@ -84,7 +84,7 @@ export class ArduSub extends ArduPilotVehicle<CustomMode> {
         if (messageSystemId !== this.currentSystemId || messageComponentId !== 1) return
         const aliasId = 'celsius-temperature'
         if (getDataLakeVariableInfo(aliasId) === undefined) {
-          createDataLakeVariable({ id: aliasId, name: `Celsius Temperature (Probably)`, type: 'number' })
+          createDataLakeVariable({ id: aliasId, name: `Celsius (TSYS01) Temperature`, type: 'number' })
         }
         setDataLakeVariableData(aliasId, scaled_pressure3.temperature)
         break
