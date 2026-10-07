@@ -943,12 +943,12 @@ export const widgetDefaultSizes: Partial<Record<WidgetType, SizeRect2D>> = {
   [WidgetType.DoItYourself]: { width: 0.3, height: 0.3 },
   [WidgetType.IFrame]: { width: 0.4, height: 0.4 },
   [WidgetType.ImageView]: { width: 0.3, height: 0.3 },
-  [WidgetType.Map]: { width: 1, height: 1 },
+  [WidgetType.Map]: { width: 0.6, height: 0.6 },
   [WidgetType.MiniMap]: { width: 0.18, height: 0.32 },
   [WidgetType.MiniWidgetsBar]: { width: 0.2, height: 0.1 },
   [WidgetType.Plotter]: { width: 0.4, height: 0.3 },
   [WidgetType.URLVideoPlayer]: { width: 0.5, height: 0.4 },
-  [WidgetType.VideoPlayer]: { width: 1, height: 1 },
+  [WidgetType.VideoPlayer]: { width: 0.6, height: 0.6 },
   [WidgetType.VirtualHorizon]: { width: 0.062, height: 0.118 },
 }
 
