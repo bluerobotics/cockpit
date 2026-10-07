@@ -164,7 +164,7 @@
                   <div
                     class="icon-btn mdi mdi-fullscreen"
                     :class="{ 'mdi-fullscreen-exit': store.isFullScreen(widget) }"
-                    @click="toggleWidgetFullScreen(widget)"
+                    @click="store.toggleFullScreen(widget)"
                   />
                   <div
                     class="icon-btn mdi mdi-cog"
@@ -854,11 +854,6 @@ const importViewsGroup = (e: Event): void => {
 const toggleSnapToGrid = (): void => {
   logUserAction(`${store.snapToGrid ? 'Disabled' : 'Enabled'} snap-to-grid`)
   store.snapToGrid = !store.snapToGrid
-}
-
-const toggleWidgetFullScreen = (widget: Widget): void => {
-  logUserAction(`${store.isFullScreen(widget) ? 'Restored' : 'Maximized'} widget '${widget.name}'`)
-  store.toggleFullScreen(widget)
 }
 
 const deleteWidget = (widget: Widget): void => {
