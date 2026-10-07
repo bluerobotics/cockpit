@@ -8,6 +8,7 @@ import {
   deleteAction,
   registerActionCallback,
   registerNewAction,
+  unregisterActionCallback,
 } from '../joystick/protocols/cockpit-actions'
 import { settingsManager } from '../settings-management'
 import { isElectron } from '../utils'
@@ -16,6 +17,8 @@ import {
   replaceDataLakeInputsInJsonString,
   replaceDataLakeInputsInString,
 } from '../utils-data-lake'
+import { removeActionLink } from './action-links'
+import { removeAutoRunConfig } from './auto-run'
 
 const httpRequestActionIdPrefix = 'http-request-action'
 export const availableHttpRequestMethods: HttpRequestMethod[] = Object.values(HttpRequestMethod)
@@ -85,7 +88,10 @@ export const getAllHttpRequestActionConfigs = (): Record<string, HttpRequestActi
 }
 
 export const deleteHttpRequestActionConfig = (id: string): void => {
+  removeAutoRunConfig(id)
+  removeActionLink(id)
   deleteAction(id as CockpitActionsFunction)
+  unregisterActionCallback(id)
   delete registeredHttpRequestActionConfigs[id]
   saveHttpRequestActionConfigs()
   updateCockpitActions()

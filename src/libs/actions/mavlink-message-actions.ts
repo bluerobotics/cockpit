@@ -9,6 +9,7 @@ import {
   deleteAction,
   registerActionCallback,
   registerNewAction,
+  unregisterActionCallback,
 } from '../joystick/protocols/cockpit-actions'
 import { settingsManager } from '../settings-management'
 import { isNumber } from '../utils'
@@ -17,6 +18,8 @@ import {
   getDataLakeVariableIdFromInput,
   replaceDataLakeInputsInJsonString,
 } from '../utils-data-lake'
+import { removeActionLink } from './action-links'
+import { removeAutoRunConfig } from './auto-run'
 import { getDataLakeVariableData } from './data-lake'
 const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
 
@@ -45,7 +48,10 @@ export const getAllMavlinkMessageActionConfigs = (): Record<string, MavlinkMessa
 }
 
 export const deleteMavlinkMessageActionConfig = (id: string): void => {
+  removeAutoRunConfig(id)
+  removeActionLink(id)
   deleteAction(id as CockpitActionsFunction)
+  unregisterActionCallback(id)
   delete registeredMavlinkMessageActionConfigs[id]
   saveMavlinkMessageActionConfigs()
   updateCockpitActions()

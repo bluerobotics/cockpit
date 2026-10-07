@@ -78,6 +78,8 @@ export const removeActionLink = (actionId: string): void => {
     delete listenerIds[actionId]
   }
 
+  clearTimeout(pendingExecutions[actionId])
+  delete pendingExecutions[actionId]
   delete actionLinks[actionId]
 
   saveLinksToPersistentStorage()
