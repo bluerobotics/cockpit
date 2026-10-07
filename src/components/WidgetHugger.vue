@@ -37,6 +37,18 @@
     >
       <slot></slot>
     </div>
+    <v-btn
+      v-if="widgetStore.editingMode && hoveringWidgetOrOverlay"
+      v-tooltip="fullScreenToggleLabel"
+      :icon="isWidgetFullScreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"
+      :aria-label="fullScreenToggleLabel"
+      :style="interfaceStore.globalGlassMenuStyles"
+      class="editing-buttons"
+      size="32"
+      variant="text"
+      @mousedown.stop
+      @click="widgetStore.toggleFullScreen(widget)"
+    />
     <div class="resize-handle top-left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
     <div class="resize-handle top-right" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
     <div class="resize-handle bottom-left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
@@ -86,6 +98,7 @@ import {
   matchedAlignmentLines,
   widgetAlignmentLines,
 } from '@/libs/widget-alignment'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
 import {
@@ -554,6 +567,7 @@ watch(allowMoving, (isAllowing, wasAllowing) => {
 })
 
 const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
 
 const sizeStyle = computed(() => ({
   width: `${100 * size.value.width}%`,
@@ -584,6 +598,7 @@ const cursorStyle = computed(() => {
 })
 
 const isWidgetFullScreen = computed(() => widgetStore.isFullScreen(widget.value))
+const fullScreenToggleLabel = computed(() => (isWidgetFullScreen.value ? 'Restore widget size' : 'Maximize widget'))
 
 // Resizing stops each edge at its bar, but a widget can already be under one (maximized, taller than the visible area,
 // or from an older layout), so each handle is inset past its bar as drawn (the scaled height) to stay clickable.

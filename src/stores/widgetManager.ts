@@ -643,6 +643,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const defaultRestoredSize: SizeRect2D = { width: 0.7, height: 0.7 }
 
   const toggleFullScreen = (widget: Widget): void => {
+    logUserAction(`${isFullScreen(widget) ? 'Restored' : 'Maximized'} widget '${widget.name}'`)
     if (!isFullScreen(widget)) {
       widgetManagerVars(widget.hash).lastNonMaximizedX = widget.position.x
       widgetManagerVars(widget.hash).lastNonMaximizedY = widget.position.y
