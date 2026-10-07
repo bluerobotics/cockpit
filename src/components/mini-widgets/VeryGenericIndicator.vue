@@ -283,7 +283,7 @@
                     {{ round(Math.random() * Number(template.variableMultiplier)).toFixed(0) }}
                     {{ template.variableUnit }}
                   </span>
-                  <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">
+                  <span class="w-full text-sm font-semibold leading-4">
                     {{ template.displayName }}
                   </span>
                 </div>
@@ -675,6 +675,12 @@ const setIndicatorFromTemplate = (template: VeryGenericIndicatorPreset): void =>
   miniWidget.value.options.variableMultiplier = template.variableMultiplier
   miniWidget.value.options.decimalPlaces = template.decimalPlaces ?? null
   miniWidget.value.options.useVariableUnit = template.useVariableUnit ?? false
+  if (template.minWidgetWidth) {
+    miniWidget.value.options.widgetWidth = Math.max(
+      Number(miniWidget.value.options.widgetWidth) || 0,
+      template.minWidgetWidth
+    )
+  }
   // Every preset is numeric, and this flag would bypass both the multiplier and the decimal places.
   miniWidget.value.options.useStringVariable = false
 }

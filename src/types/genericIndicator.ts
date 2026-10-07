@@ -33,6 +33,10 @@ export interface VeryGenericIndicatorPreset {
    * this off.
    */
   useVariableUnit?: boolean
+  /**
+   * Width, in pixels, the indicator is widened to so the name fits. A wider indicator is left as is.
+   */
+  minWidgetWidth?: number
 }
 
 export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
