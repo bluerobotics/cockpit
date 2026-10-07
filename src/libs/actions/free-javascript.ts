@@ -6,9 +6,12 @@ import {
   deleteAction,
   registerActionCallback,
   registerNewAction,
+  unregisterActionCallback,
 } from '../joystick/protocols/cockpit-actions'
 import { settingsManager } from '../settings-management'
 import { type CleanupScope, createCleanupScope, runUserScript } from '../user-script'
+import { removeActionLink } from './action-links'
+import { removeAutoRunConfig } from './auto-run'
 
 const javascriptActionIdPrefix = 'javascript-action'
 
@@ -49,8 +52,11 @@ export const getAllJavascriptActionConfigs = (): Record<string, JavascriptAction
 }
 
 export const deleteJavascriptActionConfig = (id: string): void => {
+  removeAutoRunConfig(id)
+  removeActionLink(id)
   undoActionRuns(id)
   deleteAction(id as CockpitActionsFunction)
+  unregisterActionCallback(id)
   delete registeredJavascriptActionConfigs[id]
   saveJavascriptActionConfigs()
   updateCockpitActions()
