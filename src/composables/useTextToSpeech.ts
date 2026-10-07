@@ -33,6 +33,7 @@ const hdDownloadProgress = ref<TtsDownloadProgress>({ completed: 0, total: 0, vo
 
 // Serializes playback so alerts never overlap, whichever engine speaks them.
 let speakQueue: Promise<void> = Promise.resolve()
+let speechController = new AbortController()
 
 // Resolves once the offered voices are known. The availability probe synthesizes a word to prove Piper
 // works, so an alert raised in the first second would otherwise be handed to the host default: the wrong
@@ -203,13 +204,27 @@ const waitAsIfSpoken = (text: string): Promise<void> =>
  * stalled audio element or a Web Speech utterance whose `onend` never fires
  * would otherwise block every later alert.
  * @param {Promise<void>} speech - The in-flight utterance.
+ * @param {AbortSignal} signal - Cancellation for this utterance.
  * @returns {Promise<void>} The utterance, rejected once it overruns.
  */
-const withSpeechTimeout = (speech: Promise<void>): Promise<void> =>
+const withSpeechTimeout = (speech: Promise<void>, signal: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
     const overrun = new Error(`Speech did not finish within ${speechTimeoutMs} ms`)
-    const timeout = setTimeout(() => reject(overrun), speechTimeoutMs)
-    speech.then(resolve, reject).finally(() => clearTimeout(timeout))
+    const cleanup = (): void => {
+      clearTimeout(timeout)
+      signal.removeEventListener('abort', resolveCanceled)
+    }
+    const resolveCanceled = (): void => {
+      cleanup()
+      resolve()
+    }
+    const timeout = setTimeout(() => {
+      cleanup()
+      reject(overrun)
+    }, speechTimeoutMs)
+    signal.addEventListener('abort', resolveCanceled, { once: true })
+    if (signal.aborted) resolveCanceled()
+    speech.then(resolve, reject).finally(cleanup)
   })
 
 /**
@@ -217,12 +232,14 @@ const withSpeechTimeout = (speech: Promise<void>): Promise<void> =>
  * against the empty one the first alert of a session would otherwise see.
  * @param {string} text - The text to speak.
  * @param {number} volume - Playback volume in (0, 1].
+ * @param {AbortSignal} signal - Cancellation for this utterance.
  * @returns {Promise<void>} Resolves when the utterance finishes playing.
  */
-const speakWithSelectedVoice = async (text: string, volume: number): Promise<void> => {
+const speakWithSelectedVoice = async (text: string, volume: number, signal: AbortSignal): Promise<void> => {
   await voicesReady
+  if (signal.aborted) return
   const voiceId = selectedVoiceId.value
-  await withSpeechTimeout(engineForVoice(voiceId).speak(voiceId ?? '', text, { volume }))
+  await withSpeechTimeout(engineForVoice(voiceId).speak(voiceId ?? '', text, { volume, signal }), signal)
 }
 
 /**
@@ -234,10 +251,19 @@ const speakWithSelectedVoice = async (text: string, volume: number): Promise<voi
  */
 const speak = (text: string, volume: number): Promise<void> => {
   const clampedVolume = clampVolume(volume)
+  const signal = speechController.signal
   speakQueue = speakQueue.then(() =>
-    clampedVolume === 0 ? waitAsIfSpoken(text) : speakWithSelectedVoice(text, clampedVolume).catch(reportSpeechFailure)
+    clampedVolume === 0 || signal.aborted
+      ? waitAsIfSpoken(text)
+      : speakWithSelectedVoice(text, clampedVolume, signal).catch(reportSpeechFailure)
   )
   return speakQueue
+}
+
+/** Stop active speech and keep already queued alerts silent. */
+const cancelSpeech = (): void => {
+  speechController.abort()
+  speechController = new AbortController()
 }
 
 /**
@@ -308,6 +334,8 @@ export interface TextToSpeechApi {
   hdDownloadProgress: typeof hdDownloadProgress
   /** Speak text with the selected voice. */
   speak: typeof speak
+  /** Stop active speech and keep already queued alerts silent. */
+  cancelSpeech: typeof cancelSpeech
   /** Download every higher-quality Piper model. */
   downloadHdVoices: typeof downloadHdVoices
   /** Abort the higher-quality download in progress. */
@@ -335,6 +363,7 @@ export const useTextToSpeech = (): TextToSpeechApi => {
     downloadingHdVoices,
     hdDownloadProgress,
     speak,
+    cancelSpeech,
     downloadHdVoices,
     cancelHdVoicesDownload,
     deleteHdVoices,

@@ -31,12 +31,13 @@ export class NativePiperEngine implements TtsEngine {
   }
 
   /** @inheritdoc */
-  async speak(voiceId: string, text: string, { volume }: SpeakOptions): Promise<void> {
+  async speak(voiceId: string, text: string, { volume, signal }: SpeakOptions): Promise<void> {
     const key = parsePiperVoiceKey(voiceId)
-    if (!key || !window.electronAPI?.ttsSynthesize) return
+    if (signal?.aborted || !key || !window.electronAPI?.ttsSynthesize) return
     const audio = await window.electronAPI.ttsSynthesize(text, key)
+    if (signal?.aborted) return
     if (!audio) throw new Error('The bundled synthesizer produced no audio')
-    await playWavBuffer(audio, volume)
+    await playWavBuffer(audio, volume, signal)
   }
 
   /** @returns {Promise<TtsDownloadResult>} How the higher-quality download ended. */

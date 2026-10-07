@@ -16,6 +16,8 @@ export interface TtsVoice {
 export interface SpeakOptions {
   /** Playback volume in the [0, 1] range. 0 keeps timing but stays silent. */
   volume: number
+  /** Cancel this request, including playback that has already started. */
+  signal?: AbortSignal
 }
 
 /**

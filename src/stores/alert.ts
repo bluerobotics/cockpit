@@ -11,7 +11,7 @@ export const useAlertStore = defineStore('alert', () => {
   const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   const neverShowArmedMenuWarning = useBlueOsStorage('cockpit-never-show-armed-menu-warning', false)
   const skipArmedMenuWarningThisSession = ref(false)
-  const { speak } = useTextToSpeech()
+  const { speak, cancelSpeech } = useTextToSpeech()
   const enabledAlertLevels = useBlueOsStorage('cockpit-enabled-alert-levels', [
     { level: AlertLevel.Info, enabled: false },
     { level: AlertLevel.Success, enabled: true },
@@ -20,6 +20,14 @@ export const useAlertStore = defineStore('alert', () => {
     { level: AlertLevel.Critical, enabled: true },
   ])
   const alertVolume = useBlueOsStorage('cockpit-alert-volume', 1)
+
+  watch(
+    enableVoiceAlerts,
+    (enabled) => {
+      if (!enabled) cancelSpeech()
+    },
+    { flush: 'sync' }
+  )
 
   const sortedAlerts = computed(() => {
     return alerts.sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
