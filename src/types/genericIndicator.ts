@@ -122,6 +122,16 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     useVariableUnit: true,
   },
   {
+    displayName: 'Celsius (TSYS01)',
+    variableName: 'celsius-temperature',
+    iconName: 'mdi-thermometer',
+    variableUnit: '°C',
+    variableMultiplier: 0.01,
+    decimalPlaces: 2,
+    useVariableUnit: true,
+    minWidgetWidth: 180,
+  },
+  {
     displayName: 'Celsius (TMP119)',
     variableName: 'celsius2TemperatureC',
     iconName: 'mdi-thermometer',
