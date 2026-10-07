@@ -205,6 +205,16 @@
                   hide-details
                 />
               </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showTerrain"
+                  class="my-1"
+                  label="3D terrain"
+                  :color="widget.options.showTerrain ? 'white' : undefined"
+                  hide-details
+                  @update:model-value="onTerrainToggled"
+                />
+              </v-col>
             </v-row>
           </template>
         </ExpansiblePanel>
@@ -337,6 +347,7 @@ import {
   unprojectFromContainer,
 } from '@/libs/map/maplibre'
 import { type RightClickGate, rightClickGate } from '@/libs/map/right-click'
+import { setMapTerrain } from '@/libs/map/terrain'
 import {
   applyFollowZoomMode,
   createGridOverlay,
@@ -673,6 +684,7 @@ onBeforeMount(() => {
     showHomeArrow: true,
     showVehicleArrow: true,
     showBaseStationArrow: true,
+    showTerrain: false,
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
   if (isFlightVisible.value) targetFollower.enableAutoUpdate()
@@ -742,6 +754,17 @@ const setMapControlsShown = (shown: boolean): void => {
 }
 
 watch(showButtons, (shown) => setMapControlsShown(shown))
+
+watch(
+  () => widget.value.options.showTerrain,
+  (show) => {
+    if (map.value) setMapTerrain(map.value, show)
+  }
+)
+
+const onTerrainToggled = (show: boolean | null): void => {
+  logUserAction(`${show ? 'Enabled' : 'Disabled'} 3D terrain on the map widget`)
+}
 
 // Watch for grid overlay option changes
 watch(
@@ -880,6 +903,8 @@ const onMapLoaded = async (instance: MapLibreMap): Promise<void> => {
   if (widget.value.options.showCoordinateGrid) {
     createGridOverlayLocal()
   }
+
+  if (widget.value.options.showTerrain) setMapTerrain(instance, true)
 
   mapReady.value = true
 
