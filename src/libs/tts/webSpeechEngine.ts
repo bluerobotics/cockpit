@@ -39,8 +39,9 @@ export class WebSpeechEngine implements TtsEngine {
   }
 
   /** @inheritdoc */
-  speak(voiceId: string, text: string, { volume }: SpeakOptions): Promise<void> {
+  speak(voiceId: string, text: string, { volume, signal }: SpeakOptions): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (signal?.aborted) return resolve()
       if (!this.synth) {
         reject(new Error('This system has no speech synthesis support'))
         return
@@ -55,7 +56,14 @@ export class WebSpeechEngine implements TtsEngine {
       this.pending.add(utterance)
       const finish = (): void => {
         this.pending.delete(utterance)
+        signal?.removeEventListener('abort', cancel)
       }
+      const cancel = (): void => {
+        this.synth?.cancel()
+        finish()
+        resolve()
+      }
+      signal?.addEventListener('abort', cancel, { once: true })
       utterance.onend = (): void => {
         finish()
         resolve()
