@@ -6,7 +6,9 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
-import { MavParamType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
+import { MAVLinkType, MavParamType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import {
   type MissionBreachReport,
   type WaypointLike,
@@ -170,6 +172,11 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   // on restores the operator's configured mode instead of flattening 2–4 to 1.
   const lastAutoEnableMode = ref(1)
 
+  // Whether the vehicle reports being outside its fence (FENCE_STATUS.breach_status), which the alerter announces.
+  // `undefined` while unknown (no vehicle, or the link is down), so a reconnect outside the fence warns again and
+  // losing track of the fence is never announced as the vehicle getting back inside.
+  const fenceBreached = ref<boolean | undefined>(undefined)
+
   /**
    * Asks the vehicle for the current `FENCE_ENABLE` value. The reply is
    * received asynchronously via PARAM_VALUE and updates `fenceEnabled`.
@@ -272,7 +279,11 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   // another GCS, or auto-applied by the autopilot itself (e.g.
   // `FENCE_AUTOENABLE` on takeoff) — is reflected in the UI. Re-binds
   // whenever the active vehicle instance changes.
-  let attachedVehicle: Vehicle.Abstract | undefined
+  let attachedVehicle: typeof mainVehicleStore.mainVehicle
+  // FENCE_STATUS streams in steadily, and assigning the same value does not retrigger watchers.
+  const fenceStatusSlot = (pack: Package): void => {
+    fenceBreached.value = (pack.message as Message.FenceStatus).breach_status === 1
+  }
   const fenceParamSlot = ([param]: [Parameter, number | undefined]): void => {
     if (!param) return
     if (param.name === 'FENCE_ENABLE') {
@@ -286,9 +297,16 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   watch(
     () => mainVehicleStore.mainVehicle,
     (newVehicle) => {
-      if (attachedVehicle) attachedVehicle.onParameter.remove(fenceParamSlot)
+      if (attachedVehicle) {
+        attachedVehicle.onParameter.remove(fenceParamSlot)
+        attachedVehicle.onIncomingMAVLinkMessage.remove(MAVLinkType.FENCE_STATUS, fenceStatusSlot)
+      }
       attachedVehicle = newVehicle
-      if (newVehicle) newVehicle.onParameter.add(fenceParamSlot)
+      fenceBreached.value = undefined
+      if (newVehicle) {
+        newVehicle.onParameter.add(fenceParamSlot)
+        newVehicle.onIncomingMAVLinkMessage.add(MAVLinkType.FENCE_STATUS, fenceStatusSlot)
+      }
     },
     { immediate: true }
   )
@@ -313,6 +331,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
         clearInterval(fenceEnablePollHandle)
         fenceEnablePollHandle = undefined
       }
+      if (!online) fenceBreached.value = undefined
       // `FENCE_AUTOENABLE` is editable before any fence reaches the vehicle, so
       // it is read as soon as an ArduPilot vehicle is online rather than waiting
       // for a plan, and only while still unknown.
@@ -346,6 +365,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     }
     if (attachedVehicle) {
       attachedVehicle.onParameter.remove(fenceParamSlot)
+      attachedVehicle.onIncomingMAVLinkMessage.remove(MAVLinkType.FENCE_STATUS, fenceStatusSlot)
       attachedVehicle = undefined
     }
   })
@@ -668,6 +688,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     isPx4,
     isArduPilot,
     fenceEnabled,
+    fenceBreached,
     fenceAutoEnableMode,
     lastAutoEnableMode,
     readFenceEnabled,
