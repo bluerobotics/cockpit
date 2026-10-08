@@ -244,7 +244,7 @@ const handlePlayAndPause = async (): Promise<void> => {
   try {
     if (!missionStore.isMissionRunning) {
       logUserAction('Started/resumed mission from mission control panel')
-      missionStore.executeMissionOnVehicle()
+      await missionStore.executeMissionOnVehicle()
     } else {
       logUserAction('Paused mission from mission control panel')
       await vehicleStore.pauseMission()

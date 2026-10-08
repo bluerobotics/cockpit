@@ -713,18 +713,13 @@ export const useMissionStore = defineStore('mission', () => {
     }
   )
 
-  // Allow executing missions
-  const executeMissionOnVehicle = async (): Promise<boolean> => {
-    try {
-      mainVehicleStore.clearReachedMissionItems()
-      didAutoEndCurrentRun = false
-      await mainVehicleStore.startMission()
-      // Re-apply the cruise speed on every start/resume so it is not lost after a pause cycle.
-      await applyCruiseSpeed().catch((err) => console.error('Failed to apply cruise speed on mission start:', err))
-      return true
-    } catch (error) {
-      return false
-    }
+  // Allow executing missions. A start that fails rejects with the vehicle's reason, which callers show the operator.
+  const executeMissionOnVehicle = async (): Promise<void> => {
+    mainVehicleStore.clearReachedMissionItems()
+    didAutoEndCurrentRun = false
+    await mainVehicleStore.startMission()
+    // Re-apply the cruise speed on every start/resume so it is not lost after a pause cycle.
+    await applyCruiseSpeed().catch((err) => console.error('Failed to apply cruise speed on mission start:', err))
   }
 
   // Auto-end the run when the last navigation waypoint is reached
