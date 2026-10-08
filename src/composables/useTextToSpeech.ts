@@ -260,6 +260,18 @@ const speak = (text: string, volume: number): Promise<void> => {
   return speakQueue
 }
 
+/**
+ * Wait for existing speech, including requests added while waiting, to finish.
+ * @returns {Promise<void>} Resolves when no speech request remains queued.
+ */
+const waitUntilIdle = async (): Promise<void> => {
+  let queuedSpeech: Promise<void>
+  do {
+    queuedSpeech = speakQueue
+    await queuedSpeech
+  } while (queuedSpeech !== speakQueue)
+}
+
 /** Stop active speech and keep already queued alerts silent. */
 const cancelSpeech = (): void => {
   speechController.abort()
@@ -334,6 +346,8 @@ export interface TextToSpeechApi {
   hdDownloadProgress: typeof hdDownloadProgress
   /** Speak text with the selected voice. */
   speak: typeof speak
+  /** Wait for active and already queued speech to finish. */
+  waitUntilIdle: typeof waitUntilIdle
   /** Stop active speech and keep already queued alerts silent. */
   cancelSpeech: typeof cancelSpeech
   /** Download every higher-quality Piper model. */
@@ -363,6 +377,7 @@ export const useTextToSpeech = (): TextToSpeechApi => {
     downloadingHdVoices,
     hdDownloadProgress,
     speak,
+    waitUntilIdle,
     cancelSpeech,
     downloadHdVoices,
     cancelHdVoicesDownload,
