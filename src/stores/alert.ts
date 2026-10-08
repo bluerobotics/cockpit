@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useTextToSpeech } from '@/composables/useTextToSpeech'
+import { nextAlertIndex } from '@/libs/alert-priority'
 
 import { Alert, AlertLevel } from '../types/alert'
 
@@ -11,7 +12,7 @@ export const useAlertStore = defineStore('alert', () => {
   const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   const neverShowArmedMenuWarning = useBlueOsStorage('cockpit-never-show-armed-menu-warning', false)
   const skipArmedMenuWarningThisSession = ref(false)
-  const { speak, cancelSpeech } = useTextToSpeech()
+  const { speak, waitUntilIdle, cancelSpeech } = useTextToSpeech()
   const enabledAlertLevels = useBlueOsStorage('cockpit-enabled-alert-levels', [
     { level: AlertLevel.Info, enabled: false },
     { level: AlertLevel.Success, enabled: true },
@@ -20,11 +21,25 @@ export const useAlertStore = defineStore('alert', () => {
     { level: AlertLevel.Critical, enabled: true },
   ])
   const alertVolume = useBlueOsStorage('cockpit-alert-volume', 1)
+  const pendingAlerts: {
+    /** Alert waiting for playback. */
+    alert: Alert
+    /** State group whose older pending announcement this alert supersedes. */
+    replacementKey?: string
+    /** Volume captured on arrival, or zero after voice alerts are disabled. */
+    volume: number
+  }[] = []
+  const currentAlert = ref(alerts[0])
+  const lastAlertPlaybackFinishedAt = ref(currentAlert.value.time_created)
+  const isProcessingAlerts = ref(false)
 
   watch(
     enableVoiceAlerts,
     (enabled) => {
-      if (!enabled) cancelSpeech()
+      if (!enabled) {
+        pendingAlerts.forEach((pending) => (pending.volume = 0))
+        cancelSpeech()
+      }
     },
     { flush: 'sync' }
   )
@@ -33,8 +48,16 @@ export const useAlertStore = defineStore('alert', () => {
     return [...alerts].sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
   })
 
-  const pushAlert = (alert: Alert): void => {
+  /**
+   * Record an alert and queue its announcement.
+   * @param {Alert} alert - Alert to retain in history.
+   * @param {string} [replacementKey] - Supersede older pending announcements in this group.
+   * Already playing speech and recorded history are kept.
+   * @returns {void}
+   */
+  const pushAlert = (alert: Alert, replacementKey?: string): void => {
     alerts.push(alert)
+    enqueueAlert(alert, replacementKey)
 
     switch (alert.level) {
       case AlertLevel.Success:
@@ -75,21 +98,34 @@ export const useAlertStore = defineStore('alert', () => {
     pushAlert(new Alert(AlertLevel.Critical, message, time_created))
   }
 
-  // Track the index of the last alert that finished being spoken.
-  const lastSpokenAlertIndex = ref(0)
+  const processPendingAlerts = async (): Promise<void> => {
+    while (pendingAlerts.length > 0) {
+      await waitUntilIdle()
+      const index = nextAlertIndex(pendingAlerts.map((pending) => pending.alert))
+      const [pending] = pendingAlerts.splice(index, 1)
+      currentAlert.value = pending.alert
+      await speak(pending.alert.message, pending.volume)
+      lastAlertPlaybackFinishedAt.value = new Date()
+    }
+    isProcessingAlerts.value = false
+  }
 
-  watch(alerts, () => {
-    const lastAlertIndex = alerts.length - 1
-    const lastAlert = alerts[lastAlertIndex]
-    const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === lastAlert.level)
+  const enqueueAlert = (alert: Alert, replacementKey?: string): void => {
+    if (replacementKey !== undefined) {
+      for (let index = pendingAlerts.length - 1; index >= 0; index--) {
+        if (pendingAlerts[index].replacementKey === replacementKey) pendingAlerts.splice(index, 1)
+      }
+    }
+    const alertLevelEnabled = enabledAlertLevels.value.find((enabledAlert) => enabledAlert.level === alert.level)
     const shouldMute =
       !enableVoiceAlerts.value ||
-      ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !lastAlert.message.startsWith('#'))
+      ((alertLevelEnabled === undefined || !alertLevelEnabled.enabled) && !alert.message.startsWith('#'))
     const volume = shouldMute ? 0 : alertVolume.value
-    speak(lastAlert.message, volume).finally(() => {
-      lastSpokenAlertIndex.value = lastAlertIndex
-    })
-  })
+    pendingAlerts.push({ alert, replacementKey, volume })
+    if (isProcessingAlerts.value) return
+    isProcessingAlerts.value = true
+    void nextTick().then(processPendingAlerts)
+  }
 
   return {
     alerts,
@@ -105,6 +141,8 @@ export const useAlertStore = defineStore('alert', () => {
     neverShowArmedMenuWarning,
     skipArmedMenuWarningThisSession,
     alertVolume,
-    lastSpokenAlertIndex,
+    currentAlert,
+    lastAlertPlaybackFinishedAt,
+    isProcessingAlerts,
   }
 })
