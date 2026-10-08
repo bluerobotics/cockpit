@@ -5,10 +5,9 @@
 import { capitalize } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { sendManualControl } from '@/libs/communication/mavlink'
+import { getManualControlAxisValues } from '@/libs/joystick/protocols/manual-control-axes'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
-import { round } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, CockpitModifierKeyOption, JoystickButton, JoystickProtocol } from '@/types/joystick'
 
@@ -479,20 +478,7 @@ export class MavlinkManualControlManager {
     }
 
     // Read axis values from data lake output variables (scaling is handled by the data-lake protocol handler)
-    const xVal = Number(getDataLakeVariableData('outputs/mavlink/axis-x') ?? 0)
-    const yVal = Number(getDataLakeVariableData('outputs/mavlink/axis-y') ?? 0)
-    const zVal = Number(getDataLakeVariableData('outputs/mavlink/axis-z') ?? 0)
-    const rVal = Number(getDataLakeVariableData('outputs/mavlink/axis-r') ?? 0)
-    const sVal = Number(getDataLakeVariableData('outputs/mavlink/axis-s') ?? 0)
-    const tVal = Number(getDataLakeVariableData('outputs/mavlink/axis-t') ?? 0)
-    // Users can modify the inputs arbitrarily, so handle NaN values gracefully.
-    // TODO: replace fallback value (0) with INT16_MAX (ignored) when ArduSub supports it (ArduPilot/ardupilot#32639)
-    this.manualControlState.x = round(Number.isNaN(xVal) ? 0 : xVal, 0)
-    this.manualControlState.y = round(Number.isNaN(yVal) ? 0 : yVal, 0)
-    this.manualControlState.z = round(Number.isNaN(zVal) ? 0 : zVal, 0)
-    this.manualControlState.r = round(Number.isNaN(rVal) ? 0 : rVal, 0)
-    this.manualControlState.s = round(Number.isNaN(sVal) ? 0 : sVal, 0)
-    this.manualControlState.t = round(Number.isNaN(tVal) ? 0 : tVal, 0)
+    Object.assign(this.manualControlState, getManualControlAxisValues())
     this.manualControlState.buttons = buttons_int
     this.manualControlState.buttons2 = buttons2_int
   }
