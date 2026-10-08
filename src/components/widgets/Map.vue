@@ -1968,9 +1968,10 @@ const setHomePosition = async (homePosition: [number, number]): Promise<void> =>
 // Allow executing missions
 const executeMissionOnVehicle = async (): Promise<void> => {
   logUserAction('Started mission from map')
-  const started = await missionStore.executeMissionOnVehicle()
-  if (!started) {
-    openSnackbar({ message: 'Failed to start mission.', variant: 'error' })
+  try {
+    await missionStore.executeMissionOnVehicle()
+  } catch (error) {
+    openSnackbar({ message: `Failed to start mission: ${(error as Error).message}`, variant: 'error' })
   }
 }
 
