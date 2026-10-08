@@ -190,6 +190,9 @@ const processDumpEntry = (
   modifiedSeries?: Set<string>
 ): boolean => {
   const ts = entry.ts
+  // mavlink2rest answers every message Cockpit sends with a bare "Ok(<n>)", which the dumper records as it arrives.
+  // It is not a MAVLink message, but it is not a broken line either.
+  if (typeof entry.msg === 'string' && /^Ok\(\d+\)$/.test(entry.msg)) return false
   const msg = entry.msg as DumpMessage | undefined
   const message = msg?.message
   if (!isFiniteNumber(ts) || !message || typeof message !== 'object') {
