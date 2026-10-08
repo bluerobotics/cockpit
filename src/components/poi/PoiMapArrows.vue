@@ -281,6 +281,35 @@ const handleMapEdgeCorners = (
 
 // Distance from the container edge to the arrow center for side edges
 const sideEdgeInset = 20
+
+// Half a pin's hover target plus a small gap, used to keep a left pin clear of the main-menu tab.
+const menuTriggerClearance = 24
+
+/** Stretch of a map's left edge, in container pixels, where a pin would sit under the main-menu tab. */
+interface MenuTriggerBand {
+  /** Highest pin center that stays clear of the tab. */
+  top: number
+  /** Lowest pin center that stays clear of the tab. */
+  bottom: number
+}
+
+// The main-menu tab sits over the middle of the screen's left edge, above the map. Read once per pass of pins, since
+// it cannot move while they are placed; null when the tab is hidden or clear of this map.
+const menuTriggerBand = (container: HTMLElement): MenuTriggerBand | null => {
+  const tab = document.getElementById('menu-trigger')?.getBoundingClientRect()
+  if (!tab?.height) return null
+  const box = container.getBoundingClientRect()
+  if (box.left + sideEdgeInset - menuTriggerClearance > tab.right) return null
+  return { top: tab.top - box.top - menuTriggerClearance, bottom: tab.bottom - box.top + menuTriggerClearance }
+}
+
+// A left pin under the tab moves to the closer of just above or just below it, among the two that fit on the map.
+const clearOfMenuTrigger = (edgeY: number, band: MenuTriggerBand | null, minY: number, maxY: number): number => {
+  if (!band || edgeY <= band.top || edgeY >= band.bottom) return edgeY
+  const fits = [band.top, band.bottom].filter((y) => y >= minY && y <= maxY)
+  if (!fits.length) return edgeY
+  return fits.reduce((a, b) => (Math.abs(edgeY - a) <= Math.abs(edgeY - b) ? a : b))
+}
 const getTopCenterY = (topEdgeY: number, isFullscreen: boolean): number =>
   isFullscreen ? topEdgeY + 20 : topEdgeY + 20
 const getBottomInset = (isFullscreen: boolean): number =>
@@ -341,7 +370,8 @@ const computeCircularArrow = (targetPoint: L.Point, width: number, height: numbe
 const calculateTargetEdgeArrow = (
   targetPosition: WaypointCoordinates | undefined,
   targetName: string,
-  targetColor: string
+  targetColor: string,
+  menuBand: MenuTriggerBand | null
 ): TargetEdgeArrow | null => {
   if (!props.mapReady || !map.value || !(map.value instanceof L.Map) || !targetPosition) {
     return null
@@ -453,6 +483,7 @@ const calculateTargetEdgeArrow = (
 
   if (selectedIntersection.edge === 'left' || selectedIntersection.edge === 'right') {
     edgeY = Math.max(topCenterY, Math.min(bottomCenterY, edgeY))
+    if (selectedIntersection.edge === 'left') edgeY = clearOfMenuTrigger(edgeY, menuBand, topCenterY, bottomCenterY)
   } else {
     edgeX = Math.max(sideEdgeInset, Math.min(width - sideEdgeInset, edgeX))
     edgeY = selectedIntersection.edge === 'top' ? topCenterY : bottomCenterY
@@ -483,6 +514,7 @@ const calculatePoiEdgeArrows = (): void => {
     poiEdgeArrows.value = []
     return
   }
+  const menuBand = menuTriggerBand(container)
 
   let containerSize: L.Point
   let center: L.LatLng
@@ -592,6 +624,7 @@ const calculatePoiEdgeArrows = (): void => {
 
     if (selectedIntersection.edge === 'left' || selectedIntersection.edge === 'right') {
       edgeY = Math.max(topCenterY, Math.min(bottomCenterY, edgeY))
+      if (selectedIntersection.edge === 'left') edgeY = clearOfMenuTrigger(edgeY, menuBand, topCenterY, bottomCenterY)
     } else {
       edgeX = Math.max(sideEdgeInset, Math.min(width - sideEdgeInset, edgeX))
       edgeY = selectedIntersection.edge === 'top' ? topCenterY : bottomCenterY
@@ -614,10 +647,12 @@ const calculatePoiEdgeArrows = (): void => {
 }
 
 const calculateTargetArrows = (): void => {
-  vehicleEdgeArrow.value = calculateTargetEdgeArrow(props.vehiclePosition, 'Vehicle', '#1e498f')
-  homeEdgeArrow.value = calculateTargetEdgeArrow(props.home, 'Home', '#1e498f')
+  const container = map.value instanceof L.Map ? map.value.getContainer() : undefined
+  const menuBand = container ? menuTriggerBand(container) : null
+  vehicleEdgeArrow.value = calculateTargetEdgeArrow(props.vehiclePosition, 'Vehicle', '#1e498f', menuBand)
+  homeEdgeArrow.value = calculateTargetEdgeArrow(props.home, 'Home', '#1e498f', menuBand)
   baseStationEdgeArrow.value = props.showBaseStationArrow
-    ? calculateTargetEdgeArrow(props.baseStation, 'Base station', props.baseStationColor ?? '#2b5779')
+    ? calculateTargetEdgeArrow(props.baseStation, 'Base station', props.baseStationColor ?? '#2b5779', menuBand)
     : null
 }
 
@@ -626,6 +661,21 @@ const debouncedUpdateArrows = useDebounceFn(calculatePoiEdgeArrows, 150)
 const throttledUpdateArrows = useThrottleFn(calculatePoiEdgeArrows, 15) // Max 60fps
 const debouncedUpdateTargetArrows = useDebounceFn(calculateTargetArrows, 150)
 const throttledUpdateTargetArrows = useThrottleFn(calculateTargetArrows, 15)
+
+// The main-menu tab the left pins avoid comes and goes with these, and no map event announces it.
+watch(
+  [
+    () => widgetStore.editingMode,
+    () => interfaceStore.isMainMenuVisible,
+    () => interfaceStore.mainMenuStyleTrigger,
+    () => interfaceStore.isOnSmallScreen,
+  ],
+  () => {
+    if (!props.mapReady || !(map.value instanceof L.Map)) return
+    debouncedUpdateArrows()
+    debouncedUpdateTargetArrows()
+  }
+)
 
 const centerMapOnPoi = (poiId: string): void => {
   if (!map.value || props.interactive === false) return
