@@ -269,7 +269,12 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     hideRadiusMeasure()
   }
 
-  const isInteractiveShape = (id: string): boolean => !props.readonly && fenceDraft.interactiveShapeId === id
+  // No fence offers its handles while a new one is drawn, so every click there is a point of the new shape.
+  const isInteractiveShape = (id: string): boolean =>
+    !props.readonly &&
+    !fenceDraft.isDrawingPolygon &&
+    !fenceDraft.isDrawingCircle &&
+    fenceDraft.interactiveShapeId === id
 
   // A handle drag holds the map itself hostage: panning is disabled, and both the
   // map and the document outlive this overlay, so the release stays reachable for
@@ -397,6 +402,16 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
     polygonCenterMarkers.set(polygon.id, marker)
   }
 
+  // While a new fence is being drawn, a click on an existing one is a point of the new shape, so it is left to reach
+  // the map. Otherwise nothing could be drawn inside a fence, such as an exclusion zone inside the inclusion one.
+  const selectOnClick =
+    (id: string) =>
+    (event: L.LeafletMouseEvent): void => {
+      if (fenceDraft.isDrawingPolygon || fenceDraft.isDrawingCircle) return
+      L.DomEvent.stopPropagation(event)
+      fenceDraft.setInteractive(id)
+    }
+
   const renderPolygon = (polygon: FencePolygon): void => {
     if (!map.value) return
     const existing = polygonLayers.get(polygon.id)
@@ -409,10 +424,7 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
       layer.addTo(map.value)
       applyFenceFill(layer, polygon.inclusion)
       if (!props.readonly) {
-        layer.on('click', (event: L.LeafletMouseEvent) => {
-          L.DomEvent.stopPropagation(event)
-          fenceDraft.setInteractive(polygon.id)
-        })
+        layer.on('click', selectOnClick(polygon.id))
       }
       polygonLayers.set(polygon.id, layer)
     }
@@ -475,10 +487,7 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
       layer.addTo(map.value)
       applyFenceFill(layer, circle.inclusion)
       if (!props.readonly) {
-        layer.on('click', (event: L.LeafletMouseEvent) => {
-          L.DomEvent.stopPropagation(event)
-          fenceDraft.setInteractive(circle.id)
-        })
+        layer.on('click', selectOnClick(circle.id))
       }
       circleLayers.set(circle.id, layer)
     }
@@ -573,7 +582,15 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   // drag-driven mutations no longer build per-vertex strings just to detect that
   // "something changed".
   watch(
-    () => [sourcePolygons(), sourceCircles(), sourceBreach(), fenceDraft.interactiveShapeId, props.readonly],
+    () => [
+      sourcePolygons(),
+      sourceCircles(),
+      sourceBreach(),
+      fenceDraft.interactiveShapeId,
+      fenceDraft.isDrawingPolygon,
+      fenceDraft.isDrawingCircle,
+      props.readonly,
+    ],
     () => debouncedSyncLayers(),
     { deep: true }
   )
