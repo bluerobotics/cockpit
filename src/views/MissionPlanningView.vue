@@ -4949,6 +4949,9 @@ onUnmounted(() => {
 
   targetFollower.disableAutoUpdate()
   stopUnFollowOnUserDrag?.()
+  // The side panel's visibility is app-wide, so a flag left set by a selected waypoint would block waypoint placement
+  // and the Delete key on the next visit.
+  interfaceStore.configPanelVisible = false
   if (planningMap.value) {
     planningMap.value.off('mousemove', handleMapMouseMoveNearMissionPath)
     window.removeEventListener('keydown', onGlobalKeyDown)
