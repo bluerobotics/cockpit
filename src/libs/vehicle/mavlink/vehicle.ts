@@ -190,8 +190,10 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     let timeoutReached = false
     const timeout = 5000
 
+    // Acks for other commands keep arriving while this one waits (arming triggers a home request, for one), and the
+    // loop below only polls every 100 ms, so keeping just the latest ack would let them hide the one it waits for.
     const ackHandler = (commandAck: CommandAck): void => {
-      incomingAckCommand = commandAck
+      if (commandAck.command.type === commandMessage.command.type) incomingAckCommand = commandAck
     }
 
     const dateCommand = new Date()
@@ -200,7 +202,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     // Wait for the acknowledgment to be received
     while (!timeoutReached && !receivedCommandAck) {
       await sleep(100)
-      receivedCommandAck = (incomingAckCommand as unknown as CommandAck)?.command.type === commandMessage.command.type
+      receivedCommandAck = incomingAckCommand !== undefined
       timeoutReached = differenceInMilliseconds(new Date(), dateCommand) > timeout
     }
 
