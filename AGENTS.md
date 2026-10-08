@@ -354,7 +354,9 @@ code rather than copying the nearest old example.
   `src/plugins/vuetify.ts` calls `createVuetify()` with no theme configured, so these fall back to
   Vuetify's light theme and teleport their overlay into a light stacking context out of reach of the
   component's own classes. Removing it from one of them is a regression, never a cleanup. Plain
-  in-flow controls (`v-btn`, `v-icon`, `v-card`) render dark without it.
+  in-flow controls (`v-btn`, `v-icon`, `v-card`) render dark without it, except a disabled `elevated`
+  or `flat` `v-btn`: Vuetify paints it with the light theme's white surface, so give it `disabled:`
+  fill and text overrides, as the base station panel's buttons do.
 - **One glass layer per surface.** `interfaceStore.globalGlassMenuStyles` goes on the surface itself,
   never on a block already inside a glass surface — use a flat `bg-[#FFFFFF11]` tint there. Do not
   hand-write `backdropFilter`, and do not leave a new menu or popover as a bare Vuetify surface.
