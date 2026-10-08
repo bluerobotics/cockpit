@@ -30,7 +30,7 @@ export const useAlertStore = defineStore('alert', () => {
   )
 
   const sortedAlerts = computed(() => {
-    return alerts.sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
+    return [...alerts].sort((a, b) => a.time_created.getTime() - b.time_created.getTime())
   })
 
   const pushAlert = (alert: Alert): void => {
