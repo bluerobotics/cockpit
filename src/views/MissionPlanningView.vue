@@ -1152,6 +1152,56 @@ const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
   return confirmed
 }
 
+// Moving home on an armed vehicle changes where it returns to on return-to-home and failsafes mid-operation, so it is
+// only done after the operator agrees.
+const confirmHomeMoveIfArmed = async (): Promise<boolean> => {
+  if (!vehicleStore.isArmed) return true
+  let confirmed = false
+  try {
+    await showDialog({
+      variant: 'text-only',
+      title: 'Move the vehicle home?',
+      message:
+        'The vehicle is armed. Uploading will also move its home, where it returns to on return to home and ' +
+        'failsafes, to the mission home you set.',
+      // Only the two buttons decide: a stray tap outside would otherwise upload without the home the operator set.
+      persistent: true,
+      maxWidth: '640px',
+      actions: [
+        { text: 'Keep current home', action: () => undefined },
+        {
+          text: 'Move home',
+          class: 'bg-[#FFFFFF33]',
+          action: () => {
+            confirmed = true
+          },
+        },
+      ],
+    })
+  } catch {
+    return false
+  } finally {
+    closeDialog()
+  }
+  logUserAction(confirmed ? 'Confirmed moving the armed vehicle home' : 'Kept the armed vehicle home')
+  return confirmed
+}
+
+// ArduPilot keeps its own home and replaces an uploaded mission's first item with it, so the planned home is set with
+// a command of its own. That also moves the home marker and reads back where the vehicle settled it.
+const sendPlannedHomeToVehicle = async (coordinates: WaypointCoordinates): Promise<void> => {
+  try {
+    await vehicleStore.setHomeWaypoint(coordinates, 0)
+    missionStore.plannedHomeSetByOperator = false
+  } catch (error) {
+    console.error('The vehicle refused the mission home:', error)
+    openSnackbar({
+      message: 'Mission uploaded, but the vehicle did not take the new home. Set the mission home again and re-upload.',
+      variant: 'error',
+    })
+  }
+}
+
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
     showHomePositionNotSetDialog.value = true
@@ -1159,6 +1209,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   }
 
   if (!(await confirmMissionFenceBreachIfNeeded())) return
+  const sendPlannedHome = missionStore.plannedHomeSetByOperator && (await confirmHomeMoveIfArmed())
 
   logUserAction('Uploaded mission to vehicle')
   uploadingMission.value = true
@@ -1205,9 +1256,13 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
-    // The vehicle takes its home from the mission's first item, so read it back to learn what it now holds. Not
-    // awaited, as the upload is done either way and the map only needs the answer whenever it arrives.
-    vehicleStore.fetchHomeWaypoint({ fresh: true }).catch(() => undefined)
+    if (sendPlannedHome) {
+      await sendPlannedHomeToVehicle(homeWaypoint.coordinates)
+    } else {
+      // Read the home back so the map shows the one the vehicle holds. Not awaited, as the upload is done either way
+      // and the map only needs the answer whenever it arrives.
+      vehicleStore.fetchHomeWaypoint({ fresh: true }).catch(() => undefined)
+    }
     // Keep the uploaded mission on the planner (draft) and store a restorable snapshot so quick edits
     // don't require re-downloading it from the vehicle.
     missionStore.setLastUploadedMission(buildCurrentMissionSnapshot())
@@ -1276,6 +1331,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     missionItemsInVehicle.forEach((wp: Waypoint, index) => {
       if (index === 0) {
         home.value = wp.coordinates
+        missionStore.plannedHomeSetByOperator = false
       }
       if (index > 0) {
         missionStore.currentPlanningWaypoints.push(wp)
@@ -2698,11 +2754,13 @@ const placeBaseStationFromContextMenu = (): void => {
   logUserAction('Placed the base station via the mission-planning context menu')
 }
 
-// Planning never commands the vehicle. The home point reaches it as the mission's first item on upload.
+// Planning never commands the vehicle. The home point is sent with its own set-home command once the mission is
+// uploaded.
 const setHomePosition = (): void => {
   if (!currentCursorGeoCoordinates.value) return
   const newHome: [number, number] = [currentCursorGeoCoordinates.value[0], currentCursorGeoCoordinates.value[1]]
   home.value = newHome
+  missionStore.plannedHomeSetByOperator = true
   const coordinates = `${newHome[0].toFixed(5)}, ${newHome[1].toFixed(5)}`
   openSnackbar({
     variant: 'success',
