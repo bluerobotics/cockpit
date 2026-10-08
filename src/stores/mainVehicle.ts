@@ -1154,18 +1154,23 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     }, 1000)
   })
 
-  const listenToIncomingMessages = (messageType: string, callback: (pack: Package) => void): void => {
-    if (!mainVehicle.value) {
+  // Both return a function that stops the listener, bound to the vehicle it was added to.
+  const listenToIncomingMessages = (messageType: string, callback: (pack: Package) => void): (() => void) => {
+    const vehicle = mainVehicle.value
+    if (!vehicle) {
       throw new Error('No vehicle available to listen for incoming messages.')
     }
-    mainVehicle.value?.onIncomingMAVLinkMessage.add(messageType, callback)
+    vehicle.onIncomingMAVLinkMessage.add(messageType, callback)
+    return () => vehicle.onIncomingMAVLinkMessage.remove(messageType, callback)
   }
 
-  const listenToOutgoingMessages = (messageType: string, callback: (pack: Package) => void): void => {
-    if (!mainVehicle.value) {
+  const listenToOutgoingMessages = (messageType: string, callback: (pack: Package) => void): (() => void) => {
+    const vehicle = mainVehicle.value
+    if (!vehicle) {
       throw new Error('No vehicle available to listen for outgoing messages.')
     }
-    mainVehicle.value?.onOutgoingMAVLinkMessage.add(messageType, callback)
+    vehicle.onOutgoingMAVLinkMessage.add(messageType, callback)
+    return () => vehicle.onOutgoingMAVLinkMessage.remove(messageType, callback)
   }
 
   // Allow us to set custom commands to be used in the browser

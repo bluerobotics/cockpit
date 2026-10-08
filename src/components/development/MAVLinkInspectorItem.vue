@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { format } from 'date-fns'
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -56,24 +56,29 @@ const mainVehicleStore = useMainVehicleStore()
 const incomingMessage = ref<MessageData | null>(null)
 const outgoingMessage = ref<MessageData | null>(null)
 
+const stopListeners: (() => void)[] = []
+
 const setupMessageListeners = (): void => {
   try {
-    mainVehicleStore.listenToIncomingMessages(props.type, (pack: Package) => {
+    const stopIncoming = mainVehicleStore.listenToIncomingMessages(props.type, (pack: Package) => {
       incomingMessage.value = {
         timestamp: format(new Date(), 'LLL dd, yyyy - HH:mm:ss.SSS'),
         message: pack.message,
       }
     })
-    mainVehicleStore.listenToOutgoingMessages(props.type, (pack: Package) => {
+    stopListeners.push(stopIncoming)
+    const stopOutgoing = mainVehicleStore.listenToOutgoingMessages(props.type, (pack: Package) => {
       outgoingMessage.value = {
         timestamp: format(new Date(), 'LLL dd, yyyy - HH:mm:ss.SSS'),
         message: pack.message,
       }
     })
+    stopListeners.push(stopOutgoing)
   } catch (error) {
     console.error(`Failed to setup message listeners for type ${props.type}:`, error)
   }
 }
 
 onMounted(setupMessageListeners)
+onBeforeUnmount(() => stopListeners.forEach((stop) => stop()))
 </script>
