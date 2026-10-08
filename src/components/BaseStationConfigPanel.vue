@@ -56,7 +56,7 @@
             </div>
             <div v-if="!hasLocalGnssSource" class="config-row">
               <v-btn
-                class="config-serial-gnss-btn bg-[#FFFFFF22] text-white"
+                class="config-serial-gnss-btn bg-[#FFFFFF22] text-white disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50"
                 variant="elevated"
                 size="small"
                 prepend-icon="mdi-usb-port"

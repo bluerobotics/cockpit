@@ -88,7 +88,7 @@
             v-else
             variant="flat"
             size="small"
-            class="bg-[#FFFFFF22]"
+            class="bg-[#FFFFFF22] disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50"
             :disabled="!gnss.isSupported || !device.port"
             @click="gnss.connectDevice(activeId)"
           >
