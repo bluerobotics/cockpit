@@ -44,10 +44,18 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed, ref } from 'vue'
+<script lang="ts">
+import { ref } from 'vue'
 
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+
+// Module-level, so the tracked messages are still there when the MAVLink page is opened again.
+const trackedMessageTypes = ref<Set<MAVLinkType>>(new Set())
+</script>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+
 import mavlinkDefinition from '@/libs/vehicle/mavlink/mavlink-definition'
 
 import MAVLinkInspectorItem from './MAVLinkInspectorItem.vue'
@@ -63,8 +71,6 @@ const filteredMessageTypes = computed(() => {
   if (!query) return availableMessageTypes.value
   return availableMessageTypes.value.filter((type) => type.toLowerCase().includes(query))
 })
-
-const trackedMessageTypes = ref<Set<MAVLinkType>>(new Set())
 
 const toggleMessageTracking = (type: MAVLinkType): void => {
   if (trackedMessageTypes.value.has(type)) {
