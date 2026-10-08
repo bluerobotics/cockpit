@@ -171,7 +171,15 @@ interface Props {
   interactive?: boolean
 }
 
-const props = defineProps<Props>()
+// An optional boolean prop left out is cast to false, which would leave every map but the minimap with dead pins.
+const props = withDefaults(defineProps<Props>(), {
+  baseStationColor: undefined,
+  widget: undefined,
+  targetFollower: undefined,
+  boundary: 'rectangle',
+  bearing: 0,
+  interactive: true,
+})
 
 const { resolvedPointsOfInterest } = usePointsOfInterest()
 const widgetStore = useWidgetManagerStore()
