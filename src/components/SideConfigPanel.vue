@@ -1,5 +1,6 @@
 <template>
   <transition
+    :appear="appear"
     :enter-active-class="enterActiveClass"
     :leave-active-class="leaveActiveClass"
     :enter-from-class="enterFromClass"
@@ -66,6 +67,10 @@ const props = defineProps<{
    * Text written along the tab that reopens the panel
    */
   reopenLabel?: string
+  /**
+   * Slide the panel in when it mounts already open, for a consumer that mounts it on demand
+   */
+  appear?: boolean
 }>()
 
 const closePanel = (): void => {

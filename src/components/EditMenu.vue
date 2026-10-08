@@ -539,8 +539,8 @@
     </GlassModal>
   </teleport>
 
-  <SideConfigPanel position="right" hide-button>
-    <ElementConfigPanel v-if="store.elementToShowOnDrawer?.hash" />
+  <SideConfigPanel v-if="store.elementToShowOnDrawer?.hash" position="right" hide-button appear>
+    <ElementConfigPanel />
   </SideConfigPanel>
 </template>
 
