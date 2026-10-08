@@ -718,6 +718,17 @@ watch(
   () => (vehicleConnected.value = mainVehicleStore.isVehicleOnline)
 )
 
+// A link that takes over without a gap never changes isVehicleOnline, so a heartbeat after the switch is what
+// shows it works.
+let mainConnectionSwitchedAt = 0
+watch(
+  () => mainVehicleStore.lastHeartbeat,
+  (heartbeat) => {
+    if (vehicleConnected.value !== undefined || !heartbeat) return
+    if (heartbeat.getTime() > mainConnectionSwitchedAt) vehicleConnected.value = true
+  }
+)
+
 const mainConnectionForm = ref()
 const mainConnectionFormValid = ref(false)
 const mavlink2RestWebsocketURI = ref(mainVehicleStore.MAVLink2RestWebsocketURI)
@@ -730,6 +741,7 @@ const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
     ConnectionManager.addConnection(new Connection.URI(conn), Protocol.Type.MAVLink, {
       websocket: { getWatchdogTimeoutMs: () => mainVehicleStore.vehicleConnectionWatchdogTimeoutMs },
     })
+    mainConnectionSwitchedAt = Date.now()
   } catch (error) {
     console.error(error)
     alert(`Could not update main connection. ${error}.`)
