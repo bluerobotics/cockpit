@@ -1,13 +1,14 @@
 import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import { blankMapping } from '@/assets/joystick-profiles'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
-import { openActionErrorSnackbar } from '@/composables/snackbar'
+import { openActionErrorSnackbar, openSnackbar } from '@/composables/snackbar'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
 import {
   joystickCalibrationOptionsKey,
@@ -19,6 +20,7 @@ import {
 import { allAvailableAxes, allAvailableButtons, performJoystickMappingMigrations } from '@/libs/joystick/protocols'
 import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { updateDataLakeFromJoystick } from '@/libs/joystick/protocols/data-lake'
+import { hasJoystickMotionInput } from '@/libs/joystick/protocols/manual-control-axes'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { settingsManager } from '@/libs/settings-management'
 import { isElectron, isEqual } from '@/libs/utils'
@@ -544,6 +546,25 @@ export const useControllerStore = defineStore('controller', () => {
   const previousActionStates = ref<Map<string, boolean>>(new Map())
 
   registerControllerUpdateCallback(updateDataLakeFromJoystick)
+
+  let disarmedMotionNoticeShown = false
+  let lastDisarmedMotionNoticeTime = -Infinity
+  registerControllerUpdateCallback(() => {
+    const motionWhileDisarmed =
+      mainVehicleStore.isVehicleOnline &&
+      mainVehicleStore.isArmed === false &&
+      hasJoystickMotionInput(mainVehicleStore.vehicleType)
+    const now = Date.now()
+    if (motionWhileDisarmed && !disarmedMotionNoticeShown && now - lastDisarmedMotionNoticeTime >= 5000) {
+      lastDisarmedMotionNoticeTime = now
+      openSnackbar({
+        message: t`Vehicle is disarmed. Arm it when safe to use joystick motion controls.`,
+        variant: 'warning',
+        duration: 5000,
+      })
+    }
+    disarmedMotionNoticeShown = motionWhileDisarmed
+  })
 
   registerControllerUpdateCallback(async (joystickState, actionsMapping, activeActions, actionsConfirmRequired) => {
     if (!joystickState || !actionsMapping || !activeActions || !actionsConfirmRequired) {

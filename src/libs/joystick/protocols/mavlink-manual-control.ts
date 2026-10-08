@@ -5,12 +5,10 @@
 import { capitalize } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
-import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { sendManualControl } from '@/libs/communication/mavlink'
+import { getManualControlAxisValues } from '@/libs/joystick/protocols/manual-control-axes'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
-import { round } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
-import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, CockpitModifierKeyOption, JoystickButton, JoystickProtocol } from '@/types/joystick'
 
 /**
@@ -215,9 +213,6 @@ export enum MAVLinkManualControlButton {
 }
 
 const { showDialog } = useInteractionDialog()
-
-// MANUAL_CONTROL marks an axis as invalid with INT16_MAX, so the autopilot releases it instead of reading a value
-const INT16_MAX = 32767
 
 const manualControlButtonFromParameterName = (name: string): MAVLinkManualControlButton | undefined => {
   const button = Object.entries(MAVLinkManualControlButton).find((entry) => entry[1] === name)?.[0]
@@ -432,26 +427,6 @@ export class MavlinkManualControlManager {
       this.manualControlState = new MavlinkManualControlState()
     }
 
-    // Read axis values from data lake output variables (scaling is handled by the data-lake protocol handler)
-    const xVal = Number(getDataLakeVariableData('outputs/mavlink/axis-x'))
-    const yVal = Number(getDataLakeVariableData('outputs/mavlink/axis-y'))
-    const zVal = Number(getDataLakeVariableData('outputs/mavlink/axis-z'))
-    const rVal = Number(getDataLakeVariableData('outputs/mavlink/axis-r'))
-    const sVal = Number(getDataLakeVariableData('outputs/mavlink/axis-s'))
-    const tVal = Number(getDataLakeVariableData('outputs/mavlink/axis-t'))
-    // Users can modify the inputs arbitrarily, so handle NaN values gracefully.
-    // TODO: replace the ArduSub fallbacks with INT16_MAX (ignored) when ArduSub supports it (ArduPilot/ardupilot#32639)
-    // ArduSub reads z as 0 to 1000 with 500 as neutral, so 0 would command full down.
-    const isSub = this.vehicle?.type() === VehicleType.Sub
-    const fallback = isSub ? 0 : INT16_MAX
-    const zFallback = isSub ? 500 : INT16_MAX
-    this.manualControlState.x = round(Number.isNaN(xVal) ? fallback : xVal, 0)
-    this.manualControlState.y = round(Number.isNaN(yVal) ? fallback : yVal, 0)
-    this.manualControlState.z = round(Number.isNaN(zVal) ? zFallback : zVal, 0)
-    this.manualControlState.r = round(Number.isNaN(rVal) ? fallback : rVal, 0)
-    this.manualControlState.s = round(Number.isNaN(sVal) ? fallback : sVal, 0)
-    this.manualControlState.t = round(Number.isNaN(tVal) ? fallback : tVal, 0)
-
     let buttons_int = 0
     let buttons2_int = 0
 
@@ -505,6 +480,8 @@ export class MavlinkManualControlManager {
       }
     }
 
+    // Read axis values from data lake output variables (scaling is handled by the data-lake protocol handler)
+    Object.assign(this.manualControlState, getManualControlAxisValues(this.vehicle?.type()))
     this.manualControlState.buttons = buttons_int
     this.manualControlState.buttons2 = buttons2_int
   }
