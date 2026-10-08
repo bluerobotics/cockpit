@@ -173,3 +173,14 @@ test('muted alerts still advance the displayed alert without starting speech', a
   expect(spoken).toEqual([])
   store.$dispose()
 })
+
+test('sorting alert history does not reorder its arrival sequence', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const { Alert, AlertLevel } = await import('@/types/alert')
+  const store = useAlertStore()
+  const initialAlert = store.alerts[0]
+  store.alerts.push(new Alert(AlertLevel.Success, 'Older event', new Date(0)))
+  expect(store.sortedAlerts.map((alert) => alert.message)).toEqual(['Older event', 'Cockpit started'])
+  expect(store.alerts[0]).toBe(initialAlert)
+  store.$dispose()
+})
