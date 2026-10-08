@@ -309,7 +309,7 @@
                             <div class="text-center mb-3">
                               <h4 class="font-medium text-white mb-1">{{ suggestion.actionName }}</h4>
                             </div>
-                            <div class="flex justify-center mt-auto mb-5">
+                            <div class="flex justify-center w-full mt-auto mb-5">
                               <div class="joystick-svg-container-small">
                                 <JoystickButtonIndicator
                                   :button-number="suggestion.button"
@@ -428,7 +428,7 @@
                                 {{ suggestion.description }}
                               </p>
                             </div>
-                            <div class="flex justify-center mt-auto mb-5">
+                            <div class="flex justify-center w-full mt-auto mb-5">
                               <div class="joystick-svg-container-small">
                                 <JoystickButtonIndicator
                                   :button-number="suggestion.button"
@@ -575,7 +575,7 @@
                                 {{ suggestion.description }}
                               </p>
                             </div>
-                            <div class="flex justify-center mt-auto mb-5">
+                            <div class="flex justify-center w-full mt-auto mb-5">
                               <div class="joystick-svg-container-small">
                                 <JoystickButtonIndicator
                                   :button-number="suggestion.button"
