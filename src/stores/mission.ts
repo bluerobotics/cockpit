@@ -85,6 +85,14 @@ export const useMissionStore = defineStore('mission', () => {
   const showMissionPathSignalStrength = useBlueOsStorage('cockpit-show-mission-path-signal-strength', false)
   const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
   const cruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
+  // Cruise speed of the mission being planned. Like plannedHomePosition, it only reaches the vehicle (and the stored
+  // default) on upload, but the estimates have to follow it while it is edited.
+  const plannedCruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
+  // Follows the stored default whether or not the planner is open, since the synced value can arrive at any time.
+  watch(defaultCruiseSpeed, (newDefault) => {
+    const speed = Number(newDefault)
+    if (Number.isFinite(speed)) plannedCruiseSpeed.value = speed
+  })
   const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
     'cockpit-user-last-map-tile-provider',
     'Esri World Imagery'
@@ -975,6 +983,7 @@ export const useMissionStore = defineStore('mission', () => {
     removeCommandFromWaypoint,
     updateWaypointCommand,
     defaultCruiseSpeed,
+    plannedCruiseSpeed,
     cruiseSpeed,
     applyCruiseSpeed,
     userLastMapTileProvider,

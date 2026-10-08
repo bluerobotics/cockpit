@@ -1533,16 +1533,12 @@ watch(rightPanelShowsMissionConfig, (showsMissionConfig) => {
   if (showsMissionConfig) baseStationStore.configPanelOpen = false
 })
 
-const localCruiseSpeed = ref<number>(Number(missionStore.defaultCruiseSpeed))
-watch(
-  () => missionStore.defaultCruiseSpeed,
-  (newVal) => {
-    const num = Number(newVal)
-    if (Number.isFinite(num) && num !== localCruiseSpeed.value) {
-      localCruiseSpeed.value = num
-    }
-  }
-)
+const localCruiseSpeed = computed({
+  get: () => missionStore.plannedCruiseSpeed,
+  set: (value: number) => {
+    missionStore.plannedCruiseSpeed = value
+  },
+})
 
 const cruiseSpeedTouched = ref(false)
 const cruiseSpeedStatus = computed<'invalid' | 'unchanged' | 'valid'>(() => {
