@@ -1,3 +1,5 @@
+import type { GeoTIFFImage } from 'geotiff'
+
 import type { MapOverlayBounds, MapOverlayRenderMode } from '@/types/mission'
 
 // Cap on the rendered image's largest dimension. The raster is rasterized once to a static image; capping keeps
@@ -6,7 +8,7 @@ const MAX_OVERLAY_IMAGE_DIM = 4096
 
 // Bump whenever the rasterization/color logic changes, so persisted render caches produced by an older version
 // are treated as misses and regenerated instead of showing a stale image.
-export const OVERLAY_RENDER_VERSION = 1
+export const OVERLAY_RENDER_VERSION = 2
 
 /**
  * The rasterized GeoTIFF as a static image (PNG data URL) plus the geographic bounds it covers. This is the
@@ -119,14 +121,42 @@ const buildColorFn = (
 
 // Locate the band holding per-pixel alpha via the TIFF ExtraSamples tag (1 = associated, 2 = unassociated alpha),
 // falling back to the conventional last band for RGBA / grey+alpha rasters that omit the tag.
-const findAlphaBandIndex = (fileDirectory: Record<string, unknown>, bandCount: number): number | null => {
-  const extraSamples = fileDirectory.ExtraSamples
-  if (Array.isArray(extraSamples) && extraSamples.length > 0) {
-    const alphaOffset = extraSamples.findIndex((sample) => sample === 1 || sample === 2)
-    if (alphaOffset >= 0) return bandCount - extraSamples.length + alphaOffset
+const findAlphaBandIndex = (extraSamples: ArrayLike<number> | undefined, bandCount: number): number | null => {
+  const samples = Array.from(extraSamples ?? [])
+  if (samples.length > 0) {
+    const alphaOffset = samples.findIndex((sample) => sample === 1 || sample === 2)
+    if (alphaOffset >= 0) return bandCount - samples.length + alphaOffset
   }
   if (bandCount === 4 || bandCount === 2) return bandCount - 1
   return null
+}
+
+/**
+ * How a raster's bands are laid out.
+ */
+interface RasterBandLayout {
+  /**
+   * Whether every band is 8-bit, so it is drawn as-is rather than contrast-stretched.
+   */
+  is8bit: boolean
+  /**
+   * Index of the band holding per-pixel alpha, or null when there is none.
+   */
+  alphaIndex: number | null
+}
+
+/**
+ * Read how a raster's bands are laid out, through the geotiff v3 accessors.
+ * @param {GeoTIFFImage} image - The image to inspect.
+ * @returns {RasterBandLayout} Whether it is 8-bit, and which band holds alpha.
+ */
+export const rasterBandLayout = (image: GeoTIFFImage): RasterBandLayout => {
+  const bandCount = image.getSamplesPerPixel()
+  const bits = Array.from({ length: bandCount }, (_, band) => image.getBitsPerSample(band))
+  return {
+    is8bit: bits.every((bit) => bit === 8),
+    alphaIndex: findAlphaBandIndex(image.fileDirectory.getValue('ExtraSamples'), bandCount),
+  }
 }
 
 /**
@@ -259,10 +289,7 @@ export const renderGeoTiffImage = async (
     interleave: false,
   })) as unknown as ArrayLike<number>[]
 
-  const fileDirectory = image.fileDirectory as Record<string, unknown>
-  const bitsPerSample = fileDirectory.BitsPerSample
-  const is8bit = Array.isArray(bitsPerSample) && bitsPerSample.every((bits) => bits === 8)
-  const alphaIndex = findAlphaBandIndex(fileDirectory, bands.length)
+  const { is8bit, alphaIndex } = rasterBandLayout(image)
   const stats = is8bit ? undefined : computeBandStats(bands, noData)
   const colorFn = buildColorFn(renderMode, noData, stats?.mins, stats?.maxs, is8bit, alphaIndex)
   const dataUrl = renderBandsToDataUrl(bands, outWidth, outHeight, colorFn)
