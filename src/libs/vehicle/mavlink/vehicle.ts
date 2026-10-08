@@ -1622,7 +1622,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
       await this.arm()
       await sleep(100)
     }
-    if (!this.isArmed) {
+    if (!this.isArmed()) {
       throw Error('Could not arm the vehicle. Please arm it manually.')
     }
 
