@@ -49,6 +49,7 @@ export const useVideoChunkManager = (): {
   zipProcessingProgress: any
   zipProcessingMessage: any
   fetchChunkGroups: () => Promise<void>
+  countChunkGroups: () => Promise<number>
   deleteChunkGroup: (group: ChunkGroup) => Promise<void>
   deleteAllChunks: () => Promise<void>
   downloadChunkGroup: (group: ChunkGroup) => Promise<void>
@@ -121,6 +122,23 @@ export const useVideoChunkManager = (): {
     }
   }
 
+  const isChunkKey = (key: string): boolean => {
+    if (key.includes('thumbnail_')) return false
+    const parts = key.split('_')
+    if (parts.length < 2) return false
+    const chunkNumber = parseInt(parts[parts.length - 1], 10)
+    return !isNaN(chunkNumber)
+  }
+
+  const storedChunkSize = async (key: string): Promise<number | undefined> => {
+    if (isElectron() && window.electronAPI) {
+      const fileStats = await window.electronAPI.getFileStats(key, ['videos', 'temporary-video-chunks'])
+      return fileStats?.exists ? fileStats.size || 0 : undefined
+    }
+    const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
+    return blob && blob.size > 0 ? blob.size : undefined
+  }
+
   /**
    * Fetch and group chunks
    * @returns {Promise<void>} Promise that resolves when chunks are fetched
@@ -134,13 +152,7 @@ export const useVideoChunkManager = (): {
       let totalSize = 0
 
       // Filter valid keys first
-      const validKeys = allKeys.filter((key) => {
-        if (key.includes('thumbnail_')) return false
-        const parts = key.split('_')
-        if (parts.length < 2) return false
-        const chunkNumber = parseInt(parts[parts.length - 1], 10)
-        return !isNaN(chunkNumber)
-      })
+      const validKeys = allKeys.filter(isChunkKey)
 
       // Process chunks in parallel batches for much faster loading
       const BATCH_SIZE = 20 // Process 20 chunks at a time
@@ -154,16 +166,8 @@ export const useVideoChunkManager = (): {
             const chunkNumber = parseInt(parts[parts.length - 1], 10)
 
             try {
-              let chunkSize = 0
-              if (isElectron() && window.electronAPI) {
-                const fileStats = await window.electronAPI.getFileStats(key, ['videos', 'temporary-video-chunks'])
-                if (!fileStats?.exists) return
-                chunkSize = fileStats?.size || 0
-              } else {
-                const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
-                if (!blob || blob.size === 0) return
-                chunkSize = blob.size
-              }
+              const chunkSize = await storedChunkSize(key)
+              if (chunkSize === undefined) return
 
               totalSize += chunkSize
               if (!groups[hash]) {
@@ -208,6 +212,30 @@ export const useVideoChunkManager = (): {
     } finally {
       loadingData.value = false
     }
+  }
+
+  /**
+   * Count the groups `fetchChunkGroups` would list, reading each group's chunks only until one is stored
+   * @returns {Promise<number>} Number of chunk groups with at least one stored chunk
+   */
+  const countChunkGroups = async (): Promise<number> => {
+    const keysByHash: Record<string, string[]> = {}
+    for (const key of (await videoStore.tempVideoStorage.keys()).filter(isChunkKey)) {
+      const hash = key.split('_')[0]
+      if (!keysByHash[hash]) keysByHash[hash] = []
+      keysByHash[hash].push(key)
+    }
+
+    const hasStoredChunk = async (keys: string[]): Promise<boolean> => {
+      for (const key of keys) {
+        const chunkSize = await storedChunkSize(key).catch(() => undefined)
+        if (chunkSize !== undefined) return true
+      }
+      return false
+    }
+
+    const groupsWithChunks = await Promise.all(Object.values(keysByHash).map(hasStoredChunk))
+    return groupsWithChunks.filter(Boolean).length
   }
 
   /**
@@ -662,6 +690,7 @@ export const useVideoChunkManager = (): {
 
     // Methods
     fetchChunkGroups,
+    countChunkGroups,
     deleteChunkGroup,
     deleteAllChunks,
     downloadChunkGroup,
