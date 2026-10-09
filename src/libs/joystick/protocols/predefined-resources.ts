@@ -3,6 +3,7 @@ import { createDataLakeVariable, DataLakeVariableType } from '@/libs/actions/dat
 import { ensureCockpitTransformingFunction } from '@/libs/actions/data-lake-transformations'
 import {
   getAllMavlinkMessageActionConfigs,
+  mavlinkMessageActionIdPrefix,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
 import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -87,6 +88,12 @@ const setupMavlinkCameraResources = (): void => {
   }
 
   const existingActions = getAllMavlinkMessageActionConfigs()
+  // A renamed action keeps its id, so the id these were first registered under finds them before their name does.
+  const findPredefinedActionId = (name: string): string | undefined => {
+    const originalId = `${mavlinkMessageActionIdPrefix} (${name})`
+    if (existingActions[originalId]) return originalId
+    return Object.entries(existingActions).find(([, a]) => a.name === name)?.[0]
+  }
 
   // Create MAVLink message action for camera zoom (if not already registered)
   const cameraZoomAction = {
@@ -107,9 +114,9 @@ const setupMavlinkCameraResources = (): void => {
     },
   }
 
-  const existingCameraZoomAction = Object.entries(existingActions).find(([, a]) => a.name === cameraZoomAction.name)
-  if (existingCameraZoomAction) {
-    mavlinkCameraZoomActionId = existingCameraZoomAction[0]
+  const existingCameraZoomActionId = findPredefinedActionId(cameraZoomAction.name)
+  if (existingCameraZoomActionId) {
+    mavlinkCameraZoomActionId = existingCameraZoomActionId
   } else {
     mavlinkCameraZoomActionId = registerMavlinkMessageActionConfig(cameraZoomAction)
   }
@@ -133,9 +140,9 @@ const setupMavlinkCameraResources = (): void => {
     },
   }
 
-  const existingCameraFocusAction = Object.entries(existingActions).find(([, a]) => a.name === cameraFocusAction.name)
-  if (existingCameraFocusAction) {
-    mavlinkCameraFocusActionId = existingCameraFocusAction[0]
+  const existingCameraFocusActionId = findPredefinedActionId(cameraFocusAction.name)
+  if (existingCameraFocusActionId) {
+    mavlinkCameraFocusActionId = existingCameraFocusActionId
   } else {
     mavlinkCameraFocusActionId = registerMavlinkMessageActionConfig(cameraFocusAction)
   }

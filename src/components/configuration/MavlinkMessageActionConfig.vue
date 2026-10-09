@@ -97,7 +97,8 @@ const defaultActionConfig = {
 }
 
 const actionDialog = ref({ show: false })
-const editMode = ref(false)
+const idBeingEdited = ref<string>()
+const editMode = computed(() => idBeingEdited.value !== undefined)
 const newActionConfig = ref<MavlinkMessageActionConfig>(defaultActionConfig)
 
 const availableMessageTypes = Object.values(MAVLinkType)
@@ -146,11 +147,11 @@ const resetActionConfig = (messageType: MAVLinkType = defaultMessageType): void 
 const resetNewAction = (): void => {
   // Deep copy, to avoid sharing config between Actions
   newActionConfig.value = structuredClone(defaultActionConfig)
+  idBeingEdited.value = undefined
 }
 
 const createActionConfig = (): void => {
-  editMode.value = false
-  registerMavlinkMessageActionConfig(newActionConfig.value)
+  registerMavlinkMessageActionConfig(newActionConfig.value, idBeingEdited.value)
   emit('action-saved')
   resetNewAction()
 }
@@ -174,7 +175,7 @@ const exportAction = (id: string): void => {
   const a = document.createElement('a')
   a.style.display = 'none'
   a.href = url
-  a.download = `${id}.json`
+  a.download = `${action.name}.json`
   document.body.appendChild(a)
   a.click()
   window.URL.revokeObjectURL(url)
@@ -196,8 +197,8 @@ const closeActionDialog = (): void => {
 const openEditDialog = (id: string): void => {
   const action = getMavlinkMessageActionConfig(id)
   if (action) {
+    idBeingEdited.value = id
     logUserAction(`Opened edit dialog for MAVLink message action '${action.name}'`)
-    editMode.value = true
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
     actionDialog.value.show = true
   }

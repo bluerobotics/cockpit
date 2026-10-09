@@ -84,7 +84,8 @@ const newActionConfig = ref<JavascriptActionConfig>({
 const codeError = ref('')
 // Test runs belong to the dialog rather than to an action id, which the name may still change before saving.
 const testRuns = createCleanupScope('JavaScript action test')
-const editMode = ref(false)
+const idBeingEdited = ref<string>()
+const editMode = computed(() => idBeingEdited.value !== undefined)
 const actionDialog = ref({ show: false })
 
 const isFormValid = computed(() => {
@@ -141,8 +142,7 @@ const handleDialogClose = (): void => {
 }
 
 const createActionConfig = (): void => {
-  editMode.value = false
-  registerJavascriptActionConfig(newActionConfig.value)
+  registerJavascriptActionConfig(newActionConfig.value, idBeingEdited.value)
   emit('action-saved')
   resetNewAction()
 }
@@ -159,7 +159,7 @@ const resetNewAction = (): void => {
     code: '',
   }
   codeError.value = ''
-  editMode.value = false
+  idBeingEdited.value = undefined
   if (editor) {
     editor.setValue('')
   }
@@ -184,7 +184,7 @@ const exportAction = (id: string): void => {
   const a = document.createElement('a')
   a.style.display = 'none'
   a.href = url
-  a.download = `${id}.json`
+  a.download = `${action.name}.json`
   document.body.appendChild(a)
   a.click()
   window.URL.revokeObjectURL(url)
@@ -206,8 +206,8 @@ const closeActionDialog = (): void => {
 const openEditDialog = (id: string): void => {
   const action = getJavascriptActionConfig(id)
   if (action) {
+    idBeingEdited.value = id
     logUserAction(`Opened edit dialog for JavaScript action '${action.name}'`)
-    editMode.value = true
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
     actionDialog.value.show = true
   }
