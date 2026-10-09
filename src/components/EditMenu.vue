@@ -469,11 +469,11 @@
         id="mini-widget-card"
         :ref="(el) => (miniWidgetContainers[miniWidget.component] = el as HTMLElement)"
         :key="miniWidget.hash"
-        class="palette-card flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
+        class="palette-card flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible select-none"
         :draggable="false"
       >
         <div />
-        <div id="draggable-mini-widget" class="palette-card-handle m-2 select-auto cursor-grab">
+        <div id="draggable-mini-widget" class="palette-card-handle m-2 cursor-grab">
           <div class="palette-card-preview flex justify-center pointer-events-none min-w-[170px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
@@ -497,11 +497,11 @@
         v-for="miniWidget in availableCustomWidgetElementsTypes"
         id="mini-widget-card"
         :key="miniWidget.hash"
-        class="palette-card flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
+        class="palette-card flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible select-none"
         draggable="false"
       >
         <div />
-        <div id="draggable-mini-widget" class="palette-card-handle m-2 select-auto cursor-grab">
+        <div id="draggable-mini-widget" class="palette-card-handle m-2 cursor-grab">
           <div class="palette-card-preview flex justify-center pointer-events-none min-w-[170px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
