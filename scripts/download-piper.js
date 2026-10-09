@@ -117,6 +117,27 @@ function extractRuntime(archivePath, targetDir, platform) {
 }
 
 /**
+ * Compile the runtime where no prebuilt one exists. A missing CMake or a failed
+ * compile only warns, since the app falls back to the system voices without it.
+ */
+function buildRuntimeFromSource() {
+  try {
+    execSync('cmake --version', { stdio: 'ignore' })
+  } catch (error) {
+    console.warn(
+      '⚠️ CMake not found, so the offline alert voice was not built. Install it (`brew install cmake`) and run `yarn build:piper`.'
+    )
+    return
+  }
+  try {
+    // A child process, since the build script requires this one, before this one has set its exports.
+    execSync(`"${process.execPath}" "${path.join(__dirname, 'build-piper-macos-arm64.js')}"`, { stdio: 'inherit' })
+  } catch (error) {
+    console.warn('⚠️ Could not build the offline alert voice. Run `yarn build:piper` to retry.')
+  }
+}
+
+/**
  * Download and install the Piper runtime and bundled voice for the current platform.
  */
 async function installPiper() {
@@ -158,7 +179,7 @@ async function installPiper() {
         )
         extractRuntime(archiveFile, targetDir, platform)
       } else {
-        console.log('No prebuilt Piper runtime for this platform. Build one with `yarn build:piper`.')
+        buildRuntimeFromSource()
       }
     }
 
