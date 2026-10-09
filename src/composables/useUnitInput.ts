@@ -88,11 +88,33 @@ export const useUnitConversion = (rawUnit: string, reading?: LengthReading): Use
 export const useUnitInput = (rawValue: Ref<number>, rawUnit: string, reading?: LengthReading): UseUnitInputReturn => {
   const conversion = useUnitConversion(rawUnit, reading)
 
+  // An emptied field reports the same '' as a half-typed decimal and is left alone with it, so once the user moves
+  // on it is shown the number that is still stored rather than a blank the mission will not use. The setter runs
+  // from the field's own input event, so the focused element is that field; one already holding a number is not.
+  const fieldsToRestore = new WeakSet<HTMLInputElement>()
+  const restoreWhenLeft = (): void => {
+    const field = document.activeElement
+    if (!(field instanceof HTMLInputElement) || fieldsToRestore.has(field)) return
+    if (field.value !== '' && Number.isFinite(Number(field.value))) return
+    fieldsToRestore.add(field)
+    const restore = (): void => {
+      fieldsToRestore.delete(field)
+      if (field.value === '' || Number(field.value) !== displayedValue.value) field.value = String(displayedValue.value)
+    }
+    field.addEventListener('blur', restore, { once: true })
+  }
+
   const displayedValue = computed({
     get: () => conversion.toDisplayUnit(rawValue.value),
     // The getter rewrites a finer number to the precision it shows, so storing what was typed instead of what was
     // left on screen would build the mission from a figure the box never showed.
     set: (value: number) => {
+      // A half-typed decimal ("4.") reads as '' through v-model.number, and storing it as 0 rewrites the field
+      // under the cursor, so the value stays as it was until the text parses again.
+      if (!Number.isFinite(value)) {
+        restoreWhenLeft()
+        return
+      }
       rawValue.value = conversion.toRawUnit(round(value, displayedPlaces))
     },
   })
