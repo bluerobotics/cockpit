@@ -20,6 +20,7 @@ import {
 } from '../utils-data-lake'
 import { removeActionLink } from './action-links'
 import { removeAutoRunConfig } from './auto-run'
+import { customActionIdFor } from './custom-action-id'
 import { getDataLakeVariableData } from './data-lake'
 const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
 
@@ -32,7 +33,8 @@ let registeredMavlinkMessageActionConfigs: Record<string, MavlinkMessageActionCo
  * @returns {string} The ID under which the action was registered
  */
 export const registerMavlinkMessageActionConfig = (action: MavlinkMessageActionConfig, customId?: string): string => {
-  const id = customId ?? `${mavlinkMessageActionIdPrefix} (${action.name})`
+  const id =
+    customId ?? customActionIdFor(mavlinkMessageActionIdPrefix, action.name, registeredMavlinkMessageActionConfigs)
   registeredMavlinkMessageActionConfigs[id] = action
   saveMavlinkMessageActionConfigs()
   updateCockpitActions()
