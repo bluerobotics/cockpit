@@ -31,12 +31,10 @@ const widgetStore = useWidgetManagerStore()
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      miniWidgetsContainer: {
-        name: `${capitalize(Words.animalsOcean.random() || 'Plankton')} floating container`,
-        widgets: [],
-      },
+  if (widget.value.options.miniWidgetsContainer === undefined) {
+    widget.value.options.miniWidgetsContainer = {
+      name: `${capitalize(Words.animalsOcean.random() || 'Plankton')} floating container`,
+      widgets: [],
     }
   }
 })

@@ -526,6 +526,13 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     reader.readAsText(e.target.files[0])
   }
 
+  const uniqueWidgetName = (name: string, view: View): string => {
+    const existingNames = view.widgets.map((widget) => widget.name)
+    let newName = name
+    for (let i = 1; existingNames.includes(newName); i++) newName = `${name} ${i}`
+    return newName
+  }
+
   /**
    * Add widget with given type to given view
    * @param { WidgetType } widget - Type of the widget
@@ -881,6 +888,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   }
 
   return {
+    uniqueWidgetName,
     editingMode,
     snapToGrid,
     gridInterval,
