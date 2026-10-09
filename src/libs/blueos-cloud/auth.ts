@@ -1,3 +1,4 @@
+import { BlueOsCloudApiError } from './api'
 import { BlueOsCloudTokens, BlueOsCloudUser, DeviceAuthorizationResponse, TokenResponse } from './types'
 
 export const BLUEOS_CLOUD_AUTH0_DOMAIN = 'bcloud-prod.us.auth0.com'
@@ -149,6 +150,9 @@ export const pollForDeviceAuthorizationToken = async (
 
 /**
  * Refreshes the access token using a previously issued refresh token.
+ *
+ * Throws a {@link BlueOsCloudApiError} when the server answered and refused the exchange, and whatever `fetch`
+ * threw when it could not be reached at all, so callers can tell a dead session from a missing connection.
  * @param {string} refreshToken - Refresh token returned during the original device flow.
  * @returns {Promise<BlueOsCloudTokens>} New token bundle reusing the input refresh token when a new one is not issued.
  */
@@ -167,7 +171,10 @@ export const refreshAccessToken = async (refreshToken: string): Promise<BlueOsCl
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`Failed to refresh BlueOS Cloud session: ${res.status} ${text || res.statusText}`)
+    throw new BlueOsCloudApiError(
+      `Failed to refresh BlueOS Cloud session: ${res.status} ${text || res.statusText}`,
+      res.status
+    )
   }
 
   const data: TokenResponse = await res.json()
