@@ -21,6 +21,8 @@ const { addMacRpath, hasRuntime } = require('./download-piper')
  */
 
 const PIPER_SOURCE_TAG = 'v1.6.0'
+// The commit that tag pointed to when it was reviewed, since a tag can be moved.
+const PIPER_SOURCE_COMMIT = 'f04d52c5528ac7cf2d73757f57990ff490f75005'
 const PIPER_SOURCE_REPO = 'https://github.com/OHF-Voice/piper1-gpl.git'
 
 // Electron itself supports macOS 11 and later, and so must the binary we spawn.
@@ -89,6 +91,15 @@ function buildPiper() {
 
     console.log(`Building Piper ${PIPER_SOURCE_TAG} for macOS arm64...`)
     run(`git clone --depth 1 --branch ${PIPER_SOURCE_TAG} ${PIPER_SOURCE_REPO} "${workDir}/piper1-gpl"`)
+    const clonedCommit = execSync('git rev-parse HEAD', {
+      cwd: path.join(workDir, 'piper1-gpl'),
+      encoding: 'utf8',
+    }).trim()
+    if (clonedCommit !== PIPER_SOURCE_COMMIT) {
+      throw new Error(
+        `Piper ${PIPER_SOURCE_TAG} now points to ${clonedCommit}, not the reviewed ${PIPER_SOURCE_COMMIT}.`
+      )
+    }
 
     const cmakeFlags = [
       '-DCMAKE_BUILD_TYPE=Release',
