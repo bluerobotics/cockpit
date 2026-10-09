@@ -473,7 +473,7 @@
         :draggable="false"
       >
         <div />
-        <div id="draggable-mini-widget" class="m-2 pointer-events-auto select-auto cursor-grab" :draggable="true">
+        <div id="draggable-mini-widget" class="m-2 select-auto cursor-grab">
           <div class="flex justify-center pointer-events-none min-w-[170px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
@@ -501,7 +501,7 @@
         draggable="false"
       >
         <div />
-        <div id="draggable-mini-widget" class="m-2 pointer-events-auto select-auto cursor-grab" draggable="true">
+        <div id="draggable-mini-widget" class="m-2 select-auto cursor-grab">
           <div class="flex justify-center pointer-events-none min-w-[170px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
@@ -943,6 +943,8 @@ const miniWidgetsContainerOptions = ref<UseDraggableOptions>({
   animation: '150',
   group: widgetAddMenuGroupOptions,
   sort: false,
+  forceFallback: true,
+  fallbackOnBody: true,
 })
 useDraggable(availableMiniWidgetsContainer, availableMiniWidgetTypes, miniWidgetsContainerOptions)
 
@@ -988,6 +990,8 @@ const customWidgetElementContainerOptions = ref<UseDraggableOptions>({
   animation: '150',
   group: widgetAddMenuGroupOptions,
   sort: false,
+  forceFallback: true,
+  fallbackOnBody: true,
 })
 useDraggable(
   availableCustomWidgetElementsContainer,
