@@ -462,24 +462,24 @@
     <div
       v-show="widgetMode === 'Mini'"
       ref="availableMiniWidgetsContainer"
-      class="flex items-center w-full h-full gap-3 overflow-x-scroll overflow-y-hidden pr-2"
+      class="widget-palette flex items-center w-full h-full gap-3 overflow-x-scroll overflow-y-hidden pr-2"
     >
       <div
         v-for="miniWidget in availableMiniWidgetTypes"
         id="mini-widget-card"
         :ref="(el) => (miniWidgetContainers[miniWidget.component] = el as HTMLElement)"
         :key="miniWidget.hash"
-        class="flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
+        class="palette-card flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
         :draggable="false"
       >
         <div />
-        <div id="draggable-mini-widget" class="m-2 select-auto cursor-grab">
-          <div class="flex justify-center pointer-events-none min-w-[170px]">
+        <div id="draggable-mini-widget" class="palette-card-handle m-2 select-auto cursor-grab">
+          <div class="palette-card-preview flex justify-center pointer-events-none min-w-[170px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
         </div>
         <div
-          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B7B62] rounded-b-md text-white"
+          class="palette-card-label flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B7B62] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
@@ -491,23 +491,23 @@
     <div
       v-show="widgetMode === 'Input'"
       ref="availableCustomWidgetElementsContainer"
-      class="flex items-center w-full h-full gap-3 overflow-x-scroll overflow-y-hidden pr-2"
+      class="widget-palette flex items-center w-full h-full gap-3 overflow-x-scroll overflow-y-hidden pr-2"
     >
       <div
         v-for="miniWidget in availableCustomWidgetElementsTypes"
         id="mini-widget-card"
         :key="miniWidget.hash"
-        class="flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
+        class="palette-card flex flex-col items-center w-auto justify-between rounded-md bg-[#273842] hover:brightness-125 h-[90%] cursor-pointer elevation-4 overflow-visible"
         draggable="false"
       >
         <div />
-        <div id="draggable-mini-widget" class="m-2 select-auto cursor-grab">
-          <div class="flex justify-center pointer-events-none min-w-[170px]">
+        <div id="draggable-mini-widget" class="palette-card-handle m-2 select-auto cursor-grab">
+          <div class="palette-card-preview flex justify-center pointer-events-none min-w-[170px]">
             <MiniWidgetInstantiator :mini-widget="miniWidget" />
           </div>
         </div>
         <div
-          class="flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B7B62] rounded-b-md text-white"
+          class="palette-card-label flex items-center justify-center w-full py-1 px-2 transition-all bg-[#3B7B62] rounded-b-md text-white"
         >
           <span class="whitespace-normal text-center">{{
             miniWidget.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()) ||
@@ -1285,5 +1285,27 @@ const onRegularWidgetDragEnd = (widget: InternalWidgetSetupInfo, event: DragEven
 .wrapclass {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* A card being dragged shows only its widget, so its footprint in the bars matches what will be dropped */
+.palette-card.sortable-fallback,
+:not(.widget-palette) > .palette-card.sortable-ghost {
+  visibility: hidden;
+}
+.palette-card.sortable-fallback .palette-card-preview,
+:not(.widget-palette) > .palette-card.sortable-ghost .palette-card-preview {
+  visibility: visible;
+}
+:not(.widget-palette) > .palette-card.sortable-ghost {
+  height: auto;
+}
+:not(.widget-palette) > .palette-card.sortable-ghost .palette-card-handle {
+  margin: 0;
+}
+:not(.widget-palette) > .palette-card.sortable-ghost .palette-card-preview {
+  min-width: 0;
+}
+:not(.widget-palette) > .palette-card.sortable-ghost .palette-card-label {
+  display: none;
 }
 </style>
