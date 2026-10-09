@@ -58,7 +58,8 @@
             </div>
             <p class="text-[12px] text-white/70 leading-snug mt-1">
               Cockpit version, runtime, system context (operating system, system language, window size, touch
-              capability) and connected vehicle type / firmware. This baseline cannot be turned off.
+              capability) and connected vehicle type / firmware, along with anonymous identifiers for that vehicle and
+              its BlueOS board. This baseline cannot be turned off.
             </p>
           </div>
         </div>
