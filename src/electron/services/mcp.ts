@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
 import { randomBytes, randomUUID, timingSafeEqual } from 'crypto'
-import { app, ipcMain, WebContents } from 'electron'
+import { app, BrowserWindow, ipcMain, WebContents } from 'electron'
 import { createServer, IncomingMessage, Server as HttpServer, ServerResponse } from 'http'
 
 import type { McpConfig, McpServerStatus, McpState, McpToolCall, McpToolDefinition, McpToolResult } from '@/types/mcp'
@@ -25,6 +25,17 @@ let status: McpServerStatus = { running: false }
 let tools: McpToolDefinition[] = []
 let toolsOwner: WebContents | undefined
 const pendingCalls = new Map<string, (result: McpToolResult) => void>()
+
+const screenshotTool: McpToolDefinition = {
+  name: 'take_screenshot',
+  title: 'Take screenshot',
+  description: 'Take a screenshot of the Cockpit window as the operator sees it, to check how a change looks.',
+  inputSchema: { type: 'object', properties: {} },
+  readOnly: true,
+  runsCode: false,
+}
+// Wider shots cost the agent more context without showing it more of the interface.
+const maxScreenshotWidth = 1280
 
 const getConfig = (): McpConfig => ({ ...defaultMcpConfig, ...store.get('mcp') })
 
@@ -54,12 +65,28 @@ const callRendererTool = (name: string, args: unknown): Promise<McpToolResult> =
   })
 }
 
+const takeScreenshot = async (): Promise<CallToolResult> => {
+  // A reload keeps toolsOwner but clears the tools, and the page is not worth a screenshot until it registers again.
+  const owner = tools.length > 0 ? toolsOwner : undefined
+  const win = owner && !owner.isDestroyed() ? BrowserWindow.fromWebContents(owner) : null
+  if (!win) return errorResult('Cockpit is not ready yet. Try again in a few seconds.')
+  // A minimized or hidden window is not drawn, so its capture would come back blank.
+  if (win.isMinimized() || !win.isVisible()) {
+    return errorResult('The Cockpit window is minimized or hidden. Ask the operator to restore it, then try again.')
+  }
+  const image = await win.capturePage()
+  if (image.isEmpty()) return errorResult('Cockpit returned an empty screenshot. Try again in a few seconds.')
+  const { width } = image.getSize()
+  const scaled = width > maxScreenshotWidth ? image.resize({ width: maxScreenshotWidth, quality: 'good' }) : image
+  return { content: [{ type: 'image', data: scaled.toJPEG(85).toString('base64'), mimeType: 'image/jpeg' }] }
+}
+
 const createMcpServer = (): Server => {
   const server = new Server({ name: 'cockpit', version: app.getVersion() }, { capabilities: { tools: {} } })
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     // Listed whatever the setting, since this server has no stream to tell connected agents the list changed.
-    tools: tools.map((tool) => ({
+    tools: [...tools, screenshotTool].map((tool) => ({
       name: tool.name,
       title: tool.title,
       description: tool.runsCode ? `${tool.description}\n\n${codeToolNote}` : tool.description,
@@ -69,6 +96,7 @@ const createMcpServer = (): Server => {
   }))
 
   server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
+    if (request.params.name === screenshotTool.name) return takeScreenshot()
     const tool = tools.find((t) => t.name === request.params.name)
     if (!tool) return errorResult(`Unknown tool '${request.params.name}'.`)
     // This gates agents, not page code: scripts in the page run with Cockpit's privileges and need no tool.
@@ -179,7 +207,8 @@ const setConfig = async (changes: Partial<McpConfig>): Promise<McpState> => {
 }
 
 /**
- * Serve the tools the renderer registers to agents through a local MCP server, when the operator enabled it
+ * Serve the tools the renderer registers, plus a window screenshot, to agents through a local MCP server, when the
+ * operator enabled it
  */
 export const setupMcpService = (): void => {
   ipcMain.handle('mcp-get-state', () => getState())
