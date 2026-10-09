@@ -35,7 +35,6 @@
       :map-center="mapCenter"
       :zoom="zoom"
       boundary="circle"
-      :bearing="bearing"
       :interactive="false"
     />
     <button
@@ -326,7 +325,7 @@ const selectedTileProvider = computed(() => {
 })
 
 const mapEl = ref<HTMLElement>()
-const { mapReady, zoom, operatorZoom, bearing, map, init } = useMiniMap({
+const { mapReady, zoom, operatorZoom, map, init } = useMiniMap({
   vehiclePosition: () => trackedPosition.value,
   vehicleHeading: () => trackedHeading.value,
   headingUp: () => effectiveHeadingUp.value,
@@ -342,8 +341,7 @@ watch(operatorZoom, (level) => {
   widget.value.options.zoom = level
 })
 
-// The icon class carries no styles of its own: it is what replaces Leaflet's default divIcon box, which
-// would otherwise draw a white square behind every marker.
+// The icon class carries no styles of its own; the shared PoI markers only need one to name their element.
 useMapPoiMarkers(map, {
   iconClassName: 'minimap-poi-marker-icon',
   draggable: false,
@@ -395,7 +393,7 @@ watch(
 
 onBeforeUnmount(mapOverlays.destroyOverlays)
 
-// The minimap has no leaflet dragging, so this handle temporarily flags the widget as movable, letting the
+// The minimap has no map dragging, so this handle temporarily flags the widget as movable, letting the
 // WidgetHugger drag it even outside edit mode, then restores the flag when the drag ends.
 const enableMovingOnDrag = (): void => {
   logUserAction('Started dragging the MiniMap widget')
@@ -556,9 +554,6 @@ const onTrackedPoiSelected = (value: string | null): void => {
   position: absolute;
   inset: 0;
   z-index: 0;
-  /* Rotating about the exact center is what keeps the masked circle covered at every bearing. */
-  transform: rotate(var(--minimap-bearing, 0deg));
-  transform-origin: 50% 50%;
 }
 
 .minimap-root--offline > *:not(.minimap-offline-overlay) {
@@ -585,12 +580,6 @@ const onTrackedPoiSelected = (value: string | null): void => {
   font-size: clamp(11px, 13cqmin, 28px);
   line-height: 1.1;
   opacity: 0.6;
-}
-
-/* The rotation transform exposes hairline gaps between adjacent tiles; overlapping them by 1px hides the seams. */
-.minimap-canvas :deep(.leaflet-tile) {
-  width: 257px !important;
-  height: 257px !important;
 }
 
 .minimap-drag-handle {

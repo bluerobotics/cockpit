@@ -1,5 +1,3 @@
-import L from 'leaflet'
-
 const TILE_SIZE = 256
 
 // Mid-high zoom: keeps the pattern geographically stable across zoom levels.
@@ -21,7 +19,15 @@ export interface NoiseTileOptions {
   intensity?: number
 }
 
-export type NoiseFallbackOptionsGetter = () => NoiseTileOptions
+/** Grid position of a map tile. */
+export interface TileCoordinates {
+  /** Zoom level, on the 256-pixel tile scale. */
+  z: number
+  /** Column, from the antimeridian eastwards. */
+  x: number
+  /** Row, from the north edge southwards. */
+  y: number
+}
 
 const hashLattice = (ix: number, iy: number, seed: number): number => {
   let h = Math.imul(ix | 0, 374761393) + Math.imul(iy | 0, 668265263)
@@ -88,7 +94,7 @@ const PLACEHOLDER_SAMPLE_SIZE = 32
 
 const tileCache = new Map<string, string>()
 
-const buildCacheKey = (coords: L.Coords, options: NoiseTileOptions): string => {
+const buildCacheKey = (coords: TileCoordinates, options: NoiseTileOptions): string => {
   const intensity = options.intensity ?? 0.3
   return `${coords.z}/${coords.x}/${coords.y}|${options.baseColor}|${options.seed}|${intensity}`
 }
@@ -97,11 +103,11 @@ const buildCacheKey = (coords: L.Coords, options: NoiseTileOptions): string => {
  * Generates a noise tile as a PNG data URL. The pattern is geographically stable:
  * adjacent tiles seam continuously and the same lat/lon yields the same noise
  * across zoom levels.
- * @param {L.Coords} coords - Tile coordinates (x, y, z).
+ * @param {TileCoordinates} coords - Tile coordinates (x, y, z).
  * @param {NoiseTileOptions} options - Tile rendering options.
  * @returns {string} A `data:image/png;base64,...` URL.
  */
-export const generateNoiseTileDataUrl = (coords: L.Coords, options: NoiseTileOptions): string => {
+export const generateNoiseTileDataUrl = (coords: TileCoordinates, options: NoiseTileOptions): string => {
   const cacheKey = buildCacheKey(coords, options)
   const cached = tileCache.get(cacheKey)
   if (cached !== undefined) {
@@ -185,23 +191,19 @@ export const generateNoiseTileDataUrl = (coords: L.Coords, options: NoiseTileOpt
 
 // Safety net for providers/caches that serve a "no data" image with HTTP 200
 // instead of a 404 (the `?blankTile=false` URL flag handles the common case).
-const looksLikeProviderPlaceholder = (img: HTMLImageElement): boolean => {
-  if (!img.complete || !img.naturalWidth || !img.naturalHeight) return false
+/**
+ * Whether a decoded tile looks like a provider's "no data" placeholder rather than real imagery.
+ * @param {ImageBitmap} image - The decoded tile.
+ * @returns {boolean} True when the tile is a near-uniform light image.
+ */
+export const looksLikeProviderPlaceholder = (image: ImageBitmap): boolean => {
+  if (!image.width || !image.height) return false
 
-  let ctx: CanvasRenderingContext2D | null
-  let data: Uint8ClampedArray
-  try {
-    const canvas = document.createElement('canvas')
-    canvas.width = PLACEHOLDER_SAMPLE_SIZE
-    canvas.height = PLACEHOLDER_SAMPLE_SIZE
-    ctx = canvas.getContext('2d')
-    if (!ctx) return false
-    ctx.drawImage(img, 0, 0, PLACEHOLDER_SAMPLE_SIZE, PLACEHOLDER_SAMPLE_SIZE)
-    data = ctx.getImageData(0, 0, PLACEHOLDER_SAMPLE_SIZE, PLACEHOLDER_SAMPLE_SIZE).data
-  } catch {
-    // Tainted canvas (provider missing CORS) — never risk flagging a real tile.
-    return false
-  }
+  const canvas = new OffscreenCanvas(PLACEHOLDER_SAMPLE_SIZE, PLACEHOLDER_SAMPLE_SIZE)
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return false
+  ctx.drawImage(image, 0, 0, PLACEHOLDER_SAMPLE_SIZE, PLACEHOLDER_SAMPLE_SIZE)
+  const data = ctx.getImageData(0, 0, PLACEHOLDER_SAMPLE_SIZE, PLACEHOLDER_SAMPLE_SIZE).data
 
   const total = PLACEHOLDER_SAMPLE_SIZE * PLACEHOLDER_SAMPLE_SIZE
   const uniqueColors = new Set<number>()
@@ -223,74 +225,6 @@ const looksLikeProviderPlaceholder = (img: HTMLImageElement): boolean => {
   const lightRatio = lightPixels / total
   const monoRatio = monochromePixels / total
   return uniqueColors.size <= 10 && lightRatio > 0.7 && monoRatio > 0.85
-}
-
-const replaceWithNoise = (tile: HTMLImageElement, coords: L.Coords, options: NoiseTileOptions): void => {
-  const dataUrl = generateNoiseTileDataUrl(coords, options)
-  if (!dataUrl || tile.src === dataUrl) return
-  tile.dataset.cockpitFallback = '1'
-  tile.src = dataUrl
-  // Leaflet hides tiles without `leaflet-tile-loaded`; failed tiles never get it.
-  L.DomUtil.addClass(tile, 'leaflet-tile-loaded')
-}
-
-/**
- * Attaches a procedural-noise fallback to a Leaflet tile layer. Whenever a tile
- * fails to load (or arrives as a provider-side placeholder), the broken image is
- * replaced with a generated noise tile so the operator keeps a usable,
- * motion-trackable background.
- * @param {L.TileLayer} layer - The Leaflet tile layer to augment.
- * @param {NoiseFallbackOptionsGetter} getOptions - Returns the current options;
- *   invoked per failed tile so live changes apply immediately.
- * @returns {() => void} A teardown function that removes the listeners.
- */
-export const attachTileNoiseFallback = (layer: L.TileLayer, getOptions: NoiseFallbackOptionsGetter): (() => void) => {
-  const onError = (event: L.TileErrorEvent): void => {
-    if (!event.tile) return
-    replaceWithNoise(event.tile, event.coords, getOptions())
-  }
-  const onLoad = (event: L.TileEvent): void => {
-    const tile = event.tile
-    if (!tile || tile.dataset.cockpitFallback === '1') return
-    if (!looksLikeProviderPlaceholder(tile)) return
-    replaceWithNoise(tile, event.coords, getOptions())
-  }
-  layer.on('tileerror', onError)
-  layer.on('tileload', onLoad)
-  return () => {
-    layer.off('tileerror', onError)
-    layer.off('tileload', onLoad)
-  }
-}
-
-type LeafletInternalTiles = Record<
-  string,
-  {
-    /** Tile `<img>` element on the map. */
-    el: HTMLImageElement
-    /** Tile grid coordinates (x, y, z). */
-    coords: L.Coords
-  }
->
-
-/**
- * Re-renders the already-displayed noise-fallback tiles on a layer with the
- * latest options, so user tweaks apply without waiting for a pan/zoom refetch.
- * @param {L.TileLayer} layer - The tile layer to refresh.
- * @param {NoiseTileOptions} options - The new options to apply.
- * @returns {void}
- */
-export const refreshNoiseFallbackTiles = (layer: L.TileLayer, options: NoiseTileOptions): void => {
-  const internalLayer = layer as unknown as {
-    /** Leaflet's private cache of currently-managed tiles. */
-    _tiles?: LeafletInternalTiles
-  }
-  const tiles = internalLayer._tiles
-  if (!tiles) return
-  for (const entry of Object.values(tiles)) {
-    if (entry.el?.dataset?.cockpitFallback !== '1') continue
-    entry.el.src = generateNoiseTileDataUrl(entry.coords, options)
-  }
 }
 
 /**

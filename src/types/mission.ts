@@ -287,19 +287,18 @@ export interface SurveyPath {
   /**
    * The full continuous flight path including turnaround extensions or insets.
    */
-  path: L.LatLng[]
+  path: WaypointCoordinates[]
   /**
    * Polyline segments representing the turnaround portions at the polygon boundary.
    * Each entry is a polyline connecting boundary ↔ turnaround points.
    */
-  turnaroundSegments: L.LatLng[][]
+  turnaroundSegments: WaypointCoordinates[][]
   /**
    * Index in `path` where the crosshatch second pass (rotated 90°) begins. Undefined when crosshatch is disabled.
    */
   crosshatchStartIndex?: number
 }
 
-// TODO - Replace leaflet types with agnostic types
 export type SurveyPolygon = {
   /**
    * The coordinates of the polygon that will be converted into a survey.
@@ -560,7 +559,12 @@ export type ClosestSegmentInfo = {
   /**
    * Closest point on the segment to the mouse cursor.
    */
-  closestPointOnSegment: L.Point
+  closestPointOnSegment: {
+    /** Pixels from the map container's left edge. */
+    x: number
+    /** Pixels from the map container's top edge. */
+    y: number
+  }
   /**
    * Distance from the mouse cursor to the closest point on the segment.
    */

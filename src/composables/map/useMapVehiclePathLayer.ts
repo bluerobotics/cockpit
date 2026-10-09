@@ -1,11 +1,12 @@
-import L, { type LatLngExpression, type Map, type Polyline } from 'leaflet'
-import { type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
+import type { Map as MapLibreMap } from 'maplibre-gl'
+import { type ShallowRef, onBeforeUnmount, watch } from 'vue'
 
-import { isLeafletMapReady } from '@/libs/map/utils-map'
+import { lineFeature, removeLayersAndSource, setLineLayer, slottedLayerId } from '@/libs/map/maplibre'
+import { isMapReady } from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
 
 const vehiclePathColor = '#ffff00'
-const VEHICLE_PATH_PANE = 'vehiclePathPane'
+const vehiclePathLayerId = slottedLayerId('vehicle-path', 'trail')
 
 /**
  * Reactive inputs driving the vehicle-path layer. Getters so the composable can watch them.
@@ -20,70 +21,51 @@ export interface UseMapVehiclePathLayerOptions {
 }
 
 /**
- * Draws the vehicle's traveled path as a polyline on the given map. Keeps a single persistent polyline on a
- * dedicated Canvas renderer and appends only the new points on each revision bump, so a long-running trail
- * does not stutter the map. Falls back to a full rebuild on first draw or when the trail shrinks, and removes
- * the layer when hidden, emptied or the owner unmounts.
- * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; the layer (re)draws once available.
+ * Draws the vehicle's traveled path as a line on the given map. The trail grows at the telemetry rate, so redraws
+ * are coalesced to one per animation frame, and the layer is removed when hidden, emptied or the owner unmounts.
+ * @param {ShallowRef<MapLibreMap | undefined>} map - The map to draw on; the layer (re)draws once available.
  * @param {UseMapVehiclePathLayerOptions} options - Reactive getters for the path, its revision and visibility.
  * @returns {void}
  */
 export const useMapVehiclePathLayer = (
-  map: ShallowRef<Map | undefined>,
+  map: ShallowRef<MapLibreMap | undefined>,
   options: UseMapVehiclePathLayerOptions
 ): void => {
-  // A dedicated Canvas renderer keeps the growing trail off the SVG pane, which otherwise stutters as points accumulate.
-  const renderer = L.canvas({ pane: VEHICLE_PATH_PANE })
-  const polyline = shallowRef<Polyline>()
-  let lastDrawnLength = 0
+  let pendingFrame: number | undefined
 
   const removeLine = (): void => {
-    if (polyline.value && map.value) map.value.removeLayer(polyline.value)
-    polyline.value = undefined
-    lastDrawnLength = 0
+    removeLayersAndSource(map.value, [vehiclePathLayerId], vehiclePathLayerId)
   }
 
   const redraw = (): void => {
-    if (!isLeafletMapReady(map.value)) return
+    pendingFrame = undefined
+    if (!isMapReady(map.value)) return
 
     const points = options.path()
     if (!options.show() || points.length === 0) {
       removeLine()
       return
     }
-
-    if (polyline.value === undefined) {
-      // A canvas takes the pointer across its whole box, so the non-interactive trail sits in a pane that lets
-      // hovers and clicks through to the map layers beneath it.
-      if (!map.value.getPane(VEHICLE_PATH_PANE)) {
-        const pane = map.value.createPane(VEHICLE_PATH_PANE)
-        pane.style.zIndex = '400'
-        pane.style.pointerEvents = 'none'
-      }
-      polyline.value = L.polyline([], { color: vehiclePathColor, renderer }).addTo(map.value)
-      lastDrawnLength = 0
-    }
-
-    if (points.length > lastDrawnLength && lastDrawnLength > 0) {
-      // Append only the new points — O(1) per fire instead of an O(N) full rebuild.
-      for (let i = lastDrawnLength; i < points.length; i++) {
-        polyline.value.addLatLng(points[i] as LatLngExpression)
-      }
-    } else {
-      // First draw, or the trail shrank (clear/simplify) / stayed the same length (push+shift): full rebuild.
-      polyline.value.setLatLngs(points as LatLngExpression[])
-    }
-    lastDrawnLength = points.length
+    // ponytail: every redraw re-sends the whole trail to the map's worker, which is fine for the history lengths the
+    // mission store keeps; a trail of tens of thousands of points would need splitting into appended chunks.
+    setLineLayer(map.value, vehiclePathLayerId, 'vehicle-path', lineFeature(points), { color: vehiclePathColor })
   }
 
-  watch([() => options.revision(), () => options.show()], redraw)
+  const scheduleRedraw = (): void => {
+    pendingFrame = pendingFrame ?? requestAnimationFrame(redraw)
+  }
+
+  watch([() => options.revision(), () => options.show()], scheduleRedraw)
   watch(
     map,
     (instance) => {
-      if (isLeafletMapReady(instance)) redraw()
+      if (isMapReady(instance)) redraw()
     },
     { immediate: true }
   )
 
-  onBeforeUnmount(removeLine)
+  onBeforeUnmount(() => {
+    if (pendingFrame !== undefined) cancelAnimationFrame(pendingFrame)
+    removeLine()
+  })
 }

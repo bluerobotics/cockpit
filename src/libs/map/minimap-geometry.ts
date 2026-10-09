@@ -59,28 +59,6 @@ export const clampPointToCircle = (
 }
 
 /**
- * Rotates a container point around a center, mirroring where a CSS `rotate()` on the map container ends up
- * drawing it. Overlays that live outside the rotated container need this to line up with the map beneath.
- * @param {ContainerPoint} center - Rotation center in container pixels.
- * @param {ContainerPoint} point - Point to rotate in container pixels.
- * @param {number} angleDeg - Rotation applied to the container, in degrees (positive clockwise).
- * @returns {ContainerPoint} The point where the container's rotation lands it.
- */
-export const rotatePointAroundCenter = (
-  center: ContainerPoint,
-  point: ContainerPoint,
-  angleDeg: number
-): ContainerPoint => {
-  if (angleDeg === 0) return point
-  const radians = (angleDeg * Math.PI) / 180
-  const cos = Math.cos(radians)
-  const sin = Math.sin(radians)
-  const dx = point.x - center.x
-  const dy = point.y - center.y
-  return { x: center.x + dx * cos - dy * sin, y: center.y + dx * sin + dy * cos }
-}
-
-/**
  * Builds the `mask-image` CSS value that turns a rectangular map into a circle inscribed in its
  * shortest side, with a soft radial fade toward the edge. A fade of 0 yields a hard-edged circle.
  * @param {number} fadeAmount - Fraction of the radius that fades out, clamped to [0, 0.95].

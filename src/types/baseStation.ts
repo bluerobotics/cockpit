@@ -56,7 +56,7 @@ export type MobileCoverageConfig = {
    */
   openCellIdOperator: string
   /**
-   * Leaflet `TileLayer` URL template (with `{z}/{x}/{y}` placeholders). Required when
+   * Tile URL template (with `{z}/{x}/{y}` placeholders). Required when
    * {@link provider} is {@link MobileCoverageProvider.Custom}.
    */
   customTileUrl: string

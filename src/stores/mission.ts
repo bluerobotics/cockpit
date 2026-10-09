@@ -428,7 +428,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   const setDefaultMapPosition = (center: WaypointCoordinates, zoom: number): void => {
     defaultMapCenter.value = [Number(center[0].toFixed(8)), Number(center[1].toFixed(8))]
-    defaultMapZoom.value = zoom < 1 ? 1 : zoom > 19 ? 19 : zoom
+    defaultMapZoom.value = Number((zoom < 1 ? 1 : zoom > 19 ? 19 : zoom).toFixed(2))
   }
 
   let idLastConnectedVehicle: string | undefined = undefined

@@ -10,7 +10,7 @@ export const OVERLAY_RENDER_VERSION = 1
 
 /**
  * The rasterized GeoTIFF as a static image (PNG data URL) plus the geographic bounds it covers. This is the
- * expensive-to-produce artifact; callers can cache it and cheaply build per-map Leaflet image overlays from it.
+ * expensive-to-produce artifact; callers can cache it and cheaply build per-map image layers from it.
  */
 export interface GeoTiffImage {
   /**
@@ -222,7 +222,7 @@ const pickOverviewIndex = async (
 /**
  * Parses a GeoTIFF blob and rasterizes it once to a static PNG image (the expensive step). Reads from an internal
  * overview when the file is a COG, so large COGs load quickly; the result can be cached and reused to build cheap
- * per-map Leaflet image overlays.
+ * per-map image layers.
  * @param {Blob} blob - The GeoTIFF file/blob.
  * @param {MapOverlayRenderMode} [renderMode] - Color mapping for the raster values. Defaults to `grayscale`.
  * @returns {Promise<GeoTiffImage>} The rendered image data URL and its WGS84 bounds.

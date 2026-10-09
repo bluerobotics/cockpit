@@ -1,6 +1,7 @@
-import L, { type Map as LeafletMap } from 'leaflet'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 
-import { affectedAngleTriples } from '@/libs/map/utils-map'
+import { projectToContainer } from '@/libs/map/maplibre'
+import { affectedAngleTriples, distanceInMeters } from '@/libs/map/utils-map'
 import { bearingBetween, formatBearing, formatDistanceShort } from '@/libs/mission/general-estimates'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMissionStore } from '@/stores/mission'
@@ -12,8 +13,8 @@ import type { UseVertexAngleOverlayReturn } from './useVertexAngleOverlay'
  * Return type of {@link useDragMeasureOverlay}.
  */
 export interface UseDragMeasureOverlayReturn {
-  /** Binds the overlay to a Leaflet map. */
-  initDragMeasureOverlay: (map: LeafletMap) => void
+  /** Binds the overlay to a map. */
+  initDragMeasureOverlay: (map: MapLibreMap) => void
   /** Renders distance/heading pills on the segments touching the dragged waypoint, plus the affected vertex angles. */
   renderDragMeasurePills: (waypointId: string) => void
   /** Removes the drag pills and the vertex angles it drew. */
@@ -30,15 +31,15 @@ export const useDragMeasureOverlay = (angleOverlay: UseVertexAngleOverlayReturn)
   const missionStore = useMissionStore()
   const interfaceStore = useAppInterfaceStore()
 
-  let mapRef: LeafletMap | undefined
+  let mapRef: MapLibreMap | undefined
   let overlayEl: HTMLDivElement | null = null
   let pillEls: HTMLDivElement[] = []
 
-  const initDragMeasureOverlay = (map: LeafletMap): void => {
+  const initDragMeasureOverlay = (map: MapLibreMap): void => {
     mapRef = map
   }
 
-  const ensureOverlay = (map: LeafletMap): void => {
+  const ensureOverlay = (map: MapLibreMap): void => {
     if (overlayEl) return
     overlayEl = document.createElement('div')
     overlayEl.className = 'measure-overlay'
@@ -85,11 +86,9 @@ export const useDragMeasureOverlay = (angleOverlay: UseVertexAngleOverlayReturn)
     }
 
     segments.forEach(([from, to], i) => {
-      const fromLatLng = L.latLng(from[0], from[1])
-      const toLatLng = L.latLng(to[0], to[1])
-      const a = map.latLngToContainerPoint(fromLatLng)
-      const b = map.latLngToContainerPoint(toLatLng)
-      const dist = fromLatLng.distanceTo(toLatLng)
+      const a = projectToContainer(map, from)
+      const b = projectToContainer(map, to)
+      const dist = distanceInMeters(from, to)
       const bearing = bearingBetween(from, to)
       const pill = pillEls[i]
       pill.textContent = `${formatDistanceShort(dist, interfaceStore.displayUnitPreferences)} · ${formatBearing(
