@@ -175,7 +175,7 @@
                   class="w-[95%] h-full mx-auto flex-centered flex-column position-relative"
                 >
                   <p class="text-md font-semibold mt-[10px]">{{ joystick.model }} controller</p>
-                  <div class="flex items-center gap-2 -mb-8">
+                  <div class="flex items-center gap-2">
                     <v-switch
                       :model-value="!controllerStore.disabledJoysticks.includes(joystick.model)"
                       :label="controllerStore.disabledJoysticks.includes(joystick.model) ? 'Disabled' : 'Enabled'"
