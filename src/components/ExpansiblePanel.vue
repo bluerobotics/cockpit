@@ -310,8 +310,13 @@ onMounted(() => {
       if (isPanelExpanded.value) {
         updateContentMaxHeight()
       }
+      if (isWarningOpen.value && warningContent.value) {
+        warningContent.value.style.maxHeight = warningContent.value.scrollHeight + 'px'
+      }
     })
     contentResizeObserver.value.observe(contentInner.value)
+    const warningInner = warningContent.value?.firstElementChild
+    if (warningInner) contentResizeObserver.value.observe(warningInner)
   }
   if (infoContent.value && !isInfoOpen.value) {
     infoContent.value.style.maxHeight = '0px'

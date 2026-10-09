@@ -313,7 +313,11 @@ const closeMainMenu = (): void => {
 }
 
 const handleEscKey = (event: KeyboardEvent): void => {
-  if (event.key === 'Escape' && interfaceStore.isMainMenuVisible) {
+  if (
+    event.key === 'Escape' &&
+    interfaceStore.isMainMenuVisible &&
+    !document.querySelector('.v-dialog.v-overlay--active')
+  ) {
     logUserAction('Closed main menu (Escape key)')
     closeMainMenu()
   }
