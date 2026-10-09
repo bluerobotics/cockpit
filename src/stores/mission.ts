@@ -122,6 +122,9 @@ export const useMissionStore = defineStore('mission', () => {
   // Home of the mission being planned, apart from the displayed homeMarkerPosition because planning only
   // reaches the vehicle on upload, so the vehicle's home and the plan's are free to differ until then.
   const plannedHomePosition = ref<WaypointCoordinates | undefined>(undefined)
+  // Whether the operator set plannedHomePosition in the planner, as opposed to it coming from a downloaded mission.
+  // Only a home the operator chose is sent to the vehicle on upload, so a stale one cannot undo the vehicle's own.
+  const plannedHomeSetByOperator = ref(false)
   // Request for any active map to center on given coordinates. Replaced (new object) on each request.
   const mapCenterOnRequest = ref<{
     /** Coordinates the map should center on */
@@ -1017,6 +1020,7 @@ export const useMissionStore = defineStore('mission', () => {
     setHomeMarker,
     setHomeFromStoredMission,
     plannedHomePosition,
+    plannedHomeSetByOperator,
     plannedVehicleType,
     effectiveVehicleType,
     savedMissions,
