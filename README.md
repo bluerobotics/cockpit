@@ -114,7 +114,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **AI Agent Access (MCP)** | ❌ Not available (a browser tab cannot accept connections) | ✅ Local agents can create variables, actions and DIY widgets |
 | **Voice Alerts** | Uses the browser/OS speech voices, which vary per system | ✅ Built-in offline voice on every platform (no setup), so alerts sound the same everywhere |
 | **Performance** | Standard | ✅ Optimized build for each system |
-| **Installation** | ✅ No install needed | Requires download |
+| **Installation** | No install needed; an "Install app" menu entry appears when the browser offers PWA installation. Installing does not add Desktop-only features | Requires download |
 | **Multi-platform** | ✅ Any device | Windows, macOS, Linux |
 
 </div>

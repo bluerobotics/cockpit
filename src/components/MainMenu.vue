@@ -119,6 +119,17 @@
                 @click="openAboutDialog"
                 ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
               </GlassButton>
+              <GlassButton
+                v-if="canInstall"
+                :label="simplifiedMainMenu ? '' : 'Install app'"
+                :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
+                icon="mdi-download"
+                :icon-size="simplifiedMainMenu ? 25 : buttonSize * 0.5"
+                variant="uncontained"
+                :tooltip="simplifiedMainMenu ? 'Install app' : undefined"
+                :width="buttonSize"
+                @click="install"
+              />
             </div>
           </div>
         </v-window-item>
@@ -210,6 +221,7 @@ import {
   toggleMenuPage,
   useActiveMenuRoute,
 } from '@/composables/menuRouting'
+import { usePwaInstallation } from '@/composables/usePwaInstallation'
 import {
   availableCockpitActions,
   registerActionCallback,
@@ -226,6 +238,7 @@ const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
+const { canInstall, install } = usePwaInstallation()
 
 const emit = defineEmits<{
   (event: 'closeMainMenu'): void
