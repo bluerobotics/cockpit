@@ -34,11 +34,11 @@ useFenceRendering({
 </script>
 
 <!--
-  Styling targets DOM that Leaflet injects outside this component's render
-  tree (divIcons attached to the map's fence marker pane, owned by the parent
-  Map component). Vue's `scoped` data-v-* attribute can't reach those elements,
-  so the rules below must stay global. The `fence-` prefix is the namespace
-  guard against accidental collisions.
+  Styling targets marker elements created imperatively outside this component's
+  render tree (attached to the map owned by the parent Map component). Vue's
+  `scoped` data-v-* attribute can't reach those elements, so the rules below
+  must stay global. The `fence-` prefix is the namespace guard against
+  accidental collisions.
 -->
 <style>
 .fence-breach-return-icon {
@@ -81,10 +81,8 @@ useFenceRendering({
 .fence-center-handle .mdi {
   pointer-events: none;
 }
-/* `fence-drag-handle` and `fence-add-handle` are passed via Leaflet's
-   `L.CircleMarker({ className })`, which Leaflet merges onto the rendered
-   SVG `<path>` inside the fence marker pane's renderer, so these cursor
-   rules apply to the path node directly, not to a wrapping div. */
+/* `fence-drag-handle` and `fence-add-handle` are on the round handle
+   elements themselves (see `fenceHandleMarker`). */
 .fence-drag-handle {
   cursor: move;
 }

@@ -6,6 +6,7 @@ import type { CustomTileArchiveFormat, CustomTileProviderMeta } from '@/types/mi
 
 import { getStorageBytesAvailable, requestPersistentStorage } from './storage-quota'
 import { openTileArchive } from './tile-archive'
+import { fillTileTemplate } from './tile-loading'
 import { getCachedTileArchive, removeCachedTileArchive, setCachedTileArchive } from './tile-provider-storage'
 
 const ARCHIVE_EXTENSIONS: Record<string, CustomTileArchiveFormat> = {
@@ -67,7 +68,7 @@ export const isValidTileUrlTemplate = (urlTemplate: string): boolean =>
 const highestUsableTileZoom = 24
 
 /**
- * Normalizes a user-typed maximum zoom into a zoom level Leaflet can use.
+ * Normalizes a user-typed maximum zoom into a zoom level the map can use.
  * @param {unknown} value - The raw field value, which a cleared numeric input delivers as an empty string.
  * @returns {number | undefined} The rounded, clamped zoom, or `undefined` when no usable number was given.
  */
@@ -124,6 +125,30 @@ export const buildUrlTileProvider = (input: UrlTileProviderInput): CustomTilePro
     tms: input.tms || undefined,
     attribution: input.attribution?.trim() || undefined,
     createdAt: Date.now(),
+  }
+}
+
+/**
+ * Whether the map can draw a URL provider's tiles: the map uploads each tile to WebGL, which browsers only allow for
+ * tiles served with CORS headers, so a server without them fetches fine but stays blank.
+ * @param {string} urlTemplate - The provider's XYZ URL template.
+ * @returns {Promise<'drawable' | 'blocked' | 'unreachable'>} `blocked` when the server answers but without CORS
+ *   headers, `unreachable` when it could not be reached at all (offline, wrong host), so nothing is known.
+ */
+export const probeTileProviderAccess = async (urlTemplate: string): Promise<'drawable' | 'blocked' | 'unreachable'> => {
+  const url = fillTileTemplate(urlTemplate, { z: 0, x: 0, y: 0 }, 'a')
+  const timeout = 8000
+  try {
+    await fetch(url, { mode: 'cors', signal: AbortSignal.timeout(timeout) })
+    return 'drawable'
+  } catch {
+    // A CORS refusal and a network failure throw the same error; an opaque request only fails on the latter.
+    try {
+      await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(timeout) })
+      return 'blocked'
+    } catch {
+      return 'unreachable'
+    }
   }
 }
 

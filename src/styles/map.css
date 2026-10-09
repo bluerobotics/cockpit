@@ -1,0 +1,243 @@
+/* Shared look of every Cockpit map: the Cesium canvas fills its container, markers and controls sit over it, and the
+   stacking and control styling reproduce what Leaflet drew, so the views keep their look. */
+.cockpit-map {
+  position: relative;
+  overflow: hidden;
+  outline: none;
+  font: 12px / 1.5 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+
+.cockpit-map-canvas-container,
+.cockpit-map-canvas-container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.cockpit-map-canvas-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Cesium's own credits (its logo among them) are replaced by the attribution of the visible layers. */
+.cockpit-map .cesium-widget-credits {
+  display: none;
+}
+
+.cockpit-map-marker-pane {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cockpit-map-marker-pane > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+}
+
+.cockpit-map-zoom-box {
+  position: absolute;
+  z-index: 800;
+  border: 2px dotted #38f;
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+/* Controls stay above everything drawn over the map (tooltips, label and heatmap overlays), as they always did. */
+.cockpit-map-control-container > div {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.cockpit-map-ctrl-top-left {
+  top: 0;
+  left: 0;
+}
+
+.cockpit-map-ctrl-top-right {
+  top: 0;
+  right: 0;
+}
+
+.cockpit-map-ctrl-bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.cockpit-map-ctrl-bottom-right {
+  bottom: 0;
+  right: 0;
+}
+
+.cockpit-map-ctrl {
+  clear: both;
+  pointer-events: auto;
+}
+
+.cockpit-map-ctrl-top-left .cockpit-map-ctrl,
+.cockpit-map-ctrl-bottom-left .cockpit-map-ctrl {
+  float: left;
+  margin-left: 10px;
+}
+
+.cockpit-map-ctrl-top-right .cockpit-map-ctrl,
+.cockpit-map-ctrl-bottom-right .cockpit-map-ctrl {
+  float: right;
+  margin-right: 10px;
+}
+
+.cockpit-map-ctrl-top-left .cockpit-map-ctrl,
+.cockpit-map-ctrl-top-right .cockpit-map-ctrl {
+  margin-top: 10px;
+}
+
+.cockpit-map-ctrl-bottom-left .cockpit-map-ctrl,
+.cockpit-map-ctrl-bottom-right .cockpit-map-ctrl {
+  margin-bottom: 10px;
+}
+
+/* Markers read as clickable, as Leaflet's interactive markers did, instead of inheriting the map's grab cursor. */
+.cockpit-map-marker {
+  cursor: pointer;
+}
+
+/* Marker tooltips (see bindTooltip in src/libs/map/cesium-marker.ts), drawn as Leaflet drew its tooltips so the
+   per-surface tooltip classes keep styling them the same way. */
+.cockpit-tooltip {
+  position: absolute;
+  padding: 6px;
+  background-color: #fff;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  color: #222;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  z-index: 650;
+}
+
+.cockpit-tooltip-top:before,
+.cockpit-tooltip-bottom:before,
+.cockpit-tooltip-left:before,
+.cockpit-tooltip-right:before {
+  position: absolute;
+  pointer-events: none;
+  border: 6px solid transparent;
+  background: transparent;
+  content: '';
+}
+
+.cockpit-tooltip-bottom {
+  margin-top: 6px;
+}
+
+.cockpit-tooltip-top {
+  margin-top: -6px;
+}
+
+.cockpit-tooltip-bottom:before,
+.cockpit-tooltip-top:before {
+  left: 50%;
+  margin-left: -6px;
+}
+
+.cockpit-tooltip-top:before {
+  bottom: 0;
+  margin-bottom: -12px;
+  border-top-color: #fff;
+}
+
+.cockpit-tooltip-bottom:before {
+  top: 0;
+  margin-top: -12px;
+  margin-left: -6px;
+  border-bottom-color: #fff;
+}
+
+.cockpit-tooltip-left {
+  margin-left: -6px;
+}
+
+.cockpit-tooltip-right {
+  margin-left: 6px;
+}
+
+.cockpit-tooltip-left:before,
+.cockpit-tooltip-right:before {
+  top: 50%;
+  margin-top: -6px;
+}
+
+.cockpit-tooltip-left:before {
+  right: 0;
+  margin-right: -12px;
+  border-left-color: #fff;
+}
+
+.cockpit-tooltip-right:before {
+  left: 0;
+  margin-left: -12px;
+  border-right-color: #fff;
+}
+
+/* Zoom buttons keep Leaflet's touch-sized look: 30px squares with bold +/- glyphs. The maps restyle the surface
+   around them. */
+.cockpit-map-zoom {
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  background-clip: padding-box;
+  background: #fff;
+}
+
+.cockpit-map-zoom button {
+  display: block;
+  width: 30px;
+  height: 30px;
+  font: bold 22px 'Lucida Console', Monaco, monospace;
+  line-height: 30px;
+  text-indent: 1px;
+  text-align: center;
+  color: inherit;
+}
+
+.cockpit-map-zoom button + button {
+  border-top: 1px solid #ccc;
+}
+
+.cockpit-map-zoom button:disabled {
+  color: #bbb;
+  cursor: default;
+}
+
+/* The scale bar inside its container (see scaleControl), drawn as Leaflet's scale line was. */
+.cockpit-scale-line {
+  margin: 0;
+  border: 2px solid #777;
+  border-top: none;
+  line-height: 1.1;
+  padding: 2px 5px 1px;
+  font-size: 12px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.8);
+  color: #333;
+  text-shadow: 1px 1px #fff;
+}
+
+/* The attribution line, flush with the corner as Leaflet drew it. */
+.cockpit-map-ctrl.cockpit-map-attribution {
+  margin: 0;
+  padding: 0 5px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #333;
+  line-height: 1.4;
+}
+
+.cockpit-map-attribution a {
+  color: #0078a8;
+  text-decoration: none;
+}

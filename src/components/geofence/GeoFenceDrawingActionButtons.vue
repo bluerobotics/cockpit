@@ -46,12 +46,12 @@
 </template>
 
 <script setup lang="ts">
-import type L from 'leaflet'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import { pickBestPosition, screenBounds } from '@/libs/map/screen-placement'
+import type { WaypointCoordinates } from '@/types/mission'
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 const props = defineProps<{
@@ -61,7 +61,7 @@ const props = defineProps<{
    * composable so the parent stays the single owner of the drawing
    * state.
    */
-  polygonVertexes: L.LatLng[]
+  polygonVertexes: WaypointCoordinates[]
 }>()
 
 const emit = defineEmits<{
@@ -101,7 +101,7 @@ const updateConfirmButtonPosition = (): void => {
     const cw = container.clientWidth
     const ch = container.clientHeight
 
-    const pts = props.polygonVertexes.map((ll) => map.latLngToContainerPoint(ll))
+    const pts = props.polygonVertexes.map((ll) => map.project(ll))
     const bounds = screenBounds(pts)
 
     const cx = (bounds.minX + bounds.maxX) / 2
@@ -139,18 +139,15 @@ watch([() => props.polygonVertexes, () => fenceDraft.isDrawingPolygon], () => up
 watch(
   mapRef,
   (map, prevMap) => {
-    prevMap?.off('drag', updateConfirmButtonPosition)
-    prevMap?.off('zoom', updateConfirmButtonPosition)
-    map?.on('drag', updateConfirmButtonPosition)
-    map?.on('zoom', updateConfirmButtonPosition)
+    prevMap?.off('move', updateConfirmButtonPosition)
+    map?.on('move', updateConfirmButtonPosition)
     updateConfirmButtonPosition()
   },
   { immediate: true }
 )
 
 onBeforeUnmount(() => {
-  mapRef.value?.off('drag', updateConfirmButtonPosition)
-  mapRef.value?.off('zoom', updateConfirmButtonPosition)
+  mapRef.value?.off('move', updateConfirmButtonPosition)
 })
 
 const onFinish = (): void => {
