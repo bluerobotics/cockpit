@@ -1941,7 +1941,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
-    showDialog({ variant: 'error', title: 'Mission download failed', message: messageFromError(error), timer: 5000 })
+    openSnackbar({ variant: 'error', message: `Mission download failed: ${messageFromError(error)}`, duration: 5000 })
   } finally {
     fetchingMission.value = false
   }
