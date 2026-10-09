@@ -88,3 +88,31 @@ test('what is recorded reaches the data lake variable the page reads, which is w
   expect(isCompoundDataLakeVariable('camera-zoom')).toBe(true)
   expect(isCompoundDataLakeVariable('camera-zoom-speed')).toBe(false)
 })
+
+test('a compound variable is only as current as the oldest input it reads', async () => {
+  const { createTransformingFunction, getOldestSourceUpdateTimestamp } = await import(
+    '@/libs/actions/data-lake-transformations'
+  )
+  const { createDataLakeVariable, setDataLakeVariableData } = await import('@/libs/actions/data-lake')
+  const now = vi.spyOn(performance, 'now')
+
+  createDataLakeVariable({ id: 'streamed/depth', name: 'Depth', type: 'number' })
+  createDataLakeVariable({ id: 'streamed/distance', name: 'Distance', type: 'number' })
+  createTransformingFunction('sum', 'Sum', 'number', '{{streamed/depth}} + {{streamed/distance}}')
+  createTransformingFunction('nested', 'Nested', 'number', '{{sum}} * 2')
+
+  // An input that never received a value leaves nothing to be current about.
+  now.mockReturnValue(100)
+  setDataLakeVariableData('streamed/depth', 1)
+  expect(getOldestSourceUpdateTimestamp('sum')).toBeUndefined()
+
+  now.mockReturnValue(200)
+  setDataLakeVariableData('streamed/distance', 2)
+  now.mockReturnValue(300)
+  setDataLakeVariableData('streamed/depth', 3)
+  expect(getOldestSourceUpdateTimestamp('sum')).toBe(200)
+  expect(getOldestSourceUpdateTimestamp('nested')).toBe(200)
+  expect(getOldestSourceUpdateTimestamp('streamed/depth')).toBe(300)
+
+  now.mockRestore()
+})
