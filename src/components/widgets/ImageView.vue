@@ -53,12 +53,7 @@ const widget = toRefs(props).widget
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      src: '',
-      fitStyle: 'cover',
-    }
-  }
+  widget.value.options = { src: '', fitStyle: 'cover', ...widget.value.options }
 })
 
 const src = computed(() => widget.value.options.src ?? '')
