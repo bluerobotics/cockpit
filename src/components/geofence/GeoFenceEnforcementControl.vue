@@ -1,6 +1,5 @@
 <template>
   <v-speed-dial
-    v-if="fenceStore.isArduPilot"
     :model-value="fenceSpeedDialOpen"
     location="top center"
     transition="slide-y-reverse-transition"
@@ -26,7 +25,6 @@
             size="x-small"
             style="border-radius: 0px"
             icon="mdi-shield-outline"
-            :disabled="!vehicleStore.isVehicleOnline"
             @dblclick.stop.prevent="onFenceMainDblclick"
           />
         </template>
@@ -34,21 +32,73 @@
     </template>
     <v-tooltip location="left" :text="fenceToggleItemTooltip">
       <template #activator="{ props: tooltipProps }">
-        <v-btn
-          key="toggle"
-          v-bind="tooltipProps"
-          class="bg-slate-50 text-[14px]"
-          :style="interfaceStore.globalGlassMenuStyles"
-          elevation="2"
-          style="border-radius: 0px"
-          size="x-small"
-          :icon="fenceStore.fenceEnabled ? 'mdi-toggle-switch' : 'mdi-toggle-switch-off'"
-          :disabled="!vehicleStore.isVehicleOnline || !hasVehicleFence"
-          @click.stop="onToggleFenceEnforcement"
-        />
+        <div key="toggle" v-bind="tooltipProps">
+          <v-btn
+            class="bg-slate-50 text-[14px]"
+            :style="interfaceStore.globalGlassMenuStyles"
+            elevation="2"
+            style="border-radius: 0px"
+            size="x-small"
+            :icon="fenceStore.fenceEnabled ? 'mdi-toggle-switch' : 'mdi-toggle-switch-off'"
+            :disabled="!canToggleEnforcement"
+            @click.stop="onToggleFenceEnforcement"
+          />
+        </div>
       </template>
     </v-tooltip>
-    <v-tooltip location="left" text="Refresh fence from vehicle">
+    <v-menu
+      key="layers"
+      :model-value="layersMenuOpen"
+      location="start"
+      :offset="18"
+      :close-on-content-click="false"
+      transition="slide-x-reverse-transition"
+      content-class="speed-dial-glow"
+      @update:model-value="onLayersMenuToggle"
+    >
+      <template #activator="{ props: menuProps }">
+        <v-tooltip location="left" text="Hazard layers" :disabled="layersMenuOpen">
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              v-bind="{ ...menuProps, ...tooltipProps }"
+              class="bg-slate-50 text-[14px]"
+              :style="interfaceStore.globalGlassMenuStyles"
+              elevation="2"
+              style="border-radius: 0px"
+              size="x-small"
+              :icon="layersMenuOpen ? 'mdi-chevron-right' : 'mdi-chevron-left'"
+            />
+          </template>
+        </v-tooltip>
+      </template>
+      <div class="flex flex-row-reverse gap-2">
+        <v-tooltip
+          v-for="sourceId in HAZARD_SOURCE_IDS"
+          :key="sourceId"
+          location="top"
+          :text="hazardToggleTooltip(sourceId)"
+        >
+          <template #activator="{ props: tooltipProps }">
+            <v-btn
+              v-bind="tooltipProps"
+              class="text-[14px]"
+              :class="shownHazardSources.includes(sourceId) ? 'text-white' : 'bg-slate-50'"
+              :style="[
+                interfaceStore.globalGlassMenuStyles,
+                shownHazardSources.includes(sourceId) ? { backgroundColor: HAZARD_SOURCES[sourceId].color } : {},
+              ]"
+              elevation="2"
+              style="border-radius: 0px"
+              size="x-small"
+              :icon="HAZARD_SOURCES[sourceId].icon"
+              :loading="hazardStore.fetchingSources.includes(sourceId)"
+              @click.stop="emit('toggleHazardSource', sourceId)"
+            />
+          </template>
+        </v-tooltip>
+      </div>
+    </v-menu>
+    <v-tooltip v-if="fenceStore.isArduPilot" location="left" text="Refresh fence from vehicle">
       <template #activator="{ props: tooltipProps }">
         <v-btn
           key="reload"
@@ -69,25 +119,35 @@
 </template>
 
 <script setup lang="ts">
-import { type StyleValue, computed, defineModel } from 'vue'
+import { type StyleValue, computed, defineModel, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { planHasShapes } from '@/libs/geo-fence'
+import { HAZARD_SOURCE_IDS, HAZARD_SOURCES } from '@/libs/hazards/sources'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
+import { useHazardStore } from '@/stores/hazards'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
+import type { HazardSourceId } from '@/types/hazards'
 
 // eslint-disable-next-line jsdoc/require-jsdoc
-withDefaults(
+const props = withDefaults(
   defineProps<{
     /** Inline style positioning the activator button (e.g. its bottom offset) */
     activatorStyle?: StyleValue
+    /** Hazard sources the map currently draws */
+    shownHazardSources?: HazardSourceId[]
   }>(),
-  { activatorStyle: undefined }
+  { activatorStyle: undefined, shownHazardSources: () => [] }
 )
+
+const emit = defineEmits<{
+  (event: 'toggleHazardSource', sourceId: HazardSourceId): void
+}>()
 
 const fenceStore = useGeoFenceStore()
 const vehicleStore = useMainVehicleStore()
+const hazardStore = useHazardStore()
 const interfaceStore = useAppInterfaceStore()
 const { showDialog } = useInteractionDialog()
 
@@ -104,12 +164,28 @@ const enforcementActive = computed<boolean>(() => hasVehicleFence.value && Boole
 // widget, so the parent needs this to keep the control mounted while it is up.
 const fenceSpeedDialOpen = defineModel<boolean>('open', { default: false })
 
+const layersMenuOpen = ref(false)
+
 const onFenceSpeedDialToggle = (open: boolean): void => {
   fenceSpeedDialOpen.value = open
   logUserAction(open ? 'Opened the geofence enforcement menu' : 'Closed the geofence enforcement menu')
 }
 
+const onLayersMenuToggle = (open: boolean): void => {
+  layersMenuOpen.value = open
+  logUserAction(open ? 'Opened the hazard layers submenu' : 'Closed the hazard layers submenu')
+}
+
+watch(fenceSpeedDialOpen, (open) => {
+  if (!open) layersMenuOpen.value = false
+})
+
+const canToggleEnforcement = computed<boolean>(
+  () => fenceStore.isArduPilot && vehicleStore.isVehicleOnline && hasVehicleFence.value
+)
+
 const fenceMainButtonTooltip = computed<string>(() => {
+  if (!vehicleStore.isVehicleOnline || !fenceStore.isArduPilot) return 'Geofence and hazard layers'
   if (!hasVehicleFence.value) return 'No geofence on the vehicle'
   return fenceStore.fenceEnabled
     ? 'Geofence enforcement on (double-click to disable)'
@@ -117,9 +193,16 @@ const fenceMainButtonTooltip = computed<string>(() => {
 })
 
 const fenceToggleItemTooltip = computed<string>(() => {
+  if (!vehicleStore.isVehicleOnline) return 'Connect to the vehicle to toggle fence enforcement'
+  if (!fenceStore.isArduPilot) return 'Fence enforcement can only be toggled on ArduPilot vehicles'
   if (!hasVehicleFence.value) return 'No geofence on the vehicle'
   return fenceStore.fenceEnabled ? 'Disable fence enforcement on vehicle' : 'Enable fence enforcement on vehicle'
 })
+
+const hazardToggleTooltip = (sourceId: HazardSourceId): string => {
+  const action = props.shownHazardSources.includes(sourceId) ? 'Hide' : 'Show'
+  return `${action} ${HAZARD_SOURCES[sourceId].label.toLowerCase()}`
+}
 
 const onFenceMainDblclick = (): void => {
   fenceSpeedDialOpen.value = false
@@ -127,7 +210,7 @@ const onFenceMainDblclick = (): void => {
 }
 
 const onToggleFenceEnforcement = (): void => {
-  if (!hasVehicleFence.value) return
+  if (!canToggleEnforcement.value) return
   const target = !fenceStore.fenceEnabled
   logUserAction(target ? 'Enabled geofence enforcement on the vehicle' : 'Disabled geofence enforcement on the vehicle')
   try {

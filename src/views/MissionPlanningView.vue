@@ -604,79 +604,41 @@
             </v-tooltip>
           </div>
         </div>
-        <div
+        <UploadActionsButton
           v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
-          class="flex flex-row items-stretch gap-2 m-2 mt-2"
+          v-model:expanded="missionActionsMenuExpanded"
+          label="UPLOAD MISSION TO VEHICLE"
+          actions-name="mission actions"
+          :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
+          :indicator="hasLastUploadedMission"
+          @upload="uploadMissionToVehicle"
         >
           <button
-            :disabled="missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline"
-            :class="{
-              'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-                missionStore.currentPlanningWaypoints.length < 2 || !vehicleStore.isVehicleOnline,
-            }"
-            class="flex-1 min-w-0 h-[40px] py-2 px-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
-            @click="uploadMissionToVehicle"
+            :disabled="loading"
+            class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            @click="openCLearMissionDialog"
           >
-            UPLOAD MISSION TO VEHICLE
+            <v-progress-circular v-if="loading" size="20" class="py-4" />
+            <p v-else>CLEAR CURRENT MISSION</p>
           </button>
-          <v-tooltip
-            location="top"
-            :text="missionActionsMenuExpanded ? 'Hide mission actions' : 'Show mission actions'"
+          <button
+            :disabled="loading || !vehicleStore.isVehicleOnline"
+            class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+            @click="downloadMissionFromVehicle"
           >
-            <template #activator="{ props }">
-              <button
-                v-bind="props"
-                :aria-label="missionActionsMenuExpanded ? 'Hide mission actions' : 'Show mission actions'"
-                class="relative flex items-center justify-center h-[40px] py-2 px-1 rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-                @click="toggleMissionActionsMenu"
-              >
-                <span
-                  v-if="hasLastUploadedMission && !missionActionsMenuExpanded"
-                  class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#3B78A8]"
-                />
-                <v-icon
-                  size="28"
-                  class="text-white transition-transform duration-200"
-                  :class="{ 'rotate-180': missionActionsMenuExpanded }"
-                >
-                  mdi-menu-down
-                </v-icon>
-              </button>
-            </template>
-          </v-tooltip>
-        </div>
-        <v-expand-transition
-          v-if="!isCreatingSimplePath && !isCreatingSurvey && missionStore.currentPlanningWaypoints.length > 0"
-        >
-          <div v-if="missionActionsMenuExpanded" class="flex flex-col">
-            <v-divider class="mx-2 my-1 opacity-5" />
-            <button
-              :disabled="loading"
-              class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-              @click="openCLearMissionDialog"
-            >
-              <v-progress-circular v-if="loading" size="20" class="py-4" />
-              <p v-else>CLEAR CURRENT MISSION</p>
-            </button>
-            <button
-              :disabled="loading || !vehicleStore.isVehicleOnline"
-              class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-              :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
-              @click="downloadMissionFromVehicle"
-            >
-              <v-progress-circular v-if="loading" size="20" class="py-4" />
-              <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
-            </button>
-            <button
-              v-if="hasLastUploadedMission"
-              :disabled="loading"
-              class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-              @click="restoreLastUploadedMission"
-            >
-              RESTORE LAST UPLOADED MISSION
-            </button>
-          </div>
-        </v-expand-transition>
+            <v-progress-circular v-if="loading" size="20" class="py-4" />
+            <p v-else>DOWNLOAD MISSION FROM VEHICLE</p>
+          </button>
+          <button
+            v-if="hasLastUploadedMission"
+            :disabled="loading"
+            class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            @click="restoreLastUploadedMission"
+          >
+            RESTORE LAST UPLOADED MISSION
+          </button>
+        </UploadActionsButton>
         <div v-else-if="!isCreatingSimplePath && !isCreatingSurvey" class="flex flex-col gap-2 m-2 mt-2">
           <button
             :disabled="loading || !vehicleStore.isVehicleOnline"
@@ -797,6 +759,7 @@
     :menu-type="contextMenuType"
     :can-save-current="canSaveCurrentMissionToLibrary"
     :nearest-segment-index="contextMenuNearestSegmentIndex"
+    :can-create-fence-exclusion="contextMenuHazardArea !== undefined"
     @set-home-position="setHomePositionFromContextMenu"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
@@ -819,7 +782,9 @@
     @toggle-base-station-signal-visibility="baseStationStore.toggleSignalVisibility()"
     @add-mission-from-library="addMissionFromLibraryContextMenu"
     @save-mission-to-library="openMissionLibraryWithSaveDialog"
+    @create-fence-exclusion="createFenceExclusionFromContextMenu"
   />
+  <HazardExclusionDialog v-model:area="exclusionDialogArea" />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
   <Teleport to="#planningMap">
     <RadialMenu
@@ -926,6 +891,7 @@ import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import GeoFenceDrawingActionButtons from '@/components/geofence/GeoFenceDrawingActionButtons.vue'
 import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
+import HazardExclusionDialog from '@/components/hazards/HazardExclusionDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
@@ -939,6 +905,7 @@ import MissionPlacementToolbar, {
 import MissionPlanningSidebar from '@/components/mission-planning/MissionPlanningSidebar.vue'
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import SurveyVertexList from '@/components/mission-planning/SurveyVertexList.vue'
+import UploadActionsButton from '@/components/mission-planning/UploadActionsButton.vue'
 import WaypointConfigPanel from '@/components/mission-planning/WaypointConfigPanel.vue'
 import MissionLibraryModal from '@/components/MissionLibraryModal.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -952,6 +919,7 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
 import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
+import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
@@ -974,6 +942,7 @@ import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceMapInteraction'
+import { useMissionPreflightChecks } from '@/composables/mission-planning/useMissionPreflightChecks'
 import { useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import {
@@ -1018,11 +987,12 @@ import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { degrees, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
-import { useGeoFenceStore } from '@/stores/geoFence'
+import { useHazardStore } from '@/stores/hazards'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import { SubMenuComponentName } from '@/types/general'
+import type { HazardArea } from '@/types/hazards'
 import {
   type CockpitMission,
   type MissionEstimatesSnapshot,
@@ -1046,7 +1016,6 @@ const vehicleStore = useMainVehicleStore()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const baseStationStore = useBaseStation()
-const fenceStore = useGeoFenceStore()
 const fenceDraft = useGeoFenceEditorDraft()
 const missionEstimates = useMissionEstimates()
 const angleOverlay = useVertexAngleOverlay()
@@ -1107,58 +1076,13 @@ const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
   return makeDefaultNavCommands()
 }
 
-/**
- * Inspects the mission waypoints against the active geofence (the editor
- * draft when present, falling back to the plan currently uploaded to the
- * vehicle). When at least one waypoint breaches the fence, prompts the user
- * with a "Back to mission planning" / "Upload to vehicle anyway" choice and
- * resolves to whether the upload should continue. No-op (returns true) when
- * there's no fence to check against or no breach is detected.
- * @returns { Promise<boolean> } True when the upload should proceed.
- */
-const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
-  const report = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
-  if (!report.hasBreaches) return true
-
-  let confirmed = false
-  try {
-    // Awaiting the dialog's own promise is what keeps Escape and backdrop
-    // clicks from stranding the upload: those reject rather than press a button.
-    await showDialog({
-      variant: 'text-only',
-      title: 'Mission breaches geofence',
-      message:
-        `${report.breachedIndices.length} of ${report.totalChecked} waypoints fall outside an inclusion fence ` +
-        'or inside an exclusion fence. Uploading anyway may trigger an in-flight fence breach action ' +
-        '(RTL / Land / Brake, depending on the autopilot configuration).',
-      persistent: false,
-      maxWidth: '720px',
-      actions: [
-        { text: 'Back to mission planning', action: () => undefined },
-        {
-          text: 'Upload to vehicle anyway',
-          class: 'bg-[#FFFFFF33]',
-          action: () => {
-            confirmed = true
-          },
-        },
-      ],
-    })
-  } catch {
-    return false
-  } finally {
-    closeDialog()
-  }
-  return confirmed
-}
-
 const uploadMissionToVehicle = async (): Promise<void> => {
   if (!home.value) {
     showHomePositionNotSetDialog.value = true
     return
   }
 
-  if (!(await confirmMissionFenceBreachIfNeeded())) return
+  if (!(await confirmMissionUpload())) return
 
   logUserAction('Uploaded mission to vehicle')
   uploadingMission.value = true
@@ -1302,6 +1226,15 @@ const { observe: observeMapResize } = useMapAutoResize()
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Draws the coastline, restricted-area and airspace advisories the operator has loaded
+const { initHazardOverlay, destroyHazardOverlay, shownHazardAreaAt } = useHazardOverlay()
+const hazardStore = useHazardStore()
+const contextMenuHazardArea = ref<HazardArea>()
+const exclusionDialogArea = ref<HazardArea>()
+
+// Gates the upload on the geofence breach and hazard advisory checks
+const { confirmMissionUpload } = useMissionPreflightChecks()
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
@@ -2612,6 +2545,8 @@ const showContextMenu = (event: L.LeafletMouseEvent): void => {
       contextMenuNearestSegmentIndex.value = segmentIndex
     }
   }
+  contextMenuHazardArea.value =
+    contextMenuType.value === 'map' ? shownHazardAreaAt([event.latlng.lat, event.latlng.lng]) : undefined
 
   let x = event.originalEvent.clientX
   let y = event.originalEvent.clientY
@@ -2673,6 +2608,17 @@ const clearVehiclePathHistory = (): void => {
   logUserAction('Cleared vehicle path history')
   missionStore.clearVehicleHistory()
   openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+}
+
+const createFenceExclusionFromContextMenu = (clearanceM?: number): void => {
+  const area = contextMenuHazardArea.value
+  if (!area) return
+  if (clearanceM === undefined) {
+    logUserAction(`Opened the exclusion zone clearance dialog for "${area.label}"`)
+    exclusionDialogArea.value = area
+    return
+  }
+  hazardStore.addAreaAsFenceExclusion(area.id, clearanceM)
 }
 
 const setHomePositionFromContextMenu = (): void => {
@@ -4602,12 +4548,10 @@ const missionToolboxTop = computed<number>(() => {
   return Math.max(topBound, topBound + (bottomBound - topBound - missionToolboxHeight.value) / 2)
 })
 
-const toggleMissionActionsMenu = (): void => {
-  const willOpen = !missionActionsMenuExpanded.value
-  logUserAction(`${willOpen ? 'Opened' : 'Closed'} the mission actions menu`)
-  missionToolboxPinnedTop.value = willOpen ? missionToolboxTop.value : null
-  missionActionsMenuExpanded.value = willOpen
-}
+watch(missionActionsMenuExpanded, (expanded) => {
+  missionToolboxPinnedTop.value = expanded ? missionToolboxTop.value : null
+})
+
 const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
   if (mission.vehicleType && !vehicleStore.isVehicleOnline) {
     missionStore.plannedVehicleType = mission.vehicleType
@@ -4890,6 +4834,8 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   await mapOverlays.initOverlays(planningMap.value, layerControl)
 
+  initHazardOverlay(planningMap.value, layerControl)
+
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   initCustomTileProviders(planningMap.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
 
@@ -4968,6 +4914,7 @@ onUnmounted(() => {
   stopTileFallbackWatcher?.()
   stopTileFallbackWatcher = undefined
   mapOverlays.destroyOverlays()
+  destroyHazardOverlay()
   destroyCustomTileProviders()
 
   // Reset the map context so descendants stop reacting to the destroyed instance
@@ -5562,6 +5509,16 @@ watch(
 .mission-planning--fence-mode :deep(.leaflet-marker-pane > *),
 .mission-planning--fence-mode :deep(.leaflet-overlay-pane > svg path:not(.fence-path)) {
   opacity: 0.45;
+  filter: saturate(0.5);
+}
+
+.mission-planning--fence-mode :deep(.leaflet-marker-pane > .vehicle-marker) {
+  opacity: 0.68;
+  filter: saturate(0.75);
+}
+
+.mission-planning--fence-mode :deep(.leaflet-vehiclePath-pane) {
+  opacity: 0.3;
   filter: saturate(0.5);
 }
 

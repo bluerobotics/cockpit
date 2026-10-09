@@ -78,15 +78,28 @@
             >
               <v-icon icon="mdi-vector-polygon" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Polygon {{ idx + 1 }}</p>
+              <p
+                class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap"
+                @mouseenter="onPolygonNameHover($event, polygon.id)"
+                @mouseleave="truncatedNameId = undefined"
+              >
+                {{ polygon.name ?? `Polygon ${idx + 1}` }}
+                <v-tooltip
+                  activator="parent"
+                  location="top"
+                  :open-on-hover="false"
+                  :model-value="truncatedNameId === polygon.id"
+                  :text="polygon.name ?? `Polygon ${idx + 1}`"
+                />
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="polygon.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onTogglePolygonInclusion(polygon.id)"
               >
                 {{ polygon.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete polygon">
                   <template #activator="{ props: tooltipProps }">
@@ -127,6 +140,7 @@
         elevation-effect
         :is-expanded="fenceStore.circles.length > 0"
         darken-content
+        no-bottom-divider
       >
         <template #title>
           <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
@@ -158,15 +172,17 @@
             >
               <v-icon icon="mdi-vector-circle-variant" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Circle {{ idx + 1 }}</p>
+              <p class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
+                Circle {{ idx + 1 }}
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="circle.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onToggleCircleInclusion(circle.id)"
               >
                 {{ circle.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete circle">
                   <template #activator="{ props: tooltipProps }">
@@ -198,6 +214,10 @@
         </template>
       </ExpansiblePanel>
     </div>
+
+    <GeoFenceParametersPanel />
+
+    <slot name="below-fence-lists" />
 
     <div class="flex flex-col ma-2 py-2 px-4 border-[1px] border-[#FFFFFF22] bg-[#00000022] rounded-md p-2">
       <div v-if="fenceStore.isArduPilot" class="flex items-center justify-between gap-x-2 fence-autoenable-row">
@@ -305,8 +325,6 @@
       PX4: multiple inclusion polygons are AND-ed (intersection), not OR-ed.
     </p>
 
-    <GeoFenceParametersPanel />
-
     <div class="flex w-full justify-between my-2 px-4 pt-1">
       <v-tooltip location="top" text="Save fence to file">
         <template #activator="{ props: tooltipProps }">
@@ -363,27 +381,33 @@
       </v-tooltip>
     </div>
 
-    <button
-      :disabled="!fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
-      :class="{
-        'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-          !fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress,
-      }"
-      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
-      @click="onUpload"
-    >
-      UPLOAD FENCE TO VEHICLE
-    </button>
-    <button
+    <UploadActionsButton
       v-if="fenceStore.hasItems"
-      class="h-auto py-1 px-1 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-      @click="onClearLocal"
+      label="UPLOAD FENCE TO VEHICLE"
+      actions-name="fence actions"
+      indicator
+      :disabled="!vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
+      @upload="onUpload"
     >
-      CLEAR CURRENT FENCE
-    </button>
+      <button
+        class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        @click="onClearLocal"
+      >
+        CLEAR CURRENT FENCE
+      </button>
+      <button
+        :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
+        class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+        @click="onDownload"
+      >
+        DOWNLOAD FENCE FROM VEHICLE
+      </button>
+    </UploadActionsButton>
     <button
+      v-else
       :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
-      class="h-auto py-2 px-2 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
       :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
       @click="onDownload"
     >
@@ -406,6 +430,7 @@ import { ref } from 'vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceParametersPanel from '@/components/geofence/GeoFenceParametersPanel.vue'
 import GeoFenceTooLargeDialog from '@/components/geofence/GeoFenceTooLargeDialog.vue'
+import UploadActionsButton from '@/components/mission-planning/UploadActionsButton.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
@@ -438,7 +463,7 @@ const fenceStore = useGeoFenceStore()
 const fenceDraft = useGeoFenceEditorDraft()
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
-const { showDialog, closeDialog } = useInteractionDialog()
+const { showDialog, confirmAction } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -448,6 +473,12 @@ const importedPlanSections = ref<Pick<MavlinkPlanFile, 'mission' | 'rallyPoints'
 const syncProgress = ref(0)
 const tooLargeOffer = ref<FenceTooLargeOffer>()
 const breachAltTooltipOpen = ref(false)
+const truncatedNameId = ref<string>()
+
+const onPolygonNameHover = (event: MouseEvent, id: string): void => {
+  const name = event.currentTarget as HTMLElement
+  truncatedNameId.value = name.scrollWidth > name.clientWidth ? id : undefined
+}
 
 const onToggleShapeInteractive = (id: string): void => {
   const willSelect = fenceDraft.interactiveShapeId !== id
@@ -550,41 +581,6 @@ const onToggleFenceAutoEnable = (value: boolean | null): void => {
       timer: 4000,
     })
   }
-}
-
-const confirmAction = async (
-  title: string,
-  message: string | string[],
-  confirmText: string,
-  maxWidth = '520px'
-): Promise<boolean> => {
-  let confirmed = false
-  try {
-    // Awaiting the dialog's own promise is what keeps Escape and backdrop
-    // clicks from stranding the caller: those reject rather than press a button.
-    await showDialog({
-      variant: 'warning',
-      title,
-      message,
-      persistent: false,
-      maxWidth,
-      actions: [
-        { text: 'Cancel', action: () => undefined },
-        {
-          text: confirmText,
-          class: 'bg-[#FFFFFF33]',
-          action: () => {
-            confirmed = true
-          },
-        },
-      ],
-    })
-  } catch {
-    return false
-  } finally {
-    closeDialog()
-  }
-  return confirmed
 }
 
 const confirmPx4MultipleInclusionsIfNeeded = async (): Promise<boolean> => {

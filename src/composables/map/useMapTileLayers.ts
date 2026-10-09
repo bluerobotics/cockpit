@@ -42,6 +42,10 @@ export interface MapTileLayers {
    */
   esri: L.TileLayer
   /**
+   * OpenTopoMap contour and hillshade base layer (offline-capable).
+   */
+  openTopo: L.TileLayer
+  /**
    * OpenSeaMap seamarks overlay, when requested.
    */
   seamarks?: L.TileLayer
@@ -100,12 +104,24 @@ export const useMapTileLayers = (options: MapTileLayersOptions = {}): MapTileLay
     }
   )
 
+  // Contour and hillshade rendering, for reading terrain around a launch site. The project asks
+  // that its tiles not be requested above zoom 17.
+  const openTopo = tileLayerOffline('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 23,
+    maxNativeZoom: 17,
+    attribution: '© OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors',
+    referrerPolicy: 'strict-origin-when-cross-origin',
+    crossOrigin: 'anonymous',
+    ...tileBufferOptions,
+  })
+
   const baseMaps: Record<MapTileProvider, L.TileLayer> = {
     'OpenStreetMap': osm,
     'Esri World Imagery': esri,
+    'OpenTopoMap': openTopo,
   }
 
-  const layers: MapTileLayers = { tileBufferOptions, osm, esri, baseMaps, overlays: {} }
+  const layers: MapTileLayers = { tileBufferOptions, osm, esri, openTopo, baseMaps, overlays: {} }
 
   if (options.seamarks) {
     layers.seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {

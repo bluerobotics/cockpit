@@ -5,7 +5,7 @@
     class="absolute flex flex-col left-10 rounded-[10px] overflow-hidden z-[200]"
     :style="[
       interfaceStore.globalGlassMenuStyles,
-      { height: 'auto', maxHeight: calculatedHeight, width: '320px', borderBottom: 'none', top: `${topOffset}px` },
+      { height: 'auto', maxHeight: calculatedHeight, width: '352px', borderBottom: 'none', top: `${topOffset}px` },
     ]"
   >
     <div class="flex flex-row w-full elevation-2 z-10">
@@ -27,10 +27,14 @@
         GeoFence
       </button>
     </div>
-    <div class="flex flex-col w-full h-full p-2 overflow-y-auto">
-      <GeoFenceEditor v-if="planningMode === 'geofence'" :map-center="mapCenter" />
+    <OverflowIndicatorArrows class="w-full" content-class="flex flex-col w-full p-2" align="right">
+      <GeoFenceEditor v-if="planningMode === 'geofence'" :map-center="mapCenter">
+        <template #below-fence-lists>
+          <HazardAdvisoryPanel />
+        </template>
+      </GeoFenceEditor>
       <slot v-if="planningMode === 'mission'" name="mission" />
-    </div>
+    </OverflowIndicatorArrows>
   </div>
 </template>
 
@@ -38,6 +42,8 @@
 import { defineModel, ref } from 'vue'
 
 import GeoFenceEditor from '@/components/geofence/GeoFenceEditor.vue'
+import HazardAdvisoryPanel from '@/components/hazards/HazardAdvisoryPanel.vue'
+import OverflowIndicatorArrows from '@/components/OverflowIndicatorArrows.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const planningMode = defineModel<'mission' | 'geofence'>('planningMode', { required: true })

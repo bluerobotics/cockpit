@@ -76,6 +76,8 @@
         v-if="showButtons"
         v-model:open="fenceDialOpen"
         :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+        :shown-hazard-sources="shownHazardSources"
+        @toggle-hazard-source="toggleHazardSource"
       />
       <MapCenterControl
         v-if="showButtons"
@@ -275,6 +277,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
@@ -329,6 +332,7 @@ import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
+import type { HazardSourceId } from '@/types/hazards'
 import type {
   IconDimensions,
   MarkerSizes,
@@ -647,6 +651,7 @@ onBeforeMount(() => {
     showHomeArrow: true,
     showVehicleArrow: true,
     showBaseStationArrow: true,
+    shownHazardSources: [] as HazardSourceId[],
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
   if (isFlightVisible.value) targetFollower.enableAutoUpdate()
@@ -665,6 +670,16 @@ const { preferredBaseLayer, getInitialLayers, createLayerControl, registerLayerS
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Draws the coastline, restricted-area and airspace advisories the operator has loaded
+// Chosen per widget, so hiding a layer here leaves Mission Planning's hazard checks alone.
+const shownHazardSources = computed<HazardSourceId[]>({
+  get: () => widget.value.options.shownHazardSources ?? [],
+  set: (sourceIds) => (widget.value.options.shownHazardSources = sourceIds),
+})
+const { initHazardOverlay, destroyHazardOverlay, toggleHazardSource } = useHazardOverlay({
+  shownSources: shownHazardSources,
+})
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
@@ -808,9 +823,11 @@ onMounted(async () => {
   // Bind leaflet instance to map element
   map.value = L.map(mapId.value, {
     layers: getInitialLayers(),
-    attributionControl: false,
     ...singleStepZoomMapOptions,
   }).setView(mapCenter.value as LatLngTuple, zoom.value) as Map
+  // The tile and hazard licences require their credit to be visible wherever their data is drawn.
+  // Leaflet shows only the layers currently on the map, so the line stays as short as the view is.
+  map.value.attributionControl.setPrefix(false)
 
   // Expose the Leaflet instance to descendant components via the map context
   mapContext.map.value = map.value
@@ -950,6 +967,8 @@ onMounted(async () => {
 
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
+
+  if (map.value) initHazardOverlay(map.value, layerControl)
 
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   if (map.value)
@@ -1165,6 +1184,7 @@ onBeforeUnmount(() => {
 
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
+  destroyHazardOverlay()
   destroyCustomTileProviders()
 
   if (map.value) {

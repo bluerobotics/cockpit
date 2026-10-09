@@ -192,6 +192,8 @@ ArduCopter support has been physically tested, but the primary development team 
 - **Mission import/export** for easy backup and reuse
 - **Real-time mission monitoring** and execution
 - **Custom map tile providers** via XYZ URLs or imported ZIP/MBTiles/PMTiles archives
+- **Hazard advisories** warning when a mission or the vehicle meets a coastline, rocks and wrecks, restricted areas, airspace, high ground or shallow water
+- **AIS vessel traffic** on the map, from the vehicle's AIS receiver
 
 ### 📊 **Data Management**
 - **[Data Lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake)** for centralized variable storage and retrieval
