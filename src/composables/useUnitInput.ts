@@ -93,6 +93,11 @@ export const useUnitInput = (rawValue: Ref<number>, rawUnit: string, reading?: L
     // The getter rewrites a finer number to the precision it shows, so storing what was typed instead of what was
     // left on screen would build the mission from a figure the box never showed.
     set: (value: number) => {
+      // A half-typed decimal ("4.") reads as '' through v-model.number, and storing it as 0 rewrites the field
+      // under the cursor, so the value stays as it was until the text parses again.
+      // ponytail: a field emptied and left keeps the previous value while showing blank until it is next edited;
+      // re-show the stored value on blur at the bindings if that misleads anyone.
+      if (!Number.isFinite(value)) return
       rawValue.value = conversion.toRawUnit(round(value, displayedPlaces))
     },
   })
