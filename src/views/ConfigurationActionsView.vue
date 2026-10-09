@@ -387,23 +387,17 @@ const importAction = (): void => {
 
           // Determine the action type based on the content and register it
           if ('messageType' in json) {
-            registerMavlinkMessageActionConfig(json)
+            const id = registerMavlinkMessageActionConfig(json)
             loadAllActions()
-            const configs = getAllMavlinkMessageActionConfigs()
-            const id = Object.keys(configs).find((key) => configs[key].name === json.name)
-            if (id) mavlinkConfig.value?.openEditDialog(id)
+            mavlinkConfig.value?.openEditDialog(id)
           } else if ('method' in json) {
-            registerHttpRequestActionConfig(json)
+            const id = registerHttpRequestActionConfig(json)
             loadAllActions()
-            const configs = getAllHttpRequestActionConfigs()
-            const id = Object.keys(configs).find((key) => configs[key].name === json.name)
-            if (id) httpRequestConfig.value?.openEditDialog(id)
+            httpRequestConfig.value?.openEditDialog(id)
           } else if ('code' in json) {
-            registerJavascriptActionConfig(json)
+            const id = registerJavascriptActionConfig(json)
             loadAllActions()
-            const configs = getAllJavascriptActionConfigs()
-            const id = Object.keys(configs).find((key) => configs[key].name === json.name)
-            if (id) javascriptConfig.value?.openEditDialog(id)
+            javascriptConfig.value?.openEditDialog(id)
           } else {
             throw new Error('Unknown action type')
           }

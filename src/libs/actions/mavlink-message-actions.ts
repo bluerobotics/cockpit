@@ -22,7 +22,7 @@ import { removeActionLink } from './action-links'
 import { removeAutoRunConfig } from './auto-run'
 import { customActionIdFor } from './custom-action-id'
 import { getDataLakeVariableData } from './data-lake'
-const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
+export const mavlinkMessageActionIdPrefix = 'mavlink-message-action'
 
 let registeredMavlinkMessageActionConfigs: Record<string, MavlinkMessageActionConfig> = {}
 
