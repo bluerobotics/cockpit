@@ -4,6 +4,9 @@
       v-model="container.widgets"
       :disabled="!allowEditing"
       :animation="150"
+      :force-fallback="true"
+      :fallback-on-body="true"
+      :fallback-tolerance="3"
       group="generalGroup"
       class="flex items-center w-full h-full gap-2 px-2"
       :class="[wrap ? 'flex-wrap' : '', widgetsAlignment]"
@@ -138,9 +141,18 @@ const widgetAdded = (e: SortableEvent.SortableEvent): void => {
 
 const showWidgetTrashArea = ref(false)
 
-const onDragStart = (): void => {
+const onDragStart = (event: SortableEvent.SortableEvent): void => {
   logUserAction(`Started dragging mini-widget from container '${container.value.name}'`)
   showWidgetTrashArea.value = true
+
+  // Sortable places the dragged copy on the body by unscaling its rect, which misplaces it on a small-screen scaled bar
+  const ghost = document.querySelector<HTMLElement>('body > .sortable-fallback')
+  const itemRect = event.item.getBoundingClientRect()
+  const barScale = itemRect.width / event.item.offsetWidth
+  if (!(ghost?.firstElementChild instanceof HTMLElement) || barScale === 1) return
+  const { left, top, width, height } = itemRect
+  Object.assign(ghost.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` })
+  ghost.firstElementChild.style.zoom = String(barScale)
 }
 
 const onDragEnd = (): void => {
