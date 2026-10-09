@@ -19,6 +19,7 @@ import {
 } from '../utils-data-lake'
 import { removeActionLink } from './action-links'
 import { removeAutoRunConfig } from './auto-run'
+import { customActionIdFor } from './custom-action-id'
 
 const httpRequestActionIdPrefix = 'http-request-action'
 export const availableHttpRequestMethods: HttpRequestMethod[] = Object.values(HttpRequestMethod)
@@ -72,7 +73,7 @@ export const validateHttpRequestHeaders = (
  * @returns {string} The ID under which the action was registered
  */
 export const registerHttpRequestActionConfig = (action: HttpRequestActionConfig, customId?: string): string => {
-  const id = customId ?? `${httpRequestActionIdPrefix} (${action.name})`
+  const id = customId ?? customActionIdFor(httpRequestActionIdPrefix, action.name, registeredHttpRequestActionConfigs)
   registeredHttpRequestActionConfigs[id] = action
   saveHttpRequestActionConfigs()
   updateCockpitActions()

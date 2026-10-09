@@ -12,6 +12,7 @@ import { settingsManager } from '../settings-management'
 import { type CleanupScope, createCleanupScope, runUserScript } from '../user-script'
 import { removeActionLink } from './action-links'
 import { removeAutoRunConfig } from './auto-run'
+import { customActionIdFor } from './custom-action-id'
 
 const javascriptActionIdPrefix = 'javascript-action'
 
@@ -35,7 +36,7 @@ const undoActionRuns = (id: string): void => {
  * @returns {string} The ID under which the action was registered
  */
 export const registerJavascriptActionConfig = (action: JavascriptActionConfig, customId?: string): string => {
-  const id = customId ?? `${javascriptActionIdPrefix} (${action.name})`
+  const id = customId ?? customActionIdFor(javascriptActionIdPrefix, action.name, registeredJavascriptActionConfigs)
   undoActionRuns(id)
   registeredJavascriptActionConfigs[id] = action
   saveJavascriptActionConfigs()
