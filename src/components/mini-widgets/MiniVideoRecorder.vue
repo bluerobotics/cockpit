@@ -30,7 +30,7 @@
         v-if="numberOfVideosOnDB > 0"
         color="info"
         :content="numberOfVideosOnDB"
-        :dot="isOutside || isVideoLibraryDialogOpen"
+        :dot="isOutside || interfaceStore.videoLibraryVisibility"
         class="cursor-pointer"
         @click="openVideoLibraryModal"
       >
@@ -129,7 +129,8 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
-import { isEqual } from '@/libs/utils'
+import { useVideoChunkManager } from '@/composables/videoChunkManager'
+import { isElectron, isEqual } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -139,6 +140,7 @@ const { showDialog } = useInteractionDialog()
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
 const videoStore = useVideoStore()
+const { chunkGroups, fetchChunkGroups } = useVideoChunkManager()
 
 const props = defineProps<{
   /**
@@ -166,7 +168,6 @@ const enrichedStreamItems = computed(() => {
 })
 const recorderWidget = ref()
 const { isOutside } = useMouseInElement(recorderWidget)
-const isVideoLibraryDialogOpen = ref(false)
 const isLoadingStream = ref(false)
 const timeNow = useTimestamp({ interval: 100 })
 const mediaStream = ref<MediaStream | undefined>()
@@ -256,63 +257,15 @@ watch(nameSelectedStream, (newName) => {
   mediaStream.value = undefined
 })
 
-// Fetch number of videos on storage (chunk groups + processed videos without overlap)
+// Counts the list the video library opens on, as raw chunks kept as backup outlive their deleted processed video
 const fetchNumberOfTempVideos = async (): Promise<void> => {
-  // Get processed videos from videoStorage
-  const processedKeys = await videoStore.videoStorage.keys()
-  const processedVideos = processedKeys.filter((k) => videoStore.isVideoFilename(k))
-
-  // Get chunk groups from tempVideoStorage
-  const tempKeys = await videoStore.tempVideoStorage.keys()
-  const chunkGroups: Set<string> = new Set()
-
-  for (const key of tempKeys) {
-    if (key.includes('thumbnail_')) continue
-
-    const parts = key.split('_')
-    if (parts.length < 2) continue
-
-    const hash = parts[0]
-    const chunkNumber = parseInt(parts[parts.length - 1], 10)
-    if (isNaN(chunkNumber)) continue
-
-    // Check if this chunk actually exists and has content
-    try {
-      const blob = (await videoStore.tempVideoStorage.getItem(key)) as Blob
-      if (blob && blob.size > 0) {
-        chunkGroups.add(hash)
-      }
-    } catch (error) {
-      console.warn(`Failed to check chunk ${key}:`, error)
-    }
+  if (isElectron()) {
+    const processedKeys = await videoStore.videoStorage.keys()
+    numberOfVideosOnDB.value = processedKeys.filter((k) => videoStore.isVideoFilename(k)).length
+    return
   }
-
-  // Count processed videos that don't have corresponding chunk groups
-  const processedVideoHashes = new Set<string>()
-  for (const videoKey of processedVideos) {
-    // Extract hash from processed video filename
-    // Processed videos have format like "MissionName (Date) #hash.webm"
-    // We need to extract the hash after the # symbol
-    const hashMatch = videoKey.match(/#([a-f0-9]+)\./)
-    if (hashMatch && hashMatch[1]) {
-      processedVideoHashes.add(hashMatch[1])
-    }
-  }
-
-  // Count unique videos: chunk groups + processed videos that don't have chunk groups
-  const uniqueVideos = new Set<string>()
-
-  // Add all chunk groups
-  chunkGroups.forEach((hash) => uniqueVideos.add(hash))
-
-  // Add processed videos that don't have corresponding chunk groups
-  processedVideoHashes.forEach((hash) => {
-    if (!chunkGroups.has(hash)) {
-      uniqueVideos.add(hash)
-    }
-  })
-
-  numberOfVideosOnDB.value = uniqueVideos.size
+  await fetchChunkGroups()
+  numberOfVideosOnDB.value = chunkGroups.value.length
 }
 
 // eslint-disable-next-line jsdoc/require-jsdoc
@@ -453,11 +406,19 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => isVideoLibraryDialogOpen.value,
+  () => interfaceStore.videoLibraryVisibility,
   async (newValue) => {
     if (newValue === false) {
       await fetchNumberOfTempVideos()
     }
+  }
+)
+
+// A recording only lands in the library once its recorder detaches, after processing and the telemetry overlay
+watch(
+  () => Object.values(videoStore.activeStreams).filter((stream) => stream?.mediaRecorder !== undefined).length,
+  async (attachedRecorders, previouslyAttachedRecorders) => {
+    if (attachedRecorders < previouslyAttachedRecorders) await fetchNumberOfTempVideos()
   }
 )
 </script>
