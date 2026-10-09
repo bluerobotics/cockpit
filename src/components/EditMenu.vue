@@ -678,16 +678,7 @@ const isCogIconEnabled = (widget: MiniWidget): boolean => {
   )
 }
 
-const findUniqueName = (name: string): string => {
-  let newName = name
-  let i = 1
-  const existingNames = store.currentView.widgets.map((widget) => widget.name)
-  while (existingNames.includes(newName)) {
-    newName = `${name} ${i}`
-    i++
-  }
-  return newName
-}
+const findUniqueName = (name: string): string => store.uniqueWidgetName(name, store.currentView)
 /*
  * Makes a new widget with an unique name
  */
