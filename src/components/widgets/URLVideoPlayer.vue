@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount, ref, toRefs, watch } from 'vue'
+import { ref, toRefs, watch } from 'vue'
 
 import Dropdown from '@/components/Dropdown.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -67,25 +67,14 @@ const props = defineProps<{
 }>()
 const widget = toRefs(props).widget
 
+// Merged before the watcher starts, so filling in the defaults does not restart a player that is not mounted yet.
+const defaultOptions = { source: '', fitStyle: 'cover', autoplay: true, controls: true, loop: true, muted: true }
+Object.assign(widget.value.options, { ...defaultOptions, ...widget.value.options })
+
 const videoPlayer = ref()
 watch(widget.value.options, () => {
   videoPlayer.value.pause()
   videoPlayer.value.play()
-})
-
-onBeforeMount(() => {
-  if (Object.keys(widget.value.options).length !== 0) {
-    return
-  }
-
-  widget.value.options = {
-    source: '',
-    fitStyle: 'cover',
-    autoplay: true,
-    controls: true,
-    loop: true,
-    muted: true,
-  }
 })
 </script>
 <style scoped>

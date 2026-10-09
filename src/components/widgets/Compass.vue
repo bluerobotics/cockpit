@@ -72,11 +72,7 @@ const widget = toRefs(props).widget
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  if (Object.keys(widget.value.options).length === 0) {
-    widget.value.options = {
-      headingStyle: headingOptions[0],
-    }
-  }
+  widget.value.options = { headingStyle: headingOptions[0], ...widget.value.options }
 })
 
 onMounted(() => {
