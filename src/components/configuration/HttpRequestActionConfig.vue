@@ -457,11 +457,11 @@ const removeHeader = (key: string): void => {
   delete newActionConfig.value.headers[key]
 }
 
-const editMode = ref(false)
+const idBeingEdited = ref<string>()
+const editMode = computed(() => idBeingEdited.value !== undefined)
 
 const createActionConfig = (): void => {
-  editMode.value = false
-  registerHttpRequestActionConfig(newActionConfig.value)
+  registerHttpRequestActionConfig(newActionConfig.value, idBeingEdited.value)
   emit('action-saved')
   resetNewAction()
 }
@@ -475,7 +475,7 @@ const saveActionConfig = (): void => {
 const resetNewAction = (): void => {
   newActionConfig.value = JSON.parse(JSON.stringify(defaultActionConfig))
   bodyInputError.value = ''
-  editMode.value = false
+  idBeingEdited.value = undefined
 }
 
 const exportAction = (id: string): void => {
@@ -491,7 +491,7 @@ const exportAction = (id: string): void => {
   const a = document.createElement('a')
   a.style.display = 'none'
   a.href = url
-  a.download = `${id}.json`
+  a.download = `${action.name}.json`
   document.body.appendChild(a)
   a.click()
   window.URL.revokeObjectURL(url)
@@ -517,8 +517,8 @@ const closeActionDialog = (): void => {
 const openEditDialog = (id: string): void => {
   const action = getHttpRequestActionConfig(id)
   if (action) {
+    idBeingEdited.value = id
     logUserAction(`Opened edit dialog for HTTP request action '${action.name}'`)
-    editMode.value = true
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
     actionDialog.value.show = true
   }
