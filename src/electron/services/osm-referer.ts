@@ -10,35 +10,37 @@ import { session } from 'electron'
 const COCKPIT_REFERER = 'https://github.com/bluerobotics/cockpit'
 
 /**
- * URL filter matching every known OSM tile host. The canonical policy-compliant URL is
+ * URL filter matching every known OSM tile host, plus the Overpass API that the base station's
+ * cell tower overlay queries. The canonical policy-compliant URL is
  * `https://tile.openstreetmap.org/...`, but the legacy `{s}.tile.openstreetmap.org` subdomains
  * are still in use inside some offline caches, so we cover both.
  */
-const OSM_TILE_URL_FILTER = {
+const OSM_URL_FILTER = {
   urls: [
     'https://tile.openstreetmap.org/*',
     'https://*.tile.openstreetmap.org/*',
     'https://tile.osm.org/*',
     'https://*.tile.osm.org/*',
+    'https://overpass-api.de/*',
   ],
 }
 
 /**
  * Setup a webRequest interceptor that guarantees an HTTP Referer header on every request to
- * OpenStreetMap tile servers.
+ * OpenStreetMap tile servers and the Overpass API.
  *
  * When Cockpit is loaded from `file://` (standalone/Electron build), the document origin is
  * `"null"` and Chromium omits the Referer header for cross-origin tile requests regardless of
  * the `referrerPolicy` set on the tile `<img>` element. Without a Referer, OSM serves a
  * "403R — Referer is required" blocked-tile placeholder (with a 200 status code and
- * `X-Blocked` response header) per their tile usage policy.
+ * `X-Blocked` response header) per their tile usage policy, and Overpass answers 406.
  *
- * This listener injects a Cockpit-identifying Referer only for OSM tile hosts so other
+ * This listener injects a Cockpit-identifying Referer only for these OSM hosts so other
  * request flows are unaffected.
  * @returns {void}
  */
 export const setupOsmRefererService = (): void => {
-  session.defaultSession.webRequest.onBeforeSendHeaders(OSM_TILE_URL_FILTER, (details, callback) => {
+  session.defaultSession.webRequest.onBeforeSendHeaders(OSM_URL_FILTER, (details, callback) => {
     const requestHeaders = { ...details.requestHeaders, Referer: COCKPIT_REFERER }
     callback({ requestHeaders })
   })
