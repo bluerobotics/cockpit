@@ -228,6 +228,8 @@ export const useVideoStore = defineStore('video', () => {
     return corr ? corr.name : undefined
   }
 
+  const streamDisplayName = (externalId: string): string => internalStreamNameFromExternal(externalId) ?? externalId
+
   const getStreamCorrespondency = (externalId: string): VideoStreamCorrespondency | undefined => {
     return streamsCorrespondency.value.find((stream) => stream.externalId === externalId)
   }
@@ -508,7 +510,8 @@ export const useVideoStore = defineStore('video', () => {
         // A wait for the old stream counts as recording here, or it would resume onto the replacement, under the
         // settings the user has just changed and without the warning this branch gives a recording user
         if (isRecording(streamName) || isWaitingToResumeRecording(streamName)) {
-          showDialog({ message: `Stream '${streamName}' has changed. Stopping recording...`, variant: 'error' })
+          const displayName = streamDisplayName(streamName)
+          showDialog({ message: `Stream '${displayName}' has changed. Stopping recording...`, variant: 'error' })
           stopRecording(streamName)
         }
 
@@ -552,7 +555,7 @@ export const useVideoStore = defineStore('video', () => {
       if (rtspActivationBackoff.isBackingOff(streamName)) return
 
       // The external id of an RTSP stream is its URL, credentials included, so never show it to the user
-      const displayName = internalStreamNameFromExternal(streamName) ?? streamName
+      const displayName = streamDisplayName(streamName)
 
       const rtspUrl = getRtspUrl(streamName)
       if (!rtspUrl) {
@@ -1113,6 +1116,7 @@ export const useVideoStore = defineStore('video', () => {
    * @param {string} streamName - Name of the stream
    */
   const stopRecording = (streamName: string): void => {
+    const streamLabel = streamDisplayName(streamName)
     // A stop the user asked for during an outage must not be undone by the resume that outage armed
     const wasWaitingToResume = isWaitingToResumeRecording(streamName)
     forgetRecordingResumes(streamName)
@@ -1130,7 +1134,6 @@ export const useVideoStore = defineStore('video', () => {
     if (streamData?.mediaRecorder === undefined) {
       console.debug(`No recorder attached to stream '${streamName}'. Nothing to stop.`)
       if (wasWaitingToResume) {
-        const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
         alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped waiting to record stream '${streamLabel}' again.`))
         // The wait cancelled above was the only thing holding this stream open, and no recorder will attach to it now
         deactivateStreamIfUnused(streamName)
@@ -1153,7 +1156,7 @@ export const useVideoStore = defineStore('video', () => {
 
     streamData.mediaRecorder.stop()
 
-    alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamName}.`))
+    alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamLabel}.`))
   }
 
   const getVideoThumbnail = async (videoFileNameOrHash: string, isProcessed: boolean): Promise<Blob | null> => {
@@ -1169,7 +1172,7 @@ export const useVideoStore = defineStore('video', () => {
    * another start is already waiting on the stream
    */
   const waitForStreamReadyToRecord = async (streamName: string): Promise<boolean> => {
-    const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+    const streamLabel = streamDisplayName(streamName)
     // Before the repeated-start check too, so a second press is answered rather than dropped without a word
     const waitingMsg = `Recording of '${streamLabel}' starts once its video arrives...`
     openSnackbar({ message: waitingMsg, duration: secondsToShowWaitForVideoNotice * 1000, variant: 'info' })
@@ -1277,7 +1280,7 @@ export const useVideoStore = defineStore('video', () => {
     delete recordingMonitors[streamName]
     // The internal name, since the external id of an RTSP stream is its URL, credentials included, and these warnings
     // are both shown to the user and written to the logs they share with us.
-    const streamLabel = internalStreamNameFromExternal(streamName) ?? streamName
+    const streamLabel = streamDisplayName(streamName)
 
     // Shared by the two ways a recording ends without anyone asking, a failed recorder and a lost video connection
     const reportUnexpectedStop = (interruptWithDialog = true): void => {
@@ -1302,7 +1305,7 @@ export const useVideoStore = defineStore('video', () => {
       recordingMonitors[streamName] = setInterval(async () => {
         // Check if the stream is still recording before proceeding with checks
         if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
+          const msg = `Recording for stream '${streamLabel}' has stopped. Stopping health monitor for this stream.`
           showDialog({ message: msg, variant: 'warning' })
           clearInterval(recordingMonitors[streamName])
           delete recordingMonitors[streamName]
@@ -1331,7 +1334,7 @@ export const useVideoStore = defineStore('video', () => {
       recordingMonitors[streamName] = setInterval(async () => {
         // Check if the stream is still recording before proceeding with checks
         if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamName}' has stopped. Stopping health monitor for this stream.`
+          const msg = `Recording for stream '${streamLabel}' has stopped. Stopping health monitor for this stream.`
           showDialog({ message: msg, variant: 'warning' })
           clearInterval(recordingMonitors[streamName])
           delete recordingMonitors[streamName]
@@ -1475,7 +1478,7 @@ export const useVideoStore = defineStore('video', () => {
             const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
             openSnackbar({ message: msg, variant: 'error' })
           } else if (error instanceof LiveVideoProcessorInitializationError) {
-            const msg = `Failed to initialize live processor for stream ${streamName}: ${error.message}`
+            const msg = `Failed to initialize live processor for stream ${streamLabel}: ${error.message}`
             showDialog({ message: msg, variant: 'error' })
             alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
             if (recorderIsStillAttached()) stopRecording(streamName)
@@ -1559,7 +1562,7 @@ export const useVideoStore = defineStore('video', () => {
           })
         } catch (error) {
           console.error('Failed to process video:', error)
-          alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamName}.`))
+          alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamLabel}.`))
         } finally {
           delete liveProcessors.value[recordingHash]
         }
@@ -1590,7 +1593,7 @@ export const useVideoStore = defineStore('video', () => {
     // init failing) never leaves the stream marked as mirrored.
     broadcastRecordingStart(streamName)
 
-    alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamName}.`))
+    alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamLabel}.`))
     // Closes the wait the operator was told about, which the alert above does not show on its own
     if (hadToWaitForVideo) {
       const arrivedMsg = `Video of '${streamLabel}' arrived. Recording started.`
@@ -1771,7 +1774,7 @@ export const useVideoStore = defineStore('video', () => {
 
     if (!streamsWaitingForVideo.isEmpty()) {
       // The internal names, since the external id of an RTSP stream is its URL, credentials included
-      const waitingLabels = streamsWaitingForVideo.map((name) => internalStreamNameFromExternal(name) ?? name)
+      const waitingLabels = streamsWaitingForVideo.map(streamDisplayName)
       const waiting = `Recording of ${waitingLabels.join(', ')} starts again when the video comes back.`
       alertStore.pushAlert(new Alert(AlertLevel.Info, waiting))
     }
@@ -1796,7 +1799,8 @@ export const useVideoStore = defineStore('video', () => {
     )
     if (streamsThatStarted.isEmpty()) return
 
-    const msg = `Started recording all ${streamsThatStarted.length} streams: ${streamsThatStarted.join(', ')}.`
+    const streamLabels = streamsThatStarted.map(streamDisplayName)
+    const msg = `Started recording all ${streamsThatStarted.length} streams: ${streamLabels.join(', ')}.`
     alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
 
@@ -1816,7 +1820,8 @@ export const useVideoStore = defineStore('video', () => {
       alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams were being recorded.'))
       return
     }
-    const msg = `Stopped recording all ${streamsThatStopped.length} streams: ${streamsThatStopped.join(', ')}.`
+    const streamLabels = streamsThatStopped.map(streamDisplayName)
+    const msg = `Stopped recording all ${streamsThatStopped.length} streams: ${streamLabels.join(', ')}.`
     alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
 
