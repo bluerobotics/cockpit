@@ -616,6 +616,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     if (container) {
       const index = container.widgets.indexOf(miniWidget)
       container.widgets.splice(index, 1)
+      if (elementToShowOnDrawer.value?.hash === miniWidget.hash) elementToShowOnDrawer.value = undefined
       return
     }
     if (customWidgetContainer) {
