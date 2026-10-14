@@ -1341,13 +1341,38 @@ const applyAllSuggestions = (): void => {
   })
 
   const groupName = acceptAllGroup.value.name
+
+  // An extension's groups are alternative full mapping packs, so accepting one settles the others. They are read
+  // unfiltered by the current mapping, which would hide siblings the accepted pack now matches until a remap.
+  const extension = discoveredJoystickSuggestions.value.find(
+    (ext) => ext.extensionName === acceptAllExtensionName.value
+  )
+  const acceptedIds = new Set(
+    extension?.suggestionGroups
+      .find((group) => group.id === acceptAllGroup.value?.id)
+      ?.buttonMappingSuggestions.map((s) => s.id)
+  )
+  const siblingIdsToIgnore =
+    appliedCount === 0 || !extension
+      ? []
+      : filterExtensionGroups(
+          extension,
+          (s) => !appliedSuggestionIds.value.includes(s.id) && !ignoredSuggestionIds.value.includes(s.id)
+        )
+          .suggestionGroups.filter((group) => group.id !== acceptAllGroup.value?.id)
+          .flatMap((group) => group.buttonMappingSuggestions.map((s) => s.id))
+          .filter((id) => !acceptedIds.has(id))
+  addIgnoredSuggestionIds(siblingIdsToIgnore)
+
   acceptAllDialog.value = false
   acceptAllExtensionName.value = null
   acceptAllGroup.value = null
 
   if (appliedCount > 0) {
+    const ignoredNote =
+      siblingIdsToIgnore.length > 0 ? ` Ignored ${siblingIdsToIgnore.length} from the extension's other groups.` : ''
     openSnackbar({
-      message: `Applied ${appliedCount} joystick mapping(s) from "${groupName}".`,
+      message: `Applied ${appliedCount} joystick mapping(s) from "${groupName}".${ignoredNote}`,
       variant: 'success',
       duration: 5000,
     })
