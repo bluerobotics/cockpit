@@ -2,7 +2,7 @@
   <div
     v-show="!interfaceStore.isMainMenuVisible"
     ref="rootEl"
-    class="absolute flex flex-col left-10 rounded-[10px] overflow-hidden z-[200]"
+    class="absolute flex flex-col left-10 rounded-[10px] overflow-hidden z-[200] select-none"
     :style="[
       interfaceStore.globalGlassMenuStyles,
       { height: 'auto', maxHeight: calculatedHeight, width: '320px', borderBottom: 'none', top: `${topOffset}px` },
