@@ -25,6 +25,16 @@ export interface FenceRenderingProps {
    * subscribes to the live `useGeoFenceStore` editor state instead.
    */
   plan?: GeoFencePlan
+  /**
+   * Outlines the fences with a dashed stroke, telling a fence the user cannot
+   * edit here apart from the one they are drawing.
+   */
+  dashed?: boolean
+  /**
+   * Scales every fence opacity on top of the read-only dimming, so a host can
+   * push one overlay further into the background than another.
+   */
+  opacityFactor?: number
 }
 
 let patternInstanceCount = 0
@@ -74,13 +84,17 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
   let breachReturnMarker: L.Marker | null = null
 
   const polygonStyle = (inclusion: boolean): L.PathOptions => {
-    const dim = props.readonly ? READONLY_OPACITY_FACTOR : 1
+    const dim = (props.readonly ? READONLY_OPACITY_FACTOR : 1) * (props.opacityFactor ?? 1)
     return {
       // Tags the SVG path so the planning view's fence-mode dimming can spare
       // fences by class instead of matching their border colors.
       className: FENCE_PATH_CLASS,
+      // A read-only overlay can sit on top of the editable drawing, where its fill would take the
+      // clicks meant for the shape underneath.
+      interactive: !props.readonly,
       color: inclusion ? INCLUSION_BORDER : EXCLUSION_BORDER,
       weight: 2,
+      ...(props.dashed ? { dashArray: '8, 6' } : {}),
       opacity: (inclusion ? 1 : 0.6) * dim,
       fillColor: inclusion ? INCLUSION_FILL_COLOR : EXCLUSION_FILL_COLOR,
       fillOpacity: (inclusion ? INCLUSION_FILL_OPACITY : EXCLUSION_FILL_OPACITY) * dim,
@@ -590,6 +604,7 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
       fenceDraft.isDrawingPolygon,
       fenceDraft.isDrawingCircle,
       props.readonly,
+      props.opacityFactor,
     ],
     () => debouncedSyncLayers(),
     { deep: true }
