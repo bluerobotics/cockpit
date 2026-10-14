@@ -356,6 +356,16 @@
               </div>
             </v-tooltip>
           </div>
+          <div v-if="hasFenceToRespect" class="text-sm flex justify-start items-center">
+            <v-icon v-if="fenceBreachedCount > 0" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
+            <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
+            <p
+              :class="{ 'cursor-pointer hover:underline': fenceBreachedCount > 0 }"
+              @click="fenceBreachedCount > 0 ? focusBreaches() : undefined"
+            >
+              {{ fenceChecklistLabel }}
+            </p>
+          </div>
           <div class="text-sm flex justify-start items-center">
             <v-icon v-if="!hasUploadedMission" class="text-sm mr-4 text-red-500">mdi-close-circle</v-icon>
             <v-icon v-else class="text-sm mr-4 text-green-500">mdi-check-circle</v-icon>
@@ -965,6 +975,7 @@ import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelec
 import { useMapVehicleMarker } from '@/composables/map/useMapVehicleMarker'
 import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
 import { useMeasureExtentInput } from '@/composables/map/useMeasureExtentInput'
+import { useMissionFenceBreaches } from '@/composables/map/useMissionFenceBreaches'
 import { useMissionInsertion } from '@/composables/map/useMissionInsertion'
 import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
@@ -1015,7 +1026,7 @@ import {
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
 import { endpointSplicePosition } from '@/libs/mission/planning-endpoints'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
-import { degrees, messageFromError, toPlain } from '@/libs/utils'
+import { degrees, escapeHtml, messageFromError, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
@@ -1116,7 +1127,10 @@ const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
  * @returns { Promise<boolean> } True when the upload should proceed.
  */
 const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
-  const { vehicle, draft } = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
+  // The live check is debounced, so a waypoint moved a moment ago would still be judged by the
+  // previous snapshot.
+  recheckFenceBreaches()
+  const { vehicle, draft } = fenceBreachReports.value
   const message: string[] = []
   if (vehicle?.hasBreaches) {
     message.push(
@@ -1132,6 +1146,7 @@ const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
     )
   }
   if (message.length === 0) return true
+  message.push('The waypoints in question are marked red on the map, each with the reason on hover.')
 
   let confirmed = false
   try {
@@ -1144,7 +1159,7 @@ const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
       persistent: false,
       maxWidth: '720px',
       actions: [
-        { text: 'Back to mission planning', action: () => undefined },
+        { text: 'Back to mission planning', action: () => focusBreaches() },
         {
           text: 'Upload to vehicle anyway',
           class: 'bg-[#FFFFFF33]',
@@ -3385,7 +3400,8 @@ const addWaypoint = (
       waypoint.commands.length,
       false,
       surveyEntryExitWaypointIds.value.has(waypoint.id),
-      isEndpointWaypoint(waypointId)
+      isEndpointWaypoint(waypointId),
+      waypointId
     ),
     className: 'waypoint-marker-icon',
     iconSize: iconDimensions.iconSize,
@@ -4086,7 +4102,8 @@ const createWaypointMarkerHtml = (
   commandCount: number,
   isSelected = false,
   isEntryExit = false,
-  isEndpoint = false
+  isEndpoint = false,
+  waypointId = ''
 ): string => {
   const baseClass = isSelected ? 'selected-marker' : 'marker-icon'
   const size = getEffectiveMarkerSize(zoom.value)
@@ -4095,10 +4112,15 @@ const createWaypointMarkerHtml = (
   const showCommandCount = size === 'md' && commandCount > 1
   const entryExitClass = isEntryExit ? ' green-marker' : ''
   const endpointClass = isEndpoint ? ' endpoint-marker' : ''
+  const breachTitle = waypointId ? breachTitleFor(waypointId) : ''
+  const breachClass = breachTitle ? ' breaching-marker' : ''
+  // A marker is a Leaflet divIcon rather than a component, so the reason rides on the native
+  // `title`, which the browser shows at every zoom without a second tooltip fighting the number.
+  const breachAttribute = breachTitle ? ` title="${escapeHtml(breachTitle)}"` : ''
 
   return `
     <div class="${markerSizeClass}">
-      <div class="${baseClass} waypoint-main-marker${entryExitClass}${endpointClass}"></div>
+      <div class="${baseClass} waypoint-main-marker${entryExitClass}${endpointClass}${breachClass}"${breachAttribute}></div>
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
     </div>
@@ -4133,7 +4155,8 @@ const updateWaypointMarkers = (): void => {
             wp.commands.length,
             isSelected,
             surveyEntryExitWaypointIds.value.has(wp.id),
-            isEndpoint
+            isEndpoint,
+            wp.id
           ),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
@@ -4454,7 +4477,8 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
       waypoint.commands.length,
       false,
       surveyEntryExitWaypointIds.value.has(waypoint.id),
-      isEndpointWaypoint(waypoint.id)
+      isEndpointWaypoint(waypoint.id),
+      waypoint.id
     ),
     className: 'waypoint-marker-icon',
     iconSize: dimensions.iconSize,
@@ -4505,7 +4529,8 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
             oldWp?.commands.length ?? 0,
             false,
             surveyEntryExitWaypointIds.value.has(oldWaypointId),
-            isEndpointWaypoint(oldWaypointId)
+            isEndpointWaypoint(oldWaypointId),
+            oldWaypointId
           ),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
@@ -4526,7 +4551,8 @@ const applySelectedWaypointMarkerVisual = (newWaypointId?: string, oldWaypointId
             newWp?.commands.length ?? 0,
             true,
             surveyEntryExitWaypointIds.value.has(newWaypointId),
-            isEndpointWaypoint(newWaypointId)
+            isEndpointWaypoint(newWaypointId),
+            newWaypointId
           ),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
@@ -4760,7 +4786,8 @@ const onMapClick = (e: L.LeafletMouseEvent): void => {
             oldWaypoint.commands.length,
             false,
             surveyEntryExitWaypointIds.value.has(oldWaypoint.id),
-            isEndpointWaypoint(oldWaypoint.id)
+            isEndpointWaypoint(oldWaypoint.id),
+            oldWaypoint.id
           ),
           className: 'waypoint-marker-icon',
           iconSize: dimensions.iconSize,
@@ -5178,6 +5205,27 @@ const { renderMissionPathSignal, removeMissionPathSignalLayer } = useMissionPath
   surveyExtraPathLayers
 )
 
+const {
+  reports: fenceBreachReports,
+  breachedCount: fenceBreachedCount,
+  breachTitleFor,
+  recheck: recheckFenceBreaches,
+  focusBreaches,
+} = useMissionFenceBreaches(planningMap, {
+  waypoints: () => missionStore.currentPlanningWaypoints,
+  refreshMarkers: updateWaypointMarkers,
+})
+
+const hasFenceToRespect = computed<boolean>(
+  () => fenceBreachReports.value.vehicle !== undefined || fenceBreachReports.value.draft !== undefined
+)
+
+const fenceChecklistLabel = computed<string>(() => {
+  if (fenceBreachedCount.value === 0) return 'Inside the geofence'
+  const subject = fenceBreachedCount.value === 1 ? 'waypoint breaches' : 'waypoints breach'
+  return `${fenceBreachedCount.value} ${subject} the geofence`
+})
+
 useMapVehiclePathLayer(planningMap, {
   path: () => missionStore.vehiclePositionHistory,
   revision: () => missionStore.vehiclePositionHistoryRevision,
@@ -5362,6 +5410,18 @@ watch(
   border: 2px solid #ff9800;
   transform: scale(1.25);
   transform-origin: center;
+}
+
+.waypoint-main-marker.breaching-marker {
+  background-color: #f44336;
+}
+
+/* Sized up at the far zooms, where the marker is a dot too small to read a color off. */
+.wp-marker-xs .breaching-marker {
+  width: 4.8px;
+  height: 4.8px;
+  top: 0.6px;
+  left: 0.6px;
 }
 
 .command-count-indicator {
