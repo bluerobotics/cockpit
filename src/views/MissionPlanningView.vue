@@ -881,6 +881,13 @@
     />
   </Teleport>
   <GeoFenceMapLayer :readonly="planningMode !== 'geofence'" />
+  <GeoFenceMapLayer
+    v-if="fenceStore.lastUploadedPlan && !fenceStore.draftMatchesVehicle"
+    readonly
+    dashed
+    :plan="fenceStore.lastUploadedPlan"
+    :opacity-factor="planningMode === 'geofence' ? 0.8 : 0.7"
+  />
 
   <v-progress-linear
     v-if="fetchingMission"

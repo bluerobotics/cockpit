@@ -19,8 +19,18 @@ const props = withDefaults(
      * subscribes to the live `useGeoFenceStore` editor state instead.
      */
     plan?: GeoFencePlan
+    /**
+     * Outlines the fences with a dashed stroke, telling a fence the user
+     * cannot edit here apart from the one they are drawing.
+     */
+    dashed?: boolean
+    /**
+     * Scales every fence opacity on top of the read-only dimming, so a host can
+     * push one overlay further into the background than another.
+     */
+    opacityFactor?: number
   }>(),
-  { readonly: false, plan: undefined }
+  { readonly: false, plan: undefined, dashed: false, opacityFactor: 1 }
 )
 
 useFenceRendering({
@@ -29,6 +39,12 @@ useFenceRendering({
   },
   get plan() {
     return props.plan
+  },
+  get dashed() {
+    return props.dashed
+  },
+  get opacityFactor() {
+    return props.opacityFactor
   },
 })
 </script>
