@@ -1,159 +1,191 @@
-<div align="center">
-  <img style="width: 20%" src="src/assets/cockpit-logo.avif"><br>
-</div>
+<p align="center">
+  <img src="src/assets/cockpit-logo.avif" width="72" height="72" alt="Cockpit logo">
+</p>
 
-<div align="center">
-  <h1>Cockpit - A Modern Ground Control Software</h1>
+<h1 align="center">Cockpit</h1>
 
-  <p>
-    <a href="https://docs.bluerobotics.com/cockpit">🌐 Live Demo</a> •
-    <a href="https://blueos.cloud/cockpit/docs/latest/usage/installation/">📦 Install</a> •
-    <a href="https://blueos.cloud/cockpit/docs">📖 Documentation</a> •
-    <a href="https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit">💬 Community</a>
-  </p>
-</div>
+<p align="center"><strong>Ground control for remote vehicles</strong></p>
 
-<br>
+<p align="center">
+  <a href="https://docs.bluerobotics.com/cockpit">Live demo</a> &nbsp;·&nbsp;
+  <a href="https://blueos.cloud/cockpit/docs/latest/usage/installation/">Install</a> &nbsp;·&nbsp;
+  <a href="https://blueos.cloud/cockpit/docs">Documentation</a> &nbsp;·&nbsp;
+  <a href="https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit">Community</a>
+</p>
 
-<div align="center">
-  <img style="width: 65%" src="./public/images/screen.avif"><br>
-</div>
+<p align="center">
+  <img src="public/images/screen.avif" width="960" alt="Actual Cockpit interface showing the vehicle camera view and telemetry widgets">
+</p>
 
-<br>
+<p align="center">
+  <a href="https://github.com/bluerobotics/cockpit/actions/workflows/ci.yml?query=branch%3Amaster"><img src="https://img.shields.io/github/actions/workflow/status/bluerobotics/cockpit/ci.yml?branch=master&amp;label=CI&amp;style=flat&amp;labelColor=263746" alt="CI status on master"></a>
+  <a href="https://github.com/bluerobotics/cockpit/releases/latest"><img src="https://img.shields.io/github/v/release/bluerobotics/cockpit?sort=semver&amp;label=Stable&amp;style=flat&amp;labelColor=263746&amp;color=087e9c" alt="Latest stable release"></a>
+  <a href="https://github.com/bluerobotics/cockpit/tags"><img src="https://img.shields.io/github/v/tag/bluerobotics/cockpit?include_prereleases&amp;sort=semver&amp;label=Latest%20tag&amp;style=flat&amp;labelColor=263746&amp;color=a97b24" alt="Latest Git tag, including prereleases"></a>
+</p>
 
-[![Test, Build and Deploy Images](https://github.com/bluerobotics/cockpit/actions/workflows/ci.yml/badge.svg)](https://github.com/bluerobotics/cockpit/actions/workflows/ci.yml)
-![Downloads](https://img.shields.io/github/downloads/bluerobotics/cockpit/total?label=Downloads)
-[![Latest Beta](https://img.shields.io/github/v/tag/bluerobotics/cockpit.svg?label=Latest%20Beta)](https://github.com/bluerobotics/cockpit/releases)
-[![Docker](https://img.shields.io/docker/v/bluerobotics/cockpit?label=Docker)](https://hub.docker.com/r/bluerobotics/cockpit/tags)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bluerobotics/cockpit)
+<p align="center">
+  <a href="https://github.com/bluerobotics/cockpit/releases"><img src="https://img.shields.io/github/downloads/bluerobotics/cockpit/total?label=Release%20downloads&amp;style=flat&amp;labelColor=263746&amp;color=087e9c" alt="Total downloads of GitHub release assets"></a>
+  <a href="https://hub.docker.com/r/bluerobotics/cockpit/tags"><img src="https://img.shields.io/badge/Docker-Images-087e9c?style=flat&amp;labelColor=263746" alt="Browse Cockpit Docker image tags"></a>
+  <a href="https://deepwiki.com/bluerobotics/cockpit"><img src="https://img.shields.io/badge/DeepWiki-Explore-087e9c?style=flat&amp;labelColor=263746" alt="Explore automatically generated developer documentation on DeepWiki"></a>
+</p>
 
----
-
-## 🎯 What is Cockpit?
-
-  <p><strong>An intuitive, customizable, and powerful ground control station software for remote vehicles of all types</strong></p>
-
-Cockpit is a web-based ground control station that aims to improve how you interact with remote vehicles. Whether you're piloting underwater ROVs, surface boats, aerial drones, or ground rovers, Cockpit provides an intuitive and highly customizable interface that adapts to your needs.
-
-### ✨ Key Highlights
-
-- **🌐 Universal Platform**: Runs in your browser or as a native desktop application
-- **🎨 Fully Customizable**: Drag-and-drop widget interface that adapts to your workflow
-- **🚀 Multi-Vehicle Support**: Control submarines, boats, drones and rovers from different interfaces in the same application
-- **📹 Advanced Video**: Support for as many video streams as you need, with recording, snapshots, and real-time statistics
-- **🗺️ Mission Planning**: Sophisticated waypoint planning with automated survey patterns
-- **🎮 Joystick Support**: Extensive gamepad support with customizable button mappings
-- **🔧 Extensible**: Advanced plugin system with DIY widgets, custom actions, data-lake variables, and input elements
-- **📊 Data Rich**: Comprehensive telemetry logging and real-time data visualization
+<p align="center">
+  <a href="#quick-start">Get started</a> &nbsp;·&nbsp;
+  <a href="#browser-vs-desktop">Browser vs desktop</a> &nbsp;·&nbsp;
+  <a href="#feature-overview">Features</a> &nbsp;·&nbsp;
+  <a href="#current-limitations">Limitations</a> &nbsp;·&nbsp;
+  <a href="#development-setup">Development</a>
+</p>
 
 ---
 
-## 🚀 Quick Start
+## What is Cockpit?
+
+Cockpit is a ground control station for piloting and monitoring remote vehicles. It runs in a browser or as a desktop application, with configurable layouts for underwater ROVs, surface boats, aerial vehicles and ground rovers.
+
+Choose the widgets you need, arrange them around your video and map, and save separate views for different operations. Vehicle support and testing vary by autopilot and vehicle type; see [supported vehicles](#supported-vehicles) before operating.
+
+<p align="center">
+  <img src=".github/readme/cover.webp" width="960" alt="Marine navigation concept illustration with a remote submersible and survey route">
+</p>
+
+<p align="center"><em>Concept illustration of remote vehicle navigation, not an app screenshot</em></p>
+
+### At a glance
+
+| Capability                | What it provides                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| Browser and desktop       | Run in a browser or install the native desktop application                           |
+| Configurable layouts      | Arrange widgets and save views for different workflows                               |
+| Vehicle-specific profiles | Switch between interfaces for submarines, boats, drones and rovers                   |
+| Video                     | Display multiple streams, record video, take snapshots and inspect stream statistics |
+| Mission planning          | Place waypoints and generate survey routes                                           |
+| Joystick control          | Configure gamepad axes and button mappings                                           |
+| Custom integrations       | Build DIY widgets and actions using data-lake variables and input elements           |
+| Telemetry                 | Log vehicle data and display live plots and indicators                               |
+
+---
+
+## Quick start
 
 ### Accessing Cockpit
 
-#### - Option 1: Try it Online
-If you just want to take a look at Cockpit, you can visit our **[live demo](https://docs.bluerobotics.com/cockpit)** to experience it instantly in your browser.
+#### Try it online
 
-#### - Option 2: Download the Native App (Recommended)
-Download the [latest release](https://blueos.cloud/cockpit/docs/latest/usage/installation/#self-contained-application) of our native desktop app for your platform.
-It offers the best performance, as well as all the features available in the app.
+Open the [live demo](https://docs.bluerobotics.com/cockpit) to explore the interface without installing Cockpit.
 
-We have dedicated builds for every Desktop platform, so make sure you're using the correct one to have the best possible experience.
+#### Install the desktop app
+
+Download the [desktop application](https://blueos.cloud/cockpit/docs/latest/usage/installation/#self-contained-application) for your operating system and processor. The desktop version adds local file access, vehicle discovery and other system integrations listed in the [comparison table](#browser-vs-desktop).
+
 - **Windows**: `.exe`
 - **macOS (Intel)**: `x64 .dmg`
 - **macOS (Apple Silicon)**: `arm64 .dmg`
 - **Linux**: `.AppImage`
-- **Steam OS**: `.Flatpak`
+- **Linux (Flatpak)**: `.flatpak`, including SteamOS
 
-#### - Option 3: Install the BlueOS Extension (Lite version!)
-If you're using BlueOS, you can install Cockpit [from the Extensions page](https://blueos.cloud/docs/stable/usage/advanced/#extensions).
+#### Install the BlueOS extension
 
-> ⚠️ Due to technical limitations of web browsers, the BlueOS Extension has limited functionality compared to the native app.
->
-> [See below](#%EF%B8%8F-browser-vs-desktop-whats-the-difference) for details.
+If your vehicle runs BlueOS, install Cockpit from the [Extensions page](https://blueos.cloud/docs/stable/usage/advanced/#extensions).
 
-#### - Option 4: Docker (for Developers)
+> The BlueOS extension runs in your browser. Some desktop integrations are unavailable in this version. See the [comparison table](#browser-vs-desktop).
+
+#### Run with Docker
+
 ```bash
 docker run -p 8080:8080 bluerobotics/cockpit:latest
 ```
 
-Once you have Cockpit running, it's time to connect to your vehicle:
+Once Cockpit is running, configure its connection to your vehicle.
 
 ### Connecting to your vehicle
 
-If you're running Cockpit as a BlueOS extension, it should automatically connect to your vehicle, but if you're running the native app and you have BlueOS in your vehicle, you can use the Vehicle Discovery dialog to easily connect to it. If for some reason you missed this dialog during boot you can just head to `Menu>Settings>General` and find the "Search for vehicles" button there.
+The BlueOS extension uses the address of the BlueOS connection. In the desktop app, use vehicle discovery to find BlueOS vehicles on your network. You can reopen it through **Settings > General > Search for vehicles**.
 
-If you have your vehicle connected through a serial interface, like a [USB-Serial radio](https://ardupilot.org/plane/docs/common-telemetry-landingpage.html#common-telemetry-landingpage), you should [manually configure the connection address]((https://blueos.cloud/cockpit/docs/latest/usage/getting-started/#general-configuration)). To do that activate the checkmark for "Mavlink2Rest connection" under `Menu>Settings>General` and use `serial:path/to/serial/device?baudrate=desired-baudrate` there.
+For a serial connection, such as a [USB-serial telemetry radio](https://ardupilot.org/plane/docs/common-telemetry-landingpage.html#common-telemetry-landingpage), [configure the connection address](https://blueos.cloud/cockpit/docs/latest/usage/getting-started/#general-configuration) manually. In the desktop app, open **Settings > General > MAVLink2REST URI**, enable the custom address, and enter `serial:path/to/serial/device?baudrate=desired-baudrate`. Replace the device path and baud rate with the values for your hardware, then select **Apply**.
 
 ### Streaming video
 
-If you want to stream video from your vehicle and you're not using BlueOS, you will need to run [`mavlink-camera-manager`](https://github.com/mavlink/mavlink-camera-manager) manually in the same machine as Cockpit, activate the checkmark for "WebRTC connection" and use `ws://127.0.0.1:6020` there.
+For WebRTC video without BlueOS, run [`mavlink-camera-manager`](https://github.com/mavlink/mavlink-camera-manager) on the vehicle or control station. In **Settings > General > Video connection (WebRTC)**, enable the custom address and enter the service's WebSocket URL. Use `ws://127.0.0.1:6020` only when the service runs on the same computer as Cockpit; otherwise use the service's network address. Select **Apply** to save the connection.
 
 ---
 
-## 🖥️ Browser vs Desktop: What's the Difference?
+## Browser vs desktop
 
-Most of the motivation behind having distinct versions with different features is tied to browsers' limitations -- more specifically, the need for secure context to access the most powerful APIs (e.g., filesystem, geolocation, serial communication), which is usually not the case when you're serving Cockpit from a hosted webpage with issued certificates. To overcome this, we moved to shipping additional features in a native app, built over [Electron](https://www.electronjs.org/), which also enables us to embed functionality beyond what the browser can provide.
+Both versions share Cockpit's web interface. The desktop app uses [Electron](https://www.electronjs.org/) to add integrations with local files, hardware and network services. Browser capabilities depend on the browser, its permissions and the context in which Cockpit runs.
 
-Below is a table summarizing the current status, but in general, you can expect more features and better performance on the native app:
+<p>
+  <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Available &nbsp;·&nbsp;
+  <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> Limited or requires setup &nbsp;·&nbsp;
+  <img src=".github/readme/status-unavailable.svg" width="16" height="16" alt=""> Not available
+</p>
 
 <div align="center">
 
-| **Feature** | **🌐 Browser** | **🖥️ Desktop** |
-|-------------|---------------|----------------|
-| **Joystick Support** | Only when tab and window are in focus  | ✅ Window can be unfocused and in the background |
-| **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
-| **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
-| **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
-| **External Serial GNSS** | ❌ Not available (browsers can't access serial devices outside a secure context) | ✅ Read one or more USB/serial NMEA GNSS receivers into the data-lake |
-| **Mobile Coverage Heatmap** | Limited to OpenStreetMap tower data | ✅ Also supports OpenCellID, with a personal API key |
-| **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
-| **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
-| **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |
-| **AI Agent Access (MCP)** | ❌ Not available (a browser tab cannot accept connections) | ✅ Local agents can create variables, actions and DIY widgets |
-| **Voice Alerts** | Uses the browser/OS speech voices, which vary per system | ✅ Built-in offline voice on every platform (no setup), so alerts sound the same everywhere |
-| **Performance** | Standard | ✅ Optimized build for each system |
-| **Installation** | ✅ No install needed | Requires download |
-| **Multi-platform** | ✅ Any device | Windows, macOS, Linux |
+| Feature                         | <img src=".github/readme/browser.svg" width="18" height="18" alt=""> Browser                                                                | <img src=".github/readme/desktop.svg" width="18" height="18" alt=""> Desktop                                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Joystick control                | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> Requires the tab and window to stay focused                     | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Can receive joystick input while the window is in the background                         |
+| Video recording                 | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> Download recordings and process them in the desktop app         | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Process recordings into MP4 files and save them locally                                  |
+| Snapshots                       | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> Download snapshots from the library                             | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Save snapshots to local folders                                                          |
+| Vehicle discovery               | <img src=".github/readme/status-unavailable.svg" width="16" height="16" alt=""> Network discovery is not available                          | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Scan your network for BlueOS vehicles                                                    |
+| External serial GNSS            | <img src=".github/readme/status-unavailable.svg" width="16" height="16" alt=""> Cockpit's external GNSS integration is not available        | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Read USB or serial NMEA receivers into the data lake                                     |
+| Mobile coverage heatmap         | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> OpenStreetMap tower data                                        | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> OpenStreetMap and OpenCellID data; OpenCellID requires your API key                      |
+| Updates                         | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> Update the hosted installation or BlueOS extension              | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> Update checks on supported installations; Apple Silicon requires a manual release download |
+| Application resource monitoring | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> JavaScript memory metrics where the browser exposes them        | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Application CPU and process memory metrics                                               |
+| Workspace capture               | <img src=".github/readme/status-unavailable.svg" width="16" height="16" alt=""> Full-interface capture is not available                     | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Capture the full Cockpit interface                                                       |
+| AI agent access through MCP     | <img src=".github/readme/status-unavailable.svg" width="16" height="16" alt=""> No local MCP server                                         | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Local agents can create variables, actions and DIY widgets                               |
+| Voice alerts                    | <img src=".github/readme/status-limited.svg" width="16" height="16" alt=""> Uses speech voices provided by the browser and operating system | <img src=".github/readme/status-supported.svg" width="16" height="16" alt=""> Bundled offline Piper voices, with system-voice fallback when unavailable                |
+| Runtime and performance         | Browser runtime; performance depends on the device and workload                                                                             | Electron runtime with platform-specific builds; performance depends on the device and workload                                                                         |
+| Installation                    | Open a hosted instance in a compatible browser                                                                                              | Download and install the application                                                                                                                                   |
+| Platforms                       | Devices with a compatible browser                                                                                                           | Windows, macOS and Linux                                                                                                                                               |
 
 </div>
 
-### 🎯 **Quick Decision Guide**
+### Which version should I use?
 
-**Choose Desktop** for complete experience, auto-updates, system integration, and optimal performance.
-**Choose Browser** for testing, quick access, or when you can't install applications.
+Use the **desktop app** when you need local recordings, background joystick input, vehicle discovery or hardware integrations.
 
-> **💡 Pro Tip**: Start with the [live demo](https://docs.bluerobotics.com/cockpit) to get familiar with Cockpit, then download the desktop app for regular use to unlock all capabilities!
+Use the **browser version** for a quick look, a BlueOS-based setup or a device where you cannot install the desktop app.
+
+> Start with the [live demo](https://docs.bluerobotics.com/cockpit) to explore the interface, then choose the version that supports your workflow.
 
 ---
 
-## 🎛️ Supported Vehicles
-Vehicle support is currently focused on ArduPilot-based autopilots communicating over MAVLink.
+## Supported vehicles
 
-Since Cockpit was created and is maintained by Blue Robotics, we actively test the application every day against ArduSub and ArduRover vehicles, which we sell, so you can expect the best experience with ROVs and boats.
+<p align="center">
+  <img src=".github/readme/vehicles.webp" width="960" alt="Concept illustration of underwater, surface and aerial remote vehicles">
+</p>
 
-We currently consider the application to fully cover direct control for both _submarines_ and _boats_, and partially cover automated missions. Currently, Cockpit supports creating missions with basic waypoints and polygon-based surveys. Missions requiring advanced navigation commands and control structures, like loitering, geofencing, and servo control, are not yet supported.
+<p align="center"><em>Concept illustration of remote vehicles</em></p>
 
-Aerial vehicles (including those running ArduCopter and ArduPlane autopilot firmware) have initial support, including dedicated widgets for _takeoff_ and _landing_.
+Cockpit primarily supports ArduPilot-based autopilots communicating over MAVLink.
 
-ArduCopter support has been physically tested, but the primary development team doesn't perform regular tests on any aerial vehicles, so use it at your own risk (also, PRs are very much welcome!).
+Blue Robotics develops Cockpit and regularly tests it with ArduSub and ArduRover vehicles. ROVs and boats are the project's main testing focus.
+
+Direct control is supported for submarines and boats. Mission planning includes basic waypoints and polygon-based surveys. Advanced mission commands, such as loitering and servo control, are not covered by the basic waypoint editor.
+
+A separate geofence editor supports polygon and circular fences. Upload and enforcement depend on the connected autopilot's capabilities. This is not a guarantee of support on every vehicle.
+
+Aerial vehicles running ArduCopter or ArduPlane have initial support, including takeoff and landing widgets.
+
+The project reports physical testing with ArduCopter, but aerial vehicles are not part of the primary team's regular test coverage. Validate your setup before flight and use aerial support at your own risk. Contributions to improve this coverage are welcome.
 
 <div align="center">
   <table>
     <tr>
       <td align="center">
-        <img src="src/assets/brov2-marker.avif" width="80"><br>
+        <img src="src/assets/brov2-marker.avif" width="80" alt="BlueROV2"><br>
         <strong>Submarines</strong><br>
         <em>ArduSub</em>
       </td>
       <td align="center">
-        <img src="src/assets/blueboat-marker.avif" width="80"><br>
-        <strong>Surface Boats</strong><br>
+        <img src="src/assets/blueboat-marker.avif" width="80" alt="BlueBoat"><br>
+        <strong>Surface boats</strong><br>
         <em>ArduRover</em>
       </td>
       <td align="center">
-        <img src="src/assets/arducopter-top-view.avif" width="80"><br>
+        <img src="src/assets/arducopter-top-view.avif" width="80" alt="Quadcopter"><br>
         <strong>Drones</strong><br>
         <em>ArduCopter</em>
       </td>
@@ -163,130 +195,137 @@ ArduCopter support has been physically tested, but the primary development team 
 
 ---
 
-## 🎨 Features Overview
+## Feature overview
 
-### 🖥️ **Customizable Interface**
-- **Drag-and-drop widgets** for complete layout control
-- **Multiple [views](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#views)** for different operational modes
-- **Responsive design** that works on almost any screen size
-- **Custom themes** with customizable colors and glass effects
+### Customizable interface
 
-### 🎮 **Vehicle Control**
-- **[ArduPilot](https://ardupilot.org/) support** for submarines, drones, aerial vehicles and rovers
-- **[MAVLink protocol](https://mavlink.io/en/)** for reliable communication
-- **[Joystick integration](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#joysticks)** with support for almost any controller, including custom ones
-- **Custom button mappings** for different vehicle types
-- **Real-time telemetry** with customizable data displays
+- Arrange and resize widgets with drag-and-drop controls
+- Save multiple [views](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#views) for different operations
+- Adapt layouts to different screen sizes
+- Configure colors and glass effects
 
-### 📹 **Video Streaming**
-- **[WebRTC-based streaming](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#webrtc-video-player)** for low-latency video
-- **Multi-stream support** with customizable screen placement
-- **[Video recording](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#webrtc-video-recorder)** with automatic processing and telemetry overlay generation
-- **Snapshot capture** with GPS metadata
-- **Video statistics** for monitoring stream quality
+### Vehicle control
 
-### 🗺️ **Mission Planning**
-- **Interactive map interface** with drag-and-drop waypoints
-- **Survey generation** for automated area coverage
-- **Points of interest** management
-- **Mission import/export** for easy backup and reuse
-- **Real-time mission monitoring** and execution
-- **Custom map tile providers** via XYZ URLs or imported ZIP/MBTiles/PMTiles archives
+- Connect to [ArduPilot](https://ardupilot.org/) vehicles, subject to the [support and testing limits](#supported-vehicles)
+- Exchange vehicle commands and telemetry over [MAVLink](https://mavlink.io/en/)
+- Configure [joystick controls](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#joysticks), including custom controllers and button mappings
+- Display live telemetry in configurable widgets
 
-### 📊 **Data Management**
-- **[Data Lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake)** for centralized variable storage and retrieval
-- **[Telemetry logging](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#telemetry)** with customizable video overlay
-- **Real-time [plotting](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-plotting)** and [indicators](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#very-generic-indicators) for easy visualization
+### Video streaming
 
-### 🔌 **Extensibility**
-- **Plugin architecture** for custom widgets
-- **JavaScript API** for external integrations
-- **HTTP actions** for calling external services
-- **MAVLink actions** for sending custom commands
-- **JavaScript actions** for completely custom integrations
+- Display [WebRTC video](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#webrtc-video-player) from your vehicle
+- Arrange multiple streams in the same view
+- [Record video](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#webrtc-video-recorder), process recordings and generate telemetry overlays
+- Capture snapshots with GPS metadata
+- Inspect stream statistics to troubleshoot video quality
 
----
+### Mission planning
 
-## 📦 Available Widgets
+- Place and move waypoints on the map
+- Generate survey routes for area coverage
+- Manage points of interest
+- Import and export missions for backup and reuse
+- Monitor and run missions on a connected vehicle
+- Configure map tiles through XYZ URLs or imported ZIP, MBTiles and PMTiles archives
 
-Cockpit provides an extensive list of widgets for you to customize your experience. They are divided into Regular and Mini Widgets and can be placed [anywhere on your screen](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#display-breakdown), including freely in your Views or inside Containers like the top and bottom bars.
+### Data management
 
-You can read more about the available widgets in our [docs](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#widgets).
+- Store and retrieve variables through the [data lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake)
+- Configure [telemetry logging](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#telemetry) and video overlays
+- Display live [plots](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-plotting) and [indicators](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#very-generic-indicators)
+
+### Extensibility
+
+- Add custom widgets through the plugin system
+- Use the JavaScript API for external integrations
+- Call external services through HTTP actions
+- Send custom commands through MAVLink actions
+- Write JavaScript actions for integrations that need custom logic
 
 ---
 
-## 🚀 Advanced Features
+## Available widgets
 
-One of our goals in Cockpit is to provide powerful integration tools, so you can interface with any system, no matter how complex it is. To accomplish that, we designed tools like the [Cockpit Actions](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#cockpit-actions-1), which allow you to perform custom tasks (e.g., run arbitrary code, call external APIs), and the [Data Lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake), which provides a centralized place for you to store and retrieve data.
+Cockpit has regular widgets for the main view and mini-widgets for smaller displays and controls. Place them in your views or in containers such as the top and bottom bars. The [interface guide](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#display-breakdown) explains how these areas fit together.
 
-Be sure to check our docs for more information on how to take advantage of these powerful tools.
-
----
-
-## ⚠️ Current Limitations
-
-While Cockpit is a powerful and feature-rich ground control station, there are some current limitations to be aware of:
-
-
-### 🚁 **Vehicle Support Gaps**
-- [**PX4 autopilots**]: Cockpit's MAVLink functionality is mostly generic, so it is expected that most available features will also work with PX4 autopilot firmware. That said, the core development team does not actively test with PX4 vehicles, so please open a documenting issue (or ideally a solving pull request) for any problems you encounter.
-- **Aerial and Ground vehicles**: Although recognized by the application, those types of vehicles have limited support and testing
-- **Contributions welcome**: We're actively seeking community help to add support for PX4 vehicles as well as improve the support for Aerial and Ground vehicles on Ardupilot
-
-### 🗺️ **Mission Planning Limitations**
-- **Geofencing**: Not currently supported in mission planning
-
-> 💡 **Help Us Improve**: Many of these limitations represent opportunities for community contributions. Check our [GitHub Issues](https://github.com/bluerobotics/cockpit/issues) for specific areas where help is needed!
+Browse the [widget documentation](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#widgets) for the available controls and configuration options.
 
 ---
 
-## 📚 Documentation & Support
+## Advanced features
 
-- **📖 User Documentation**: [blueos.cloud/docs/extensions/cockpit](https://blueos.cloud/cockpit/docs)
-- **💬 Community Forum**: [discuss.bluerobotics.com](https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit)
-- **🐛 Issue Tracker**: [GitHub Issues](https://github.com/bluerobotics/cockpit/issues)
-- **💡 Feature Requests**: [GitHub Discussions](https://github.com/bluerobotics/cockpit/discussions)
-- **🛠️ Auto-generated Developer Documentation**: [DeepWiki](https://deepwiki.com/bluerobotics/cockpit)
+Use [Cockpit actions](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#cockpit-actions-1) to run custom code, send commands or call external APIs. The [data lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake) gives widgets and actions a shared place to read and write variables.
+
+The linked guides cover configuration and examples for both tools.
 
 ---
 
-## 🏗️ Architecture
+## Current limitations
 
-Cockpit is built with modern web technologies, which help us advance development quickly and easily receive external contributions. Here you can find part of our stack:
+Check these limits before relying on Cockpit for a vehicle or mission that differs from the project's main testing focus.
 
-- **Frontend**: Vue.js 3 with TypeScript and Composition API
-- **UI Library**: Vuetify 3 for Material Design components
-- **Build System**: Vite for fast development and optimized builds
-- **Desktop**: Electron for native application packaging
-- **Communication**: WebSocket and WebRTC for real-time data
+### Vehicle support gaps
 
----
+- **PX4 autopilots.** Cockpit uses MAVLink, but the core team does not actively test PX4 vehicles. Protocol compatibility alone does not guarantee that a feature will work with your autopilot. Report reproducible problems through the issue tracker.
+- **Aerial and ground vehicles.** These vehicle types have limited support and testing compared with ROVs and boats.
+- Contributions to PX4 support and broader ArduPilot vehicle coverage are welcome.
 
-## 🤝 Contributing
+### Mission planning limitations
 
-We welcome contributions! We don't have a contribution guide yet, but you can help us in different ways:
+- The basic mission editor focuses on waypoints and surveys. Advanced mission commands, including loitering and servo control, are outside that editor's current scope.
+- The geofence editor is separate from the waypoint editor. Uploads may be rejected when a vehicle does not advertise the required MAVLink service.
 
-- 🐛 **Bug Reports**: Help us improve by reporting issues
-- 💡 **Feature Requests**: Suggest new capabilities
-- 🔧 **Code Contributions**: Submit pull requests
-- 📝 **Documentation**: Improve our [docs](https://blueos.cloud/cockpit/docs) and examples
+> Check [GitHub issues](https://github.com/bluerobotics/cockpit/issues) for known gaps and contribution opportunities.
 
 ---
 
-## 🛠️ Development Setup
+## Documentation and support
+
+- [User documentation](https://blueos.cloud/cockpit/docs) for installation, configuration and operation
+- [Community forum](https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit) for questions and shared setups
+- [Issue tracker](https://github.com/bluerobotics/cockpit/issues) for bugs and reproducible problems
+- [GitHub Discussions](https://github.com/bluerobotics/cockpit/discussions) for feature requests
+- [DeepWiki](https://deepwiki.com/bluerobotics/cockpit) for automatically generated developer documentation
+
+---
+
+## Architecture
+
+Cockpit shares a Vue-based interface between its browser and desktop versions.
+
+- Vue 3, TypeScript and the Composition API for the frontend
+- Vuetify 3 for Material Design components
+- Vite for development and builds
+- Electron for the desktop application
+- WebSocket and WebRTC for vehicle data and video
+
+---
+
+## Contributing
+
+Contributions can include bug reports, feature proposals, code, documentation and examples. Check existing issues and pull requests before starting work so your contribution does not duplicate an active change.
+
+For code contributions, read the repository's [engineering instructions](AGENTS.md) and [pull request template](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md). Documentation contributions should follow the conventions in the [documentation project](https://blueos.cloud/cockpit/docs).
+
+---
+
+## Development setup
 
 ### Prerequisites
-- **Node.js** 18+ and **yarn** package manager
-- **Git** with submodule support
-- **On ARM-based macOS (Apple Silicon) only**: **CMake**, plus `yarn build:piper` after installing, to compile the offline alert voice from source. There is no prebuilt release for this platform, so without it voice alerts fall back to the system voices.
 
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+- Node.js 22 and Yarn. The [CI workflow](.github/workflows/ci.yml) uses Node.js 22.13.0; match that version when reproducing CI behavior.
+- Git with submodule support
+- On Apple Silicon, CMake and `yarn build:piper` after installation to compile the offline alert voice. The build script supplies the Piper runtime for this platform; without it, development builds fall back to system voices.
 
-### Quick Development Start
+### Development workflow
+
+1. Fork the repository and clone it with its submodules
+2. Create a branch for your change
+3. Make the change and run the relevant checks
+4. Submit a pull request using the repository's template
+
+### Quick development start
+
 ```bash
 # Clone with submodules
 git clone --recurse-submodules https://github.com/bluerobotics/cockpit.git
@@ -305,25 +344,30 @@ yarn dev:electron
 yarn lint:fix
 ```
 
-The development server will start at `http://localhost:5173` with hot reloading enabled.
+The development server uses `http://localhost:5173` by default and reloads when source files change.
 
-> **📌 Submodules**: This repository relies on Git submodules. When submodules are updated (e.g., after pulling changes), run the following command to keep your development environment working:
+> When submodule references change after a pull, update your local checkout:
+>
 > ```bash
 > git submodule update --init --recursive
 > ```
 
-### Testing PR Builds on ARM-based macOS machines (Apple Silicon)
-PR builds are not code-signed by Apple, so macOS will block them by default via Gatekeeper. To bypass that, after installing the `.dmg`, run the following command:
+### Testing PR builds on Apple Silicon
+
+Pull request builds are not signed by Apple, so Gatekeeper may block them. Only test a build from a source you trust. If you choose to remove the quarantine flag after installing the `.dmg`, use:
+
 ```bash
 xattr -d com.apple.quarantine /Applications/Cockpit.app
 ```
 
-### Backend Services (Optional)
-For video support, Cockpit relies on a backend service called [mavlink-camera-manager](https://github.com/mavlink/mavlink-camera-manager).
-This service is included by default on [BlueOS](https://github.com/bluerobotics/blueos), but if you want to use Cockpit without BlueOS installed on your vehicle, you should install it in the vehicle or in your top-side computer.
+### Backend services, optional
 
-### Vehicle Simulation
-If you don't have a vehicle, or prefer to test the application against a simulated one, you can do it with our Docker Compose:
+For WebRTC video, Cockpit uses [mavlink-camera-manager](https://github.com/mavlink/mavlink-camera-manager). [BlueOS](https://github.com/bluerobotics/blueos) includes this service. For a setup without BlueOS, install it on the vehicle or control station and configure Cockpit's video connection to reach it.
+
+### Vehicle simulation
+
+Use the repository's Docker Compose configuration to test with a simulated vehicle instead of physical hardware:
+
 ```bash
 # Start ArduSub simulation
 docker-compose -f sim.yml --profile ardusub up
@@ -333,31 +377,35 @@ docker-compose -f sim.yml --profile ardusub up
 
 ---
 
-## 📄 License
+## License
 
-Cockpit is dual-licensed:
-- **AGPL-3.0**: For open-source use
-- **Commercial License**: For proprietary applications
+Cockpit's [license file](LICENSE.md) declares the following SPDX licensing options:
 
-See [LICENSE.md](LICENSE.md) for details.
+- AGPL-3.0-only
+- Cockpit Custom License, available by contacting Blue Robotics
+
+Consult LICENSE.md and Blue Robotics for the terms that apply to your use, including proprietary applications.
 
 ---
 
-## 🏢 About Blue Robotics
+## About Blue Robotics
 
 <div align="center">
-  <img src="./src/assets/blue-robotics-white-name-logo.avif" width="200">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="src/assets/blue-robotics-white-name-logo.avif">
+    <img src="src/assets/blue-robotics-logo.svg" width="120" alt="Blue Robotics">
+  </picture>
   <p><strong>On a mission to enable the future of marine robotics</strong></p>
   <p>
-    <a href="https://bluerobotics.com">🌐 Website</a> •
-    <a href="https://github.com/bluerobotics">🐙 GitHub</a> •
-    <a href="https://www.youtube.com/bluerobotics">📺 YouTube</a>
+    <a href="https://bluerobotics.com">Website</a> &nbsp;·&nbsp;
+    <a href="https://github.com/bluerobotics">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://www.youtube.com/bluerobotics">YouTube</a>
   </p>
 </div>
 
 ---
 
 <div align="center">
-  <p>⭐ <strong>Star us on GitHub</strong> if you find Cockpit useful!</p>
-  <p>Made with 💙 by the Blue Robotics team and contributors worldwide</p>
+  <p>If Cockpit is useful to you, consider starring the repository on GitHub.</p>
+  <p>Made with care by the Blue Robotics team and contributors worldwide</p>
 </div>
