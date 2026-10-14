@@ -10,7 +10,7 @@ import type { Package } from '@/libs/connection/m2r/messages/mavlink2rest'
 import { MAVLinkType, MavParamType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import {
-  type MissionBreachReport,
+  type MissionFenceBreachReports,
   type WaypointLike,
   CIRCLE_MAX_RADIUS_M,
   clonePlan,
@@ -22,6 +22,7 @@ import {
   fenceItemCount,
   fenceStorageBytes,
   planHasShapes,
+  sameFenceGeometry,
   simplifyFencePolygons,
 } from '@/libs/geo-fence'
 import type { Parameter } from '@/libs/vehicle/types'
@@ -539,19 +540,32 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   )
 
   /**
-   * Checks the given list of waypoints against the current editor fence
-   * plan, with the uploaded plan as a fallback when the editor is empty.
-   * @param { WaypointLike[] } waypoints Waypoints to test.
-   * @returns { MissionBreachReport } Breach summary with offending indices.
+   * Whether the editor holds the same fence the vehicle does, so the two never need to be told
+   * apart in the UI. False while nothing has been uploaded and the editor holds shapes.
+   * @returns { boolean } True when the drawing and the vehicle's fence are the same.
    */
-  const detectMissionBreaches = (waypoints: WaypointLike[]): MissionBreachReport => {
-    // Read straight from the reactive editor state when it has shapes,
-    // otherwise fall back to the (already plain) `lastUploadedPlan`. Avoids
-    // a deep copy of every fence shape on every upload attempt.
-    const editorHasFences = polygons.length > 0 || circles.length > 0
-    const sourcePolygons: FencePolygon[] = editorHasFences ? polygons : lastUploadedPlan.value?.polygons ?? []
-    const sourceCircles: FenceCircle[] = editorHasFences ? circles : lastUploadedPlan.value?.circles ?? []
-    return detectMissionBreachesInShapes(waypoints, sourcePolygons, sourceCircles)
+  const draftMatchesVehicle = computed<boolean>(() =>
+    sameFenceGeometry(polygons, circles, breachReturn.value, lastUploadedPlan.value)
+  )
+
+  /**
+   * Checks the given list of waypoints against each fence that applies to them: the one stored on
+   * the vehicle, which is the one that acts in flight, and the one open in the editor while it
+   * holds shapes the vehicle does not have yet.
+   * @param { WaypointLike[] } waypoints Waypoints to test.
+   * @returns { MissionFenceBreachReports } One breach summary per fence, with offending indices.
+   */
+  const detectMissionBreaches = (waypoints: WaypointLike[]): MissionFenceBreachReports => {
+    // Read straight from the reactive editor state and the (already plain) `lastUploadedPlan`.
+    // Avoids a deep copy of every fence shape on every check.
+    const vehiclePlan = lastUploadedPlan.value
+    const editorDiffers = (polygons.length > 0 || circles.length > 0) && !draftMatchesVehicle.value
+    return {
+      vehicle: vehiclePlan
+        ? detectMissionBreachesInShapes(waypoints, vehiclePlan.polygons, vehiclePlan.circles)
+        : undefined,
+      draft: editorDiffers ? detectMissionBreachesInShapes(waypoints, polygons, circles) : undefined,
+    }
   }
 
   /**
@@ -696,6 +710,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     setFenceAutoEnable,
     inclusionPolygonCount,
     hasItems,
+    draftMatchesVehicle,
     detectMissionBreaches,
     updatePolygon,
     updateCircle,
