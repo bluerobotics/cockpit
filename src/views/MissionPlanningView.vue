@@ -5337,7 +5337,10 @@ watch(
   outline: 1px solid rgba(255, 235, 59, 0.1);
 }
 
-.green-marker {
+/* Two classes rather than one, here and on the marker fills below it: `Map.vue` emits
+   `.marker-icon` through `:global()`, so an equally specific fill would win or lose on
+   stylesheet order alone. */
+.waypoint-main-marker.green-marker {
   border-radius: 50%;
   border: 2px solid #ffffff99;
   background-color: #034103;
@@ -5345,7 +5348,7 @@ watch(
 
 /* Carried on the ring rather than the fill so a waypoint that is both an endpoint and a survey
    entry/exit keeps the green of `.green-marker` underneath it. */
-.endpoint-marker {
+.waypoint-main-marker.endpoint-marker {
   border: 2px solid #ff9800;
   transform: scale(1.25);
   transform-origin: center;
