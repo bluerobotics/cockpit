@@ -151,6 +151,7 @@ import {
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
 import { isElectron, sleep } from '@/libs/utils'
+import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMissionStore } from '@/stores/mission'
 import { SubMenuComponentName } from '@/types/general'
 import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
@@ -259,6 +260,9 @@ useMcpBridge()
 
 // Created at boot so external software can manage points of interest before any map is mounted.
 usePointsOfInterest()
+
+// Created at boot so the vehicle's fence is re-read on every connection, before any map is mounted.
+useGeoFenceStore()
 
 // Keep the main menu and the address showing the same destination.
 useMenuRouteSync()

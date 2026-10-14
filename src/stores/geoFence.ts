@@ -645,6 +645,15 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     }
   }
 
+  // Another ground station can change or clear the fence while Cockpit is away, so the cache is re-read on every
+  // connection. It waits for the settings sync, which would otherwise land the older synced cache on top of it.
+  window.addEventListener('vehicle-sync-complete', () => {
+    if (!mainVehicleStore.isVehicleOnline || !isFenceSupported.value || syncInProgress.value) return
+    fetchIntoOverlayCache().catch((error) =>
+      console.warn('[GeoFence] Could not re-read the vehicle fence on connect:', error)
+    )
+  })
+
   const announceFetchedFence = (plan: GeoFencePlan, successMessage: string): void => {
     openSnackbar(
       planHasShapes(plan)
