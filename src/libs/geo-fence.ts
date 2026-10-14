@@ -112,6 +112,23 @@ export const emptyGeoFencePlan = (): GeoFencePlan => ({ version: 2, polygons: []
 export const planHasShapes = (plan: GeoFencePlan | null | undefined): plan is GeoFencePlan =>
   !!plan && (plan.polygons.length > 0 || plan.circles.length > 0)
 
+/**
+ * Points that together enclose every shape of a plan: each polygon vertex, plus the north, east,
+ * south and west edges of each circle.
+ * @param { GeoFencePlan } plan Plan to enclose.
+ * @returns { FenceLatLng[] } The enclosing points, in `[lat, lng]`.
+ */
+export const fencePlanExtentPoints = (plan: GeoFencePlan): FenceLatLng[] => [
+  ...plan.polygons.flatMap((polygon) => polygon.vertices),
+  ...plan.circles.flatMap((circle) =>
+    [0, 90, 180, 270].map((bearing): FenceLatLng => {
+      const origin = turf.point([circle.center[1], circle.center[0]])
+      const [lng, lat] = turf.destination(origin, circle.radius, bearing, { units: 'meters' }).geometry.coordinates
+      return [lat, lng]
+    })
+  ),
+]
+
 // A fence read back from a vehicle never matches the drawing it was uploaded from down to the last
 // digit: the autopilot keeps coordinates as 1e7-scaled integers, and radii and altitudes as floats.
 const COORDINATE_EPSILON_DEG = 1e-7

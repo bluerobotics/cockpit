@@ -4,6 +4,24 @@
       This vehicle does not advertise the GeoFence MAVLink service. Editing is allowed but uploads may be rejected.
     </p>
 
+    <p
+      v-if="fenceStore.lastUploadedPlan && !fenceStore.draftMatchesVehicle"
+      class="px-2 py-1 mx-2 mt-0.5 mb-[3px] text-xs rounded-md border-[1px] border-orange-500/60 bg-orange-500/10 text-orange-300"
+    >
+      Vehicle currently has a fence, drawn dimmed on the planning map. Upload to replace it.
+      <v-btn
+        variant="text"
+        size="x-small"
+        class="float-right -mt-px px-1 normal-case tracking-normal"
+        @click="showVehicleFenceOnMap"
+      >
+        Show on map
+        <template #append>
+          <v-icon class="translate-y-[3px]">mdi-crosshairs-gps</v-icon>
+        </template>
+      </v-btn>
+    </p>
+
     <div class="flex flex-row items-center justify-end gap-x-2 mb-3 mt-1">
       <span class="text-sm font-medium mr-2">Add fence:</span>
       <div class="flex flex-row items-center gap-x-2">
@@ -407,9 +425,11 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceParametersPanel from '@/components/geofence/GeoFenceParametersPanel.vue'
 import GeoFenceTooLargeDialog from '@/components/geofence/GeoFenceTooLargeDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { useMapContext } from '@/composables/map/useMapContext'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
-import { fenceItemCount, fencePointCapacity } from '@/libs/geo-fence'
+import { fenceItemCount, fencePlanExtentPoints, fencePointCapacity } from '@/libs/geo-fence'
+import { fitMapToWaypoints, isLeafletMapReady } from '@/libs/map/utils-map'
 import {
   geoFencePlanToMavlinkPlanFile,
   mavlinkPlanFileToGeoFencePlan,
@@ -440,6 +460,15 @@ const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
+
+const { map } = useMapContext()
+
+const showVehicleFenceOnMap = (): void => {
+  logUserAction('Centered the map on the geofence stored on the vehicle')
+  const plan = fenceStore.lastUploadedPlan
+  if (!isLeafletMapReady(map.value) || !plan) return
+  fitMapToWaypoints(map.value, fencePlanExtentPoints(plan))
+}
 
 const fileInput = ref<HTMLInputElement | null>(null)
 // Sections of the last imported `.plan` that Cockpit does not edit, so exporting
@@ -768,11 +797,11 @@ const onClearOnVehicle = async (): Promise<void> => {
 }
 
 const onClearLocal = async (): Promise<void> => {
-  const confirmed = await confirmAction(
-    'Clear local fence plan',
-    'This removes all polygons, circles and the breach return point from the local fence plan. Continue?',
-    'Clear plan'
-  )
+  const message = ['This removes all polygons, circles and the breach return point from the local fence plan.']
+  if (fenceStore.lastUploadedPlan) {
+    message.push('The geofence stored on the vehicle is not affected, and missions are still checked against it.')
+  }
+  const confirmed = await confirmAction('Clear local fence plan', [...message, 'Continue?'], 'Clear plan')
   if (!confirmed) return
   logUserAction('Cleared the local fence plan')
   fenceStore.clearAll()
