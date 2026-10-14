@@ -307,6 +307,25 @@ export const useVideoChunkManager = (): {
   }
 
   /**
+   * The video file name of a chunk group: the one its recording was given when it started, mission name included.
+   * @param {ChunkGroup} group - The chunk group
+   * @returns {string} The video file name
+   */
+  const chunkGroupFileName = (group: ChunkGroup): string =>
+    videoStore.unprocessedVideos[group.hash]?.fileName || videoFilename(group.hash, group.firstChunkDate)
+
+  /**
+   * The name a chunks zip gives the recording's subtitle file, which processing the zip names the video after: the
+   * recording's own rather than whichever stored copy was found. Undefined when this machine has no record of it.
+   * @param {ChunkGroup} group - The chunk group
+   * @returns {string | undefined} The subtitle file name
+   */
+  const zippedSubtitlesFileName = (group: ChunkGroup): string | undefined => {
+    const fileName = videoStore.unprocessedVideos[group.hash]?.fileName
+    return fileName ? videoSubtitlesFilename(fileName) : undefined
+  }
+
+  /**
    * Resolve the telemetry overlay of a chunk group, generating it from the logged telemetry and storing
    * it alongside the recording when the recording never got one.
    * @param {ChunkGroup} group - The chunk group to resolve the overlay for
@@ -320,7 +339,7 @@ export const useVideoChunkManager = (): {
       console.warn(`Could not read the stored telemetry overlay of ${group.hash}, generating a new one:`, error)
     }
 
-    const subtitlesFileName = videoSubtitlesFilename(group.fileName || videoFilename(group.hash, group.firstChunkDate))
+    const subtitlesFileName = videoSubtitlesFilename(chunkGroupFileName(group))
     const candidateWindows = telemetryOverlayWindowCandidates(
       videoStore.unprocessedVideos[group.hash],
       group.chunks.map((chunk) => chunk.timestamp)
@@ -376,7 +395,7 @@ export const useVideoChunkManager = (): {
         }
 
         // Electron version: Create ZIP using filesystem (no memory limits)
-        const zipFilePath = await window.electronAPI?.createVideoChunksZip(group.hash)
+        const zipFilePath = await window.electronAPI?.createVideoChunksZip(group.hash, zippedSubtitlesFileName(group))
 
         if (zipFilePath) {
           const count = group.chunkCount
@@ -435,7 +454,7 @@ export const useVideoChunkManager = (): {
             try {
               const assFile = await resolveTelemetryOverlayFile(group)
               files.push({
-                file: { blob: assFile.blob, filename: assFile.filename },
+                file: { blob: assFile.blob, filename: zippedSubtitlesFileName(group) ?? assFile.filename },
                 lastModDate: files[0].lastModDate,
               })
             } catch (error) {
@@ -573,7 +592,7 @@ export const useVideoChunkManager = (): {
       isProcessingChunks.value = true
 
       // Generate filename based on the chunk group
-      const fileName = group.fileName || videoFilename(group.hash, group.firstChunkDate)
+      const fileName = chunkGroupFileName(group)
 
       // Get the chunk file paths from the group's chunks array, sorted by chunk number
       const sortedChunks = group.chunks.sort((a, b) => {

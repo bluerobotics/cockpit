@@ -79,7 +79,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readChunkFile: (chunkPath: string) => ipcRenderer.invoke('read-chunk-file', chunkPath),
   copyTelemetryFile: (assFilePath: string, outputVideoPath: string) =>
     ipcRenderer.invoke('copy-telemetry-file', assFilePath, outputVideoPath),
-  createVideoChunksZip: (hash: string) => ipcRenderer.invoke('create-video-chunks-zip', hash),
+  createVideoChunksZip: (hash: string, subtitlesFileName?: string) =>
+    ipcRenderer.invoke('create-video-chunks-zip', hash, subtitlesFileName),
   cleanupTempDir: (tempDir: string) => ipcRenderer.invoke('cleanup-temp-dir', tempDir),
   captureWorkspace: (rect?: Electron.Rectangle) => ipcRenderer.invoke('capture-workspace', rect),
   serialListPorts: () => ipcRenderer.invoke('serial-list-ports'),
