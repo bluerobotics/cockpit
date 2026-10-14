@@ -617,9 +617,10 @@ declare global {
       /**
        * Create a ZIP file containing video chunks and telemetry file
        * @param hash - The hash identifier for the chunk group
+       * @param subtitlesFileName - Name for the telemetry file inside the ZIP, the recording's own
        * @returns Promise resolving to the path to the created ZIP file
        */
-      createVideoChunksZip: (hash: string) => Promise<string>
+      createVideoChunksZip: (hash: string, subtitlesFileName?: string) => Promise<string>
       /**
        * Clean up temporary directory
        * @param tempDir - Path to the temporary directory to remove

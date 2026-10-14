@@ -3,7 +3,7 @@ import { ipcMain } from 'electron'
 import { promises as fs } from 'fs'
 import { createWriteStream } from 'fs'
 import { tmpdir } from 'os'
-import { basename, dirname, isAbsolute, join } from 'path'
+import { basename, dirname, extname, isAbsolute, join } from 'path'
 import { pipeline } from 'stream'
 import { v4 as uuid } from 'uuid'
 import * as yauzl from 'yauzl'
@@ -11,7 +11,8 @@ import * as yazl from 'yazl'
 
 import type { LiveConcatProcessResult, LiveStreamProcess, ZipExtractionResult } from '@/types/video'
 
-import { videoFilename, videoThumbnailFilename } from '../../utils/video'
+import { sanitizeFilenameComponent } from '../../libs/utils'
+import { videoFilename, videoFilenameWithoutExtension, videoThumbnailFilename } from '../../utils/video'
 import { getFFmpegPath } from './ffmpeg-path'
 import { filesystemStorage, getCockpitFolderPath } from './storage'
 
@@ -53,6 +54,29 @@ const writeBlobToFile = async (blobData: Uint8Array, filePath: string): Promise<
 }
 
 /**
+ * A path in `dir` for `fileName` that no file uses yet. Processing a recording's chunks again, or importing a zip of a
+ * video already in the library, yields the name of the video already there, so a taken name gets a number before its
+ * recording hash instead of being written over.
+ * @param {string} dir - The folder the video goes in
+ * @param {string} fileName - The video file name, `<mission> (<date>) #<hash>.mp4`
+ * @returns {Promise<string>} The path to write the video to
+ */
+const unusedVideoPath = async (dir: string, fileName: string): Promise<string> => {
+  const suffix = fileName.match(/ #[0-9a-f]+\.\w+$/)?.[0] ?? extname(fileName)
+  const stem = fileName.slice(0, fileName.length - suffix.length)
+  // ponytail: a linear scan, fine for the handful of copies a recording can get.
+  for (let copy = 1; copy < 1000; copy++) {
+    const candidate = join(dir, copy === 1 ? fileName : `${stem} (${copy})${suffix}`)
+    try {
+      await fs.access(candidate)
+    } catch {
+      return candidate
+    }
+  }
+  throw new Error(`Too many copies of ${fileName} in ${dir}`)
+}
+
+/**
  * Start a live video streaming process with FFmpeg
  * @param {Uint8Array} firstChunkData - The first video chunk data
  * @param {string} recordingHash - Unique identifier for this recording
@@ -76,7 +100,7 @@ const startVideoRecording = async (
   await fs.mkdir(videosPath, { recursive: true })
 
   // Output directly as MP4 with fragmented format
-  const outputPath = join(videosPath, fileName)
+  const outputPath = await unusedVideoPath(videosPath, fileName)
 
   console.log(`Starting live FFmpeg streaming process ${processId}`)
   console.log(`Output path: ${outputPath}`)
@@ -459,7 +483,12 @@ const buildExtractionResult = async (extractedFiles: string[], tempDir: string):
     creationDate = new Date()
   }
 
-  const fileName = videoFilename(hash, creationDate)
+  // The subtitle file carries the name the recording was given, mission name included. Made safe for every filesystem,
+  // since the zip comes from outside and an older one's name can hold a real colon from its time zone.
+  const nameFromSubtitles = assFile
+    ? sanitizeFilenameComponent(`${videoFilenameWithoutExtension(basename(assFile))}.mp4`)
+    : undefined
+  const fileName = nameFromSubtitles?.endsWith(`#${hash}.mp4`) ? nameFromSubtitles : videoFilename(hash, creationDate)
 
   return {
     chunkPaths: validChunks,
@@ -630,9 +659,10 @@ const generateThumbnailFromMP4 = async (videoPath: string, outputPath: string, t
 /**
  * Create a ZIP file containing video chunks and telemetry file
  * @param {string} hash - The hash identifier for the chunk group
+ * @param {string} [subtitlesFileName] - Name for the telemetry file inside the ZIP, the recording's own
  * @returns {Promise<string>} Path to the created ZIP file
  */
-const createVideoChunksZip = async (hash: string): Promise<string> => {
+const createVideoChunksZip = async (hash: string, subtitlesFileName?: string): Promise<string> => {
   console.debug(`Creating ZIP file for chunk group ${hash}`)
 
   // Find all chunk files for this hash
@@ -741,7 +771,7 @@ const createVideoChunksZip = async (hash: string): Promise<string> => {
       fs.access(assFilePath)
         .then(() => fs.stat(assFilePath))
         .then((stats) => {
-          zipfile.addFile(assFilePath, assFileName, {
+          zipfile.addFile(assFilePath, subtitlesFileName ?? assFileName, {
             mtime: stats.mtime,
           })
           console.debug(`Added .ass file ${assFileName} to ZIP`)
@@ -888,9 +918,9 @@ export const setupVideoRecordingService = (): void => {
   /**
    * Create a ZIP file containing video chunks and telemetry
    */
-  ipcMain.handle('create-video-chunks-zip', async (_, hash: string) => {
+  ipcMain.handle('create-video-chunks-zip', async (_, hash: string, subtitlesFileName?: string) => {
     try {
-      const zipFilePath = await createVideoChunksZip(hash)
+      const zipFilePath = await createVideoChunksZip(hash, subtitlesFileName)
       return zipFilePath
     } catch (error) {
       console.error('Error creating video chunks ZIP:', error)
