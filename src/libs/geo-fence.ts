@@ -1,7 +1,7 @@
 import * as turf from '@turf/turf'
 
 import { FINE_SIMPLIFY_TOLERANCE_DEG, simplifyPath } from '@/libs/map/path-simplify'
-import type { FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
+import type { BreachReturnPoint, FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
 
 export const CIRCLE_MAX_RADIUS_M = 1500
 
@@ -32,6 +32,25 @@ export type WaypointLike = {
 }
 
 /**
+ * Why a waypoint breaches a fence: it sits outside every inclusion shape, or inside an exclusion one.
+ */
+export type BreachReason = 'outside-inclusion' | 'inside-exclusion'
+
+/**
+ * A single waypoint that breaches a fence, and what is wrong with it.
+ */
+export type WaypointBreach = {
+  /**
+   * Index of the waypoint within the input list.
+   */
+  index: number
+  /**
+   * What the waypoint does wrong.
+   */
+  reason: BreachReason
+}
+
+/**
  * Result of a `detectMissionBreaches` call.
  */
 export type MissionBreachReport = {
@@ -40,13 +59,28 @@ export type MissionBreachReport = {
    */
   hasBreaches: boolean
   /**
-   * Indices (within the input waypoint list) of every breaching waypoint.
+   * Every breaching waypoint, in input order.
    */
-  breachedIndices: number[]
+  breaches: WaypointBreach[]
   /**
    * Total number of waypoints inspected.
    */
   totalChecked: number
+}
+
+/**
+ * Breach reports for each fence a mission is checked against: the one stored on the vehicle, which
+ * is the one that acts in flight, and the one open in the editor while it has not been uploaded.
+ */
+export type MissionFenceBreachReports = {
+  /**
+   * Report against the geofence stored on the vehicle, absent when it holds none.
+   */
+  vehicle?: MissionBreachReport
+  /**
+   * Report against the geofence being drawn, absent while it is empty or matches the vehicle's.
+   */
+  draft?: MissionBreachReport
 }
 
 /**
@@ -77,6 +111,64 @@ export const emptyGeoFencePlan = (): GeoFencePlan => ({ version: 2, polygons: []
  */
 export const planHasShapes = (plan: GeoFencePlan | null | undefined): plan is GeoFencePlan =>
   !!plan && (plan.polygons.length > 0 || plan.circles.length > 0)
+
+// A fence read back from a vehicle never matches the drawing it was uploaded from down to the last
+// digit: the autopilot keeps coordinates as 1e7-scaled integers, and radii and altitudes as floats.
+const COORDINATE_EPSILON_DEG = 1e-7
+const METERS_EPSILON = 0.01
+
+const sameCoordinate = (a: FenceLatLng, b: FenceLatLng): boolean =>
+  Math.abs(a[0] - b[0]) <= COORDINATE_EPSILON_DEG && Math.abs(a[1] - b[1]) <= COORDINATE_EPSILON_DEG
+
+const samePolygons = (polygons: FencePolygon[], others: FencePolygon[]): boolean =>
+  polygons.length === others.length &&
+  polygons.every(
+    (polygon, index) =>
+      polygon.inclusion === others[index].inclusion &&
+      polygon.vertices.length === others[index].vertices.length &&
+      polygon.vertices.every((vertex, vertexIndex) => sameCoordinate(vertex, others[index].vertices[vertexIndex]))
+  )
+
+const sameCircles = (circles: FenceCircle[], others: FenceCircle[]): boolean =>
+  circles.length === others.length &&
+  circles.every(
+    (circle, index) =>
+      circle.inclusion === others[index].inclusion &&
+      sameCoordinate(circle.center, others[index].center) &&
+      Math.abs(circle.radius - others[index].radius) <= METERS_EPSILON
+  )
+
+const sameBreachReturn = (point?: BreachReturnPoint, other?: BreachReturnPoint): boolean => {
+  if (!point || !other) return point === undefined && other === undefined
+  return (
+    sameCoordinate(point.coordinates, other.coordinates) && Math.abs(point.altitude - other.altitude) <= METERS_EPSILON
+  )
+}
+
+/**
+ * Whether a set of fence shapes describes the same fence as a plan. Ids are left out of the
+ * comparison, since a fence downloaded from a vehicle gets fresh ones, and so is the sub-centimeter
+ * rounding the autopilot's integer coordinates introduce.
+ * @param { FencePolygon[] } polygons Polygons to compare.
+ * @param { FenceCircle[] } circles Circles to compare.
+ * @param { BreachReturnPoint | undefined } breachReturn Breach return point to compare.
+ * @param { GeoFencePlan | null | undefined } plan Plan to compare them against.
+ * @returns { boolean } True when both describe the same fence.
+ */
+export const sameFenceGeometry = (
+  polygons: FencePolygon[],
+  circles: FenceCircle[],
+  breachReturn: BreachReturnPoint | undefined,
+  plan: GeoFencePlan | null | undefined
+): boolean => {
+  runSelfCheckOnce()
+  if (!plan) return polygons.length === 0 && circles.length === 0 && breachReturn === undefined
+  return (
+    samePolygons(polygons, plan.polygons) &&
+    sameCircles(circles, plan.circles) &&
+    sameBreachReturn(breachReturn, plan.breachReturn)
+  )
+}
 
 /**
  * Number of items a plan takes on the vehicle: one per polygon vertex, circle and breach return point.
@@ -221,7 +313,7 @@ export const detectMissionBreaches = (
   circles: FenceCircle[]
 ): MissionBreachReport => {
   if (polygons.length === 0 && circles.length === 0) {
-    return { hasBreaches: false, breachedIndices: [], totalChecked: waypoints.length }
+    return { hasBreaches: false, breaches: [], totalChecked: waypoints.length }
   }
 
   const inclusionPolygons = polygons.filter((p) => p.inclusion)
@@ -230,7 +322,7 @@ export const detectMissionBreaches = (
   const exclusionCircles = circles.filter((c) => !c.inclusion)
   const hasInclusion = inclusionPolygons.length > 0 || inclusionCircles.length > 0
 
-  const breachedIndices: number[] = []
+  const breaches: WaypointBreach[] = []
   waypoints.forEach((wp, index) => {
     const point: FenceLatLng = [wp.coordinates[0], wp.coordinates[1]]
     const insideAnyInclusion =
@@ -240,12 +332,15 @@ export const detectMissionBreaches = (
     const insideAnyExclusion =
       exclusionPolygons.some((p) => isPointInsidePolygon(point, p.vertices)) ||
       exclusionCircles.some((c) => distanceMeters(point, c.center) <= c.radius)
-    if (!insideAnyInclusion || insideAnyExclusion) breachedIndices.push(index)
+    // Being outside the inclusion area is reported in preference to the overlap, since it is the
+    // one the operator fixes by moving the waypoint back into the fence.
+    if (!insideAnyInclusion) breaches.push({ index, reason: 'outside-inclusion' })
+    else if (insideAnyExclusion) breaches.push({ index, reason: 'inside-exclusion' })
   })
 
   return {
-    hasBreaches: breachedIndices.length > 0,
-    breachedIndices,
+    hasBreaches: breaches.length > 0,
+    breaches,
     totalChecked: waypoints.length,
   }
 }
@@ -311,4 +406,33 @@ const runSelfCheckOnce = (): void => {
   }
   const snug = coarsenFencePlan({ version: 2, polygons: [jagged], circles: [] }, 84 * FENCE_VERTEX_BYTES)
   assert(snug !== undefined && fenceItemCount(snug) >= 80, 'A coarsened plan must keep nearly as many points as fit')
+
+  const drawn: FencePolygon = {
+    id: 'drawn',
+    inclusion: true,
+    vertices: [
+      [0, 0],
+      [0, 0.01],
+      [0.01, 0.01],
+    ],
+  }
+  const readBack: GeoFencePlan = {
+    version: 2,
+    polygons: [
+      {
+        ...drawn,
+        id: 'read-back',
+        vertices: [
+          [0, 0],
+          [0, 0.0100000049],
+          [0.01, 0.01],
+        ],
+      },
+    ],
+    circles: [],
+  }
+  assert(sameFenceGeometry([drawn], [], undefined, readBack), 'Fresh ids and integer rounding must still be one fence')
+  assert(!sameFenceGeometry([drawn], [], undefined, undefined), 'A drawn fence must differ from no fence at all')
+  const moved = { ...drawn, vertices: [...drawn.vertices.slice(0, 2), [0.02, 0.01] as FenceLatLng] }
+  assert(!sameFenceGeometry([moved], [], undefined, readBack), 'A moved vertex must count as a different fence')
 }

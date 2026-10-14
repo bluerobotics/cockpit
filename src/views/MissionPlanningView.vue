@@ -1108,17 +1108,30 @@ const cloneCommands = (commands?: MissionCommand[]): MissionCommand[] => {
 }
 
 /**
- * Inspects the mission waypoints against the active geofence (the editor
- * draft when present, falling back to the plan currently uploaded to the
- * vehicle). When at least one waypoint breaches the fence, prompts the user
- * with a "Back to mission planning" / "Upload to vehicle anyway" choice and
- * resolves to whether the upload should continue. No-op (returns true) when
- * there's no fence to check against or no breach is detected.
+ * Inspects the mission waypoints against every geofence that applies to them: the one stored on
+ * the vehicle and, while it has not been uploaded, the one open in the editor. When at least one
+ * waypoint breaches either, prompts the user with a "Back to mission planning" / "Upload to
+ * vehicle anyway" choice naming the fence each breach belongs to, and resolves to whether the
+ * upload should continue. No-op (returns true) when there's no fence or no breach.
  * @returns { Promise<boolean> } True when the upload should proceed.
  */
 const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
-  const report = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
-  if (!report.hasBreaches) return true
+  const { vehicle, draft } = fenceStore.detectMissionBreaches(missionStore.currentPlanningWaypoints)
+  const message: string[] = []
+  if (vehicle?.hasBreaches) {
+    message.push(
+      `${vehicle.breaches.length} of ${vehicle.totalChecked} waypoints breach the geofence stored ` +
+        'on the vehicle. Uploading anyway may trigger the fence action the autopilot is configured with ' +
+        '(return, land or brake) once the mission runs.'
+    )
+  }
+  if (draft?.hasBreaches) {
+    message.push(
+      `${draft.breaches.length} of ${draft.totalChecked} waypoints breach the geofence you are ` +
+        'drawing, which has not been uploaded to the vehicle yet.'
+    )
+  }
+  if (message.length === 0) return true
 
   let confirmed = false
   try {
@@ -1127,10 +1140,7 @@ const confirmMissionFenceBreachIfNeeded = async (): Promise<boolean> => {
     await showDialog({
       variant: 'text-only',
       title: 'Mission breaches geofence',
-      message:
-        `${report.breachedIndices.length} of ${report.totalChecked} waypoints fall outside an inclusion fence ` +
-        'or inside an exclusion fence. Uploading anyway may trigger an in-flight fence breach action ' +
-        '(RTL / Land / Brake, depending on the autopilot configuration).',
+      message,
       persistent: false,
       maxWidth: '720px',
       actions: [
