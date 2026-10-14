@@ -113,6 +113,8 @@ const executeLinkedAction = (actionId: string): void => {
       clearTimeout(pendingExecutions[actionId])
     }
     pendingExecutions[actionId] = setTimeout(() => {
+      // Without this, the next change finds the interval already passed and runs right behind this one.
+      link.lastExecutionTime = Date.now()
       executeActionCallback(actionId)
     }, link.minInterval - timeSinceLastExecution)
   }
