@@ -66,6 +66,8 @@ We have dedicated builds for every Desktop platform, so make sure you're using t
 - **Linux**: `.AppImage`
 - **Steam OS**: `.Flatpak`
 
+The macOS builds require macOS 12 (Monterey) or later.
+
 #### - Option 3: Install the BlueOS Extension (Lite version!)
 If you're using BlueOS, you can install Cockpit [from the Extensions page](https://blueos.cloud/docs/stable/usage/advanced/#extensions).
 
