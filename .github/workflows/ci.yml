@@ -342,6 +342,17 @@ jobs:
           # Only rename if the generic name exists.
           if [ -f dist/latest-mac.yml ]; then mv dist/latest-mac.yml dist/latest-mac-arm64.yml; fi
 
+      # The updater compares this against `os.release()`, the Darwin version, so 21.0.0 is macOS 12, Electron's minimum.
+      - name: Require macOS 12 in the update metadata
+        if: matrix.suffix == 'mac'
+        run: |
+          FILE=dist/${{ matrix.latestMetadataName }}
+          if [ ! -f "$FILE" ] || grep -q '^minimumSystemVersion:' "$FILE"; then
+            echo "::error::$FILE is missing or already sets minimumSystemVersion"
+            exit 1
+          fi
+          echo 'minimumSystemVersion: 21.0.0' >> "$FILE"
+
       - name: Package AppImage in tar.gz (Linux)
         if: matrix.suffix == 'linux'
         run: |
