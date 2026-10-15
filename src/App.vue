@@ -472,6 +472,12 @@ body.hide-cursor {
   top: -11%;
 }
 
+/* A scale of 0.78 leaves a seam a 1px overlap does not cover, so tiles overlap by 2px. This replaces the mini map's overlap while edit mode is on. */
+.main-view.edit-mode .leaflet-container .leaflet-tile {
+  width: 258px !important;
+  height: 258px !important;
+}
+
 .vehicle-connection-overlay {
   position: fixed;
   inset: 0;
