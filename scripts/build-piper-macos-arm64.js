@@ -23,8 +23,8 @@ const { addMacRpath, hasRuntime } = require('./download-piper')
 const PIPER_SOURCE_TAG = 'v1.6.0'
 const PIPER_SOURCE_REPO = 'https://github.com/OHF-Voice/piper1-gpl.git'
 
-// Electron itself supports macOS 11 and later, and so must the binary we spawn.
-const MACOS_DEPLOYMENT_TARGET = '11.0'
+// Electron itself supports macOS 12 and later, and so must the binary we spawn.
+const MACOS_DEPLOYMENT_TARGET = '12.0'
 
 // espeak-ng composes every phoneme source path into a 180-byte buffer, appending
 // up to 36 bytes ("/../phsource/" plus its longest name) to its data directory.
