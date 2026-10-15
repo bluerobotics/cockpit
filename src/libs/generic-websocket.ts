@@ -1,6 +1,7 @@
 import { createDataLakeVariable, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
 import { machinizeString } from '@/libs/utils'
 import { guessedTypeFromString, replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
+import type { DataLakeVariableType } from '@/types/data-lake'
 
 import { settingsManager } from './settings-management'
 
@@ -134,6 +135,20 @@ const parseAndInjectMessage = (message: string): void => {
     valueStr = valueStr.slice(1, -1)
   }
 
+  // Determine type from first value received
+  // If quoted, force string type. Otherwise, guess from value.
+  // Note: Type is locked on creation. If a string variable sometimes looks like a number,
+  // the supplier should surround the value with quotes to force string type.
+  injectValue(variableName, valueStr, isQuoted ? 'string' : guessedTypeFromString(valueStr))
+}
+
+/**
+ * Write a received value into the data lake, creating its variable on first sight
+ * @param {string} variableName The name the sender gave the variable
+ * @param {string | number | boolean} value The received value
+ * @param {DataLakeVariableType} typeIfNew The type to create the variable with if it does not exist yet
+ */
+const injectValue = (variableName: string, value: string | number | boolean, typeIfNew: DataLakeVariableType): void => {
   // Create prefixed ID using machinized name for consistency
   const variableId = 'external/' + machinizeString(variableName)
 
@@ -141,15 +156,10 @@ const parseAndInjectMessage = (message: string): void => {
   let variableInfo = getDataLakeVariableInfo(variableId)
 
   if (!variableInfo) {
-    // Determine type from first value received
-    // If quoted, force string type. Otherwise, guess from value.
-    // Note: Type is locked on creation. If a string variable sometimes looks like a number,
-    // the supplier should surround the value with quotes to force string type.
-    const type = isQuoted ? 'string' : guessedTypeFromString(valueStr)
     createDataLakeVariable({
       id: variableId,
       name: variableName,
-      type,
+      type: typeIfNew,
       description: 'Variable received from generic WebSocket connection',
     })
     variableInfo = getDataLakeVariableInfo(variableId)
@@ -160,11 +170,11 @@ const parseAndInjectMessage = (message: string): void => {
   let parsedValue: string | number | boolean
 
   if (type === 'number') {
-    parsedValue = Number(valueStr)
+    parsedValue = Number(value)
   } else if (type === 'boolean') {
-    parsedValue = valueStr.toLowerCase() === 'true'
+    parsedValue = typeof value === 'boolean' ? value : String(value).toLowerCase() === 'true'
   } else {
-    parsedValue = valueStr
+    parsedValue = String(value)
   }
 
   setDataLakeVariableData(variableId, parsedValue)
