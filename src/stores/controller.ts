@@ -21,7 +21,7 @@ import { CockpitActionsFunction, executeActionCallback } from '@/libs/joystick/p
 import { updateDataLakeFromJoystick } from '@/libs/joystick/protocols/data-lake'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { settingsManager } from '@/libs/settings-management'
-import { isElectron } from '@/libs/utils'
+import { isElectron, isEqual } from '@/libs/utils'
 import { isMappingBlank } from '@/migration/default-profile-importer'
 import { legacyProtocolMappingsKey, migrateLegacyJoystickMapping } from '@/migration/profile-migrations'
 import {
@@ -105,11 +105,15 @@ export const useControllerStore = defineStore('controller', () => {
     if (migrated) protocolMapping.value = migrated
   })
 
-  // Run schema migrations on the current mapping
-  const migratedArray = performJoystickMappingMigrations([protocolMapping.value])
-  if (migratedArray.length > 0) {
-    protocolMapping.value = migratedArray[0]
-  }
+  // Imports, vehicle syncs and vehicle switches assign this ref after boot, so migrate on every write
+  watch(
+    protocolMapping,
+    (mapping) => {
+      const [migrated] = performJoystickMappingMigrations([mapping])
+      if (!isEqual(migrated, mapping)) protocolMapping.value = migrated
+    },
+    { immediate: true, deep: true }
+  )
 
   const cockpitStdMappings = computed<typeof availableGamepadToCockpitMaps>(() => {
     const mappings = {} as typeof availableGamepadToCockpitMaps
