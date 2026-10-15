@@ -251,7 +251,7 @@ watch(isCurrentAlertBarHovered, (isHovered, wasHovered) => {
       }
     }, 250)
   }
-  if (isShowingExpandedAlerts.value) return
+  if (isShowingExpandedAlerts.value || !isHovered) return
   showExpandedAlerts()
 })
 watch(isExpandedAlertsBarHovered, (isHovering, wasHovering) => {
@@ -269,9 +269,7 @@ const toggleExpandedAlertLock = (): void => {
     return
   }
 
-  if (!isExpandedAlertsBarHovered.value && !isCurrentAlertBarHovered.value) {
-    hideExpandedAlerts()
-  }
+  hideExpandedAlerts()
 }
 
 const sortedAlertsReversed = computed(() => {
