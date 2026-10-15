@@ -418,10 +418,16 @@
               <p>Connect to external WebSocket servers to receive data and inject it into the data-lake.</p>
               <ul class="list-disc list-inside mt-2">
                 <li>
-                  Messages should be in the format <span class="font-mono">variableName=value</span>, one per message.
+                  Messages should be in the format <span class="font-mono">variableName=value</span>, one per message,
+                  or a JSON object with one entry per variable, for example:
+                  <span class="font-mono">{{ exampleJsonWebSocketMessage }}</span
+                  >. JSON values keep their type, and nested objects and arrays become one variable per value, named by
+                  their path (<span class="font-mono">external/payload/temp</span>,
+                  <span class="font-mono">external/cells/0</span>).
                 </li>
                 <li>
-                  JSON messages add, update or remove points of interest instead, for example:
+                  JSON messages whose <span class="font-mono">type</span> starts with
+                  <span class="font-mono">cockpit:</span> add, update or remove points of interest instead, for example:
                   <span class="font-mono">{{ examplePoiWebSocketMessage }}</span
                   >. Update with <span class="font-mono">cockpit:updatePointOfInterest</span> and the fields to change,
                   or remove with <span class="font-mono">{{ exampleRemovePoiWebSocketMessage }}</span
@@ -1072,6 +1078,11 @@ const examplePoiWebSocketMessage = JSON.stringify({
   poi: { id: 'target-1', name: 'Target 1', latitude: -27.5935, longitude: -48.5585 },
 })
 const exampleRemovePoiWebSocketMessage = JSON.stringify({ type: 'cockpit:removePointOfInterest', id: 'target-1' })
+const exampleJsonWebSocketMessage = JSON.stringify({
+  WaterTemp: 23.5,
+  Payload: { Temp: 21.2, Locked: true },
+  Cells: [3.9, 4],
+})
 const genericWebSocketConnections = ref<Record<string, GenericWebSocketConnection>>({})
 const newGenericWebSocketUrl = ref(exampleGenericWebSocketUrl)
 let unsubscribeGenericWebSocket: (() => void) | null = null

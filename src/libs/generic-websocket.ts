@@ -37,6 +37,9 @@ const connections: Record<string, GenericWebSocketConnection> = {}
 const sockets: Record<string, WebSocket | null> = {}
 const connectionListeners: Record<string, (connections: Record<string, GenericWebSocketConnection>) => void> = {}
 const jsonMessageListeners = new Set<(message: unknown) => void>()
+// Senders repeat the same payload on every tick, so each skipped path is only worth one log line.
+// ponytail: never cleared, so it grows with every distinct path skipped; clear it per connection if senders vary keys
+const warnedSkippedJsonPaths = new Set<string>()
 
 let listenerIdCounter = 0
 
@@ -139,18 +142,19 @@ const parseAndInjectMessage = (message: string): void => {
   // If quoted, force string type. Otherwise, guess from value.
   // Note: Type is locked on creation. If a string variable sometimes looks like a number,
   // the supplier should surround the value with quotes to force string type.
-  injectValue(variableName, valueStr, isQuoted ? 'string' : guessedTypeFromString(valueStr))
+  injectValue([variableName], valueStr, isQuoted ? 'string' : guessedTypeFromString(valueStr))
 }
 
 /**
  * Write a received value into the data lake, creating its variable on first sight
- * @param {string} variableName The name the sender gave the variable
+ * @param {string[]} path The name the sender gave the variable, one segment per level of nesting
  * @param {string | number | boolean} value The received value
  * @param {DataLakeVariableType} typeIfNew The type to create the variable with if it does not exist yet
  */
-const injectValue = (variableName: string, value: string | number | boolean, typeIfNew: DataLakeVariableType): void => {
+const injectValue = (path: string[], value: string | number | boolean, typeIfNew: DataLakeVariableType): void => {
   // Create prefixed ID using machinized name for consistency
-  const variableId = 'external/' + machinizeString(variableName)
+  const variableId = 'external/' + path.map(machinizeString).join('/')
+  const variableName = path.join('/')
 
   // Get existing variable info or create new one
   let variableInfo = getDataLakeVariableInfo(variableId)
@@ -178,6 +182,62 @@ const injectValue = (variableName: string, value: string | number | boolean, typ
   }
 
   setDataLakeVariableData(variableId, parsedValue)
+}
+
+const isCommandMessage = (message: Record<string, unknown>): boolean => {
+  return typeof message.type === 'string' && message.type.startsWith('cockpit:')
+}
+
+const warnSkippedJsonPath = (path: string[], reason: string): void => {
+  const joinedPath = path.join('/')
+  if (warnedSkippedJsonPaths.has(joinedPath)) return
+  warnedSkippedJsonPaths.add(joinedPath)
+  logWarn(`Skipping '${joinedPath}': ${reason}`)
+}
+
+/**
+ * A string, number or boolean found while walking a JSON message
+ */
+type JsonLeaf = {
+  /**
+   * The object keys and array indexes from the message root down to the value
+   */
+  path: string[]
+  /**
+   * The value itself
+   */
+  value: string | number | boolean
+}
+
+/**
+ * Walk a JSON value down to its strings, numbers and booleans, the way the MAVLink flattener walks a message:
+ * every object key and array index adds a segment to the path
+ * @param {unknown} value The JSON value to walk
+ * @param {string[]} path The path that led to this value
+ * @returns {JsonLeaf[]} One entry per primitive leaf
+ */
+const flattenJson = (value: unknown, path: string[]): JsonLeaf[] => {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return [{ path, value }]
+  if (value === null) {
+    warnSkippedJsonPath(path, 'null values are not supported')
+    return []
+  }
+  return Object.entries(value as object).flatMap(([key, item]) => flattenJson(item, [...path, key]))
+}
+
+/**
+ * Inject every leaf of a JSON object message into the data-lake, typed by its JSON value
+ * Expected format: {"variableName": value, "group": {"nested": value}, "list": [value, ...], ...}
+ * @param {Record<string, unknown>} message The parsed message
+ */
+const injectJsonValues = (message: Record<string, unknown>): void => {
+  flattenJson(message, []).forEach(({ path, value }) => {
+    if (path.some((segment) => !machinizeString(segment))) {
+      warnSkippedJsonPath(path, 'every key needs a letter or a digit')
+      return
+    }
+    injectValue(path, value, typeof value as DataLakeVariableType)
+  })
 }
 
 /**
@@ -220,8 +280,12 @@ const connectToWebSocket = (url: string): void => {
       try {
         const message = typeof event.data === 'string' ? event.data : event.data.toString()
         if (message.trimStart().startsWith('{')) {
-          const parsedMessage: unknown = JSON.parse(message)
-          jsonMessageListeners.forEach((listener) => listener(parsedMessage))
+          const parsedMessage: Record<string, unknown> = JSON.parse(message)
+          if (isCommandMessage(parsedMessage)) {
+            jsonMessageListeners.forEach((listener) => listener(parsedMessage))
+            return
+          }
+          injectJsonValues(parsedMessage)
           return
         }
         parseAndInjectMessage(message)
@@ -321,8 +385,8 @@ export const listenToGenericWebSocketConnections = (
 }
 
 /**
- * Subscribe to JSON messages (those starting with '{') received on any generic WebSocket connection.
- * They carry commands rather than data-lake values, so they are not injected into the data lake.
+ * Subscribe to JSON command messages (those whose `type` starts with 'cockpit:') received on any generic WebSocket
+ * connection. They carry commands rather than data-lake values, so they are not injected into the data lake.
  * @param {(message: unknown) => void} listener Function called with each parsed message
  * @returns {() => void} A function to unsubscribe
  */
