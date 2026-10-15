@@ -161,6 +161,11 @@ export type CockpitMission = {
      * The default speed to be used on the mission
      */
     defaultCruiseSpeed: number
+    /**
+     * The speed the mission commands, or null to leave the vehicle on its own. Missing from missions saved before
+     * that choice was stored, which read `defaultCruiseSpeed` instead.
+     */
+    cruiseSpeed?: number | null
   }
   /**
    * The waypoints of the mission
@@ -170,6 +175,16 @@ export type CockpitMission = {
    * Survey data associated with this mission.
    */
   surveys?: Survey[]
+}
+
+/**
+ * The cruise speed the operator picked as the default for new missions.
+ */
+export type CruiseSpeedChoice = {
+  /**
+   * The speed in m/s, or null to leave the vehicle on its own
+   */
+  speed: number | null
 }
 
 /**

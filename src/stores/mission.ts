@@ -16,6 +16,13 @@ import {
   generateAutomaticMissionName,
   shouldRenewAutomaticMissionName,
 } from '@/libs/mission/automatic-name'
+import {
+  commandedCruiseSpeed,
+  cruiseSpeedFromLegacy,
+  cruiseSpeedSettings,
+  shippedCruiseSpeed,
+  validCruiseSpeed,
+} from '@/libs/mission/cruise-speed'
 import { generateMissionThumbnailSvg } from '@/libs/mission/library'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
@@ -24,6 +31,7 @@ import {
   AltitudeReferenceType,
   CockpitMission,
   countNavWaypointCommands,
+  CruiseSpeedChoice,
   CustomTileProviderMeta,
   HomeMarkerSource,
   isNavWaypointCommand,
@@ -83,15 +91,45 @@ export const useMissionStore = defineStore('mission', () => {
   const alwaysShowWaypointNumbers = useBlueOsStorage('cockpit-always-show-waypoint-numbers', false, { debounceMs: 0 })
   const showMissionEstimates = useBlueOsStorage('cockpit-show-mission-estimates', true)
   const showMissionPathSignalStrength = useBlueOsStorage('cockpit-show-mission-path-signal-strength', false)
-  const defaultCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', 1)
-  const cruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
+  // A null speed leaves the vehicle on its own. Kept apart from the key older Cockpits read, which would turn a null
+  // into a 0 m/s speed command. A pick is mirrored into that key with the shipped speed for the vehicle's own, which is
+  // how older Cockpits read it, and once the key holds anything else an older Cockpit has changed it, so it wins.
+  const cruiseSpeedChoice = useBlueOsStorage<CruiseSpeedChoice | null>('cockpit-default-cruise-speed-v2', null)
+  const legacyCruiseSpeed = useBlueOsStorage<number>('cockpit-default-cruise-speed', shippedCruiseSpeed)
+  const defaultCruiseSpeed = computed({
+    get: () => {
+      const choice = cruiseSpeedChoice.value
+      const mirroredSpeed = choice && (choice.speed ?? shippedCruiseSpeed)
+      if (mirroredSpeed !== legacyCruiseSpeed.value) return cruiseSpeedFromLegacy(legacyCruiseSpeed.value)
+      return validCruiseSpeed(choice?.speed)
+    },
+    set: (speed: number | null) => {
+      cruiseSpeedChoice.value = { speed }
+      legacyCruiseSpeed.value = speed ?? shippedCruiseSpeed
+    },
+  })
+  // Seeded from the mission on the vehicle, so starting or resuming it after a reload or from another topside still
+  // re-commands its speed, and null when that mission leaves the vehicle on its own speed.
+  // ponytail: a live slider change is in memory only, so a reload goes back to the mission's own speed.
+  const vehicleMissionCruiseSpeed = computed(() => {
+    const commands = vehicleMission.value?.[1]?.commands
+    return Array.isArray(commands) ? commandedCruiseSpeed(commands) : null
+  })
+  const cruiseSpeed = ref<number | null>(vehicleMissionCruiseSpeed.value)
+  watch(vehicleMissionCruiseSpeed, (speed) => {
+    cruiseSpeed.value = speed
+  })
+  // The stored mission can predate one another app uploaded since, so a switch to AUTO only re-commands its speed once
+  // this session has commanded a speed or rewritten that mission itself.
+  let cruiseSpeedIsCurrent = false
   // Cruise speed of the mission being planned. Like plannedHomePosition, it only reaches the vehicle (and the stored
   // default) on upload, but the estimates have to follow it while it is edited.
-  const plannedCruiseSpeed = ref<number>(Number(defaultCruiseSpeed.value))
-  // Follows the stored default whether or not the planner is open, since the synced value can arrive at any time.
+  const plannedCruiseSpeed = ref<number | null>(validCruiseSpeed(defaultCruiseSpeed.value))
+  // Follows the stored default whether or not the planner is open, since the synced value can arrive at any time, but
+  // leaves the speed of a mission already being planned alone.
   watch(defaultCruiseSpeed, (newDefault) => {
-    const speed = Number(newDefault)
-    if (Number.isFinite(speed)) plannedCruiseSpeed.value = speed
+    if (hasLivePlanningMission(currentPlanningWaypoints, currentPlanningSurveys)) return
+    plannedCruiseSpeed.value = validCruiseSpeed(newDefault)
   })
   const userLastMapTileProvider = useBlueOsStorage<MapTileProvider>(
     'cockpit-user-last-map-tile-provider',
@@ -494,7 +532,7 @@ export const useMissionStore = defineStore('mission', () => {
         zoom: defaultMapZoom.value,
         currentWaypointAltitude: waypoints[0]?.altitude || 0,
         currentWaypointAltitudeRefType: waypoints[0]?.altitudeReferenceType || AltitudeReferenceType.RELATIVE_TO_HOME,
-        defaultCruiseSpeed: defaultCruiseSpeed.value,
+        ...cruiseSpeedSettings(plannedCruiseSpeed.value),
       },
       waypoints,
       surveys: [...currentPlanningSurveys],
@@ -508,6 +546,7 @@ export const useMissionStore = defineStore('mission', () => {
   const bumpVehicleMissionRevision = (wps: Waypoint[]): void => {
     vehicleMission.value = wps
     vehicleMissionRevision.value += 1
+    cruiseSpeedIsCurrent = true
   }
 
   /**
@@ -695,20 +734,17 @@ export const useMissionStore = defineStore('mission', () => {
 
   let didAutoEndCurrentRun = false
 
-  // Distinguishes a cruise speed the user actually asked for from the untouched default, so a vehicle running a
-  // mission that was never planned here keeps the speed its own parameters define.
-  let cruiseSpeedWasCommanded = false
-
   /**
    * Applies the active cruise speed to the vehicle as a live command.
-   * @param {number} [speedMps] - Speed to apply; defaults to the current active cruise speed
+   * @param {number | null} [speedMps] - Speed to apply; defaults to the current active cruise speed
    * @returns {Promise<void>}
    */
-  const applyCruiseSpeed = async (speedMps: number = cruiseSpeed.value): Promise<void> => {
+  const applyCruiseSpeed = async (speedMps: number | null = cruiseSpeed.value): Promise<void> => {
+    if (speedMps === null) return
     const speed = Number(speedMps)
     if (!Number.isFinite(speed) || speed <= 0) return
     cruiseSpeed.value = speed
-    cruiseSpeedWasCommanded = true
+    cruiseSpeedIsCurrent = true
     if (!mainVehicleStore.isVehicleOnline) return
     await mainVehicleStore.setCruiseSpeed(speed)
   }
@@ -719,7 +755,7 @@ export const useMissionStore = defineStore('mission', () => {
   watch(
     () => mainVehicleStore.mode,
     (newMode) => {
-      if (newMode !== 'AUTO' || !cruiseSpeedWasCommanded) return
+      if (newMode !== 'AUTO' || cruiseSpeed.value === null || !cruiseSpeedIsCurrent) return
       applyCruiseSpeed().catch((err) => console.error('Failed to re-apply cruise speed on AUTO mode:', err))
     }
   )
@@ -782,6 +818,12 @@ export const useMissionStore = defineStore('mission', () => {
     (wps) => persistDraft(wps),
     { deep: true }
   )
+  // Clearing the draft is left to the waypoint watcher, since a speed synced in before the planner restores the draft
+  // finds it empty.
+  watch(plannedCruiseSpeed, () => {
+    if (!hasLivePlanningMission(currentPlanningWaypoints, currentPlanningSurveys)) return
+    persistDraft([...currentPlanningWaypoints])
+  })
 
   // Maximum number of positions to store in the vehicle position history before simplifying
   const maxPositionHistorySize = useBlueOsStorage(

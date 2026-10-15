@@ -2,6 +2,7 @@ import { computed, ComputedRef, ref } from 'vue'
 
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { blueBoatMissionEstimate } from '@/libs/mission/blueboat-estimates'
+import { shippedCruiseSpeed } from '@/libs/mission/cruise-speed'
 import {
   calculateHaversineDistance,
   computeMissionDurationSecondsFromLegs,
@@ -90,7 +91,8 @@ export const useMissionEstimates = (): {
     const wps = missionStore.currentPlanningWaypoints
     if (!Array.isArray(wps) || wps.length < 2) return []
 
-    const draftDefault = Number(missionStore.plannedCruiseSpeed)
+    // ponytail: assumes the shipped speed while the vehicle keeps its own; read its waypoint-speed parameter to do better.
+    const draftDefault = Number(missionStore.plannedCruiseSpeed ?? shippedCruiseSpeed)
 
     const legs: MissionLeg[] = []
     for (let i = 0; i < wps.length - 1; i++) {

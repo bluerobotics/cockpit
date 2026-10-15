@@ -2,11 +2,7 @@
   <div class="relative flex items-center -mt-[2px]">
     <v-menu :close-on-content-click="false" location="top" offset="8">
       <template #activator="{ props: speedProps }">
-        <v-tooltip
-          location="top"
-          open-delay="800"
-          :text="`Cruise speed (${displayedCruiseSpeed.toFixed(1)} ${speedUnit})`"
-        >
+        <v-tooltip location="top" open-delay="800" :text="`Cruise speed (${speedReadout})`">
           <template #activator="{ props: speedTooltipProps }">
             <v-btn
               v-bind="{ ...speedProps, ...speedTooltipProps }"
@@ -22,7 +18,7 @@
       <div class="flex flex-col p-3 rounded-lg w-[210px] text-white" :style="interfaceStore.globalGlassMenuStyles">
         <div class="flex justify-between items-center mb-1 text-xs">
           <span>Cruise speed</span>
-          <span class="font-bold">{{ displayedCruiseSpeed.toFixed(1) }} {{ speedUnit }}</span>
+          <span class="font-bold">{{ speedReadout }}</span>
         </div>
         <v-slider
           v-model="displayedCruiseSpeed"
@@ -37,6 +33,7 @@
       </div>
     </v-menu>
     <span
+      v-if="!followsVehicleDefault"
       class="absolute left-1/2 top-full -translate-x-1/2 px-[3px] rounded-[2px] bg-white text-[#333333] font-bold select-none pointer-events-none"
       :class="
         compact
@@ -51,10 +48,11 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
 import { useUnitInput } from '@/composables/useUnitInput'
+import { shippedCruiseSpeed } from '@/libs/mission/cruise-speed'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -70,10 +68,16 @@ const interfaceStore = useAppInterfaceStore()
 const missionStore = useMissionStore()
 const vehicleStore = useMainVehicleStore()
 
-const liveCruiseSpeed = ref<number>(Number(missionStore.cruiseSpeed))
+const liveCruiseSpeed = ref<number>(
+  Number(missionStore.cruiseSpeed ?? missionStore.defaultCruiseSpeed ?? shippedCruiseSpeed)
+)
+const followsVehicleDefault = ref(missionStore.cruiseSpeed === null)
 watch(
   () => missionStore.cruiseSpeed,
-  (newSpeed) => (liveCruiseSpeed.value = Number(newSpeed))
+  (newSpeed) => {
+    followsVehicleDefault.value = newSpeed === null
+    if (newSpeed !== null) liveCruiseSpeed.value = Number(newSpeed)
+  }
 )
 
 // The speed is commanded in m/s, so only the slider and the readouts follow the unit the user reads.
@@ -87,9 +91,14 @@ const {
 // A tenth is the step the slider moves in, and the slowest end is a fraction of a knot that whole numbers lose.
 const displayedSpeedBound = (metersPerSecond: number): number => speedToDisplayBound(metersPerSecond, 1)
 
+const speedReadout = computed(() =>
+  followsVehicleDefault.value ? 'vehicle default' : `${displayedCruiseSpeed.value.toFixed(1)} ${speedUnit.value}`
+)
+
 // Debounce live speed commands so dragging the slider doesn't flood the vehicle with DO_CHANGE_SPEED.
 let cruiseSpeedDebounce: ReturnType<typeof setTimeout> | undefined
 const handleCruiseSpeedInput = (value: number): void => {
+  followsVehicleDefault.value = false
   if (cruiseSpeedDebounce) clearTimeout(cruiseSpeedDebounce)
   cruiseSpeedDebounce = setTimeout(() => {
     logUserAction(`Set the cruise speed to ${value.toFixed(1)} ${speedUnit.value}`)

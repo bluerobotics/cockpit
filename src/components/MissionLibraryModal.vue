@@ -211,7 +211,7 @@
             </div>
             <div class="flex justify-between">
               <span class="text-white/60">Cruise speed</span>
-              <span>{{ formatCruiseSpeed(detailMission.settings.defaultCruiseSpeed) }}</span>
+              <span>{{ formatCruiseSpeed(detailMission.settings) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-white/60">Created</span>
@@ -324,6 +324,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { missionCruiseSpeed } from '@/libs/mission/cruise-speed'
 import { computeMissionLocation, isSavedMission, vehicleTypeLabel } from '@/libs/mission/library'
 import { formatValueWithUnit } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -397,8 +398,10 @@ watch(isVisible, (visible) => {
 
 const formatDate = (date: Date): string => format(date, 'LLL dd, yyyy HH:mm')
 
-const formatCruiseSpeed = (speedInMetersPerSecond: number): string =>
-  formatValueWithUnit(speedInMetersPerSecond, 'm/s', interfaceStore.displayUnitPreferences)
+const formatCruiseSpeed = (settings: CockpitMission['settings']): string => {
+  const speed = missionCruiseSpeed(settings)
+  return speed === null ? 'Vehicle default' : formatValueWithUnit(speed, 'm/s', interfaceStore.displayUnitPreferences)
+}
 
 const googleEarthUrl = (coords: WaypointCoordinates): string =>
   `https://earth.google.com/web/@${coords[0]},${coords[1]},500a,1000d`
