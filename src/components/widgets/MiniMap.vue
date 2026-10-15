@@ -587,7 +587,7 @@ const onTrackedPoiSelected = (value: string | null): void => {
   opacity: 0.6;
 }
 
-/* The rotation transform exposes hairline gaps between adjacent tiles; overlapping them by 1px hides the seams. */
+/* The rotation transform exposes hairline gaps between adjacent tiles; overlapping them by 1px hides the seams. Edit mode's scale replaces this with a 2px overlap. */
 .minimap-canvas :deep(.leaflet-tile) {
   width: 257px !important;
   height: 257px !important;
