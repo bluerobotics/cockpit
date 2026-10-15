@@ -81,7 +81,7 @@
     <v-tooltip
       v-if="isCreatingSurvey && surveyPolygonVertexesPositions.length >= 3"
       location="top"
-      :text="`Cruise speed (${speedUnit})`"
+      :text="`Cruise speed (${speedUnit}). ${cruiseSpeedEmptyHint}`"
     >
       <template #activator="{ props }">
         <div
@@ -91,11 +91,14 @@
           variant="text"
         >
           <input
-            v-model.number="displayedCruiseSpeed"
-            class="rounded-lg bg-[#333333EE] text-white w-12 pl-2 pa-0"
+            :value="displayedCruiseSpeed"
+            class="rounded-lg bg-[#333333EE] text-white w-16 pl-2 pa-0 placeholder:text-xs"
             type="number"
             :min="metersPerSecondToDisplayBound(1)"
             step="0.5"
+            placeholder="Vehicle"
+            @input="onCruiseSpeedInput"
+            @change="onCruiseSpeedChange"
           />
         </div>
       </template>
@@ -257,14 +260,21 @@
         >
           <div class="flex flex-row items-center gap-x-1 w-[130px] -ml-1">
             <p class="text-xs">Cruise speed</p>
-            <input
-              v-model.number="displayedCruiseSpeed"
-              class="w-[55px] px-1 py-0 rounded-sm bg-[#FFFFFF22] text-sm"
-              type="number"
-              min="0"
-              step="0.5"
-              @change="cruiseSpeedTouched = true"
-            />
+            <v-tooltip location="top" :text="cruiseSpeedEmptyHint">
+              <template #activator="{ props: cruiseSpeedTooltipProps }">
+                <input
+                  v-bind="cruiseSpeedTooltipProps"
+                  :value="displayedCruiseSpeed"
+                  class="w-16 px-1 py-0 rounded-sm bg-[#FFFFFF22] text-sm placeholder:text-xs"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="Vehicle"
+                  @input="onCruiseSpeedInput"
+                  @change="onCruiseSpeedChange"
+                />
+              </template>
+            </v-tooltip>
             <p class="text-xs">{{ speedUnit }}</p>
           </div>
           <v-divider vertical class="opacity-30 mx-1 h-5 self-center" />
@@ -1025,6 +1035,12 @@ import { orderedSurveyPath, surveyEndpointEdgeBearing, surveyEntryCornerCount } 
 import type { VehicleTooltipState } from '@/libs/map/vehicle-tooltip'
 import { vehicleTooltipContent } from '@/libs/map/vehicle-tooltip'
 import {
+  commandedCruiseSpeed,
+  cruiseSpeedSettings,
+  missionCruiseSpeed,
+  validCruiseSpeed,
+} from '@/libs/mission/cruise-speed'
+import {
   bearingBetween,
   calculateHaversineDistance,
   centroidLatLng,
@@ -1033,7 +1049,7 @@ import {
 import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/library'
 import { endpointSplicePosition } from '@/libs/mission/planning-endpoints'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
-import { degrees, escapeHtml, messageFromError, toPlain } from '@/libs/utils'
+import { degrees, escapeHtml, messageFromError, round, toPlain } from '@/libs/utils'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
@@ -1262,25 +1278,24 @@ const uploadMissionToVehicle = async (): Promise<void> => {
 
   missionItemsToUpload.unshift(homeWaypoint)
 
-  // Commit the local cruise speed back to the store so the chosen value persists across sessions and mission restarts.
-  missionStore.defaultCruiseSpeed = localCruiseSpeed.value
-  missionStore.cruiseSpeed = localCruiseSpeed.value
-
-  if (localCruiseSpeed.value > 0 && missionItemsToUpload.length > 1) {
+  // An empty speed field sends nothing, so the vehicle keeps the speed its own parameters define.
+  const cruiseSpeedToCommand = validCruiseSpeed(localCruiseSpeed.value)
+  if (missionItemsToUpload.length > 1) {
     const firstMissionItem = missionItemsToUpload[1]
     const existing = Array.isArray(firstMissionItem.commands) ? firstMissionItem.commands : []
 
-    firstMissionItem.commands = [
-      ...existing.filter((cmd) => cmd.command !== MavCmd.MAV_CMD_DO_CHANGE_SPEED),
-      {
+    // A mission downloaded from the vehicle still carries the speed command an earlier upload added.
+    firstMissionItem.commands = existing.filter((cmd) => cmd.command !== MavCmd.MAV_CMD_DO_CHANGE_SPEED)
+    if (cruiseSpeedToCommand !== null) {
+      firstMissionItem.commands.push({
         type: MissionCommandType.MAVLINK_NAV_COMMAND,
         command: MavCmd.MAV_CMD_DO_CHANGE_SPEED,
         param1: 1,
-        param2: localCruiseSpeed.value,
+        param2: cruiseSpeedToCommand,
         param3: -1,
         param4: 0,
-      },
-    ]
+      })
+    }
   }
 
   try {
@@ -1288,6 +1303,9 @@ const uploadMissionToVehicle = async (): Promise<void> => {
       throw 'Vehicle is not online.'
     }
     await vehicleStore.uploadMission(missionItemsToUpload, loadingCallback)
+    // Commit the local cruise speed back to the store so the chosen value persists across sessions and mission restarts.
+    missionStore.defaultCruiseSpeed = cruiseSpeedToCommand
+    missionStore.cruiseSpeed = cruiseSpeedToCommand
     if (sendPlannedHome) {
       await sendPlannedHomeToVehicle(homeWaypoint.coordinates)
     } else {
@@ -1371,6 +1389,8 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
       }
     })
     updateWaypointMarkers()
+    // The upload rewrites the speed command from the field, so the field starts from the one the mission carries.
+    missionStore.plannedCruiseSpeed = commandedCruiseSpeed(missionItemsInVehicle[1]?.commands ?? [])
 
     openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
   } catch (error) {
@@ -1623,16 +1643,15 @@ watch(rightPanelShowsMissionConfig, (showsMissionConfig) => {
 
 const localCruiseSpeed = computed({
   get: () => missionStore.plannedCruiseSpeed,
-  set: (value: number) => {
+  set: (value: number | null) => {
     missionStore.plannedCruiseSpeed = value
   },
 })
 
-const cruiseSpeedTouched = ref(false)
 const cruiseSpeedStatus = computed<'invalid' | 'unchanged' | 'valid'>(() => {
   const value = localCruiseSpeed.value
+  if (value === null) return 'unchanged'
   if (!Number.isFinite(value) || value <= 0 || value > 3) return 'invalid'
-  if (value === Number(missionStore.defaultCruiseSpeed) && !cruiseSpeedTouched.value) return 'unchanged'
   return 'valid'
 })
 const isSettingHomeWaypoint = ref(false)
@@ -3597,10 +3616,33 @@ const { displayedValue: displayedWaypointAltitude, unit: altitudeUnit } = useUni
   'altitude'
 )
 const {
-  displayedValue: displayedCruiseSpeed,
+  toDisplayUnit: speedToDisplayUnit,
   toDisplayBound: metersPerSecondToDisplayBound,
+  toRawUnit: speedToRawUnit,
   unit: speedUnit,
-} = useUnitInput(localCruiseSpeed, 'm/s')
+} = useUnitConversion('m/s')
+
+// The speed fields are not bound through useUnitInput, which shows the stored number again in an emptied field,
+// while here an empty field is how the operator leaves the vehicle on its own speed.
+const cruiseSpeedEmptyHint = "Leave empty to use the vehicle's own speed."
+const displayedCruiseSpeed = computed(() =>
+  localCruiseSpeed.value === null ? '' : speedToDisplayUnit(localCruiseSpeed.value)
+)
+// A half-typed decimal ("4.") reads as '' too, so the speed is only cleared once the field is left empty.
+const onCruiseSpeedInput = (event: Event): void => {
+  const field = event.target as HTMLInputElement
+  if (field.value === '') return
+  localCruiseSpeed.value = speedToRawUnit(round(Number(field.value), 1))
+}
+const onCruiseSpeedChange = (event: Event): void => {
+  const field = event.target as HTMLInputElement
+  if (field.value === '' && !field.validity.badInput) localCruiseSpeed.value = null
+  if (localCruiseSpeed.value === null) {
+    logUserAction("Cleared the mission cruise speed to use the vehicle's own")
+    return
+  }
+  logUserAction(`Set the mission cruise speed to ${displayedCruiseSpeed.value} ${speedUnit.value}`)
+}
 
 // The tested speeds are quoted in m/s, so they are read out in whatever the cruise-speed field beside them takes.
 const testedSpeed = (metersPerSecond: number): number => metersPerSecondToDisplayBound(metersPerSecond, 1)
@@ -4590,7 +4632,7 @@ const loadDraftMission = async (
     }
     currentWaypointAltitude.value = mission.settings.currentWaypointAltitude
     currentWaypointAltitudeRefType.value = mission.settings.currentWaypointAltitudeRefType
-    missionStore.defaultCruiseSpeed = mission.settings.defaultCruiseSpeed
+    missionStore.plannedCruiseSpeed = missionCruiseSpeed(mission.settings)
 
     drawMissionOnTheMap(mission.waypoints)
 
@@ -4616,7 +4658,7 @@ const buildCurrentMissionSnapshot = (): CockpitMission =>
       currentWaypointAltitudeRefType: currentWaypointAltitudeRefType.value,
       // Use the local (in-input) cruise speed so library saves capture pending changes the user
       // typed but hasn't committed back to the store yet (e.g. by uploading the mission).
-      defaultCruiseSpeed: localCruiseSpeed.value,
+      ...cruiseSpeedSettings(localCruiseSpeed.value),
     },
     waypoints: missionStore.currentPlanningWaypoints,
     surveys: missionStore.currentPlanningSurveys,
