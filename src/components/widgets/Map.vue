@@ -967,7 +967,13 @@ onMounted(async () => {
 // React to clear/download requests from any mission-control widget.
 watch(
   () => missionStore.mapClearRequestRevision,
-  () => clearMapDrawing()
+  () => {
+    clearMapDrawing()
+    // Not in clearMapDrawing: redraws write the same home back, which never re-fires the watcher that redraws it.
+    if (missionStore.homeMarkerSource !== 'mission') return
+    homeMarker.value?.remove()
+    homeMarker.value = undefined
+  }
 )
 
 // React to "center on coordinates" requests (e.g. from the Map tools menu).
@@ -1009,21 +1015,13 @@ const handleContextMenu = {
 }
 
 const clearMapDrawing = (): void => {
-  const poiMarkerSet = new Set(Object.values(poiMarkers.markers.value))
-
-  map.value?.eachLayer((l) => {
-    if (l instanceof L.Marker) {
-      if (poiMarkerSet.has(l as L.Marker)) return
-      // The vehicle is not part of the mission drawing, and nothing recreates its marker until it moves.
-      if (l === vehicleMarker.value) return
-      map.value!.removeLayer(l)
-    }
-  })
+  // Only the mission's own markers: overlays sharing this map keep references to theirs and never re-add them.
+  Object.values(reachedWaypoints.value).forEach((marker) => marker.remove())
+  gotoMarker.value?.remove()
   mapWaypointMarkers.value.forEach((m) => m.remove())
   mapWaypointMarkers.value = []
   mapWaypoints.value = []
 
-  homeMarker.value = undefined
   gotoMarker.value = undefined
   reachedWaypoints.value = {}
   missionItemsInVehicle.value = []
