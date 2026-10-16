@@ -1,11 +1,17 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 vi.mock('@/composables/settingsSyncer', () => ({ useBlueOsStorage: (_key: string, value: unknown) => ref(value) }))
 vi.mock('@/composables/snackbar', () => ({ openSnackbar: vi.fn() }))
 vi.mock('@/libs/utils', () => ({ isElectron: () => Boolean(window.electronAPI) }))
+vi.mock('@/stores/geoFence', () => ({ useGeoFenceStore: () => fence }))
+vi.mock('@/stores/mainVehicle', () => ({
+  useMainVehicleStore: () =>
+    reactive({ statusText: { text: '' }, mode: undefined, isArmed: false, isVehicleOnline: false }),
+}))
 
+let fence = reactive({ fenceBreached: undefined as boolean | undefined })
 let activeUtterance: SpeechSynthesisUtterance | undefined
 let spoken: string[]
 let playingAudio: Pick<HTMLAudioElement, 'paused' | 'onended' | 'onerror'>[]
@@ -22,6 +28,7 @@ beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
   setActivePinia(createPinia())
+  fence = reactive({ fenceBreached: undefined })
   activeUtterance = undefined
   spoken = []
   playingAudio = []
@@ -94,10 +101,11 @@ test('disabling voice stops active speech and keeps old queued alerts silent aft
   store.enableVoiceAlerts = true
   store.pushSuccessAlert('Fresh')
   await flushSpeech()
-  expect(store.lastSpokenAlertIndex).toBe(1)
+  expect(store.currentAlert.message).toBe('Queued')
+  expect(store.isProcessingAlerts).toBe(true)
   vi.advanceTimersByTime(1000)
   await flushSpeech()
-  expect(store.lastSpokenAlertIndex).toBe(2)
+  expect(store.currentAlert.message).toBe('Fresh')
   expect(spoken).toEqual(['First', 'Fresh'])
   expect(activeUtterance?.text).toBe('Fresh')
   store.$dispose()
@@ -166,10 +174,226 @@ test('muted alerts still advance the displayed alert without starting speech', a
   store.enableVoiceAlerts = false
   store.pushSuccessAlert('Muted')
   await flushSpeech()
-  expect(store.lastSpokenAlertIndex).toBe(0)
+  expect(store.currentAlert.message).toBe('Muted')
+  expect(store.isProcessingAlerts).toBe(true)
   vi.advanceTimersByTime(350)
   await flushSpeech()
-  expect(store.lastSpokenAlertIndex).toBe(1)
+  expect(store.isProcessingAlerts).toBe(false)
   expect(spoken).toEqual([])
+  store.$dispose()
+})
+
+test('pending alerts follow severity without interrupting speech or reordering history', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const { AlertLevel } = await import('@/types/alert')
+  const store = useAlertStore()
+  store.enabledAlertLevels.find((level) => level.level === AlertLevel.Info)!.enabled = true
+  store.pushSuccessAlert('Active')
+  await flushSpeech()
+
+  store.pushSuccessAlert('Success')
+  await flushSpeech()
+  store.pushInfoAlert('Info', new Date(0))
+  await flushSpeech()
+  store.pushWarningAlert('Warning first')
+  await flushSpeech()
+  store.pushWarningAlert('Warning second')
+  await flushSpeech()
+  store.pushErrorAlert('Error')
+  await flushSpeech()
+  store.pushCriticalAlert('Critical')
+  await flushSpeech()
+  expect(spoken).toEqual(['Active'])
+
+  for (const message of ['Critical', 'Error', 'Warning first', 'Warning second', 'Success', 'Info']) {
+    activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+    await flushSpeech()
+    expect(activeUtterance?.text).toBe(message)
+    expect(store.currentAlert.message).toBe(message)
+  }
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(store.isProcessingAlerts).toBe(false)
+  expect(store.sortedAlerts[0].message).toBe('Info')
+  expect(store.alerts.map((alert) => alert.message)).toEqual([
+    'Cockpit started',
+    'Active',
+    'Success',
+    'Info',
+    'Warning first',
+    'Warning second',
+    'Error',
+    'Critical',
+  ])
+  await flushSpeech()
+  expect(spoken).toEqual(['Active', 'Critical', 'Error', 'Warning first', 'Warning second', 'Success', 'Info'])
+  store.$dispose()
+})
+
+test('same-tick alerts all play once with the highest severity first', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const store = useAlertStore()
+  store.pushSuccessAlert('Success')
+  store.pushCriticalAlert('Critical')
+  store.pushWarningAlert('Warning')
+  await flushSpeech()
+  expect(activeUtterance?.text).toBe('Critical')
+
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(activeUtterance?.text).toBe('Warning')
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(activeUtterance?.text).toBe('Success')
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(spoken).toEqual(['Critical', 'Warning', 'Success'])
+  expect(store.isProcessingAlerts).toBe(false)
+  store.$dispose()
+})
+
+test('disabling voice keeps prioritized pending alerts silent after re-enabling', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const store = useAlertStore()
+  store.pushSuccessAlert('Active')
+  await flushSpeech()
+  store.pushSuccessAlert('Queued')
+  store.pushCriticalAlert('Critical')
+  await flushSpeech()
+
+  store.enableVoiceAlerts = false
+  store.enableVoiceAlerts = true
+  store.pushSuccessAlert('Fresh')
+  await flushSpeech()
+  expect(store.currentAlert.message).toBe('Critical')
+  vi.advanceTimersByTime(560)
+  await flushSpeech()
+  expect(store.currentAlert.message).toBe('Queued')
+  vi.advanceTimersByTime(420)
+  await flushSpeech()
+  expect(spoken).toEqual(['Active', 'Fresh'])
+  expect(store.currentAlert.message).toBe('Fresh')
+  store.$dispose()
+})
+
+test('alerts waiting behind voice previews remain pending for priority selection', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const { useTextToSpeech } = await import('@/composables/useTextToSpeech')
+  const store = useAlertStore()
+  const { speak } = useTextToSpeech()
+  void speak('First preview', 1)
+  await flushSpeech()
+  store.pushSuccessAlert('Success')
+  await flushSpeech()
+  void speak('Second preview', 1)
+  store.pushCriticalAlert('Critical')
+  await flushSpeech()
+
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(activeUtterance?.text).toBe('Second preview')
+  expect(store.currentAlert.message).toBe('Cockpit started')
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(activeUtterance?.text).toBe('Critical')
+  expect(store.currentAlert.message).toBe('Critical')
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(activeUtterance?.text).toBe('Success')
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(spoken).toEqual(['First preview', 'Second preview', 'Critical', 'Success'])
+  store.$dispose()
+})
+
+test('a newer connection state replaces the older pending announcement, not its history', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const { Alert, AlertLevel } = await import('@/types/alert')
+  const store = useAlertStore()
+  store.pushSuccessAlert('Active')
+  await flushSpeech()
+  store.pushAlert(new Alert(AlertLevel.Success, 'Vehicle connected'), 'vehicle-connection')
+  await flushSpeech()
+  store.pushAlert(new Alert(AlertLevel.Error, 'Vehicle disconnected'), 'vehicle-connection')
+  await flushSpeech()
+  expect(spoken).toEqual(['Active'])
+
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(activeUtterance?.text).toBe('Vehicle disconnected')
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(spoken).toEqual(['Active', 'Vehicle disconnected'])
+  expect(store.isProcessingAlerts).toBe(false)
+  expect(store.currentAlert.message).toBe('Vehicle disconnected')
+  expect(store.alerts.map((alert) => alert.message)).toEqual([
+    'Cockpit started',
+    'Active',
+    'Vehicle connected',
+    'Vehicle disconnected',
+  ])
+  store.$dispose()
+})
+
+test.each([true, false])('pending geofence alerts end on the latest breach state (%s)', async (breached) => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const { useVehicleAlerterStore } = await import('@/stores/vehicleAlerter')
+  const store = useAlertStore()
+  const alerter = useVehicleAlerterStore()
+  store.pushSuccessAlert('Active')
+  await flushSpeech()
+
+  fence.fenceBreached = true
+  await flushSpeech()
+  fence.fenceBreached = false
+  await flushSpeech()
+  if (breached) {
+    fence.fenceBreached = true
+    await flushSpeech()
+  }
+  expect(spoken).toEqual(['Active'])
+  const history = [
+    'Cockpit started',
+    'Active',
+    'Vehicle is outside the geofence.',
+    'Vehicle is back inside the geofence.',
+  ]
+  if (breached) history.push('Vehicle is outside the geofence.')
+  expect(store.alerts.map((alert) => alert.message)).toEqual(history)
+
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  const expected = breached ? 'Vehicle is outside the geofence.' : 'Vehicle is back inside the geofence.'
+  expect(store.currentAlert.message).toBe(expected)
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(spoken).toEqual(['Active', expected])
+  expect(store.isProcessingAlerts).toBe(false)
+  alerter.$dispose()
+  store.$dispose()
+})
+
+test('an old queued alert gets a fresh display interval when playback finishes', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const store = useAlertStore()
+  store.pushSuccessAlert('Old alert', new Date(0))
+  await flushSpeech()
+  vi.advanceTimersByTime(12000)
+  activeUtterance?.onend?.({} as SpeechSynthesisEvent)
+  await flushSpeech()
+  expect(store.isProcessingAlerts).toBe(false)
+  expect(store.currentAlert.time_created).toEqual(new Date(0))
+  expect(store.lastAlertPlaybackFinishedAt).toEqual(new Date())
+  store.$dispose()
+})
+
+test('sorting alert history does not reorder its arrival sequence', async () => {
+  const { useAlertStore } = await import('@/stores/alert')
+  const { Alert, AlertLevel } = await import('@/types/alert')
+  const store = useAlertStore()
+  const initialAlert = store.alerts[0]
+  store.alerts.push(new Alert(AlertLevel.Success, 'Older event', new Date(0)))
+  expect(store.sortedAlerts.map((alert) => alert.message)).toEqual(['Older event', 'Cockpit started'])
+  expect(store.alerts[0]).toBe(initialAlert)
   store.$dispose()
 })
