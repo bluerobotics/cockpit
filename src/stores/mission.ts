@@ -583,11 +583,14 @@ export const useMissionStore = defineStore('mission', () => {
     userLastMapCenter.value = mapCenter
   }
 
+  // Home is seq 0, and a download folds every item before the first real waypoint into its commands
+  const firstWaypointMissionSeq = computed<number>(() => vehicleMission.value[0]?.commands.length ?? 1)
+
   // Maps waypoints on MAVLink mission to their corresponding mission item seq (ignoring NON_NAV commands)
   const navMissionSeqByWaypointIndex = computed<number[]>(() => {
     const navigationSequence: number[] = []
     navigationSequence[0] = 0
-    let seq = 1
+    let seq = firstWaypointMissionSeq.value
 
     if (vehicleMission.value.length <= 1) {
       return navigationSequence
