@@ -1,3 +1,4 @@
+import { useStorage } from '@vueuse/core'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { NativePiperEngine } from '@/libs/tts/nativePiperEngine'
@@ -101,12 +102,18 @@ const wayBackTo = (stored: string): string => {
 
 // The stored choice survives untouched when this machine cannot offer it, so an operator who had picked a
 // voice hears a different one with nothing to explain it. Said once, naming both voices and the way back.
-let reportedVoiceOverride = false
+// Kept on this computer only, since another one may well offer the voice.
+const reportedVoiceOverrides = useStorage<string[]>('cockpit-reported-alert-voice-overrides', [])
 const reportVoiceOverride = (): void => {
   const stored = storedVoiceId.value
-  if (reportedVoiceOverride || stored === null || voices.value.length === 0) return
-  if (voices.value.some((voice) => voice.id === stored)) return
-  reportedVoiceOverride = true
+  if (stored === null || voices.value.length === 0) return
+  const reportedIndex = reportedVoiceOverrides.value.indexOf(stored)
+  if (voices.value.some((voice) => voice.id === stored)) {
+    if (reportedIndex !== -1) reportedVoiceOverrides.value.splice(reportedIndex, 1)
+    return
+  }
+  if (reportedIndex !== -1) return
+  reportedVoiceOverrides.value.push(stored)
   const speaking = voices.value.find((voice) => voice.id === selectedVoiceId.value)?.label
   const chosen = piperVoices.find((voice) => piperVoiceOptionValue(voice.key) === stored)?.label ?? stored
   const wayBack = wayBackTo(stored)
@@ -298,7 +305,8 @@ const deleteHdVoices = async (): Promise<boolean> => {
   const ok = await nativePiperEngine.deleteHdVoices()
   // The stored choice is vehicle-synced, so it must not move for a local cleanup. Suppressing the notice
   // is enough: the operator asked for this voice to be gone, so it needs no explaining to them.
-  reportedVoiceOverride = true
+  const stored = storedVoiceId.value
+  if (stored !== null && !reportedVoiceOverrides.value.includes(stored)) reportedVoiceOverrides.value.push(stored)
   await refreshVoices()
   return ok
 }
