@@ -696,7 +696,9 @@ export const useMissionStore = defineStore('mission', () => {
     }
   }
 
-  let didAutoEndCurrentRun = false
+  // Only runs started from Cockpit are auto-ended, so a mission started from the RC or another GCS keeps its own ending
+  let autoEndMissionSeq: number | undefined = undefined
+  let autoEndRunGeneration = 0
 
   // Distinguishes a cruise speed the user actually asked for from the untouched default, so a vehicle running a
   // mission that was never planned here keeps the speed its own parameters define.
@@ -730,41 +732,46 @@ export const useMissionStore = defineStore('mission', () => {
   // Allow executing missions. A start that fails rejects with the vehicle's reason, which callers show the operator.
   const executeMissionOnVehicle = async (): Promise<void> => {
     mainVehicleStore.clearReachedMissionItems()
-    didAutoEndCurrentRun = false
     await mainVehicleStore.startMission()
+    targetAutoEndAtVehicleMissionEnd()
     // Re-apply the cruise speed on every start/resume so it is not lost after a pause cycle.
     await applyCruiseSpeed().catch((err) => console.error('Failed to apply cruise speed on mission start:', err))
   }
 
-  // Auto-end the run when the last navigation waypoint is reached
-  watch(
-    () => mainVehicleStore.reachedMissionItemSequences,
-    (reachedSeqs) => {
-      if (didAutoEndCurrentRun) return
-      if (!isMissionRunning.value) return
-      if (reachedSeqs.length === 0) return
+  const endRunIfLastNavReached = (): void => {
+    if (autoEndMissionSeq === undefined || !isMissionRunning.value) return
+    if (!mainVehicleStore.reachedMissionItemSequences.includes(autoEndMissionSeq)) return
 
-      const navSeqs = navMissionSeqByWaypointIndex.value
-      if (navSeqs.length <= 1) return
+    autoEndMissionSeq = undefined
+    mainVehicleStore.pauseMission().catch((err) => {
+      console.error('Failed to end mission after reaching last waypoint:', err)
+    })
+  }
 
-      const lastWpSeq = navSeqs[navSeqs.length - 1]
-      if (lastWpSeq === undefined) return
-      if (!reachedSeqs.includes(lastWpSeq)) return
-
-      didAutoEndCurrentRun = true
-      mainVehicleStore.pauseMission().catch((err) => {
-        console.error('Failed to end mission after reaching last waypoint:', err)
+  // Read from the vehicle rather than the local copy, which another GCS may have replaced since Cockpit last fetched it
+  const targetAutoEndAtVehicleMissionEnd = (): void => {
+    const generation = ++autoEndRunGeneration
+    mainVehicleStore
+      .fetchMission(async () => undefined)
+      .then(() => {
+        if (generation !== autoEndRunGeneration) return
+        const items = [...mainVehicleStore.lastDownloadedMissionItems()].reverse()
+        autoEndMissionSeq = items.find((item) => item.command.type.startsWith('MAV_CMD_NAV_'))?.seq
+        endRunIfLastNavReached()
       })
-    }
-  )
+      .catch((err) => console.error('Failed to read the mission on the vehicle, so this run will not auto-end:', err))
+  }
 
-  // Mirror the vehicle store's own arm-transition cleanup of reached items so we re-arm detection
+  // Auto-end the run when the last navigation waypoint is reached
+  watch(() => mainVehicleStore.reachedMissionItemSequences, endRunIfLastNavReached)
+
+  // A dropped link leaves the armed state unknown, which must not cancel the auto-end of a run still in progress
   watch(
-    () => mainVehicleStore.isArmed,
-    (isNowArmed, wasPreviouslyArmed) => {
-      if (isNowArmed === true && wasPreviouslyArmed !== true) {
-        didAutoEndCurrentRun = false
-      }
+    () => mainVehicleStore.isArmed !== false && isMissionRunning.value,
+    (isRunActive) => {
+      if (isRunActive) return
+      autoEndMissionSeq = undefined
+      autoEndRunGeneration += 1
     }
   )
 
