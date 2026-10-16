@@ -89,6 +89,22 @@ const migratePointOfInterest = (poi: LegacyPointOfInterest): PointOfInterest => 
   }
 }
 
+// Migrate any legacy POIs to the current model (coordinates split into data-lake-backed sources).
+// POIs created before this feature lack `fallbackCoordinates`; those get a fresh human-friendly id
+// derived from their name (de-duplicated). POIs already in the current model keep their id.
+// ponytail: a legacy POI's id depends on list order until it is first edited, so removing an earlier
+// same-name legacy POI shifts it (`dock-2` becomes `dock`); seed the id with the legacy id if that bites.
+const migratePointsOfInterest = (rawPois: LegacyPointOfInterest[]): PointOfInterest[] => {
+  const usedIds = rawPois.filter((poi) => poi.fallbackCoordinates !== undefined).map((poi) => poi.id)
+  return rawPois.map((raw) => {
+    // Passed through untouched, so fields a newer Cockpit added survive the next edit made here.
+    if (raw.fallbackCoordinates !== undefined) return raw as PointOfInterest
+    const id = generatePointOfInterestId(raw.name, usedIds)
+    usedIds.push(id)
+    return { ...migratePointOfInterest(raw), id }
+  })
+}
+
 /**
  * Shared reactive state and actions for managing points of interest.
  */
@@ -115,30 +131,6 @@ let state: PointsOfInterestState | undefined
 
 const createState = (): PointsOfInterestState => {
   const pointsOfInterest = useBlueOsStorage<PointOfInterest[]>(pointsOfInterestKey, [])
-
-  // Migrate any legacy POIs to the current model (coordinates split into data-lake-backed sources).
-  // POIs created before this feature lack `fallbackCoordinates`; those get a fresh human-friendly id
-  // derived from their name (de-duplicated). POIs already in the current model keep their id.
-  const storedPois = pointsOfInterest.value as unknown
-  const storedPoisAreList = Array.isArray(storedPois)
-  if (!storedPoisAreList) {
-    console.warn(`[PointsOfInterest] Stored '${pointsOfInterestKey}' is not a list. Reading it as empty.`)
-  }
-  const rawPois = storedPoisAreList ? (storedPois as LegacyPointOfInterest[]) : []
-  const usedIds = rawPois.filter((poi) => poi.fallbackCoordinates !== undefined).map((poi) => poi.id)
-  const migrated = rawPois.map((raw) => {
-    const poi = migratePointOfInterest(raw)
-    if (raw.fallbackCoordinates !== undefined) return poi
-    const id = generatePointOfInterestId(poi.name, usedIds)
-    usedIds.push(id)
-    return { ...poi, id }
-  })
-
-  // Only a real migration writes back. This key is vehicle-synced, so overwriting an unrecognized
-  // value would delete the POIs of every operator of that vehicle, automatically and with no undo.
-  if (storedPoisAreList && JSON.stringify(migrated) !== JSON.stringify(storedPois)) {
-    pointsOfInterest.value = migrated
-  }
 
   // Live coordinate values mirrored from the data lake, keyed by variable id.
   const liveCoordinateValues = reactive<Record<string, number | undefined>>({})
@@ -199,8 +191,10 @@ const createState = (): PointsOfInterestState => {
   // The only place downstream code may assume a list, since this shared singleton is created during the
   // setup of every POI consumer and a throw here would take all of them down at once.
   const storedListIsReadable = computed(() => Array.isArray(pointsOfInterest.value))
+  // A legacy list can arrive at any time (a vehicle sync, or an edit from an older Cockpit), so it is
+  // migrated on every read. It is never written back, since an older Cockpit hides POIs in the current model.
   const validPointsOfInterest = computed<PointOfInterest[]>(() =>
-    storedListIsReadable.value ? pointsOfInterest.value : []
+    storedListIsReadable.value ? migratePointsOfInterest(pointsOfInterest.value as LegacyPointOfInterest[]) : []
   )
 
   watch(
@@ -268,13 +262,13 @@ const createState = (): PointsOfInterestState => {
   // The mutators go through the normalized list, so an unreadable stored value makes an edit a no-op
   // instead of a throw. Adding is the exception: the user asked for a POI, so the list is rewritten.
   const addPointOfInterest = (poi: PointOfInterest): void => {
-    pointsOfInterest.value = [...validPointsOfInterest.value, poi]
+    pointsOfInterest.value = [...(storedListIsReadable.value ? pointsOfInterest.value : []), poi]
   }
 
   const updatePointOfInterest = (id: string, update: Partial<PointOfInterest>): void => {
     const index = validPointsOfInterest.value.findIndex((poi) => poi.id === id)
     if (index === -1) return
-    pointsOfInterest.value[index] = { ...pointsOfInterest.value[index], ...update, timestamp: Date.now() }
+    pointsOfInterest.value[index] = { ...validPointsOfInterest.value[index], ...update, timestamp: Date.now() }
   }
 
   const removePointOfInterest = (id: string): void => {
