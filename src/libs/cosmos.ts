@@ -542,16 +542,12 @@ declare global {
       /**
        * Start live video streaming process with FFmpeg
        * @param firstChunk - The first video chunk blob
-       * @param recordingHash - Unique identifier for this recording
        * @param fileName - The name of the video file
-       * @param keepChunkBackup - Whether to keep raw chunks as backup (optional, default: true)
        * @returns Promise resolving to process ID and output path
        */
       startVideoRecording: (
         firstChunk: Blob,
-        recordingHash: string,
-        fileName: string,
-        keepChunkBackup?: boolean
+        fileName: string
       ) => Promise<import('@/types/video').LiveConcatProcessResult>
       /**
        * Append chunk to live video stream (pipes to FFmpeg stdin)

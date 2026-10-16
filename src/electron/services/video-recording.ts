@@ -44,16 +44,6 @@ const createTempDirectory = async (prefix: string): Promise<string> => {
 }
 
 /**
- * Write a blob to a file (via array buffer)
- * @param {Uint8Array} blobData - The blob data as Uint8Array
- * @param {string} filePath - Path where to write the file
- */
-const writeBlobToFile = async (blobData: Uint8Array, filePath: string): Promise<void> => {
-  await fs.mkdir(dirname(filePath), { recursive: true })
-  await fs.writeFile(filePath, blobData)
-}
-
-/**
  * A path in `dir` for `fileName` that no file uses yet. Processing a recording's chunks again, or importing a zip of a
  * video already in the library, yields the name of the video already there, so a taken name gets a number before its
  * recording hash instead of being written over.
@@ -79,21 +69,11 @@ const unusedVideoPath = async (dir: string, fileName: string): Promise<string> =
 /**
  * Start a live video streaming process with FFmpeg
  * @param {Uint8Array} firstChunkData - The first video chunk data
- * @param {string} recordingHash - Unique identifier for this recording
  * @param {string} fileName - The name of the video file
- * @param {boolean} keepChunkBackup - Whether to keep raw chunks as backup (default: true)
  * @returns {Promise<LiveConcatProcessResult>} Promise that resolves to the process information
  */
-const startVideoRecording = async (
-  firstChunkData: Uint8Array,
-  recordingHash: string,
-  fileName: string,
-  keepChunkBackup = true
-): Promise<LiveConcatProcessResult> => {
+const startVideoRecording = async (firstChunkData: Uint8Array, fileName: string): Promise<LiveConcatProcessResult> => {
   const processId = uuid()
-
-  // Create temporary directory for chunk backups (if enabled)
-  const tempDir = await createTempDirectory(`cockpit_video_recording_${recordingHash}`)
 
   // Get video folder path and construct output path
   const videosPath = join(getCockpitFolderPath(), 'videos')
@@ -158,12 +138,6 @@ const startVideoRecording = async (
     activeStreamProcesses.delete(processId)
   })
 
-  // Save first chunk as backup if enabled
-  if (keepChunkBackup) {
-    const firstChunkPath = join(tempDir, 'chunk_0000.webm')
-    await writeBlobToFile(firstChunkData, firstChunkPath)
-  }
-
   // Write first chunk to FFmpeg stdin
   if (ffmpegProcess.stdin) {
     ffmpegProcess.stdin.write(Buffer.from(firstChunkData), (err) => {
@@ -180,9 +154,7 @@ const startVideoRecording = async (
     id: processId,
     ffmpegProcess,
     outputPath,
-    tempDir,
     isFinalized: false,
-    chunkBackupEnabled: keepChunkBackup,
   }
 
   activeStreamProcesses.set(processId, streamProcess)
@@ -207,12 +179,6 @@ const appendChunkToVideoRecording = async (
   }
 
   try {
-    // Save chunk as backup if enabled
-    if (process.chunkBackupEnabled) {
-      const chunkPath = join(process.tempDir, `chunk_${chunkNumber.toString().padStart(4, '0')}.webm`)
-      await writeBlobToFile(chunkData, chunkPath)
-    }
-
     // Write chunk directly to FFmpeg stdin
     if (process.ffmpegProcess.stdin && !process.ffmpegProcess.stdin.destroyed) {
       return new Promise((resolve, reject) => {
@@ -493,7 +459,6 @@ const buildExtractionResult = async (extractedFiles: string[], tempDir: string):
   return {
     chunkPaths: validChunks,
     assFilePath: assFile,
-    hash,
     fileName,
     tempDir,
   }
@@ -814,18 +779,15 @@ export const setupVideoRecordingService = (): void => {
   /**
    * Start live video streaming with FFmpeg
    */
-  ipcMain.handle(
-    'start-video-recording',
-    async (_, firstChunkData: Uint8Array, recordingHash: string, fileName: string, keepChunkBackup?: boolean) => {
-      try {
-        const result = await startVideoRecording(firstChunkData, recordingHash, fileName, keepChunkBackup)
-        return result
-      } catch (error) {
-        console.error('Error starting live video streaming:', error)
-        throw error
-      }
+  ipcMain.handle('start-video-recording', async (_, firstChunkData: Uint8Array, fileName: string) => {
+    try {
+      const result = await startVideoRecording(firstChunkData, fileName)
+      return result
+    } catch (error) {
+      console.error('Error starting live video streaming:', error)
+      throw error
     }
-  )
+  })
 
   /**
    * Append chunk to live video stream (pipes to FFmpeg stdin)

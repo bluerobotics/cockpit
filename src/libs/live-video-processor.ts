@@ -172,12 +172,7 @@ export class LiveVideoProcessor {
   private async initializeOutputFile(firstChunk: Blob): Promise<void> {
     // Start FFmpeg streaming process with the first chunk
     // The main process spawns FFmpeg with stdin input and fragmented MP4 output
-    this.concatProcess = await window.electronAPI?.startVideoRecording(
-      firstChunk,
-      this.recordingHash,
-      this.fileName,
-      this.keepRawVideoChunksAsBackup
-    )
+    this.concatProcess = await window.electronAPI?.startVideoRecording(firstChunk, this.fileName)
 
     console.log('FFmpeg streaming process initialized with first chunk')
   }
@@ -253,7 +248,7 @@ export class LiveVideoProcessor {
 
       // Extract ZIP(s) and get chunk information
       const extractionResult: ZipExtractionResult = await window.electronAPI.extractVideoChunksZips(zipFilePaths)
-      const { chunkPaths, assFilePath, hash, fileName, tempDir } = extractionResult
+      const { chunkPaths, assFilePath, fileName, tempDir } = extractionResult
 
       console.log(`Extracted ${chunkPaths.length} chunks from ${zipFilePaths.length} ZIP file(s)`)
       onProgress?.(30, 'Starting video processing...')
@@ -262,13 +257,8 @@ export class LiveVideoProcessor {
       const firstChunkData = await window.electronAPI.readChunkFile(chunkPaths[0])
       const firstChunkBlob = new Blob([new Uint8Array(firstChunkData)], { type: 'video/webm' })
 
-      // Start FFmpeg streaming process with first chunk (no backup needed since ZIP is the backup)
-      const { id: processId, outputPath } = await window.electronAPI.startVideoRecording(
-        firstChunkBlob,
-        hash,
-        fileName,
-        false // Don't keep chunk backup - the ZIP is the backup
-      )
+      // Start FFmpeg streaming process with first chunk
+      const { id: processId, outputPath } = await window.electronAPI.startVideoRecording(firstChunkBlob, fileName)
 
       console.log(`Started streaming process ${processId}`)
       console.log(`Output path: ${outputPath}`)
