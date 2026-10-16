@@ -125,7 +125,7 @@
                       </p>
                     </td>
                     <td>
-                      <p class="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left font-mono">
+                      <p class="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-center font-mono">
                         {{ displayedValue(item) }}
                       </p>
                     </td>
@@ -264,7 +264,7 @@ const tableHeaders = [
   { title: 'Name', align: 'start', key: 'name', width: '260px' },
   { title: 'Type', align: 'center', key: 'type', width: '78px' },
   { title: 'Source', align: 'center', key: 'source', width: '118px' },
-  { title: 'Value', align: 'start', key: 'value', width: '160px' },
+  { title: 'Value', align: 'center', key: 'value', width: '160px', sortable: false },
   { title: 'Unit', align: 'center', key: 'unit', width: '52px' },
   { title: 'Actions', align: 'end', key: 'actions', width: '56px' },
   {
@@ -372,9 +372,9 @@ const displayedValue = (item: DataLakeVariable): string => {
   const text =
     converted === undefined ? parsedCurrentValue(item.id) : Number(converted.value.toPrecision(10)).toString()
   const value = converted?.value ?? currentValues.value[item.id]
-  // A leading figure-space keeps digits from shifting when the value oscillates around zero.
-  if (typeof value !== 'number' || text === '' || text.startsWith('-')) return text
-  return `\u2007${text}`
+  // Figure-spaces keep digits centered and from shifting when the value oscillates around zero.
+  if (typeof value !== 'number' || text === '') return text
+  return `${text.startsWith('-') ? '' : '\u2007'}${text}\u2007`
 }
 
 const displayedUnit = (item: DataLakeVariable): string => {
