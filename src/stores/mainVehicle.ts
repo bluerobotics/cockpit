@@ -568,6 +568,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     return inflightMissionFetch
   }
 
+  /**
+   * Mission items exactly as the vehicle numbers them, from the last mission download
+   * @returns { Message.MissionItemInt[] } Raw mission items, empty before the first download
+   */
+  function lastDownloadedMissionItems(): Message.MissionItemInt[] {
+    return mainVehicle.value?._currentMavlinkMissionItemsOnVehicle ?? []
+  }
+
   // Prevent multiple home fetches from happening at the same time
   let inflightHomeFetch: Promise<Waypoint> | undefined
   // Bumped when a newer claim about home lands (a set-home ack, or the link dropping) so a fetch that started
@@ -1312,6 +1320,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     sendGcsHeartbeat,
     configure,
     fetchMission,
+    lastDownloadedMissionItems,
     uploadMission,
     clearMissions,
     uploadFence,
