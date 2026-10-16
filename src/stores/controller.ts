@@ -240,6 +240,7 @@ export const useControllerStore = defineStore('controller', () => {
       if (event.has(key)) continue
       const model = joysticks.value.get(key)?.model
       joysticks.value.delete(key)
+      heldButtonsActions.delete(key)
       console.info(`Joystick ${key} (${model ?? 'Unknown model'}) disconnected.`)
       if (joysticks.value.size === 0) {
         console.warn('Disabling joystick forwarding.')
@@ -310,12 +311,22 @@ export const useControllerStore = defineStore('controller', () => {
     // If joystick forwarding is disabled, disable the callback processing
     if (!enableForwarding.value) return
 
+    // A throw here would unwind the joystick manager's polling loop and stop it for good, so catch it like the callbacks
+    let modifierKeyId: CockpitModifierKeyOption
+    try {
+      modifierKeyId = activeModifierKeyId(currentState, protocolMapping.value)
+      logButtonPressesAndReleases(event.index, currentState, protocolMapping.value, modifierKeyId)
+    } catch (error) {
+      console.error('Error while processing joystick state event:', error)
+      return
+    }
+
     for (const callback of updateCallbacks.value) {
       try {
         callback(
           currentState,
           protocolMapping.value,
-          activeButtonActions(currentState, protocolMapping.value),
+          activeButtonActions(currentState, protocolMapping.value, modifierKeyId),
           actionsJoystickConfirmRequired.value
         )
       } catch (error) {
@@ -324,22 +335,70 @@ export const useControllerStore = defineStore('controller', () => {
     }
   }
 
-  const activeButtonActions = (
+  const modifierKeyActionsJson = Object.values(modifierKeyActions).map((a) => JSON.stringify(a))
+  const isModifierKeyAction = (action: ProtocolAction): boolean =>
+    modifierKeyActionsJson.includes(JSON.stringify(action))
+
+  const activeModifierKeyId = (
     joystickState: JoystickState,
     mapping: JoystickProtocolActionsMapping
-  ): ProtocolAction[] => {
+  ): CockpitModifierKeyOption => {
     let modifierKeyId = modifierKeyActions.regular.id
 
     Object.entries(mapping.buttonsCorrespondencies.regular).forEach(([key, value]) => {
       const buttonActive = (joystickState.buttons[Number(key)] ?? 0) > 0.5
-      const isModifier = Object.values(modifierKeyActions)
-        .map((a) => JSON.stringify(a))
-        .includes(JSON.stringify(value.action))
+      const isModifier = isModifierKeyAction(value.action)
       if (buttonActive && isModifier) {
         modifierKeyId = value.action.id
       }
     })
 
+    return modifierKeyId as CockpitModifierKeyOption
+  }
+
+  // Action each held button is forwarding, per joystick, so a modifier change mid-hold logs the switch and the release
+  // names what was really being sent
+  const heldButtonsActions = new Map<number, Map<number, ProtocolAction>>()
+  watch(enableForwarding, (enabled) => {
+    if (!enabled) heldButtonsActions.clear()
+  })
+
+  const logButtonPressesAndReleases = (
+    joystickIndex: number,
+    joystickState: JoystickState,
+    mapping: JoystickProtocolActionsMapping,
+    modifierKeyId: CockpitModifierKeyOption
+  ): void => {
+    const heldActions = heldButtonsActions.get(joystickIndex) ?? new Map<number, ProtocolAction>()
+    heldButtonsActions.set(joystickIndex, heldActions)
+
+    joystickState.buttons.forEach((value, idx) => {
+      const heldAction = heldActions.get(idx)
+      let action: ProtocolAction | undefined
+      if ((value ?? 0) > 0.5) {
+        const regularAction = mapping.buttonsCorrespondencies.regular[idx]?.action
+        action =
+          regularAction && isModifierKeyAction(regularAction)
+            ? regularAction
+            : mapping.buttonsCorrespondencies[modifierKeyId][idx]?.action
+        if (action?.id === otherAvailableActions.no_function.id) action = undefined
+      }
+      if (action?.id === heldAction?.id && action?.protocol === heldAction?.protocol) return
+      if (heldAction !== undefined) {
+        heldActions.delete(idx)
+        logUserAction(`Released joystick button B${idx} (${heldAction.name}, ${heldAction.protocol})`)
+      }
+      if (action === undefined) return
+      heldActions.set(idx, action)
+      logUserAction(`Pressed joystick button B${idx} (${action.name}, ${action.protocol})`)
+    })
+  }
+
+  const activeButtonActions = (
+    joystickState: JoystickState,
+    mapping: JoystickProtocolActionsMapping,
+    modifierKeyId: CockpitModifierKeyOption
+  ): ProtocolAction[] => {
     const modKeyAction = modifierKeyActions[modifierKeyId as CockpitModifierKeyOption]
 
     const activeActions = joystickState.buttons
