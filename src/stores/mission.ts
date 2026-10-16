@@ -736,6 +736,9 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   // Only runs started from Cockpit are auto-ended, so a mission started from the RC or another GCS keeps its own ending
+  // ponytail: the mark identifies the mission rather than the run, so after a relaunch the same mission restarted from
+  // the RC or another GCS while Cockpit was closed is still auto-ended; a per-run id from the vehicle would lift this
+  const autoEndMissionMark = useStorage<string | null>('cockpit-mission-auto-end-pending', null)
   let autoEndMissionSeq: number | undefined = undefined
   let autoEndRunGeneration = 0
 
@@ -778,6 +781,7 @@ export const useMissionStore = defineStore('mission', () => {
     if (autoEndMissionSeq === undefined || !isMissionRunning.value) return
     if (!mainVehicleStore.reachedMissionItemSequences.includes(autoEndMissionSeq)) return
 
+    autoEndMissionMark.value = null
     autoEndMissionSeq = undefined
     mainVehicleStore.pauseMission().catch((err) => {
       console.error('Failed to end mission after reaching last waypoint:', err)
@@ -785,7 +789,7 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   // Read from the vehicle rather than the local copy, which another GCS may have replaced since Cockpit last fetched it
-  const targetAutoEndAtVehicleMissionEnd = (): void => {
+  const targetAutoEndAtVehicleMissionEnd = (relaunchMark?: string): void => {
     const generation = ++autoEndRunGeneration
     mainVehicleStore
       .fetchMission(async () => undefined)
@@ -799,6 +803,11 @@ export const useMissionStore = defineStore('mission', () => {
           (item) => item.command.type.startsWith('MAV_CMD_DO_JUMP') && item.seq > (lastNavSeq ?? Infinity)
         )
         autoEndMissionSeq = loopsAfterLastNav ? undefined : lastNavSeq
+        const target = items.find((item) => item.seq === autoEndMissionSeq)
+        const mark = target ? `${items.length}:${target.seq}:${target.x}:${target.y}` : null
+        // A relaunch only resumes the run when the vehicle still holds the mission this Cockpit started
+        if (relaunchMark !== undefined && mark !== relaunchMark) autoEndMissionSeq = undefined
+        autoEndMissionMark.value = autoEndMissionSeq === undefined ? null : mark
         endRunIfLastNavReached()
       })
       .catch((err) => console.error('Failed to read the mission on the vehicle, so this run will not auto-end:', err))
@@ -807,11 +816,19 @@ export const useMissionStore = defineStore('mission', () => {
   // Auto-end the run when the last navigation waypoint is reached
   watch(() => mainVehicleStore.reachedMissionItemSequences, endRunIfLastNavReached)
 
-  // A dropped link leaves the armed state unknown, which must not cancel the auto-end of a run still in progress
+  // An unknown armed state (dropped link) or mode (before the first heartbeat after a restart) must not cancel the run
   watch(
-    () => mainVehicleStore.isArmed !== false && isMissionRunning.value,
+    () =>
+      mainVehicleStore.mode === undefined ? undefined : mainVehicleStore.isArmed !== false && isMissionRunning.value,
     (isRunActive) => {
-      if (isRunActive) return
+      if (isRunActive === undefined) return
+      if (isRunActive) {
+        if (autoEndMissionMark.value !== null && autoEndMissionSeq === undefined) {
+          targetAutoEndAtVehicleMissionEnd(autoEndMissionMark.value)
+        }
+        return
+      }
+      autoEndMissionMark.value = null
       autoEndMissionSeq = undefined
       autoEndRunGeneration += 1
     }
