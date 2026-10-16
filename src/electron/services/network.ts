@@ -209,7 +209,7 @@ const checkTcpPortOpen = (host: string, port: number, timeoutMs: number): Promis
 const abortInFlightTcpProbes = (): void => {
   if (inFlightProbeSockets.size === 0) return
   console.log(`[VehicleDiscovery] Aborting ${inFlightProbeSockets.size} in-flight TCP probe socket(s).`)
-  for (const socket of inFlightProbeSockets) socket.destroy()
+  for (const socket of inFlightProbeSockets) socket.destroy(new Error('aborted'))
   inFlightProbeSockets.clear()
 }
 
