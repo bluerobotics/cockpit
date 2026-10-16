@@ -192,6 +192,8 @@ const isColorPickerOpen = ref(false)
 
 // Snapshot of the POI as it was when the dialog opened, used to revert unsaved live-preview edits.
 const originalPoi = ref<PointOfInterest | null>(null)
+// Reverting writes the POI back, which would save an untouched legacy POI in the current model.
+let livePreviewChangedPoi = false
 
 // Flag to prevent watcher from firing during dialog initialization
 const isInitializingDialog = ref(false)
@@ -383,6 +385,7 @@ watch(
     if (coordinateFields) Object.assign(update, coordinateFields)
 
     updatePointOfInterest(editingPoiId.value, update)
+    livePreviewChangedPoi = true
   },
   { deep: true }
 )
@@ -395,6 +398,7 @@ watch(
 const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?: PointOfInterest): void => {
   // Set initialization flag to prevent watcher from firing during setup
   isInitializingDialog.value = true
+  livePreviewChangedPoi = false
 
   // Reset icon picker state
   isIconPickerOpen.value = false
@@ -478,9 +482,10 @@ const closeDialog = (logClose = true): void => {
   if (!poiDialogVisible.value) return
   if (logClose) logUserAction('Closed the point-of-interest dialog')
   // Revert changes if user was editing an existing POI and cancels without saving
-  if (editingPoiId.value && originalPoi.value) {
+  if (editingPoiId.value && originalPoi.value && livePreviewChangedPoi) {
     updatePointOfInterest(editingPoiId.value, originalPoi.value)
   }
+  livePreviewChangedPoi = false
 
   poiDialogVisible.value = false
   editingPoiId.value = null
