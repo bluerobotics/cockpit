@@ -9,6 +9,7 @@ import {
   createDataLakeVariable,
   DataLakeVariableType,
   deleteDataLakeVariable,
+  getDataLakeVariableLastUpdateTimestamp,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
@@ -346,6 +347,27 @@ export const getAllTransformingFunctions = (): TransformingFunction[] => {
  */
 export const isCompoundDataLakeVariable = (id: string): boolean => {
   return globalTransformingFunctions.some((func) => func.id === id)
+}
+
+/**
+ * When a data lake variable was last current. A compound variable is only as current as the oldest of the variables
+ * its expression reads, since it keeps being evaluated from the others after one of them stops updating.
+ * @param {string} id - ID of the variable
+ * @param {Set<string>} visitedIds - Compound variables already walked, so a cyclic expression does not recurse forever
+ * @returns {number | undefined} Timestamp (from performance.now()), or undefined when a source was never set
+ */
+export const getOldestSourceUpdateTimestamp = (id: string, visitedIds = new Set<string>()): number | undefined => {
+  const func = globalTransformingFunctions.find((f) => f.id === id)
+  if (func === undefined || visitedIds.has(id)) return getDataLakeVariableLastUpdateTimestamp(id)
+  visitedIds.add(id)
+
+  // ponytail: an input that is set once and never again (a constant, a parameter) makes the whole variable read as
+  // stale; telling those apart needs the data lake to know which variables are streamed.
+  const timestamps = findDataLakeVariablesIdsInString(func.expression).map((inputId) =>
+    getOldestSourceUpdateTimestamp(inputId, visitedIds)
+  )
+  if (timestamps.some((timestamp) => timestamp === undefined)) return undefined
+  return Math.min(...(timestamps as number[]))
 }
 
 /**
