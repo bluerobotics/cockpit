@@ -697,6 +697,7 @@ export const useMissionStore = defineStore('mission', () => {
   }
 
   // Only runs started from Cockpit are auto-ended, so a mission started from the RC or another GCS keeps its own ending
+  const isAutoEndPending = useStorage('cockpit-mission-auto-end-pending', false)
   let autoEndMissionSeq: number | undefined = undefined
   let autoEndRunGeneration = 0
 
@@ -733,6 +734,7 @@ export const useMissionStore = defineStore('mission', () => {
   const executeMissionOnVehicle = async (): Promise<void> => {
     mainVehicleStore.clearReachedMissionItems()
     await mainVehicleStore.startMission()
+    isAutoEndPending.value = true
     targetAutoEndAtVehicleMissionEnd()
     // Re-apply the cruise speed on every start/resume so it is not lost after a pause cycle.
     await applyCruiseSpeed().catch((err) => console.error('Failed to apply cruise speed on mission start:', err))
@@ -742,6 +744,7 @@ export const useMissionStore = defineStore('mission', () => {
     if (autoEndMissionSeq === undefined || !isMissionRunning.value) return
     if (!mainVehicleStore.reachedMissionItemSequences.includes(autoEndMissionSeq)) return
 
+    isAutoEndPending.value = false
     autoEndMissionSeq = undefined
     mainVehicleStore.pauseMission().catch((err) => {
       console.error('Failed to end mission after reaching last waypoint:', err)
@@ -765,11 +768,17 @@ export const useMissionStore = defineStore('mission', () => {
   // Auto-end the run when the last navigation waypoint is reached
   watch(() => mainVehicleStore.reachedMissionItemSequences, endRunIfLastNavReached)
 
-  // A dropped link leaves the armed state unknown, which must not cancel the auto-end of a run still in progress
+  // An unknown armed state (dropped link) or mode (before the first heartbeat after a restart) must not cancel the run
   watch(
-    () => mainVehicleStore.isArmed !== false && isMissionRunning.value,
+    () =>
+      mainVehicleStore.mode === undefined ? undefined : mainVehicleStore.isArmed !== false && isMissionRunning.value,
     (isRunActive) => {
-      if (isRunActive) return
+      if (isRunActive === undefined) return
+      if (isRunActive) {
+        if (isAutoEndPending.value && autoEndMissionSeq === undefined) targetAutoEndAtVehicleMissionEnd()
+        return
+      }
+      isAutoEndPending.value = false
       autoEndMissionSeq = undefined
       autoEndRunGeneration += 1
     }
