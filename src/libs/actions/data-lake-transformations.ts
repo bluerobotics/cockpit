@@ -148,7 +148,10 @@ const setupTransformingFunctionsListeners = (): void => {
         setDataLakeVariableData(func.id, getExpressionValue(func))
         clearTimeout(initialEvaluationTimeouts[func.id])
       } catch (error) {
-        console.error(`Error setting initial value for transforming function '${func.id}'. Error: ${error}`)
+        // The first attempt runs inside every rebuild, so its error is left to the retry instead of logged per rebuild.
+        if (timesTried > 0) {
+          console.error(`Error setting initial value for transforming function '${func.id}'. Error: ${error}`)
+        }
         if (timesTried < 10) {
           initialEvaluationTimeouts[func.id] = setTimeout(() => performInitialEvaluation(timesTried + 1), 1000)
         } else {
@@ -156,7 +159,7 @@ const setupTransformingFunctionsListeners = (): void => {
         }
       }
     }
-    initialEvaluationTimeouts[func.id] = setTimeout(performInitialEvaluation, 1000)
+    performInitialEvaluation()
 
     const dataLakeVariablesInExpression = getDataLakeVariableIdFromInput(func.expression)
     if (dataLakeVariablesInExpression) {
