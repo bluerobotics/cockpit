@@ -314,6 +314,15 @@ export const getVehicleName = async (vehicleAddress: string): Promise<string> =>
   }
 }
 
+export const getHardwareId = async (vehicleAddress: string): Promise<string> => {
+  try {
+    const url = `${protocol}//${vehicleAddress}/helper/v1.0/hardware_id`
+    return await ky.get(url, { timeout: defaultTimeout }).json<string>()
+  } catch (error) {
+    throw new Error(`Could not get the BlueOS hardware ID. ${error}`)
+  }
+}
+
 export const getCpuTempCelsius = async (vehicleAddress: string): Promise<number> => {
   try {
     const url = `${protocol}//${vehicleAddress}/system-information/system/temperature`
