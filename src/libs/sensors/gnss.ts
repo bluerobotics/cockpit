@@ -371,6 +371,7 @@ export const gnssVariablesForDevice = (device: GnssDeviceInfo): DataLakeVariable
     type: field.type,
     description: field.description,
     unit: field.unit,
+    source: 'GNSS receiver',
   }))
 
 /**

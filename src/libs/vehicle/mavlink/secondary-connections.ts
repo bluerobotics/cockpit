@@ -93,6 +93,7 @@ const setIsReceivingDataVariable = (systemId: number, isReceiving: boolean): voi
       name: `Receiving data from vehicle ${systemId}`,
       type: 'boolean',
       description: `Whether data from the vehicle with system ID ${systemId} is currently arriving, so widgets can tell live values from the last ones received.`,
+      source: 'MAVLink',
     })
   }
   setDataLakeVariableData(id, isReceiving)
