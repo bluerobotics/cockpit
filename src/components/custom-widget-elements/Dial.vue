@@ -9,7 +9,7 @@
       <div
         v-bind="tooltipProps"
         id="dial"
-        class="flex items-center relative w-auto"
+        class="flex items-center relative w-auto select-none"
         :style="{ justifyContent: miniWidget.options.layout?.align }"
         :class="
           widgetStore.elementToShowOnDrawer?.hash === miniWidget.hash && widgetStore.editingMode

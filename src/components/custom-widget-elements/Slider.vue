@@ -1,6 +1,6 @@
 <template>
   <div
-    class="slider-container"
+    class="slider-container select-none"
     :class="
       widgetStore.elementToShowOnDrawer?.hash === miniWidget.hash && widgetStore.editingMode
         ? 'bg-[#00000010] '

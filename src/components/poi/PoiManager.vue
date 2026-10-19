@@ -665,6 +665,7 @@ input[type='color']::-moz-color-swatch {
   padding: 8px 4px;
   border-radius: 4px;
   cursor: pointer;
+  user-select: none;
   background-color: rgba(255, 255, 255, 0.1);
   text-align: center;
 }

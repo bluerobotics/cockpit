@@ -1,6 +1,6 @@
 <template>
   <div
-    class="label-container"
+    class="label-container select-none"
     :class="
       widgetStore.elementToShowOnDrawer?.hash === miniWidget.hash && widgetStore.editingMode
         ? 'bg-[#00000010] '

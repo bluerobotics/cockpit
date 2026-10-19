@@ -401,6 +401,7 @@ onUnmounted(() => {
   flex-direction: column;
   padding: 6px 10px;
   cursor: pointer;
+  user-select: none;
 }
 
 .dl-expression-option:hover,
