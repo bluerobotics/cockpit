@@ -336,6 +336,7 @@ onBeforeUnmount(() => {
   width: 100%;
   padding-left: 5px;
   cursor: pointer;
+  user-select: none;
 }
 .panel-header-expanded {
   display: flex;
@@ -345,6 +346,7 @@ onBeforeUnmount(() => {
   width: 100%;
   padding-left: 5px;
   cursor: pointer;
+  user-select: none;
 }
 .content-expand-collapse {
   width: 100%;

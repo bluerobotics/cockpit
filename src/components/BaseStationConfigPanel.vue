@@ -1505,6 +1505,7 @@ const snapBearingToMission = (): void => {
 .config-text-btn {
   text-align: center;
   cursor: pointer;
+  user-select: none;
 }
 
 /* Eyedropper hijacks the v-menu's outside-click and the OS picker UX is shaky on web; drop it. */

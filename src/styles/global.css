@@ -69,6 +69,20 @@ select:focus {
     user-select: none;
 }
 
+/* Hand-rolled clickable elements do not get Vuetify's own `user-select: none`, so pressing and dragging off one, or
+   long-pressing it on a touchscreen, left part of its label highlighted. `:where()` keeps it at zero specificity, so
+   `select-text` and the rule below still win. Clickables that set their cursor in scoped CSS opt out there instead. */
+@layer base {
+    :where(.cursor-pointer:not(input, textarea), [role='button']) {
+        user-select: none;
+    }
+    /* iOS Safari will not let the user type into a field under an unselectable ancestor unless it opts back in */
+    input,
+    textarea {
+        user-select: text;
+    }
+}
+
 /* Leaflet pads the expanded layers control asymmetrically (6px left, 10px right). Even it out on the controls
    that carry a full-width action row, so the button sits equidistant from both panel edges. */
 .cockpit-leaflet-layers-with-action.leaflet-control-layers-expanded {

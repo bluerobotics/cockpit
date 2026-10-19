@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="visible && selectedPoi"
-      class="poi-popup-menu fixed z-[99999] flex flex-col rounded-md text-white"
+      class="poi-popup-menu fixed z-[99999] flex flex-col rounded-md text-white select-none"
       :style="[
         interfaceStore.globalGlassMenuStyles,
         { background: '#333333EE', border: '1px solid #FFFFFF44' },
