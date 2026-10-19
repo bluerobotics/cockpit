@@ -28,6 +28,7 @@
                 :items="availableDataLakeNumberVariables"
                 item-title="name"
                 item-value="id"
+                :value-comparator="isSameDataLakeVariableId"
                 label="Data Lake variable"
                 hint="Select a variable to be plotted"
                 persistent-hint
@@ -209,6 +210,8 @@ import {
   DataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableData,
+  getDataLakeVariableInfo,
+  isSameDataLakeVariableId,
   listenDataLakeVariable,
   listenToDataLakeVariablesInfoChanges,
   unlistenDataLakeVariable,
@@ -452,7 +455,7 @@ const renderCanvas = (): void => {
 
     // Draw the title if enabled
     if (widget.value.options.showTitle && widget.value.options.dataLakeVariableId) {
-      const variable = availableDataLakeVariables.value.find((v) => v.id === widget.value.options.dataLakeVariableId)
+      const variable = getDataLakeVariableInfo(widget.value.options.dataLakeVariableId)
       if (variable) {
         drawText(ctx, variable.name, 10, 26)
         ctx.textBaseline = 'bottom'

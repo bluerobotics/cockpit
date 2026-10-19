@@ -169,7 +169,7 @@
                     <td>
                       <div class="flex items-center justify-center">
                         <v-checkbox
-                          :model-value="recordedVariableIds.includes(item.id)"
+                          :model-value="isRecorded(item.id)"
                           density="compact"
                           hide-details
                           color="white"
@@ -223,6 +223,7 @@ import {
   deleteDataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableData,
+  isSameDataLakeVariableId,
   listenDataLakeVariable,
   listenToDataLakeVariablesInfoChanges,
   unlistenDataLakeVariable,
@@ -274,11 +275,13 @@ const tableHeaders = [
     key: 'record',
     width: '56px',
     sortable: true,
-    value: (item: DataLakeVariableWithSource) => (recordedVariableIds.value.includes(item.id) ? 1 : 0),
+    value: (item: DataLakeVariableWithSource) => (isRecorded(item.id) ? 1 : 0),
   },
 ] as const
 
 const recordedVariableIds = ref<string[]>([...dataLakeLogger.recordedVariableIds])
+const isRecorded = (id: string): boolean =>
+  recordedVariableIds.value.some((recordedId) => isSameDataLakeVariableId(recordedId, id))
 
 const handleRecordToggle = (variableId: string, recorded: boolean | null): void => {
   logUserAction(`${recorded ? 'Enabled' : 'Disabled'} recording of data-lake variable '${variableId}'`)
@@ -488,7 +491,7 @@ const deleteVariable = (id: string): void => {
   }
 
   if (isCompoundVariable(id)) {
-    const func = getAllTransformingFunctions().find((f) => f.id === id)
+    const func = getAllTransformingFunctions().find((f) => isSameDataLakeVariableId(f.id, id))
     if (func) {
       logUserAction(`Deleted compound variable '${id}'`)
       deleteTransformingFunction(func)
@@ -521,7 +524,7 @@ const editCompoundVariable = (id: string): void => {
     return
   }
 
-  const func = getAllTransformingFunctions().find((f) => f.id === id)
+  const func = getAllTransformingFunctions().find((f) => isSameDataLakeVariableId(f.id, id))
   if (func) {
     logUserAction(`Opened edit dialog for compound variable '${id}'`)
     functionBeingEdited.value = func

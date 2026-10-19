@@ -1,15 +1,20 @@
 import { expect, test, vi } from 'vitest'
 
 import { type TransformingFunction } from '@/libs/actions/data-lake-transformations'
+import { type DataLakeVariable } from '@/types/data-lake'
 
 const transformingFunctionsKey = 'cockpit-transforming-functions'
+const persistentVariablesKey = 'cockpit-persistent-data-lake-variables'
 
 // A function stored by a Cockpit version that did not record who owned it, plus one the user actually made.
 const storage: Record<string, unknown> = {
   [transformingFunctionsKey]: [
     { id: 'camera-zoom', name: 'Camera Zoom', type: 'number', expression: '1' },
     { id: 'user/compound/mine', name: 'Mine', type: 'number', expression: '2' },
+    // A user variable and a compound variable an older Cockpit kept apart, whose ids only differ by the slash.
+    { id: 'user/compound-twin', name: 'Compound twin', type: 'number', expression: '4' },
   ],
+  [persistentVariablesKey]: [{ id: '/user/compound-twin', name: 'Variable twin', type: 'number', persistent: true }],
 }
 
 vi.mock('@/libs/settings-management', () => ({
@@ -87,4 +92,21 @@ test('what is recorded reaches the data lake variable the page reads, which is w
   // No control may write to a computed variable, however changeable the page considers it.
   expect(isCompoundDataLakeVariable('camera-zoom')).toBe(true)
   expect(isCompoundDataLakeVariable('camera-zoom-speed')).toBe(false)
+})
+
+test('a compound variable never takes over a user variable whose id only differs from it by the slash', async () => {
+  const { createTransformingFunction, isCompoundDataLakeVariable } = await import(
+    '@/libs/actions/data-lake-transformations'
+  )
+  const { getDataLakeVariableInfo } = await import('@/libs/actions/data-lake')
+
+  // Saving rebuilds every function's variable, which is where a twin used to take the user variable down with it.
+  createTransformingFunction('user/compound/another', 'Another', 'number', '5')
+  expect(() => createTransformingFunction('//user/compound-twin', 'Twin', 'number', '7')).toThrow()
+
+  expect(getDataLakeVariableInfo('user/compound-twin')?.name).toBe('Variable twin')
+  expect(isCompoundDataLakeVariable('/user/compound-twin')).toBe(false)
+  const storedVariableIds = (storage[persistentVariablesKey] as DataLakeVariable[]).map((variable) => variable.id)
+  expect(storedVariableIds).toContain('/user/compound-twin')
+  expect(storedFunction('user/compound-twin')).toMatchObject({ name: 'Compound twin', expression: '4' })
 })
