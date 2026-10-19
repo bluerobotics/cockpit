@@ -12,7 +12,13 @@ const setVariable = (id: string, name: string, value: string | number, getUnit?:
   if (!validVariableIdRegex.test(id)) return
 
   if (getDataLakeVariableInfo(id) === undefined) {
-    createDataLakeVariable({ id, name, type: typeof value === 'string' ? 'string' : 'number', unit: getUnit?.() })
+    createDataLakeVariable({
+      id,
+      name,
+      type: typeof value === 'string' ? 'string' : 'number',
+      unit: getUnit?.(),
+      source: 'MAVLink',
+    })
   }
   setDataLakeVariableData(id, value)
 }

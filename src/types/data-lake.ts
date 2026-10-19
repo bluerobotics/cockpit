@@ -4,6 +4,11 @@
 export type DataLakeVariableType = 'string' | 'number' | 'boolean'
 
 /**
+ * Where the value of a data lake variable comes from, for the variables Cockpit relays from outside of itself
+ */
+export type DataLakeVariableSource = 'BlueOS' | 'Generic WebSocket' | 'GNSS receiver' | 'Joystick' | 'MAVLink'
+
+/**
  * A configuration for a Data Lake variable
  */
 export interface DataLakeVariable {
@@ -45,6 +50,10 @@ export interface DataLakeVariable {
    * this is assumed when absent, and the few places that create one on the user's behalf set it to false
    */
   systemOwned?: boolean
+  /**
+   * Where the value comes from, when Cockpit relays it from outside of itself rather than producing it
+   */
+  source?: DataLakeVariableSource
 }
 
 /**

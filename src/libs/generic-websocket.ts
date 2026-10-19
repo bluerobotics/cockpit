@@ -165,6 +165,7 @@ const injectValue = (path: string[], value: string | number | boolean, typeIfNew
       name: variableName,
       type: typeIfNew,
       description: 'Variable received from generic WebSocket connection',
+      source: 'Generic WebSocket',
     })
     variableInfo = getDataLakeVariableInfo(variableId)
   }

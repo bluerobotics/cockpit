@@ -162,7 +162,7 @@ const setupJoystickAxesResources = (): void => {
   const commonVariableConfig = { type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }
 
   for (const axis of joystickAxisConfig) {
-    createDataLakeVariable({ id: axis.inputId, name: axis.name, ...commonVariableConfig }, 0)
+    createDataLakeVariable({ id: axis.inputId, name: axis.name, source: 'Joystick', ...commonVariableConfig }, 0)
 
     try {
       ensureCockpitTransformingFunction({

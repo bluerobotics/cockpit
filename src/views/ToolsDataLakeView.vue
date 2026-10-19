@@ -243,17 +243,18 @@ import {
   isSystemOwnedDataLakeVariable,
 } from '@/libs/utils-data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import type { DataLakeVariableSource } from '@/types/data-lake'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
 
-type VariableSource = 'Cockpit internal' | 'User defined'
+type VariableSource = 'Cockpit internal' | 'User defined' | DataLakeVariableSource
 
 /**
  * DataLakeVariable with source type
  */
-interface DataLakeVariableWithSource extends DataLakeVariable {
+interface DataLakeVariableWithSource extends Omit<DataLakeVariable, 'source'> {
   /**
    * Source type
    */
@@ -388,11 +389,12 @@ const searchQuery = ref('')
 
 /**
  * Gets the source type for a data lake variable
- * @param {string} id Variable ID
+ * @param {DataLakeVariable} variable The variable
  * @returns {VariableSource} Source type
  */
-const getVariableSource = (id: string): VariableSource => {
-  return isSystemOwnedDataLakeVariable(id) ? 'Cockpit internal' : 'User defined'
+const getVariableSource = (variable: DataLakeVariable): VariableSource => {
+  if (!isSystemOwnedDataLakeVariable(variable.id)) return 'User defined'
+  return variable.source ?? 'Cockpit internal'
 }
 
 const throttledSearchQuery = useThrottle(searchQuery, 300, true, true)
@@ -403,7 +405,7 @@ const throttledSearchQuery = useThrottle(searchQuery, 300, true, true)
 const filteredVariables = computed<DataLakeVariableWithSource[]>(() => {
   const variables = availableDataLakeVariables.value.map((v) => ({
     ...v,
-    source: getVariableSource(v.id),
+    source: getVariableSource(v),
   }))
 
   if (!throttledSearchQuery.value) return variables
