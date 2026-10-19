@@ -2,6 +2,7 @@ import { watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
 import { syncTileProviderToVehicle } from '@/libs/map/tile-provider-import'
+import { isBlueOsSettingsSyncEnabled } from '@/libs/settings-management'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
@@ -58,7 +59,8 @@ export const useCustomTileProviderVehicleSync = (): void => {
       return
     }
     const vehicleAddress = vehicleStore.globalAddress
-    if (!vehicleAddress || !vehicleStore.isVehicleOnline) return
+    // Pending archives stay pending with the sync off, so they upload once it is turned back on.
+    if (!vehicleAddress || !vehicleStore.isVehicleOnline || !isBlueOsSettingsSyncEnabled()) return
     const hasPending = missionStore.customTileProviders.some(
       (provider) => provider.type === 'file' && provider.pendingVehicleSync
     )
