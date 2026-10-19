@@ -38,8 +38,11 @@
                 <li>Advanced configuration is available for setting axis limits.</li>
               </div>
             </template>
-            <template v-if="showJoystickWarningMessage" #warning>
-              <div class="text-center text-yellow-200">
+            <template v-if="showJoystickControlPaused || showJoystickWarningMessage" #warning>
+              <p v-if="showJoystickControlPaused" role="status" class="text-center text-yellow-200 font-medium">
+                Joystick input is paused in these settings. Leave this page to resume control when safe.
+              </p>
+              <div v-if="showJoystickWarningMessage" class="text-center text-yellow-200">
                 <p class="font-semibold">System update is recommended</p>
                 <br />
                 <p class="font-medium">
@@ -704,14 +707,18 @@ import {
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const controllerStore = useControllerStore()
-const { globalAddress } = useMainVehicleStore()
+const mainVehicleStore = useMainVehicleStore()
+const { globalAddress } = mainVehicleStore
 const interfaceStore = useAppInterfaceStore()
 const { openSnackbar } = useSnackbar()
 
 const showJoystickWarningMessage = ref(false)
+const showJoystickControlPaused = ref(false)
 const searchText = ref('')
 
 onMounted(async () => {
+  showJoystickControlPaused.value =
+    controllerStore.enableForwarding && controllerStore.joysticks.size > 0 && mainVehicleStore.isVehicleOnline
   controllerStore.enableForwarding = false
   warnIfJoystickDoesNotSupportExtendedManualControl()
 })
