@@ -27,12 +27,17 @@ import {
   VehicleSettings,
 } from '@/types/settings-management'
 
-import { getKeyDataFromCockpitVehicleStorage, setKeyDataOnCockpitVehicleStorage } from './blueos'
+import { getKeyDataFromCockpitVehicleStorage, getStatus, setKeyDataOnCockpitVehicleStorage } from './blueos'
 import { deserialize, isEqual, sleep, tryACoupleOfTimes } from './utils'
 
 const nullValue = 'null'
 const possibleNullValues = [fallbackUsername, fallbackVehicleId, nullValue, null, undefined, '']
 const keyValueUpdateDebounceTime = 100
+// About 30 s per pass, so a vehicle without BlueOS fails its first pass and `vehicle-sync-complete` still fires.
+// ponytail: an address that drops requests waits out the 10 s timeout on each try (~5 min per pass); bound the pass by time if that matters.
+const vehicleStorageAttempts = 30
+const firstPipelineRetryDelay = 10000
+const maxPipelineRetryDelay = 300000
 
 export const blueOsSettingsSyncEnablingKey = 'cockpit-enable-blueos-settings-sync'
 
@@ -208,6 +213,9 @@ export class SettingsManager {
   private keyValueUpdateTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
   private lastLocalUserVehicleSettings: SettingsPackage = {}
   private currentVehicleAddress: string = nullValue
+  private onlineSession = 0
+  private pipelinePassSession = 0
+  private pipelinePass: Promise<void> = Promise.resolve()
   private keyValueVehicleUpdateQueue: KeyValueVehicleUpdateQueue = {}
   private initialLoadingComplete = false
   private cachedSettings: LocalSyncedSettings | null = null
@@ -540,6 +548,24 @@ export class SettingsManager {
   }
 
   /**
+   * Runs a vehicle-storage request with the pipeline's retries, dropping the pass once its link is gone so a
+   * new link does not wait for its tries to run out.
+   * @param {() => Promise<T>} fn - The request to run
+   * @param {number} times - How many times to try it
+   * @param {number} delay - The delay between tries, in milliseconds
+   * @returns {Promise<T>} The result of the request
+   */
+  private tryOnVehicle = <T>(fn: () => Promise<T>, times = vehicleStorageAttempts, delay = 1000): Promise<T> => {
+    const tryIfLinkIsCurrent = (): Promise<T> => {
+      if (this.pipelinePassSession !== this.onlineSession) {
+        return Promise.reject(new DOMException('The vehicle link changed, so this sync pass was dropped.', 'AbortError'))
+      }
+      return fn()
+    }
+    return tryACoupleOfTimes(tryIfLinkIsCurrent, times, delay, `Error while trying to execute function '${fn.name}'`)
+  }
+
+  /**
    * Retrieves settings from the vehicle
    * @param {string} vehicleAddress - The address of the vehicle to retrieve settings from
    * @returns {Promise<VehicleSettings>} The settings from the vehicle. If no settings are found, an empty object is returned.
@@ -554,7 +580,7 @@ export class SettingsManager {
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const getSettingsFn = (): Promise<VehicleSettings | undefined> => this.vehicle.getKeyData(vehicleAddress, vehicleNewStyleSettingsKey)
     try {
-      const maybeSettings = await tryACoupleOfTimes(getSettingsFn, 5, 300)
+      const maybeSettings = await this.tryOnVehicle(getSettingsFn, 5, 300)
       if (maybeSettings !== undefined) {
         return maybeSettings
       } else {
@@ -599,7 +625,7 @@ export class SettingsManager {
   private getVehicleIdFromVehicleOrGenerateAndPushANewOne = async (vehicleAddress: string): Promise<string> => {
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const getVehicleIdFn = (): Promise<string | undefined> => this.vehicle.getKeyData(vehicleAddress, vehicleIdKey)
-    const maybeId = await tryACoupleOfTimes(getVehicleIdFn, 0, 300)
+    const maybeId = await this.tryOnVehicle(getVehicleIdFn)
     if (typeof maybeId === 'string') {
       return maybeId
     } else {
@@ -619,7 +645,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const setVehicleIdFn = (): Promise<void> => this.vehicle.setKeyData(vehicleAddress, vehicleIdKey, newVehicleId)
-    await tryACoupleOfTimes(setVehicleIdFn, 0, 300)
+    await this.tryOnVehicle(setVehicleIdFn)
 
     console.log(`Successfully set new vehicle ID '${newVehicleId}' on vehicle '${vehicleAddress}'.`)
 
@@ -739,7 +765,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const getOldStyleVehicleSettingsBackupFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsBackupKey)
-    const oldStyleVehicleSettingsBackup = await tryACoupleOfTimes(getOldStyleVehicleSettingsBackupFn, 0, 300)
+    const oldStyleVehicleSettingsBackup = await this.tryOnVehicle(getOldStyleVehicleSettingsBackupFn)
 
     if (oldStyleVehicleSettingsBackup !== undefined) {
       console.info('[SettingsManager] Found old-style settings backup on vehicle. Skipping backup.')
@@ -749,7 +775,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving old-style vehicle settings.')
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const getOldStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsKey)
-    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 0, 300)
+    const oldStyleVehicleSettings = await this.tryOnVehicle(getOldStyleVehicleSettingsFn)
 
     if (!oldStyleVehicleSettings || Object.keys(oldStyleVehicleSettings).length === 0) {
       console.warn('[SettingsManager] No old-style vehicle settings found. Skipping backup.')
@@ -759,7 +785,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len
     const setOldStyleVehicleSettingsBackupFn = (): Promise<void> => this.vehicle.setKeyData(vehicleAddress, vehicleOldStyleSettingsBackupKey, oldStyleVehicleSettings)
-    await tryACoupleOfTimes(setOldStyleVehicleSettingsBackupFn, 0, 300)
+    await this.tryOnVehicle(setOldStyleVehicleSettingsBackupFn)
     console.info('[SettingsManager] Successfully backed up old-style vehicle settings.')
   }
 
@@ -773,7 +799,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving new-style vehicle settings.')
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const newStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleNewStyleSettingsKey)
-    const newStyleVehicleSettings = await tryACoupleOfTimes(newStyleVehicleSettingsFn, 0, 300)
+    const newStyleVehicleSettings = await this.tryOnVehicle(newStyleVehicleSettingsFn)
 
     if (newStyleVehicleSettings && this.areVehicleSettingsInNewStyle(newStyleVehicleSettings)) {
       console.info('[SettingsManager] Vehicle settings in the new style already exist. Skipping migration.')
@@ -785,7 +811,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving old-style vehicle settings.')
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const getOldStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleOldStyleSettingsKey)
-    const oldStyleVehicleSettings = await tryACoupleOfTimes(getOldStyleVehicleSettingsFn, 0, 300)
+    const oldStyleVehicleSettings = await this.tryOnVehicle(getOldStyleVehicleSettingsFn)
 
     if (!oldStyleVehicleSettings || Object.keys(oldStyleVehicleSettings).length === 0) {
       console.warn('[SettingsManager] No old-style vehicle settings found. Skipping migration.')
@@ -801,7 +827,7 @@ export class SettingsManager {
 
     // eslint-disable-next-line vue/max-len, prettier/prettier, max-len, @typescript-eslint/explicit-function-return-type
     const setNewStyleSettingsFn = () => this.vehicle.setKeyData(vehicleAddress, vehicleNewStyleSettingsKey, newStyleMigratedSettings)
-    await tryACoupleOfTimes(setNewStyleSettingsFn, 0, 300)
+    await this.tryOnVehicle(setNewStyleSettingsFn)
     console.info('[SettingsManager] Successfully migrated old-style vehicle settings to new style.')
   }
 
@@ -822,7 +848,7 @@ export class SettingsManager {
     console.info('[SettingsManager] Retrieving new-style vehicle settings from vehicle.')
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const getNewStyleVehicleSettingsFn = () => this.vehicle.getKeyData(vehicleAddress, vehicleNewStyleSettingsKey)
-    const newStyleVehicleSettings = await tryACoupleOfTimes(getNewStyleVehicleSettingsFn, 0, 300)
+    const newStyleVehicleSettings = await this.tryOnVehicle(getNewStyleVehicleSettingsFn)
 
     if (!newStyleVehicleSettings || Object.keys(newStyleVehicleSettings).length <= 0) {
       console.info('[SettingsManager] No new-style vehicle settings found. Aborting import.')
@@ -1101,23 +1127,44 @@ export class SettingsManager {
   public handleVehicleGettingOnline = async (vehicleAddress: string): Promise<void> => {
     console.log('[SettingsManager]', 'Handling vehicle getting online!')
 
-    let succeeded = false
-    try {
-      await this.runVehicleGettingOnlinePipeline(vehicleAddress)
-      succeeded = true
-    } catch (error) {
-      console.error('[SettingsManager]', 'Failed to fully handle vehicle getting online.', error)
-    } finally {
-      // Dispatch even on failure so listeners can proceed without a successful BlueOS round-trip.
-      dispatchEvent(
-        new CustomEvent('vehicle-sync-complete', {
-          detail: {
-            vehicleAddress,
-            vehicleId: this.currentVehicleId,
-            succeeded,
-          },
-        })
-      )
+    const session = ++this.onlineSession
+    // A pass started on an earlier link may still be running, and two passes must never interleave.
+    await this.pipelinePass
+
+    let retryDelay = firstPipelineRetryDelay
+    for (let pass = 0; session === this.onlineSession; pass++) {
+      this.pipelinePassSession = session
+      const run = this.runVehicleGettingOnlinePipeline(vehicleAddress)
+      this.pipelinePass = run.catch(() => undefined)
+      let succeeded = false
+      try {
+        await run
+        succeeded = true
+      } catch (error) {
+        console.error('[SettingsManager]', 'Failed to fully handle vehicle getting online.', error)
+      }
+      // A BlueOS that answers but whose storage is still starting gets a real sync before listeners are told.
+      const blueOsAnswers = !succeeded && pass === 0 && (await getStatus(vehicleAddress).catch(() => false))
+      if (session !== this.onlineSession) return
+
+      if (succeeded || (pass === 0 && !blueOsAnswers)) {
+        // Dispatch even on failure so listeners can proceed without a successful BlueOS round-trip.
+        dispatchEvent(
+          new CustomEvent('vehicle-sync-complete', {
+            detail: {
+              vehicleAddress,
+              vehicleId: this.currentVehicleId,
+              succeeded,
+            },
+          })
+        )
+      }
+      if (succeeded) return
+
+      // A BlueOS that answers late still gets synced, for as long as the link stays up.
+      console.warn('[SettingsManager]', `Will try to sync with the vehicle again in ${retryDelay / 1000} s.`)
+      await sleep(retryDelay)
+      retryDelay = Math.min(retryDelay * 2, maxPipelineRetryDelay)
     }
   }
 
@@ -1128,6 +1175,7 @@ export class SettingsManager {
   public handleVehicleGettingOffline = (): void => {
     console.log('[SettingsManager]', 'Handling vehicle getting offline!')
     this.currentVehicleAddress = nullValue
+    this.onlineSession++
   }
 
   private runVehicleGettingOnlinePipeline = async (vehicleAddress: string): Promise<void> => {
