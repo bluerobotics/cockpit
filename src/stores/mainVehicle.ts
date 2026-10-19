@@ -2,6 +2,7 @@ import { useStorage, useTimestamp } from '@vueuse/core'
 import { useThrottleFn } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
+import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { defaultGlobalAddress, defaultVehicleBatteryPack } from '@/assets/defaults'
