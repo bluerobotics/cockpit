@@ -89,7 +89,8 @@ function initializeMonaco(): void {
   monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: true,
     noSyntaxValidation: true,
-    diagnosticCodesToIgnore: [1005, 1128, 7027],
+    // 6385/6387 strike through deprecated names, such as `external` in `{{external/foo}}` resolving to `window.external`
+    diagnosticCodesToIgnore: [1005, 1128, 6385, 6387, 7027],
   })
 
   // Add custom tokens to JavaScript for data lake variable highlighting ({{variable}})
