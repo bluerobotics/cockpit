@@ -509,6 +509,7 @@ import GlassButton from '@/components/GlassButton.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import {
+  canonicalDataLakeVariableId,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableInfo,
   listenToDataLakeVariablesInfoChanges,
@@ -594,10 +595,12 @@ const resolveDisplayName = (entry: string): string => {
 
 const updateDataLakeVarsList = (): void => {
   const allTelemetryValues = new Set<string>()
-  Object.values(telemetryDisplayData).forEach((arr) => arr.forEach((v) => allTelemetryValues.add(v)))
+  Object.values(telemetryDisplayData).forEach((arr) =>
+    arr.forEach((v) => allTelemetryValues.add(canonicalDataLakeVariableId(v)))
+  )
 
   let filtered = allDataLakeVarIds.value.filter((id) => {
-    if (allTelemetryValues.has(id)) return false
+    if (allTelemetryValues.has(canonicalDataLakeVariableId(id))) return false
     const name = getDataLakeVariableInfo(id)?.name ?? id
     if (name.includes('(Legacy)')) return false
     return true
@@ -737,7 +740,7 @@ const removeChipFromGrid = (quadrantKey: string, chip: string): void => {
       loggedVariables.value.push(chip)
     } else if (originalOtherLoggingElements.value.includes(chip)) {
       otherLoggingElements.value.push(chip)
-    } else if (allDataLakeVarIds.value.includes(chip)) {
+    } else if (getDataLakeVariableInfo(chip) !== undefined) {
       // Data lake variable - will reappear in the list via updateDataLakeVarsList
     } else if (!CurrentlyLoggedVariables.getAllVariables().includes(chip)) {
       customMessageElements.value.push(chip)
@@ -769,7 +772,7 @@ const resetAllChips = (): void => {
   Object.values(telemetryDisplayData).forEach((displayGridArray) => {
     displayGridArray.forEach((variable) => {
       if (CurrentlyLoggedVariables.getAllVariables().includes(variable)) return
-      if (allDataLakeVarIds.value.includes(variable)) return
+      if (getDataLakeVariableInfo(variable) !== undefined) return
       customMessageElementsBackup.push(variable)
     })
   })

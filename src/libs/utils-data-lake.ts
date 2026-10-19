@@ -1,4 +1,4 @@
-import { getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
+import { canonicalDataLakeVariableId, getDataLakeVariableData, getDataLakeVariableInfo } from './actions/data-lake'
 import { convertValue, readingLengthsAs, UnitSystem, unitSystems } from './units'
 
 /**
@@ -251,9 +251,10 @@ export const findDataLakeVariablesIdsInString = (input: string): string[] => {
  * @returns {string[]} The unavailable ids
  */
 export const findUnknownDataLakeVariablesInString = (input: string, availableIds: readonly string[]): string[] => {
+  const canonicalAvailableIds = new Set(availableIds.map(canonicalDataLakeVariableId))
   return [...input.matchAll(/{{\s*([^}]+)\s*}}/g)]
     .map((match) => getDataLakeVariableIdFromInput(match[0]) ?? match[1].trim())
-    .filter((id) => !availableIds.includes(id))
+    .filter((id) => !canonicalAvailableIds.has(canonicalDataLakeVariableId(id)))
 }
 
 export const replaceDataLakeInputsInJsonString = (jsonString: string): string => {

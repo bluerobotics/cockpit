@@ -9,6 +9,7 @@
         <v-autocomplete
           v-model="dialog.selectedVariables"
           :items="availableDataLakeVariables"
+          :value-comparator="isSameDataLakeVariableId"
           label="Data Lake Variables"
           multiple
           chips
@@ -81,7 +82,7 @@ import { computed, ref } from 'vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { getActionLink, removeActionLink, saveActionLink } from '@/libs/actions/action-links'
 import { getAutoRunConfig, removeAutoRunConfig, saveAutoRunConfig } from '@/libs/actions/auto-run'
-import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
+import { getAllDataLakeVariablesInfo, isSameDataLakeVariableId } from '@/libs/actions/data-lake'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { ActionConfig } from '@/types/cockpit-actions'
 

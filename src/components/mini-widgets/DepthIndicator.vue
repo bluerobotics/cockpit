@@ -34,6 +34,7 @@
           :items="altitudeSourceOptions"
           item-title="title"
           item-value="value"
+          :value-comparator="isSameDataLakeVariableId"
           hide-details
           theme="dark"
           variant="outlined"
@@ -46,6 +47,7 @@
           :items="availableDataLakeNumberVariables"
           item-title="name"
           item-value="id"
+          :value-comparator="isSameDataLakeVariableId"
           label="Data lake variable"
           hint="Select any numeric data lake variable"
           persistent-hint
@@ -72,6 +74,7 @@ import { computed, onBeforeMount, toRefs } from 'vue'
 
 import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { isSameDataLakeVariableId } from '@/libs/actions/data-lake'
 import {
   altitudeSourceOptions,
   defaultDepthAltitudeVariableId,

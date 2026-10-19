@@ -6,6 +6,7 @@ import {
   getAllDataLakeVariablesInfo,
   getDataLakeVariableData,
   getDataLakeVariableInfo,
+  isSameDataLakeVariableId,
   setDataLakeVariableData,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
@@ -276,7 +277,7 @@ const transformingFunctionTools: McpTool[] = [
       description: z.string().optional(),
     }),
     run: (func) => {
-      const stored = getAllTransformingFunctions().find((f) => f.id === func.id)
+      const stored = getAllTransformingFunctions().find((f) => isSameDataLakeVariableId(f.id, func.id))
       if (stored !== undefined) {
         if (!canUserChangeDataLakeVariable(func.id)) throw new Error(`Function '${func.id}' belongs to Cockpit.`)
         // Spread over the stored one so its provenance flags survive, as the Data Lake page does.
@@ -299,7 +300,7 @@ const transformingFunctionTools: McpTool[] = [
     runsCode: false,
     input: z.object({ id }),
     run: ({ id: funcId }) => {
-      const stored = getAllTransformingFunctions().find((f) => f.id === funcId)
+      const stored = getAllTransformingFunctions().find((f) => isSameDataLakeVariableId(f.id, funcId))
       if (stored === undefined) throw new Error(`No transforming function with id '${funcId}'.`)
       if (stored.systemOwned !== false) throw new Error(`Function '${funcId}' belongs to Cockpit.`)
       deleteTransformingFunction(stored)

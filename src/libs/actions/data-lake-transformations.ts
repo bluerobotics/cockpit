@@ -9,6 +9,8 @@ import {
   createDataLakeVariable,
   DataLakeVariableType,
   deleteDataLakeVariable,
+  getDataLakeVariableInfo,
+  isSameDataLakeVariableId,
   listenDataLakeVariable,
   setDataLakeVariableData,
   unlistenDataLakeVariable,
@@ -40,6 +42,11 @@ const usableTransformingFunctionOrThrow = (func: TransformingFunction): Transfor
   throw new Error(`A transforming function needs a non-empty id and a string expression. ${got}`)
 }
 
+const isTakenByAnotherSpelling = (id: string): boolean => {
+  const lakeId = getDataLakeVariableInfo(id)?.id
+  return lakeId !== undefined && lakeId !== id
+}
+
 const loadTransformingFunctions = (): void => {
   const transformingFunctions = settingsManager.getKeyValue(transformingFunctionsKey)
   if (transformingFunctions === undefined) {
@@ -58,13 +65,22 @@ const loadTransformingFunctions = (): void => {
   // matches the trimmed id an update carries, instead of silently saving nothing.
   // Ownership is assumed to be Cockpit's when unsaid, but an entry stored before the flag existed cannot be told
   // apart from one the user wrote, so it is read as theirs and Cockpit reclaims its own through the setup routines.
-  globalTransformingFunctions = storedFunctions
-    .filter((func) => isUsableTransformingFunction(func))
-    .map((func) => ({ systemOwned: false, ...withTrimmedId(func) }))
-  unusableTransformingFunctions = storedFunctions.filter((func) => !isUsableTransformingFunction(func))
+  globalTransformingFunctions = []
+  unusableTransformingFunctions = []
+  storedFunctions.forEach((func) => {
+    const usableFunc = { systemOwned: false, ...withTrimmedId(func) }
+    // An id differing from an earlier one, or from a stored user variable, only by leading slashes would back the same
+    // variable as it, so it is held aside with the unusable entries rather than fighting it for that variable's value.
+    const collides =
+      isTakenByAnotherSpelling(usableFunc.id) ||
+      globalTransformingFunctions.some((f) => isSameDataLakeVariableId(f.id, usableFunc.id))
+    if (isUsableTransformingFunction(func) && !collides) globalTransformingFunctions.push(usableFunc)
+    else unusableTransformingFunctions.push(func)
+  })
   const droppedCount = unusableTransformingFunctions.length
   if (droppedCount > 0) {
-    console.warn(`Ignoring ${droppedCount} stored transforming function(s) with no id or expression.`)
+    const reason = 'with no id or expression, or whose id only differs from another by leading slashes'
+    console.warn(`Ignoring ${droppedCount} stored transforming function(s) ${reason}.`)
   }
   updateTransformingFunctionListeners()
 }
@@ -284,7 +300,8 @@ type TransformingFunctionOptions = Pick<TransformingFunction, 'systemOwned' | 'a
  * @param {string?} description - Description of the new variable
  * @param {TransformingFunctionOptions?} options - Who the function belongs to, what the user may do with it, and
  * the unit its expression results in
- * @throws {Error} If the id is empty or the expression is not a string
+ * @throws {Error} If the id is empty, the expression is not a string, or the id only differs from an existing
+ * variable's by leading slashes
  */
 export const createTransformingFunction = (
   id: string,
@@ -302,6 +319,11 @@ export const createTransformingFunction = (
     description,
     ...options,
   })
+  // Creating it would take over that variable's record, which the next rebuild of the functions then deletes.
+  if (isTakenByAnotherSpelling(transformingFunction.id)) {
+    const existingId = getDataLakeVariableInfo(transformingFunction.id)?.id
+    throw new Error(`The id '${transformingFunction.id}' only differs from the variable '${existingId}' by slashes.`)
+  }
   globalTransformingFunctions.push(transformingFunction)
   createDataLakeVariable({ id: transformingFunction.id, name, type, description, ...options })
   saveTransformingFunctions()
@@ -317,7 +339,7 @@ export const createTransformingFunction = (
  */
 export const ensureCockpitTransformingFunction = (func: TransformingFunction): void => {
   const flags = { systemOwned: true, allowUserToChangeValue: func.allowUserToChangeValue === true }
-  const stored = globalTransformingFunctions.find((f) => f.id === func.id)
+  const stored = globalTransformingFunctions.find((f) => isSameDataLakeVariableId(f.id, func.id))
 
   if (stored === undefined) {
     createTransformingFunction(func.id, func.name, func.type, func.expression, func.description, flags)
@@ -345,7 +367,7 @@ export const getAllTransformingFunctions = (): TransformingFunction[] => {
  * @returns {boolean} True when a transforming function backs the variable
  */
 export const isCompoundDataLakeVariable = (id: string): boolean => {
-  return globalTransformingFunctions.some((func) => func.id === id)
+  return globalTransformingFunctions.some((func) => isSameDataLakeVariableId(func.id, id))
 }
 
 /**
@@ -355,12 +377,12 @@ export const isCompoundDataLakeVariable = (id: string): boolean => {
  */
 export const updateTransformingFunction = (func: TransformingFunction): void => {
   const transformingFunction = usableTransformingFunctionOrThrow(func)
-  const index = globalTransformingFunctions.findIndex((f) => f.id === transformingFunction.id)
+  const index = globalTransformingFunctions.findIndex((f) => isSameDataLakeVariableId(f.id, transformingFunction.id))
   // Returning quietly here would discard the caller's update while looking like it worked.
   if (index === -1) {
     throw new Error(`There is no transforming function with id '${transformingFunction.id}' to update.`)
   }
-  globalTransformingFunctions[index] = transformingFunction
+  globalTransformingFunctions[index] = { ...transformingFunction, id: globalTransformingFunctions[index].id }
   saveTransformingFunctions()
 }
 
@@ -370,7 +392,7 @@ export const updateTransformingFunction = (func: TransformingFunction): void => 
  */
 export const deleteTransformingFunction = (func: TransformingFunction): void => {
   // Remove the variable from the data lake
-  globalTransformingFunctions = globalTransformingFunctions.filter((f) => f.id !== func.id)
+  globalTransformingFunctions = globalTransformingFunctions.filter((f) => !isSameDataLakeVariableId(f.id, func.id))
   deleteDataLakeVariable(func.id)
   saveTransformingFunctions()
 }
