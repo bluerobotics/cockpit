@@ -1,10 +1,11 @@
 import { useDebounceFn } from '@vueuse/core'
-import L from 'leaflet'
-import { type Ref, type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
+import { type Ref, type ShallowRef, onBeforeUnmount, watch } from 'vue'
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useMissionPathSignal } from '@/composables/baseStation/useMissionPathSignal'
 import { buildMissionPathDisplaySegments, MISSION_COVERAGE_RISK_COLORS } from '@/libs/baseStation/missionPathSignal'
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import { type DrawnLine, type LineStyle, lineFeature } from '@/libs/map/cesium-vectors'
 import { useMissionStore } from '@/stores/mission'
 import type { WaypointCoordinates } from '@/types/mission'
 
@@ -12,20 +13,13 @@ import type { WaypointCoordinates } from '@/types/mission'
 type ColoredPath = {
   /** Vertices of the path being colored. */
   coordinates: WaypointCoordinates[]
-  /** Leaflet style the colored segments inherit, minus the color. */
-  style: L.PolylineOptions
-}
-
-const flattenPolylineCoordinates = (polyline: L.Polyline): WaypointCoordinates[] => {
-  const latlngs = polyline.getLatLngs()
-  if (!latlngs.length) return []
-  const flat = latlngs[0] instanceof L.LatLng ? (latlngs as L.LatLng[]) : (latlngs as L.LatLng[][]).flat()
-  return flat.map((latlng) => [latlng.lat, latlng.lng] as WaypointCoordinates)
+  /** Style the colored segments inherit, minus the color. */
+  style: LineStyle
 }
 
 /**
- * Reactive Leaflet overlay that recolors the planned mission (or survey) path by the expected comms
- * quality at each segment, keeping the map/mission leaflet specifics out of the view.
+ * Reactive overlay that recolors the planned mission (or survey) path by the expected comms
+ * quality at each segment, keeping the map/mission specifics out of the view.
  */
 export interface MissionPathSignalOverlayApi {
   /**
@@ -38,61 +32,48 @@ export interface MissionPathSignalOverlayApi {
   removeMissionPathSignalLayer: () => void
 }
 
+const signalLayerId = 'survey::mission-path-signal'
+
 /**
  * Drives the mission-path signal-coloring overlay for the planning map.
- * @param {ShallowRef<L.Map | undefined>} planningMap The planning Leaflet map instance.
- * @param {ShallowRef<L.Polyline | null>} surveyPathLayer The active survey path polyline, when in survey mode.
- * @param {ShallowRef<L.Polyline | null>} missionWaypointsPolyline The plain mission waypoints polyline.
- * @param {Ref<L.Polyline[]>} surveyExtraPathLayers The survey legs drawn apart from the main path
+ * @param {ShallowRef<CockpitMap | undefined>} planningMap The planning map instance.
+ * @param {ShallowRef<DrawnLine | null>} surveyPathLayer The active survey path line, when in survey mode.
+ * @param {ShallowRef<DrawnLine | null>} missionWaypointsPolyline The plain mission waypoints line.
+ * @param {Ref<DrawnLine[]>} surveyExtraPathLayers The survey legs drawn apart from the main path
  * (crosshatch pass and turnarounds), colored alongside it so no flown leg is left uncolored.
  * @returns {MissionPathSignalOverlayApi} Render and teardown handlers for the overlay.
  */
 export const useMissionPathSignalOverlay = (
-  planningMap: ShallowRef<L.Map | undefined>,
-  surveyPathLayer: ShallowRef<L.Polyline | null>,
-  missionWaypointsPolyline: ShallowRef<L.Polyline | null>,
-  surveyExtraPathLayers: Ref<L.Polyline[]>
+  planningMap: ShallowRef<CockpitMap | undefined>,
+  surveyPathLayer: ShallowRef<DrawnLine | null>,
+  missionWaypointsPolyline: ShallowRef<DrawnLine | null>,
+  surveyExtraPathLayers: Ref<DrawnLine[]>
 ): MissionPathSignalOverlayApi => {
   const missionStore = useMissionStore()
   const baseStationStore = useBaseStation()
   const { isPathSignalAvailable, mobileCoverageCircles } = useMissionPathSignal()
 
-  const missionPathSignalLayer = shallowRef<L.LayerGroup | null>(null)
+  // The colored segments are drawn one layer per distinct stroke, since a dash pattern cannot vary within a layer.
 
   const getMissionCoveragePathCoordinates = (): WaypointCoordinates[] => {
     if (surveyPathLayer.value) {
-      return flattenPolylineCoordinates(surveyPathLayer.value)
+      return surveyPathLayer.value.coordinates()
     }
     return missionStore.currentPlanningWaypoints.map((waypoint) => waypoint.coordinates)
   }
 
-  // Leaflet's live `options` are the only record of how the view styled each path, and hiding one
-  // overwrites them, so the original is snapshotted the first time the layer is seen.
-  const basePathStyles = new WeakMap<L.Polyline, L.PolylineOptions>()
-  const basePathStyle = (layer: L.Polyline): L.PolylineOptions => {
-    const known = basePathStyles.get(layer)
-    if (known) return known
-    const { color, weight, opacity, className } = layer.options
-    const style: L.PolylineOptions = { color, weight, opacity, className }
-    basePathStyles.set(layer, style)
-    return style
+  const setLineHidden = (line: DrawnLine, hidden: boolean): void => {
+    planningMap.value?.setVectorsVisible(line.layerId, !hidden)
   }
 
   const restoreMissionPathLineStyles = (): void => {
-    if (missionWaypointsPolyline.value) {
-      missionWaypointsPolyline.value.setStyle(basePathStyle(missionWaypointsPolyline.value))
-    }
-    if (surveyPathLayer.value) {
-      surveyPathLayer.value.setStyle(basePathStyle(surveyPathLayer.value))
-    }
-    surveyExtraPathLayers.value.forEach((layer) => layer.setStyle(basePathStyle(layer)))
+    if (missionWaypointsPolyline.value) setLineHidden(missionWaypointsPolyline.value, false)
+    if (surveyPathLayer.value) setLineHidden(surveyPathLayer.value, false)
+    surveyExtraPathLayers.value.forEach((layer) => setLineHidden(layer, false))
   }
 
   const removeMissionPathSignalLayer = (): void => {
-    if (!missionPathSignalLayer.value) return
-    missionPathSignalLayer.value.clearLayers()
-    planningMap.value?.removeLayer(missionPathSignalLayer.value)
-    missionPathSignalLayer.value = null
+    planningMap.value?.removeVectors(signalLayerId)
   }
 
   const renderMissionPathSignalImmediate = (): void => {
@@ -110,47 +91,31 @@ export const useMissionPathSignalOverlay = (
       return
     }
 
-    // Both main lines are snapshotted before either is hidden, so the one that is not driving the
-    // coloring this round still has its real style on record when it takes over later.
     const mainPathLayer = surveyPathLayer.value ?? missionWaypointsPolyline.value
-    if (missionWaypointsPolyline.value) {
-      basePathStyle(missionWaypointsPolyline.value)
-      missionWaypointsPolyline.value.setStyle({ opacity: 0 })
-    }
-    if (surveyPathLayer.value) {
-      basePathStyle(surveyPathLayer.value)
-      surveyPathLayer.value.setStyle({ opacity: 0 })
-    }
+    if (missionWaypointsPolyline.value) setLineHidden(missionWaypointsPolyline.value, true)
+    if (surveyPathLayer.value) setLineHidden(surveyPathLayer.value, true)
 
     const coloredPaths: ColoredPath[] = [
-      { coordinates: pathCoordinates, style: mainPathLayer ? basePathStyle(mainPathLayer) : {} },
+      { coordinates: pathCoordinates, style: mainPathLayer?.style ?? { color: '#000000' } },
     ]
-    // Each extra leg keeps its own weight and class so the crosshatch and the turnarounds stay
+    // Each extra leg keeps its own width and dashes so the crosshatch and the turnarounds stay
     // distinguishable from the main lines once the risk color replaces their identifying color.
     surveyExtraPathLayers.value.forEach((layer) => {
-      const coordinates = flattenPolylineCoordinates(layer)
-      const style = basePathStyle(layer)
-      layer.setStyle({ opacity: 0 })
-      if (coordinates.length >= 2) coloredPaths.push({ coordinates, style })
+      const coordinates = layer.coordinates()
+      setLineHidden(layer, true)
+      if (coordinates.length >= 2) coloredPaths.push({ coordinates, style: layer.style })
     })
 
-    missionPathSignalLayer.value = L.layerGroup()
-    for (const coloredPath of coloredPaths) {
-      const displaySegments = buildMissionPathDisplaySegments(
+    const features = coloredPaths.flatMap((coloredPath) =>
+      buildMissionPathDisplaySegments(
         baseStationStore.config,
         coloredPath.coordinates,
         mobileCoverageCircles.value
+      ).map((segment) =>
+        lineFeature(segment.points, { ...coloredPath.style, color: MISSION_COVERAGE_RISK_COLORS[segment.risk] })
       )
-      for (const segment of displaySegments) {
-        const polyline = L.polyline(segment.points, {
-          ...coloredPath.style,
-          color: MISSION_COVERAGE_RISK_COLORS[segment.risk],
-          interactive: false,
-        })
-        polyline.addTo(missionPathSignalLayer.value)
-      }
-    }
-    missionPathSignalLayer.value.addTo(planningMap.value)
+    )
+    planningMap.value.setVectors(signalLayerId, 'survey', features)
   }
 
   // Coalesces redraws caused by survey edits, waypoint drags, and config changes within the

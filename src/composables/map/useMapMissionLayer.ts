@@ -1,10 +1,16 @@
-import L, { type LatLngTuple, type LayerGroup, type Map, type Polyline } from 'leaflet'
 import { type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
-import { isLeafletMapReady } from '@/libs/map/utils-map'
-import type { Waypoint } from '@/types/mission'
+import type { CockpitMap, MapPointerEvent } from '@/libs/map/cesium-map'
+import { type DrawnLine, type LineStyle, lineFeature, pointFeature } from '@/libs/map/cesium-vectors'
+import { isMapReady } from '@/libs/map/utils-map'
+import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 
 const missionPathColor = '#358AC3'
+const missionLayerId = 'mission::path'
+const missionShadowLayerId = 'mission::path-shadow'
+const missionDotsLayerId = 'mission::waypoint-dots'
+// Leaflet's CSS drop shadow under the path: offset down-right, in pixels.
+const shadowOffset = { x: 2, y: 3 }
 
 /**
  * Reactive inputs driving the mission layer. Getters so the composable can watch them.
@@ -14,14 +20,14 @@ export interface UseMapMissionLayerOptions {
   waypoints: () => Waypoint[]
   /** Whether the mission is currently drawn. */
   show: () => boolean
-  /** Polyline color; defaults to the shared mission-path blue. */
+  /** Line color; defaults to the shared mission-path blue. */
   color?: string
-  /** CSS class applied to the polyline (e.g. for a drop-shadow). */
-  className?: string
+  /** Draws a soft drop shadow under the path. */
+  shadow?: boolean
   /** Draws a dot at each waypoint. Off by default; the interactive views render their own markers. */
   showWaypointDots?: boolean
   /** Handler for a double-click on the mission path (e.g. inserting a waypoint on the clicked segment). */
-  onDblClick?: (event: L.LeafletMouseEvent) => void
+  onDblClick?: (event: MapPointerEvent) => void
   /** Called after every redraw, for surfaces that draw derived overlays on top of the path. */
   onRedraw?: () => void
 }
@@ -30,64 +36,87 @@ export interface UseMapMissionLayerOptions {
  * Handles exposed by the mission layer composable.
  */
 export interface UseMapMissionLayerReturn {
-  /** The mission polyline while it is on the map, for surfaces that restyle or measure it. */
-  polyline: ShallowRef<Polyline | null>
+  /** The mission line while it is on the map, for surfaces that restyle or measure it. */
+  polyline: ShallowRef<DrawnLine | null>
 }
 
 /**
- * Draws a mission as a single connecting polyline on the given map, kept in sync with the source waypoints
- * and a show/hide toggle. The polyline is persistent and updated in place via `setLatLngs`, so it can carry a
- * double-click handler without being torn down on every waypoint change. Optionally renders a dot per waypoint
- * for display-only surfaces; the interactive views draw their own markers instead.
- * @param {ShallowRef<Map | undefined>} map - The Leaflet map to draw on; the layer (re)draws once available.
+ * Draws a mission as a single connecting line on the given map, kept in sync with the source waypoints and a
+ * show/hide toggle. The line is persistent and updated in place, so it can carry a double-click handler without being
+ * torn down on every waypoint change. Optionally renders a dot per waypoint for display-only surfaces; the
+ * interactive views draw their own markers instead.
+ * @param {ShallowRef<CockpitMap | undefined>} map - The map to draw on; the layer (re)draws once available.
  * @param {UseMapMissionLayerOptions} options - Reactive getters for the waypoints and visibility, plus styling.
- * @returns {UseMapMissionLayerReturn} The mission polyline reference.
+ * @returns {UseMapMissionLayerReturn} The mission line reference.
  */
 export const useMapMissionLayer = (
-  map: ShallowRef<Map | undefined>,
+  map: ShallowRef<CockpitMap | undefined>,
   options: UseMapMissionLayerOptions
 ): UseMapMissionLayerReturn => {
-  const color = options.color ?? missionPathColor
-  const polyline = shallowRef<Polyline | null>(null)
-  const dots = shallowRef<LayerGroup>()
+  const style: LineStyle = { color: options.color ?? missionPathColor }
+  const polyline = shallowRef<DrawnLine | null>(null)
+  let boundMap: CockpitMap | undefined
 
-  const coordinates = (): LatLngTuple[] => options.waypoints().map((waypoint) => waypoint.coordinates as LatLngTuple)
+  const coordinates = (): WaypointCoordinates[] => options.waypoints().map((waypoint) => waypoint.coordinates)
+
+  const onDblClick = (event: MapPointerEvent): void => {
+    // Keeps the double-click from also zooming the map.
+    event.preventDefault()
+    options.onDblClick?.(event)
+  }
 
   const clear = (): void => {
-    if (map.value) {
-      if (polyline.value) map.value.removeLayer(polyline.value)
-      if (dots.value) map.value.removeLayer(dots.value)
+    if (boundMap) {
+      if (options.onDblClick) boundMap.offLayer('dblclick', missionLayerId, onDblClick)
+      if (options.shadow) boundMap.off('zoomend', drawShadow)
+      boundMap.removeVectors(missionDotsLayerId)
+      boundMap.removeVectors(missionShadowLayerId)
+      boundMap.removeVectors(missionLayerId)
     }
+    boundMap = undefined
     polyline.value = null
-    dots.value = undefined
+  }
+
+  // Cesium lines have no pixel offset, so the shadow is the path moved by the offset at the current zoom, redrawn
+  // once a zoom settles.
+  const drawShadow = (): void => {
+    if (!boundMap || !options.show()) return
+    const instance = boundMap
+    const shifted = coordinates().map((coordinate) => {
+      const point = instance.project(coordinate)
+      return instance.unproject({ x: point.x + shadowOffset.x, y: point.y + shadowOffset.y })
+    })
+    instance.setVectors(missionShadowLayerId, 'mission', [
+      lineFeature(shifted, { color: '#000000', opacity: 0.2, width: (style.width ?? 3) + 1 }),
+    ])
   }
 
   const redraw = (): void => {
-    if (!isLeafletMapReady(map.value)) return
+    if (!isMapReady(map.value)) return
     if (!options.show()) {
       clear()
       options.onRedraw?.()
       return
     }
-    if (polyline.value === null) {
-      polyline.value = L.polyline([], { color, ...(options.className ? { className: options.className } : {}) }).addTo(
-        map.value
-      )
-      if (options.onDblClick) {
-        polyline.value.on('dblclick', (event) => options.onDblClick?.(event))
-      }
+    if (boundMap !== map.value) {
+      clear()
+      boundMap = map.value
+      if (options.onDblClick) boundMap.onLayer('dblclick', missionLayerId, onDblClick)
+      if (options.shadow) boundMap.on('zoomend', drawShadow)
     }
-    polyline.value.setLatLngs(coordinates())
+    // The shadow is created first, so the path, in the same slot, stacks above it.
+    if (options.shadow) drawShadow()
+    map.value.setVectors(missionLayerId, 'mission', [lineFeature(coordinates(), style)])
+    polyline.value = { layerId: missionLayerId, coordinates, style }
 
     if (options.showWaypointDots) {
-      if (dots.value === undefined) dots.value = L.layerGroup().addTo(map.value)
-      const group = dots.value
-      group.clearLayers()
-      coordinates().forEach((coordinate) => {
-        L.circleMarker(coordinate, { radius: 3, color: '#ffffff', weight: 1, fillColor: color, fillOpacity: 1 }).addTo(
-          group
-        )
-      })
+      // Leaflet's radius 3 dot had its 1px stroke centered on the edge, so it reached 3.5px.
+      const dot = { radius: 2.5, fillColor: style.color, color: '#ffffff', weight: 1 }
+      map.value.setVectors(
+        missionDotsLayerId,
+        'mission',
+        coordinates().map((coordinate) => pointFeature(coordinate, dot))
+      )
     }
 
     options.onRedraw?.()
@@ -99,7 +128,7 @@ export const useMapMissionLayer = (
   watch(
     map,
     (instance) => {
-      if (isLeafletMapReady(instance)) redraw()
+      if (isMapReady(instance)) redraw()
     },
     { immediate: true }
   )

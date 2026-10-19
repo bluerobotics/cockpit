@@ -429,7 +429,7 @@ import { useMapContext } from '@/composables/map/useMapContext'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import { fenceItemCount, fencePlanExtentPoints, fencePointCapacity } from '@/libs/geo-fence'
-import { fitMapToWaypoints, isLeafletMapReady } from '@/libs/map/utils-map'
+import { fitMapToWaypoints, isMapReady } from '@/libs/map/utils-map'
 import {
   geoFencePlanToMavlinkPlanFile,
   mavlinkPlanFileToGeoFencePlan,
@@ -466,7 +466,7 @@ const { map } = useMapContext()
 const showVehicleFenceOnMap = (): void => {
   logUserAction('Centered the map on the geofence stored on the vehicle')
   const plan = fenceStore.lastUploadedPlan
-  if (!isLeafletMapReady(map.value) || !plan) return
+  if (!isMapReady(map.value) || !plan) return
   fitMapToWaypoints(map.value, fencePlanExtentPoints(plan))
 }
 

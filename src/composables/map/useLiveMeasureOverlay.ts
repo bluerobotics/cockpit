@@ -1,16 +1,18 @@
-import L, { type Map as LeafletMap } from 'leaflet'
 import { onBeforeUnmount } from 'vue'
 
 import { fieldUnitPreferences } from '@/composables/useUnitInput'
+import type { CockpitMap } from '@/libs/map/cesium-map'
+import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 import { formatBearing, formatDistanceShort } from '@/libs/mission/general-estimates'
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import type { WaypointCoordinates } from '@/types/mission'
 
 /** The segment the live measure draws, as the view resolved it for the pointer's current position. */
 export interface LiveMeasureSegment {
   /** Where the segment starts. */
-  from: L.LatLng
+  from: WaypointCoordinates
   /** Where the segment ends, which is where the next point would land. */
-  to: L.LatLng
+  to: WaypointCoordinates
   /** Length of the segment, in meters. */
   distanceInMeters: number
   /** Bearing of the segment, in degrees clockwise from north. */
@@ -26,11 +28,11 @@ export interface LiveMeasureSegment {
 /** Wiring {@link useLiveMeasureOverlay} needs from the view that draws the segment. */
 export interface UseLiveMeasureOverlayOptions {
   /** Draws the segment again for a coordinate the map moving has put the pointer over. */
-  redraw: (latlng: L.LatLng, containerPoint: L.Point) => void
+  redraw: (latlng: WaypointCoordinates, containerPoint: ScreenPoint) => void
   /** Where the cursor is on the page, in client coordinates. */
-  cursorPosition: () => L.Point
+  cursorPosition: () => ScreenPoint
   /** Where a point dragged out with a finger is waiting, so the measure ends there instead of at the cursor. */
-  heldPoint: () => L.LatLng | null
+  heldPoint: () => WaypointCoordinates | null
   /** Reads back a press on the tag, which is how the extent field is asked for without a keyboard. */
   onTagPressed: () => void
   /** Reads back the tap that follows it, which is what a mobile browser raises its keyboard for. */
@@ -39,14 +41,14 @@ export interface UseLiveMeasureOverlayOptions {
 
 /** Return type of {@link useLiveMeasureOverlay}. */
 export interface UseLiveMeasureOverlayReturn {
-  /** Binds the overlay to a Leaflet map. */
-  initLiveMeasure: (map: LeafletMap) => void
+  /** Binds the overlay to a map. */
+  initLiveMeasure: (map: CockpitMap) => void
   /** Draws the segment, its loose end and the tag reading it back, creating the overlay on first use. */
   renderLiveMeasure: (segment: LiveMeasureSegment) => void
   /** Takes the whole overlay off the map. */
   clearLiveMeasure: () => void
   /** Moves the segment's start, saying whether there was an overlay on the map to move it on. */
-  setLiveMeasureAnchor: (latlng: L.LatLng) => boolean
+  setLiveMeasureAnchor: (latlng: WaypointCoordinates) => boolean
   /** Marks the tag as being typed into, which is what puts a caret in it. */
   setLiveMeasureTyping: (typing: boolean) => void
   /** Keeps the measure pinned to the pointer while the map moves under it, at most once a frame. */
@@ -77,7 +79,7 @@ const createSvgElement = <K extends keyof SVGElementTagNameMap>(tag: K): SVGElem
 const tagLabel = 'Type the distance'
 
 /**
- * Draws the measure of the segment being drawn on a Leaflet map: a dashed line from the last point to where the
+ * Draws the measure of the segment being drawn on a map: a dashed line from the last point to where the
  * next one would land, a dot on that loose end, and a tag reading the length and bearing back. The tag doubles as
  * the way to ask for the extent field where there is no keyboard to press a shortcut on.
  * @param {UseLiveMeasureOverlayOptions} options - Where the pointer is, and what a press on the tag means.
@@ -87,16 +89,16 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
   const { redraw, cursorPosition, heldPoint, onTagPressed, onTagTapped } = options
   const interfaceStore = useAppInterfaceStore()
 
-  let mapRef: LeafletMap | undefined
+  let mapRef: CockpitMap | undefined
   let elements: LiveMeasureElements | null = null
   let refreshRafId: number | null = null
   let isTyping = false
 
-  const initLiveMeasure = (map: LeafletMap): void => {
+  const initLiveMeasure = (map: CockpitMap): void => {
     mapRef = map
   }
 
-  const buildOverlay = (map: LeafletMap): LiveMeasureElements => {
+  const buildOverlay = (map: CockpitMap): LiveMeasureElements => {
     const root = document.createElement('div')
     root.className = 'measure-overlay'
     root.style.pointerEvents = 'none'
@@ -139,7 +141,9 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
     tag.style.cursor = 'pointer'
     // Tapping the tag is how the field is asked for without a keyboard, so the tag owns its presses the way the
     // map's own controls do: the map is listening inside its container, and the tag is not a place to draw.
-    L.DomEvent.disableClickPropagation(tag)
+    ;['mousedown', 'touchstart', 'dblclick', 'contextmenu', 'click'].forEach((type) =>
+      tag.addEventListener(type, (event) => event.stopPropagation())
+    )
     // Taken on the press rather than on the click, which the browser aims wherever the tag has moved to by the
     // time a finger is lifted.
     tag.addEventListener('pointerdown', (event) => {
@@ -170,7 +174,7 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
     return { root, line, endDot, tag, length, rest }
   }
 
-  const ensureOverlay = (map: LeafletMap): LiveMeasureElements => {
+  const ensureOverlay = (map: CockpitMap): LiveMeasureElements => {
     elements ??= buildOverlay(map)
     return elements
   }
@@ -180,8 +184,8 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
     if (!map) return
 
     const { line, endDot, tag, length, rest } = ensureOverlay(map)
-    const from = map.latLngToContainerPoint(segment.from)
-    const to = map.latLngToContainerPoint(segment.to)
+    const from = map.project(segment.from)
+    const to = map.project(segment.to)
 
     line.setAttribute('x1', String(from.x))
     line.setAttribute('y1', String(from.y))
@@ -212,11 +216,11 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
     elements = null
   }
 
-  const setLiveMeasureAnchor = (latlng: L.LatLng): boolean => {
+  const setLiveMeasureAnchor = (latlng: WaypointCoordinates): boolean => {
     const map = mapRef
     if (!map || !elements) return false
 
-    const point = map.latLngToContainerPoint(latlng)
+    const point = map.project(latlng)
     elements.line.setAttribute('x1', String(point.x))
     elements.line.setAttribute('y1', String(point.y))
     return true
@@ -244,10 +248,8 @@ export const useLiveMeasureOverlay = (options: UseLiveMeasureOverlayOptions): Us
       const cursor = cursorPosition()
       // A finger leaves no cursor behind, so a point it dragged out and left waiting is where the measure ends.
       const held = heldPoint()
-      const containerPoint = held
-        ? map.latLngToContainerPoint(held)
-        : L.point(cursor.x - rect.left, cursor.y - rect.top)
-      redraw(held ?? map.containerPointToLatLng(containerPoint), containerPoint)
+      const containerPoint = held ? map.project(held) : { x: cursor.x - rect.left, y: cursor.y - rect.top }
+      redraw(held ?? map.unproject({ x: containerPoint.x, y: containerPoint.y }), containerPoint)
     })
   }
 

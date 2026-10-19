@@ -1,8 +1,9 @@
-import type L from 'leaflet'
 import { type Ref, computed, onBeforeUnmount, watch } from 'vue'
 
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
+import type { MapPointerEvent } from '@/libs/map/cesium-map'
 import { useGeoFenceStore } from '@/stores/geoFence'
+import type { WaypointCoordinates } from '@/types/mission'
 
 /**
  * Options for `useFenceMapInteraction`.
@@ -18,12 +19,12 @@ export interface UseFenceMapInteractionOptions {
    * Fence-drawing composable action that appends a new latitude/longitude
    * vertex to the polygon currently being drawn.
    */
-  addFencePolygonPoint: (latlng: L.LatLng) => void
+  addFencePolygonPoint: (latlng: WaypointCoordinates) => void
   /**
    * Fence-drawing composable action that seeds the center of a
    * to-be-drawn circle fence at the given latitude/longitude.
    */
-  setPendingFenceCircleCenter: (latlng: L.LatLng) => void
+  setPendingFenceCircleCenter: (latlng: WaypointCoordinates) => void
   /**
    * Planning view callback that clears the ephemeral measure preview
    * so a fresh vertex or circle center does not leave a stale line
@@ -48,13 +49,13 @@ export interface UseFenceMapInteractionReturn {
    */
   handleFenceKeyDown: (event: KeyboardEvent) => void
   /**
-   * Handles a Leaflet map click while a fence shape is being drawn.
+   * Handles a map click while a fence shape is being drawn.
    * Returns `true` when the click was consumed by fence handling so
    * the planning view knows to skip its mission/survey click paths.
    * @returns `true` if fence handling consumed the click, `false`
    * otherwise so the caller can fall through to its own logic.
    */
-  onFenceMapClick: (e: L.LeafletMouseEvent) => boolean
+  onFenceMapClick: (e: MapPointerEvent) => boolean
 }
 
 /**
@@ -110,16 +111,16 @@ export const useFenceMapInteraction = (options: UseFenceMapInteractionOptions): 
     }
   }
 
-  const onFenceMapClick = (e: L.LeafletMouseEvent): boolean => {
+  const onFenceMapClick = (e: MapPointerEvent): boolean => {
     if (!inFenceMode.value) return false
     if (fenceDraft.isDrawingPolygon) {
-      options.addFencePolygonPoint(e.latlng)
+      options.addFencePolygonPoint(e.latLng)
       options.clearLiveMeasure()
       return true
     }
     if (fenceDraft.isDrawingCircle) {
       if (!fenceDraft.pendingCircleCenter) {
-        options.setPendingFenceCircleCenter(e.latlng)
+        options.setPendingFenceCircleCenter(e.latLng)
       } else if (fenceDraft.pendingCircleRadius >= 1) {
         logUserAction('Confirmed the in-progress circle fence drawing')
         fenceStore.finishDrawingCircle()
