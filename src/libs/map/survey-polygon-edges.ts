@@ -29,12 +29,24 @@ export const isOverSurveyHandle = (target: EventTarget | null): boolean =>
 export const isOverEdgeAddMarker = (target: EventTarget | null): boolean =>
   !!(target as HTMLElement | null)?.closest?.('.edge-marker')
 
-const distanceToSegment = (point: ScreenPoint, start: ScreenPoint, end: ScreenPoint): number => {
+/**
+ * The point of a segment closest to a given point, both on screen.
+ * @param {ScreenPoint} point - The point to project.
+ * @param {ScreenPoint} start - The segment's start.
+ * @param {ScreenPoint} end - The segment's end.
+ * @returns {ScreenPoint} The closest point, which is one of the ends when the projection falls beyond it.
+ */
+export const closestPointOnSegment = (point: ScreenPoint, start: ScreenPoint, end: ScreenPoint): ScreenPoint => {
   const run = { x: end.x - start.x, y: end.y - start.y }
   const lengthSquared = run.x * run.x + run.y * run.y
   const alongRun = lengthSquared === 0 ? 0 : ((point.x - start.x) * run.x + (point.y - start.y) * run.y) / lengthSquared
   const closest = Math.min(1, Math.max(0, alongRun))
-  return Math.hypot(point.x - (start.x + closest * run.x), point.y - (start.y + closest * run.y))
+  return { x: start.x + closest * run.x, y: start.y + closest * run.y }
+}
+
+const distanceToSegment = (point: ScreenPoint, start: ScreenPoint, end: ScreenPoint): number => {
+  const closest = closestPointOnSegment(point, start, end)
+  return Math.hypot(point.x - closest.x, point.y - closest.y)
 }
 
 /**

@@ -1,10 +1,13 @@
-import L from 'leaflet'
-import { watchEffect } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 
 import { openSnackbar } from '@/composables/snackbar'
 import { downloadFileFromVehicle } from '@/libs/blueos-files'
-import { createCachedTileLayer } from '@/libs/map/cached-tile-layer'
+import type { MapLayerSlot } from '@/libs/map/maplibre'
+import { removeLayersAndSource } from '@/libs/map/maplibre'
+import { type RasterLayerDefinition, addRasterLayer, refreshRasterLayerTiles } from '@/libs/map/raster-layers'
 import { type TileArchiveSource, openTileArchive } from '@/libs/map/tile-archive'
+import { type TileDisplayAdjustments, archiveProtocolUrl, registerArchiveSource } from '@/libs/map/tile-protocol'
 import { archiveTransferTimeout, tileArchiveFileName, tileProviderSubfolder } from '@/libs/map/tile-provider-import'
 import { getCachedTileArchive, setCachedTileArchive } from '@/libs/map/tile-provider-storage'
 import { messageFromError } from '@/libs/utils'
@@ -15,6 +18,9 @@ import type { CustomTileProviderMeta } from '@/types/mission'
 // Highest zoom a custom provider is shown at; tiles beyond the archive's native maximum are upscaled (overzoom).
 const CUSTOM_PROVIDER_MAX_ZOOM = 23
 
+// Leaflet's default `{s}` values, which URL templates saved before the move to MapLibre were drawn with.
+const defaultSubdomains = ['a', 'b', 'c']
+
 /**
  * Range the brightness and contrast multipliers of a custom provider are limited to, 1 being unadjusted.
  */
@@ -22,28 +28,6 @@ export const tileDisplayAdjustmentRange = { min: 0.2, max: 2 }
 
 const clampDisplayAdjustment = (value = 1): number =>
   Number.isFinite(value) ? Math.min(Math.max(value, tileDisplayAdjustmentRange.min), tileDisplayAdjustmentRange.max) : 1
-
-// Leaflet has no tile-styling API, so brightness and contrast are a CSS filter on the layer's container, which
-// only exists while the layer is on a map. A neutral adjustment clears the filter rather than writing an
-// identity one, which would still make the tile pane a stacking context and containing block. The metadata is
-// resolved on each run because a settings sync replaces the whole provider array, so an entry captured once
-// would be an orphan the sliders no longer write to.
-const bindDisplayAdjustments = (layer: L.GridLayer, resolveMeta: () => CustomTileProviderMeta): (() => void) => {
-  const paint = (): void => {
-    const meta = resolveMeta()
-    const brightness = clampDisplayAdjustment(meta.brightness)
-    const contrast = clampDisplayAdjustment(meta.contrast)
-    const filter = brightness === 1 && contrast === 1 ? '' : `brightness(${brightness}) contrast(${contrast})`
-    const container = layer.getContainer()
-    if (container) container.style.filter = filter
-  }
-  layer.on('add', paint)
-  const stopWatch = watchEffect(paint)
-  return () => {
-    layer.off('add', paint)
-    stopWatch()
-  }
-}
 
 // Fields baked into the layer at build time (or into its control label); a change to any requires rebuilding.
 export const customTileProviderSignature = (meta: CustomTileProviderMeta): string =>
@@ -59,17 +43,17 @@ export const customTileProviderSignature = (meta: CustomTileProviderMeta): strin
   ])
 
 /**
- * A materialized custom provider: its live Leaflet layer and any backing tile source to release with it.
+ * A custom provider drawn on a map, with what it takes to release it.
  */
-export interface CustomTileProviderLayer {
+export interface MountedCustomTileProviderLayer {
   /**
-   * The live Leaflet layer drawing the provider's tiles.
+   * Id of the provider's source and layer on the map.
    */
-  layer: L.GridLayer
+  id: string
   /**
-   * Releases the layer's display-adjustment binding and, for file providers, the backing tile source.
+   * Removes the layer and releases its display-adjustment binding and, for file providers, the backing tile source.
    */
-  close?: () => void
+  close: () => void
 }
 
 /**
@@ -77,16 +61,37 @@ export interface CustomTileProviderLayer {
  */
 export interface UseCustomTileProviderLayerReturn {
   /**
-   * Builds a Leaflet layer for a custom provider, whether it is served from a URL template or from an
-   * archive stored on the vehicle. The caller owns the returned layer and must call its `close`.
+   * Draws a custom provider on a map, whether it is served from a URL template or from an archive stored on the
+   * vehicle. The caller owns the returned layer and must call its `close`.
    */
-  createLayer: (meta: CustomTileProviderMeta) => CustomTileProviderLayer
+  mountLayer: (
+    map: MapLibreMap,
+    meta: CustomTileProviderMeta,
+    options: {
+      /** Stacking slot to draw it in. */
+      slot: MapLayerSlot
+      /** Whether it starts visible. */
+      visible: boolean
+    }
+  ) => MountedCustomTileProviderLayer
+}
+
+let archiveTokenCounter = 0
+
+/**
+ * A custom provider's layer definition and what has to be released with it.
+ */
+interface BuiltProviderDefinition {
+  /** The layer definition for the given display adjustments. */
+  definition: (adjustments: TileDisplayAdjustments) => RasterLayerDefinition
+  /** Releases the archive registration and source, for file providers. */
+  release?: () => void
 }
 
 /**
- * Turns persisted custom-provider metadata into Leaflet layers, resolving a file provider's archive from the
- * local render cache or from the vehicle. Shared by the layer-control surfaces (`useCustomTileProviders`) and
- * by maps that pick a single provider without a control, such as the MiniMap widget.
+ * Turns persisted custom-provider metadata into map layers, resolving a file provider's archive from the local render
+ * cache or from the vehicle. Shared by the layer-selector surfaces (`useCustomTileProviders`) and by maps that pick a
+ * single provider without a selector, such as the MiniMap widget.
  * @returns {UseCustomTileProviderLayerReturn} The layer factory.
  */
 export const useCustomTileProviderLayer = (): UseCustomTileProviderLayerReturn => {
@@ -113,17 +118,28 @@ export const useCustomTileProviderLayer = (): UseCustomTileProviderLayerReturn =
     return openTileArchive(archive, meta.format)
   }
 
-  const buildUrlLayer = (meta: CustomTileProviderMeta): CustomTileProviderLayer => ({
-    layer: L.tileLayer(meta.urlTemplate ?? '', {
-      attribution: meta.attribution,
-      tms: meta.tms ?? false,
-      minZoom: meta.minZoom ?? 0,
-      maxNativeZoom: meta.maxZoom,
-      maxZoom: CUSTOM_PROVIDER_MAX_ZOOM,
-    }),
+  const baseDefinition = (meta: CustomTileProviderMeta): Omit<RasterLayerDefinition, 'template' | 'tilesUrl'> => ({
+    id: `custom-${meta.id}`,
+    label: meta.name,
+    attribution: meta.attribution,
+    minZoom: meta.minZoom ?? 0,
+    maxNativeZoom: meta.maxZoom ?? CUSTOM_PROVIDER_MAX_ZOOM,
+    maxZoom: CUSTOM_PROVIDER_MAX_ZOOM,
   })
 
-  const buildFileLayer = (meta: CustomTileProviderMeta): CustomTileProviderLayer => {
+  // Builds the layer definition plus, for file providers, the archive registration it reads tiles through.
+  const buildDefinition = (meta: CustomTileProviderMeta): BuiltProviderDefinition => {
+    if (meta.type === 'url') {
+      return {
+        definition: () => ({
+          ...baseDefinition(meta),
+          template: meta.urlTemplate ?? '',
+          subdomains: defaultSubdomains,
+          tms: meta.tms ?? false,
+        }),
+      }
+    }
+
     // ponytail: each map showing this provider opens its own source, so a large archive is held once per map.
     // Sharing one source across maps needs reference counting, whose failure mode (closing a source another map
     // still draws from) is worse than the duplication.
@@ -144,31 +160,50 @@ export const useCustomTileProviderLayer = (): UseCustomTileProviderLayerReturn =
         })
       return sourcePromise
     }
-    const layer = createCachedTileLayer({
-      sourceProvider,
-      bounds: meta.bounds ? L.latLngBounds(meta.bounds) : undefined,
-      attribution: meta.attribution,
-      minZoom: meta.minZoom ?? 0,
-      maxNativeZoom: meta.maxZoom,
-      maxZoom: CUSTOM_PROVIDER_MAX_ZOOM,
-    })
-    const close = (): void => void sourcePromise?.then((source) => source.close()).catch(() => undefined)
-    return { layer, close }
-  }
-
-  const createLayer = (meta: CustomTileProviderMeta): CustomTileProviderLayer => {
-    const built = meta.type === 'url' ? buildUrlLayer(meta) : buildFileLayer(meta)
-    const liveMeta = (): CustomTileProviderMeta =>
-      missionStore.customTileProviders.find((provider) => provider.id === meta.id) ?? meta
-    const unbindDisplayAdjustments = bindDisplayAdjustments(built.layer, liveMeta)
+    archiveTokenCounter += 1
+    const token = `${meta.id}-${archiveTokenCounter}`
+    const unregister = registerArchiveSource(token, sourceProvider)
+    const [[south, west], [north, east]] = meta.bounds ?? [
+      [-90, -180],
+      [90, 180],
+    ]
     return {
-      layer: built.layer,
-      close: () => {
-        unbindDisplayAdjustments()
-        built.close?.()
+      definition: (adjustments) => ({
+        ...baseDefinition(meta),
+        tilesUrl: archiveProtocolUrl(token, adjustments),
+        bounds: meta.bounds ? [west, south, east, north] : undefined,
+      }),
+      release: () => {
+        unregister()
+        void sourcePromise?.then((source) => source.close()).catch(() => undefined)
       },
     }
   }
 
-  return { createLayer }
+  const mountLayer: UseCustomTileProviderLayerReturn['mountLayer'] = (map, meta, options) => {
+    const built = buildDefinition(meta)
+    // The metadata is resolved on each read because a settings sync replaces the whole provider array, so an entry
+    // captured once would be an orphan the sliders no longer write to.
+    const adjustments = (): TileDisplayAdjustments => {
+      const live = missionStore.customTileProviders.find((provider) => provider.id === meta.id) ?? meta
+      return { brightness: clampDisplayAdjustment(live.brightness), contrast: clampDisplayAdjustment(live.contrast) }
+    }
+    const id = addRasterLayer(map, built.definition(adjustments()), { ...options, adjustments: adjustments() })
+    // Adjusted tiles are redrawn by reloading them, so slider drags are coalesced instead of reloading per step.
+    const stopAdjustmentsWatch = watchDebounced(
+      adjustments,
+      (current) => refreshRasterLayerTiles(map, id, built.definition(current), { adjustments: current }),
+      { debounce: 200, deep: true }
+    )
+    return {
+      id,
+      close: () => {
+        stopAdjustmentsWatch()
+        removeLayersAndSource(map, [id], id)
+        built.release?.()
+      },
+    }
+  }
+
+  return { mountLayer }
 }

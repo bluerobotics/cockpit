@@ -1,5 +1,8 @@
-import L, { type Map as LeafletMap } from 'leaflet'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 import { onBeforeUnmount } from 'vue'
+
+import { containerPointFromClient } from '@/libs/map/maplibre'
+import type { ScreenPoint } from '@/libs/map/survey-polygon-edges'
 
 /** Wiring {@link useMapBoxZoom} needs from the view that owns the map. */
 export interface UseMapBoxZoomOptions {
@@ -15,8 +18,8 @@ export interface UseMapBoxZoomOptions {
 
 /** Return type of {@link useMapBoxZoom}. */
 export interface UseMapBoxZoomReturn {
-  /** Hands the extra triggers to Leaflet's box-zoom handler on this map. */
-  initMapBoxZoom: (map: LeafletMap) => void
+  /** Binds the extra box-zoom triggers to this map. */
+  initMapBoxZoom: (map: MapLibreMap) => void
   /** Unbinds the extra triggers. */
   destroyMapBoxZoom: () => void
 }
@@ -25,32 +28,15 @@ export interface UseMapBoxZoomReturn {
 const TOUCH_BOX_ARM_MS = 700
 // Matches `longPressDuration` in `src/directives/contextMenu.ts`.
 const CONTEXT_MENU_LONG_PRESS_MS = 500
-// Leaflet starts a pan at 3px; a looser radius would arm after a pan had already begun.
+// A pan starts at about 3px; a looser radius would arm after a pan had already begun.
 const ARM_MOVE_CANCEL_PX = 3
 const BOX_COMMIT_MIN_PX = 16
 const CONTEXT_MENU_GRACE_MS = 200
 const SWALLOW_CLICK_MS = 500
-const IGNORE_TOUCH_PRESS =
-  '.leaflet-marker-icon, .leaflet-control, .leaflet-interactive, .v-btn, button, .bottom-button'
-const IGNORE_MIDDLE_PRESS = '.leaflet-control, .v-btn, button, .bottom-button'
-// ponytail: Leaflet 1.9.3 BoxZoom has no public start API (pinned in package.json); if a bump drops these private handlers, init leaves the gesture unbound.
-const LEAFLET_BOX_METHODS = [
-  '_onMouseDown',
-  '_onMouseMove',
-  '_onMouseUp',
-  '_onKeyDown',
-  '_finish',
-  '_clearDeferredResetState',
-  '_resetState',
-  'moved',
-] as const
+const IGNORE_TOUCH_PRESS = '.maplibregl-marker, .maplibregl-ctrl, .v-btn, button, .bottom-button'
+const IGNORE_MIDDLE_PRESS = '.maplibregl-ctrl, .v-btn, button, .bottom-button'
 
 type BoxPhase = 'idle' | 'arming' | 'armed' | 'live'
-
-const canDriveLeafletBox = (map: LeafletMap): boolean => {
-  const handler = map.boxZoom as Record<string, unknown> | undefined
-  return !!handler && LEAFLET_BOX_METHODS.every((name) => typeof handler[name] === 'function')
-}
 
 const pointerClientInit = (event: PointerEvent): MouseEventInit => ({
   bubbles: true,
@@ -62,14 +48,22 @@ const pointerClientInit = (event: PointerEvent): MouseEventInit => ({
   screenY: event.screenY,
 })
 
-const mouseFromPointer = (type: string, event: PointerEvent): MouseEvent =>
-  new MouseEvent(type, {
-    ...pointerClientInit(event),
-    shiftKey: true,
-    // button 1 (middle) is what Leaflet's BoxZoom guard accepts even when `which` is unset on a constructed event.
-    button: 1,
-    buttons: type === 'mouseup' ? 0 : 4,
-  })
+const distanceBetween = (a: ScreenPoint, b: ScreenPoint): number => Math.hypot(a.x - b.x, a.y - b.y)
+
+// Drawn the way Leaflet drew its zoom rectangle.
+const createBoxElement = (): HTMLDivElement => {
+  const box = document.createElement('div')
+  box.className = 'cockpit-zoom-box'
+  Object.assign(box.style, {
+    position: 'absolute',
+    zIndex: '800',
+    boxSizing: 'border-box',
+    border: '2px dotted #38f',
+    background: 'rgba(255, 255, 255, 0.5)',
+    pointerEvents: 'none',
+  } satisfies Partial<CSSStyleDeclaration>)
+  return box
+}
 
 const contextMenuFromPointer = (event: PointerEvent): MouseEvent =>
   new MouseEvent('contextmenu', { ...pointerClientInit(event), button: 2, buttons: 0 })
@@ -80,21 +74,24 @@ const ignoredTarget = (event: Event, selector: string): boolean => {
 }
 
 /**
- * Hands a middle-click drag, or a one-finger hold then drag, to Leaflet's existing box-zoom handler.
- * A still release held past the context-menu delay opens the menu; a drag before the arm delay pans.
+ * Zooms the map to a rectangle drawn with a middle-click drag, or with a one-finger hold then drag, alongside the
+ * map's own Shift-drag box zoom. A still release held past the context-menu delay opens the menu; a drag before the
+ * arm delay pans.
  * @param {UseMapBoxZoomOptions} options Unfollow / block hooks from the view that owns the map.
  * @returns {UseMapBoxZoomReturn} Bind and unbind methods for the map instance.
  */
 export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoomReturn => {
-  let mapRef: LeafletMap | undefined
+  let mapRef: MapLibreMap | undefined
   const pointers = new Set<number>()
   let armTimer: ReturnType<typeof setTimeout> | undefined
-  let pendingStart: L.Point | undefined
+  let pendingStart: ScreenPoint | undefined
   let pendingEvent: PointerEvent | undefined
   let gesturePointerId: number | undefined
   let weDisabledDragging = false
   let phase: BoxPhase = 'idle'
-  let boxOrigin: L.Point | undefined
+  let boxOrigin: ScreenPoint | undefined
+  let boxElement: HTMLDivElement | undefined
+  let boxEnd: ScreenPoint | undefined
   let suppressNextAuxClick = false
   let menuGraceTimer: ReturnType<typeof setTimeout> | undefined
   let pressStartedAt: number | undefined
@@ -102,44 +99,43 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
   let swallowClickTarget: HTMLElement | undefined
   let swallowClickHandler: ((clickEvent: Event) => void) | undefined
 
-  const leafletBox = (): any => mapRef?.boxZoom
-
   const suppressContextMenu = (event: Event): void => {
     event.preventDefault()
     event.stopImmediatePropagation()
   }
 
-  const startLeafletBox = (event: PointerEvent): void => {
-    const handler = leafletBox()
-    if (!handler || !mapRef) return
-    handler._onMouseDown(mouseFromPointer('mousedown', event))
-    // Drop the document listeners _onMouseDown just attached — we drive the rest from
-    // pointers so a compatibility mouseup cannot fitBounds twice.
-    L.DomEvent.off(
-      document as unknown as HTMLElement,
-      {
-        contextmenu: L.DomEvent.stop,
-        mousemove: handler._onMouseMove,
-        mouseup: handler._onMouseUp,
-        keydown: handler._onKeyDown,
-      },
-      handler
-    )
+  const containerPoint = (event: PointerEvent): ScreenPoint | undefined =>
+    mapRef ? containerPointFromClient(mapRef, event) : undefined
+
+  const drawBox = (): void => {
+    if (!boxElement || !boxOrigin || !boxEnd) return
+    Object.assign(boxElement.style, {
+      left: `${Math.min(boxOrigin.x, boxEnd.x)}px`,
+      top: `${Math.min(boxOrigin.y, boxEnd.y)}px`,
+      width: `${Math.abs(boxEnd.x - boxOrigin.x)}px`,
+      height: `${Math.abs(boxEnd.y - boxOrigin.y)}px`,
+    })
+  }
+
+  const startDrawnBox = (): void => {
+    if (!mapRef) return
+    boxElement = createBoxElement()
+    mapRef.getContainer().appendChild(boxElement)
+    mapRef.getCanvasContainer().style.cursor = 'crosshair'
     mapRef.getContainer().addEventListener('contextmenu', suppressContextMenu, true)
   }
 
-  const abortLeafletBox = (): void => {
-    const handler = leafletBox()
-    if (!handler) return
-    handler._finish()
-    handler._clearDeferredResetState()
-    handler._resetState()
+  const removeDrawnBox = (): void => {
+    boxElement?.remove()
+    boxElement = undefined
+    boxEnd = undefined
+    if (mapRef) mapRef.getCanvasContainer().style.cursor = ''
   }
 
   const restoreDragging = (): void => {
     if (!weDisabledDragging || !mapRef) return
     weDisabledDragging = false
-    mapRef.dragging.enable()
+    mapRef.dragPan.enable()
   }
 
   const dropContextMenuSuppress = (): void => {
@@ -191,7 +187,7 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
     mapEl.dispatchEvent(contextMenuFromPointer(event))
   }
 
-  const boxClear = (committed = false): void => {
+  const boxClear = (): void => {
     if (armTimer !== undefined) {
       clearTimeout(armTimer)
       armTimer = undefined
@@ -205,7 +201,7 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
     pressStartedAt = undefined
     phase = 'idle'
     if (wasLive) {
-      if (!committed) abortLeafletBox()
+      removeDrawnBox()
       keepContextMenuSuppress()
     } else {
       dropContextMenuSuppress()
@@ -220,12 +216,12 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
       event.preventDefault()
       event.stopImmediatePropagation()
     }
-    if (!weDisabledDragging && mapRef.dragging.enabled()) {
+    if (!weDisabledDragging && mapRef.dragPan.isEnabled()) {
       weDisabledDragging = true
-      mapRef.dragging.disable()
+      mapRef.dragPan.disable()
     }
     gesturePointerId = event.pointerId
-    boxOrigin = mapRef.mouseEventToContainerPoint(event)
+    boxOrigin = containerPoint(event)
     try {
       mapRef.getContainer().setPointerCapture(event.pointerId)
     } catch {
@@ -241,7 +237,7 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
     if (phase !== 'armed') boxClear()
     claimPress(event, liveEvent)
     if (!mapRef) return
-    startLeafletBox(event)
+    startDrawnBox()
     phase = 'live'
     pendingStart = undefined
     pendingEvent = undefined
@@ -249,8 +245,8 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
   }
 
   const movedAtLeast = (event: PointerEvent, minPx: number): boolean => {
-    const point = mapRef?.mouseEventToContainerPoint(event)
-    return !!pendingStart && !!point && point.distanceTo(pendingStart) >= minPx
+    const point = containerPoint(event)
+    return !!pendingStart && !!point && distanceBetween(point, pendingStart) >= minPx
   }
 
   const onPointerDown = (event: PointerEvent): void => {
@@ -273,7 +269,7 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
     if (ignoredTarget(event, IGNORE_TOUCH_PRESS)) return
     if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
     if (options.isBlocked?.()) return
-    pendingStart = mapRef?.mouseEventToContainerPoint(event)
+    pendingStart = containerPoint(event)
     pendingEvent = event
     gesturePointerId = event.pointerId
     pressStartedAt = event.timeStamp
@@ -303,31 +299,31 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
       if (movedAtLeast(event, BOX_COMMIT_MIN_PX)) {
         startBox(pendingEvent ?? event, false)
         if (event.cancelable) event.preventDefault()
-        leafletBox()?._onMouseMove(mouseFromPointer('mousemove', event))
+        boxEnd = containerPoint(event)
+        drawBox()
       }
       return
     }
     if (phase !== 'live') return
-    leafletBox()?._onMouseMove(mouseFromPointer('mousemove', event))
+    boxEnd = containerPoint(event)
+    drawBox()
   }
 
   const finishLiveBox = (event: PointerEvent): void => {
-    const end = mapRef?.mouseEventToContainerPoint(event)
+    const end = containerPoint(event)
+    const origin = boxOrigin
     const tooSmall =
-      !boxOrigin ||
+      !origin ||
       !end ||
-      (Math.abs(end.x - boxOrigin.x) < BOX_COMMIT_MIN_PX && Math.abs(end.y - boxOrigin.y) < BOX_COMMIT_MIN_PX)
-    if (tooSmall) {
+      (Math.abs(end.x - origin.x) < BOX_COMMIT_MIN_PX && Math.abs(end.y - origin.y) < BOX_COMMIT_MIN_PX)
+    if (tooSmall || !mapRef) {
       boxClear()
       return
     }
-    const handler = leafletBox()
-    if (handler?.moved()) {
-      options.onBoxCommit?.()
-      logUserAction('Zoomed the map to the drawn area')
-    }
-    handler?._onMouseUp(mouseFromPointer('mouseup', event))
-    boxClear(true)
+    options.onBoxCommit?.()
+    logUserAction('Zoomed the map to the drawn area')
+    mapRef.fitScreenCoordinates([origin.x, origin.y], [end.x, end.y], mapRef.getBearing(), { linear: true })
+    boxClear()
   }
 
   const onPointerUp = (event: PointerEvent): void => {
@@ -370,9 +366,8 @@ export const useMapBoxZoom = (options: UseMapBoxZoomOptions = {}): UseMapBoxZoom
     if ((phase === 'live' || phase === 'armed') && event.cancelable) event.preventDefault()
   }
 
-  const initMapBoxZoom = (map: LeafletMap): void => {
+  const initMapBoxZoom = (map: MapLibreMap): void => {
     destroyMapBoxZoom()
-    if (!canDriveLeafletBox(map)) return
     mapRef = map
     const mapEl = map.getContainer()
     mapEl.addEventListener('pointerdown', onPointerDown, true)

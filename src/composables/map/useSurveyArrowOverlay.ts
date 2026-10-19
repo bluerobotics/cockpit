@@ -1,6 +1,15 @@
-import L, { type Map as LeafletMap } from 'leaflet'
+import type { Map as MapLibreMap, Marker } from 'maplibre-gl'
 import { type WatchStopHandle, watch } from 'vue'
 
+import {
+  divIconMarker,
+  fromMapLibreZoom,
+  lineFeature,
+  removeLayersAndSource,
+  setLineLayer,
+  slottedLayerId,
+  toLngLat,
+} from '@/libs/map/maplibre'
 import {
   type SurveyArrowAnchor,
   computeSurveyArrowAnchors,
@@ -10,9 +19,11 @@ import {
 } from '@/libs/map/survey-arrows'
 import type { Survey, Waypoint, WaypointCoordinates } from '@/types/mission'
 
-const ARROW_PANE = 'surveyArrowPane'
-const REFLY_PANE = 'surveyReflyPane'
-const PRIMARY_PANE = 'surveyPrimaryPane'
+// Arrows stack above the waypoint markers but below the waypoint-number tooltips (650).
+const arrowZIndex = '620'
+// Both pass layers sit above the mission path and the trail; the primary one is added second so blue wins crossings.
+const reflyLinesId = slottedLayerId('survey-legs', 'refly')
+const primaryLinesId = slottedLayerId('survey-legs', 'primary')
 
 // Preview legs match the dashed survey-path blue, crosshatch re-fly legs the purple crosshatch line, and
 // generated-survey legs the mission path blue.
@@ -65,8 +76,8 @@ export interface SurveyArrowSources {
  * Return type of {@link useSurveyArrowOverlay}.
  */
 export interface UseSurveyArrowOverlayReturn {
-  /** Binds the overlay to a Leaflet map, creates its pane, and starts reacting to the sources. */
-  initArrowOverlay: (map: LeafletMap) => void
+  /** Binds the overlay to a map and starts reacting to the sources. */
+  initArrowOverlay: (map: MapLibreMap) => void
   /** Removes every arrow, stops the watchers, and unbinds the map. */
   destroyArrowOverlay: () => void
 }
@@ -100,7 +111,7 @@ interface SurveyRenderData {
  * generated survey) and on each survey's mission entry and exit legs, never on any other plain
  * waypoint-to-waypoint segment. For generated crosshatch surveys it also
  * repaints the transects over the blue base line: the crosshatch re-fly pass in purple and the primary pass in
- * blue on top, so the two passes read distinctly and the blue lines win every crossing. Owns its panes, watchers,
+ * blue on top, so the two passes read distinctly and the blue lines win every crossing. Owns its layers, watchers,
  * and teardown so a view only wires an init/destroy pair. Renders are coalesced to one per animation frame so the
  * overlay tracks the survey lines live during dial rotation and waypoint drags without redundant work.
  * @param {SurveyArrowSources} sources - Reactive getters for the survey list, the live survey preview path, and the
@@ -108,11 +119,9 @@ interface SurveyRenderData {
  * @returns {UseSurveyArrowOverlayReturn} Methods to initialize and tear down the overlay.
  */
 export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArrowOverlayReturn => {
-  let mapRef: LeafletMap | undefined
-  let markers: L.Marker[] = []
+  let mapRef: MapLibreMap | undefined
+  let markers: Marker[] = []
   let arrowEls: (HTMLElement | null)[] = []
-  let reflyLines: L.Polyline[] = []
-  let primaryLines: L.Polyline[] = []
   let stopWatch: WatchStopHandle | undefined
   let rafId: number | null = null
 
@@ -169,7 +178,7 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
   const render = (): void => {
     if (!mapRef) return
     const map = mapRef
-    const zoom = map.getZoom()
+    const zoom = fromMapLibreZoom(map.getZoom())
     const scale = arrowScaleForZoom(zoom)
     const { anchors, reflySegments, primarySegments } = collectRenderData(zoom)
 
@@ -181,7 +190,7 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
     anchors.forEach((anchor, i) => {
       const transform = `rotate(${anchor.bearing}deg) scale(${scale})`
       if (markers[i]) {
-        markers[i].setLatLng(anchor.position)
+        markers[i].setLngLat(toLngLat(anchor.position))
         const el = arrowEls[i]
         if (el) {
           el.style.transform = transform
@@ -189,38 +198,27 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
           el.style.opacity = String(anchor.opacity)
         }
       } else {
-        const icon = L.divIcon({
+        const marker = divIconMarker({
           className: 'survey-arrow',
           html: `<div class="survey-arrow-glyph" style="transform: ${transform}; color: ${anchor.color}; opacity: ${anchor.opacity}">${arrowSvg}</div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          size: [24, 24],
         })
-        const marker = L.marker(anchor.position, { icon, interactive: false, keyboard: false, pane: ARROW_PANE }).addTo(
-          map
-        )
+        Object.assign(marker.getElement().style, { pointerEvents: 'none', zIndex: arrowZIndex })
+        marker.setLngLat(toLngLat(anchor.position)).addTo(map)
         markers[i] = marker
-        arrowEls[i] = marker.getElement()?.querySelector('.survey-arrow-glyph') ?? null
+        arrowEls[i] = marker.getElement().querySelector('.survey-arrow-glyph')
       }
     })
 
-    // Both passes are drawn at the mission polyline's width and full opacity so each fully hides the blue base line
-    // underneath it; the primary pane sits above the crosshatch pane so blue wins wherever the two passes cross.
-    const renderLines = (lines: L.Polyline[], segments: LegSegment[], color: string, pane: string): void => {
-      while (lines.length > segments.length) {
-        lines.pop()?.remove()
-      }
-      segments.forEach((segment, i) => {
-        const latLngs = [L.latLng(segment[0][0], segment[0][1]), L.latLng(segment[1][0], segment[1][1])]
-        if (lines[i]) {
-          lines[i].setLatLngs(latLngs)
-        } else {
-          lines[i] = L.polyline(latLngs, { color, weight: 3, opacity: 1, interactive: false, pane }).addTo(map)
-        }
-      })
+    // Both passes are drawn at the mission line's width and full opacity so each fully hides the blue base line
+    // underneath it; the primary layer sits above the crosshatch one so blue wins wherever the two passes cross.
+    const renderLines = (id: string, segments: LegSegment[], color: string): void => {
+      const features = segments.map((segment) => lineFeature(segment))
+      setLineLayer(map, id, 'survey-legs', { type: 'FeatureCollection', features }, { color, width: 3, opacity: 1 })
     }
 
-    renderLines(reflyLines, reflySegments, crosshatchArrowColor, REFLY_PANE)
-    renderLines(primaryLines, primarySegments, surveyArrowColor, PRIMARY_PANE)
+    renderLines(reflyLinesId, reflySegments, crosshatchArrowColor)
+    renderLines(primaryLinesId, primarySegments, surveyArrowColor)
   }
 
   // Coalesce bursts (dial rotation, waypoint drag) into one render on the next frame, so arrows repaint in step
@@ -233,27 +231,8 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
     })
   }
 
-  const initArrowOverlay = (map: LeafletMap): void => {
+  const initArrowOverlay = (map: MapLibreMap): void => {
     mapRef = map
-    if (!map.getPane(ARROW_PANE)) {
-      const pane = map.createPane(ARROW_PANE)
-      // Above the mission path (overlay pane, 400) but below the waypoint-number tooltips (650).
-      pane.style.zIndex = '620'
-      pane.style.pointerEvents = 'none'
-    }
-    if (!map.getPane(REFLY_PANE)) {
-      const pane = map.createPane(REFLY_PANE)
-      // Just above the mission path so the purple crosshatch lines sit on it, but below the waypoint markers (600).
-      pane.style.zIndex = '410'
-      pane.style.pointerEvents = 'none'
-    }
-    if (!map.getPane(PRIMARY_PANE)) {
-      const pane = map.createPane(PRIMARY_PANE)
-      // Above the crosshatch pane so the blue primary lines paint over the purple ones at every crossing.
-      pane.style.zIndex = '420'
-      pane.style.pointerEvents = 'none'
-    }
-
     map.on('zoomend', scheduleRender)
     stopWatch = watch(
       [() => sources.previewPath(), () => sources.surveys(), () => sources.missionWaypoints()],
@@ -271,12 +250,10 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
     }
     mapRef?.off('zoomend', scheduleRender)
     markers.forEach((marker) => marker.remove())
-    reflyLines.forEach((line) => line.remove())
-    primaryLines.forEach((line) => line.remove())
+    removeLayersAndSource(mapRef, [reflyLinesId], reflyLinesId)
+    removeLayersAndSource(mapRef, [primaryLinesId], primaryLinesId)
     markers = []
     arrowEls = []
-    reflyLines = []
-    primaryLines = []
     mapRef = undefined
   }
 

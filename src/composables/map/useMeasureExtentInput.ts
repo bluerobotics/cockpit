@@ -1,16 +1,18 @@
-import L, { type Map as LeafletMap } from 'leaflet'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 import { type ComputedRef, type Ref, computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 
+import { projectToContainer } from '@/libs/map/maplibre'
 import { clampExtent, minExtentInMeters, pointAtDistanceToward } from '@/libs/map/typed-extent'
+import type { WaypointCoordinates } from '@/types/mission'
 
 /** A segment on the map whose extent can be typed instead of drawn. */
 export interface MeasureExtentTarget {
   /** What the segment measures, named as it is read out and logged. */
   label: string
   /** Where the segment starts. */
-  from: L.LatLng
+  from: WaypointCoordinates
   /** Where the segment ends. */
-  to: L.LatLng
+  to: WaypointCoordinates
   /** Extent the segment currently has, in meters, which is the number a backspace starts deleting from. */
   liveValue: number
   /** Redraws the segment, so what is typed shows on the map without waiting for the cursor to move again. */
@@ -72,9 +74,9 @@ export interface UseMeasureExtentInputReturn {
   /** Whether an extent was typed away, so its tag reads blank instead of the measure it was showing. */
   isExtentCleared: (id: string) => boolean
   /** Applies a typed extent to a point still being chosen with the cursor, keeping only its direction. */
-  projectToLockedExtent: (id: string, from: L.LatLng, towards: L.LatLng) => L.LatLng
-  /** Binds the fields to a Leaflet map. */
-  initExtentInputs: (map: LeafletMap) => void
+  projectToLockedExtent: (id: string, from: WaypointCoordinates, towards: WaypointCoordinates) => WaypointCoordinates
+  /** Binds the fields to a map. */
+  initExtentInputs: (map: MapLibreMap) => void
 }
 
 /**
@@ -87,7 +89,7 @@ export interface UseMeasureExtentInputReturn {
 export const useMeasureExtentInput = (options: UseMeasureExtentInputOptions): UseMeasureExtentInputReturn => {
   const { shortcutFocus, onOpened } = options
 
-  let mapRef: LeafletMap | undefined
+  let mapRef: MapLibreMap | undefined
 
   const extentInputsOpen = ref(false)
   const focusedId = ref<string | null>(null)
@@ -96,13 +98,13 @@ export const useMeasureExtentInput = (options: UseMeasureExtentInputOptions): Us
   const targets = shallowRef<Record<string, MeasureExtentTarget>>({})
   const values = ref<Record<string, number | null>>({})
 
-  const initExtentInputs = (map: LeafletMap): void => {
+  const initExtentInputs = (map: MapLibreMap): void => {
     mapRef = map
   }
 
-  const boxPosition = (map: LeafletMap, target: MeasureExtentTarget): Pick<MeasureExtentBox, 'left' | 'top'> => {
-    const from = map.latLngToContainerPoint(target.from)
-    const to = map.latLngToContainerPoint(target.to)
+  const boxPosition = (map: MapLibreMap, target: MeasureExtentTarget): Pick<MeasureExtentBox, 'left' | 'top'> => {
+    const from = projectToContainer(map, target.from)
+    const to = projectToContainer(map, target.to)
 
     return { left: (from.x + to.x) / 2, top: (from.y + to.y) / 2 }
   }
@@ -183,12 +185,15 @@ export const useMeasureExtentInput = (options: UseMeasureExtentInputOptions): Us
     return value != null && Number.isFinite(value) ? clampExtent(value, minExtentInMeters) : null
   }
 
-  const projectToLockedExtent = (id: string, from: L.LatLng, towards: L.LatLng): L.LatLng => {
+  const projectToLockedExtent = (
+    id: string,
+    from: WaypointCoordinates,
+    towards: WaypointCoordinates
+  ): WaypointCoordinates => {
     const locked = lockedExtent(id)
     if (locked === null) return towards
 
-    const [lat, lng] = pointAtDistanceToward([from.lat, from.lng], [towards.lat, towards.lng], locked)
-    return L.latLng(lat, lng)
+    return pointAtDistanceToward(from, towards, locked)
   }
 
   // Shapes that do not put the box up on their own are typed by asking for it, and the ones that do can bring it

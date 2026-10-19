@@ -1,0 +1,150 @@
+/* Text inside every map keeps the metrics Leaflet's container gave it, so labels sized for it still fit. */
+.maplibregl-map {
+  font: 12px/1.5 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+
+/* Marker tooltips (see bindTooltip in src/libs/map/maplibre.ts), drawn as Leaflet drew its tooltips so the
+   per-surface tooltip classes keep styling them the same way. */
+.cockpit-tooltip {
+  position: absolute;
+  padding: 6px;
+  background-color: #fff;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  color: #222;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  z-index: 650;
+}
+
+.cockpit-tooltip-top:before,
+.cockpit-tooltip-bottom:before,
+.cockpit-tooltip-left:before,
+.cockpit-tooltip-right:before {
+  position: absolute;
+  pointer-events: none;
+  border: 6px solid transparent;
+  background: transparent;
+  content: '';
+}
+
+.cockpit-tooltip-bottom {
+  margin-top: 6px;
+}
+
+.cockpit-tooltip-top {
+  margin-top: -6px;
+}
+
+.cockpit-tooltip-bottom:before,
+.cockpit-tooltip-top:before {
+  left: 50%;
+  margin-left: -6px;
+}
+
+.cockpit-tooltip-top:before {
+  bottom: 0;
+  margin-bottom: -12px;
+  border-top-color: #fff;
+}
+
+.cockpit-tooltip-bottom:before {
+  top: 0;
+  margin-top: -12px;
+  margin-left: -6px;
+  border-bottom-color: #fff;
+}
+
+.cockpit-tooltip-left {
+  margin-left: -6px;
+}
+
+.cockpit-tooltip-right {
+  margin-left: 6px;
+}
+
+.cockpit-tooltip-left:before,
+.cockpit-tooltip-right:before {
+  top: 50%;
+  margin-top: -6px;
+}
+
+.cockpit-tooltip-left:before {
+  right: 0;
+  margin-right: -12px;
+  border-left-color: #fff;
+}
+
+.cockpit-tooltip-right:before {
+  left: 0;
+  margin-left: -12px;
+  border-right-color: #fff;
+}
+
+/* Controls stay above everything drawn over the map (tooltips, label and heatmap overlays), as they always did. */
+.maplibregl-ctrl-top-left,
+.maplibregl-ctrl-top-right,
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  z-index: 1000;
+}
+
+/* Markers read as clickable, as Leaflet's interactive markers did, instead of inheriting the map's grab cursor. */
+.maplibregl-marker {
+  cursor: pointer;
+}
+
+/* Zoom buttons keep Leaflet's touch-sized look: 30px squares with bold +/- glyphs instead of icons. The maps restyle
+   the surface around them. */
+.maplibregl-ctrl-group:has(.maplibregl-ctrl-zoom-in) {
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  background-clip: padding-box;
+  box-shadow: none;
+}
+
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-in,
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-out {
+  width: 30px;
+  height: 30px;
+  font: bold 22px 'Lucida Console', Monaco, monospace;
+  line-height: 30px;
+  text-indent: 1px;
+  color: inherit;
+}
+
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon,
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon {
+  display: none;
+}
+
+.maplibregl-ctrl-zoom-in::before {
+  content: '+';
+}
+
+.maplibregl-ctrl-zoom-out::before {
+  content: '\2212';
+}
+
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-in:disabled,
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-out:disabled {
+  color: #bbb;
+  cursor: default;
+}
+
+/* The scale bar inside its container (see framedScaleControl), drawn as Leaflet's scale line was. */
+.maplibregl-ctrl-scale.cockpit-scale-line {
+  margin: 0;
+  border: 2px solid #777;
+  border-top: none;
+  line-height: 1.1;
+  padding: 2px 5px 1px;
+  font-size: 12px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.8);
+  color: #333;
+  text-shadow: 1px 1px #fff;
+}

@@ -261,6 +261,7 @@ import {
   isValidTileUrlTemplate,
   normalizeTileMaxZoom,
   pickTileArchiveFiles,
+  probeTileProviderAccess,
   tileArchiveFormatFromFile,
 } from '@/libs/map/tile-provider-import'
 import { cachedTileArchiveIds } from '@/libs/map/tile-provider-storage'
@@ -383,6 +384,15 @@ const cancelUrlEdit = (): void => {
   clearUrlForm()
 }
 
+// Kept off the add path: the provider is saved either way, and an unreachable server proves nothing.
+const warnIfTilesBlocked = async (provider: Pick<CustomTileProviderMeta, 'name' | 'urlTemplate'>): Promise<void> => {
+  if (!provider.urlTemplate || (await probeTileProviderAccess(provider.urlTemplate)) !== 'blocked') return
+  const message =
+    `"${provider.name}" answers, but does not allow its tiles to be drawn by other sites, so the map will stay blank.` +
+    ' Ask the provider to enable cross-origin (CORS) access for its tiles.'
+  openSnackbar({ message, variant: 'warning', duration: 10000 })
+}
+
 const submitUrlProvider = (): void => {
   try {
     if (editingProviderId.value) {
@@ -403,21 +413,22 @@ const submitUrlProvider = (): void => {
       logUserAction('Updated a custom map provider')
       openSnackbar({ message: 'Custom map provider updated.', variant: 'success', duration: 3000 })
       cancelUrlEdit()
+      warnIfTilesBlocked({ name, urlTemplate })
       return
     }
 
-    missionStore.addCustomTileProvider(
-      buildUrlTileProvider({
-        name: urlForm.name,
-        urlTemplate: urlForm.urlTemplate,
-        maxZoom: urlForm.maxZoom,
-        tms: urlForm.tms,
-        attribution: urlForm.attribution,
-      })
-    )
+    const provider = buildUrlTileProvider({
+      name: urlForm.name,
+      urlTemplate: urlForm.urlTemplate,
+      maxZoom: urlForm.maxZoom,
+      tms: urlForm.tms,
+      attribution: urlForm.attribution,
+    })
+    missionStore.addCustomTileProvider(provider)
     logUserAction('Added a custom map provider by URL')
     openSnackbar({ message: 'Custom map provider added.', variant: 'success', duration: 3000 })
     clearUrlForm()
+    warnIfTilesBlocked(provider)
   } catch (error) {
     openSnackbar({ message: messageFromError(error), variant: 'error', duration: 5000 })
   }
