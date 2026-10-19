@@ -264,6 +264,7 @@ import {
   tileArchiveFormatFromFile,
 } from '@/libs/map/tile-provider-import'
 import { cachedTileArchiveIds } from '@/libs/map/tile-provider-storage'
+import { isBlueOsSettingsSyncEnabled } from '@/libs/settings-management'
 import { messageFromError } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -331,10 +332,14 @@ const isArchiveAvailableLocally = (provider: CustomTileProviderMeta): boolean =>
 const pendingSyncIcon = (provider: CustomTileProviderMeta): string =>
   isArchiveAvailableLocally(provider) ? 'mdi-cloud-clock-outline' : 'mdi-cloud-off-outline'
 
-const pendingSyncHint = (provider: CustomTileProviderMeta): string =>
-  isArchiveAvailableLocally(provider)
+const pendingSyncHint = (provider: CustomTileProviderMeta): string => {
+  if (!isArchiveAvailableLocally(provider)) {
+    return 'Imported on another computer. It cannot be shown here until that computer uploads it to the vehicle.'
+  }
+  return isBlueOsSettingsSyncEnabled()
     ? "Saved on this computer. Will upload to the vehicle once it's online."
-    : 'Imported on another computer. It cannot be shown here until that computer uploads it to the vehicle.'
+    : 'Saved on this computer. BlueOS settings sync is off, so it is not uploaded to the vehicle.'
+}
 
 const providerTypeLabel = (provider: CustomTileProviderMeta): string => {
   if (provider.type === 'url') return 'URL'
@@ -506,7 +511,7 @@ const performRemoveProvider = async (provider: CustomTileProviderMeta): Promise<
   if (missionStore.userLastCustomMapProviderId === provider.id) missionStore.userLastCustomMapProviderId = null
   try {
     // Matches what the confirmation dialog promised: the vehicle copy is only touched when it can be reached.
-    await deleteStoredTileProvider(provider, vehicleStore.isVehicleOnline ? vehicleStore.globalAddress : undefined)
+    await deleteStoredTileProvider(provider, vehicleStorageAddress.value)
   } catch (error) {
     // The entry is already gone from the list, so the user has to be told its bytes were left behind.
     const reason = messageFromError(error)
@@ -517,9 +522,16 @@ const performRemoveProvider = async (provider: CustomTileProviderMeta): Promise<
 
 // What removal does to the vehicle-stored archive, which depends on whether it ever reached the vehicle and on
 // the vehicle being reachable now, since only a live connection can actually delete it.
+const vehicleStorageAddress = computed(() =>
+  vehicleStore.isVehicleOnline && isBlueOsSettingsSyncEnabled() ? vehicleStore.globalAddress || undefined : undefined
+)
+
 const archiveRemovalNote = (provider: CustomTileProviderMeta): string => {
   if (provider.type !== 'file' || provider.pendingVehicleSync) return ''
-  if (!vehicleStore.globalAddress || !vehicleStore.isVehicleOnline) {
+  if (!isBlueOsSettingsSyncEnabled()) {
+    return ' The copy stored on the vehicle is kept, since BlueOS settings sync is off on this computer.'
+  }
+  if (!vehicleStorageAddress.value) {
     return ' The copy stored on the vehicle is kept, since no vehicle is connected to delete it from.'
   }
   return ' This also deletes the archive stored on the vehicle, which cannot be undone.'

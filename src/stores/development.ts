@@ -3,11 +3,11 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { openSnackbar } from '@/composables/snackbar'
 import { defaultShareHardwareDetails, shareHardwareDetailsKey } from '@/libs/external-telemetry/event-tracking'
-import { settingsManager } from '@/libs/settings-management'
+import { blueOsSettingsSyncEnablingKey, settingsManager } from '@/libs/settings-management'
 
 export const systemLoggingEnablingKey = 'cockpit-enable-system-logging'
-export const blueOsSettingsSyncEnablingKey = 'cockpit-enable-blueos-settings-sync'
 export const showSplashScreenOnStartupKey = 'cockpit-show-splash-screen-on-startup'
 
 export const useDevelopmentStore = defineStore('development', () => {
@@ -17,6 +17,20 @@ export const useDevelopmentStore = defineStore('development', () => {
   const enableSystemLogging = useBlueOsStorage(systemLoggingEnablingKey, true)
   const enableBlueOsSettingsSync = useStorage(blueOsSettingsSyncEnablingKey, true)
   const showSplashScreenOnStartup = useStorage(showSplashScreenOnStartupKey, true)
+
+  // The switch did nothing for a while, so a computer where it was turned off long ago is told once per session.
+  let syncOffNoticeShown = false
+  window.addEventListener('vehicle-sync-complete', () => {
+    if (enableBlueOsSettingsSync.value || syncOffNoticeShown) return
+    syncOffNoticeShown = true
+    openSnackbar({
+      message:
+        'BlueOS settings sync is off on this computer, so settings are not shared through the vehicle. ' +
+        'It can be turned back on in Settings > Dev.',
+      variant: 'info',
+      duration: 8000,
+    })
+  })
 
   const shareHardwareDetails = ref<boolean>(
     settingsManager.getKeyValue<boolean>(shareHardwareDetailsKey) ?? defaultShareHardwareDetails

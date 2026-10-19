@@ -34,6 +34,14 @@ const nullValue = 'null'
 const possibleNullValues = [fallbackUsername, fallbackVehicleId, nullValue, null, undefined, '']
 const keyValueUpdateDebounceTime = 100
 
+export const blueOsSettingsSyncEnablingKey = 'cockpit-enable-blueos-settings-sync'
+
+/**
+ * Whether this computer may sync its settings with BlueOS, as chosen in the Dev settings menu (on by default)
+ * @returns {boolean} False only when the user turned the sync off
+ */
+export const isBlueOsSettingsSyncEnabled = (): boolean => localStorage.getItem(blueOsSettingsSyncEnablingKey) !== 'false'
+
 // No `undefined`: a cleared setting is spelled `null`, so writing one with no value at all is a type error.
 export type SettingValue = string | number | boolean | object | null
 
@@ -1123,15 +1131,22 @@ export class SettingsManager {
   }
 
   private runVehicleGettingOnlinePipeline = async (vehicleAddress: string): Promise<void> => {
-    // Before anything else, back up old-style vehicle settings in the vehicle, if needed
-    await this.backupOldStyleVehicleSettingsIfNeeded(vehicleAddress)
+    // With the sync off, the vehicle id is still read so each vehicle keeps its own local settings, but no setting is
+    // read from or written to the vehicle, and leaving the address unset keeps the later per-change pushes local too.
+    const syncEnabled = isBlueOsSettingsSyncEnabled()
+    if (syncEnabled) {
+      // Before anything else, back up old-style vehicle settings in the vehicle, if needed
+      await this.backupOldStyleVehicleSettingsIfNeeded(vehicleAddress)
 
-    // Then migrate local old-style settings to the vehicle, if needed
-    await this.migrateOldStyleVehicleSettingsIfNeeded(vehicleAddress)
+      // Then migrate local old-style settings to the vehicle, if needed
+      await this.migrateOldStyleVehicleSettingsIfNeeded(vehicleAddress)
 
-    // Set the current vehicle address
-    console.log(`[SettingsManager] Setting current vehicle address to: '${vehicleAddress}'.`)
-    this.currentVehicleAddress = vehicleAddress
+      // Set the current vehicle address
+      console.log(`[SettingsManager] Setting current vehicle address to: '${vehicleAddress}'.`)
+      this.currentVehicleAddress = vehicleAddress
+    } else {
+      console.warn('[SettingsManager]', 'BlueOS settings sync is disabled. Keeping settings on this computer only.')
+    }
 
     // Get ID of the connected vehicle
     const vehicleId = await this.getVehicleIdFromVehicleOrGenerateAndPushANewOne(vehicleAddress)
@@ -1143,7 +1158,7 @@ export class SettingsManager {
 
     // Import migrated vehicle settings to local storage if we don't have them yet
     // This should happen after we have the vehicle ID, because we need to know to which vehicle we are importing the settings to
-    await this.importMigratedVehicleSettingsToLocalStorageIfNeeded(vehicleAddress)
+    if (syncEnabled) await this.importMigratedVehicleSettingsToLocalStorageIfNeeded(vehicleAddress)
 
     let toBeUsedUser: string | undefined | undefined = undefined
     let toBeUsedVehicle: string | undefined | undefined = undefined
@@ -1190,6 +1205,12 @@ export class SettingsManager {
 
     // Set the local settings for the user/vehicle combination that we found (or the migrated old-style settings)
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, toBeUsedSettings)
+
+    if (!syncEnabled) {
+      this.saveLastConnectedVehicle(this.currentVehicleId)
+      this.notifyAllListenersAboutSettingsChange()
+      return
+    }
 
     // Now that we have local settings for the current user and vehicle, we can get the best settings between local and vehicle
     console.log('[SettingsManager]', `Getting best settings between local and vehicle for user '${this.currentUsername}' and vehicle '${this.currentVehicleId}'.`)
