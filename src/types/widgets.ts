@@ -932,6 +932,28 @@ export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
 }
 
 /**
+ * Widgets whose contents stay interactive in edit mode, because the mini widgets they hold are rearranged there
+ */
+export const widgetKeepsInputInEditMode: Record<WidgetType, boolean> = {
+  [WidgetType.Attitude]: false,
+  [WidgetType.Compass]: false,
+  [WidgetType.CompassHUD]: false,
+  [WidgetType.CollapsibleContainer]: true,
+  [WidgetType.DepthHUD]: false,
+  [WidgetType.DoItYourself]: false,
+  [WidgetType.IFrame]: false,
+  [WidgetType.ImageView]: false,
+  [WidgetType.Map]: false,
+  [WidgetType.MiniMap]: false,
+  [WidgetType.MiniWidgetsBar]: true,
+  [WidgetType.Plotter]: false,
+  [WidgetType.URLVideoPlayer]: false,
+  [WidgetType.VideoPlayer]: false,
+  [WidgetType.VirtualHorizon]: false,
+  [WidgetType.MissionControlPanel]: false,
+}
+
+/**
  * Default sizes for widgets when first added to a view
  */
 export const widgetDefaultSizes: Partial<Record<WidgetType, SizeRect2D>> = {

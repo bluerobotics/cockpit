@@ -22,7 +22,7 @@
     <div
       v-if="widgetHasOwnContextMenu[widget.component as WidgetType]"
       class="innerWidget"
-      :class="{ 'overflow-hidden': hideOverflow }"
+      :class="{ 'overflow-hidden': hideOverflow, 'content-locked': contentLocked }"
       :style="{ opacity: widget.options.opacity ?? 1 }"
     >
       <slot></slot>
@@ -32,7 +32,7 @@
       ref="innerWidgetRef"
       v-contextmenu="handleContextMenu"
       class="innerWidget"
-      :class="{ 'overflow-hidden': hideOverflow }"
+      :class="{ 'overflow-hidden': hideOverflow, 'content-locked': contentLocked }"
       :style="{ opacity: widget.options.opacity ?? 1 }"
     >
       <slot></slot>
@@ -106,6 +106,7 @@ import {
   isWidgetConfigurable,
   minWidgetOpacity,
   widgetHasOwnContextMenu,
+  widgetKeepsInputInEditMode,
   WidgetType,
 } from '@/types/widgets'
 
@@ -583,6 +584,11 @@ const overlayDisplayStyle = computed(() => {
   return allowMoving.value || allowResizing.value ? 'block' : 'none'
 })
 
+// While the layout is edited a widget is something to move and resize, so its own controls stop taking input.
+const contentLocked = computed(
+  () => widgetStore.editingMode && !widgetKeepsInputInEditMode[widget.value.component as WidgetType]
+)
+
 const userInteractionStyle = computed(() => {
   return allowMoving.value || allowResizing.value ? 'none' : ''
 })
@@ -674,6 +680,10 @@ const showingAlignmentGuides = computed(
   justify-content: center;
   align-items: center;
   user-select: v-bind('userInteractionStyle');
+}
+/* Every descendant, since some (POI markers, map buttons) set pointer-events back on themselves. */
+.innerWidget.content-locked * {
+  pointer-events: none !important;
 }
 .editing-buttons {
   position: absolute;
