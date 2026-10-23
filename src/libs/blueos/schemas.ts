@@ -119,4 +119,7 @@ export const ExtrasJsonSchema = z.object({
   widgets: z.array(ExternalWidgetSetupInfoSchema).default([]),
   actions: z.array(ActionConfigSchema).default([]),
   joystickSuggestions: z.array(JoystickMapSuggestionGroupSchema).optional(),
+  webSockets: z
+    .array(z.object({ name: z.string().min(1), path: z.string().startsWith('/', 'Start the path with a slash.') }))
+    .default([]),
 })
