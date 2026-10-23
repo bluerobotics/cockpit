@@ -1062,7 +1062,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     Object.values(blueOsVariables).forEach((variable) => {
       if (!Object.values(getAllDataLakeVariablesInfo()).find((v) => v.id === variable.id)) {
         // @ts-ignore: The type is right, only being incorrectly inferred by TS
-        createDataLakeVariable({ ...variable, persistent: false, persistValue: false })
+        createDataLakeVariable({ ...variable, persistent: false, persistValue: false, source: 'BlueOS' })
       }
     })
 
