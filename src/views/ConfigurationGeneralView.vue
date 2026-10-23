@@ -437,7 +437,9 @@
                 <li>
                   They can also draw GeoJSON overlays on the map:
                   <span class="font-mono">{{ exampleMapOverlayWebSocketMessage }}</span
-                  >. Sending the same id again replaces the overlay, and
+                  >. Sending the same id again replaces the overlay,
+                  <span class="font-mono">cockpit:appendMapOverlayFeatures</span> adds features to it,
+                  <span class="font-mono">cockpit:clearMapOverlay</span> empties it, and
                   <span class="font-mono">cockpit:removeMapOverlay</span> removes it. Overlays are saved on this
                   computer unless <span class="font-mono">live</span> is true. Every sender shares the same ids, so
                   prefix them with your software's name.

@@ -103,6 +103,24 @@ export function setMapOverlay(overlay: ExternalMapOverlay): void {
 }
 
 /**
+ * Adds features to a map overlay without re-sending the ones it already has, for a track that grows as the
+ * vehicle moves.
+ * @param {string} id - The id of an overlay already sent with `setMapOverlay`
+ * @param {ExternalMapOverlay['geojson']['features']} features - The GeoJSON features to add
+ */
+export function appendMapOverlayFeatures(id: string, features: ExternalMapOverlay['geojson']['features']): void {
+  window.parent.postMessage({ type: 'cockpit:appendMapOverlayFeatures', id, features }, '*')
+}
+
+/**
+ * Removes every feature from a map overlay, keeping the overlay itself to be appended to again.
+ * @param {string} id - The id of the overlay
+ */
+export function clearMapOverlay(id: string): void {
+  window.parent.postMessage({ type: 'cockpit:clearMapOverlay', id }, '*')
+}
+
+/**
  * Removes a map overlay from Cockpit, including its saved copy.
  * @param {string} id - The id of the overlay
  */

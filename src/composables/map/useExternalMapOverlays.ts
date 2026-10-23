@@ -31,7 +31,7 @@ export interface ReceivedMapOverlay {
    */
   features: ExternalMapOverlayFeature[]
   /**
-   * Bumped whenever the features are replaced, so maps know to redraw them
+   * Bumped whenever the features are replaced rather than appended to, so maps know to redraw them all
    */
   revision: number
 }
@@ -142,6 +142,23 @@ const createState = (): ExternalMapOverlaysState => {
         changeCount.value++
         if (!live) persist(id)
         else if (previous && !previous.live) forget(id)
+        return
+      }
+      case 'cockpit:appendMapOverlayFeatures': {
+        const overlay = existingOverlay(command.id)
+        // ponytail: an overlay appended to grows without bound; cap or decimate it if senders stream for hours.
+        // One push per feature, since spreading a large batch into a single call can overflow the stack.
+        command.features.forEach((feature) => overlay.features.push(feature))
+        changeCount.value++
+        if (!overlay.live) persist(overlay.id)
+        return
+      }
+      case 'cockpit:clearMapOverlay': {
+        const overlay = existingOverlay(command.id)
+        overlay.features = []
+        overlay.revision++
+        changeCount.value++
+        if (!overlay.live) persist(overlay.id)
         return
       }
       case 'cockpit:removeMapOverlay':
