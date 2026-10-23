@@ -1,3 +1,4 @@
+import type { ExternalMapOverlay } from '@/libs/map/external-overlay-api'
 import type { ExternalPoi, ExternalPoiUpdate } from '@/libs/poi/external-api'
 
 import { CallbackRateLimiter } from './callback-rate-limiter'
@@ -72,4 +73,39 @@ export function updatePointOfInterest(poi: ExternalPoiUpdate): void {
  */
 export function removePointOfInterest(id: string): void {
   window.parent.postMessage({ type: 'cockpit:removePointOfInterest', id }, '*')
+}
+
+/**
+ * Draws a GeoJSON overlay on Cockpit's maps, replacing any overlay already using its id. Features are styled by
+ * their simplestyle-spec properties (`stroke`, `stroke-width`, `stroke-opacity`, `fill`, `fill-opacity`,
+ * `marker-color`, `marker-size`). The overlay is saved on the computer running Cockpit, unless `live` is true,
+ * which suits data that is re-sent as it changes.
+ * @param {ExternalMapOverlay} overlay - The overlay. Every sender shares the same ids, so prefix it with your
+ * extension's name
+ * @example
+ * ```typescript
+ * setMapOverlay({
+ *   id: 'my-extension-route',
+ *   name: 'Route',
+ *   geojson: {
+ *     type: 'FeatureCollection',
+ *     features: [{
+ *       type: 'Feature',
+ *       properties: { stroke: '#FFFF00' },
+ *       geometry: { type: 'LineString', coordinates: [[-48.5585, -27.5935], [-48.5575, -27.5925]] },
+ *     }],
+ *   },
+ * })
+ * ```
+ */
+export function setMapOverlay(overlay: ExternalMapOverlay): void {
+  window.parent.postMessage({ type: 'cockpit:setMapOverlay', overlay }, '*')
+}
+
+/**
+ * Removes a map overlay from Cockpit, including its saved copy.
+ * @param {string} id - The id of the overlay
+ */
+export function removeMapOverlay(id: string): void {
+  window.parent.postMessage({ type: 'cockpit:removeMapOverlay', id }, '*')
 }
