@@ -441,8 +441,9 @@
                   <span class="font-mono">cockpit:appendMapOverlayFeatures</span> adds features to it,
                   <span class="font-mono">cockpit:clearMapOverlay</span> empties it, and
                   <span class="font-mono">cockpit:removeMapOverlay</span> removes it. Overlays are saved on this
-                  computer unless <span class="font-mono">live</span> is true. Every sender shares the same ids, so
-                  prefix them with your software's name.
+                  computer unless <span class="font-mono">live</span> is true. For a GeoTIFF, send
+                  <span class="font-mono">cockpit:setMapGeoTiff</span> with its URL instead, and Cockpit downloads it
+                  once. Every sender shares the same ids, so prefix them with your software's name.
                 </li>
                 <li>
                   You can use data-lake variables to compose the URL, for example:

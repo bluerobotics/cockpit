@@ -706,6 +706,10 @@ export interface MapOverlayMeta {
    * Creation timestamp (epoch milliseconds).
    */
   createdAt: number
+  /**
+   * Id the sending software gave the overlay, when it was sent by external software rather than loaded by the user.
+   */
+  externalId?: string
 }
 
 /**
