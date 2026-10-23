@@ -74,6 +74,24 @@ export interface ExtrasJson {
 }
 
 /**
+ * Cockpit extras of one BlueOS extension
+ */
+export interface ExtensionExtras {
+  /**
+   * Name of the extension
+   */
+  extensionName: string
+  /**
+   * The BlueOS service the extension runs as, which locates its address
+   */
+  service: Service
+  /**
+   * The extras the extension offers
+   */
+  extras: ExtrasJson
+}
+
+/**
  * Service object from BlueOS
  */
 export interface Service {
