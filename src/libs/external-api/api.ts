@@ -1,4 +1,4 @@
-import type { ExternalMapOverlay } from '@/libs/map/external-overlay-api'
+import type { ExternalMapGeoTiff, ExternalMapOverlay } from '@/libs/map/external-overlay-api'
 import type { ExternalPoi, ExternalPoiUpdate } from '@/libs/poi/external-api'
 
 import { CallbackRateLimiter } from './callback-rate-limiter'
@@ -122,7 +122,27 @@ export function clearMapOverlay(id: string): void {
 }
 
 /**
- * Removes a map overlay from Cockpit, including its saved copy.
+ * Has Cockpit download a GeoTIFF and show it on its maps, replacing the one already using its id. The file is
+ * downloaded once and saved like a GeoTIFF the operator loaded, so send it again to update it. The server must
+ * allow Cockpit's origin through CORS.
+ * @param {ExternalMapGeoTiff} geoTiff - Id, name, URL and render mode of the overlay. Data-lake inputs in the URL
+ * are resolved, so `{{ vehicle-address }}` becomes the address Cockpit reaches the vehicle at
+ * @example
+ * ```typescript
+ * setMapGeoTiff({
+ *   id: 'my-extension-depth',
+ *   name: 'Depth',
+ *   url: 'http://{{ vehicle-address }}:9000/survey/depth.tif',
+ *   renderMode: 'bathymetry',
+ * })
+ * ```
+ */
+export function setMapGeoTiff(geoTiff: ExternalMapGeoTiff): void {
+  window.parent.postMessage({ type: 'cockpit:setMapGeoTiff', geoTiff }, '*')
+}
+
+/**
+ * Removes a map overlay from Cockpit, GeoJSON or GeoTIFF, including its saved copy.
  * @param {string} id - The id of the overlay
  */
 export function removeMapOverlay(id: string): void {
