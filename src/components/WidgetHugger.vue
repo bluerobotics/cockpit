@@ -335,7 +335,9 @@ const clampPositionToValidArea = (desiredPos: Point2D, widgetSize: SizeRect2D): 
   const { top: topBarNormalized, bottom: bottomBarNormalized } = barInsetsNormalized.value
   const visibleAreaHeight = 1 - topBarNormalized - bottomBarNormalized
 
-  const widgetTallerThanVisibleArea = widgetSize.height >= visibleAreaHeight
+  // A widget exactly as tall as the area (resized or pinched up to the bars) still fits between them; the margin keeps
+  // rounding from tipping it into the taller-than case, which would let it slide under a bar.
+  const widgetTallerThanVisibleArea = widgetSize.height > visibleAreaHeight + 1e-6
   const minY = widgetTallerThanVisibleArea ? 0 : topBarNormalized
   const maxY = widgetTallerThanVisibleArea
     ? Math.max(0, 1 - widgetSize.height)
