@@ -4393,7 +4393,14 @@ const createSurveyVertexMarker = (
       const popup = target.getElement()?.querySelector('.delete-popup') as HTMLDivElement
       if (popup) popup.style.display = 'none'
     })
-    .on('click', (event: L.LeafletEvent) => {
+    .on('click', (event: L.LeafletMouseEvent) => {
+      // While the area is still being drawn, a click on any corner closes it, leaving deletion to the trash button.
+      const clickedTrash = (event.originalEvent.target as Element | null)?.closest('.delete-popup')
+      if (isDrawingSurveyPolygon.value && surveyPolygonVertexesPositions.value.length >= 3 && !clickedTrash) {
+        logUserAction('Closed survey polygon by clicking a vertex')
+        isDrawingSurveyPolygon.value = false
+        return
+      }
       const target = event.target as L.Marker
       onClick(target, event)
     })
