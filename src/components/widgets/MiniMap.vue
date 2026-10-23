@@ -8,12 +8,12 @@
   >
     <div ref="mapEl" class="minimap-canvas"></div>
     <v-icon
-      class="minimap-drag-handle"
+      class="minimap-drag-handle touch-none"
       color="white"
       aria-label="Drag to move the MiniMap"
       title="Drag to move the MiniMap"
-      @mousedown="enableMovingOnDrag"
-      @mouseup="disableMovingOnDrag"
+      @pointerdown="enableMovingOnDrag"
+      @pointerup="disableMovingOnDrag"
       >mdi-drag</v-icon
     >
     <div
@@ -400,18 +400,18 @@ onBeforeUnmount(mapOverlays.destroyOverlays)
 const enableMovingOnDrag = (): void => {
   logUserAction('Started dragging the MiniMap widget')
   widgetStore.allowMovingAndResizing(widget.value.hash, true)
-  window.addEventListener('mouseup', disableMovingOnDrag)
+  window.addEventListener('pointerup', disableMovingOnDrag)
   window.addEventListener('dragend', disableMovingOnDrag)
 }
 
 const disableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(widget.value.hash, widgetStore.editingMode)
-  window.removeEventListener('mouseup', disableMovingOnDrag)
+  window.removeEventListener('pointerup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
 }
 
 onBeforeUnmount(() => {
-  window.removeEventListener('mouseup', disableMovingOnDrag)
+  window.removeEventListener('pointerup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
 })
 

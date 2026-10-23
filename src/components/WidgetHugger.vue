@@ -46,7 +46,7 @@
       class="editing-buttons"
       size="32"
       variant="text"
-      @mousedown.stop
+      @pointerdown.stop
       @click="widgetStore.toggleFullScreen(widget)"
     />
     <div class="resize-handle top-left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
@@ -88,6 +88,7 @@ import { useElementHover, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
+import { cancelLongPress, longPressMoveTolerance } from '@/directives/contextMenu'
 import { constrain, snapToInterval } from '@/libs/utils'
 import {
   type AxisSpan,
@@ -369,6 +370,12 @@ const alignDraggedPosition = (desiredPos: Point2D, viewSize: ReturnType<typeof g
   }
 }
 
+// A finger held a moment before a gesture reads as a long press, and its menu would ride along with the widget.
+const dismissLongPressMenu = (): void => {
+  cancelLongPress()
+  contextMenuVisible.value = false
+}
+
 const handleDrag = (event: MouseEvent): void => {
   if (!draggingWidget.value || !initialMousePos.value) return
 
@@ -379,6 +386,9 @@ const handleDrag = (event: MouseEvent): void => {
   const desiredPos = { x: initialWidgetPos.value.x + dx, y: initialWidgetPos.value.y + dy }
   position.value = clampPositionToValidArea(alignDraggedPosition(desiredPos, viewSize), size.value)
   updateAlignmentGuides()
+  // A finger held still for the menu drifts a little, so only a real drag takes the menu away.
+  const moved = Math.hypot(event.clientX - initialMousePos.value.x, event.clientY - initialMousePos.value.y)
+  if (moved > longPressMoveTolerance) dismissLongPressMenu()
 }
 
 const minWidgetSize = 0.01
@@ -536,25 +546,28 @@ onMounted(async () => {
     for (let i = 0; i < widgetResizeHandles.value.length; i++) {
       const handle = widgetResizeHandles.value[i]
       // @ts-ignore
-      handle.addEventListener('mousedown', handleResizeStart)
+      handle.addEventListener('pointerdown', handleResizeStart)
     }
   }
 
-  outerWidgetRef.value?.addEventListener('mousedown', function (event: MouseEvent) {
-    if (event.button === 0) {
+  outerWidgetRef.value?.addEventListener('pointerdown', function (event: PointerEvent) {
+    // A pointerdown prevented inside never produced the mousedown this listened to before, so it still starts no drag.
+    if (event.button === 0 && !event.defaultPrevented) {
       handleDragStart(event)
     }
   })
 
-  document.addEventListener('mousemove', handleDrag)
-  document.addEventListener('mousemove', handleResize)
-  document.addEventListener('mouseup', handleEnd)
+  document.addEventListener('pointermove', handleDrag)
+  document.addEventListener('pointermove', handleResize)
+  document.addEventListener('pointerup', handleEnd)
+  document.addEventListener('pointercancel', handleEnd)
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('mousemove', handleDrag)
-  document.removeEventListener('mousemove', handleResize)
-  document.removeEventListener('mouseup', handleEnd)
+  document.removeEventListener('pointermove', handleDrag)
+  document.removeEventListener('pointermove', handleResize)
+  document.removeEventListener('pointerup', handleEnd)
+  document.removeEventListener('pointercancel', handleEnd)
   document.documentElement.classList.remove('widget-dragging')
 })
 
@@ -667,6 +680,7 @@ const showingAlignmentGuides = computed(
 .outerWidget {
   position: absolute;
   cursor: v-bind('cursorStyle');
+  touch-action: v-bind('userInteractionStyle');
   left: v-bind('positionStyle.left');
   top: v-bind('positionStyle.top');
   width: v-bind('sizeStyle.width');

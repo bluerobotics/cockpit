@@ -7,7 +7,11 @@
     >
       <div class="flex flex-col justify-start items-center h-full pt-2 cursor-pointer">
         <div class="flex justify-between w-full px-2 pb-[2px] border-b-[1px] border-[#FFFFFF15]">
-          <v-icon class="cursor-grab opacity-40" @mousedown="enableMovingOnDrag" @mouseup="disableMovingOnDrag">
+          <v-icon
+            class="cursor-grab opacity-40 touch-none"
+            @pointerdown="enableMovingOnDrag"
+            @pointerup="disableMovingOnDrag"
+          >
             mdi-drag
           </v-icon>
           <div class="select-none text-[14px] font-bold mt-[1px]">Mission control panel</div>
@@ -171,13 +175,13 @@ const toggleWrapContainer = (): void => {
 
 const enableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(widget.value.hash, true)
-  window.addEventListener('mouseup', disableMovingOnDrag)
+  window.addEventListener('pointerup', disableMovingOnDrag)
   window.addEventListener('dragend', disableMovingOnDrag)
 }
 
 const disableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(widget.value.hash, widgetStore.editingMode)
-  window.removeEventListener('mouseup', disableMovingOnDrag)
+  window.removeEventListener('pointerup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
 }
 

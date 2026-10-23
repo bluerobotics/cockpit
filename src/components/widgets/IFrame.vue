@@ -14,9 +14,9 @@
           :class="expandsUpward ? 'order-2' : 'order-1'"
         >
           <div
-            class="flex items-center gap-1 flex-1 min-w-0 cursor-grab select-none"
-            @mousedown="enableMovingOnDrag"
-            @mouseup="disableMovingOnDrag"
+            class="flex items-center gap-1 flex-1 min-w-0 cursor-grab select-none touch-none"
+            @pointerdown="enableMovingOnDrag"
+            @pointerup="disableMovingOnDrag"
           >
             <v-icon class="opacity-40 flex-shrink-0">mdi-drag</v-icon>
             <span class="flex-1 text-center truncate">{{ widget.options.containerName }}</span>
@@ -441,13 +441,13 @@ const toBeUsedURL = computed(() => {
 
 const enableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(widget.value.hash, true)
-  window.addEventListener('mouseup', disableMovingOnDrag)
+  window.addEventListener('pointerup', disableMovingOnDrag)
   window.addEventListener('dragend', disableMovingOnDrag)
 }
 
 const disableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(widget.value.hash, widgetStore.editingMode)
-  window.removeEventListener('mouseup', disableMovingOnDrag)
+  window.removeEventListener('pointerup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
 }
 
