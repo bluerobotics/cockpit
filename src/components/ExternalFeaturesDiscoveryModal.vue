@@ -790,7 +790,11 @@ import {
   getAllMavlinkMessageActionConfigs,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
-import { getActionsFromBlueOS, getJoystickSuggestionsFromBlueOS } from '@/libs/blueos'
+import {
+  actionsFromExtensionExtras,
+  getExtensionExtrasFromBlueOS,
+  joystickSuggestionsFromExtensionExtras,
+} from '@/libs/blueos'
 import { allAvailableButtons } from '@/libs/joystick/protocols'
 import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -1607,40 +1611,6 @@ const confirmCloseModal = (): void => {
 }
 
 /**
- * Check for available actions from BlueOS.
- */
-const checkForBlueOSActions = async (): Promise<void> => {
-  try {
-    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
-    const actionsFromExtensions = await getActionsFromBlueOS(vehicleAddress)
-
-    const actions = actionsFromExtensions.flatMap((extension) =>
-      extension.actionConfigs.map((action) => ({
-        extensionName: extension.extensionName,
-        ...action,
-      }))
-    )
-
-    discoveredActions.value = actions
-  } catch (error) {
-    console.error('Failed to fetch actions from BlueOS:', error)
-  }
-}
-
-/**
- * Check for available joystick suggestions from BlueOS.
- */
-const checkForBlueOSJoystickSuggestions = async (): Promise<void> => {
-  try {
-    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
-    const suggestions = await getJoystickSuggestionsFromBlueOS(vehicleAddress)
-    discoveredJoystickSuggestions.value = suggestions
-  } catch (error) {
-    console.error('Failed to fetch joystick suggestions from BlueOS:', error)
-  }
-}
-
-/**
  * Guard to prevent the isVisible watcher from re-fetching when auto-opened on mount
  */
 let isAutoOpening = false
@@ -1655,7 +1625,16 @@ let hasAutoOpened = false
  * Fetch features from BlueOS without changing modal visibility
  */
 const fetchBlueOSFeatures = async (): Promise<void> => {
-  await Promise.all([checkForBlueOSActions(), checkForBlueOSJoystickSuggestions()])
+  try {
+    const vehicleAddress = await mainVehicleStore.getVehicleAddress()
+    const extensionExtras = await getExtensionExtrasFromBlueOS(vehicleAddress)
+    discoveredActions.value = actionsFromExtensionExtras(extensionExtras).flatMap((extension) =>
+      extension.actionConfigs.map((action) => ({ extensionName: extension.extensionName, ...action }))
+    )
+    discoveredJoystickSuggestions.value = joystickSuggestionsFromExtensionExtras(extensionExtras)
+  } catch (error) {
+    console.error('Failed to fetch extension features from BlueOS:', error)
+  }
 }
 
 /**
