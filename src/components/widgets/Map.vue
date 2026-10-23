@@ -275,6 +275,8 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
+import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
 import { useMapBoxZoom } from '@/composables/map/useMapBoxZoom'
 import { useMapCenterFromUserLocation } from '@/composables/map/useMapCenterFromUserLocation'
@@ -666,6 +668,10 @@ const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
 
+// Draws the overlays external software (BlueOS extensions, embedded pages) sent onto this map
+const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
+const hasAnyMapOverlay = useHasAnyMapOverlay()
+
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
@@ -950,6 +956,7 @@ onMounted(async () => {
 
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
+  if (map.value) initExternalOverlayLayers(map.value, layerControl)
 
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   if (map.value)
@@ -1163,6 +1170,7 @@ onBeforeUnmount(() => {
 
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
+  destroyExternalOverlayLayers()
   destroyCustomTileProviders()
 
   if (map.value) {
@@ -1556,7 +1564,7 @@ const updateSkipToWpMenu = (): void => {
 const updateOverlayMenuLabel = (): void => {
   const overlayItem = menuItems.find((item) => (item as any)._isOverlay === true)
   if (overlayItem) {
-    overlayItem.item = missionStore.mapOverlays.length > 0 ? 'Manage overlays' : 'Add overlay (GeoTIFF)'
+    overlayItem.item = hasAnyMapOverlay.value ? 'Manage overlays' : 'Add overlay (GeoTIFF)'
   }
 }
 
