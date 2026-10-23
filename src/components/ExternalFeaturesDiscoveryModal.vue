@@ -16,6 +16,9 @@
         >
           Joystick Mappings
         </v-tab>
+        <v-tab value="connections" :class="{ 'tab-blink': activeTab !== 'connections' && pendingOffers.length > 0 }">
+          Connections
+        </v-tab>
       </v-tabs>
 
       <v-tabs-window v-model="activeTab">
@@ -604,6 +607,72 @@
             </div>
           </div>
         </v-tabs-window-item>
+
+        <v-tabs-window-item value="connections">
+          <div v-if="pendingOffers.length === 0" class="text-center py-8">
+            <v-icon size="50" class="mb-3 opacity-50">mdi-lan-connect</v-icon>
+            <p class="opacity-70">No new connections offered by extensions.</p>
+          </div>
+          <template v-else>
+            <p class="mb-2 opacity-70">
+              These extensions can send data, points of interest and map overlays to Cockpit once connected:
+            </p>
+            <v-list class="bg-transparent">
+              <v-list-item v-for="offer in pendingOffers" :key="offer.url" class="mb-3 p-0">
+                <v-card variant="outlined" class="w-full action-card">
+                  <v-card-item>
+                    <v-card-title class="font-medium pb-0">{{ offer.name }}</v-card-title>
+                    <div class="flex justify-between items-center my-2">
+                      <v-btn
+                        class="bg-[#FFFFFF22]"
+                        variant="flat"
+                        prepend-icon="mdi-close"
+                        size="small"
+                        @click="ignoreOffer(offer)"
+                      >
+                        Ignore
+                      </v-btn>
+                      <span class="text-xs opacity-70">from {{ offer.extensionName }}</span>
+                      <v-btn
+                        class="bg-[#FFFFFF22]"
+                        variant="flat"
+                        prepend-icon="mdi-lan-connect"
+                        size="small"
+                        @click="acceptOffer(offer)"
+                      >
+                        Connect
+                      </v-btn>
+                    </div>
+                  </v-card-item>
+                </v-card>
+              </v-list-item>
+            </v-list>
+          </template>
+          <template v-if="handledOffers.length > 0">
+            <p class="mb-2 opacity-70">Offered before and not connected:</p>
+            <v-list class="bg-transparent">
+              <v-list-item v-for="offer in handledOffers" :key="offer.url" class="mb-3 p-0">
+                <v-card variant="outlined" class="w-full">
+                  <v-card-item>
+                    <v-card-title class="font-medium pb-0">{{ offer.name }}</v-card-title>
+                    <div class="flex justify-between items-center my-2">
+                      <span class="text-xs opacity-70">from {{ offer.extensionName }}</span>
+                      <v-btn
+                        class="bg-[#FFFFFF22]"
+                        variant="flat"
+                        prepend-icon="mdi-lan-connect"
+                        size="small"
+                        @click="acceptOffer(offer)"
+                      >
+                        Connect
+                      </v-btn>
+                    </div>
+                  </v-card-item>
+                </v-card>
+              </v-list-item>
+            </v-list>
+          </template>
+        </v-tabs-window-item>
       </v-tabs-window>
 
       <!-- Joystick Suggestion Application Dialog -->
@@ -784,6 +853,7 @@ import GlassModal from '@/components/GlassModal.vue'
 import JoystickButtonIndicator from '@/components/JoystickButtonIndicator.vue'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
+import { useExtensionWebSocketOffers } from '@/composables/useExtensionWebSocketOffers'
 import { getAllJavascriptActionConfigs, registerJavascriptActionConfig } from '@/libs/actions/free-javascript'
 import { getAllHttpRequestActionConfigs, registerHttpRequestActionConfig } from '@/libs/actions/http-request'
 import {
@@ -794,6 +864,7 @@ import {
   actionsFromExtensionExtras,
   getExtensionExtrasFromBlueOS,
   joystickSuggestionsFromExtensionExtras,
+  webSocketOffersFromExtensionExtras,
 } from '@/libs/blueos'
 import { allAvailableButtons } from '@/libs/joystick/protocols'
 import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
@@ -819,6 +890,7 @@ const mainVehicleStore = useMainVehicleStore()
 const { openSnackbar } = useSnackbar()
 const controllerStore = useControllerStore()
 const interfaceStore = useAppInterfaceStore()
+const { discoveredOffers, pendingOffers, handledOffers, acceptOffer, ignoreOffer } = useExtensionWebSocketOffers()
 
 /**
  * Props for the component
@@ -1195,7 +1267,7 @@ const hasPendingJoystickSuggestions = computed(() => filteredJoystickSuggestions
  * Whether there are new extension features that still need user action
  */
 const hasPendingBlueOSFeatures = computed(() => {
-  return hasPendingActions.value || hasPendingJoystickSuggestions.value
+  return hasPendingActions.value || hasPendingJoystickSuggestions.value || pendingOffers.value.length > 0
 })
 
 /**
@@ -1632,6 +1704,7 @@ const fetchBlueOSFeatures = async (): Promise<void> => {
       extension.actionConfigs.map((action) => ({ extensionName: extension.extensionName, ...action }))
     )
     discoveredJoystickSuggestions.value = joystickSuggestionsFromExtensionExtras(extensionExtras)
+    discoveredOffers.value = webSocketOffersFromExtensionExtras(extensionExtras)
   } catch (error) {
     console.error('Failed to fetch extension features from BlueOS:', error)
   }
@@ -1647,6 +1720,8 @@ const autoOpenIfPending = (): void => {
   isVisible.value = true
   if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
     activeTab.value = 'joystick-suggestions'
+  } else if (pendingOffers.value.length > 0 && filteredActions.value.length === 0) {
+    activeTab.value = 'connections'
   }
 }
 
