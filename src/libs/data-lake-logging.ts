@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import {
   getDataLakeVariableData,
   getDataLakeVariableInfo,
+  isSameDataLakeVariableId,
   listenDataLakeVariable,
   unlistenDataLakeVariable,
 } from './actions/data-lake'
@@ -363,10 +364,10 @@ export class DataLakeLogger {
   setVariableRecorded(variableId: string, recorded: boolean): void {
     const currentIds = [...this.recordedVariableIds]
 
-    if (recorded && !currentIds.includes(variableId)) {
+    if (recorded && !currentIds.some((id) => isSameDataLakeVariableId(id, variableId))) {
       this.recordedVariableIds = [...currentIds, variableId]
     } else if (!recorded) {
-      this.recordedVariableIds = currentIds.filter((id) => id !== variableId)
+      this.recordedVariableIds = currentIds.filter((id) => !isSameDataLakeVariableId(id, variableId))
     }
 
     // Interval logging reads the recorded list on every tick, but raw logging holds per-variable

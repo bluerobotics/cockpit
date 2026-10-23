@@ -228,7 +228,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { getAllDataLakeVariablesInfo } from '@/libs/actions/data-lake'
+import { getAllDataLakeVariablesInfo, isSameDataLakeVariableId } from '@/libs/actions/data-lake'
 import {
   availableHttpRequestMethods,
   deleteHttpRequestActionConfig,
@@ -372,7 +372,9 @@ const isValidUrlParams = (params: Record<string, string>): boolean => {
   return Object.entries(params).every(([key, value]) => {
     if (value.startsWith('{{') && value.endsWith('}}')) {
       const parsedValue = value.replace('{{', '').replace('}}', '').trim()
-      return key !== '' && value !== '' && paramValueOptions.value.map((option) => option.value).includes(parsedValue)
+      return (
+        key !== '' && value !== '' && availableInputIds.value.some((id) => isSameDataLakeVariableId(id, parsedValue))
+      )
     }
     return key !== '' && value !== ''
   })

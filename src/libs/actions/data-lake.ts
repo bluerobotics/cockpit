@@ -20,6 +20,39 @@ export const dataLakeVariableData: Record<string, string | number | boolean | un
 const dataLakeVariableListeners: Record<string, Record<string, DataLakeVariableListener>> = {}
 const dataLakeVariableInfoListeners: Record<string, (variables: Record<string, DataLakeVariable>) => void> = {}
 
+// Stored variables whose id differs from an earlier one only by leading slashes. They would share its record, so
+// they are kept out of the lake and saved back untouched instead of overwriting it.
+const collidingPersistentVariables: DataLakeVariable[] = []
+
+// The id each variable was written with, by its canonical id. Records stay keyed by the written id, since those keys
+// reach scripts, autocompletion and stored settings that older Cockpit versions read with an exact match.
+const writtenDataLakeVariableIds: Record<string, string> = {}
+
+/**
+ * The id without leading slashes, so '/mavlink/1/1/VFR_HUD/alt' and 'mavlink/1/1/VFR_HUD/alt' name the same variable.
+ * The variable itself keeps the id it was written with.
+ * @param {string} id - The id as written
+ * @returns {string} The id both spellings share
+ */
+export const canonicalDataLakeVariableId = (id: string): string => {
+  return typeof id === 'string' && id.startsWith('/') ? id.replace(/^\/+/, '') : id
+}
+
+// The exact spelling is tried first, since it is what the per-message path always passes.
+const writtenDataLakeVariableId = (id: string): string =>
+  id in dataLakeVariableInfo || id in dataLakeVariableData
+    ? id
+    : writtenDataLakeVariableIds[canonicalDataLakeVariableId(id)] ?? id
+
+/**
+ * Whether two data lake variable ids name the same variable, whatever leading slashes either is written with.
+ * @param {string} a - One id
+ * @param {string} b - The other id
+ * @returns {boolean} True when both ids name the same variable
+ */
+export const isSameDataLakeVariableId = (a: string, b: string): boolean =>
+  canonicalDataLakeVariableId(a) === canonicalDataLakeVariableId(b)
+
 // Load persistent variables from localStorage on initialization
 const loadPersistentVariables = (): void => {
   const savedVariables = settingsManager.getKeyValue(persistentVariablesKey)
@@ -28,8 +61,19 @@ const loadPersistentVariables = (): void => {
     savedVariables.forEach((variable) => {
       // Ownership is assumed to be Cockpit's when unsaid, but only the dialogs that create a variable on the user's
       // behalf ever store one here, so an entry that predates the flag is theirs rather than Cockpit's.
+      const canonicalId = canonicalDataLakeVariableId(variable.id)
+      const writtenId = writtenDataLakeVariableIds[canonicalId]
+      if (writtenId !== undefined && writtenId !== variable.id) {
+        collidingPersistentVariables.push(variable)
+        return
+      }
+      writtenDataLakeVariableIds[canonicalId] = variable.id
       dataLakeVariableInfo[variable.id] = { systemOwned: false, ...variable }
     })
+  }
+  if (collidingPersistentVariables.length > 0) {
+    const ids = collidingPersistentVariables.map((variable) => `'${variable.id}'`).join(', ')
+    console.warn(`Ignoring stored data lake variable(s) ${ids}, whose ids only differ from others by leading slashes.`)
   }
 
   // Load persistent values
@@ -48,7 +92,7 @@ const loadPersistentVariables = (): void => {
 const savePersistentVariables = (): void => {
   const persistentVariables = Object.values(dataLakeVariableInfo).filter((variable) => variable?.persistent)
 
-  settingsManager.setKeyValue(persistentVariablesKey, persistentVariables)
+  settingsManager.setKeyValue(persistentVariablesKey, [...persistentVariables, ...collidingPersistentVariables])
 }
 
 const getPersistentValues = (): Record<string, string | number | boolean> => {
@@ -76,27 +120,29 @@ export const getAllDataLakeVariablesInfo = (): Record<string, DataLakeVariable> 
 }
 
 export const getDataLakeVariableInfo = (id: string): DataLakeVariable | undefined => {
-  return dataLakeVariableInfo[id]
+  return dataLakeVariableInfo[writtenDataLakeVariableId(id)]
 }
 
 export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?: string | number | boolean): void => {
-  if (dataLakeVariableInfo[variable.id]) {
+  // The spelling already in the lake wins, as on an update, so recreating a variable never rewrites its stored id.
+  const id = (writtenDataLakeVariableIds[canonicalDataLakeVariableId(variable.id)] ??= variable.id)
+  if (dataLakeVariableInfo[id]) {
     console.warn(`Cockpit action variable with id '${variable.id}' already exists. Updating it.`)
   }
-  dataLakeVariableInfo[variable.id] = variable
+  dataLakeVariableInfo[id] = id === variable.id ? variable : { ...variable, id }
 
   let valueToSet = initialValue
   if (variable.persistValue) {
-    const savedValue = getPersistentValues()[variable.id]
+    const savedValue = getPersistentValues()[id]
     if (savedValue !== undefined) {
       valueToSet = savedValue
     }
   }
-  dataLakeVariableData[variable.id] = valueToSet
+  dataLakeVariableData[id] = valueToSet
 
   // Initialize timestamp if a value is being set
   if (valueToSet !== undefined) {
-    dataLakeVariableTimestamps[variable.id] = performance.now()
+    dataLakeVariableTimestamps[id] = performance.now()
   }
 
   if (variable.persistent) {
@@ -111,11 +157,13 @@ export const createDataLakeVariable = (variable: DataLakeVariable, initialValue?
 }
 
 export const updateDataLakeVariableInfo = (variable: DataLakeVariable): void => {
-  if (!dataLakeVariableInfo[variable.id]) {
+  const id = writtenDataLakeVariableId(variable.id)
+  if (!dataLakeVariableInfo[id]) {
     throw new Error(`Cockpit action variable with id '${variable.id}' does not exist. Create it first.`)
   }
 
-  dataLakeVariableInfo[variable.id] = variable
+  // The stored spelling of the id wins, so an update written without its leading slashes does not rewrite it.
+  dataLakeVariableInfo[id] = { ...variable, id }
 
   if (variable?.persistent) {
     savePersistentVariables()
@@ -129,16 +177,18 @@ export const updateDataLakeVariableInfo = (variable: DataLakeVariable): void => 
 }
 
 export const getDataLakeVariableData = (id: string): string | number | boolean | undefined => {
-  return dataLakeVariableData[id]
+  return dataLakeVariableData[writtenDataLakeVariableId(id)]
 }
 
 export const setDataLakeVariableData = (id: string, data: string | number | boolean): void => {
+  const canonicalId = canonicalDataLakeVariableId(id)
+  id = writtenDataLakeVariableIds[canonicalId] ??= id
   // Always update the timestamp regardless of value change
   dataLakeVariableTimestamps[id] = performance.now()
 
   // If the value is not changing, skip the value "update" but notify timestamp listeners
   if (dataLakeVariableData[id] === data) {
-    notifyDataLakeVariableTimestampListeners(id)
+    notifyDataLakeVariableTimestampListeners(canonicalId)
     return
   }
 
@@ -149,15 +199,18 @@ export const setDataLakeVariableData = (id: string, data: string | number | bool
     savePersistentValues()
   }
 
-  notifyDataLakeVariableListeners(id)
+  notifyDataLakeVariableListeners(canonicalId)
 }
 
 export const deleteDataLakeVariable = (id: string): void => {
+  const canonicalId = canonicalDataLakeVariableId(id)
+  id = writtenDataLakeVariableIds[canonicalId] ?? id
   const variable = dataLakeVariableInfo[id]
 
   delete dataLakeVariableInfo[id]
   delete dataLakeVariableData[id]
   delete dataLakeVariableTimestamps[id]
+  delete writtenDataLakeVariableIds[canonicalId]
 
   // If variable was persistent, remove it from the storage
   if (variable && variable?.persistent) {
@@ -179,6 +232,7 @@ export const listenDataLakeVariable = (
   listener: (value: string | number | boolean) => void,
   options?: ListenDataLakeVariableOptions
 ): string => {
+  variableId = canonicalDataLakeVariableId(variableId)
   if (!dataLakeVariableListeners[variableId]) {
     dataLakeVariableListeners[variableId] = {}
   }
@@ -192,6 +246,7 @@ export const listenDataLakeVariable = (
 }
 
 export const unlistenDataLakeVariable = (variableId: string, listenerId: string): void => {
+  variableId = canonicalDataLakeVariableId(variableId)
   if (!dataLakeVariableListeners[variableId]) {
     console.warn(`No listeners found for variable with id '${variableId}'.`)
     return
@@ -205,7 +260,7 @@ export const unlistenDataLakeVariable = (variableId: string, listenerId: string)
 
 const notifyDataLakeVariableListeners = (id: string): void => {
   if (dataLakeVariableListeners[id]) {
-    const value = dataLakeVariableData[id]
+    const value = dataLakeVariableData[writtenDataLakeVariableIds[id]]
     if (value === undefined) return
     Object.entries(dataLakeVariableListeners[id]).forEach(([listenerId, listener]) => {
       try {
@@ -219,7 +274,7 @@ const notifyDataLakeVariableListeners = (id: string): void => {
 
 const notifyDataLakeVariableTimestampListeners = (id: string): void => {
   if (dataLakeVariableListeners[id]) {
-    const value = dataLakeVariableData[id]
+    const value = dataLakeVariableData[writtenDataLakeVariableIds[id]]
     if (value === undefined) return
     Object.entries(dataLakeVariableListeners[id])
       .filter(([, listener]) => listener.notifyOnTimestampChange)
@@ -239,7 +294,7 @@ const notifyDataLakeVariableTimestampListeners = (id: string): void => {
  * @returns {number | undefined} The timestamp (from performance.now()) or undefined if the variable has never been set
  */
 export const getDataLakeVariableLastUpdateTimestamp = (id: string): number | undefined => {
-  return dataLakeVariableTimestamps[id]
+  return dataLakeVariableTimestamps[writtenDataLakeVariableId(id)]
 }
 
 export const listenToDataLakeVariablesInfoChanges = (

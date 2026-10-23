@@ -4,8 +4,8 @@ type VariableIdOption = {
   value: string
 }
 
-// Captures the suffix from both templated and concrete preset paths.
-const MAVLINK_PATH_PATTERN = /^\/mavlink\/(?:\d+|\{\{autopilotSystemId\}\})\/\d+\/(.+)$/
+// Captures the suffix from both templated and concrete preset paths, with or without the leading slash.
+const MAVLINK_PATH_PATTERN = /^\/?mavlink\/(?:\d+|\{\{autopilotSystemId\}\})\/\d+\/(.+)$/
 
 const extractSuffix = (variableId: string): string | undefined => variableId.match(MAVLINK_PATH_PATTERN)?.[1]
 

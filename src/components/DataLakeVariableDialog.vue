@@ -16,9 +16,10 @@
               variant="outlined"
               :disabled="editMode || !isManualIdEnabled"
               :rules="[(v) => !!v || 'ID is required']"
+              :error-messages="idInUse ? 'A variable with this ID already exists' : []"
               class="flex-1"
               density="compact"
-              hide-details
+              hide-details="auto"
             />
             <v-btn
               class="self-start -mt-1"
@@ -281,6 +282,9 @@ const validateValue = (): boolean => {
   return true
 }
 
+// Creating over an existing id, in either spelling, would merge into that variable instead of making a new one.
+const idInUse = computed(() => !editMode.value && getDataLakeVariableInfo(variable.id) !== undefined)
+
 /**
  * Whether the form is valid and can be submitted
  */
@@ -288,7 +292,7 @@ const isValid = computed(() => {
   if (valueOnlyEditMode.value) {
     return initialValue.value !== '' && !valueError.value
   }
-  return !!variable.name.trim() && !!variable.id && !valueError.value
+  return !!variable.name.trim() && !!variable.id && !valueError.value && !idInUse.value
 })
 
 /**
