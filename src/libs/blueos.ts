@@ -12,6 +12,7 @@ import {
   type RawCpuTempInfo,
   type RawNetworkInfo,
   type Service,
+  type WebSocketOfferFromExtension,
   JoystickMapSuggestionGroupsFromExtension,
   NoPathInBlueOsErrorName,
 } from '@/types/blueos'
@@ -156,6 +157,18 @@ export const joystickSuggestionsFromExtensionExtras = (
   })
   return Array.from(suggestionsMap.values())
 }
+
+/**
+ * Lists the WebSocket connections BlueOS extensions offer Cockpit in their extras.
+ * @param {ExtensionExtras[]} extensionExtras - The extensions' extras
+ * @returns {WebSocketOfferFromExtension[]} One entry per offered connection, with the vehicle's address left as a
+ * `{{ vehicle-address }}` placeholder, so an accepted connection follows the vehicle to a new address
+ */
+export const webSocketOffersFromExtensionExtras = (extensionExtras: ExtensionExtras[]): WebSocketOfferFromExtension[] =>
+  extensionExtras.flatMap(({ extensionName, service, extras }) => {
+    const baseUrl = blueOsServiceUrl('{{ vehicle-address }}', service).replace(/^http/, 'ws')
+    return extras.webSockets.map(({ name, path }) => ({ extensionName, name, url: baseUrl + path }))
+  })
 
 export const setBagOfHoldingOnVehicle = async (
   vehicleAddress: string,
