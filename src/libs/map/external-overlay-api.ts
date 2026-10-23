@@ -49,6 +49,12 @@ export const externalMapOverlaySchema = z.object({
  */
 export const externalMapOverlayCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cockpit:setMapOverlay'), overlay: externalMapOverlaySchema }),
+  z.object({
+    type: z.literal('cockpit:appendMapOverlayFeatures'),
+    id: externalMapOverlayIdSchema,
+    features: z.array(externalMapOverlayFeatureSchema).min(1),
+  }),
+  z.object({ type: z.literal('cockpit:clearMapOverlay'), id: externalMapOverlayIdSchema }),
   z.object({ type: z.literal('cockpit:removeMapOverlay'), id: externalMapOverlayIdSchema }),
 ])
 

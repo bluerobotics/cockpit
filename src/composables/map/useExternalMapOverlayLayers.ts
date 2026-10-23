@@ -63,6 +63,10 @@ interface OverlayEntry {
    * Revision of the features currently drawn
    */
   revision: number
+  /**
+   * How many of the overlay's features are drawn, so appended ones are added without redrawing the rest
+   */
+  drawnCount: number
 }
 
 /**
@@ -119,7 +123,7 @@ export const useExternalMapOverlayLayers = (): UseExternalMapOverlayLayersReturn
     const layer = L.geoJSON(undefined, options)
     controlRef?.addOverlay(layer, overlay.name)
     if (mapRef) layer.addTo(mapRef)
-    const entry = { layer, name: overlay.name, revision: 0 }
+    const entry = { layer, name: overlay.name, revision: 0, drawnCount: 0 }
     entries.set(overlay.id, entry)
     return entry
   }
@@ -139,9 +143,14 @@ export const useExternalMapOverlayLayers = (): UseExternalMapOverlayLayersReturn
       }
       if (entry.revision !== overlay.revision) {
         entry.layer.clearLayers()
-        const collection: FeatureCollection = { type: 'FeatureCollection', features: overlay.features }
-        entry.layer.addData(collection)
+        entry.drawnCount = 0
         entry.revision = overlay.revision
+      }
+      if (entry.drawnCount < overlay.features.length) {
+        const features = overlay.features.slice(entry.drawnCount)
+        const collection: FeatureCollection = { type: 'FeatureCollection', features }
+        entry.layer.addData(collection)
+        entry.drawnCount = overlay.features.length
       }
     }
   }
