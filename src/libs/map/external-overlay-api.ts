@@ -45,6 +45,16 @@ export const externalMapOverlaySchema = z.object({
 })
 
 /**
+ * GeoTIFF overlay external software asks Cockpit to download and show on its maps
+ */
+export const externalMapGeoTiffSchema = z.object({
+  id: externalMapOverlayIdSchema,
+  name: z.string().min(1),
+  url: z.string().regex(/^https?:\/\//, 'Use an http or https URL.'),
+  renderMode: z.enum(['grayscale', 'intensity', 'bathymetry']).default('grayscale'),
+})
+
+/**
  * Commands external software (embedded iframes, WebSocket servers) can send to manage map overlays.
  */
 export const externalMapOverlayCommandSchema = z.discriminatedUnion('type', [
@@ -55,6 +65,7 @@ export const externalMapOverlayCommandSchema = z.discriminatedUnion('type', [
     features: z.array(externalMapOverlayFeatureSchema).min(1),
   }),
   z.object({ type: z.literal('cockpit:clearMapOverlay'), id: externalMapOverlayIdSchema }),
+  z.object({ type: z.literal('cockpit:setMapGeoTiff'), geoTiff: externalMapGeoTiffSchema }),
   z.object({ type: z.literal('cockpit:removeMapOverlay'), id: externalMapOverlayIdSchema }),
 ])
 
@@ -67,6 +78,16 @@ export type ExternalMapOverlayCommand = z.output<typeof externalMapOverlayComman
  * Map overlay as external software sends it
  */
 export type ExternalMapOverlay = z.input<typeof externalMapOverlaySchema>
+
+/**
+ * GeoTIFF overlay as external software sends it
+ */
+export type ExternalMapGeoTiff = z.input<typeof externalMapGeoTiffSchema>
+
+/**
+ * A validated GeoTIFF overlay from external software
+ */
+export type ValidatedMapGeoTiff = z.output<typeof externalMapGeoTiffSchema>
 
 /**
  * A validated GeoJSON feature of an external map overlay

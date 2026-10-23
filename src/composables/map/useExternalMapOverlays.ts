@@ -1,14 +1,21 @@
+import ky from 'ky'
 import localforage from 'localforage'
 import { type ComputedRef, computed, ref } from 'vue'
 
+import { openSnackbar } from '@/composables/snackbar'
 import { listenToGenericWebSocketJsonMessages } from '@/libs/generic-websocket'
 import {
   type ExternalMapOverlayCommand,
   type ExternalMapOverlayFeature,
+  type ValidatedMapGeoTiff,
   externalMapOverlayCommandSchema,
   isExternalMapOverlayCommand,
 } from '@/libs/map/external-overlay-api'
+import { deleteStoredOverlay, importGeoTiffFile, OverlayStorageQuotaError } from '@/libs/map/overlay-import'
+import { messageFromError } from '@/libs/utils'
+import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { useMissionStore } from '@/stores/mission'
+import type { MapOverlayMeta } from '@/types/mission'
 
 /**
  * A map overlay received from external software
@@ -80,9 +87,13 @@ const storage = localforage.createInstance({
 
 const persistDelayMs = 1000
 
+// Rasters run to tens of megabytes over a tether, so the usual request timeout would expire on most of them.
+const geoTiffDownloadTimeoutMs = 5 * 60 * 1000
+
 let state: ExternalMapOverlaysState | undefined
 
 const createState = (): ExternalMapOverlaysState => {
+  const missionStore = useMissionStore()
   const overlays = new Map<string, ReceivedMapOverlay>()
   // The overlays are plain objects, so a large mesh is not made deeply reactive; this counter is what changes.
   const changeCount = ref(0)
@@ -127,6 +138,58 @@ const createState = (): ExternalMapOverlaysState => {
     forget(id)
   }
 
+  // The GeoTIFF list is synced to the vehicle so, as with points of interest, writing it before the vehicle's copy
+  // is read would replace the overlays saved there. A GeoTIFF command waits for that read rather than failing, since
+  // senders typically send it as soon as they connect, which is before the read.
+  let vehicleSyncCompleted = false
+  const vehicleSyncWaiters: (() => void)[] = []
+  window.addEventListener('vehicle-online', () => (vehicleSyncCompleted = false))
+  window.addEventListener('vehicle-sync-complete', () => {
+    vehicleSyncCompleted = true
+    vehicleSyncWaiters.splice(0).forEach((resolve) => resolve())
+  })
+  const vehicleSynced = (): Promise<void> =>
+    vehicleSyncCompleted ? Promise.resolve() : new Promise((resolve) => vehicleSyncWaiters.push(resolve))
+
+  // Kept apart from the GeoJSON commands, so a large download never holds up a live track.
+  let geoTiffQueue: Promise<void> = Promise.resolve()
+  const queueGeoTiffTask = (task: () => Promise<void>, onError: (error: unknown) => void): void => {
+    geoTiffQueue = geoTiffQueue.then(vehicleSynced).then(task).catch(onError)
+  }
+  // A sender re-sends on every reconnection, so each failing download is reported once per session.
+  const reportedGeoTiffFailures = new Set<string>()
+
+  const sentGeoTiff = (externalId: string): MapOverlayMeta | undefined =>
+    missionStore.mapOverlays.find((overlay) => overlay.externalId === externalId)
+
+  const removeGeoTiff = async (externalId: string): Promise<void> => {
+    const overlay = sentGeoTiff(externalId)
+    if (!overlay) throw new Error(`Overlay '${externalId}' does not exist.`)
+    missionStore.removeMapOverlay(overlay.id)
+    await deleteStoredOverlay(overlay.id)
+  }
+
+  const setGeoTiff = async (geoTiff: ValidatedMapGeoTiff): Promise<void> => {
+    const url = replaceDataLakeInputsInString(geoTiff.url)
+    const raster = await ky
+      .get(url, { timeout: geoTiffDownloadTimeoutMs, retry: 0 })
+      .blob()
+      .catch(() => {
+        throw new Error(`it could not be downloaded from ${url}.`)
+      })
+    const file = new File([raster], `${geoTiff.name}.tif`)
+    const imported = await importGeoTiffFile(file, geoTiff.renderMode).catch((error) => {
+      if (error instanceof OverlayStorageQuotaError) throw error
+      throw new Error('it may be an unsupported or corrupted GeoTIFF.')
+    })
+    // Stored under a new id, so maps drop the previous raster instead of reusing its cached render.
+    const previous = sentGeoTiff(geoTiff.id)
+    if (previous) await removeGeoTiff(geoTiff.id)
+    const visible = previous?.visible ?? true
+    const opacity = previous?.opacity ?? 1
+    missionStore.addMapOverlay({ ...imported, externalId: geoTiff.id, visible, opacity })
+  }
+
   const existingOverlay = (id: string): ReceivedMapOverlay => {
     const overlay = overlays.get(id)
     if (!overlay) throw new Error(`Overlay '${id}' does not exist.`)
@@ -161,9 +224,30 @@ const createState = (): ExternalMapOverlaysState => {
         if (!overlay.live) persist(overlay.id)
         return
       }
+      case 'cockpit:setMapGeoTiff': {
+        const { geoTiff } = command
+        queueGeoTiffTask(
+          () => setGeoTiff(geoTiff),
+          (error) => {
+            const failure = `${geoTiff.id} ${geoTiff.url}`
+            if (reportedGeoTiffFailures.has(failure)) return
+            reportedGeoTiffFailures.add(failure)
+            const reason = messageFromError(error)
+            openSnackbar({ message: `Could not show the "${geoTiff.name}" map overlay: ${reason}`, variant: 'error' })
+          }
+        )
+        return
+      }
       case 'cockpit:removeMapOverlay':
-        existingOverlay(command.id)
-        removeOverlay(command.id)
+        if (overlays.has(command.id)) {
+          removeOverlay(command.id)
+          return
+        }
+        // Queued behind any download of the same overlay, so a removal is never overtaken by it.
+        queueGeoTiffTask(
+          () => removeGeoTiff(command.id),
+          (error) => console.warn(`[ExternalMapOverlays] Ignoring command. ${messageFromError(error)}`)
+        )
     }
   }
 
@@ -181,7 +265,7 @@ const createState = (): ExternalMapOverlaysState => {
     // Applied once the saved overlays are read, so finishing that read never undoes a newer command.
     storedOverlaysLoaded
       .then(() => applyCommand(parsed.data))
-      .catch((error) => console.warn(`[ExternalMapOverlays] Ignoring command. ${(error as Error).message}`))
+      .catch((error) => console.warn(`[ExternalMapOverlays] Ignoring command. ${messageFromError(error)}`))
   }
 
   // The singleton outlives every consumer, so this listener is never removed.
