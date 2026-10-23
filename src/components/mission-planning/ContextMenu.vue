@@ -245,7 +245,7 @@
             class="text-[16px]"
           ></v-icon>
           <span class="text-white text-sm ml-4">
-            {{ missionStore.mapOverlays.length > 0 ? 'Manage overlays' : 'Add overlay (GeoTIFF)' }}
+            {{ hasAnyMapOverlay ? 'Manage overlays' : 'Add overlay (GeoTIFF)' }}
           </span>
         </v-list-item>
         <v-divider v-if="canSetHome" />
@@ -400,6 +400,7 @@ import { computed, defineEmits, defineProps, nextTick, ref, watch } from 'vue'
 
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
 import {
   baseStationMenuIcon,
   baseStationPlaceMenuLabel,
@@ -415,6 +416,7 @@ import { useMissionStore } from '@/stores/mission'
 import { ContextMenuTypes, Survey, Waypoint } from '@/types/mission'
 
 const missionStore = useMissionStore()
+const hasAnyMapOverlay = useHasAnyMapOverlay()
 const interfaceStore = useAppInterfaceStore()
 const baseStationStore = useBaseStation()
 const menuEl = ref<HTMLElement | null>(null)

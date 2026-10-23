@@ -1,7 +1,7 @@
 <template>
   <v-dialog :model-value="modelValue" width="700" @update:model-value="emit('update:modelValue', $event)">
     <v-card :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-lg text-center font-semibold mt-2">Map overlays (GeoTIFF)</v-card-title>
+      <v-card-title class="text-lg text-center font-semibold mt-2">Map overlays</v-card-title>
       <v-icon icon="mdi-close" class="absolute top-3 right-5 mt-2" @click="emit('update:modelValue', false)" />
       <v-card-text>
         <div class="flex flex-col gap-y-3">
@@ -31,7 +31,7 @@
           </div>
 
           <p v-if="missionStore.mapOverlays.length === 0" class="text-sm text-slate-400">
-            No overlays loaded. Use "Add GeoTIFF" to load a survey.
+            No GeoTIFF overlays loaded. Use "Add GeoTIFF" to load a survey.
           </p>
 
           <div
@@ -107,6 +107,30 @@
               </div>
             </div>
           </div>
+
+          <template v-if="externalOverlays.length > 0">
+            <p class="text-md">Sent by extensions and other software</p>
+            <div
+              v-for="overlay in externalOverlays"
+              :key="overlay.id"
+              class="flex items-center justify-between gap-x-3 p-3 rounded-sm bg-[#FFFFFF14]"
+            >
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm text-white truncate">{{ overlay.name }}</span>
+                <span class="text-xs text-slate-400">
+                  {{ overlay.live ? 'Live, cleared when Cockpit restarts' : 'Saved on this computer' }}
+                </span>
+              </div>
+              <v-btn
+                v-tooltip.bottom="'Remove overlay'"
+                icon="mdi-trash-can-outline"
+                variant="text"
+                size="small"
+                aria-label="Remove overlay"
+                @click="removeExternalOverlay(overlay)"
+              />
+            </div>
+          </template>
         </div>
       </v-card-text>
       <v-divider class="mx-8" />
@@ -122,6 +146,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import { type ReceivedMapOverlay, useExternalMapOverlays } from '@/composables/map/useExternalMapOverlays'
 import { openSnackbar } from '@/composables/snackbar'
 import {
   deleteStoredOverlay,
@@ -158,6 +183,7 @@ const emit = defineEmits<{
 
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
+const { overlays: externalOverlays, removeOverlay: removeExternalMapOverlay } = useExternalMapOverlays()
 
 const renderModeOptions: {
   /**
@@ -213,6 +239,11 @@ const addOverlays = async (): Promise<void> => {
 const removeOverlay = async (overlay: MapOverlayMeta): Promise<void> => {
   missionStore.removeMapOverlay(overlay.id)
   await deleteStoredOverlay(overlay.id)
+}
+
+const removeExternalOverlay = (overlay: ReceivedMapOverlay): void => {
+  removeExternalMapOverlay(overlay.id)
+  logUserAction(`Removed the map overlay "${overlay.name}" sent by external software`)
 }
 
 // Frame the map on the overlay but keep the dialog open so the user can keep adjusting overlay properties.
