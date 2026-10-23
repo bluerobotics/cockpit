@@ -26,11 +26,14 @@ let currentContextMenu: {
 
 const longPressDuration = 500
 // How far a finger may wander and still count as held in place, in pixels.
-const longPressMoveTolerance = 10
+export const longPressMoveTolerance = 10
 let touchTimer: ReturnType<typeof setTimeout> | null = null
 let touchStartPoint: Point2D | null = null
 
-const cancelLongPress = (): void => {
+/**
+ * Drop a pending long press, for a touch that has turned out to be another gesture (a widget drag or pinch)
+ */
+export const cancelLongPress = (): void => {
   if (touchTimer) {
     clearTimeout(touchTimer)
     touchTimer = null
