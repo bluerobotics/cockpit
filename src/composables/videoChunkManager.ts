@@ -612,12 +612,7 @@ export const useVideoChunkManager = (): {
       }
 
       // Start FFmpeg streaming process with first chunk
-      const { id: processId, outputPath } = await window.electronAPI.startVideoRecording(
-        firstChunkBlob,
-        group.hash,
-        fileName,
-        false // Don't keep chunk backup since we're processing existing chunks
-      )
+      const { id: processId, outputPath } = await window.electronAPI.startVideoRecording(firstChunkBlob, fileName)
 
       // Stream remaining chunks to FFmpeg in order
       for (let i = 1; i < sortedChunks.length; i++) {

@@ -338,17 +338,9 @@ export interface LiveStreamProcess {
    */
   outputPath: string
   /**
-   * Temporary directory for chunk backups (if enabled)
-   */
-  tempDir: string
-  /**
    * Whether the FFmpeg process has been finalized
    */
   isFinalized: boolean
-  /**
-   * Whether to save raw chunk backups during streaming
-   */
-  chunkBackupEnabled: boolean
 }
 
 /**
@@ -363,10 +355,6 @@ export interface ZipExtractionResult {
    * Path to extracted telemetry .ass file (if exists)
    */
   assFilePath?: string
-  /**
-   * Recording hash extracted from chunk filenames
-   */
-  hash: string
   /**
    * Generated filename for the output video
    */
