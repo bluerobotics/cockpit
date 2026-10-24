@@ -16,7 +16,7 @@ const ONLY_ON_PAGES = 'The simulator only runs in the Cockpit web version on Git
  * - defaults: parameter file under sitl/ loaded as SITL defaults
  * - home: start location as lat,lon,alt,heading
  * The binaries are only published with the GitHub Pages build.
- * @example sitl://ardusub?model=JSON&defaults=sub-6dof.parm&home=33.810313,-118.393867,0,270
+ * @example sitl://ardusub?model=JSON&defaults=bluesim.parm&home=33.810313,-118.393867,0,270
  */
 export class SitlConnection extends Connection.Abstract {
   private _codec = new RawMavlinkCodec()

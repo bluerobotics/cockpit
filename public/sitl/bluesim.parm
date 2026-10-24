@@ -1,0 +1,106 @@
+# ArduPilot's Tools/autotest/default_params/sub-6dof.parm, with gains tuned for the BlueROV2 Heavy in BlueSim
+BATT_MONITOR     4
+BTN0_FUNCTION    0
+BTN10_SFUNCTION  0
+BTN10_FUNCTION   22
+BTN10_SFUNCTION  0
+BTN11_FUNCTION   42
+BTN11_SFUNCTION  47
+BTN12_FUNCTION   43
+BTN12_SFUNCTION  46
+BTN13_FUNCTION   33
+BTN13_SFUNCTION  45
+BTN14_FUNCTION   32
+BTN14_SFUNCTION  44
+BTN15_SFUNCTION  0
+BTN1_FUNCTION    6
+BTN1_SFUNCTION   0
+BTN2_FUNCTION    8
+BTN2_SFUNCTION   0
+BTN3_FUNCTION    7
+BTN3_SFUNCTION   0
+BTN4_FUNCTION    4
+BTN4_SFUNCTION   0
+BTN5_FUNCTION    1
+BTN5_SFUNCTION   0
+BTN6_FUNCTION    3
+BTN6_SFUNCTION   0
+BTN7_FUNCTION    21
+BTN7_SFUNCTION   0
+BTN8_FUNCTION    48
+BTN8_SFUNCTION   0
+BTN9_FUNCTION    23
+BTN9_SFUNCTION   0
+COMPASS_OFS_X   5
+COMPASS_OFS_Y   13
+COMPASS_OFS_Z   -18
+COMPASS_OFS2_X   5
+COMPASS_OFS2_Y   13
+COMPASS_OFS2_Z   -18
+COMPASS_OFS3_X   5
+COMPASS_OFS3_Y   13
+COMPASS_OFS3_Z   -18
+INS_ACCOFFS_X   0.001
+INS_ACCOFFS_Y   0.001
+INS_ACCOFFS_Z   0.001
+INS_ACCSCAL_X   1.001
+INS_ACCSCAL_Y   1.001
+INS_ACCSCAL_Z   1.001
+INS_ACC2OFFS_X   0.001
+INS_ACC2OFFS_Y   0.001
+INS_ACC2OFFS_Z   0.001
+INS_ACC2SCAL_X   1.001
+INS_ACC2SCAL_Y   1.001
+INS_ACC2SCAL_Z   1.001
+INS_ACC3OFFS_X   0.000
+INS_ACC3OFFS_Y   0.000
+INS_ACC3OFFS_Z   0.000
+INS_ACC3SCAL_X   1.000
+INS_ACC3SCAL_Y   1.000
+INS_ACC3SCAL_Z   1.000
+LOG_BITMASK      180222
+SIM_BARO_RND     0.02
+FRAME_CONFIG     2.000
+RC3_TRIM 1500
+RC_OPTIONS 0
+RC_PROTOCOLS 1
+# the autopilot steps once per BlueSim frame (~30 Hz), and tasks are scheduled in loops, so at
+# 400 Hz the 50 Hz pilot input task would only run every ~250 ms
+SCHED_LOOP_RATE 50
+# the gyro filter is designed for the 1 kHz SITL IMU, which only gets a sample per BlueSim frame,
+# so 20 Hz acts like ~1 Hz and delays the rate controllers by ~200 ms
+INS_GYRO_FILTER 0
+ATC_RAT_RLL_P 0.07
+ATC_RAT_RLL_I 0.05
+ATC_RAT_RLL_D 0.002
+# the BlueROV2 Heavy tops out at ~100 deg/s of yaw in BlueSim, so full stick asks for less, and the
+# yaw gains leave room for the extra latency of slow machines, which oscillate at ~20 fps otherwise
+ACRO_YAW_P 2.25
+ATC_RAT_YAW_P 0.25
+ATC_RAT_YAW_I 0.025
+ATC_ANG_YAW_P 4
+# the vertical thrusters also steer pitch, so stiffer velocity and acceleration loops bounce depth at ~2 Hz
+# and rock the vehicle with it
+PSC_D_POS_P 3
+PSC_D_VEL_P 4
+PSC_D_ACC_P 0.025
+PSC_D_ACC_I 0.01
+# BlueSim works its gripper with output 9, its lights with 13 and its camera tilt with 15, which tilts
+# as far as sub.parm's mount range
+SERVO9_FUNCTION 184
+SERVO13_FUNCTION 181
+SERVO15_FUNCTION 7
+MNT1_PITCH_MAX 45
+MNT1_PITCH_MIN -45
+# sub.parm's 30 deg/s is too twitchy to frame a shot with the keyboard
+MNT1_RC_RATE 10
+# a brushless gimbal stabilises itself, so the autopilot leaves the tilt alone instead of countering every
+# small attitude change in 1 us steps, which BlueSim's camera, fixed to the vehicle, shows as jitter
+MNT1_TYPE 7
+# actuator 1 max and min, which open and close the gripper, on otherwise unused buttons, so keys can
+# press them without a joystick
+BTN15_FUNCTION 64
+BTN16_FUNCTION 63
+# BlueSim sends its downward Ping sonar reading, which Surface Track needs
+RNGFND1_TYPE 100
+RNGFND1_MAX 50
