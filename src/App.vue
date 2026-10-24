@@ -150,6 +150,7 @@ import {
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
+import { startKeyboardControl } from '@/libs/keyboard'
 import { isElectron, sleep } from '@/libs/utils'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMissionStore } from '@/stores/mission'
@@ -189,7 +190,7 @@ import {
   useActiveMenuRoute,
   useMenuRouteSync,
 } from './composables/menuRouting'
-import { useSnackbar } from './composables/snackbar'
+import { openActionErrorSnackbar, useSnackbar } from './composables/snackbar'
 import { useMcpBridge } from './composables/useMcpBridge'
 import { usePointsOfInterest } from './composables/usePointsOfInterest'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
@@ -198,7 +199,7 @@ import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
-const { openSnackbar } = useSnackbar()
+const { openSnackbar, closeSnackbar, snackbars } = useSnackbar()
 import { useSnapshotStore } from './stores/snapshot'
 
 const { baseRouteName, isFlightVisible, activeMenuPage, isAboutOpen } = useActiveMenuRoute()
@@ -263,6 +264,32 @@ usePointsOfInterest()
 
 // Created at boot so the vehicle's fence is re-read on every connection, before any map is mounted.
 useGeoFenceStore()
+
+let keysHeldWarningId: number | undefined
+
+const warnKeysHeldByFocus = (held: boolean): void => {
+  if (!held) {
+    if (keysHeldWarningId !== undefined) closeSnackbar(keysHeldWarningId)
+    return
+  }
+  // Shown again on the next held key once the user has closed it
+  if (snackbars.some((snackbar) => snackbar.id === keysHeldWarningId)) return
+  keysHeldWarningId = openSnackbar({
+    message: 'Keyboard controls are paused while a control on the screen is selected.',
+    variant: 'warning',
+    persistent: true,
+    action: {
+      label: 'Resume keyboard controls',
+      handler: () => {
+        logUserAction('Resumed keyboard controls from the paused warning')
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+      },
+    },
+  })
+}
+
+// Started at boot so mapped keys work before the controllers configuration is ever opened.
+const stopKeyboardControl = startKeyboardControl(openActionErrorSnackbar, warnKeysHeldByFocus)
 
 // Keep the main menu and the address showing the same destination.
 useMenuRouteSync()
@@ -329,6 +356,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEscKey)
+  stopKeyboardControl()
 })
 
 /* eslint-disable jsdoc/require-jsdoc  */
