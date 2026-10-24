@@ -5,6 +5,10 @@
       <div class="flex flex-col items-start px-5 font-medium">
         <li>Keys work alongside the joystick, running Cockpit actions or setting data-lake variables.</li>
         <li>
+          By default W and S move forward and back, A and D sideways, Space and Shift go up and down, and the left and
+          right arrows turn. Each held key adds half a stick to the joystick.
+        </li>
+        <li>
           A variable mapped to a key is 1 while the key is held and 0 once it is released. To move the vehicle, create a
           variable for the key and add it to an axis output's transforming function, like
           <code>{{ axisOutputExample }}</code> for a variable named "forward-key". Mapping a key to the joystick's own
@@ -63,12 +67,18 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { isAssignableToButton } from '@/libs/joystick/protocols'
 import { otherAvailableActions } from '@/libs/joystick/protocols/other'
-import { type KeyboardMapping, initializeKeyVariable, keyboardMappingKey, keyLabel } from '@/libs/keyboard'
+import {
+  type KeyboardMapping,
+  defaultKeyboardMapping,
+  initializeKeyVariable,
+  keyboardMappingKey,
+  keyLabel,
+} from '@/libs/keyboard'
 import { useControllerStore } from '@/stores/controller'
 import { type ProtocolAction, JoystickProtocol } from '@/types/joystick'
 
 // Written right away, as the keyboard listener reads the stored mapping on every key press
-const mapping = useBlueOsStorage<KeyboardMapping>(keyboardMappingKey, {}, { debounceMs: 0 })
+const mapping = useBlueOsStorage<KeyboardMapping>(keyboardMappingKey, defaultKeyboardMapping, { debounceMs: 0 })
 const controllerStore = useControllerStore()
 const { openSnackbar } = useSnackbar()
 

@@ -8,7 +8,8 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { sendManualControl } from '@/libs/communication/mavlink'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
-import { round } from '@/libs/utils'
+import { keyboardAxesOffsets } from '@/libs/keyboard'
+import { constrain, round } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, CockpitModifierKeyOption, JoystickButton, JoystickProtocol } from '@/types/joystick'
@@ -506,6 +507,16 @@ export class MavlinkManualControlManager {
     this.manualControlState.r = round(Number.isNaN(rVal) ? 0 : rVal, 0)
     this.manualControlState.s = round(Number.isNaN(sVal) ? 0 : sVal, 0)
     this.manualControlState.t = round(Number.isNaN(tVal) ? 0 : tVal, 0)
+    this.addKeyboardMovement(this.manualControlState)
+  }
+
+  private addKeyboardMovement(state: MavlinkManualControlState): void {
+    const offsets = keyboardAxesOffsets()
+    const zMin = this.vehicle?.type() === VehicleType.Sub ? 0 : -1000
+    state.x = constrain(state.x + offsets.x, -1000, 1000)
+    state.y = constrain(state.y + offsets.y, -1000, 1000)
+    state.z = constrain(state.z + offsets.z, zMin, 1000)
+    state.r = constrain(state.r + offsets.r, -1000, 1000)
   }
 
   updateVehicleButtonsParameters = (): void => {

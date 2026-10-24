@@ -10,6 +10,62 @@ export type KeyboardMapping = Record<string, ProtocolAction>
 
 export const keyboardMappingKey = 'cockpit-keyboard-functions-mapping'
 
+/**
+ * A data-lake variable that moves the vehicle along a MANUAL_CONTROL axis while its key is held
+ */
+export interface KeyboardMovement {
+  /**
+   * Data-lake variable the key holds at 1
+   */
+  id: string
+  /**
+   * Human-readable name
+   */
+  name: string
+  /**
+   * Physical key mapped to it by default
+   */
+  defaultKey: string
+  /**
+   * MANUAL_CONTROL axis it moves
+   */
+  axis: 'x' | 'y' | 'z' | 'r'
+  /**
+   * What a held key adds to the axis: half a stick, a quarter of z's 0 to 1000 range
+   */
+  offset: number
+}
+
+export const keyboardMovements: KeyboardMovement[] = [
+  { id: 'keyboard-forward', name: 'Keyboard forward', defaultKey: 'KeyW', axis: 'x', offset: 500 },
+  { id: 'keyboard-backward', name: 'Keyboard backward', defaultKey: 'KeyS', axis: 'x', offset: -500 },
+  { id: 'keyboard-right', name: 'Keyboard right', defaultKey: 'KeyD', axis: 'y', offset: 500 },
+  { id: 'keyboard-left', name: 'Keyboard left', defaultKey: 'KeyA', axis: 'y', offset: -500 },
+  { id: 'keyboard-up', name: 'Keyboard up', defaultKey: 'Space', axis: 'z', offset: 250 },
+  { id: 'keyboard-down', name: 'Keyboard down', defaultKey: 'ShiftLeft', axis: 'z', offset: -250 },
+  { id: 'keyboard-yaw-right', name: 'Keyboard yaw right', defaultKey: 'ArrowRight', axis: 'r', offset: 500 },
+  { id: 'keyboard-yaw-left', name: 'Keyboard yaw left', defaultKey: 'ArrowLeft', axis: 'r', offset: -500 },
+]
+
+export const defaultKeyboardMapping: KeyboardMapping = Object.fromEntries(
+  keyboardMovements.map((movement) => [
+    movement.defaultKey,
+    { protocol: JoystickProtocol.DataLakeVariable, id: movement.id, name: movement.name },
+  ])
+)
+
+/**
+ * How far the held movement keys push each MANUAL_CONTROL axis
+ * @returns {Record<KeyboardMovement['axis'], number>} The sum of the offsets of the movement variables held at 1
+ */
+export const keyboardAxesOffsets = (): Record<KeyboardMovement['axis'], number> => {
+  const offsets = { x: 0, y: 0, z: 0, r: 0 }
+  keyboardMovements.forEach(({ id, axis, offset }) => {
+    offsets[axis] += offset * (Number(getDataLakeVariableData(id)) || 0)
+  })
+  return offsets
+}
+
 const nonTextInputTypes = ['button', 'checkbox', 'color', 'file', 'radio', 'range', 'reset', 'submit']
 
 /**
@@ -87,7 +143,8 @@ export const setKeyboardControlPaused = (value: boolean): void => {
  */
 export const startKeyboardControl = (onError: (error: unknown) => void): (() => void) => {
   const pressedKeys = new Set<string>()
-  const getMapping = (): KeyboardMapping => settingsManager.getKeyValue<KeyboardMapping>(keyboardMappingKey) ?? {}
+  const getMapping = (): KeyboardMapping =>
+    settingsManager.getKeyValue<KeyboardMapping>(keyboardMappingKey) ?? defaultKeyboardMapping
   // A variable that does not persist its value comes back empty on every boot
   Object.values(getMapping()).forEach(initializeKeyVariable)
 
