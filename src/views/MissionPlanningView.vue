@@ -978,6 +978,7 @@ import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissio
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
+import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
 import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
 import { useLiveMeasureOverlay } from '@/composables/map/useLiveMeasureOverlay'
 import { useMapAutoResize } from '@/composables/map/useMapAutoResize'
@@ -1410,6 +1411,9 @@ const { observe: observeMapResize } = useMapAutoResize()
 const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
+
+// Draws the overlays external software (BlueOS extensions, embedded pages) sent onto the planning map
+const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
@@ -5040,6 +5044,7 @@ onMounted(async () => {
 
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   await mapOverlays.initOverlays(planningMap.value, layerControl)
+  initExternalOverlayLayers(planningMap.value, layerControl)
 
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   initCustomTileProviders(planningMap.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
@@ -5122,6 +5127,7 @@ onUnmounted(() => {
   stopTileFallbackWatcher?.()
   stopTileFallbackWatcher = undefined
   mapOverlays.destroyOverlays()
+  destroyExternalOverlayLayers()
   destroyCustomTileProviders()
 
   // Reset the map context so descendants stop reacting to the destroyed instance

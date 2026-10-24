@@ -6,11 +6,13 @@ import { sleep } from '@/libs/utils'
 import {
   type ActionsFromExtension,
   type BagOfHoldingsError,
+  type ExtensionExtras,
   type ExtrasJson,
   type RawCpuLoadInfo,
   type RawCpuTempInfo,
   type RawNetworkInfo,
   type Service,
+  type WebSocketOfferFromExtension,
   JoystickMapSuggestionGroupsFromExtension,
   NoPathInBlueOsErrorName,
 } from '@/types/blueos'
@@ -109,55 +111,64 @@ export const getWidgetsFromBlueOS = async (vehicleAddress: string): Promise<Exte
   return widgetsPerService.flat()
 }
 
-export const getActionsFromBlueOS = async (vehicleAddress: string): Promise<ActionsFromExtension[]> => {
+/**
+ * Reads the Cockpit extras of every BlueOS extension that has them, once, so each kind of feature they offer is
+ * derived from the same sweep of the extensions.
+ * @param {string} vehicleAddress - Address of the vehicle running the extensions
+ * @returns {Promise<ExtensionExtras[]>} The extras of each extension that has them
+ */
+export const getExtensionExtrasFromBlueOS = async (vehicleAddress: string): Promise<ExtensionExtras[]> => {
   const services = await getServicesFromBlueOS(vehicleAddress)
-  const actionsFromExtensions: ActionsFromExtension[] = []
-
-  await Promise.all(
-    services.map(async (service) => {
+  const extrasPerService = await Promise.all(
+    services.map(async (service): Promise<ExtensionExtras[]> => {
       try {
-        const extraJson = await getExtrasJsonFromBlueOsService(vehicleAddress, service)
-        if (extraJson !== null && extraJson.actions) {
-          const extensionName = service.metadata?.sanitizedName || 'Unknown Extension'
-          actionsFromExtensions.push({ extensionName, actionConfigs: extraJson.actions })
-        }
+        const extras = await getExtrasJsonFromBlueOsService(vehicleAddress, service)
+        if (extras === null) return []
+        return [{ extensionName: service.metadata?.sanitizedName || 'Unknown Extension', service, extras }]
       } catch (error) {
-        console.error(`Could not get actions from BlueOS service ${service.metadata?.sanitizedName}. ${error}`)
+        console.error(`Could not get extras from BlueOS service ${service.metadata?.sanitizedName}. ${error}`)
+        return []
       }
     })
   )
-
-  return actionsFromExtensions
+  return extrasPerService.flat()
 }
 
-export const getJoystickSuggestionsFromBlueOS = async (
-  vehicleAddress: string
-): Promise<JoystickMapSuggestionGroupsFromExtension[]> => {
-  const services = await getServicesFromBlueOS(vehicleAddress)
+/**
+ * Lists the actions each BlueOS extension offers in its extras.
+ * @param {ExtensionExtras[]} extensionExtras - The extensions' extras
+ * @returns {ActionsFromExtension[]} One entry per extension
+ */
+export const actionsFromExtensionExtras = (extensionExtras: ExtensionExtras[]): ActionsFromExtension[] =>
+  extensionExtras.map(({ extensionName, extras }) => ({ extensionName, actionConfigs: extras.actions }))
+
+/**
+ * Lists the joystick mapping suggestions each BlueOS extension offers in its extras.
+ * @param {ExtensionExtras[]} extensionExtras - The extensions' extras
+ * @returns {JoystickMapSuggestionGroupsFromExtension[]} One entry per extension that offers suggestions
+ */
+export const joystickSuggestionsFromExtensionExtras = (
+  extensionExtras: ExtensionExtras[]
+): JoystickMapSuggestionGroupsFromExtension[] => {
   const suggestionsMap = new Map<string, JoystickMapSuggestionGroupsFromExtension>()
-
-  await Promise.all(
-    services.map(async (service) => {
-      try {
-        const extraJson = await getExtrasJsonFromBlueOsService(vehicleAddress, service)
-        if (extraJson !== null && extraJson.joystickSuggestions) {
-          const extensionName = service.metadata?.sanitizedName || 'Unknown Extension'
-
-          suggestionsMap.set(extensionName, {
-            extensionName,
-            suggestionGroups: extraJson.joystickSuggestions,
-          })
-        }
-      } catch (error) {
-        console.error(
-          `Could not get joystick suggestions from BlueOS service ${service.metadata?.sanitizedName}. ${error}`
-        )
-      }
-    })
-  )
-
+  extensionExtras.forEach(({ extensionName, extras }) => {
+    if (!extras.joystickSuggestions) return
+    suggestionsMap.set(extensionName, { extensionName, suggestionGroups: extras.joystickSuggestions })
+  })
   return Array.from(suggestionsMap.values())
 }
+
+/**
+ * Lists the WebSocket connections BlueOS extensions offer Cockpit in their extras.
+ * @param {ExtensionExtras[]} extensionExtras - The extensions' extras
+ * @returns {WebSocketOfferFromExtension[]} One entry per offered connection, with the vehicle's address left as a
+ * `{{ vehicle-address }}` placeholder, so an accepted connection follows the vehicle to a new address
+ */
+export const webSocketOffersFromExtensionExtras = (extensionExtras: ExtensionExtras[]): WebSocketOfferFromExtension[] =>
+  extensionExtras.flatMap(({ extensionName, service, extras }) => {
+    const baseUrl = blueOsServiceUrl('{{ vehicle-address }}', service).replace(/^http/, 'ws')
+    return extras.webSockets.map(({ name, path }) => ({ extensionName, name, url: baseUrl + path }))
+  })
 
 export const setBagOfHoldingOnVehicle = async (
   vehicleAddress: string,

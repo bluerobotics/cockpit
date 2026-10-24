@@ -71,6 +71,43 @@ export interface ExtrasJson {
    * A list of joystick map suggestion groups offered by the extension.
    */
   joystickSuggestions?: JoystickMapSuggestionGroup[]
+  /**
+   * WebSocket servers the extension offers Cockpit to connect to, to receive data, points of interest and map
+   * overlays from it.
+   */
+  webSockets: ExtensionWebSocket[]
+}
+
+/**
+ * WebSocket server a BlueOS extension offers Cockpit to connect to
+ */
+export interface ExtensionWebSocket {
+  /**
+   * User-facing name of what the connection carries
+   */
+  name: string
+  /**
+   * Path of the WebSocket on the extension's own address, starting with a slash (e.g. `/ws`)
+   */
+  path: string
+}
+
+/**
+ * Cockpit extras of one BlueOS extension
+ */
+export interface ExtensionExtras {
+  /**
+   * Name of the extension
+   */
+  extensionName: string
+  /**
+   * The BlueOS service the extension runs as, which locates its address
+   */
+  service: Service
+  /**
+   * The extras the extension offers
+   */
+  extras: ExtrasJson
 }
 
 /**
@@ -217,4 +254,22 @@ export interface JoystickMapSuggestionGroupsFromExtension {
    * Array of suggestion groups from this extension
    */
   suggestionGroups: JoystickMapSuggestionGroup[]
+}
+
+/**
+ * WebSocket connection a BlueOS extension offers Cockpit
+ */
+export interface WebSocketOfferFromExtension {
+  /**
+   * Name of the extension offering the connection
+   */
+  extensionName: string
+  /**
+   * User-facing name of what the connection carries
+   */
+  name: string
+  /**
+   * URL template of the connection, with `{{ vehicle-address }}` standing for the vehicle's address
+   */
+  url: string
 }

@@ -435,6 +435,17 @@
                   positions.
                 </li>
                 <li>
+                  They can also draw GeoJSON overlays on the map:
+                  <span class="font-mono">{{ exampleMapOverlayWebSocketMessage }}</span
+                  >. Sending the same id again replaces the overlay,
+                  <span class="font-mono">cockpit:appendMapOverlayFeatures</span> adds features to it,
+                  <span class="font-mono">cockpit:clearMapOverlay</span> empties it, and
+                  <span class="font-mono">cockpit:removeMapOverlay</span> removes it. Overlays are saved on this
+                  computer unless <span class="font-mono">live</span> is true. For a GeoTIFF, send
+                  <span class="font-mono">cockpit:setMapGeoTiff</span> with its URL instead, and Cockpit downloads it
+                  once. Every sender shares the same ids, so prefix them with your software's name.
+                </li>
+                <li>
                   You can use data-lake variables to compose the URL, for example:
                   <span class="font-mono">{{ exampleGenericWebSocketUrl }}</span>
                 </li>
@@ -1078,6 +1089,30 @@ const examplePoiWebSocketMessage = JSON.stringify({
   poi: { id: 'target-1', name: 'Target 1', latitude: -27.5935, longitude: -48.5585 },
 })
 const exampleRemovePoiWebSocketMessage = JSON.stringify({ type: 'cockpit:removePointOfInterest', id: 'target-1' })
+const exampleMapOverlayWebSocketMessage = JSON.stringify({
+  type: 'cockpit:setMapOverlay',
+  overlay: {
+    id: 'my-extension-route',
+    name: 'Route',
+    live: true,
+    geojson: {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { stroke: '#FFFF00' },
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [-48.5585, -27.5935],
+              [-48.5575, -27.5925],
+            ],
+          },
+        },
+      ],
+    },
+  },
+})
 const exampleJsonWebSocketMessage = JSON.stringify({
   WaterTemp: 23.5,
   Payload: { Temp: 21.2, Locked: true },
