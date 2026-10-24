@@ -676,13 +676,12 @@ import JoystickCalibration from '@/components/joysticks/JoystickCalibration.vue'
 import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
-import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
+import { isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { JoystickModel } from '@/libs/joystick/manager'
+import { isAssignableToButton } from '@/libs/joystick/protocols'
 import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
-import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
-import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
@@ -809,13 +808,6 @@ const shiftFunction = {
   name: 'Shift',
 }
 
-const idsExcludedJoystickActions = [
-  MAVLinkButtonFunction.arm,
-  MAVLinkButtonFunction.disarm,
-  mavlinkCameraZoomActionId,
-  mavlinkCameraFocusActionId,
-]
-
 watch(
   () => currentJoystick.value?.model,
   (newModel) => (currentTabVIew.value = tabViewForModel(newModel))
@@ -851,12 +843,7 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
   return buttonActionsToShow.value
     .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value.toLowerCase()))
     .filter((action: JoystickAction) => allowedProtocols.includes(action.protocol as JoystickProtocol))
-    .filter((action: JoystickAction) => {
-      const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
-      if (!dataLakeVariableInfo) return true
-      return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type !== 'string'
-    })
-    .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
+    .filter((action: JoystickAction) => isAssignableToButton(action.id))
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 })
 
@@ -1044,13 +1031,7 @@ const axisRemappingText = computed(() => {
 const buttonActionsToShow = computed(() =>
   controllerStore.availableButtonActions.filter((a) => {
     // Do not show the action to the regular modifier key, as it's the default behavior when not pressing any modifier key
-    const isNotRegularAction = JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular)
-
-    // Do not show transforming functions, as they are calculated, not to be injected
-    const transformingFunctions = getAllTransformingFunctions()
-    const isNotTransformingFunction = !transformingFunctions.some((v) => v.id === a.id)
-
-    return isNotRegularAction && isNotTransformingFunction
+    return JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular)
   })
 )
 
