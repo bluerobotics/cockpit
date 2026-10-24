@@ -201,8 +201,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a Mavlink2Rest"
-                    :rules="[isValidSocketConnectionURI]"
+                    :hint="
+                      isSitlAvailable
+                        ? 'URI of a Mavlink2Rest, or sitl://ardusub for the simulator'
+                        : 'URI of a Mavlink2Rest'
+                    "
+                    :rules="[isValidMainConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
@@ -961,6 +965,19 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
     return `Invalid connection URI. ${error}.`
   }
   return true
+}
+
+declare const __SITL_AVAILABLE__: boolean
+// The simulator needs a build that includes it and a secure page it can isolate, see SitlConnection
+const isSitlAvailable = __SITL_AVAILABLE__ && window.isSecureContext && !isElectron()
+
+const isValidMainConnectionURI = (value: string): boolean | string => {
+  try {
+    if (isSitlAvailable && new Connection.URI(value).type() === Connection.Type.Sitl) return true
+  } catch (error) {
+    return `Invalid connection URI. ${error}.`
+  }
+  return isValidSocketConnectionURI(value)
 }
 
 const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.customWebRTCConfiguration.data, null, 4))
