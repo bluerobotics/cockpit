@@ -11,6 +11,8 @@ export enum Type {
   Http = 'http',
   WebSocket = 'ws',
   Serial = 'serial',
+  // ArduPilot SITL running as WebAssembly inside Cockpit
+  Sitl = 'sitl',
   // Protocols Supported in Desktop Version
   UdpIn = 'udpin',
   UdpOut = 'udpout',
