@@ -798,14 +798,15 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   ConnectionManager.onMainConnection.add(() => {
     const newMainConnection = ConnectionManager.mainConnection()
     console.log('Main connection changed:', newMainConnection?.uri().toString())
-    if (newMainConnection !== undefined) {
+    // A simulator link must not replace the address of the user's own vehicle
+    if (newMainConnection !== undefined && newMainConnection.uri().type() !== Connection.Type.Sitl) {
       customMAVLink2RestWebsocketURI.value.data = newMainConnection.uri().toString()
     }
   })
 
   ConnectionManager.addConnection(MAVLink2RestWebsocketURI.value, Protocol.Type.MAVLink, {
     websocket: { getWatchdogTimeoutMs: () => vehicleConnectionWatchdogTimeoutMs.value },
-  })
+  }).catch((error: Error) => openSnackbar({ message: error.message, variant: 'error', persistent: true }))
 
   let applyThrottledCoordinates = useThrottleFn(
     (nc: Coordinates) => Object.assign(coordinates, nc),

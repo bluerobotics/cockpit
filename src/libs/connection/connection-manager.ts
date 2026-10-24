@@ -3,6 +3,7 @@ import * as Protocol from '@/libs/vehicle/protocol/protocol'
 
 import * as Connection from './connection'
 import { ElectronConnection } from './electron-connection'
+import { SitlConnection } from './sitl-connection'
 import { WebSocketConnection, WebSocketConnectionOptions } from './websocket-connection'
 
 /**
@@ -42,9 +43,15 @@ export class ConnectionManager {
    * @param  {Connection.URI} uri
    * @param  {Protocol.Type} vehicleProtocol
    * @param  {AddConnectionOptions} options Optional transport-specific configuration.
+   * @returns {Promise<void>} Rejects with a message for the user when the connection can not start
    */
-  static addConnection(uri: Connection.URI, vehicleProtocol: Protocol.Type, options: AddConnectionOptions = {}): void {
+  static addConnection(
+    uri: Connection.URI,
+    vehicleProtocol: Protocol.Type,
+    options: AddConnectionOptions = {}
+  ): Promise<void> {
     let connection = undefined
+    let started = Promise.resolve()
     switch (uri.type()) {
       case Connection.Type.WebSocket:
         connection = new WebSocketConnection(uri, vehicleProtocol, options.websocket)
@@ -58,13 +65,18 @@ export class ConnectionManager {
         connection = new ElectronConnection(uri, vehicleProtocol)
         connection.initialize()
         break
+      case Connection.Type.Sitl:
+        connection = new SitlConnection(uri, vehicleProtocol)
+        started = connection.initialize()
+        break
 
       default:
         unimplemented(`connection type not supported: ${uri.type()}`)
-        return
+        return started
     }
 
     ConnectionManager._addConnection(connection)
+    return started
   }
 
   /**

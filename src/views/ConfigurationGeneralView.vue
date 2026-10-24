@@ -746,7 +746,7 @@ const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
   try {
     ConnectionManager.addConnection(new Connection.URI(conn), Protocol.Type.MAVLink, {
       websocket: { getWatchdogTimeoutMs: () => mainVehicleStore.vehicleConnectionWatchdogTimeoutMs },
-    })
+    }).catch((error: Error) => openSnackbar({ message: error.message, variant: 'error', persistent: true }))
     mainConnectionSwitchedAt = Date.now()
   } catch (error) {
     console.error(error)
