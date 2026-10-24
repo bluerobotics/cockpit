@@ -19,7 +19,11 @@
   >
     <div class="flex flex-col justify-between h-full pa-2 cursor-pointer">
       <div class="flex justify-between w-full">
-        <v-icon class="cursor-grab opacity-40" @mousedown="enableMovingOnDrag" @mouseup="disableMovingOnDrag">
+        <v-icon
+          class="cursor-grab opacity-40 touch-none"
+          @pointerdown="enableMovingOnDrag"
+          @pointerup="disableMovingOnDrag"
+        >
           mdi-drag
         </v-icon>
         <div v-if="!isWrapped">
@@ -103,8 +107,8 @@
         </div>
         <div
           v-if="widget.options.columns > 1 && widgetStore.editingMode"
-          class="cursor-col-resize w-1 bg-[#FFFFFF22] relative"
-          @mousedown="startResize"
+          class="cursor-col-resize w-1 bg-[#FFFFFF22] relative touch-none"
+          @pointerdown.stop="startResize"
         >
           <div class="absolute inset-y-0 -left-1 -right-1"></div>
         </div>
@@ -437,12 +441,14 @@ const startResize = (event: MouseEvent): void => {
 
   const stopDrag = (): void => {
     isDragging.value = false
-    document.removeEventListener('mousemove', doDrag)
-    document.removeEventListener('mouseup', stopDrag)
+    document.removeEventListener('pointermove', doDrag)
+    document.removeEventListener('pointerup', stopDrag)
+    document.removeEventListener('pointercancel', stopDrag)
   }
 
-  document.addEventListener('mousemove', doDrag)
-  document.addEventListener('mouseup', stopDrag)
+  document.addEventListener('pointermove', doDrag)
+  document.addEventListener('pointerup', stopDrag)
+  document.addEventListener('pointercancel', stopDrag)
 }
 
 const leftContainers = computed(() =>
@@ -460,14 +466,14 @@ const convertedBackgroundOpacity = computed(() => Math.round(widget.value.option
 
 const enableMovingOnDrag = (): void => {
   widgetStore.allowMovingAndResizing(currentWidget.value.hash, true)
-  window.addEventListener('mouseup', disableMovingOnDrag)
+  window.addEventListener('pointerup', disableMovingOnDrag)
   window.addEventListener('dragend', disableMovingOnDrag)
 }
 
 const disableMovingOnDrag = (): void => {
   updateWrapDirection()
   widgetStore.allowMovingAndResizing(currentWidget.value.hash, widgetStore.editingMode)
-  window.removeEventListener('mouseup', disableMovingOnDrag)
+  window.removeEventListener('pointerup', disableMovingOnDrag)
   window.removeEventListener('dragend', disableMovingOnDrag)
 }
 

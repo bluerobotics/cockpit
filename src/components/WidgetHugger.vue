@@ -22,7 +22,7 @@
     <div
       v-if="widgetHasOwnContextMenu[widget.component as WidgetType]"
       class="innerWidget"
-      :class="{ 'overflow-hidden': hideOverflow }"
+      :class="{ 'overflow-hidden': hideOverflow, 'content-locked': contentLocked }"
       :style="{ opacity: widget.options.opacity ?? 1 }"
     >
       <slot></slot>
@@ -32,7 +32,7 @@
       ref="innerWidgetRef"
       v-contextmenu="handleContextMenu"
       class="innerWidget"
-      :class="{ 'overflow-hidden': hideOverflow }"
+      :class="{ 'overflow-hidden': hideOverflow, 'content-locked': contentLocked }"
       :style="{ opacity: widget.options.opacity ?? 1 }"
     >
       <slot></slot>
@@ -46,7 +46,7 @@
       class="editing-buttons"
       size="32"
       variant="text"
-      @mousedown.stop
+      @pointerdown.stop
       @click="widgetStore.toggleFullScreen(widget)"
     />
     <div class="resize-handle top-left" :class="{ hoveringWidgetOrOverlay, allowResizing }" />
@@ -88,6 +88,7 @@ import { useElementHover, useWindowSize } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
+import { cancelLongPress, longPressMoveTolerance } from '@/directives/contextMenu'
 import { constrain, snapToInterval } from '@/libs/utils'
 import {
   type AxisSpan,
@@ -98,6 +99,7 @@ import {
   matchedAlignmentLines,
   widgetAlignmentLines,
 } from '@/libs/widget-alignment'
+import { type FingerPair, pinchedWidget } from '@/libs/widget-pinch'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Point2D, SizeRect2D } from '@/types/general'
@@ -106,6 +108,7 @@ import {
   isWidgetConfigurable,
   minWidgetOpacity,
   widgetHasOwnContextMenu,
+  widgetKeepsInputInEditMode,
   WidgetType,
 } from '@/types/widgets'
 
@@ -332,7 +335,9 @@ const clampPositionToValidArea = (desiredPos: Point2D, widgetSize: SizeRect2D): 
   const { top: topBarNormalized, bottom: bottomBarNormalized } = barInsetsNormalized.value
   const visibleAreaHeight = 1 - topBarNormalized - bottomBarNormalized
 
-  const widgetTallerThanVisibleArea = widgetSize.height >= visibleAreaHeight
+  // A widget exactly as tall as the area (resized or pinched up to the bars) still fits between them; the margin keeps
+  // rounding from tipping it into the taller-than case, which would let it slide under a bar.
+  const widgetTallerThanVisibleArea = widgetSize.height > visibleAreaHeight + 1e-6
   const minY = widgetTallerThanVisibleArea ? 0 : topBarNormalized
   const maxY = widgetTallerThanVisibleArea
     ? Math.max(0, 1 - widgetSize.height)
@@ -368,6 +373,12 @@ const alignDraggedPosition = (desiredPos: Point2D, viewSize: ReturnType<typeof g
   }
 }
 
+// A finger held a moment before a gesture reads as a long press, and its menu would ride along with the widget.
+const dismissLongPressMenu = (): void => {
+  cancelLongPress()
+  contextMenuVisible.value = false
+}
+
 const handleDrag = (event: MouseEvent): void => {
   if (!draggingWidget.value || !initialMousePos.value) return
 
@@ -378,6 +389,75 @@ const handleDrag = (event: MouseEvent): void => {
   const desiredPos = { x: initialWidgetPos.value.x + dx, y: initialWidgetPos.value.y + dy }
   position.value = clampPositionToValidArea(alignDraggedPosition(desiredPos, viewSize), size.value)
   updateAlignmentGuides()
+  // A finger held still for the menu drifts a little, so only a real drag takes the menu away.
+  const moved = Math.hypot(event.clientX - initialMousePos.value.x, event.clientY - initialMousePos.value.y)
+  if (moved > longPressMoveTolerance) dismissLongPressMenu()
+}
+
+// Fingers on this widget's gesture, kept per pointer so a second finger can turn a drag into a pinch.
+const touchPoints = new Map<number, Point2D>()
+let pinchStart:
+  | {
+      /**
+       * The two fingers when the pinch began
+       */
+      fingers: FingerPair
+      /**
+       * The widget's center when the pinch began, normalized to the view
+       */
+      center: Point2D
+      /**
+       * The widget's size when the pinch began, normalized to the view
+       */
+      size: SizeRect2D
+    }
+  | undefined
+
+const pointOf = (event: PointerEvent): Point2D => ({ x: event.clientX, y: event.clientY })
+
+const trackTouch = (event: PointerEvent): void => {
+  if (event.pointerType === 'touch' && draggingWidget.value) touchPoints.set(event.pointerId, pointOf(event))
+}
+
+// Listens on the whole document while capturing, since the second finger may land beside a widget too small for two,
+// and must reach neither the widget nor whatever it lands on.
+const handlePinchStart = (event: PointerEvent): void => {
+  const dragging = draggingWidget.value && touchPoints.size === 1
+  if (event.pointerType !== 'touch' || !dragging || !allowResizing.value || touchPoints.has(event.pointerId)) return
+  event.stopPropagation()
+  dismissLongPressMenu()
+  touchPoints.set(event.pointerId, pointOf(event))
+  draggingWidget.value = false
+  isResizing.value = true
+  pinchStart = {
+    fingers: [...touchPoints.values()] as FingerPair,
+    center: { x: position.value.x + size.value.width / 2, y: position.value.y + size.value.height / 2 },
+    size: { ...size.value },
+  }
+  activeAlignmentGuides.value = { x: [], y: [] }
+}
+
+const handlePinch = (event: PointerEvent): void => {
+  if (!touchPoints.has(event.pointerId)) return
+  touchPoints.set(event.pointerId, pointOf(event))
+  if (!pinchStart) return
+
+  const pinched = pinchedWidget(
+    pinchStart.center,
+    pinchStart.size,
+    pinchStart.fingers,
+    [...touchPoints.values()] as FingerPair,
+    getViewSize(),
+    minWidgetSize,
+    // Like the resize handles, a pinch stops at the bars.
+    { width: 1, height: 1 - barInsetsNormalized.value.top - barInsetsNormalized.value.bottom }
+  )
+  const centeredPosition = {
+    x: pinched.center.x - pinched.size.width / 2,
+    y: pinched.center.y - pinched.size.height / 2,
+  }
+  size.value = pinched.size
+  position.value = clampPositionToValidArea(centeredPosition, pinched.size)
 }
 
 const minWidgetSize = 0.01
@@ -481,6 +561,9 @@ const handleEnd = (): void => {
   if (!outerWidgetRef.value) return
   if (draggingWidget.value || isResizing.value) {
     activeAlignmentGuides.value = { x: [], y: [] }
+    touchPoints.clear()
+    pinchStart = undefined
+    document.documentElement.classList.remove('widget-dragging')
   }
   if (draggingWidget.value) {
     const x = position.value.x.toFixed(3)
@@ -489,7 +572,6 @@ const handleEnd = (): void => {
     draggingWidget.value = false
     syncPositionToWidget()
     outerWidgetRef.value.style.cursor = 'grab'
-    document.documentElement.classList.remove('widget-dragging')
   } else if (isResizing.value) {
     const width = size.value.width.toFixed(3)
     const height = size.value.height.toFixed(3)
@@ -535,25 +617,33 @@ onMounted(async () => {
     for (let i = 0; i < widgetResizeHandles.value.length; i++) {
       const handle = widgetResizeHandles.value[i]
       // @ts-ignore
-      handle.addEventListener('mousedown', handleResizeStart)
+      handle.addEventListener('pointerdown', handleResizeStart)
     }
   }
 
-  outerWidgetRef.value?.addEventListener('mousedown', function (event: MouseEvent) {
-    if (event.button === 0) {
+  outerWidgetRef.value?.addEventListener('pointerdown', function (event: PointerEvent) {
+    // A pointerdown prevented inside never produced the mousedown this listened to before, so it still starts no drag.
+    if (event.button === 0 && !event.defaultPrevented) {
       handleDragStart(event)
+      trackTouch(event)
     }
   })
 
-  document.addEventListener('mousemove', handleDrag)
-  document.addEventListener('mousemove', handleResize)
-  document.addEventListener('mouseup', handleEnd)
+  document.addEventListener('pointerdown', handlePinchStart, true)
+  document.addEventListener('pointermove', handleDrag)
+  document.addEventListener('pointermove', handleResize)
+  document.addEventListener('pointermove', handlePinch)
+  document.addEventListener('pointerup', handleEnd)
+  document.addEventListener('pointercancel', handleEnd)
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('mousemove', handleDrag)
-  document.removeEventListener('mousemove', handleResize)
-  document.removeEventListener('mouseup', handleEnd)
+  document.removeEventListener('pointerdown', handlePinchStart, true)
+  document.removeEventListener('pointermove', handleDrag)
+  document.removeEventListener('pointermove', handleResize)
+  document.removeEventListener('pointermove', handlePinch)
+  document.removeEventListener('pointerup', handleEnd)
+  document.removeEventListener('pointercancel', handleEnd)
   document.documentElement.classList.remove('widget-dragging')
 })
 
@@ -582,6 +672,11 @@ const positionStyle = computed(() => ({
 const overlayDisplayStyle = computed(() => {
   return allowMoving.value || allowResizing.value ? 'block' : 'none'
 })
+
+// While the layout is edited a widget is something to move and resize, so its own controls stop taking input.
+const contentLocked = computed(
+  () => widgetStore.editingMode && !widgetKeepsInputInEditMode[widget.value.component as WidgetType]
+)
 
 const userInteractionStyle = computed(() => {
   return allowMoving.value || allowResizing.value ? 'none' : ''
@@ -661,6 +756,7 @@ const showingAlignmentGuides = computed(
 .outerWidget {
   position: absolute;
   cursor: v-bind('cursorStyle');
+  touch-action: v-bind('userInteractionStyle');
   left: v-bind('positionStyle.left');
   top: v-bind('positionStyle.top');
   width: v-bind('sizeStyle.width');
@@ -674,6 +770,10 @@ const showingAlignmentGuides = computed(
   justify-content: center;
   align-items: center;
   user-select: v-bind('userInteractionStyle');
+}
+/* Every descendant, since some (POI markers, map buttons) set pointer-events back on themselves. */
+.innerWidget.content-locked * {
+  pointer-events: none !important;
 }
 .editing-buttons {
   position: absolute;
