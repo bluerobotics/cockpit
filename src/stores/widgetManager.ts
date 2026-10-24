@@ -561,12 +561,18 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
         ? { x: snapToInterval(point.x, gridInterval.value), y: snapToInterval(point.y, gridInterval.value) }
         : point
 
+    // The simulator fills the screen like a camera feed, so it goes under the widgets instead of covering them
+    const isBackground = widget.component === WidgetType.Simulator
+
     const newWidget: Widget = {
       hash: widgetHash,
       name: widget.name,
       component: widget.component,
-      position:
-        dropPosition === undefined ? widget.defaultPosition ?? { x: 0.4, y: 0.32 } : snapDropToGrid(dropPosition),
+      position: isBackground
+        ? { x: 0, y: 0 }
+        : dropPosition === undefined
+        ? widget.defaultPosition ?? { x: 0.4, y: 0.32 }
+        : snapDropToGrid(dropPosition),
       size: widget.defaultSize ?? { width: 0.2, height: 0.36 },
       options: widget.options,
       persistentInternalState: {},
@@ -583,8 +589,12 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
       }
     }
 
-    view.widgets.unshift(newWidget)
-    const addedWidget = view.widgets[0]
+    if (isBackground) {
+      view.widgets.push(newWidget)
+    } else {
+      view.widgets.unshift(newWidget)
+    }
+    const addedWidget = view.widgets[isBackground ? view.widgets.length - 1 : 0]
     Object.assign(widgetManagerVars(newWidget.hash), {
       ...defaultWidgetManagerVars,
       ...{ allowMoving: true },

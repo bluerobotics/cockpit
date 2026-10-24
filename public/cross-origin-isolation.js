@@ -6,7 +6,9 @@ self.addEventListener('fetch', (event) => {
   const isSitlNavigation =
     request.mode === 'navigate' && url.searchParams.get('MAVLink2RestWebsocketURI')?.startsWith('sitl:')
   const isSitlWorker = request.destination === 'worker' && url.pathname.includes('/sitl/')
-  if (!isSitlNavigation && !isSitlWorker) return
+  // An isolated page can only embed iframes that are isolated too, BlueSim is shown in an IFrame widget
+  const isBlueSimNavigation = request.mode === 'navigate' && url.pathname.includes('/bluesim/')
+  if (!isSitlNavigation && !isSitlWorker && !isBlueSimNavigation) return
 
   event.respondWith(
     fetch(request).then((response) => {
