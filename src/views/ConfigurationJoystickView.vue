@@ -7,8 +7,19 @@
         class="overflow-y-auto"
         style="scrollbar-gutter: stable"
       >
+        <v-tabs
+          :model-value="controllerTab"
+          theme="dark"
+          density="compact"
+          align-tabs="center"
+          class="mb-2"
+          @update:model-value="setControllerTab"
+        >
+          <v-tab value="joystick">Joystick</v-tab>
+          <v-tab value="keyboard">Keyboard</v-tab>
+        </v-tabs>
         <div
-          v-if="!controllerStore.joysticks.size"
+          v-if="controllerTab === 'joystick' && !controllerStore.joysticks.size"
           class="px-6 pb-2 flex-centered flex-column position-relative"
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
@@ -17,7 +28,7 @@
             import or export joystick configurations below.
           </p>
         </div>
-        <div>
+        <div v-if="controllerTab === 'joystick'">
           <ExpansiblePanel
             no-top-divider
             no-bottom-divider
@@ -522,6 +533,7 @@
             </template>
           </ExpansiblePanel>
         </div>
+        <KeyboardMappingConfig v-else />
       </div>
     </template>
   </BaseConfigurationView>
@@ -716,6 +728,7 @@ import semver from 'semver'
 import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
+import KeyboardMappingConfig from '@/components/configuration/KeyboardMappingConfig.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisDraftActions from '@/components/joysticks/AxisDraftActions.vue'
@@ -733,6 +746,7 @@ import { JoystickModel } from '@/libs/joystick/manager'
 import { isAssignableToButton } from '@/libs/joystick/protocols'
 import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
+import { setKeyboardControlPaused } from '@/libs/keyboard'
 import { scale } from '@/libs/utils'
 import { vehicleTypeName } from '@/migration/default-profile-importer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -766,6 +780,7 @@ const searchText = ref('')
 
 onMounted(async () => {
   controllerStore.enableForwarding = false
+  setKeyboardControlPaused(true)
   warnIfJoystickDoesNotSupportExtendedManualControl()
 })
 
@@ -866,6 +881,13 @@ watch(
   () => currentJoystick.value?.model,
   (newModel) => (currentTabVIew.value = tabViewForModel(newModel))
 )
+
+const controllerTab = ref('joystick')
+
+const setControllerTab = (tab: unknown): void => {
+  controllerTab.value = String(tab)
+  logUserAction(`Switched to the "${controllerTab.value === 'joystick' ? 'Joystick' : 'Keyboard'}" controller tab`)
+}
 
 const setTabView = (view: unknown): void => {
   const newView = String(view)
@@ -986,6 +1008,7 @@ onUnmounted(() => {
   // Going through the helper so a session where another ground station was detected stays silent until the user
   // re-enables forwarding by hand, instead of leaving this page bringing the sticks back live.
   controllerStore.enableJoystickForwardingIfSafe()
+  setKeyboardControlPaused(false)
 })
 
 watch(inputClickedDialog, () => {
