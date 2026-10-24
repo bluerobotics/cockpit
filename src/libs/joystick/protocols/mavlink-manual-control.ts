@@ -406,6 +406,8 @@ export class MavlinkManualControlManager {
 
   sendManualControl(): void {
     if (!this.manualControlState) return
+    // Joystick events only fire on change, and other sources (e.g. the keyboard) also write these variables
+    this.updateAxesFromDataLake()
     sendManualControl(this.manualControlState, this.vehicle?.systemId ?? 1)
   }
 
@@ -480,6 +482,13 @@ export class MavlinkManualControlManager {
       }
     }
 
+    this.manualControlState.buttons = buttons_int
+    this.manualControlState.buttons2 = buttons2_int
+  }
+
+  updateAxesFromDataLake(): void {
+    if (!this.manualControlState) return
+
     // Read axis values from data lake output variables (scaling is handled by the data-lake protocol handler)
     const xVal = Number(getDataLakeVariableData('outputs/mavlink/axis-x') ?? 0)
     const yVal = Number(getDataLakeVariableData('outputs/mavlink/axis-y') ?? 0)
@@ -497,8 +506,6 @@ export class MavlinkManualControlManager {
     this.manualControlState.r = round(Number.isNaN(rVal) ? 0 : rVal, 0)
     this.manualControlState.s = round(Number.isNaN(sVal) ? 0 : sVal, 0)
     this.manualControlState.t = round(Number.isNaN(tVal) ? 0 : tVal, 0)
-    this.manualControlState.buttons = buttons_int
-    this.manualControlState.buttons2 = buttons2_int
   }
 
   updateVehicleButtonsParameters = (): void => {
