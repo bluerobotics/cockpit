@@ -6,7 +6,7 @@
   <h1>Cockpit - A Modern Ground Control Software</h1>
 
   <p>
-    <a href="https://docs.bluerobotics.com/cockpit">🌐 Live Demo</a> •
+    <a href="https://docs.bluerobotics.com/cockpit/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub">🌐 Live Demo</a> •
     <a href="https://blueos.cloud/cockpit/docs/latest/usage/installation/">📦 Install</a> •
     <a href="https://blueos.cloud/cockpit/docs">📖 Documentation</a> •
     <a href="https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit">💬 Community</a>
@@ -53,7 +53,7 @@ Cockpit is a web-based ground control station that aims to improve how you inter
 ### Accessing Cockpit
 
 #### - Option 1: Try it Online
-If you just want to take a look at Cockpit, you can visit our **[live demo](https://docs.bluerobotics.com/cockpit)** to experience it instantly in your browser.
+If you just want to take a look at Cockpit, you can visit our **[live demo](https://docs.bluerobotics.com/cockpit/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub)**, which runs a simulated ArduSub vehicle in Chrome, Edge or Firefox. The first visit reloads the page once. In other browsers, open [Cockpit without the simulator](https://docs.bluerobotics.com/cockpit).
 
 #### - Option 2: Download the Native App (Recommended)
 Download the [latest release](https://blueos.cloud/cockpit/docs/latest/usage/installation/#self-contained-application) of our native desktop app for your platform.
@@ -127,7 +127,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 **Choose Desktop** for complete experience, auto-updates, system integration, and optimal performance.
 **Choose Browser** for testing, quick access, or when you can't install applications.
 
-> **💡 Pro Tip**: Start with the [live demo](https://docs.bluerobotics.com/cockpit) to get familiar with Cockpit, then download the desktop app for regular use to unlock all capabilities!
+> **💡 Pro Tip**: Start with the [live demo](https://docs.bluerobotics.com/cockpit/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub) to get familiar with Cockpit, then download the desktop app for regular use to unlock all capabilities!
 
 ---
 
