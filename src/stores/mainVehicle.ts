@@ -263,6 +263,16 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   watch(isVehicleOnline, (isOnline) => {
     if (isOnline) {
       hasVehicleBeenOnlineThisSession.value = true
+      // A SITL running inside Cockpit has no BlueOS to sync settings with, and the sync retries until it answers,
+      // so finish it right away to let the vehicle defaults (views, joystick) be imported
+      if (MAVLink2RestWebsocketURI.value.type() === Connection.Type.Sitl) {
+        dispatchEvent(
+          new CustomEvent('vehicle-sync-complete', {
+            detail: { vehicleAddress: globalAddress.value, vehicleId: undefined, succeeded: false },
+          })
+        )
+        return
+      }
       dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: globalAddress.value } }))
       return
     }
