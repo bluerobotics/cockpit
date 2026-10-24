@@ -196,10 +196,16 @@ const stringLiteralPositions = (code: string): boolean[] => {
 const asStringLiteralContent = (value: unknown): string =>
   JSON.stringify(String(value)).slice(1, -1).replace(/['`]/g, '\\$&').replace(/\$\{/g, '\\${')
 
+const isNumberOrBooleanText = (value: string): boolean =>
+  value === 'true' || value === 'false' || String(Number(value)) === value
+
 /**
  * Replace all data lake inputs in a string with their values written as JavaScript literals, for strings
  * that are going to be evaluated as code. Substituting a string value raw would let it be read as syntax
  * instead of as a value, so whatever wrote the variable would be choosing what the evaluation runs.
+ * Text that is exactly a number or a boolean, as a dropdown writes, cannot carry syntax, so it is substituted
+ * bare and keeps the meaning it had before string values were quoted. Bare values are parenthesised so an
+ * adjacent operator or member access (`-{{ x }}`, `{{ x }}.length`) cannot merge with them into invalid code.
  * An input inside a string literal is text being built rather than a value being read, so it gets the value
  * escaped instead of quoted, which keeps templates like `'Mode: {{ /x }}'` meaning what they always did.
  * If a possible input is not found in the data lake, it will be left unchanged.
@@ -214,7 +220,9 @@ export const replaceDataLakeInputsInStringAsLiterals = (input: string): string =
     if (variableData === undefined) return match
     if (insideStringLiteral[offset]) return asStringLiteralContent(variableData)
     // JSON has no NaN or Infinity and writes them as null, which arithmetic would then read as 0.
-    return typeof variableData === 'number' ? String(variableData) : JSON.stringify(variableData)
+    if (typeof variableData === 'number') return `(${variableData})`
+    if (typeof variableData === 'string' && isNumberOrBooleanText(variableData)) return `(${variableData})`
+    return JSON.stringify(variableData)
   })
 }
 
