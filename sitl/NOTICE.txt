@@ -1,0 +1,1 @@
+ArduSub SITL built from https://github.com/ArduPilot/ardupilot/tree/437a3301cc335742e5807e6f10e1b819e0a5afa9, licensed under the GPLv3 in COPYING.txt.
