@@ -161,7 +161,9 @@ jobs:
     runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-base:v0.2.0@sha256:4971bb7ca20180adc011431d6d3c0d6ee0752432751c2d941719fd759146d9fa
     env:
-      ARDUPILOT_SHA: 437a3301cc335742e5807e6f10e1b819e0a5afa9
+      # ArduPilot master cannot exchange JSON physics with a simulator in the browser yet
+      ARDUPILOT_REPOSITORY: williangalvani/ardupilot
+      ARDUPILOT_SHA: c25eb12204797d71a7d47e870766d0e2fe7a17b3
     steps:
       - name: Restore ArduSub WebAssembly SITL
         id: cache
@@ -175,7 +177,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
-          repository: ArduPilot/ardupilot
+          repository: ${{ env.ARDUPILOT_REPOSITORY }}
           ref: ${{ env.ARDUPILOT_SHA }}
           submodules: recursive
           path: ardupilot
@@ -192,7 +194,7 @@ jobs:
           ./waf build --target bin/ardusub
           mkdir ../sitl
           cp build/wasm/bin/ardusub.js build/wasm/bin/ardusub.wasm COPYING.txt ../sitl/
-          echo "ArduSub SITL built from https://github.com/ArduPilot/ardupilot/tree/${ARDUPILOT_SHA}, licensed under the GPLv3 in COPYING.txt." > ../sitl/NOTICE.txt
+          echo "ArduSub SITL built from https://github.com/${ARDUPILOT_REPOSITORY}/tree/${ARDUPILOT_SHA}, licensed under the GPLv3 in COPYING.txt." > ../sitl/NOTICE.txt
 
       - name: Upload ArduSub WebAssembly SITL
         uses: actions/upload-artifact@v4
