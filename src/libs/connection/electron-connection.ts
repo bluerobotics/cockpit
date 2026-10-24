@@ -1,8 +1,5 @@
-import init, { ParserEmitter } from 'mavlink2rest-wasm'
-// @ts-ignore
-import wasmUrl from 'mavlink2rest-wasm/mavlink2rest_wasm_bg.wasm?url'
-
 import * as Connection from './connection'
+import { RawMavlinkCodec } from './raw-mavlink-codec'
 
 /**
  * Electron connection abstraction using IPC
@@ -89,16 +86,13 @@ class ElectronConnectionIPC {
  */
 export class ElectronConnection extends Connection.Abstract {
   private _connection: ElectronConnectionIPC | undefined
-  private _textEncoder = new TextEncoder()
-  private _textDecoder = new TextDecoder()
-  private _mavlink2rest: ParserEmitter | undefined
+  private _codec = new RawMavlinkCodec()
 
   /**
    * Initialize the connection
    */
   async initialize(): Promise<void> {
-    await init(wasmUrl)
-    this._mavlink2rest = new ParserEmitter()
+    await this._codec.initialize()
     this._connection = this.createConnection(this.uri())
     await this._connection.initialize()
 
@@ -144,9 +138,8 @@ export class ElectronConnection extends Connection.Abstract {
    */
   write(data: Uint8Array): boolean {
     try {
-      const decoded = this._textDecoder.decode(data)
-      const connection_data = this._mavlink2rest?.rest2mavlink(decoded)
-      if (this._connection) {
+      const connection_data = this._codec.encode(data)
+      if (this._connection && connection_data) {
         Promise.resolve().then(async () => {
           await this._connection?.write(connection_data)
         })
@@ -174,9 +167,6 @@ export class ElectronConnection extends Connection.Abstract {
    * @param {Uint8Array} raw_data
    */
   private processRawMavlink(raw_data: Uint8Array): void {
-    this._mavlink2rest?.parser(raw_data)
-    this._mavlink2rest?.emit((mavlink_json: string) => {
-      this.onRead.emit_value(this._textEncoder.encode(mavlink_json))
-    })
+    this._codec.decode(raw_data, (message) => this.onRead.emit_value(message))
   }
 }
