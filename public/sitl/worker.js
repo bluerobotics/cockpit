@@ -3,11 +3,24 @@
 // is what stops the simulator and all of its threads.
 const BUFFER_SIZE = 4096
 const SERIAL_PORT = 0
+// Florianópolis, Brazil, as lat,lng,alt,yaw
+const HOME = '-27.598524,-48.459752,0,0'
 
 const params = new URL(self.location.href).searchParams
 const { default: createModule } = await import(`./${params.get('binary')}.js`)
 const sitl = await createModule({
-  arguments: ['--model', params.get('model'), '--serial0', 'wasm', '--serial1', 'none', '--serial2', 'none'],
+  arguments: [
+    '--model',
+    params.get('model'),
+    '--home',
+    HOME,
+    '--serial0',
+    'wasm',
+    '--serial1',
+    'none',
+    '--serial2',
+    'none',
+  ],
 })
 
 const malloc = sitl.cwrap('ardupilot_malloc', 'number', ['number'])
