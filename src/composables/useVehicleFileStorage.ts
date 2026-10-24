@@ -8,6 +8,7 @@ import {
   listVehicleFiles,
   uploadFileToVehicle,
 } from '@/libs/blueos-files'
+import { isBlueOsSettingsSyncEnabled } from '@/libs/settings-management'
 
 /**
  * Minimal metadata every stored file carries. Consumers extend this with their own fields (e.g. a name).
@@ -93,7 +94,7 @@ const ensureVehicleSyncListener = (): void => {
   // reconcile bytes; otherwise a fresh control station wouldn't yet know which files to pull.
   window.addEventListener('vehicle-sync-complete', (event) => {
     const vehicleAddress = (event as CustomEvent).detail?.vehicleAddress
-    if (!vehicleAddress) return
+    if (!vehicleAddress || !isBlueOsSettingsSyncEnabled()) return
     vehicleSyncSubscribers.forEach((notify) => notify(vehicleAddress))
   })
 }
