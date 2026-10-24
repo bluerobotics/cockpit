@@ -418,6 +418,7 @@ export const deserialize = (serialized: string): any => {
  * If it fails after the number of tries, it will throw an error.
  * @template T The type of the function's return value.
  * @param {() => Promise<T>} fn The function to execute.
+ * An error named `AbortError` is rethrown at once instead of retried.
  * @param {number} times The number of times to try. Default value is 5. If value is 0, it will try until it succeeds.
  * @param {number} delay The delay between tries in milliseconds. Default value is 1 second.
  * @param {string} errorMessage The error message to use. Default value is 'Error while trying to execute function'.
@@ -435,6 +436,7 @@ export const tryACoupleOfTimes = async <T>(
     try {
       return await fn()
     } catch (error) {
+      if ((error as Error)?.name === 'AbortError') throw error
       if (times !== 0 && i >= times - 1) {
         // If we have a limit on the number of tries, and we have reached it, throw an error
         throw error
