@@ -510,6 +510,16 @@ export class MavlinkManualControlManager {
     this.addKeyboardMovement(this.manualControlState)
   }
 
+  /**
+   * Send MANUAL_CONTROL with the sticks at rest and only the movement keys held, for when no joystick is connected
+   */
+  sendKeyboardManualControl(): void {
+    const state = new MavlinkManualControlState()
+    state.z = this.vehicle?.type() === VehicleType.Sub ? 500 : 0
+    this.addKeyboardMovement(state)
+    sendManualControl(state, this.vehicle?.systemId ?? 1)
+  }
+
   private addKeyboardMovement(state: MavlinkManualControlState): void {
     const offsets = keyboardAxesOffsets()
     const zMin = this.vehicle?.type() === VehicleType.Sub ? 0 : -1000

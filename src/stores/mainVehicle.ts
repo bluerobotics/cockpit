@@ -30,6 +30,7 @@ import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-messag
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
+import { isKeyboardDriving } from '@/libs/keyboard'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
@@ -1223,6 +1224,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     // Send MAVLink Manual Control message
     if (controllerStore.enableForwarding) {
       mavlinkManualControlManager.sendManualControl()
+    } else if (controllerStore.joysticks.size === 0 && isKeyboardDriving()) {
+      mavlinkManualControlManager.sendKeyboardManualControl()
     }
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)

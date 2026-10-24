@@ -127,6 +127,15 @@ export const initializeKeyVariable = (action: ProtocolAction): void => {
 }
 
 let paused = false
+let driving = false
+
+/**
+ * Whether the keyboard is driving the vehicle on its own, so Cockpit should send MANUAL_CONTROL without a joystick.
+ * It starts at the first movement key press rather than whenever Cockpit is open, which would take control from any
+ * other station, and stops once the window is hidden.
+ * @returns {boolean} True after a movement key was pressed, while the window is visible and keys are not paused
+ */
+export const isKeyboardDriving = (): boolean => driving && !paused && document.visibilityState === 'visible'
 
 /**
  * Stop mapped keys from acting, as on the controllers configuration page, where keys are pressed to be mapped
@@ -157,7 +166,9 @@ export const startKeyboardControl = (onError: (error: unknown) => void): (() => 
     if (action) event.preventDefault()
     if (event.repeat) return
     pressedKeys.add(event.code)
-    if (action) applyKeyboardAction(action, true, onError)
+    if (!action) return
+    if (keyboardMovements.some((movement) => movement.id === action.id)) driving = true
+    applyKeyboardAction(action, true, onError)
   }
 
   const releaseKey = (code: string): void => {
@@ -169,16 +180,22 @@ export const startKeyboardControl = (onError: (error: unknown) => void): (() => 
   const onKeyUp = (event: KeyboardEvent): void => releaseKey(event.code)
   // A key released while the window is unfocused never reports its keyup, so it would stay held forever
   const releaseAllKeys = (): void => [...pressedKeys].forEach(releaseKey)
+  const onVisibilityChange = (): void => {
+    if (document.visibilityState === 'hidden') driving = false
+  }
 
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', releaseAllKeys)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 
   return () => {
     window.removeEventListener('keydown', onKeyDown)
     window.removeEventListener('keyup', onKeyUp)
     window.removeEventListener('blur', releaseAllKeys)
+    document.removeEventListener('visibilitychange', onVisibilityChange)
     releaseAllKeys()
+    driving = false
   }
 }
 

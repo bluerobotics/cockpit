@@ -6,7 +6,9 @@
         <li>Keys work alongside the joystick, running Cockpit actions or setting data-lake variables.</li>
         <li>
           By default W and S move forward and back, A and D sideways, Space and Shift go up and down, and the left and
-          right arrows turn. Each held key adds half a stick to the joystick.
+          right arrows turn. Each held key adds half a stick to the joystick. With no joystick connected, the keyboard
+          takes control of the vehicle at the first of these key presses, and lets it go while Cockpit is hidden or this
+          page is open.
         </li>
         <li>
           A variable mapped to a key is 1 while the key is held and 0 once it is released. To move the vehicle, create a
@@ -14,7 +16,10 @@
           <code>{{ axisOutputExample }}</code> for a variable named "forward-key". Mapping a key to the joystick's own
           axis input instead makes the key and the stick overwrite each other.
         </li>
-        <li>Axis outputs only reach the vehicle while a joystick is connected. Cockpit actions work without one.</li>
+        <li>
+          Axis outputs only reach the vehicle while a joystick is connected, apart from the default movement keys above.
+          Cockpit actions work without one.
+        </li>
         <li>
           Keys do nothing while you type in a field, while Ctrl, Alt or Cmd is held, or while this page is open. Space
           and Enter are left to a focused button, slider or list, and the arrow keys to a focused slider or list.
