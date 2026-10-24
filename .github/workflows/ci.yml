@@ -155,14 +155,65 @@ jobs:
       - name: Lint the workflow scripts
         run: yarn eslint --no-ignore .github/scripts --ext .js --max-warnings=0
 
+  # ArduSub SITL for the browser, served by the page under /sitl. ArduPilot is GPLv3, so the
+  # licence and the exact source commit are published next to the binaries.
+  build-ardusub-wasm:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-base:v0.2.0@sha256:4971bb7ca20180adc011431d6d3c0d6ee0752432751c2d941719fd759146d9fa
+    env:
+      ARDUPILOT_SHA: 437a3301cc335742e5807e6f10e1b819e0a5afa9
+    steps:
+      - name: Restore ArduSub WebAssembly SITL
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: sitl
+          # Bump the version when the build step below changes
+          key: ardusub-wasm-v1-${{ env.ARDUPILOT_SHA }}
+
+      - name: Checkout ArduPilot
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ArduPilot/ardupilot
+          ref: ${{ env.ARDUPILOT_SHA }}
+          submodules: recursive
+          path: ardupilot
+
+      - name: Build ArduSub WebAssembly SITL
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: ardupilot
+        run: |
+          git config --global --add safe.directory "${PWD}"
+          Tools/environment_install/install-wasm-prereqs-ubuntu.sh
+          source "$HOME/emsdk/emsdk_env.sh"
+          ./waf configure --board wasm
+          ./waf build --target bin/ardusub
+          mkdir ../sitl
+          cp build/wasm/bin/ardusub.js build/wasm/bin/ardusub.wasm COPYING.txt ../sitl/
+          echo "ArduSub SITL built from https://github.com/ArduPilot/ardupilot/tree/${ARDUPILOT_SHA}, licensed under the GPLv3 in COPYING.txt." > ../sitl/NOTICE.txt
+
+      - name: Upload ArduSub WebAssembly SITL
+        uses: actions/upload-artifact@v4
+        with:
+          name: ardusub-wasm
+          path: sitl
+
   deploy-page:
-    needs: test
+    needs: [test, build-ardusub-wasm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Download ArduSub WebAssembly SITL
+        uses: actions/download-artifact@v4
+        with:
+          name: ardusub-wasm
+          path: public/sitl
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

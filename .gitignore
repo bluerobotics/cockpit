@@ -12,3 +12,6 @@ cypress/screenshots/
 *.tsbuildinfo
 
 .DS_Store
+
+# ArduSub WebAssembly build, made by CI
+public/sitl/ardusub.*
