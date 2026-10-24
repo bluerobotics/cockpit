@@ -1,6 +1,6 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Joystick configuration </template>
+    <template #title>Controllers configuration</template>
     <template #content>
       <div
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'"
