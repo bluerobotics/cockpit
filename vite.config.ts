@@ -55,6 +55,10 @@ const baseConfig = {
           enabled: true,
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+        workbox: {
+          // Runs before workbox, so its fetch handler sees the requests first
+          importScripts: ['cross-origin-isolation.js'],
+        },
       }),
     !isLibrary && importCycleGuard(__dirname),
   ].filter(Boolean),
