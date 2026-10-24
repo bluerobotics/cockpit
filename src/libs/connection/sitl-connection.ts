@@ -10,9 +10,13 @@ const ONLY_ON_PAGES = 'The simulator only runs in the Cockpit web version on Git
 
 /**
  * ArduPilot SITL compiled to WebAssembly, running in a worker inside Cockpit (public/sitl/worker.js).
- * The URI host is the binary under sitl/ (sitl://ardusub loads sitl/ardusub.js),
- * the optional model parameter is the SITL physics model (vectored by default).
+ * The URI host is the binary under sitl/ (sitl://ardusub loads sitl/ardusub.js).
+ * Optional parameters:
+ * - model: SITL physics model, vectored by default, JSON for an external simulator like BlueSim
+ * - defaults: parameter file under sitl/ loaded as SITL defaults
+ * - home: start location as lat,lon,alt,heading
  * The binaries are only published with the GitHub Pages build.
+ * @example sitl://ardusub?model=JSON&defaults=sub-6dof.parm&home=33.810313,-118.393867,0,270
  */
 export class SitlConnection extends Connection.Abstract {
   private _codec = new RawMavlinkCodec()
@@ -33,9 +37,14 @@ export class SitlConnection extends Connection.Abstract {
     await this._codec.initialize()
     if (this._disposed) return
 
+    const options = this.uri().entries()
     const workerUrl = new URL('sitl/worker.js', document.baseURI)
     workerUrl.searchParams.set('binary', this.uri().host)
-    workerUrl.searchParams.set('model', this.uri().entries().get('model') ?? 'vectored')
+    workerUrl.searchParams.set('model', options.get('model') ?? 'vectored')
+    for (const option of ['home', 'defaults']) {
+      const value = options.get(option)
+      if (value !== undefined) workerUrl.searchParams.set(option, value)
+    }
     const worker = new Worker(workerUrl, { type: 'module' })
     this._worker = worker
     await new Promise<void>((resolve, reject) => {
