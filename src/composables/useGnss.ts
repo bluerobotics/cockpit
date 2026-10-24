@@ -1,4 +1,4 @@
-import { reactive, ref } from 'vue'
+import { effectScope, reactive, ref } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import {
@@ -210,6 +210,7 @@ const createState = (): GnssState => {
  * @returns {GnssState} The shared GNSS state and actions.
  */
 export const useGnss = (): GnssState => {
-  if (!state) state = createState()
+  // Detached, so the state outlives whichever component happened to create it
+  if (!state) state = effectScope(true).run(createState)!
   return state
 }
