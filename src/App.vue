@@ -158,6 +158,7 @@ import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
 import ConfigurationCloudView from '@/views/ConfigurationCloudView.vue'
 import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.vue'
+import ConfigurationDiyWidgetsView from '@/views/ConfigurationDiyWidgetsView.vue'
 import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
@@ -213,6 +214,7 @@ const menuPageComponents: Record<SubMenuComponentName, Component> = {
   [SubMenuComponentName.SettingsDev]: ConfigurationDevelopmentView,
   [SubMenuComponentName.SettingsMission]: ConfigurationMissionView,
   [SubMenuComponentName.SettingsActions]: ConfigurationActionsView,
+  [SubMenuComponentName.SettingsDiyWidgets]: ConfigurationDiyWidgetsView,
   [SubMenuComponentName.SettingsSources]: ConfigurationSourcesView,
   [SubMenuComponentName.SettingsMAVLink]: ConfigurationMAVLinkView,
   [SubMenuComponentName.SettingsCloud]: ConfigurationCloudView,

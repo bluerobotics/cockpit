@@ -97,6 +97,12 @@ export const menuPages: Record<SubMenuComponentName, MenuPage> = {
     title: 'Actions',
     icon: 'mdi-run-fast',
   },
+  [SubMenuComponentName.SettingsDiyWidgets]: {
+    subMenu: SubMenuName.settings,
+    slug: 'diy-widgets',
+    title: 'DIY widgets',
+    icon: 'mdi-puzzle-outline',
+  },
   [SubMenuComponentName.SettingsSources]: {
     subMenu: SubMenuName.settings,
     slug: 'sources',

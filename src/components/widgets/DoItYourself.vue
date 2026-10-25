@@ -101,9 +101,18 @@
                 <v-icon class="mr-1 mt-[2px]">mdi-download</v-icon>
                 Export
               </v-btn>
-              <v-btn class="text-white/60 mr-10" variant="text" title="Import configuration" @click="importConfig">
+              <v-btn class="text-white/60" variant="text" title="Import configuration" @click="importConfig">
                 <v-icon class="mr-1 mt-[2px]">mdi-upload</v-icon>
                 Import
+              </v-btn>
+              <v-btn
+                class="text-white/60 mr-10"
+                variant="text"
+                title="Save to the DIY widget library"
+                @click="saveToLibrary"
+              >
+                <v-icon class="mr-1 mt-[2px]">mdi-bookshelf</v-icon>
+                Save to library
               </v-btn>
               <v-btn class="text-white/60" variant="text" @click="resetChanges">Reset</v-btn>
               <v-btn class="text-white" variant="text" @click="applyChanges">Apply</v-btn>
@@ -118,7 +127,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { useSnackbar } from '@/composables/snackbar'
+import { getAllDiyWidgetTemplates, saveDiyWidgetTemplate } from '@/libs/diy-widget-library'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { createCleanupScope, runUserScript } from '@/libs/user-script'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -129,6 +141,8 @@ const autoSave = useBlueOsStorage('cockpit-diy-widget-auto-save', false)
 
 const interfaceStore = useAppInterfaceStore()
 const widgetStore = useWidgetManagerStore()
+const { openSnackbar } = useSnackbar()
+const { showDialog, closeDialog: closeInteractionDialog } = useInteractionDialog()
 
 const props = defineProps<{
   /**
@@ -372,6 +386,72 @@ const exportConfig = (): void => {
   // Clean up
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+const storeInLibrary = (libraryId: string | undefined): void => {
+  if (!htmlEditor || !cssEditor || !jsEditor) return
+  widget.value.options.libraryId = saveDiyWidgetTemplate(
+    {
+      name: widget.value.name,
+      html: htmlEditor.getValue(),
+      css: cssEditor.getValue(),
+      js: jsEditor.getValue(),
+      inheritCockpitStyles: widget.value.options.inheritCockpitStyles === true,
+      scopedScript: widget.value.options.scopedScript === true,
+    },
+    libraryId
+  )
+  const verb = libraryId ? 'Updated' : 'Saved'
+  openSnackbar({
+    message: `${verb} "${widget.value.name}" in the DIY widget library.`,
+    variant: 'success',
+    duration: 3000,
+  })
+}
+
+const saveToLibrary = (): void => {
+  logUserAction(`Pressed "Save to library" on Do-It-Yourself widget "${widget.value.name}"`)
+  // The widget remembers its library entry, so saving it again updates that entry.
+  const libraryId = widget.value.options.libraryId as string | undefined
+  const entry = libraryId === undefined ? undefined : getAllDiyWidgetTemplates()[libraryId]
+  if (entry === undefined) return storeInLibrary(undefined)
+
+  // Copying a widget or a view copies its library id too, so the entry may also belong to another widget.
+  const sharedWithOthers = widgetStore.currentProfile.views.some((view) =>
+    view.widgets.some((w) => w.hash !== widget.value.hash && w.options.libraryId === libraryId)
+  )
+  if (!sharedWithOthers) return storeInLibrary(libraryId)
+
+  showDialog({
+    title: 'Update the library entry?',
+    variant: 'warning',
+    maxWidth: 520,
+    // Neither choice is safe to take by mistake, so closing the dialog leaves the library as it was.
+    persistent: false,
+    message: `Other widgets also come from "${entry.name}" in the library. Update that entry, or save this widget as a new one?`,
+    actions: [
+      {
+        text: 'Save as new',
+        action: () => {
+          logUserAction(`Saved Do-It-Yourself widget "${widget.value.name}" as a new library entry`)
+          closeInteractionDialog()
+          storeInLibrary(undefined)
+        },
+      },
+      {
+        text: 'Update entry',
+        class: 'bg-[#FFFFFF33] text-white',
+        action: () => {
+          logUserAction(`Updated the library entry "${entry.name}" from a Do-It-Yourself widget`)
+          closeInteractionDialog()
+          storeInLibrary(libraryId)
+        },
+      },
+    ],
+  }).catch(() => {
+    // Closing the dialog rejects its promise.
+    logUserAction('Closed the "Update the library entry?" prompt without saving')
+  })
 }
 
 // Function to import configuration from a JSON file
