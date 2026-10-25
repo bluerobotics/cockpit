@@ -129,7 +129,9 @@ export class SitlConnection extends Connection.Abstract {
     if (this._disposed) return
     const url = new URL(window.location.href)
     url.searchParams.set('MAVLink2RestWebsocketURI', this.uri().toString())
-    window.location.replace(url)
+    // replace() to a URL that differs only in its fragment, or not at all, does not reload the page
+    window.history.replaceState(window.history.state, '', url)
+    window.location.reload()
   }
 
   /**
