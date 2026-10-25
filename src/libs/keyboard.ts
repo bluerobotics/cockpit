@@ -47,12 +47,26 @@ export const keyboardMovements: KeyboardMovement[] = [
   { id: 'keyboard-yaw-left', name: 'Keyboard yaw left', defaultKey: 'ArrowLeft', axis: 'r', offset: -500 },
 ]
 
-export const defaultKeyboardMapping: KeyboardMapping = Object.fromEntries(
-  keyboardMovements.map((movement) => [
-    movement.defaultKey,
-    { protocol: JoystickProtocol.DataLakeVariable, id: movement.id, name: movement.name },
-  ])
-)
+export const defaultKeyboardMapping: KeyboardMapping = {
+  ...Object.fromEntries(
+    keyboardMovements.map((movement) => [
+      movement.defaultKey,
+      { protocol: JoystickProtocol.DataLakeVariable, id: movement.id, name: movement.name },
+    ])
+  ),
+  ArrowUp: { protocol: JoystickProtocol.MAVLinkManualControl, id: 'Mount tilt up', name: 'Mount tilt up' },
+  ArrowDown: { protocol: JoystickProtocol.MAVLinkManualControl, id: 'Mount tilt down', name: 'Mount tilt down' },
+  Comma: { protocol: JoystickProtocol.MAVLinkManualControl, id: 'Actuator 1 max', name: 'Actuator 1 max' },
+  Period: { protocol: JoystickProtocol.MAVLinkManualControl, id: 'Actuator 1 min', name: 'Actuator 1 min' },
+}
+
+const heldButtonFunctions = new Set<string>()
+
+/**
+ * The vehicle button functions whose keys are held, which MANUAL_CONTROL presses on the buttons set to them
+ * @returns {string[]} The ids of the held MAVLink manual control button functions
+ */
+export const keyboardHeldButtonFunctions = (): string[] => [...heldButtonFunctions]
 
 /**
  * How far the held movement keys push each MANUAL_CONTROL axis
@@ -102,8 +116,8 @@ const operatesFocusedControl = (event: KeyboardEvent): boolean => {
 }
 
 /**
- * Apply the action mapped to a key. A Cockpit action runs when the key goes down, and a data-lake variable holds 1
- * while the key is down and 0 once it is released.
+ * Apply the action mapped to a key. A Cockpit action runs when the key goes down, a data-lake variable holds 1
+ * while the key is down and 0 once it is released, and a vehicle button function is held as long as the key.
  * @param {ProtocolAction} action The action mapped to the key
  * @param {boolean} pressed Whether the key went down or up
  * @param {(error: unknown) => void} onError Called when a Cockpit action fails
@@ -113,6 +127,10 @@ const applyKeyboardAction = (action: ProtocolAction, pressed: boolean, onError: 
     setDataLakeVariableData(action.id, pressed ? 1 : 0)
   } else if (action.protocol === JoystickProtocol.CockpitAction && pressed) {
     executeActionCallback(action.id, onError)
+  } else if (action.protocol === JoystickProtocol.MAVLinkManualControl && pressed) {
+    heldButtonFunctions.add(action.id)
+  } else if (action.protocol === JoystickProtocol.MAVLinkManualControl) {
+    heldButtonFunctions.delete(action.id)
   }
 }
 
@@ -131,9 +149,10 @@ let driving = false
 
 /**
  * Whether the keyboard is driving the vehicle on its own, so Cockpit should send MANUAL_CONTROL without a joystick.
- * It starts at the first movement key press rather than whenever Cockpit is open, which would take control from any
- * other station, and stops once the window is hidden.
- * @returns {boolean} True after a movement key was pressed, while the window is visible and keys are not paused
+ * It starts at the first movement or vehicle button key press rather than whenever Cockpit is open, which would take
+ * control from any other station, and stops once the window is hidden.
+ * @returns {boolean} True after a movement or vehicle button key was pressed, while the window is visible and keys
+ * are not paused
  */
 export const isKeyboardDriving = (): boolean => driving && !paused && document.visibilityState === 'visible'
 
@@ -167,7 +186,8 @@ export const startKeyboardControl = (onError: (error: unknown) => void): (() => 
     if (event.repeat) return
     pressedKeys.add(event.code)
     if (!action) return
-    if (keyboardMovements.some((movement) => movement.id === action.id)) driving = true
+    const isMovement = keyboardMovements.some((movement) => movement.id === action.id)
+    if (isMovement || action.protocol === JoystickProtocol.MAVLinkManualControl) driving = true
     applyKeyboardAction(action, true, onError)
   }
 

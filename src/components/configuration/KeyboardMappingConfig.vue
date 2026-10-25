@@ -3,12 +3,20 @@
     <template #title>Key mappings</template>
     <template #info>
       <div class="flex flex-col items-start px-5 font-medium">
-        <li>Keys work alongside the joystick, running Cockpit actions or setting data-lake variables.</li>
         <li>
-          By default W and S move forward and back, A and D sideways, Space and Shift go up and down, and the left and
-          right arrows turn. Each held key adds half a stick to the joystick. With no joystick connected, the keyboard
-          takes control of the vehicle at the first of these key presses, and lets it go while Cockpit is hidden or this
-          page is open.
+          Keys work alongside the joystick, running Cockpit actions, setting data-lake variables, or holding vehicle
+          functions.
+        </li>
+        <li>
+          By default W and S move forward and back, A and D sideways, Space and Shift go up and down, the left and right
+          arrows turn, the up and down arrows tilt the camera, and comma and period open and close a gripper on actuator
+          1. Each held movement key adds half a stick to the joystick. With no joystick connected, the keyboard takes
+          control of the vehicle at the first of these key presses, and lets it go while Cockpit is hidden or this page
+          is open.
+        </li>
+        <li>
+          A vehicle function, like the camera tilt, is held for as long as its key. It needs a joystick button on the
+          vehicle set to that function, which the joystick mapping sets for the functions it uses.
         </li>
         <li>
           A variable mapped to a key is 1 while the key is held and 0 once it is released. To move the vehicle, create a
@@ -18,7 +26,7 @@
         </li>
         <li>
           Axis outputs only reach the vehicle while a joystick is connected, apart from the default movement keys above.
-          Cockpit actions work without one.
+          Cockpit actions and vehicle functions work without one.
         </li>
         <li>
           Keys do nothing while you type in a field, while Ctrl, Alt or Cmd is held, or while this page is open. Space
@@ -91,11 +99,15 @@ const mappedKeys = computed(() => Object.keys(mapping.value))
 
 const axisOutputExample = '{{inputs/mavlink/axis-x}} + {{user/custom/forward-key}} * 500'
 
-// MAVLink manual control button functions are left out, as they are tied to the joystick's buttons on the vehicle
+const keyProtocols = [
+  JoystickProtocol.CockpitAction,
+  JoystickProtocol.DataLakeVariable,
+  JoystickProtocol.MAVLinkManualControl,
+]
 const assignableActions = computed((): ProtocolAction[] => [
   otherAvailableActions.no_function,
   ...controllerStore.availableButtonActions
-    .filter((a) => [JoystickProtocol.CockpitAction, JoystickProtocol.DataLakeVariable].includes(a.protocol))
+    .filter((a) => keyProtocols.includes(a.protocol))
     .filter((a) => isAssignableToButton(a.id))
     .sort((a, b) => a.name.localeCompare(b.name)),
 ])
