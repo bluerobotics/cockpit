@@ -1,18 +1,20 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 
 import { getDataLakeVariableData, getDataLakeVariableLastUpdateTimestamp } from '@/libs/actions/data-lake'
-import { StreamPeerConnectionInfo, WebRTCVideoStat } from '@/types/video'
+import { streamStatVariableId } from '@/libs/video/stream-stats'
+import { StreamPeerConnectionInfo } from '@/types/video'
 
 const maxVideoStatAge = 2000
 
+// Callers hold the external id, and the video store registers the internal stream name used in persisted ids; a stream with no correspondency entry is not followed.
+let publishedStreamName: (externalId: string) => string | undefined = () => undefined
+
 /**
- * Data-lake variable id under which a stream's inbound-video stat is published
- * @param {string} streamName - Name of the stream the stat belongs to
- * @param {WebRTCVideoStat} statName - Stat published under the id
- * @returns {string} The data-lake variable id
+ * Choose the stream name persisted in data-lake stat ids
+ * @param {(externalId: string) => string | undefined} resolve - Maps the caller's external id to the internal name
  */
-export const streamStatVariableId = (streamName: string, statName: WebRTCVideoStat): string => {
-  return `stream-${streamName}-${statName}`
+export const setStreamStatPublishedName = (resolve: (externalId: string) => string | undefined): void => {
+  publishedStreamName = resolve
 }
 
 /**
@@ -23,12 +25,33 @@ export const streamStatVariableId = (streamName: string, statName: WebRTCVideoSt
  * is missing or stale
  */
 export const trackVideoArrival = (streamName: string, missingStatConsequence: string): (() => number | undefined) => {
-  const statId = streamStatVariableId(streamName, 'bytesReceived')
+  const bytesReceivedId = (): string | undefined => {
+    const internalName = publishedStreamName(streamName)
+    if (internalName === undefined) return undefined
+    return streamStatVariableId(internalName, 'bytesReceived')
+  }
+
+  let statId = bytesReceivedId()
   let lastBytesReceived: number | undefined
   let lastChangeTime = performance.now()
   let missingStatReported = false
 
   return () => {
+    const nextStatId = bytesReceivedId()
+    // A renamed stream publishes under a new id; keep following the one being written
+    if (nextStatId !== statId) {
+      statId = nextStatId
+      lastBytesReceived = undefined
+      lastChangeTime = performance.now()
+      missingStatReported = false
+    }
+
+    if (statId === undefined) {
+      if (!missingStatReported) console.warn(`Without a correspondency entry, ${missingStatConsequence}.`)
+      missingStatReported = true
+      return undefined
+    }
+
     const bytesReceived = getDataLakeVariableData(statId)
     if (typeof bytesReceived !== 'number') {
       if (!missingStatReported) console.warn(`Without '${statId}', ${missingStatConsequence}.`)
