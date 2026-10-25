@@ -10,7 +10,10 @@
           <code>{{ axisOutputExample }}</code> for a variable named "forward-key". Mapping a key to the joystick's own
           axis input instead makes the key and the stick overwrite each other.
         </li>
-        <li>Axis outputs only reach the vehicle while a joystick is connected. Cockpit actions work without one.</li>
+        <li>
+          Axis outputs reach the vehicle while manual control is enabled in the joystick mini-widget, with or without a
+          joystick. Without one, the axes start centred, as a released stick would leave them.
+        </li>
         <li>
           Keys do nothing while you type in a field, while Ctrl, Alt or Cmd is held, or while this page is open. Space,
           Enter and the arrow keys are left to a focused button, slider or list.
