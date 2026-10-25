@@ -1,6 +1,13 @@
 <template>
-  <div class="w-full h-full">
+  <div class="relative w-full h-full">
     <iframe :src="source" class="w-full h-full" :class="{ 'pointer-events-none': !isInteractive }" frameborder="0" />
+    <div
+      v-if="sitlStageMessage"
+      class="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md text-sm text-white text-center pointer-events-none"
+      :style="interfaceStore.globalGlassMenuStyles"
+    >
+      {{ sitlStageMessage }}
+    </div>
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
       <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
         <v-card-title class="text-center">Simulator</v-card-title>
@@ -36,8 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, toRefs } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs } from 'vue'
 
+import { type SitlStage, onSitlStageChange } from '@/libs/connection/sitl-connection'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -64,4 +72,14 @@ onBeforeMount(() => {
 
 const source = computed(() => new URL(widget.value.options.source, document.baseURI).href)
 const isInteractive = computed(() => widget.value.options.interactive && !widgetStore.editingMode)
+
+const sitlStageMessages: Partial<Record<SitlStage, string>> = {
+  'loading-autopilot': 'Loading the autopilot...',
+  'waiting-for-simulator': 'Autopilot running, waiting for the simulator, which only loads while visible...',
+  'failed': 'The autopilot failed to start. See the system logs for details.',
+}
+const sitlStage = ref<SitlStage>('idle')
+const stopFollowingSitl = onSitlStageChange((stage) => (sitlStage.value = stage))
+onBeforeUnmount(stopFollowingSitl)
+const sitlStageMessage = computed(() => sitlStageMessages[sitlStage.value])
 </script>
