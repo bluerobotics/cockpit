@@ -1,5 +1,5 @@
 import { getDataLakeVariableData, setDataLakeVariableData } from '@/libs/actions/data-lake'
-import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
+import { availableCockpitActions, executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { settingsManager } from '@/libs/settings-management'
 import { type ProtocolAction, JoystickProtocol } from '@/types/joystick'
 
@@ -58,6 +58,8 @@ export const defaultKeyboardMapping: KeyboardMapping = {
   ArrowDown: { protocol: JoystickProtocol.MAVLinkManualControl, id: 'Mount tilt down', name: 'Mount tilt down' },
   Comma: { protocol: JoystickProtocol.MAVLinkManualControl, id: 'Actuator 1 max', name: 'Actuator 1 max' },
   Period: { protocol: JoystickProtocol.MAVLinkManualControl, id: 'Actuator 1 min', name: 'Actuator 1 min' },
+  Equal: availableCockpitActions.mavlink_arm,
+  Minus: availableCockpitActions.mavlink_disarm,
 }
 
 const heldButtonFunctions = new Set<string>()

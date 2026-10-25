@@ -319,8 +319,9 @@ export const buildFreshViewsGroupFromDefault = (defaultProfile: Profile): Profil
 // The DIY widget's CSS is not scoped to it, hence the class on every selector
 const keyboardGuideHtml = `<details class="keyboard-guide" open>
   <summary>Keyboard controls</summary>
-  <p class="arming">Arm the vehicle first, with the Disarmed button at the bottom right.</p>
+  <p class="arming">Arm the vehicle first, with <kbd>=</kbd> or the Disarmed button at the bottom right.</p>
   <table>
+    <tr><td><kbd>=</kbd> <kbd>-</kbd></td><td>Arm, disarm</td></tr>
     <tr><td><kbd>W</kbd> <kbd>S</kbd></td><td>Forward, back</td></tr>
     <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td>Left, right</td></tr>
     <tr><td><kbd>Space</kbd> <kbd>Shift</kbd></td><td>Up, down</td></tr>
