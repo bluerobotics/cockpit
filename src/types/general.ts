@@ -52,6 +52,7 @@ export enum SubMenuComponentName {
   SettingsCloud = 'settings-cloud',
   SettingsMission = 'settings-mission',
   SettingsActions = 'settings-actions',
+  SettingsDiyWidgets = 'settings-diy-widgets',
   SettingsSources = 'settings-sources',
   SettingsMAVLink = 'settings-mavlink',
   ToolsMAVLink = 'tools-mavlink',
