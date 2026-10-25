@@ -1025,7 +1025,7 @@ export const fillMissingBarContainers = (
 }
 
 /**
- * Views that should be mounted, with the current view last so it stacks on top.
+ * Views that should be mounted, in profile order, since moving a mounted view in the DOM reloads its iframes.
  * @param {View[]} views - The profile's views
  * @param {number} currentIndex - Index of the view on screen
  * @param {boolean} unmountHidden - When true, mount only the current view
@@ -1038,10 +1038,7 @@ export const selectViewsToShow = (views: View[], currentIndex: number, unmountHi
     const current = views[index]
     return current.visible ? [current] : []
   }
-  const viewsOnShowOrder = views.slice()
-  viewsOnShowOrder.splice(index, 1)
-  viewsOnShowOrder.push(views[index])
-  return viewsOnShowOrder.filter((v) => v.visible)
+  return views.filter((v) => v.visible)
 }
 
 export const validateContainer = (maybeContainer: MiniWidgetContainer): maybeContainer is MiniWidgetContainer => {

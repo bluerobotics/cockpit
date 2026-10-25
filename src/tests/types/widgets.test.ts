@@ -48,10 +48,11 @@ const view = (name: string, visible = true): View => ({
   miniWidgetContainers: [],
 })
 
-test('all visible views stay mounted, with the current view last so it stacks on top', () => {
+test('all visible views stay mounted in profile order whichever view is current', () => {
   const views = [view('video'), view('map'), view('hud')]
 
-  expect(selectViewsToShow(views, 0, false).map((v) => v.name)).toEqual(['map', 'hud', 'video'])
+  expect(selectViewsToShow(views, 0, false).map((v) => v.name)).toEqual(['video', 'map', 'hud'])
+  expect(selectViewsToShow(views, 2, false).map((v) => v.name)).toEqual(['video', 'map', 'hud'])
 })
 
 test('hidden views are left out even when every view stays mounted', () => {
