@@ -201,8 +201,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a Mavlink2Rest"
-                    :rules="[isValidSocketConnectionURI]"
+                    :hint="
+                      sitlAvailable
+                        ? 'URI of a Mavlink2Rest, or sitl://ardusub for the simulator'
+                        : 'URI of a Mavlink2Rest'
+                    "
+                    :rules="[isValidMainConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
@@ -587,6 +591,7 @@ import {
 import { useSnackbar } from '@/composables/snackbar'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
+import { isSitlAvailable } from '@/libs/connection/sitl-connection'
 import {
   addGenericWebSocketConnection,
   GenericWebSocketConnection,
@@ -767,6 +772,14 @@ watch(
   }
 )
 
+// A connection given in the page address (e.g. the demo link) wins over this setting
+const removeConnectionFromAddress = (): void => {
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('MAVLink2RestWebsocketURI')) return
+  url.searchParams.delete('MAVLink2RestWebsocketURI')
+  window.history.replaceState(window.history.state, '', url)
+}
+
 const setMainVehicleConnectionURI = async (): Promise<void> => {
   const res = await mainConnectionForm.value.validate()
 
@@ -774,6 +787,39 @@ const setMainVehicleConnectionURI = async (): Promise<void> => {
     return
   }
 
+  const uri = new Connection.URI(mavlink2RestWebsocketURI.value)
+  if (uri.type() === Connection.Type.Sitl && !window.crossOriginIsolated) {
+    logUserAction('Opened the simulator reload confirmation')
+    showDialog({
+      title: 'Start the simulator',
+      message: 'Cockpit will reload to start the ArduSub simulator.',
+      variant: 'info',
+      actions: [
+        {
+          text: 'Cancel',
+          size: 'small',
+          action: () => {
+            logUserAction('Cancelled starting the simulator')
+            closeDialog()
+          },
+        },
+        {
+          text: 'Reload',
+          size: 'small',
+          action: () => {
+            closeDialog()
+            applyMainVehicleConnectionURI()
+          },
+        },
+      ],
+    })
+    return
+  }
+  applyMainVehicleConnectionURI()
+}
+
+const applyMainVehicleConnectionURI = (): void => {
+  removeConnectionFromAddress()
   logUserAction(`Set custom main vehicle connection URI to '${mavlink2RestWebsocketURI.value.toString()}'`)
   mainVehicleStore.customMAVLink2RestWebsocketURI = {
     data: mavlink2RestWebsocketURI.value.toString(),
@@ -785,6 +831,7 @@ const setMainVehicleConnectionURI = async (): Promise<void> => {
 
 const resetMainVehicleConnectionURI = async (): Promise<void> => {
   logUserAction('Reset main vehicle connection URI to default')
+  removeConnectionFromAddress()
   mainVehicleStore.customMAVLink2RestWebsocketURI = {
     enabled: false,
     data: mainVehicleStore.defaultMAVLink2RestWebsocketURI.toString(),
@@ -961,6 +1008,17 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
     return `Invalid connection URI. ${error}.`
   }
   return true
+}
+
+const sitlAvailable = isSitlAvailable()
+
+const isValidMainConnectionURI = (value: string): boolean | string => {
+  try {
+    if (sitlAvailable && new Connection.URI(value).type() === Connection.Type.Sitl) return true
+  } catch (error) {
+    return `Invalid connection URI. ${error}.`
+  }
+  return isValidSocketConnectionURI(value)
 }
 
 const customRtcConfiguration = ref<string>(JSON.stringify(mainVehicleStore.customWebRTCConfiguration.data, null, 4))
