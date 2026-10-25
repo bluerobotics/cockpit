@@ -32,8 +32,16 @@ export class RawMavlinkCodec {
    * Serialize a mavlink2rest JSON message into raw MAVLink bytes
    * @param {Uint8Array} data - Encoded JSON message
    * @returns {Uint8Array | undefined} Raw bytes, undefined before initialize finishes
+   * @throws {Error} When the message does not match the dialect
    */
   encode(data: Uint8Array): Uint8Array | undefined {
-    return this._mavlink2rest?.rest2mavlink(this._textDecoder.decode(data))
+    if (this._mavlink2rest === undefined) return undefined
+    const json = this._textDecoder.decode(data)
+    const message: unknown = this._mavlink2rest.rest2mavlink(json)
+    // rest2mavlink returns a string instead of throwing when the JSON does not match the dialect
+    if (!(message instanceof Uint8Array)) {
+      throw new Error(`could not encode ${json}`)
+    }
+    return message
   }
 }
