@@ -2,7 +2,10 @@ import { type Ref, onUnmounted } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
+import * as Connection from '@/libs/connection/connection'
+import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import {
+  buildFreshSimulatorViewsGroupFromDefault,
   buildFreshViewsGroupFromDefault,
   buildReplacementMapping,
   evaluateDefaults,
@@ -20,6 +23,8 @@ import { useWidgetManagerStore } from '@/stores/widgetManager'
 export const useVehicleDefaultsHandledFlag = (): Ref<boolean> =>
   useBlueOsStorage<boolean>('cockpit-vehicle-defaults-handled', false)
 
+const sitlVehicleTypes: Record<string, MavType> = { ardusub: MavType.MAV_TYPE_SUBMARINE }
+
 /**
  * Wires the per-vehicle defaults flow to the `vehicle-sync-complete` event.
  *
@@ -28,6 +33,7 @@ export const useVehicleDefaultsHandledFlag = (): Ref<boolean> =>
  * - Otherwise run the evaluator, silently auto-import any side that comes back as `auto-import`
  *   (with a per-side success snackbar), then re-evaluate. Open the auto import modal when any side
  *   still says `offer`; if nothing is left to offer, just persist the handled flag.
+ * - On setup, a SITL with external physics and a blank views group gets the default views with the Simulator widget.
  *
  * The flag lives in `useBlueOsStorage`, so settings-v2 scopes it automatically to the current
  * (user, vehicle) pair — no per-vehicle-type bookkeeping is needed.
@@ -87,6 +93,33 @@ export const useVehicleDefaultsAutoImport = (): void => {
     }
   }
 
+  // A SITL with external physics only sends heartbeats once the Simulator widget runs it, so a blank views group
+  // gets the vehicle's default views, with the simulator in them, up front instead of after the first heartbeat
+  const seedSimulatorViews = (): void => {
+    try {
+      const uri = mainVehicleStore.MAVLink2RestWebsocketURI
+      if (uri.type() !== Connection.Type.Sitl || !uri.entries().get('model')?.startsWith('JSON')) return
+      const vehicleType = sitlVehicleTypes[uri.host]
+      if (vehicleType === undefined) return
+
+      const { views, vehicleTypeName } = evaluateDefaults(
+        vehicleType,
+        widgetStore.viewsGroup,
+        controllerStore.protocolMapping
+      )
+      if (views.action !== 'auto-import' || !views.defaultProfile) return
+      widgetStore.viewsGroup = buildFreshSimulatorViewsGroupFromDefault(views.defaultProfile)
+      openSnackbar({
+        message: `Imported default views for ${vehicleTypeName}, with the simulator.`,
+        variant: 'success',
+        duration: 5000,
+      })
+    } catch (error) {
+      console.error('Failed to import the default views for the simulated vehicle.', error)
+    }
+  }
+
+  seedSimulatorViews()
   window.addEventListener('vehicle-sync-complete', handleSyncComplete)
   onUnmounted(() => {
     window.removeEventListener('vehicle-sync-complete', handleSyncComplete)
