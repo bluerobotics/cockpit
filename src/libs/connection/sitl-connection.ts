@@ -9,6 +9,43 @@ const SERVICE_WORKER_TIMEOUT_MS = 60_000
 const ONLY_ON_PAGES = 'The simulator only runs in the Cockpit web version on GitHub Pages.'
 
 /**
+ * How far a sitl:// connection got through starting up
+ */
+export type SitlStage = 'idle' | 'loading-autopilot' | 'waiting-for-simulator' | 'running' | 'failed'
+
+const sitlStageLogs: Record<SitlStage, string> = {
+  'idle': 'stopped',
+  'loading-autopilot': 'loading',
+  'waiting-for-simulator': 'started, waiting for the simulator physics',
+  'running': 'running',
+  'failed': 'failed to start',
+}
+let sitlStage: SitlStage = 'idle'
+let sitlStartedAt = 0
+const sitlStageListeners = new Set<(stage: SitlStage) => void>()
+
+const setSitlStage = (stage: SitlStage): void => {
+  if (stage === sitlStage) return
+  sitlStage = stage
+  const seconds = ((performance.now() - sitlStartedAt) / 1000).toFixed(1)
+  console.info(`ArduPilot SITL ${sitlStageLogs[stage]} (${seconds} s)`)
+  sitlStageListeners.forEach((listener) => listener(stage))
+}
+
+/**
+ * Follow how far the sitl:// connection got through starting up
+ * @param {(stage: SitlStage) => void} listener Called with the current stage, then on every change
+ * @returns {() => void} Stops following
+ */
+export const onSitlStageChange = (listener: (stage: SitlStage) => void): (() => void) => {
+  sitlStageListeners.add(listener)
+  listener(sitlStage)
+  return () => {
+    sitlStageListeners.delete(listener)
+  }
+}
+
+/**
  * ArduPilot SITL compiled to WebAssembly, running in a worker inside Cockpit (public/sitl/worker.js).
  * The URI host is the binary under sitl/ (sitl://ardusub loads sitl/ardusub.js).
  * Optional parameters:
@@ -33,6 +70,8 @@ export class SitlConnection extends Connection.Abstract {
       return
     }
     sessionStorage.removeItem(RELOAD_KEY)
+    sitlStartedAt = performance.now()
+    setSitlStage('loading-autopilot')
 
     await this._codec.initialize()
     if (this._disposed) return
@@ -48,12 +87,18 @@ export class SitlConnection extends Connection.Abstract {
     const worker = new Worker(workerUrl, { type: 'module' })
     this._worker = worker
     await new Promise<void>((resolve, reject) => {
-      worker.onmessage = (event: MessageEvent<Uint8Array>) => {
+      // The worker posts its stage as a string, and the simulator serial output as bytes
+      worker.onmessage = (event: MessageEvent<Uint8Array | SitlStage>) => {
+        if (typeof event.data === 'string') {
+          setSitlStage(event.data)
+          return
+        }
         resolve()
         this._codec.decode(event.data, (message) => this.onRead.emit_value(message))
       }
       worker.onerror = (event: Event) => {
         console.error('Simulator stopped:', (event as ErrorEvent).message)
+        setSitlStage('failed')
         const host = this.uri().host
         reject(
           new Error(
@@ -95,6 +140,7 @@ export class SitlConnection extends Connection.Abstract {
     this._disposed = true
     this._worker?.terminate()
     this._worker = undefined
+    setSitlStage('idle')
     return true
   }
 

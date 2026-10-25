@@ -45,6 +45,7 @@ const sitl = await createModule({
   arguments: args,
   preRun: [(module) => defaults !== undefined && module.FS.writeFile(DEFAULTS_PATH, defaults)],
 })
+self.postMessage(model.startsWith('JSON') ? 'waiting-for-simulator' : 'running')
 
 const malloc = sitl.cwrap('ardupilot_malloc', 'number', ['number'])
 const read = sitl.cwrap('ardupilot_serial_read', 'number', ['number', 'number', 'number'])
@@ -83,7 +84,12 @@ if (model.startsWith('JSON')) {
     )
   }
 
+  let isLinked = false
   physicsChannel.onmessage = ({ data }) => {
+    if (!isLinked) {
+      isLinked = true
+      self.postMessage('running')
+    }
     const sensors = textEncoder.encode(data).subarray(0, BUFFER_SIZE)
     sitl.HEAPU8.set(sensors, sensorsBuffer)
     writeSensors(sensorsBuffer, sensors.length)
