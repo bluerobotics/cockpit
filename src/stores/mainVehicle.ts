@@ -103,8 +103,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     },
   })
 
+  // Lets a deployment, like a hosted simulator, pick the main connection without a query parameter on every link
+  const deploymentMainConnectionURI: string | undefined = import.meta.env.VITE_DEFAULT_MAIN_CONNECTION_URI
   const defaultMAVLink2RestWebsocketURI = computed(
-    () => `${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`
+    () => deploymentMainConnectionURI || `${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`
   )
   const defaultMAVLink2RestHttpURI = computed(() => `${http_protocol}://${globalAddress.value}/mavlink2rest/v1/mavlink`)
   const defaultWebRTCSignallingURI = computed(() => `${ws_protocol}://${globalAddress.value}:6021/`)

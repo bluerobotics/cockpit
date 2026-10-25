@@ -334,6 +334,11 @@ docker-compose -f sim.yml --profile ardusub up
 # Other profiles: arducopter, ardurover, arduplane
 ```
 
+To host Cockpit with the in-browser ArduSub and BlueSim, build it with that SITL as the default main connection:
+```bash
+VITE_DEFAULT_MAIN_CONNECTION_URI='sitl://ardusub?model=JSON&defaults=bluesim.parm&home=33.810313,-118.393867,0,270' yarn build
+```
+
 ---
 
 ## 📄 License
