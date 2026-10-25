@@ -316,11 +316,93 @@ export const buildFreshViewsGroupFromDefault = (defaultProfile: Profile): Profil
   return fresh
 }
 
+// The DIY widget's CSS is not scoped to it, hence the class on every selector
+const keyboardGuideHtml = `<details class="keyboard-guide" open>
+  <summary>Keyboard controls</summary>
+  <p class="arming">Arm the vehicle first, with the Disarmed button at the bottom right.</p>
+  <table>
+    <tr><td><kbd>W</kbd> <kbd>S</kbd></td><td>Forward, back</td></tr>
+    <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td>Left, right</td></tr>
+    <tr><td><kbd>Space</kbd> <kbd>Shift</kbd></td><td>Up, down</td></tr>
+    <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd></td><td>Turn</td></tr>
+    <tr><td><kbd>&uarr;</kbd> <kbd>&darr;</kbd></td><td>Camera up, down</td></tr>
+    <tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>Gripper open, close</td></tr>
+  </table>
+  <p>Remap them in Controllers, on the Keyboard tab.</p>
+</details>`
+const keyboardGuideCss = `.keyboard-guide {
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: #63636354;
+  backdrop-filter: blur(25px);
+  color: #FFFFFF;
+  font-size: 13px;
+}
+.keyboard-guide summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+.keyboard-guide p {
+  margin-top: 6px;
+  opacity: 0.8;
+}
+.keyboard-guide table {
+  margin-top: 4px;
+  border-spacing: 0 3px;
+}
+.keyboard-guide td:first-child {
+  padding-right: 10px;
+  white-space: nowrap;
+}
+.keyboard-guide kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 4px;
+  border: 1px solid #FFFFFF55;
+  border-radius: 4px;
+  font-family: inherit;
+  text-align: center;
+}
+.keyboard-guide .arming {
+  margin-left: -4px;
+  margin-right: -4px;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+.keyboard-guide .arming.flash {
+  animation: keyboard-guide-flash 1.5s ease-out;
+}
+@keyframes keyboard-guide-flash {
+  0%, 50% {
+    background-color: #DC2626AA;
+    opacity: 1;
+  }
+}`
+// The camera and gripper work while disarmed, so only the keys that move the vehicle flash the arming line
+const keyboardGuideJs = `const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ArrowLeft', 'ArrowRight']
+const guide = root.querySelector('.keyboard-guide')
+const arming = root.querySelector('.arming')
+const onKeyDown = (event) => {
+  if (event.repeat || !movementKeys.includes(event.code)) return
+  const baseMode = Number(cockpit.getDataLakeVariableData('/mavlink/1/1/HEARTBEAT/base_mode'))
+  // MAV_MODE_FLAG_SAFETY_ARMED
+  if (baseMode & 128) return
+  guide.open = true
+  arming.classList.remove('flash')
+  // restarts the animation on every press
+  void arming.offsetWidth
+  arming.classList.add('flash')
+}
+window.addEventListener('keydown', onKeyDown)
+cockpit.onCleanup(() => window.removeEventListener('keydown', onKeyDown))`
+
 /**
  * Builds a fresh ViewsGroup from the vehicle-type default for a SITL whose physics runs in the Simulator widget.
  * The simulator replaces the first view's video player, since a simulated vehicle has no camera stream, and only
  * one is added because each instance loads its own copy of the simulator. A MiniMap over it shows the simulated
- * level's own map tiles.
+ * level's own map tiles, and a DIY widget under that lists the default keyboard controls for first-time users.
  * @param {Profile} defaultProfile - The vehicle-type default profile
  * @param {string} mapTileProviderId - Id of the custom tile provider serving the simulated level
  * @returns {Profile} A fresh ViewsGroup ready to assign to the widget store
@@ -346,9 +428,23 @@ export const buildFreshSimulatorViewsGroupFromDefault = (
     size: { width: 0.18, height: 0.32 },
     options: { tileProvider: mapTileProviderId, zoom: 20 },
   }
+  const keyboardGuide: Widget = {
+    hash: uuid4(),
+    name: 'Keyboard controls',
+    component: WidgetType.DoItYourself,
+    position: { x: 0.008, y: 0.4 },
+    size: { width: 0.23, height: 0.45 },
+    options: {
+      html: keyboardGuideHtml,
+      css: keyboardGuideCss,
+      js: keyboardGuideJs,
+      scopedScript: true,
+      inheritCockpitStyles: false,
+    },
+  }
   const [firstView] = fresh.views
   const nonVideoWidgets = firstView.widgets.filter((w) => w.component !== WidgetType.VideoPlayer)
-  firstView.widgets = [miniMap, ...nonVideoWidgets, simulator]
+  firstView.widgets = [miniMap, keyboardGuide, ...nonVideoWidgets, simulator]
   return fresh
 }
 
