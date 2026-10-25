@@ -33,6 +33,13 @@ export class SitlConnection extends Connection.Abstract {
    * Resolves once the simulator sends its first bytes, rejects with a message for the user otherwise.
    */
   async initialize(): Promise<void> {
+    if (sessionStorage.getItem(RELOAD_KEY) === 'added') {
+      // The address only carried the simulator for the isolation reload, it must not outlive it,
+      // even when isolation failed
+      const url = new URL(window.location.href)
+      url.searchParams.delete('MAVLink2RestWebsocketURI')
+      window.history.replaceState(window.history.state, '', url)
+    }
     if (!crossOriginIsolated) {
       await this.reloadWithIsolation()
       return
@@ -76,7 +83,8 @@ export class SitlConnection extends Connection.Abstract {
     if (sessionStorage.getItem(RELOAD_KEY) !== null) {
       throw new Error(browserMessage)
     }
-    sessionStorage.setItem(RELOAD_KEY, 'true')
+    const hadParameter = new URLSearchParams(window.location.search).has('MAVLink2RestWebsocketURI')
+    sessionStorage.setItem(RELOAD_KEY, hadParameter ? 'true' : 'added')
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(browserMessage)), SERVICE_WORKER_TIMEOUT_MS)
     })
