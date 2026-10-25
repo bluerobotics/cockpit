@@ -319,11 +319,16 @@ export const buildFreshViewsGroupFromDefault = (defaultProfile: Profile): Profil
 /**
  * Builds a fresh ViewsGroup from the vehicle-type default for a SITL whose physics runs in the Simulator widget.
  * The simulator replaces the first view's video player, since a simulated vehicle has no camera stream, and only
- * one is added because each instance loads its own copy of the simulator.
+ * one is added because each instance loads its own copy of the simulator. A MiniMap over it shows the simulated
+ * level's own map tiles.
  * @param {Profile} defaultProfile - The vehicle-type default profile
+ * @param {string} mapTileProviderId - Id of the custom tile provider serving the simulated level
  * @returns {Profile} A fresh ViewsGroup ready to assign to the widget store
  */
-export const buildFreshSimulatorViewsGroupFromDefault = (defaultProfile: Profile): Profile => {
+export const buildFreshSimulatorViewsGroupFromDefault = (
+  defaultProfile: Profile,
+  mapTileProviderId: string
+): Profile => {
   const fresh = buildFreshViewsGroupFromDefault(defaultProfile)
   const simulator: Widget = {
     hash: uuid4(),
@@ -333,8 +338,17 @@ export const buildFreshSimulatorViewsGroupFromDefault = (defaultProfile: Profile
     size: { width: 1, height: 1 },
     options: {},
   }
+  const miniMap: Widget = {
+    hash: uuid4(),
+    name: 'MiniMap',
+    component: WidgetType.MiniMap,
+    position: { x: 0.008, y: 0.06 },
+    size: { width: 0.18, height: 0.32 },
+    options: { tileProvider: mapTileProviderId, zoom: 20 },
+  }
   const [firstView] = fresh.views
-  firstView.widgets = [...firstView.widgets.filter((w) => w.component !== WidgetType.VideoPlayer), simulator]
+  const nonVideoWidgets = firstView.widgets.filter((w) => w.component !== WidgetType.VideoPlayer)
+  firstView.widgets = [miniMap, ...nonVideoWidgets, simulator]
   return fresh
 }
 
