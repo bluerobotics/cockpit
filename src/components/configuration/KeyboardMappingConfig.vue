@@ -12,8 +12,8 @@
         </li>
         <li>Axis outputs only reach the vehicle while a joystick is connected. Cockpit actions work without one.</li>
         <li>
-          Keys do nothing while you type in a field, while Ctrl, Alt or Cmd is held, or while this page is open. Space,
-          Enter and the arrow keys are left to a focused button, slider or list.
+          Keys do nothing while you type in a field, while Ctrl, Alt or Cmd is held, or while this page is open. Space
+          and Enter are left to a focused button, slider or list, and the arrow keys to a focused slider or list.
         </li>
       </div>
     </template>

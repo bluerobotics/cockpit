@@ -30,15 +30,19 @@ const controlKeys = ['Enter', 'NumpadEnter', 'Space', 'ArrowUp', 'ArrowDown', 'A
 const interactiveControls =
   'button, a[href], input, select, [role="button"], [role="option"], [role="menuitem"], ' +
   '[role="slider"], [role="tab"], [role="checkbox"], [role="switch"], [role="radio"], [role="listbox"]'
+// A plain button ignores the arrows, so they still reach the mapping after a click, like the one that arms
+const arrowControls =
+  'input, select, [role="option"], [role="menuitem"], [role="slider"], [role="tab"], [role="radio"], [role="listbox"]'
 
 /**
  * Whether a key event operates the control that has focus, which must keep working from the keyboard
  * @param {KeyboardEvent} event The key event
- * @returns {boolean} True for Space, Enter and the arrow keys pressed on a button, input, slider, list or menu
+ * @returns {boolean} True for Space and Enter pressed on a button, input, slider, list or menu, and for the arrow
+ * keys pressed on one that moves with them
  */
 const operatesFocusedControl = (event: KeyboardEvent): boolean => {
   if (!controlKeys.includes(event.code) || !(event.target instanceof HTMLElement)) return false
-  return event.target.closest(interactiveControls) !== null
+  return event.target.closest(event.code.startsWith('Arrow') ? arrowControls : interactiveControls) !== null
 }
 
 /**
