@@ -360,6 +360,11 @@ Neither build lives in this repository, so they have to be put under `public/` f
    ```bash
    rsync -a --delete <bluesim>/export/web/ <cockpit>/public/bluesim/
    ```
+   Or take the web build CI uses, which has no map tiles:
+   ```bash
+   curl -fsSL -o bluesim-web.zip https://github.com/williangalvani/bluesim-1/releases/download/latest/bluesim-web.zip
+   unzip -o bluesim-web.zip -d <cockpit>/public/bluesim/
+   ```
 3. Run `yarn dev` and open `http://localhost:5173/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub%3Fmodel%3DJSON%26defaults%3Dbluesim.parm%26home%3D33.810313%2C-118.393867%2C0%2C270`. The page reloads once on the first visit to become cross-origin isolated, which the SITL needs.
 
 With a blank layout, Cockpit sets up the vehicle's default views with the Simulator widget in place of the video, adds the level's tiles as the "BlueSim reef" map provider, and puts a mini map on them. With no joystick, W/A/S/D and Space/Shift move the vehicle, the left and right arrows turn it, the up and down arrows tilt the camera, and comma and period open and close the gripper, all listed in a "Keyboard controls" widget under the mini map. The vehicle has to be armed first.

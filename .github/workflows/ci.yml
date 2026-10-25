@@ -217,6 +217,13 @@ jobs:
           name: ardusub-wasm
           path: public/sitl
 
+      # The physics for the ArduSub SITL, shown in the Simulator widget. BlueSim's own releases do not have
+      # the Godot 4 web build yet. BlueSim is GPLv2, its licence and source commit are in the zip.
+      - name: Download BlueSim web build
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/bluesim-web.zip" https://github.com/williangalvani/bluesim-1/releases/download/latest/bluesim-web.zip
+          unzip -q "$RUNNER_TEMP/bluesim-web.zip" -d public/bluesim
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
