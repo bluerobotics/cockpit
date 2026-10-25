@@ -409,7 +409,9 @@ export class MavlinkManualControlManager {
 
   sendManualControl(): void {
     // The axis fallbacks depend on the vehicle type, so nothing is sent before the vehicle is identified
-    if (!this.manualControlState || !this.vehicle) return
+    if (!this.vehicle) return
+    // Without a joystick nothing else creates it, and the axes still come from the data lake
+    this.manualControlState ??= new MavlinkManualControlState()
     // Joystick events only fire on change, and other sources (e.g. the keyboard) also write these variables
     this.updateAxesFromDataLake()
     sendManualControl(this.manualControlState, this.vehicle.systemId)

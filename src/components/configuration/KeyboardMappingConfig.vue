@@ -14,7 +14,10 @@
           A Cockpit action runs when its key is pressed or when it is released, as chosen beside it. Add the same key
           twice to run one action on press and another on release. Leaving the Cockpit window releases every key.
         </li>
-        <li>Axis outputs only reach the vehicle while a joystick is connected. Cockpit actions work without one.</li>
+        <li>
+          Axis outputs reach the vehicle while manual control is enabled in the joystick mini-widget, with or without a
+          joystick. Without one, the axes start centred, as a released stick would leave them.
+        </li>
         <li>
           Keys do nothing while you type in a field, while Ctrl, Alt or Cmd is held, or while this page is open. Space,
           Enter and the arrow keys are left to a focused button, slider or list.
