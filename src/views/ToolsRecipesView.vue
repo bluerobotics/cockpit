@@ -11,9 +11,13 @@
           <v-btn class="flex-1 bg-[#FFFFFF22] text-white" prepend-icon="mdi-file-export-outline" @click="openCreate">
             Create recipe
           </v-btn>
+          <v-btn class="flex-1 bg-[#FFFFFF22] text-white" prepend-icon="mdi-file-import-outline" @click="openRead">
+            Read recipe
+          </v-btn>
         </div>
       </div>
       <CreateRecipeDialog v-model="showCreateDialog" />
+      <ReadRecipeDialog v-model="showReadDialog" />
     </template>
   </BaseConfigurationView>
 </template>
@@ -22,15 +26,22 @@
 import { ref } from 'vue'
 
 import CreateRecipeDialog from '@/components/recipes/CreateRecipeDialog.vue'
+import ReadRecipeDialog from '@/components/recipes/ReadRecipeDialog.vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
 const showCreateDialog = ref(false)
+const showReadDialog = ref(false)
 
 const openCreate = (): void => {
   logUserAction('Opened the "Create recipe" dialog')
   showCreateDialog.value = true
+}
+
+const openRead = (): void => {
+  logUserAction('Opened the "Read recipe" dialog')
+  showReadDialog.value = true
 }
 </script>
