@@ -784,11 +784,51 @@ const showingAlignmentGuides = computed(
   position: absolute;
   width: 10px;
   height: 10px;
-  background: white;
-  border: 1px solid black;
   z-index: 2;
   opacity: 0;
   transition: opacity 0.3s ease;
+}
+
+/* The box stays a 10px anchor centered on the edge; ::before widens the hit area for fingers, ::after is the drawing. */
+.resize-handle::before,
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Sized only while the handles show, or the invisible box would swallow presses meant for content or a neighbour. */
+.resize-handle.allowResizing.hoveringWidgetOrOverlay::before {
+  width: 28px;
+  height: 28px;
+}
+
+.resize-handle::after {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: white;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+
+.resize-handle.top::after,
+.resize-handle.bottom::after {
+  width: 24px;
+  height: 6px;
+}
+
+.resize-handle.left::after,
+.resize-handle.right::after {
+  width: 6px;
+  height: 24px;
+}
+
+.resize-handle:hover::after {
+  transform: translate(-50%, -50%) scale(1.25);
 }
 
 .resize-handle.hoveringWidgetOrOverlay.allowResizing {
