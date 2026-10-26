@@ -77,8 +77,10 @@ import InteractionDialog, { type Action } from '@/components/InteractionDialog.v
 import { useSnackbar } from '@/composables/snackbar'
 import { useUnitInput } from '@/composables/useUnitInput'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const { openSnackbar } = useSnackbar()
+const vehicleStore = useMainVehicleStore()
 
 const showDialog = defineModel<boolean>({ required: true })
 
@@ -146,11 +148,7 @@ const saveGlobalOrigin = (): void => {
   }
   logUserAction('Set vehicle global origin')
 
-  if (
-    props.vehicle === undefined ||
-    props.vehicle.dateLastHeartbeat() === undefined ||
-    props.vehicle.dateLastHeartbeat()! > new Date(Date.now() - 5000)
-  ) {
+  if (props.vehicle === undefined || !vehicleStore.isVehicleOnline) {
     openSnackbar({ message: 'Cannot set global origin. Vehicle does not appear to be online.', variant: 'error' })
     return
   }
