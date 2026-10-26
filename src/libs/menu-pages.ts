@@ -147,6 +147,12 @@ export const menuPages: Record<SubMenuComponentName, MenuPage> = {
     title: 'Map',
     icon: 'mdi-map-marker-radius',
   },
+  [SubMenuComponentName.ToolsRecipes]: {
+    subMenu: SubMenuName.tools,
+    slug: 'recipes',
+    title: 'Recipes',
+    icon: 'mdi-list-box-outline',
+  },
 }
 
 // The destinations that are not pages of a sub-menu still need their address held in one place, since the router and

@@ -172,6 +172,7 @@ import ToolsDataLakeView from '@/views/ToolsDataLakeView.vue'
 import ToolsLogsView from '@/views/ToolsLogsView.vue'
 import ToolsMapView from '@/views/ToolsMapView.vue'
 import ToolsMAVLinkView from '@/views/ToolsMAVLinkView.vue'
+import ToolsRecipesView from '@/views/ToolsRecipesView.vue'
 import WidgetsView from '@/views/WidgetsView.vue'
 
 import About from './components/About.vue'
@@ -222,6 +223,7 @@ const menuPageComponents: Record<SubMenuComponentName, Component> = {
   [SubMenuComponentName.ToolsDataLake]: ToolsDataLakeView,
   [SubMenuComponentName.ToolsLogs]: ToolsLogsView,
   [SubMenuComponentName.ToolsMap]: ToolsMapView,
+  [SubMenuComponentName.ToolsRecipes]: ToolsRecipesView,
 }
 
 const activeMenuPagePanel = computed(() =>

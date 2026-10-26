@@ -59,6 +59,7 @@ export enum SubMenuComponentName {
   ToolsDataLake = 'tools-datalake',
   ToolsLogs = 'tools-logs',
   ToolsMap = 'tools-map',
+  ToolsRecipes = 'tools-recipes',
 }
 
 export interface StorageDB {
