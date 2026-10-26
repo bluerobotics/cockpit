@@ -142,7 +142,7 @@ const closeDialog = (): void => {
   showDialog.value = false
 }
 
-const saveGlobalOrigin = (): void => {
+const saveGlobalOrigin = async (): Promise<void> => {
   if (!isValid.value || isSaving.value) {
     return
   }
@@ -155,9 +155,10 @@ const saveGlobalOrigin = (): void => {
 
   isSaving.value = true
   try {
-    props.vehicle.setGlobalOrigin([latitude.value, longitude.value], altitude.value)
-    openSnackbar({ message: 'Global origin set successfully.', variant: 'success' })
-    emit('origin-set', latitude.value, longitude.value) // eslint-disable-line
+    const origin = await props.vehicle.setGlobalOrigin([latitude.value, longitude.value], altitude.value)
+    const confirmedPosition = `${origin.latitude.toFixed(7)}°, ${origin.longitude.toFixed(7)}°`
+    openSnackbar({ message: `Global origin confirmed by the vehicle at ${confirmedPosition}.`, variant: 'success' })
+    emit('origin-set', origin.latitude, origin.longitude) // eslint-disable-line
     closeDialog()
   } catch (error) {
     openSnackbar({ message: `Failed to set global origin: ${error}`, variant: 'error' })
