@@ -730,12 +730,11 @@ const showingAlignmentGuides = computed(
 
 <style>
 .widgetOverlay {
-  --overlayOverSize: 10px;
   position: absolute;
-  left: calc(v-bind('positionStyle.left') - var(--overlayOverSize));
-  top: calc(v-bind('positionStyle.top') - var(--overlayOverSize));
-  width: calc(v-bind('sizeStyle.width') + 2 * var(--overlayOverSize));
-  height: calc(v-bind('sizeStyle.height') + 2 * var(--overlayOverSize));
+  left: v-bind('positionStyle.left');
+  top: v-bind('positionStyle.top');
+  width: v-bind('sizeStyle.width');
+  height: v-bind('sizeStyle.height');
   user-select: none;
   display: v-bind('overlayDisplayStyle');
 }
