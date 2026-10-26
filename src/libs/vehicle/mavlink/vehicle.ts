@@ -9,7 +9,12 @@ import {
 } from '@/libs/actions/data-lake'
 import { ensureCockpitTransformingFunction } from '@/libs/actions/data-lake-transformations'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
-import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
+import type {
+  MAVLinkMessageDictionary,
+  Message as MavMessage,
+  Package,
+  Type,
+} from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
   getMAVLinkMessageId,
   GpsFixType,
@@ -1335,6 +1340,28 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   }
 
   /**
+   * Wait for a message of the given type that arrived after a point in time
+   * @param { MAVLinkType } type Type of the message to wait for
+   * @param { number } sinceEpoch Only messages received after this epoch (ms) are accepted
+   * @param { number } timeoutMs How long to wait, counted from sinceEpoch, before giving up
+   * @returns { Promise<T | undefined> } The message, or undefined if none arrived in time
+   */
+  private async waitForMessageAfter<T extends MavMessage>(
+    type: MAVLinkType,
+    sinceEpoch: number,
+    timeoutMs = 5000
+  ): Promise<T | undefined> {
+    while (new Date().getTime() - sinceEpoch < timeoutMs) {
+      await sleep(100)
+      const lastMessage = this._messages.get(type)
+      if (lastMessage !== undefined && lastMessage.epoch > sinceEpoch) {
+        return lastMessage as T
+      }
+    }
+    return undefined
+  }
+
+  /**
    * Fetch the home waypoint from the vehicle
    * and converts the message into a Waypoint.
    * @returns {Promise<Waypoint>} The home waypoint.
@@ -1342,15 +1369,8 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   async fetchHomeWaypoint(): Promise<Waypoint> {
     const startTime = new Date().getTime()
     await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_MESSAGE, getMAVLinkMessageId(MAVLinkType.HOME_POSITION))
-    let homePosition: Message.HomePosition | undefined = undefined
-    while (!homePosition && new Date().getTime() - startTime < 5000) {
-      await sleep(100)
-      // Only a reply to this request, so home is not reported from the one cached before it last moved.
-      const lastHomePositionMessage = this._messages.get(MAVLinkType.HOME_POSITION)
-      if (lastHomePositionMessage !== undefined && lastHomePositionMessage.epoch > startTime) {
-        homePosition = lastHomePositionMessage as Message.HomePosition
-      }
-    }
+    // Only a reply to this request, so home is not reported from the one cached before it last moved.
+    const homePosition = await this.waitForMessageAfter<Message.HomePosition>(MAVLinkType.HOME_POSITION, startTime)
     if (!homePosition) {
       throw new Error('Home position not received from vehicle.')
     }
