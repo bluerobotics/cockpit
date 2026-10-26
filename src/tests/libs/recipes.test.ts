@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { emptyRecipe, parseRecipe, pickRecipeItems, recipeItems } from '@/libs/recipes'
+import {
+  emptyRecipe,
+  missingDependencies,
+  parseRecipe,
+  pickRecipeItems,
+  recipeDependencies,
+  recipeItems,
+  withDependencies,
+} from '@/libs/recipes'
 import { customActionTypes, HttpRequestMethod } from '@/types/cockpit-actions'
 import type { CockpitRecipe } from '@/types/recipes'
 
@@ -88,6 +96,18 @@ describe('parseRecipe', () => {
   })
 })
 
+describe('recipeDependencies', () => {
+  it('finds the variables and actions each entry needs', () => {
+    expect(recipeDependencies(sampleRecipe())).toEqual({
+      'data-lake:user/custom/too-deep': ['data-lake:user/custom/depth-limit'],
+      'action:http-request-action (Notify)': ['data-lake:user/custom/unused', 'data-lake:user/custom/too-deep'],
+      'action:javascript-action (Alarm)': ['action:http-request-action (Notify)'],
+      'websocket:ws://{{ vehicle-address }}:1234': [],
+      'diy-widget:depth-panel': ['data-lake:user/custom/too-deep'],
+    })
+  })
+})
+
 describe('pickRecipeItems', () => {
   it('keeps only the chosen entries', () => {
     const recipe = sampleRecipe()
@@ -96,5 +116,18 @@ describe('pickRecipeItems', () => {
       'data-lake:user/custom/too-deep',
       'diy-widget:depth-panel',
     ])
+  })
+})
+
+describe('withDependencies and missingDependencies', () => {
+  const dependencies = { a: ['b'], b: ['c'], c: [], d: ['c'] }
+
+  it('adds what the items need, through other items too', () => {
+    expect(withDependencies(['a'], dependencies).sort()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('lists, per chosen item, what was left out', () => {
+    expect(missingDependencies(['a', 'd'], dependencies)).toEqual({ a: ['b'], d: ['c'] })
+    expect(missingDependencies(['a', 'b', 'c'], dependencies)).toEqual({})
   })
 })

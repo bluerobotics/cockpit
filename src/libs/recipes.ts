@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { findDataLakeVariablesIdsInString } from '@/libs/utils-data-lake'
 import { customActionTypes, customActionTypesNames, HttpRequestMethod, MessageFieldType } from '@/types/cockpit-actions'
 import {
   type CockpitRecipe,
@@ -257,3 +258,104 @@ export const emptyRecipe = (name = '', description = ''): CockpitRecipe => ({
   websocketConnections: [],
   diyWidgets: [],
 })
+
+const actionTemplates = (action: RecipeAction): string[] => {
+  switch (action.type) {
+    case customActionTypes.httpRequest: {
+      const { url, body, urlParams, headers } = action.config
+      return [url, body, ...Object.values(urlParams), ...Object.values(headers)]
+    }
+    case customActionTypes.mavlinkMessage: {
+      const { messageConfig } = action.config
+      if (typeof messageConfig === 'string') return [messageConfig]
+      return Object.values(messageConfig).map((field) => String(field.value))
+    }
+    case customActionTypes.javascript:
+      return []
+  }
+}
+
+/**
+ * Which entries of a recipe each entry needs, from the `{{ variable }}` inputs of its templates, the variables that
+ * trigger an action, and the variable and action ids named in JavaScript and DIY widget code
+ * @param {CockpitRecipe} recipe - The recipe
+ * @returns {Record<string, string[]>} Keys of the items each item needs, by item key. Only entries of the recipe are
+ * listed, since anything else is Cockpit's own or missing from the recipe either way
+ */
+export const recipeDependencies = (recipe: CockpitRecipe): Record<string, string[]> => {
+  const dataLakeIds = [
+    ...recipe.dataLakeVariables.map(({ variable }) => variable.id),
+    ...recipe.compoundVariables.map((func) => func.id),
+  ]
+  const actionIds = recipe.actions.map((action) => action.id)
+
+  const needs = (ownKey: string, templates: string[], variableIds: string[] = [], code: string[] = []): string[] => {
+    const referencedVariables = [...templates.flatMap(findDataLakeVariablesIdsInString), ...variableIds]
+    // ponytail: a plain substring search, so an id contained in a longer one is over-reported. Parse the `cockpit.*`
+    // calls if that ever selects something unwanted.
+    const named = (ids: string[]): string[] => ids.filter((id) => code.some((snippet) => snippet.includes(id)))
+    const keys = [
+      ...dataLakeIds.filter((id) => referencedVariables.includes(id)).map(dataLakeKey),
+      ...named(dataLakeIds).map(dataLakeKey),
+      ...named(actionIds).map(actionKey),
+    ]
+    return [...new Set(keys)].filter((key) => key !== ownKey)
+  }
+
+  const dependencies: Record<string, string[]> = {}
+  recipe.compoundVariables.forEach((func) => {
+    dependencies[dataLakeKey(func.id)] = needs(dataLakeKey(func.id), [func.expression])
+  })
+  recipe.actions.forEach((action) => {
+    const code = action.type === customActionTypes.javascript ? [action.config.code] : []
+    dependencies[actionKey(action.id)] = needs(
+      actionKey(action.id),
+      actionTemplates(action),
+      action.link?.variables,
+      code
+    )
+  })
+  recipe.websocketConnections.forEach((url) => {
+    dependencies[websocketKey(url)] = needs(websocketKey(url), [url])
+  })
+  recipe.diyWidgets.forEach(({ id, template }) => {
+    dependencies[diyWidgetKey(id)] = needs(diyWidgetKey(id), [], [], [template.html, template.js])
+  })
+  return dependencies
+}
+
+/**
+ * The given items plus every item they need, directly or through another item
+ * @param {string[]} keys - Keys of the items
+ * @param {Record<string, string[]>} dependencies - Keys of the items each item needs, from `recipeDependencies`
+ * @returns {string[]} The keys, with those of the items needed added
+ */
+export const withDependencies = (keys: string[], dependencies: Record<string, string[]>): string[] => {
+  const result = new Set(keys)
+  const pending = [...keys]
+  for (let key = pending.pop(); key !== undefined; key = pending.pop()) {
+    const unseen = (dependencies[key] ?? []).filter((needed) => !result.has(needed))
+    unseen.forEach((needed) => result.add(needed))
+    pending.push(...unseen)
+  }
+  return [...result]
+}
+
+/**
+ * The items each chosen item needs but that were left out
+ * @param {string[]} selected - Keys of the chosen items
+ * @param {Record<string, string[]>} dependencies - Keys of the items each item needs, from `recipeDependencies`
+ * @returns {Record<string, string[]>} Keys of the items left out, by key of the chosen item needing them. Chosen
+ * items missing nothing are not listed
+ */
+export const missingDependencies = (
+  selected: string[],
+  dependencies: Record<string, string[]>
+): Record<string, string[]> => {
+  const chosen = new Set(selected)
+  return Object.fromEntries(
+    selected
+      .map((key) => [key, (dependencies[key] ?? []).filter((needed) => !chosen.has(needed))] as const)
+      .filter(([, missing]) => missing.length > 0)
+  )
+}
