@@ -819,7 +819,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   ConnectionManager.addConnection(MAVLink2RestWebsocketURI.value, Protocol.Type.MAVLink, {
     websocket: { getWatchdogTimeoutMs: () => vehicleConnectionWatchdogTimeoutMs.value },
-  }).catch((error: Error) => openSnackbar({ message: error.message, variant: 'error', persistent: true }))
+  }).catch((error: Error) => {
+    const isSitl = MAVLink2RestWebsocketURI.value.type() === Connection.Type.Sitl
+    const action = isSitl ? { label: 'Reload', handler: () => window.location.reload() } : undefined
+    openSnackbar({ message: error.message, variant: 'error', persistent: true, action })
+  })
 
   let applyThrottledCoordinates = useThrottleFn(
     (nc: Coordinates) => Object.assign(coordinates, nc),

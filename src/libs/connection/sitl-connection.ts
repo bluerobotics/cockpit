@@ -13,6 +13,11 @@ import { RawMavlinkCodec } from './raw-mavlink-codec'
 export const sitlPhysicsChannelId = uuid()
 
 const RELOAD_KEY = 'cockpit-sitl-isolation-reload'
+// The page opened by the isolation reload starts navigating within this time of the guard being stored. A hard reload
+// or a page restored from the back/forward cache can be handed an older copy of the session storage holding the guard
+const ISOLATION_RELOAD_WINDOW_MS = 10_000
+// Date.now() and performance.timeOrigin are separate clocks that can disagree slightly
+const ISOLATION_RELOAD_CLOCK_SKEW_MS = 1000
 // The first visit waits for Cockpit's service worker to download the whole app
 const SERVICE_WORKER_TIMEOUT_MS = 60_000
 const ONLY_ON_PAGES = 'The simulator only runs in the Cockpit web version on GitHub Pages.'
@@ -72,6 +77,25 @@ export const onSitlStageChange = (listener: (stage: SitlStage) => void): (() => 
   return () => {
     sitlStageListeners.delete(listener)
   }
+}
+
+/**
+ * Whether this page was opened by the isolation reload, rather than holding a stale copy of its guard
+ * @param {string | null} stored When the isolation reload happened, as stored in the session storage
+ * @param {number} timeOrigin When this page's navigation started
+ * @returns {boolean} True if this page already is the result of the one automatic reload
+ */
+export const isRecentIsolationReload = (stored: string | null, timeOrigin: number): boolean => {
+  if (stored === null) return false
+  const reloadedAt = Number(stored)
+  if (!Number.isFinite(reloadedAt)) return false
+  const elapsed = timeOrigin - reloadedAt
+  return elapsed >= -ISOLATION_RELOAD_CLOCK_SKEW_MS && elapsed <= ISOLATION_RELOAD_WINDOW_MS
+}
+
+// A page restored from the back/forward cache is still the one that was not isolated
+const reloadIfRestored = (event: PageTransitionEvent): void => {
+  if (event.persisted) window.location.reload()
 }
 
 /**
@@ -157,10 +181,12 @@ export class SitlConnection extends Connection.Abstract {
       throw new Error(ONLY_ON_PAGES)
     }
     const browserMessage = 'This browser could not prepare the page for the simulator. Use Chrome, Edge or Firefox.'
-    if (sessionStorage.getItem(RELOAD_KEY) !== null) {
+    if (isRecentIsolationReload(sessionStorage.getItem(RELOAD_KEY), performance.timeOrigin)) {
       throw new Error(browserMessage)
     }
-    sessionStorage.setItem(RELOAD_KEY, 'true')
+    sessionStorage.removeItem(RELOAD_KEY)
+    // The same function reference is only registered once, however many times this runs
+    window.addEventListener('pageshow', reloadIfRestored)
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(browserMessage)), SERVICE_WORKER_TIMEOUT_MS)
     })
@@ -170,6 +196,7 @@ export class SitlConnection extends Connection.Abstract {
     url.searchParams.set('MAVLink2RestWebsocketURI', this.uri().toString())
     // replace() to a URL that differs only in its fragment, or not at all, does not reload the page
     window.history.replaceState(window.history.state, '', url)
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
     window.location.reload()
   }
 
