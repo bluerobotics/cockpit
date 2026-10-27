@@ -8,6 +8,7 @@ import {
   fenceActionOptions,
   fenceActionParameter,
   fenceBreachOutcome,
+  supportsBreachReturn,
 } from '@/libs/vehicle/fence-actions'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { useGeoFenceStore } from '@/stores/geoFence'
@@ -30,11 +31,15 @@ export interface UseFenceBreachActionReturn {
    * What crossing the fence leads to, once the connected vehicle has reported its fence action.
    */
   outcome: ComputedRef<string | undefined>
+  /**
+   * Whether a breach return point is worth adding: true for planes, and while the vehicle type is unknown.
+   */
+  canAddBreachReturn: ComputedRef<boolean>
 }
 
 /**
  * Describes the fence breach behavior of the connected or planned vehicle in operator terms.
- * @returns {UseFenceBreachActionReturn} The fence action parameter and its options, and the breach outcome.
+ * @returns {UseFenceBreachActionReturn} The fence action and its options, the breach outcome and breach-return support.
  */
 export const useFenceBreachAction = (): UseFenceBreachActionReturn => {
   const vehicleStore = useMainVehicleStore()
@@ -58,9 +63,12 @@ export const useFenceBreachAction = (): UseFenceBreachActionReturn => {
     return vehicle.value && value !== undefined ? fenceBreachOutcome(vehicle.value, value) : undefined
   })
 
+  const canAddBreachReturn = computed(() => !vehicle.value || supportsBreachReturn(vehicle.value))
+
   return {
     parameterName,
     options,
     outcome,
+    canAddBreachReturn,
   }
 }
