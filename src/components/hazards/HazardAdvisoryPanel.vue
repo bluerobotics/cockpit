@@ -106,7 +106,52 @@
               class="flex items-center justify-between w-full pl-1 pr-2"
             >
               <div class="flex items-center min-w-0">
-                <v-icon :icon="HAZARD_SOURCES[sourceId].icon" class="mr-2 opacity-70 text-[16px]" />
+                <span class="flex items-center justify-center w-4 h-4 mr-2 shrink-0">
+                  <v-fade-transition mode="out-in">
+                    <v-progress-circular
+                      v-if="hazardStore.fetchingSources.includes(sourceId)"
+                      key="loading"
+                      indeterminate
+                      size="16"
+                      width="2"
+                      color="#FFFFFFB3"
+                      :aria-label="`Loading ${HAZARD_SOURCES[sourceId].label}`"
+                    />
+                    <v-btn
+                      v-else-if="hazardStore.failedLoads[sourceId]"
+                      key="failed"
+                      icon
+                      variant="text"
+                      size="x-small"
+                      class="!w-4 !h-4"
+                      :aria-label="`Retry loading ${HAZARD_SOURCES[sourceId].label}`"
+                      @click="onRetrySource(sourceId)"
+                    >
+                      <v-icon icon="mdi-reload" :color="ADVISORY_COLOR" class="text-[16px]" />
+                      <v-tooltip
+                        activator="parent"
+                        location="top"
+                        max-width="280"
+                        :text="`Could not load: ${hazardStore.failedLoads[sourceId]?.error}. Click to try again.`"
+                      />
+                    </v-btn>
+                    <v-icon
+                      v-else-if="loadedSources.includes(sourceId)"
+                      key="loaded"
+                      icon="mdi-check-circle"
+                      :color="LOADED_COLOR"
+                      class="text-[16px]"
+                      :aria-label="`${HAZARD_SOURCES[sourceId].label} loaded`"
+                    />
+                    <v-icon
+                      v-else
+                      key="idle"
+                      :icon="HAZARD_SOURCES[sourceId].icon"
+                      color="#FFFFFFB3"
+                      class="text-[16px]"
+                    />
+                  </v-fade-transition>
+                </span>
                 <span class="text-xs truncate">{{ HAZARD_SOURCES[sourceId].label }}</span>
                 <v-tooltip location="top" max-width="280">
                   <template #activator="{ props: tooltipProps }">
@@ -269,8 +314,7 @@
               variant="flat"
               size="small"
               class="grow bg-[#FFFFFF22] rounded-md text-xs elevation-1 disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50"
-              :loading="loadingTarget === 'view'"
-              :disabled="hazardStore.settings.enabledSources.length === 0 || loadingTarget === 'mission'"
+              :disabled="hazardStore.settings.enabledSources.length === 0 || hazardStore.isFetching"
               prepend-icon="mdi-map-search-outline"
               @click="onRefresh"
             >
@@ -280,11 +324,10 @@
               variant="flat"
               size="small"
               class="grow bg-[#FFFFFF22] rounded-md text-xs elevation-1 disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50"
-              :loading="loadingTarget === 'mission'"
               :disabled="
                 hazardStore.settings.enabledSources.length === 0 ||
                 !missionStore.currentPlanningWaypoints.length ||
-                loadingTarget === 'view'
+                hazardStore.isFetching
               "
               prepend-icon="mdi-map-marker-path"
               @click="onLoadForMission"
@@ -404,6 +447,8 @@ const MIN_MISSION_LOAD_PADDING_M = 100
 const SOURCES_WITH_SETTINGS: HazardSourceId[] = ['airspace', 'terrain', 'shallow-water']
 // The map draws exclusion fences in this orange.
 const ADVISORY_COLOR = '#FF8800'
+const LOADED_COLOR = '#2E7D32'
+const LOADED_MARK_MS = 10000
 
 /** Every advisory raised about one area, collapsed into a single row. */
 type AdvisoryGroup = {
@@ -649,24 +694,44 @@ const onConfirmOpenAipKey = (): void => {
   isOpenAipMenuOpen.value = false
 }
 
-const loadingTarget = ref<'view' | 'mission'>()
+const loadAreas = (bbox: GeoBbox): void => {
+  hazardStore.refreshAreas(bbox).catch((error: Error) => {
+    openSnackbar({ variant: 'error', message: `Could not load hazard data: ${error.message}`, duration: 5000 })
+  })
+}
 
-const loadAreas = (bbox: GeoBbox, target: 'view' | 'mission'): void => {
-  loadingTarget.value = target
-  hazardStore
-    .refreshAreas(bbox)
-    .catch((error: Error) => {
-      openSnackbar({ variant: 'error', message: `Could not load hazard data: ${error.message}`, duration: 5000 })
-    })
-    .finally(() => {
-      if (loadingTarget.value === target) loadingTarget.value = undefined
-    })
+const loadedSources = ref<HazardSourceId[]>([])
+const loadedMarkTimers = new Map<HazardSourceId, ReturnType<typeof setTimeout>>()
+
+const markLoaded = (sourceId: HazardSourceId): void => {
+  clearTimeout(loadedMarkTimers.get(sourceId))
+  loadedSources.value = [...loadedSources.value.filter((id) => id !== sourceId), sourceId]
+  const timer = setTimeout(() => {
+    loadedMarkTimers.delete(sourceId)
+    loadedSources.value = loadedSources.value.filter((id) => id !== sourceId)
+  }, LOADED_MARK_MS)
+  loadedMarkTimers.set(sourceId, timer)
+}
+
+// The store records a failure before the source leaves the loading list, so one that leaves without it has loaded.
+watch(
+  () => hazardStore.fetchingSources,
+  (current, previous) => {
+    previous.filter((id) => !current.includes(id) && !hazardStore.failedLoads[id]).forEach(markLoaded)
+  }
+)
+
+onBeforeUnmount(() => loadedMarkTimers.forEach((timer) => clearTimeout(timer)))
+
+const onRetrySource = (sourceId: HazardSourceId): void => {
+  logUserAction(`Retried loading the "${HAZARD_SOURCES[sourceId].label}" hazard source`)
+  hazardStore.retryFailedLoads([sourceId])
 }
 
 const onRefresh = (): void => {
   logUserAction('Loaded hazard advisory data for the current map view')
   readViewBbox()
-  if (viewBbox.value) loadAreas(viewBbox.value, 'view')
+  if (viewBbox.value) loadAreas(viewBbox.value)
 }
 
 const onLoadForMission = (): void => {
@@ -685,7 +750,7 @@ const onLoadForMission = (): void => {
     })
     return
   }
-  loadAreas(bbox, 'mission')
+  loadAreas(bbox)
 }
 
 const hasLoadedData = computed(() => Object.keys(hazardStore.results).length > 0 || hazardStore.terrainGrid !== null)

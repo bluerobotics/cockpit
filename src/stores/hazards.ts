@@ -101,9 +101,24 @@ type SourceLoadReport = SourceLoad & {
    */
   labels: string
   /**
+   * The sources the report covers.
+   */
+  sourceIds: HazardSourceId[]
+  /**
    * Why the load failed, absent when it succeeded.
    */
   error?: string
+}
+
+type FailedLoad = {
+  /**
+   * Area the failed load asked for, so a retry covers the same ground.
+   */
+  bbox: GeoBbox
+  /**
+   * Why the load failed, readable by the operator.
+   */
+  error: string
 }
 
 const NOTHING_LOADED: SourceLoad = { areaCount: 0, truncated: false }
@@ -112,12 +127,18 @@ const NOTHING_LOADED: SourceLoad = { areaCount: 0, truncated: false }
 const refreshOutcomeSnackbar = (
   reports: SourceLoadReport[],
   withAreas: boolean,
-  withGrid: boolean
+  withGrid: boolean,
+  retryFailed: (sourceIds: HazardSourceId[]) => void
 ): SnackbarOptions => {
   const failures = reports.filter((report) => report.error !== undefined)
   if (failures.length > 0) {
     const detail = failures.map((report) => `${report.labels}: ${report.error}`).join('. ')
-    return { variant: 'error', message: `Could not load every hazard source. ${detail}`, duration: 6000 }
+    return {
+      variant: 'error',
+      message: `Could not load every hazard source. ${detail}`,
+      duration: 6000,
+      action: { label: 'Retry', handler: () => retryFailed(failures.flatMap((report) => report.sourceIds)) },
+    }
   }
   const partial = reports.filter((report) => report.truncated).map((report) => report.labels)
   const partialNote = partial.length > 0 ? ` ${partial.join(' and ')} had more than fit; zoom in for the rest.` : ''
@@ -152,6 +173,7 @@ export const useHazardStore = defineStore('hazards', () => {
   const results = shallowRef<Partial<Record<HazardAreaSourceId, HazardFetchResult>>>({})
   const terrainGrid = shallowRef<TerrainGrid | null>(null)
   const fetchingSources = ref<HazardSourceId[]>([])
+  const failedLoads = shallowRef<Partial<Record<HazardSourceId, FailedLoad>>>({})
   const advisories = ref<HazardAdvisory[]>([])
   // Session-only: it exists to stop the same area being added twice, and a reload takes the
   // question with it since the operator then sees the polygon in the editor rather than the button.
@@ -429,6 +451,11 @@ export const useHazardStore = defineStore('hazards', () => {
     }
     const loading = [...sources, ...gridSources]
     fetchingSources.value = [...fetchingSources.value.filter((id) => !loading.includes(id)), ...loading]
+    // Both grid sources trace the one grid, so loading it for either settles the other's failure too.
+    const settling = withTerrain ? [...sources, ...HAZARD_GRID_SOURCE_IDS] : sources
+    failedLoads.value = Object.fromEntries(
+      Object.entries(failedLoads.value).filter(([id]) => !settling.includes(id as HazardSourceId))
+    )
 
     // The grid sources share one sampling, so they are loaded, and fail, together.
     const runLoad = async (
@@ -437,10 +464,12 @@ export const useHazardStore = defineStore('hazards', () => {
     ): Promise<SourceLoadReport | undefined> => {
       const labels = sourceIds.map((sourceId) => HAZARD_SOURCES[sourceId].label).join(' and ')
       try {
-        return { labels, ...(await load()) }
+        return { labels, sourceIds, ...(await load()) }
       } catch (error) {
         if ((error as DOMException)?.name === 'AbortError') return undefined
-        return { labels, ...NOTHING_LOADED, error: describeFailure(error) }
+        const failure = { bbox: queryBbox, error: describeFailure(error) }
+        failedLoads.value = { ...failedLoads.value, ...Object.fromEntries(sourceIds.map((id) => [id, failure])) }
+        return { labels, sourceIds, ...NOTHING_LOADED, error: failure.error }
       } finally {
         fetchingSources.value = fetchingSources.value.filter((id) => !sourceIds.includes(id))
       }
@@ -457,7 +486,25 @@ export const useHazardStore = defineStore('hazards', () => {
     if (activeController.signal.aborted) return
 
     const loaded = reports.filter((report): report is SourceLoadReport => report !== undefined)
-    openSnackbar(refreshOutcomeSnackbar(loaded, sources.length > 0, withTerrain))
+    openSnackbar(refreshOutcomeSnackbar(loaded, sources.length > 0, withTerrain, retryFailedLoads))
+  }
+
+  /**
+   * Loads failed sources again, each over the area its failed load asked for, wherever the map has moved since.
+   * @param {HazardSourceId[]} sourceIds Sources to retry; those without a failed load are skipped.
+   */
+  const retryFailedLoads = (sourceIds: HazardSourceId[]): void => {
+    // Sources that failed in the same load share its box, so they are retried together.
+    const byBbox = new Map<GeoBbox, HazardSourceId[]>()
+    sourceIds.forEach((sourceId) => {
+      const bbox = failedLoads.value[sourceId]?.bbox
+      if (bbox) byBbox.set(bbox, [...(byBbox.get(bbox) ?? []), sourceId])
+    })
+    byBbox.forEach((ids, bbox) =>
+      refreshAreas(bbox, ids).catch((error: Error) => {
+        openSnackbar({ variant: 'error', message: `Could not load hazard data: ${error.message}`, duration: 5000 })
+      })
+    )
   }
 
   /**
@@ -708,6 +755,8 @@ export const useHazardStore = defineStore('hazards', () => {
     isFetching,
     isSamplingTerrain,
     fetchingSources,
+    failedLoads,
+    retryFailedLoads,
     isSourceEnabled,
     setSourceEnabled,
     refreshAreas,
