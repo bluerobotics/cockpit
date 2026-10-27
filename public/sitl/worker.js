@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 // Runs an ArduPilot SITL WebAssembly build (?binary=ardusub&model=vectored) on its serial 0.
 // It lives in its own worker because the module has no shutdown: terminating the worker
 // is what stops the simulator and all of its threads.
@@ -18,13 +19,34 @@ const SERVO_PACKET_CHANNELS = { 18458: 16, 29569: 32 }
 // Emscripten's poll() readable flags
 const POLLIN = 0x1
 const POLLRDNORM = 0x40
+// What an old cached loader next to a newer wasm, or the other way around, fails with
+const VERSION_MISMATCH = /missing Wasm export|LinkError/
+const SERIAL_EXPORTS = ['_ardupilot_malloc', '_ardupilot_serial_read', '_ardupilot_serial_write']
 
 const params = new URL(self.location.href).searchParams
 const model = params.get('model')
 const defaultsFile = params.get('defaults')
+// The hash of the SITL files the page was built with. Pages from before it was passed do not set it.
+const appSitlVersion = params.get('v')
+// The server's own hash wins, so even an old page loads a matching set of files
+const serverSitlVersion = await fetch('./version.json', { cache: 'no-store' })
+  .then((response) => (response.ok ? response.json() : undefined))
+  .then((version) => (typeof version?.sitl === 'string' ? version.sitl : undefined))
+  .catch(() => undefined)
+if (appSitlVersion !== null && serverSitlVersion !== undefined && serverSitlVersion !== appSitlVersion) {
+  self.postMessage('stale')
+}
+const sitlVersion = serverSitlVersion ?? appSitlVersion
+// The service worker caches versioned SITL files for good, as they never change under the same version
+const versionedUrl = (file) => {
+  const url = new URL(`./${file}`, self.location.href)
+  if (sitlVersion !== null) url.searchParams.set('v', sitlVersion)
+  return url.href
+}
+
 let defaults = undefined
 if (defaultsFile !== null) {
-  const response = await fetch(`./${defaultsFile}`)
+  const response = await fetch(versionedUrl(defaultsFile))
   if (!response.ok) {
     throw new Error(`Could not load the SITL defaults ${defaultsFile}: ${response.status}`)
   }
@@ -121,33 +143,54 @@ if (model.startsWith('JSON')) {
   }
 }
 
-const { default: createModule } = await import(`./${params.get('binary')}.js`)
-const sitl = await createModule({
-  arguments: args,
-  preRun: [
-    (module) => {
-      sitlModule = module
-      if (defaults !== undefined) module.FS.writeFile(DEFAULTS_PATH, defaults)
-    },
-  ],
-})
-self.postMessage(model.startsWith('JSON') ? 'waiting-for-simulator' : 'running')
-
-const malloc = sitl.cwrap('ardupilot_malloc', 'number', ['number'])
-const read = sitl.cwrap('ardupilot_serial_read', 'number', ['number', 'number', 'number'])
-const write = sitl.cwrap('ardupilot_serial_write', 'number', ['number', 'number', 'number'])
-const readBuffer = malloc(BUFFER_SIZE)
-const writeBuffer = malloc(BUFFER_SIZE)
-
-self.onmessage = ({ data }) => {
-  const length = Math.min(data.length, BUFFER_SIZE)
-  sitl.HEAPU8.set(data.subarray(0, length), writeBuffer)
-  write(SERIAL_PORT, writeBuffer, length)
+const loadSitl = async () => {
+  const loaderUrl = versionedUrl(`${params.get('binary')}.js`)
+  const { default: createModule } = await import(loaderUrl)
+  // An Emscripten abort, like a missing export, rejects this
+  const instance = await createModule({
+    arguments: args,
+    // Its threads load the loader again, by default from a URL without the version
+    mainScriptUrlOrBlob: loaderUrl,
+    locateFile: (path, scriptDirectory) => (path.endsWith('.wasm') ? versionedUrl(path) : scriptDirectory + path),
+    preRun: [
+      (module) => {
+        sitlModule = module
+        if (defaults !== undefined) module.FS.writeFile(DEFAULTS_PATH, defaults)
+      },
+    ],
+  })
+  // Builds without Emscripten's assertions do not check their exports themselves
+  const missing = SERIAL_EXPORTS.filter((name) => typeof instance[name] !== 'function')
+  if (missing.length > 0) throw new Error(`missing Wasm export: ${missing.join(', ')}`)
+  return instance
 }
 
-setInterval(() => {
-  const length = read(SERIAL_PORT, readBuffer, BUFFER_SIZE)
-  if (length > 0) {
-    self.postMessage(sitl.HEAPU8.slice(readBuffer, readBuffer + length))
+const sitl = await loadSitl().catch((error) => {
+  // Pages from before the structured error only listen for the worker's error event
+  if (appSitlVersion === null) throw error
+  const message = String(error?.message ?? error)
+  self.postMessage({ type: 'error', message, isVersionMismatch: VERSION_MISMATCH.test(message) })
+})
+
+if (sitl !== undefined) {
+  self.postMessage(model.startsWith('JSON') ? 'waiting-for-simulator' : 'running')
+
+  const malloc = sitl.cwrap('ardupilot_malloc', 'number', ['number'])
+  const read = sitl.cwrap('ardupilot_serial_read', 'number', ['number', 'number', 'number'])
+  const write = sitl.cwrap('ardupilot_serial_write', 'number', ['number', 'number', 'number'])
+  const readBuffer = malloc(BUFFER_SIZE)
+  const writeBuffer = malloc(BUFFER_SIZE)
+
+  self.onmessage = ({ data }) => {
+    const length = Math.min(data.length, BUFFER_SIZE)
+    sitl.HEAPU8.set(data.subarray(0, length), writeBuffer)
+    write(SERIAL_PORT, writeBuffer, length)
   }
-}, 10)
+
+  setInterval(() => {
+    const length = read(SERIAL_PORT, readBuffer, BUFFER_SIZE)
+    if (length > 0) {
+      self.postMessage(sitl.HEAPU8.slice(readBuffer, readBuffer + length))
+    }
+  }, 10)
+}

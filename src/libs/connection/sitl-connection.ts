@@ -1,3 +1,4 @@
+import { appSitlVersion, checkSitlVersion } from '@/libs/sitl-version'
 import { isElectron } from '@/libs/utils'
 
 import * as Connection from './connection'
@@ -7,6 +8,26 @@ const RELOAD_KEY = 'cockpit-sitl-isolation-reload'
 // The first visit waits for Cockpit's service worker to download the whole app
 const SERVICE_WORKER_TIMEOUT_MS = 60_000
 const ONLY_ON_PAGES = 'The simulator only runs in the Cockpit web version on GitHub Pages.'
+const VERSION_MISMATCH =
+  "The simulator files are from different Cockpit versions (an old cached copy). Reload the page; if it persists, clear this site's data."
+
+/**
+ * Posted by the SITL worker when the simulator could not load
+ */
+interface SitlWorkerError {
+  /**
+   * Tells it apart from the stages and the serial bytes
+   */
+  type: 'error'
+  /**
+   * What the simulator failed with
+   */
+  message: string
+  /**
+   * Whether it failed because its files are from different builds
+   */
+  isVersionMismatch: boolean
+}
 
 /**
  * How far a sitl:// connection got through starting up
@@ -74,12 +95,14 @@ export class SitlConnection extends Connection.Abstract {
     setSitlStage('loading-autopilot')
 
     await this._codec.initialize()
-    if (this._disposed) return
+    // The page reloads to the server's build, which has matching simulator files
+    if (this._disposed || (await checkSitlVersion()) === 'stale') return
 
     const options = this.uri().entries()
     const workerUrl = new URL('sitl/worker.js', document.baseURI)
     workerUrl.searchParams.set('binary', this.uri().host)
     workerUrl.searchParams.set('model', options.get('model') ?? 'vectored')
+    workerUrl.searchParams.set('v', appSitlVersion.sitl)
     for (const option of ['home', 'defaults']) {
       const value = options.get(option)
       if (value !== undefined) workerUrl.searchParams.set(option, value)
@@ -87,25 +110,32 @@ export class SitlConnection extends Connection.Abstract {
     const worker = new Worker(workerUrl, { type: 'module' })
     this._worker = worker
     await new Promise<void>((resolve, reject) => {
-      // The worker posts its stage as a string, and the simulator serial output as bytes
-      worker.onmessage = (event: MessageEvent<Uint8Array | SitlStage>) => {
-        if (typeof event.data === 'string') {
-          setSitlStage(event.data)
+      const fail = (reason: string, message: string): void => {
+        console.error('Simulator stopped:', reason)
+        setSitlStage('failed')
+        reject(new Error(message))
+      }
+      const host = this.uri().host
+      const genericFailure = `Could not start the simulator '${host}'. It needs the Cockpit web version on GitHub Pages, if you are already there, reload the page.`
+      // The worker posts its stage as a string, the simulator serial output as bytes, and an object if it fails
+      worker.onmessage = (event: MessageEvent<Uint8Array | SitlStage | 'stale' | SitlWorkerError>) => {
+        const data = event.data
+        if (data === 'stale') {
+          checkSitlVersion()
+          return
+        }
+        if (typeof data === 'string') {
+          setSitlStage(data)
+          return
+        }
+        if (!(data instanceof Uint8Array)) {
+          fail(data.message, data.isVersionMismatch ? VERSION_MISMATCH : genericFailure)
           return
         }
         resolve()
-        this._codec.decode(event.data, (message) => this.onRead.emit_value(message))
+        this._codec.decode(data, (message) => this.onRead.emit_value(message))
       }
-      worker.onerror = (event: Event) => {
-        console.error('Simulator stopped:', (event as ErrorEvent).message)
-        setSitlStage('failed')
-        const host = this.uri().host
-        reject(
-          new Error(
-            `Could not start the simulator '${host}'. It needs the Cockpit web version on GitHub Pages, if you are already there, reload the page.`
-          )
-        )
-      }
+      worker.onerror = (event: Event) => fail((event as ErrorEvent).message, genericFailure)
     })
   }
 

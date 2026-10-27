@@ -46,6 +46,7 @@
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs } from 'vue'
 
 import { type SitlStage, onSitlStageChange } from '@/libs/connection/sitl-connection'
+import { versionedSimulatorUrl } from '@/libs/sitl-version'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -70,7 +71,7 @@ onBeforeMount(() => {
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
-const source = computed(() => new URL(widget.value.options.source, document.baseURI).href)
+const source = computed(() => versionedSimulatorUrl(widget.value.options.source))
 const isInteractive = computed(() => widget.value.options.interactive && !widgetStore.editingMode)
 
 const sitlStageMessages: Partial<Record<SitlStage, string>> = {

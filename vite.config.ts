@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import vuetify from 'vite-plugin-vuetify'
 
 import { importCycleGuard } from './scripts/import-cycles.mjs'
+import { sitlVersion } from './scripts/sitl-version.mjs'
 import { getVersion } from './src/libs/non-browser-utils'
 
 // Check if we're running in Electron mode or building the application
@@ -58,8 +59,29 @@ const baseConfig = {
         workbox: {
           // Runs before workbox, so its fetch handler sees the requests first
           importScripts: ['cross-origin-isolation.js'],
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
+          // The simulator files have to load as a set of one version, which a cached loader next to a newer wasm is not
+          globIgnores: ['**/node_modules/**/*', 'sitl/**', 'bluesim/**'],
+          runtimeCaching: [
+            {
+              // The SITL worker asks for its files with their hash (scripts/sitl-version.mjs), so a cached copy is
+              // never stale. Worker scripts are answered by cross-origin-isolation.js, and version.json has no hash.
+              urlPattern: ({ url, request }) =>
+                url.pathname.includes('/sitl/') && url.searchParams.has('v') && request.destination !== 'worker',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'cockpit-sitl',
+                // A few versions' worth, so older ones get evicted
+                expiration: { maxEntries: 8 },
+                cacheableResponse: { statuses: [200] },
+              },
+            },
+          ],
         },
       }),
+    !isLibrary && sitlVersion(path.resolve(__dirname, 'public')),
     !isLibrary && importCycleGuard(__dirname),
   ].filter(Boolean),
   define: {
