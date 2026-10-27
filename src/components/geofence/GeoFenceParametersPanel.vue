@@ -81,6 +81,8 @@
                 v-else
                 type="number"
                 class="p-1 bg-[#FFFFFF11] w-[90px] text-xs text-right rounded-sm"
+                :min="param.min"
+                :max="param.max"
                 :value="paramValues[param.name] ?? ''"
                 @change="onNumberInput(param, $event.target as HTMLInputElement)"
               />
@@ -120,6 +122,7 @@ import { useSnackbar } from '@/composables/snackbar'
 import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
 import type { MavParamType as DialectMavParamType } from '@/libs/connection/m2r/dialects/ardupilotmega/MavParamType'
 import { MAVLinkType, MavParamType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { constrain } from '@/libs/utils'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import { useAlertStore } from '@/stores/alert'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -143,6 +146,14 @@ interface ParamDescriptor {
    * expected by the MAVLink parameter API.
    */
   type: DialectMavParamType
+  /**
+   * Lowest value the autopilot accepts, for numeric parameters.
+   */
+  min?: number
+  /**
+   * Highest value the autopilot accepts, for numeric parameters.
+   */
+  max?: number
   /**
    * The accepted values, for parameters picked from a list.
    */
@@ -191,17 +202,23 @@ const apmParams: ParamDescriptor[] = [
     name: 'FENCE_ALT_MAX',
     description: 'Maximum altitude (meters) before the fence triggers. Numeric value, range 10 to 1000, increment 1.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 10,
+    max: 1000,
   },
   {
     name: 'FENCE_ALT_MIN',
     description: 'Minimum altitude (meters) before the fence triggers. Numeric value, range -100 to 100, increment 1.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: -100,
+    max: 100,
   },
   {
     name: 'FENCE_MARGIN',
     description:
       'Buffer distance (meters) the autopilot tries to keep from the fence boundary to avoid breaching. Numeric value, range 1 to 10.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 1,
+    max: 10,
   },
   {
     name: 'FENCE_AUTOENABLE',
@@ -227,12 +244,16 @@ const px4Params: ParamDescriptor[] = [
     description:
       'Maximum horizontal distance (meters) the vehicle may travel from the home position. Numeric value. 0 → no horizontal limit.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 0,
+    max: 10000,
   },
   {
     name: 'GF_MAX_VER_DIST',
     description:
       'Maximum vertical distance (meters) the vehicle may travel above the home position. Numeric value. 0 → no vertical limit.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 0,
+    max: 1000,
   },
   {
     name: 'GF_PREDICT',
@@ -313,8 +334,10 @@ const closeDriftWarning = (confirmed: boolean): void => {
 }
 
 const onNumberInput = (param: ParamDescriptor, input: HTMLInputElement): void => {
-  const value = Number(input.value)
-  if (!Number.isFinite(value)) return
+  const typed = Number(input.value)
+  if (input.value === '' || !Number.isFinite(typed)) return
+  const value = constrain(typed, param.min ?? -Infinity, param.max ?? Infinity)
+  input.value = String(value)
   onWriteParam(param.name, value, param.type)
 }
 
