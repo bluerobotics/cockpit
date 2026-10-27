@@ -188,6 +188,20 @@
           </v-menu>
           <v-divider />
         </template>
+        <template v-if="hazardRecordLabel">
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleOpenHazardRecord">
+            <v-icon
+              variant="text"
+              icon="mdi-open-in-new"
+              rounded="full"
+              size="x-small"
+              color="white"
+              class="text-[16px]"
+            ></v-icon>
+            <span class="text-white text-sm ml-4">Open {{ hazardRecordLabel }}</span>
+          </v-list-item>
+          <v-divider />
+        </template>
         <v-list-item v-if="!isCreatingSurvey" class="flex items-center gap-x-2 pb-2" @click="handleAddHereClick">
           <v-icon
             variant="text"
@@ -493,6 +507,7 @@ const props = defineProps<{
   canSaveCurrent: boolean
   nearestSegmentIndex: number | null
   canCreateFenceExclusion: boolean
+  hazardRecordLabel?: string
 }>()
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -520,6 +535,7 @@ const emit = defineEmits<{
   (event: 'addMissionFromLibrary'): void
   (event: 'saveMissionToLibrary'): void
   (event: 'createFenceExclusion', clearanceM?: number): void
+  (event: 'openHazardRecord'): void
 }>()
 
 const EXCLUSION_CLEARANCES_M = [2, 5, 10, 15, 30]
@@ -720,6 +736,11 @@ const handleSaveMissionToLibrary = (): void => {
 
 const handleCreateFenceExclusion = (clearanceM?: number): void => {
   emit('createFenceExclusion', clearanceM)
+  emit('close')
+}
+
+const handleOpenHazardRecord = (): void => {
+  emit('openHazardRecord')
   emit('close')
 }
 

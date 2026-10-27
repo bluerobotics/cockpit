@@ -14,7 +14,12 @@ const isHazardArea = (value: unknown, sourceId: HazardAreaSourceId): value is Ha
     Array.isArray(area.coordinates) &&
     area.coordinates.every(isCoordinate) &&
     (area.details === undefined ||
-      (Array.isArray(area.details) && area.details.every((line) => typeof line === 'string')))
+      (Array.isArray(area.details) && area.details.every((line) => typeof line === 'string'))) &&
+    // The link is opened as given, and stored copies arrive from other topside computers.
+    (area.sourceRecord === undefined ||
+      (typeof area.sourceRecord?.label === 'string' &&
+        typeof area.sourceRecord.url === 'string' &&
+        area.sourceRecord.url.startsWith('https://')))
   )
 }
 

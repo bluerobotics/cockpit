@@ -780,6 +780,7 @@
     :can-save-current="canSaveCurrentMissionToLibrary"
     :nearest-segment-index="contextMenuNearestSegmentIndex"
     :can-create-fence-exclusion="contextMenuHazardArea !== undefined"
+    :hazard-record-label="contextMenuHazardArea?.sourceRecord?.label"
     @set-home-position="setHomePositionFromContextMenu"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
@@ -803,6 +804,7 @@
     @add-mission-from-library="addMissionFromLibraryContextMenu"
     @save-mission-to-library="openMissionLibraryWithSaveDialog"
     @create-fence-exclusion="createFenceExclusionFromContextMenu"
+    @open-hazard-record="openHazardRecordFromContextMenu"
   />
   <HazardExclusionDialog v-model:area="exclusionDialogArea" />
   <MapOverlaysDialog v-model="overlaysDialogOpen" :loading-ids="overlayLoadingIds" />
@@ -2711,6 +2713,13 @@ const createFenceExclusionFromContextMenu = (clearanceM?: number): void => {
     return
   }
   hazardStore.addAreaAsFenceExclusion(area.id, clearanceM)
+}
+
+const openHazardRecordFromContextMenu = (): void => {
+  const record = contextMenuHazardArea.value?.sourceRecord
+  if (!record) return
+  logUserAction(`Opened ${record.label} from the context menu`)
+  window.open(record.url, '_blank', 'noopener,noreferrer')
 }
 
 const setHomePositionFromContextMenu = (): void => {

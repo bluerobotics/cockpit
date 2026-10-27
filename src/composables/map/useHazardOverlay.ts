@@ -75,10 +75,13 @@ const areaBand = (area: HazardArea): string | undefined => {
 const areaTooltip = (area: HazardArea): string => {
   const band = areaBand(area)
   const facts = [...(band ? [`${band} above sea level`] : []), ...(area.details ?? [])]
+  const record = area.sourceRecord ? [`<div class="opacity-60">${escapeHtml(area.sourceRecord.label)}</div>`] : []
   // Labels and details come straight from contributor-entered tags, so they are escaped before reaching the DOM.
-  return [`<strong>${escapeHtml(area.label)}</strong>`, ...facts.map((fact) => `<div>${escapeHtml(fact)}</div>`)].join(
-    ''
-  )
+  return [
+    `<strong>${escapeHtml(area.label)}</strong>`,
+    ...facts.map((fact) => `<div>${escapeHtml(fact)}</div>`),
+    ...record,
+  ].join('')
 }
 
 // Every closed coastline ring is just an island, so only the named areas of the other sources are labeled.
