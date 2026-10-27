@@ -123,6 +123,15 @@ export const fenceActionOptions = (vehicle: FenceVehicle): FenceActionOption[] =
   }
 }
 
+/**
+ * Whether the vehicle flies to a breach return point. Only ArduPilot planes (VTOLs included) use one; other
+ * ArduPilot vehicles and PX4 accept it in the fence but never read it.
+ * @param {FenceVehicle} vehicle The vehicle to check.
+ * @returns {boolean} True when the vehicle uses a breach return point.
+ */
+export const supportsBreachReturn = ({ firmware, family }: FenceVehicle): boolean =>
+  firmware === Firmware.ArduPilot && family === VehicleType.Plane
+
 let selfChecked = false
 
 // Runs on first use in development; the global `assert` is installed during bootstrap, after this module loads.
@@ -139,6 +148,8 @@ const runSelfChecksOnce = (): void => {
   assert(fenceActionOptions({ firmware: Firmware.PX4, isBoat: true }).filter((action) => action.drifts).length === 2)
   assert(fenceActionOptions(boat).filter((action) => action.drifts).length === 2)
   assert(!fenceActionOptions({ ...boat, isBoat: false }).some((action) => action.drifts))
+  assert(supportsBreachReturn({ firmware: Firmware.ArduPilot, family: VehicleType.Plane, isBoat: false }))
+  assert(!supportsBreachReturn({ firmware: Firmware.PX4, family: VehicleType.Plane, isBoat: false }))
 }
 
 /**

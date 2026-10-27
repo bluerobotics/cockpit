@@ -238,6 +238,7 @@
     <slot name="below-fence-lists" />
 
     <div
+      v-if="fenceStore.isArduPilot || canAddBreachReturn || fenceStore.breachReturn"
       class="flex flex-col mx-2 mt-2.5 mb-[5px] py-2 px-4 border-[1px] border-[#FFFFFF44] bg-[#00000022] rounded-md p-2"
     >
       <div v-if="fenceStore.isArduPilot" class="flex items-center justify-between gap-x-2 fence-autoenable-row">
@@ -253,7 +254,10 @@
           @update:model-value="onToggleFenceAutoEnable"
         />
       </div>
-      <v-divider class="opacity-10 my-1 mx-12" />
+      <v-divider
+        v-if="fenceStore.isArduPilot && (canAddBreachReturn || fenceStore.breachReturn)"
+        class="opacity-10 my-1 mx-12"
+      />
       <div v-if="fenceStore.breachReturn" class="flex items-center justify-between gap-x-2">
         <p class="text-xs">Breach return altitude</p>
         <div class="flex items-center gap-x-1">
@@ -302,7 +306,7 @@
           </v-tooltip>
         </div>
       </div>
-      <div v-if="!fenceStore.breachReturn" class="flex flex-row items-center gap-x-2 mt-1">
+      <div v-if="!fenceStore.breachReturn && canAddBreachReturn" class="flex flex-row items-center gap-x-2 mt-1">
         <button
           class="flex-1 h-auto py-1 px-2 text-xs rounded-md elevation-1 bg-[#FFFFFF22] hover:bg-[#FFFFFF33] transition-colors duration-200"
           @click="onAddBreachReturn"
@@ -322,11 +326,7 @@
               Click <em>Add breach return point</em> to seed it at the map center, then drag the orange
               <strong>B</strong> marker to fine-tune the location and edit the altitude (relative to home) inline.
             </p>
-            <p>
-              Behavior on breach is governed by the autopilot fence parameters (<code>FENCE_ACTION</code> on ArduPilot,
-              <code>GF_ACTION</code> on PX4) — typically set them to <em>RTL</em> or <em>Land</em> for the rally point
-              to be honored.
-            </p>
+            <p>Only ArduPilot planes fly to it, when the fence action is set to fly to the breach return point.</p>
           </div>
         </v-tooltip>
       </div>
@@ -508,7 +508,7 @@ const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const { showDialog, confirmAction } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
-const { outcome: breachOutcome, parameterName: breachActionParameter } = useFenceBreachAction()
+const { outcome: breachOutcome, parameterName: breachActionParameter, canAddBreachReturn } = useFenceBreachAction()
 
 const onBreachOutcomeTooltip = (open: boolean): void => {
   if (open) logUserAction('Opened the help on where to change the fence breach action')
