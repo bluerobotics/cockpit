@@ -3,7 +3,7 @@ import * as turf from '@turf/turf'
 import { restrictedAreaDetails, seamarkDetails } from '@/libs/hazards/osm-details'
 import { type OverpassElement, type OverpassGeometryPoint, overpassRegion, runOverpassQuery } from '@/libs/overpass'
 import type { GeoBbox } from '@/types/general'
-import type { HazardArea, HazardFetchResult } from '@/types/hazards'
+import type { HazardArea, HazardFetchResult, HazardSourceRecord } from '@/types/hazards'
 import type { WaypointCoordinates } from '@/types/mission'
 
 /** Sources served by Overpass. openAIP airspace has its own client. */
@@ -209,6 +209,8 @@ const runSelfChecksOnce = (): void => {
   const rock = seamarkAreaOf({ type: 'node', id: 1, lat: 0, lon: 0, tags: { 'seamark:type': 'rock' } })
   assert(rock?.kind === 'polygon' && rock.coordinates.length === 8, 'A charted point must become a small polygon')
   assert(rock?.label === 'Rock', 'An unnamed seamark must be labeled by its type')
+  assert(rock?.sourceRecord?.url === 'https://www.openstreetmap.org/node/1', 'A seamark must link its OSM record')
+  assert(osmRecord({ type: 'area', id: 1 }) === undefined, 'Only node, way and relation records can be linked')
 }
 
 // A ring repeats its first vertex at the end; every consumer here wants the open form.
@@ -228,6 +230,13 @@ const toArea = (
   }
 }
 
+const OSM_ELEMENT_TYPES = ['node', 'way', 'relation']
+
+const osmRecord = ({ type, id }: OverpassElement): HazardSourceRecord | undefined =>
+  type && OSM_ELEMENT_TYPES.includes(type) && Number.isSafeInteger(id)
+    ? { label: `OpenStreetMap ${type} ${id}`, url: `https://www.openstreetmap.org/${type}/${id}` }
+    : undefined
+
 const elementLabel = (element: OverpassElement, fallback: string): string =>
   element.tags?.name?.trim() || element.tags?.['seamark:name']?.trim() || fallback
 
@@ -243,9 +252,12 @@ const isCoastlineWay = (element: OverpassElement): boolean => element.tags?.natu
 const restrictedWaterAreasOf = (element: OverpassElement): HazardArea[] => {
   const label = elementLabel(element, element.tags?.['seamark:type'] ? 'Restricted area' : 'Protected area')
   const details = restrictedAreaDetails(element)
+  const sourceRecord = osmRecord(element)
   const wayGeometry = geometryOf(element)
   if (wayGeometry.length > 0) {
-    return [{ ...toArea('restricted-waters', `restricted-waters:w${element.id}`, label, wayGeometry), details }]
+    return [
+      { ...toArea('restricted-waters', `restricted-waters:w${element.id}`, label, wayGeometry), details, sourceRecord },
+    ]
   }
 
   // Inner members (holes) are dropped: a fence exclusion has no holes, and covering the hole too
@@ -257,6 +269,7 @@ const restrictedWaterAreasOf = (element: OverpassElement): HazardArea[] => {
   return chainSegments(outerSegments).map((coordinates, ringIndex) => ({
     ...toArea('restricted-waters', `restricted-waters:r${element.id}:${ringIndex}`, label, coordinates),
     details,
+    sourceRecord,
   }))
 }
 
@@ -278,12 +291,13 @@ const seamarkAreaOf = (element: OverpassElement): HazardArea | undefined => {
   const label = elementLabel(element, SEAMARK_LABELS[type] ?? 'Obstruction')
   const id = `seamarks:${element.type?.[0] ?? 'x'}${element.id}`
   const details = seamarkDetails(element)
+  const sourceRecord = osmRecord(element)
   const wayGeometry = geometryOf(element)
-  if (wayGeometry.length > 0) return { ...toArea('seamarks', id, label, wayGeometry), details }
+  if (wayGeometry.length > 0) return { ...toArea('seamarks', id, label, wayGeometry), details, sourceRecord }
   if (element.lat === undefined || element.lon === undefined) return undefined
   const circle = turf.circle([element.lon, element.lat], SEAMARK_POINT_RADIUS_M, { units: 'meters', steps: 8 })
   const ring = circle.geometry.coordinates[0].slice(0, -1).map(([lng, lat]) => [lat, lng] as WaypointCoordinates)
-  return { id, sourceId: 'seamarks', kind: 'polygon', coordinates: ring, label, details }
+  return { id, sourceId: 'seamarks', kind: 'polygon', coordinates: ring, label, details, sourceRecord }
 }
 
 const seamarkAreas = (elements: OverpassElement[]): HazardArea[] => {
