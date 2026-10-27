@@ -6,6 +6,20 @@ export interface EnumEntryParam {
   index: string
   /** Description for this parameter (optional). */
   description?: string
+  /** Short name for this parameter (optional, e.g. 'Speed'). */
+  label?: string
+  /** Units of this parameter (optional, e.g. 'm/s'). */
+  units?: string
+  /** Enum whose entries are the valid values (optional). */
+  enum?: string
+  /** Minimum valid value (optional). */
+  minValue?: string
+  /** Maximum valid value (optional). */
+  maxValue?: string
+  /** Default value (optional). */
+  default?: string
+  /** True if the parameter is reserved and should not be set (optional). */
+  reserved?: string
 }
 
 /** Metadata for deprecated types, entries, or fields. */

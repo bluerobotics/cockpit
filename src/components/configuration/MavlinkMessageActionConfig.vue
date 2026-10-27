@@ -26,18 +26,46 @@
           />
 
           <div v-if="newActionConfig.messageType" class="mt-4">
-            <h3 class="text-subtitle-1 font-weight-bold mb-2">Message Configuration</h3>
-            <div v-if="typeof messageFields !== 'string' && Object.keys(messageFields).length > 0">
-              <div v-for="(field, key) in messageFields" :key="key" class="mb-1">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-subtitle-1 font-weight-bold">Message Configuration</h3>
+              <v-switch
+                v-if="hasUnusedParams"
+                v-model="showUnusedParams"
+                label="Show unused params"
+                color="white"
+                density="compact"
+                hide-details
+                class="flex-grow-0"
+                @update:model-value="onShowUnusedParamsChange"
+              />
+            </div>
+            <div
+              v-if="typeof messageFields !== 'string' && Object.keys(messageFields).length > 0"
+              class="flex flex-col gap-4"
+            >
+              <template v-for="(field, key) in messageFields" :key="key">
                 <v-text-field
+                  v-if="showUnusedParams || !paramFieldInfo[key]?.unused"
                   v-model.trim="newActionConfig.messageConfig[key].value"
-                  :label="field.description + (field.units ? ` (${field.units})` : '')"
+                  :label="paramFieldInfo[key]?.label ?? field.description + (field.units ? ` (${field.units})` : '')"
                   :placeholder="field.type"
                   variant="outlined"
                   density="compact"
+                  hide-details="auto"
                   :rules="[field.required ? (v) => !!v || 'This field is required' : () => true]"
-                />
-              </div>
+                >
+                  <template v-if="paramFieldInfo[key]?.hint" #append-inner>
+                    <v-btn
+                      v-tooltip.bottom="paramFieldInfo[key]?.hint"
+                      :aria-label="paramFieldInfo[key]?.hint"
+                      icon="mdi-information-outline"
+                      variant="text"
+                      size="x-small"
+                      class="opacity-60"
+                    />
+                  </template>
+                </v-text-field>
+              </template>
             </div>
             <div v-else>
               <v-textarea
@@ -77,7 +105,10 @@ import {
   getMavlinkMessageActionConfig,
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
-import { messageFieldDefinitions } from '@/libs/actions/mavlink-message-actions-message-definitions'
+import {
+  commandParamFieldInfo,
+  messageFieldDefinitions,
+} from '@/libs/actions/mavlink-message-actions-message-definitions'
 import { MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { MavlinkMessageActionConfig } from '@/types/cockpit-actions'
@@ -107,6 +138,19 @@ const messageFields = computed(() => {
   const selectedType = newActionConfig.value.messageType
   return messageFieldDefinitions[selectedType] || ''
 })
+
+const paramFieldInfo = computed(() => {
+  const config = newActionConfig.value.messageConfig
+  if (typeof config === 'string' || typeof config.command?.value !== 'string') return {}
+  return commandParamFieldInfo(config.command.value)
+})
+
+const showUnusedParams = ref(false)
+const hasUnusedParams = computed(() => Object.values(paramFieldInfo.value).some((info) => info.unused))
+
+const onShowUnusedParamsChange = (show: boolean | null): void => {
+  logUserAction(`${show ? 'Showed' : 'Hid'} unused params in the MAVLink message action dialog`)
+}
 
 const isFormValid = computed(() => {
   if (!newActionConfig.value.name || !newActionConfig.value.messageType) {
@@ -148,6 +192,7 @@ const resetNewAction = (): void => {
   // Deep copy, to avoid sharing config between Actions
   newActionConfig.value = structuredClone(defaultActionConfig)
   idBeingEdited.value = undefined
+  showUnusedParams.value = false
 }
 
 const createActionConfig = (): void => {
@@ -198,6 +243,7 @@ const openEditDialog = (id: string): void => {
   const action = getMavlinkMessageActionConfig(id)
   if (action) {
     idBeingEdited.value = id
+    showUnusedParams.value = false
     logUserAction(`Opened edit dialog for MAVLink message action '${action.name}'`)
     newActionConfig.value = JSON.parse(JSON.stringify(action)) // Deep copy
     actionDialog.value.show = true
