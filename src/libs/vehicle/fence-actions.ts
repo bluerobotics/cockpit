@@ -132,6 +132,45 @@ export const fenceActionOptions = (vehicle: FenceVehicle): FenceActionOption[] =
 export const supportsBreachReturn = ({ firmware, family }: FenceVehicle): boolean =>
   firmware === Firmware.ArduPilot && family === VehicleType.Plane
 
+/**
+ * `FENCE_AUTOENABLE` value that turns the fence on at arming and off at disarming, on any ArduPilot vehicle.
+ */
+export const FENCE_AUTOENABLE_WHEN_ARMED = 3
+
+/**
+ * Whether the vehicle takes off, which is what the other `FENCE_AUTOENABLE` values wait for. Only ArduPilot planes
+ * and copters do; boats, rovers and subs only ever reach the arming one.
+ * @param {FenceVehicle} vehicle The vehicle to check.
+ * @returns {boolean} True for ArduPilot planes and copters.
+ */
+export const autoEnablesOnTakeoff = ({ firmware, family }: FenceVehicle): boolean =>
+  firmware === Firmware.ArduPilot && (family === VehicleType.Plane || family === VehicleType.Copter)
+
+/**
+ * The `FENCE_AUTOENABLE` values that do something on the vehicle.
+ * @param {boolean} takesOff Whether the vehicle takes off, as told by `autoEnablesOnTakeoff`.
+ * @returns {Pick<FenceActionOption, 'value' | 'label'>[]} The useful values, in parameter order.
+ */
+export const fenceAutoEnableOptions = (takesOff: boolean): Pick<FenceActionOption, 'value' | 'label'>[] => {
+  const whenArmed = { value: FENCE_AUTOENABLE_WHEN_ARMED, label: 'On when armed' }
+  if (!takesOff) return [{ value: 0, label: 'Off' }, whenArmed]
+  return [
+    { value: 0, label: 'Off' },
+    { value: 1, label: 'On after an automatic takeoff' },
+    { value: 2, label: 'On after an automatic takeoff, floor off when landing' },
+    whenArmed,
+  ]
+}
+
+/**
+ * Whether the vehicle turns its fence on by itself with the given `FENCE_AUTOENABLE` value.
+ * @param {boolean} takesOff Whether the vehicle takes off, as told by `autoEnablesOnTakeoff`.
+ * @param {number} mode Current `FENCE_AUTOENABLE` value.
+ * @returns {boolean} True when the value is one the vehicle acts on.
+ */
+export const isFenceAutoEnabled = (takesOff: boolean, mode: number): boolean =>
+  takesOff ? mode > 0 : mode === FENCE_AUTOENABLE_WHEN_ARMED
+
 let selfChecked = false
 
 // Runs on first use in development; the global `assert` is installed during bootstrap, after this module loads.
@@ -148,6 +187,9 @@ const runSelfChecksOnce = (): void => {
   assert(fenceActionOptions({ firmware: Firmware.PX4, isBoat: true }).filter((action) => action.drifts).length === 2)
   assert(fenceActionOptions(boat).filter((action) => action.drifts).length === 2)
   assert(!fenceActionOptions({ ...boat, isBoat: false }).some((action) => action.drifts))
+  assert(!autoEnablesOnTakeoff(boat) && fenceAutoEnableOptions(false).length === 2)
+  assert(!isFenceAutoEnabled(false, 1) && isFenceAutoEnabled(false, 3) && isFenceAutoEnabled(true, 1))
+  assert(autoEnablesOnTakeoff({ firmware: Firmware.ArduPilot, family: VehicleType.Copter, isBoat: false }))
   assert(supportsBreachReturn({ firmware: Firmware.ArduPilot, family: VehicleType.Plane, isBoat: false }))
   assert(!supportsBreachReturn({ firmware: Firmware.PX4, family: VehicleType.Plane, isBoat: false }))
 }
