@@ -8,7 +8,8 @@ import { useInteractionDialog } from '@/composables/interactionDialog'
 import { getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { sendManualControl } from '@/libs/communication/mavlink'
 import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
-import { round } from '@/libs/utils'
+import { keyboardAxesOffsets, keyboardHeldButtonFunctions } from '@/libs/keyboard'
+import { constrain, round } from '@/libs/utils'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 import { type JoystickProtocolActionsMapping, type JoystickState, type ProtocolAction, CockpitModifierKeyOption, JoystickButton, JoystickProtocol } from '@/types/joystick'
@@ -406,7 +407,9 @@ export class MavlinkManualControlManager {
 
   sendManualControl(): void {
     if (!this.manualControlState) return
-    sendManualControl(this.manualControlState, this.vehicle?.systemId ?? 1)
+    // Joystick events only fire on change, and other sources (e.g. the keyboard) also write these variables
+    this.updateAxesFromDataLake()
+    sendManualControl(this.withKeyboardButtons(this.manualControlState), this.vehicle?.systemId ?? 1)
   }
 
   updateControllerData = (state: JoystickState, protocolActionsMapping: JoystickProtocolActionsMapping, activeButtonsActions: ProtocolAction[]): void => {
@@ -480,6 +483,13 @@ export class MavlinkManualControlManager {
       }
     }
 
+    this.manualControlState.buttons = buttons_int
+    this.manualControlState.buttons2 = buttons2_int
+  }
+
+  updateAxesFromDataLake(): void {
+    if (!this.manualControlState) return
+
     // Read axis values from data lake output variables (scaling is handled by the data-lake protocol handler)
     const xVal = Number(getDataLakeVariableData('outputs/mavlink/axis-x') ?? 0)
     const yVal = Number(getDataLakeVariableData('outputs/mavlink/axis-y') ?? 0)
@@ -497,8 +507,43 @@ export class MavlinkManualControlManager {
     this.manualControlState.r = round(Number.isNaN(rVal) ? 0 : rVal, 0)
     this.manualControlState.s = round(Number.isNaN(sVal) ? 0 : sVal, 0)
     this.manualControlState.t = round(Number.isNaN(tVal) ? 0 : tVal, 0)
-    this.manualControlState.buttons = buttons_int
-    this.manualControlState.buttons2 = buttons2_int
+    this.addKeyboardMovement(this.manualControlState)
+  }
+
+  /**
+   * Send MANUAL_CONTROL with the sticks at rest and only the keys held, for when no joystick is connected
+   */
+  sendKeyboardManualControl(): void {
+    const state = new MavlinkManualControlState()
+    state.z = this.vehicle?.type() === VehicleType.Sub ? 500 : 0
+    this.addKeyboardMovement(state)
+    sendManualControl(this.withKeyboardButtons(state), this.vehicle?.systemId ?? 1)
+  }
+
+  // A copy, since the joystick's buttons are only recalculated when its state changes
+  private withKeyboardButtons(state: MavlinkManualControlState): MavlinkManualControlState {
+    const heldFunctions = keyboardHeldButtonFunctions()
+    if (heldFunctions.length === 0) return state
+    const functionNames: Record<number, string> = {}
+    this.vehicleButtonParameterTable.forEach((entry) => (functionNames[entry.value] = entry.title))
+    let buttons = state.buttons
+    let buttons2 = state.buttons2
+    Object.entries(this.currentVehicleParameters).forEach(([name, value]) => {
+      const button = Number(/^BTN(\d+)_FUNCTION$/.exec(name)?.[1])
+      if (Number.isNaN(button) || !heldFunctions.includes(functionNames[value])) return
+      if (button < MavlinkManualControlState.BUTTONS_PER_BITFIELD) buttons |= 1 << button
+      else buttons2 |= 1 << (button - MavlinkManualControlState.BUTTONS_PER_BITFIELD)
+    })
+    return Object.assign(new MavlinkManualControlState(), state, { buttons, buttons2 })
+  }
+
+  private addKeyboardMovement(state: MavlinkManualControlState): void {
+    const offsets = keyboardAxesOffsets()
+    const zMin = this.vehicle?.type() === VehicleType.Sub ? 0 : -1000
+    state.x = constrain(state.x + offsets.x, -1000, 1000)
+    state.y = constrain(state.y + offsets.y, -1000, 1000)
+    state.z = constrain(state.z + offsets.z, zMin, 1000)
+    state.r = constrain(state.r + offsets.r, -1000, 1000)
   }
 
   updateVehicleButtonsParameters = (): void => {

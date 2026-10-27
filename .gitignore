@@ -15,3 +15,6 @@ cypress/screenshots/
 
 # ArduSub WebAssembly build, made by CI
 public/sitl/ardusub.*
+
+# BlueSim web export, copied in from the BlueSim repository
+public/bluesim/

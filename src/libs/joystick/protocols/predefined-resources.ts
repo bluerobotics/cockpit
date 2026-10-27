@@ -7,6 +7,7 @@ import {
   registerMavlinkMessageActionConfig,
 } from '@/libs/actions/mavlink-message-actions'
 import { MavCmd, MAVLinkType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { keyboardMovements } from '@/libs/keyboard'
 import { getUnindentedString } from '@/libs/utils'
 import { MessageFieldType } from '@/types/cockpit-actions'
 import { customActionTypes } from '@/types/cockpit-actions'
@@ -179,7 +180,14 @@ const setupJoystickAxesResources = (): void => {
   }
 }
 
+const setupKeyboardMovementResources = (): void => {
+  keyboardMovements.forEach(({ id, name }) => {
+    createDataLakeVariable({ id, name, type: 'number' as DataLakeVariableType, allowUserToChangeValue: true }, 0)
+  })
+}
+
 export const setupPredefinedLakeAndActionResources = (): void => {
   setupMavlinkCameraResources()
   setupJoystickAxesResources()
+  setupKeyboardMovementResources()
 }

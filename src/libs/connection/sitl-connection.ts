@@ -1,18 +1,113 @@
+import { v4 as uuid } from 'uuid'
+
+import { appSitlVersion, checkSitlVersion } from '@/libs/sitl-version'
 import { isElectron } from '@/libs/utils'
 
 import * as Connection from './connection'
 import { RawMavlinkCodec } from './raw-mavlink-codec'
 
+/**
+ * Names this page's physics channel between the SITL worker and BlueSim, so other Cockpit tabs do not cross it.
+ * One per page load rather than in sessionStorage, which a duplicated tab copies.
+ */
+export const sitlPhysicsChannelId = uuid()
+
 const RELOAD_KEY = 'cockpit-sitl-isolation-reload'
+// The page opened by the isolation reload starts within milliseconds of the guard being stored, so the window only has
+// to cover slow devices. A hard reload can be handed an older copy of the session storage holding the guard, so the
+// window must stay shorter than a person can hard reload after the page appears
+const ISOLATION_RELOAD_WINDOW_MS = 2000
+// Date.now() and performance.timeOrigin are separate clocks that can disagree slightly
+const ISOLATION_RELOAD_CLOCK_SKEW_MS = 1000
 // The first visit waits for Cockpit's service worker to download the whole app
 const SERVICE_WORKER_TIMEOUT_MS = 60_000
 const ONLY_ON_PAGES = 'The simulator only runs in the Cockpit web version on GitHub Pages.'
+const VERSION_MISMATCH =
+  "The simulator files are from different Cockpit versions (an old cached copy). Reload the page; if it persists, clear this site's data."
+
+/**
+ * Posted by the SITL worker when the simulator could not load
+ */
+interface SitlWorkerError {
+  /**
+   * Tells it apart from the stages and the serial bytes
+   */
+  type: 'error'
+  /**
+   * What the simulator failed with
+   */
+  message: string
+  /**
+   * Whether it failed because its files are from different builds
+   */
+  isVersionMismatch: boolean
+}
+
+/**
+ * How far a sitl:// connection got through starting up
+ */
+export type SitlStage = 'idle' | 'loading-autopilot' | 'waiting-for-simulator' | 'running' | 'failed'
+
+const sitlStageLogs: Record<SitlStage, string> = {
+  'idle': 'stopped',
+  'loading-autopilot': 'loading',
+  'waiting-for-simulator': 'started, waiting for the simulator physics',
+  'running': 'running',
+  'failed': 'failed to start',
+}
+let sitlStage: SitlStage = 'idle'
+let sitlStartedAt = 0
+const sitlStageListeners = new Set<(stage: SitlStage) => void>()
+
+const setSitlStage = (stage: SitlStage): void => {
+  if (stage === sitlStage) return
+  sitlStage = stage
+  const seconds = ((performance.now() - sitlStartedAt) / 1000).toFixed(1)
+  console.info(`ArduPilot SITL ${sitlStageLogs[stage]} (${seconds} s)`)
+  sitlStageListeners.forEach((listener) => listener(stage))
+}
+
+/**
+ * Follow how far the sitl:// connection got through starting up
+ * @param {(stage: SitlStage) => void} listener Called with the current stage, then on every change
+ * @returns {() => void} Stops following
+ */
+export const onSitlStageChange = (listener: (stage: SitlStage) => void): (() => void) => {
+  sitlStageListeners.add(listener)
+  listener(sitlStage)
+  return () => {
+    sitlStageListeners.delete(listener)
+  }
+}
+
+/**
+ * Whether this page was opened by the isolation reload, rather than holding a stale copy of its guard
+ * @param {string | null} stored When the isolation reload happened, as stored in the session storage
+ * @param {number} timeOrigin When this page's navigation started
+ * @returns {boolean} True if this page already is the result of the one automatic reload
+ */
+export const isRecentIsolationReload = (stored: string | null, timeOrigin: number): boolean => {
+  if (stored === null) return false
+  const reloadedAt = Number(stored)
+  if (!Number.isFinite(reloadedAt)) return false
+  const elapsed = timeOrigin - reloadedAt
+  return elapsed >= -ISOLATION_RELOAD_CLOCK_SKEW_MS && elapsed <= ISOLATION_RELOAD_WINDOW_MS
+}
+
+// A page restored from the back/forward cache is still the one that was not isolated
+const reloadIfRestored = (event: PageTransitionEvent): void => {
+  if (event.persisted) window.location.reload()
+}
 
 /**
  * ArduPilot SITL compiled to WebAssembly, running in a worker inside Cockpit (public/sitl/worker.js).
- * The URI host is the binary under sitl/ (sitl://ardusub loads sitl/ardusub.js),
- * the optional model parameter is the SITL physics model (vectored by default).
+ * The URI host is the binary under sitl/ (sitl://ardusub loads sitl/ardusub.js).
+ * Optional parameters:
+ * - model: SITL physics model, vectored by default, JSON for an external simulator like BlueSim
+ * - defaults: parameter file under sitl/ loaded as SITL defaults
+ * - home: start location as lat,lon,alt,heading
  * The binaries are only published with the GitHub Pages build.
+ * @example sitl://ardusub?model=JSON&defaults=bluesim.parm&home=33.810313,-118.393867,0,270
  */
 export class SitlConnection extends Connection.Abstract {
   private _codec = new RawMavlinkCodec()
@@ -29,29 +124,52 @@ export class SitlConnection extends Connection.Abstract {
       return
     }
     sessionStorage.removeItem(RELOAD_KEY)
+    sitlStartedAt = performance.now()
+    setSitlStage('loading-autopilot')
 
     await this._codec.initialize()
-    if (this._disposed) return
+    // The page reloads to the server's build, which has matching simulator files
+    if (this._disposed || (await checkSitlVersion()) === 'stale') return
 
+    const options = this.uri().entries()
     const workerUrl = new URL('sitl/worker.js', document.baseURI)
     workerUrl.searchParams.set('binary', this.uri().host)
-    workerUrl.searchParams.set('model', this.uri().entries().get('model') ?? 'vectored')
+    workerUrl.searchParams.set('model', options.get('model') ?? 'vectored')
+    workerUrl.searchParams.set('v', appSitlVersion.sitl)
+    workerUrl.searchParams.set('channel', sitlPhysicsChannelId)
+    for (const option of ['home', 'defaults']) {
+      const value = options.get(option)
+      if (value !== undefined) workerUrl.searchParams.set(option, value)
+    }
     const worker = new Worker(workerUrl, { type: 'module' })
     this._worker = worker
     await new Promise<void>((resolve, reject) => {
-      worker.onmessage = (event: MessageEvent<Uint8Array>) => {
+      const fail = (reason: string, message: string): void => {
+        console.error('Simulator stopped:', reason)
+        setSitlStage('failed')
+        reject(new Error(message))
+      }
+      const host = this.uri().host
+      const genericFailure = `Could not start the simulator '${host}'. It needs the Cockpit web version on GitHub Pages, if you are already there, reload the page.`
+      // The worker posts its stage as a string, the simulator serial output as bytes, and an object if it fails
+      worker.onmessage = (event: MessageEvent<Uint8Array | SitlStage | 'stale' | SitlWorkerError>) => {
+        const data = event.data
+        if (data === 'stale') {
+          checkSitlVersion()
+          return
+        }
+        if (typeof data === 'string') {
+          setSitlStage(data)
+          return
+        }
+        if (!(data instanceof Uint8Array)) {
+          fail(data.message, data.isVersionMismatch ? VERSION_MISMATCH : genericFailure)
+          return
+        }
         resolve()
-        this._codec.decode(event.data, (message) => this.onRead.emit_value(message))
+        this._codec.decode(data, (message) => this.onRead.emit_value(message))
       }
-      worker.onerror = (event: Event) => {
-        console.error('Simulator stopped:', (event as ErrorEvent).message)
-        const host = this.uri().host
-        reject(
-          new Error(
-            `Could not start the simulator '${host}'. It needs the Cockpit web version on GitHub Pages, if you are already there, reload the page.`
-          )
-        )
-      }
+      worker.onerror = (event: Event) => fail((event as ErrorEvent).message, genericFailure)
     })
   }
 
@@ -64,10 +182,12 @@ export class SitlConnection extends Connection.Abstract {
       throw new Error(ONLY_ON_PAGES)
     }
     const browserMessage = 'This browser could not prepare the page for the simulator. Use Chrome, Edge or Firefox.'
-    if (sessionStorage.getItem(RELOAD_KEY) !== null) {
+    if (isRecentIsolationReload(sessionStorage.getItem(RELOAD_KEY), performance.timeOrigin)) {
       throw new Error(browserMessage)
     }
-    sessionStorage.setItem(RELOAD_KEY, 'true')
+    sessionStorage.removeItem(RELOAD_KEY)
+    // The same function reference is only registered once, however many times this runs
+    window.addEventListener('pageshow', reloadIfRestored)
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(browserMessage)), SERVICE_WORKER_TIMEOUT_MS)
     })
@@ -75,7 +195,10 @@ export class SitlConnection extends Connection.Abstract {
     if (this._disposed) return
     const url = new URL(window.location.href)
     url.searchParams.set('MAVLink2RestWebsocketURI', this.uri().toString())
-    window.location.replace(url)
+    // replace() to a URL that differs only in its fragment, or not at all, does not reload the page
+    window.history.replaceState(window.history.state, '', url)
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
+    window.location.reload()
   }
 
   /**
@@ -86,6 +209,7 @@ export class SitlConnection extends Connection.Abstract {
     this._disposed = true
     this._worker?.terminate()
     this._worker = undefined
+    setSitlStage('idle')
     return true
   }
 

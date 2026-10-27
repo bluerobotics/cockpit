@@ -30,6 +30,7 @@ import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-messag
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
+import { isKeyboardDriving } from '@/libs/keyboard'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
@@ -102,8 +103,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     },
   })
 
+  // Lets a deployment, like a hosted simulator, pick the main connection without a query parameter on every link
+  const deploymentMainConnectionURI: string | undefined = import.meta.env.VITE_DEFAULT_MAIN_CONNECTION_URI
   const defaultMAVLink2RestWebsocketURI = computed(
-    () => `${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`
+    () => deploymentMainConnectionURI || `${ws_protocol}://${globalAddress.value}/mavlink2rest/ws/mavlink`
   )
   const defaultMAVLink2RestHttpURI = computed(() => `${http_protocol}://${globalAddress.value}/mavlink2rest/v1/mavlink`)
   const defaultWebRTCSignallingURI = computed(() => `${ws_protocol}://${globalAddress.value}:6021/`)
@@ -263,6 +266,16 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   watch(isVehicleOnline, (isOnline) => {
     if (isOnline) {
       hasVehicleBeenOnlineThisSession.value = true
+      // A SITL running inside Cockpit has no BlueOS to sync settings with, and the sync retries until it answers,
+      // so finish it right away to let the vehicle defaults (views, joystick) be imported
+      if (MAVLink2RestWebsocketURI.value.type() === Connection.Type.Sitl) {
+        dispatchEvent(
+          new CustomEvent('vehicle-sync-complete', {
+            detail: { vehicleAddress: globalAddress.value, vehicleId: undefined, succeeded: false },
+          })
+        )
+        return
+      }
       dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: globalAddress.value } }))
       return
     }
@@ -806,7 +819,11 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   ConnectionManager.addConnection(MAVLink2RestWebsocketURI.value, Protocol.Type.MAVLink, {
     websocket: { getWatchdogTimeoutMs: () => vehicleConnectionWatchdogTimeoutMs.value },
-  }).catch((error: Error) => openSnackbar({ message: error.message, variant: 'error', persistent: true }))
+  }).catch((error: Error) => {
+    const isSitl = MAVLink2RestWebsocketURI.value.type() === Connection.Type.Sitl
+    const action = isSitl ? { label: 'Reload', handler: () => window.location.reload() } : undefined
+    openSnackbar({ message: error.message, variant: 'error', persistent: true, action })
+  })
 
   let applyThrottledCoordinates = useThrottleFn(
     (nc: Coordinates) => Object.assign(coordinates, nc),
@@ -1213,6 +1230,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     // Send MAVLink Manual Control message
     if (controllerStore.enableForwarding) {
       mavlinkManualControlManager.sendManualControl()
+    } else if (controllerStore.joysticks.size === 0 && isKeyboardDriving()) {
+      mavlinkManualControlManager.sendKeyboardManualControl()
     }
   }, 40)
   setInterval(() => sendGcsHeartbeat(), 1000)

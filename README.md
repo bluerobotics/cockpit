@@ -334,6 +334,49 @@ docker-compose -f sim.yml --profile ardusub up
 # Other profiles: arducopter, ardurover, arduplane
 ```
 
+#### In-browser simulation (ArduSub and BlueSim)
+Cockpit can also run ArduSub itself, compiled to WebAssembly, with [BlueSim](https://github.com/bluerobotics/bluesim)'s web build as its physics, so the whole simulated vehicle runs inside the page. A `sitl://` main connection starts it:
+```
+sitl://ardusub?model=JSON&defaults=bluesim.parm&home=33.810313,-118.393867,0,270
+```
+- `ardusub` loads `sitl/ardusub.js` and `sitl/ardusub.wasm`.
+- `model=JSON` takes the physics from the Simulator widget, which shows `bluesim/index.html?level=reef` by default. The autopilot only runs while that widget is visible.
+- `defaults` is a parameter file under `public/sitl/`. `bluesim.parm` is tuned for BlueSim's BlueROV2 Heavy, and sets the outputs and buttons its camera tilt, lights and gripper use.
+- `home` is latitude, longitude, altitude and heading. Keep it where the level's map tiles were rendered, or the vehicle will not sit on them.
+
+Neither build lives in this repository, so they have to be put under `public/` first:
+
+1. Build ArduSub from the `wasm-json-sim` branch, which can exchange JSON physics with a simulator in the browser (CI does the same in the `build-ardusub-wasm` job):
+   ```bash
+   git clone --recurse-submodules -b wasm-json-sim https://github.com/williangalvani/ardupilot.git
+   cd ardupilot
+   Tools/environment_install/install-wasm-prereqs-ubuntu.sh
+   source ~/emsdk/emsdk_env.sh
+   ./waf configure --board wasm
+   ./waf build --target bin/ardusub
+   cp build/wasm/bin/ardusub.js build/wasm/bin/ardusub.wasm <cockpit>/public/sitl/
+   ```
+2. Export BlueSim's web build and render its map tiles, as BlueSim's README describes, then copy the export in:
+   ```bash
+   rsync -a --delete <bluesim>/export/web/ <cockpit>/public/bluesim/
+   ```
+   Or take the web build CI uses, which has no map tiles:
+   ```bash
+   curl -fsSL -o bluesim-web.zip https://github.com/williangalvani/bluesim-1/releases/download/latest/bluesim-web.zip
+   unzip -o bluesim-web.zip -d <cockpit>/public/bluesim/
+   ```
+3. Run `yarn dev` and open `http://localhost:5173/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub%3Fmodel%3DJSON%26defaults%3Dbluesim.parm%26home%3D33.810313%2C-118.393867%2C0%2C270`. The page reloads once on the first visit to become cross-origin isolated, which the SITL needs.
+
+With a blank layout, Cockpit sets up the vehicle's default views with the Simulator widget in place of the video, adds the level's tiles as the "BlueSim reef" map provider, and puts a mini map on them. With no joystick, = and - arm and disarm the vehicle, W/A/S/D and Space/Shift move it, the left and right arrows turn it, the up and down arrows tilt the camera, and comma and period open and close the gripper, all listed in a "Keyboard controls" widget under the mini map. The vehicle has to be armed first.
+
+To host it, build with the SITL as the default main connection, so plain links open the simulator:
+```bash
+VITE_DEFAULT_MAIN_CONNECTION_URI='sitl://ardusub?model=JSON&defaults=bluesim.parm&home=33.810313,-118.393867,0,270' yarn build
+```
+Then serve the whole of `dist/` from any static HTTPS server. No special headers are needed, since the page's service worker adds the cross-origin isolation headers itself, but every file has to be uploaded: one missing from the offline cache's list fails the worker's install, and the SITL never starts. Upload with `rsync --delete` (or an equivalent), so files left over from an older build do not linger.
+
+The build hashes the files in `public/sitl/` and `public/bluesim/` and publishes the hashes in `sitl/version.json`. The SITL worker loads its files with that hash in the URL, so the service worker caches them per version and never mixes an old loader with a new `ardusub.wasm`, and BlueSim's page is opened with its own. A page left over from an older build sees that `sitl/version.json` changed and reloads once to the new one. Pages themselves are loaded network-first, so a deploy is picked up on the next load, and the cached copy is only used offline.
+
 ---
 
 ## 📄 License

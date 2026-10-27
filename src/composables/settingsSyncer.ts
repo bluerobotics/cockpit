@@ -1,7 +1,7 @@
 import { type RemovableRef } from '@vueuse/core'
 import { diff } from 'jest-diff'
 import { format as prettyFormat } from 'pretty-format'
-import { type MaybeRef, ref, unref, watch } from 'vue'
+import { type MaybeRef, getCurrentScope, onScopeDispose, ref, unref, watch } from 'vue'
 
 import { settingsManager } from '@/libs/settings-management'
 import { deserialize, isEqual } from '@/libs/utils'
@@ -127,7 +127,7 @@ export function useBlueOsStorage<T>(
     { deep: true }
   )
 
-  settingsManager.registerListener(key, (newSetting: CockpitSetting) => {
+  const listenerId = settingsManager.registerListener(key, (newSetting: CockpitSetting) => {
     // A stored setting can carry no value at all, and applying it would hand every consumer an
     // undefined where the returned type promises T, so the last known value is kept instead.
     const newValue = newSetting.value
@@ -146,6 +146,8 @@ export function useBlueOsStorage<T>(
     refedValue.value = newValue as T
     oldRefedValue = deserialize(JSON.stringify(refedValue.value)) as T
   })
+  // Called from a component, the listener would otherwise outlive it and pile up with every remount
+  if (getCurrentScope()) onScopeDispose(() => settingsManager.unregisterListener(key, listenerId))
 
   return refedValue as RemovableRef<T>
 }

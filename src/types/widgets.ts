@@ -110,6 +110,7 @@ export enum WidgetType {
   MiniWidgetsBar = 'MiniWidgetsBar',
   MissionControlPanel = 'MissionControlPanel',
   Plotter = 'Plotter',
+  Simulator = 'Simulator',
   URLVideoPlayer = 'URLVideoPlayer',
   VideoPlayer = 'VideoPlayer',
   VirtualHorizon = 'VirtualHorizon',
@@ -882,6 +883,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.MiniMap]: true,
   [WidgetType.MiniWidgetsBar]: false,
   [WidgetType.Plotter]: true,
+  [WidgetType.Simulator]: true,
   [WidgetType.URLVideoPlayer]: true,
   [WidgetType.VideoPlayer]: true,
   [WidgetType.VirtualHorizon]: false,
@@ -925,6 +927,7 @@ export const widgetHasOwnContextMenu: Record<WidgetType, boolean> = {
   [WidgetType.MiniMap]: false,
   [WidgetType.MiniWidgetsBar]: false,
   [WidgetType.Plotter]: false,
+  [WidgetType.Simulator]: false,
   [WidgetType.URLVideoPlayer]: false,
   [WidgetType.VideoPlayer]: false,
   [WidgetType.VirtualHorizon]: false,
@@ -969,6 +972,7 @@ export const widgetDefaultSizes: Partial<Record<WidgetType, SizeRect2D>> = {
   [WidgetType.MiniMap]: { width: 0.18, height: 0.32 },
   [WidgetType.MiniWidgetsBar]: { width: 0.2, height: 0.1 },
   [WidgetType.Plotter]: { width: 0.4, height: 0.3 },
+  [WidgetType.Simulator]: { width: 1, height: 1 },
   [WidgetType.URLVideoPlayer]: { width: 0.5, height: 0.4 },
   [WidgetType.VideoPlayer]: { width: 0.6, height: 0.6 },
   [WidgetType.VirtualHorizon]: { width: 0.062, height: 0.118 },
@@ -1043,7 +1047,7 @@ export const fillMissingBarContainers = (
 }
 
 /**
- * Views that should be mounted, with the current view last so it stacks on top.
+ * Views that should be mounted, in profile order, since moving a mounted view in the DOM reloads its iframes.
  * @param {View[]} views - The profile's views
  * @param {number} currentIndex - Index of the view on screen
  * @param {boolean} unmountHidden - When true, mount only the current view
@@ -1056,10 +1060,7 @@ export const selectViewsToShow = (views: View[], currentIndex: number, unmountHi
     const current = views[index]
     return current.visible ? [current] : []
   }
-  const viewsOnShowOrder = views.slice()
-  viewsOnShowOrder.splice(index, 1)
-  viewsOnShowOrder.push(views[index])
-  return viewsOnShowOrder.filter((v) => v.visible)
+  return views.filter((v) => v.visible)
 }
 
 export const validateContainer = (maybeContainer: MiniWidgetContainer): maybeContainer is MiniWidgetContainer => {

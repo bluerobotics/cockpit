@@ -1,6 +1,11 @@
 <template>
-  <div class="widgets-view">
-    <div v-for="view in store.viewsToShow" :key="view.hash" class="widget-view">
+  <div class="widgets-view isolate">
+    <div
+      v-for="view in store.viewsToShow"
+      :key="view.hash"
+      class="widget-view"
+      :class="{ 'z-[1]': view.hash === store.currentView.hash }"
+    >
       <div class="w-full h-full bg-slate-500 flex justify-center align-center">
         <div
           v-if="view.widgets.isEmpty()"

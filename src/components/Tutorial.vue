@@ -143,8 +143,9 @@ const steps = [
   },
   {
     id: 7,
-    title: 'Joystick Configuration',
-    content: `Connect a controller and move a joystick or press a button to see the current function mapping.`,
+    title: 'Controllers Configuration',
+    content: `Connect a controller and move a joystick or press a button to see the current function mapping.
+      Keyboard keys can also be mapped, on the Keyboard tab.`,
     opposite: `Fully supported joysticks have a visual configuration interface available, but there's also a
       mapping table provided for custom or uncommon controllers. Actions can be related to vehicle functions,
       can influence the display, or can run custom requests or code.`,
@@ -239,7 +240,7 @@ const handleStepChange = (newStep: number): void => {
       goToMenuPage(SubMenuComponentName.SettingsJoystick, true)
       interfaceStore.userHasSeenTutorial = false
       tallContent.value = true
-      interfaceStore.componentToHighlight = 'Joystick'
+      interfaceStore.componentToHighlight = 'Controllers'
       break
     case 8:
       interfaceStore.isMainMenuVisible = true
