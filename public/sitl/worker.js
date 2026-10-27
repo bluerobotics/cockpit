@@ -10,8 +10,9 @@ const SERIAL_PORT = 0
 // Florianópolis, Brazil, as lat,lng,alt,yaw
 const HOME = '-27.598524,-48.459752,0,0'
 const DEFAULTS_PATH = '/defaults.parm'
-// Same channel name used by BlueSim's web build
+// BlueSim's web build adds -<id> when its page has ?channel=<id>, so each Cockpit tab gets its own
 const PHYSICS_CHANNEL_NAME = 'cockpit-sitl-json'
+const PHYSICS_CHANNEL_ID = /^[A-Za-z0-9_-]{1,64}$/
 // Where Emscripten's SOCKFS connects SIM_JSON's UDP socket to
 const PHYSICS_SOCKET_URL = 'ws://127.0.0.1:9002/'
 const SERVO_PACKET_HEADER_SIZE = 8
@@ -71,7 +72,13 @@ if (defaults !== undefined) {
 let sitlModule = undefined
 if (model.startsWith('JSON')) {
   const textEncoder = new TextEncoder()
-  const physicsChannel = new BroadcastChannel(PHYSICS_CHANNEL_NAME)
+  // BlueSim exports from before ?channel, or opened in another tab, use the shared channel, so both are
+  // listened to (and servo packets sent to both) until physics arrives on one, which is then kept alone
+  const channelId = params.get('channel')
+  let physicsChannels = [new BroadcastChannel(PHYSICS_CHANNEL_NAME)]
+  if (channelId !== null && PHYSICS_CHANNEL_ID.test(channelId)) {
+    physicsChannels.push(new BroadcastChannel(`${PHYSICS_CHANNEL_NAME}-${channelId}`))
+  }
   let physicsSocket = undefined
   let isPhysicsPollPatched = false
 
@@ -93,13 +100,12 @@ if (model.startsWith('JSON')) {
           const pwm = Array.from({ length: channels }, (_, index) =>
             packet.getUint16(SERVO_PACKET_HEADER_SIZE + index * 2, true)
           )
-          physicsChannel.postMessage(
-            JSON.stringify({
-              frame_rate: packet.getUint16(2, true),
-              frame_count: packet.getUint32(4, true),
-              pwm,
-            })
-          )
+          const message = JSON.stringify({
+            frame_rate: packet.getUint16(2, true),
+            frame_count: packet.getUint32(4, true),
+            pwm,
+          })
+          physicsChannels.forEach((channel) => channel.postMessage(message))
         },
         close: () => {
           socket.readyState = 3
@@ -133,14 +139,18 @@ if (model.startsWith('JSON')) {
   })
 
   let isLinked = false
-  physicsChannel.onmessage = ({ data }) => {
-    if (physicsSocket === undefined) return
-    if (!isLinked) {
-      isLinked = true
-      self.postMessage('running')
+  physicsChannels.forEach((physicsChannel) => {
+    physicsChannel.onmessage = ({ data }) => {
+      if (physicsSocket === undefined || !physicsChannels.includes(physicsChannel)) return
+      if (!isLinked) {
+        isLinked = true
+        physicsChannels.filter((channel) => channel !== physicsChannel).forEach((channel) => channel.close())
+        physicsChannels = [physicsChannel]
+        self.postMessage('running')
+      }
+      physicsSocket.onmessage?.({ data: textEncoder.encode(data).buffer })
     }
-    physicsSocket.onmessage?.({ data: textEncoder.encode(data).buffer })
-  }
+  })
 }
 
 const loadSitl = async () => {

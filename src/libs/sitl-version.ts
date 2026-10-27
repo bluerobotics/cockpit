@@ -137,19 +137,17 @@ export const checkSitlVersion = (): Promise<SitlVersionStatus> => {
 }
 
 /**
- * Versions the URL of the BlueSim export Cockpit ships, so its page is not an old cached copy
+ * Versions the URL of the BlueSim export Cockpit ships, so its page is not an old cached copy,
+ * and points it at this page's physics channel
  * @param {string} source The simulator URL, relative to Cockpit's
- * @returns {string} The absolute URL, with the BlueSim version when it is Cockpit's own BlueSim
+ * @param {string} channel The id of this page's physics channel with the SITL worker
+ * @returns {string} The absolute URL, with the BlueSim version and channel when it is Cockpit's own BlueSim
  */
-export const versionedSimulatorUrl = (source: string): string => {
+export const versionedSimulatorUrl = (source: string, channel: string): string => {
   const url = new URL(source, document.baseURI)
   const blueSimUrl = new URL('bluesim/index.html', document.baseURI)
-  if (
-    appSitlVersion.bluesim !== NOT_VERSIONED &&
-    url.origin === blueSimUrl.origin &&
-    url.pathname === blueSimUrl.pathname
-  ) {
-    url.searchParams.set('v', appSitlVersion.bluesim)
-  }
+  if (url.origin !== blueSimUrl.origin || url.pathname !== blueSimUrl.pathname) return url.href
+  if (appSitlVersion.bluesim !== NOT_VERSIONED) url.searchParams.set('v', appSitlVersion.bluesim)
+  url.searchParams.set('channel', channel)
   return url.href
 }

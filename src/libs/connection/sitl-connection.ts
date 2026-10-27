@@ -1,8 +1,16 @@
+import { v4 as uuid } from 'uuid'
+
 import { appSitlVersion, checkSitlVersion } from '@/libs/sitl-version'
 import { isElectron } from '@/libs/utils'
 
 import * as Connection from './connection'
 import { RawMavlinkCodec } from './raw-mavlink-codec'
+
+/**
+ * Names this page's physics channel between the SITL worker and BlueSim, so other Cockpit tabs do not cross it.
+ * One per page load rather than in sessionStorage, which a duplicated tab copies.
+ */
+export const sitlPhysicsChannelId = uuid()
 
 const RELOAD_KEY = 'cockpit-sitl-isolation-reload'
 // The first visit waits for Cockpit's service worker to download the whole app
@@ -103,6 +111,7 @@ export class SitlConnection extends Connection.Abstract {
     workerUrl.searchParams.set('binary', this.uri().host)
     workerUrl.searchParams.set('model', options.get('model') ?? 'vectored')
     workerUrl.searchParams.set('v', appSitlVersion.sitl)
+    workerUrl.searchParams.set('channel', sitlPhysicsChannelId)
     for (const option of ['home', 'defaults']) {
       const value = options.get(option)
       if (value !== undefined) workerUrl.searchParams.set(option, value)

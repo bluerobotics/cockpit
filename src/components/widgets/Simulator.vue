@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs } from 'vue'
 
-import { type SitlStage, onSitlStageChange } from '@/libs/connection/sitl-connection'
+import { type SitlStage, onSitlStageChange, sitlPhysicsChannelId } from '@/libs/connection/sitl-connection'
 import { versionedSimulatorUrl } from '@/libs/sitl-version'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -71,7 +71,7 @@ onBeforeMount(() => {
   widget.value.options = { ...defaultOptions, ...widget.value.options }
 })
 
-const source = computed(() => versionedSimulatorUrl(widget.value.options.source))
+const source = computed(() => versionedSimulatorUrl(widget.value.options.source, sitlPhysicsChannelId))
 const isInteractive = computed(() => widget.value.options.interactive && !widgetStore.editingMode)
 
 const sitlStageMessages: Partial<Record<SitlStage, string>> = {

@@ -17,8 +17,9 @@ test('compareSitlVersions', () => {
 })
 
 test('versionedSimulatorUrl', () => {
-  const versioned = new URL(versionedSimulatorUrl('bluesim/index.html?level=reef'))
+  const versioned = new URL(versionedSimulatorUrl('bluesim/index.html?level=reef', 'tab-1'))
   expect(versioned.searchParams.get('level')).toBe('reef')
   expect(versioned.searchParams.get('v')).toBe(appSitlVersion.bluesim === 'none' ? null : appSitlVersion.bluesim)
-  expect(versionedSimulatorUrl('https://example.com/sim.html?a=1')).toBe('https://example.com/sim.html?a=1')
+  expect(versioned.searchParams.get('channel')).toBe('tab-1')
+  expect(versionedSimulatorUrl('https://example.com/sim.html?a=1', 'tab-1')).toBe('https://example.com/sim.html?a=1')
 })
