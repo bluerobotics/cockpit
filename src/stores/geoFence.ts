@@ -25,6 +25,7 @@ import {
   sameFenceGeometry,
   simplifyFencePolygons,
 } from '@/libs/geo-fence'
+import { fenceActionParameter } from '@/libs/vehicle/fence-actions'
 import type { Parameter } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import type { BreachReturnPoint, FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
@@ -173,6 +174,13 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   // on restores the operator's configured mode instead of flattening 2–4 to 1.
   const lastAutoEnableMode = ref(1)
 
+  // Current fence action (`FENCE_ACTION` on ArduPilot, `GF_ACTION` on PX4), `undefined` until the vehicle answers.
+  const fenceAction = ref<number | undefined>(undefined)
+  const fenceActionParam = computed(() => {
+    const v = mainVehicleStore.mainVehicle
+    return v ? fenceActionParameter(v.firmware()) : undefined
+  })
+
   // Whether the vehicle reports being outside its fence (FENCE_STATUS.breach_status), which the alerter announces.
   // `undefined` while unknown (no vehicle, or the link is down), so a reconnect outside the fence warns again and
   // losing track of the fence is never announced as the vehicle getting back inside.
@@ -293,6 +301,8 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
       const mode = Math.round(param.value)
       fenceAutoEnableMode.value = mode
       if (mode > 0) lastAutoEnableMode.value = mode
+    } else if (param.name === fenceActionParam.value) {
+      fenceAction.value = Math.round(param.value)
     }
   }
   watch(
@@ -351,6 +361,15 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
       if (vis !== 'visible') return
       refreshFenceEnabled()
       fenceEnablePollHandle = setInterval(refreshFenceEnabled, FENCE_ENABLE_POLL_INTERVAL_MS)
+    },
+    { immediate: true }
+  )
+
+  watch(
+    [fenceActionParam, () => mainVehicleStore.isVehicleOnline],
+    ([name, online]) => {
+      fenceAction.value = undefined
+      if (name && online) mainVehicleStore.mainVehicle?.requestParameter(name)
     },
     { immediate: true }
   )
@@ -743,6 +762,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     fenceBreached,
     fenceAutoEnableMode,
     lastAutoEnableMode,
+    fenceAction,
     readFenceEnabled,
     setFenceEnabled,
     setFenceAutoEnable,
