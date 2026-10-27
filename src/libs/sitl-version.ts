@@ -22,7 +22,7 @@ export interface SitlVersion {
  * How this copy of Cockpit compares with the one on the server
  * - unknown: there is nothing to compare, like in development, Electron or builds without the simulator
  * - current: same build
- * - stale: an older copy, like one the service worker kept from before a deploy
+ * - stale: an older copy, like a tab left open across a deploy
  * - still-stale: an older copy, even after reloading once to the server's build
  */
 export type SitlVersionStatus = 'unknown' | 'current' | 'stale' | 'still-stale'

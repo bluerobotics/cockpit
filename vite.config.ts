@@ -64,7 +64,23 @@ const baseConfig = {
           cleanupOutdatedCaches: true,
           // The simulator files have to load as a set of one version, which a cached loader next to a newer wasm is not
           globIgnores: ['**/node_modules/**/*', 'sitl/**', 'bluesim/**'],
+          // A precached index.html outlives a deploy and points at an entry chunk too big to precache, and gone from the
+          // server, so pages come from the network and the precache only answers them offline. Without directoryIndex
+          // the precache stops answering '/' with index.html itself.
+          navigateFallback: null,
+          directoryIndex: null,
           runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'cockpit-pages',
+                expiration: { maxEntries: 4 },
+                precacheFallback: { fallbackURL: 'index.html' },
+                // The browser HTTP cache (GitHub Pages sends max-age=600) would otherwise serve an old index.html
+                fetchOptions: { cache: 'no-cache' },
+              },
+            },
             {
               // The SITL worker asks for its files with their hash (scripts/sitl-version.mjs), so a cached copy is
               // never stale. Worker scripts are answered by cross-origin-isolation.js, and version.json has no hash.

@@ -375,7 +375,7 @@ VITE_DEFAULT_MAIN_CONNECTION_URI='sitl://ardusub?model=JSON&defaults=bluesim.par
 ```
 Then serve the whole of `dist/` from any static HTTPS server. No special headers are needed, since the page's service worker adds the cross-origin isolation headers itself, but every file has to be uploaded: one missing from the offline cache's list fails the worker's install, and the SITL never starts. Upload with `rsync --delete` (or an equivalent), so files left over from an older build do not linger.
 
-The build hashes the files in `public/sitl/` and `public/bluesim/` and publishes the hashes in `sitl/version.json`. The SITL worker loads its files with that hash in the URL, so the service worker caches them per version and never mixes an old loader with a new `ardusub.wasm`, and BlueSim's page is opened with its own. A page left over from an older build sees that `sitl/version.json` changed and reloads once to the new one.
+The build hashes the files in `public/sitl/` and `public/bluesim/` and publishes the hashes in `sitl/version.json`. The SITL worker loads its files with that hash in the URL, so the service worker caches them per version and never mixes an old loader with a new `ardusub.wasm`, and BlueSim's page is opened with its own. A page left over from an older build sees that `sitl/version.json` changed and reloads once to the new one. Pages themselves are loaded network-first, so a deploy is picked up on the next load, and the cached copy is only used offline.
 
 ---
 

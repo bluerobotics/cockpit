@@ -105,7 +105,8 @@ initGnss()
 // Boot the secondary vehicle connections so their telemetry reaches the data lake independently of the UI
 initSecondaryVehicleConnections()
 
-// Reload to the latest build when the service worker served an old copy, whose files no longer match the simulator's
+// Reload to the latest build when this page is an old copy, like a tab left open across a deploy, whose files no longer
+// match the simulator's
 initSitlVersionCheck()
 
 // Start logging as soon as the app is loaded to always have telemetry for videos
