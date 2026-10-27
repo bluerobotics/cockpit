@@ -55,6 +55,24 @@ export interface HazardArea {
    * Further facts the source publishes about the area, one operator-readable line each.
    */
   details?: string[]
+  /**
+   * The source's own record of the area, when the area maps to a single one.
+   */
+  sourceRecord?: HazardSourceRecord
+}
+
+/**
+ * A record at a hazard source, so the operator can see where an area's details came from.
+ */
+export interface HazardSourceRecord {
+  /**
+   * Operator-facing name of the record, such as "OpenStreetMap way 123".
+   */
+  label: string
+  /**
+   * Page showing the record at its source.
+   */
+  url: string
 }
 
 /**

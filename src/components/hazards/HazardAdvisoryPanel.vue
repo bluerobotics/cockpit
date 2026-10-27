@@ -378,6 +378,21 @@
                   </v-btn>
                 </template>
               </v-tooltip>
+              <v-tooltip v-if="group.sourceRecord" location="top" :text="`Open ${group.sourceRecord.label}`">
+                <template #activator="{ props: tooltipProps }">
+                  <v-btn
+                    v-bind="tooltipProps"
+                    icon
+                    variant="text"
+                    size="x-small"
+                    class="ml-1 -mr-1 !w-[22px] !h-[22px]"
+                    :aria-label="`Open ${group.sourceRecord.label}`"
+                    @click="onOpenGroupRecord(group.sourceRecord)"
+                  >
+                    <v-icon icon="mdi-open-in-new" class="text-[14px]" />
+                  </v-btn>
+                </template>
+              </v-tooltip>
               <v-tooltip v-if="group.areaId" location="top" max-width="260" :text="exclusionTooltip(group.areaId)">
                 <template #activator="{ props: tooltipProps }">
                   <div v-bind="tooltipProps">
@@ -434,7 +449,7 @@ import { useGeoFenceStore } from '@/stores/geoFence'
 import { useHazardStore } from '@/stores/hazards'
 import { useMissionStore } from '@/stores/mission'
 import type { GeoBbox } from '@/types/general'
-import type { HazardSourceId } from '@/types/hazards'
+import type { HazardSourceId, HazardSourceRecord } from '@/types/hazards'
 import type { WaypointCoordinates } from '@/types/mission'
 
 // Deeper than this the elevation model's seabed is too coarse to single out anything worth avoiding.
@@ -476,6 +491,10 @@ type AdvisoryGroup = {
    * Every waypoint the advisories name, in mission order.
    */
   waypointIndices: number[]
+  /**
+   * The source's record of the area, when it has one.
+   */
+  sourceRecord?: HazardSourceRecord
 }
 
 const hazardStore = useHazardStore()
@@ -583,6 +602,7 @@ const advisoryGroups = computed<AdvisoryGroup[]>(() => {
       color: advisory.sourceId ? HAZARD_SOURCES[advisory.sourceId].color : ADVISORY_COLOR,
       messages: [advisory.message],
       waypointIndices: advisory.waypointIndices,
+      sourceRecord: advisory.areaId ? hazardStore.findArea(advisory.areaId)?.sourceRecord : undefined,
     })
   })
   const breachGroup = fenceBreachGroup.value
@@ -595,6 +615,11 @@ const onFocusGroup = (group: AdvisoryGroup): void => {
     .map((index) => missionStore.currentPlanningWaypoints[index]?.coordinates)
     .filter((coordinates): coordinates is WaypointCoordinates => coordinates !== undefined)
   focusAdvisory(group.areaId ? hazardStore.findArea(group.areaId) : undefined, waypoints)
+}
+
+const onOpenGroupRecord = (record: HazardSourceRecord): void => {
+  logUserAction(`Opened ${record.label} from the hazard advisories`)
+  window.open(record.url, '_blank', 'noopener,noreferrer')
 }
 
 const exclusionTooltip = (areaId: string): string =>
