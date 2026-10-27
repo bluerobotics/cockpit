@@ -224,12 +224,6 @@ const apmParams: ParamDescriptor[] = [
     name: 'FENCE_AUTOENABLE',
     description: 'Whether the autopilot turns the fence on by itself, and when.',
     type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 } as DialectMavParamType,
-    options: [
-      { value: 0, label: 'Off' },
-      { value: 1, label: 'On after an automatic takeoff' },
-      { value: 2, label: 'On after an automatic takeoff, floor off when landing' },
-      { value: 3, label: 'On when armed' },
-    ],
   },
 ]
 
@@ -269,7 +263,7 @@ const px4Params: ParamDescriptor[] = [
 const vehicleStore = useMainVehicleStore()
 const alertStore = useAlertStore()
 const { openSnackbar } = useSnackbar()
-const { parameterName: actionParam, options: breachOptions } = useFenceBreachAction()
+const { parameterName: actionParam, options: breachOptions, autoEnableOptions } = useFenceBreachAction()
 
 const paramValues = reactive<Record<string, number | undefined>>({})
 const openTooltip = ref<string | null>(null)
@@ -280,7 +274,7 @@ const activeParams = computed<ParamDescriptor[]>(() => (isApm.value ? apmParams 
 
 // Only what the vehicle answered for, since the parameter set differs between vehicle types and firmware versions.
 const rows = computed<ParamDescriptor[]>(() => {
-  const vehicleOptions: Record<string, ParamOption[]> = {}
+  const vehicleOptions: Record<string, ParamOption[]> = { FENCE_AUTOENABLE: autoEnableOptions.value }
   if (actionParam.value) vehicleOptions[actionParam.value] = breachOptions.value
   return activeParams.value
     .filter((param) => paramValues[param.name] !== undefined)

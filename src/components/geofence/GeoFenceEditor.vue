@@ -242,9 +242,9 @@
       class="flex flex-col mx-2 mt-2.5 mb-[5px] py-2 px-4 border-[1px] border-[#FFFFFF44] bg-[#00000022] rounded-md p-2"
     >
       <div v-if="fenceStore.isArduPilot" class="flex items-center justify-between gap-x-2 fence-autoenable-row">
-        <p class="text-xs">Auto enable fence on takeoff</p>
+        <p class="text-xs">{{ autoEnableLabel }}</p>
         <v-switch
-          :model-value="fenceStore.fenceAutoEnableMode !== undefined && fenceStore.fenceAutoEnableMode > 0"
+          :model-value="autoEnabled"
           color="#3B78A8"
           density="compact"
           hide-details
@@ -465,7 +465,7 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceParametersPanel from '@/components/geofence/GeoFenceParametersPanel.vue'
@@ -478,6 +478,7 @@ import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import { fenceItemCount, fencePlanExtentPoints, fencePointCapacity } from '@/libs/geo-fence'
 import { fitMapToWaypoints, isLeafletMapReady } from '@/libs/map/utils-map'
+import { FENCE_AUTOENABLE_WHEN_ARMED } from '@/libs/vehicle/fence-actions'
 import {
   geoFencePlanToMavlinkPlanFile,
   mavlinkPlanFileToGeoFencePlan,
@@ -508,7 +509,16 @@ const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const { showDialog, confirmAction } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
-const { outcome: breachOutcome, parameterName: breachActionParameter, canAddBreachReturn } = useFenceBreachAction()
+const {
+  outcome: breachOutcome,
+  parameterName: breachActionParameter,
+  canAddBreachReturn,
+  autoEnablesOnTakeoff,
+  autoEnabled,
+} = useFenceBreachAction()
+const autoEnableLabel = computed(() =>
+  autoEnablesOnTakeoff.value ? 'Auto enable fence on takeoff' : 'Auto enable fence when armed'
+)
 
 const onBreachOutcomeTooltip = (open: boolean): void => {
   if (open) logUserAction('Opened the help on where to change the fence breach action')
@@ -626,8 +636,9 @@ const onBreachReturnAltInput = (value: string): void => {
 }
 
 const onToggleFenceAutoEnable = (value: boolean | null): void => {
-  const target = value ? fenceStore.lastAutoEnableMode : 0
-  logUserAction(target ? 'Enabled auto-enable fence on takeoff' : 'Disabled auto-enable fence on takeoff')
+  const onMode = autoEnablesOnTakeoff.value ? fenceStore.lastAutoEnableMode : FENCE_AUTOENABLE_WHEN_ARMED
+  const target = value ? onMode : 0
+  logUserAction(`${target ? 'Enabled' : 'Disabled'} the "${autoEnableLabel.value}" switch`)
   try {
     fenceStore.setFenceAutoEnable(target)
   } catch (error) {

@@ -5,9 +5,12 @@ import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
 import {
   type FenceActionOption,
   type FenceVehicle,
+  autoEnablesOnTakeoff,
   fenceActionOptions,
   fenceActionParameter,
+  fenceAutoEnableOptions,
   fenceBreachOutcome,
+  isFenceAutoEnabled,
   supportsBreachReturn,
 } from '@/libs/vehicle/fence-actions'
 import * as Vehicle from '@/libs/vehicle/vehicle'
@@ -16,7 +19,7 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 
 /**
- * What the fence does on a breach, for the vehicle being planned for.
+ * What the fence does on a breach, and when it turns itself on, for the vehicle being planned for.
  */
 export interface UseFenceBreachActionReturn {
   /**
@@ -35,11 +38,23 @@ export interface UseFenceBreachActionReturn {
    * Whether a breach return point is worth adding: true for planes, and while the vehicle type is unknown.
    */
   canAddBreachReturn: ComputedRef<boolean>
+  /**
+   * Whether the fence can turn itself on at takeoff, rather than only at arming. True while the vehicle type is unknown.
+   */
+  autoEnablesOnTakeoff: ComputedRef<boolean>
+  /**
+   * The `FENCE_AUTOENABLE` values that do something on that vehicle.
+   */
+  autoEnableOptions: ComputedRef<Pick<FenceActionOption, 'value' | 'label'>[]>
+  /**
+   * Whether the connected vehicle turns its fence on by itself, judged by values it actually acts on.
+   */
+  autoEnabled: ComputedRef<boolean>
 }
 
 /**
  * Describes the fence breach behavior of the connected or planned vehicle in operator terms.
- * @returns {UseFenceBreachActionReturn} The fence action and its options, the breach outcome and breach-return support.
+ * @returns {UseFenceBreachActionReturn} The fence action and its options, the breach outcome, breach-return support and auto-enable.
  */
 export const useFenceBreachAction = (): UseFenceBreachActionReturn => {
   const vehicleStore = useMainVehicleStore()
@@ -65,10 +80,20 @@ export const useFenceBreachAction = (): UseFenceBreachActionReturn => {
 
   const canAddBreachReturn = computed(() => !vehicle.value || supportsBreachReturn(vehicle.value))
 
+  const takesOff = computed(() => !vehicle.value || autoEnablesOnTakeoff(vehicle.value))
+  const autoEnableOptions = computed(() => fenceAutoEnableOptions(takesOff.value))
+  const autoEnabled = computed(() => {
+    const mode = fenceStore.fenceAutoEnableMode
+    return mode !== undefined && isFenceAutoEnabled(takesOff.value, mode)
+  })
+
   return {
     parameterName,
     options,
     outcome,
     canAddBreachReturn,
+    autoEnablesOnTakeoff: takesOff,
+    autoEnableOptions,
+    autoEnabled,
   }
 }
