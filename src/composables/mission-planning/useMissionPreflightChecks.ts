@@ -1,5 +1,6 @@
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import type { UseMissionFenceBreachesReturn } from '@/composables/map/useMissionFenceBreaches'
+import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
 import type { MissionFenceBreachReports } from '@/libs/geo-fence'
 import { useHazardStore } from '@/stores/hazards'
 import { useMissionStore } from '@/stores/mission'
@@ -28,9 +29,19 @@ type UploadWarningFindings = MissionFenceBreachReports & {
    * Whether the hazard check could not finish in time.
    */
   unchecked: boolean
+  /**
+   * What crossing the fence stored on the vehicle leads to.
+   */
+  consequence: string
 }
 
-const uploadWarningMessage = ({ vehicle, draft, advisories, unchecked }: UploadWarningFindings): string[] => {
+const uploadWarningMessage = ({
+  vehicle,
+  draft,
+  advisories,
+  unchecked,
+  consequence,
+}: UploadWarningFindings): string[] => {
   const message: string[] = []
   if (unchecked) {
     message.push(
@@ -41,8 +52,7 @@ const uploadWarningMessage = ({ vehicle, draft, advisories, unchecked }: UploadW
   if (vehicle?.hasBreaches) {
     message.push(
       `${vehicle.breaches.length} of ${vehicle.totalChecked} waypoints breach the geofence stored ` +
-        'on the vehicle. Uploading anyway may trigger the fence action the autopilot is configured with ' +
-        '(return, land or brake) once the mission runs.'
+        `on the vehicle. ${consequence}`
     )
   }
   if (draft?.hasBreaches) {
@@ -112,6 +122,7 @@ export const useMissionPreflightChecks = ({
   const hazardStore = useHazardStore()
   const missionStore = useMissionStore()
   const { confirmAction } = useInteractionDialog()
+  const { outcome: breachOutcome } = useFenceBreachAction()
 
   const confirmMissionUpload = async (): Promise<boolean> => {
     const waypoints = missionStore.currentPlanningWaypoints
@@ -125,7 +136,15 @@ export const useMissionPreflightChecks = ({
     const advisories = checked ?? []
     if (!hasBreaches && checked?.length === 0) return true
 
-    const message = uploadWarningMessage({ vehicle, draft, advisories, unchecked: checked === undefined })
+    const message = uploadWarningMessage({
+      vehicle,
+      draft,
+      advisories,
+      unchecked: checked === undefined,
+      consequence:
+        breachOutcome.value ??
+        'Uploading anyway may trigger the fence action the autopilot is configured with once the mission runs.',
+    })
     const title = uploadWarningTitle(hasBreaches, advisories.length > 0, checked === undefined)
 
     const confirmed = await confirmAction(
