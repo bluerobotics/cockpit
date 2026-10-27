@@ -344,6 +344,26 @@
     >
       PX4: multiple inclusion polygons are AND-ed (intersection), not OR-ed.
     </p>
+    <v-tooltip
+      v-if="breachOutcome"
+      location="top"
+      max-width="300"
+      :open-on-hover="false"
+      open-on-click
+      @update:model-value="onBreachOutcomeTooltip"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <p
+          v-bind="tooltipProps"
+          class="px-3 py-2 mx-2 mt-1 text-[13px] text-center text-orange-300 rounded-md bg-[#33333366] border-[1px] border-orange-300/50 cursor-pointer"
+        >
+          {{ breachOutcome }}
+        </p>
+      </template>
+      <p class="text-xs pa-1">
+        Set this under <code>{{ breachActionParameter }}</code> in <strong>Fence parameters</strong>, above.
+      </p>
+    </v-tooltip>
 
     <div class="flex w-full justify-between my-2 px-4 pt-1">
       <v-tooltip location="top" text="Save fence to file">
@@ -454,6 +474,7 @@ import UploadActionsButton from '@/components/mission-planning/UploadActionsButt
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useMapContext } from '@/composables/map/useMapContext'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
+import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import { fenceItemCount, fencePlanExtentPoints, fencePointCapacity } from '@/libs/geo-fence'
 import { fitMapToWaypoints, isLeafletMapReady } from '@/libs/map/utils-map'
@@ -487,6 +508,11 @@ const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
 const { showDialog, confirmAction } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
+const { outcome: breachOutcome, parameterName: breachActionParameter } = useFenceBreachAction()
+
+const onBreachOutcomeTooltip = (open: boolean): void => {
+  if (open) logUserAction('Opened the help on where to change the fence breach action')
+}
 
 const { map } = useMapContext()
 
