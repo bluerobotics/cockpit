@@ -9,10 +9,12 @@ test('isRecentIsolationReload', () => {
   const reloadedAt = 1_800_000_000_000
   // The page that reload opened
   expect(isRecentIsolationReload(String(reloadedAt), reloadedAt + 300)).toBe(true)
-  expect(isRecentIsolationReload(String(reloadedAt), reloadedAt + 10_000)).toBe(true)
+  expect(isRecentIsolationReload(String(reloadedAt), reloadedAt + 2000)).toBe(true)
   expect(isRecentIsolationReload(String(reloadedAt), reloadedAt - 1000)).toBe(true)
   // A hard reload later on, handed the session storage of the page before the isolation reload
-  expect(isRecentIsolationReload(String(reloadedAt), reloadedAt + 10_001)).toBe(false)
+  expect(isRecentIsolationReload(String(reloadedAt), reloadedAt + 2001)).toBe(false)
+  // A hard reload a few seconds later
+  expect(isRecentIsolationReload(String(reloadedAt), reloadedAt + 4000)).toBe(false)
   // A page that started before the reload was stored, like one restored from the back/forward cache
   expect(isRecentIsolationReload(String(reloadedAt), reloadedAt - 1001)).toBe(false)
   // Missing, or the boolean guard from an older Cockpit

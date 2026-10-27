@@ -13,9 +13,10 @@ import { RawMavlinkCodec } from './raw-mavlink-codec'
 export const sitlPhysicsChannelId = uuid()
 
 const RELOAD_KEY = 'cockpit-sitl-isolation-reload'
-// The page opened by the isolation reload starts navigating within this time of the guard being stored. A hard reload
-// or a page restored from the back/forward cache can be handed an older copy of the session storage holding the guard
-const ISOLATION_RELOAD_WINDOW_MS = 10_000
+// The page opened by the isolation reload starts within milliseconds of the guard being stored, so the window only has
+// to cover slow devices. A hard reload can be handed an older copy of the session storage holding the guard, so the
+// window must stay shorter than a person can hard reload after the page appears
+const ISOLATION_RELOAD_WINDOW_MS = 2000
 // Date.now() and performance.timeOrigin are separate clocks that can disagree slightly
 const ISOLATION_RELOAD_CLOCK_SKEW_MS = 1000
 // The first visit waits for Cockpit's service worker to download the whole app
