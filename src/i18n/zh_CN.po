@@ -309,6 +309,12 @@ msgstr "（共 ${ 0 } 项）"
 msgid "(Drag card to add)"
 msgstr "(拖动卡片添加)"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"(an integer, or a string of 1 to 256 characters) is answered on the same "
+"connection, in order, with a"
+msgstr ""
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 msgid "(empty)"
 msgstr "（空）"
@@ -365,6 +371,18 @@ msgstr "应用程序启动时间慢 3-4 倍"
 msgid "3D model with attitude and altitude (copters and boats)"
 msgstr ""
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+": the version (1), whether meshes are drawn (they need WebGL2), the limits "
+"and the formats. Meshes are kept in memory only: a reloaded Cockpit has "
+"none and a dropped connection keeps them, so set them again on every "
+"connection."
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "; one with any other"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
 msgstr "@ 光标："
@@ -383,6 +401,10 @@ msgid ""
 "through the cabled network should give you better video quality and less "
 "delay."
 msgstr "大量数据正通过设备的 Wi-Fi 连接传输。改用有线网络连接可以获得更好的视频质量和更低的延迟。"
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "A mesh command with a"
+msgstr ""
 
 #: src/components/UpdateNotification.vue
 msgid ""
@@ -4739,6 +4761,12 @@ msgstr ""
 #: src/views/ConfigurationLogsView.vue
 msgid "For additional Help, refer to documentation or contact us."
 msgstr "如需更多帮助，请参阅文档或联系我们。"
+
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"For georeferenced imagery sent many times a second, they can draw meshes of "
+"textured quads:"
+msgstr ""
 
 #: src/components/OtherControlStationWarningDialog.vue
 msgid "Force forwarding"
@@ -12128,6 +12156,7 @@ msgstr "允许 Cockpit 开放高级功能，例如设置 MAVLink 消息的频率
 
 #: src/components/configuration/JavascriptActionConfig.vue
 #: src/views/ConfigurationAlertsView.vue
+#: src/views/ConfigurationGeneralView.vue
 msgid "and"
 msgstr "和"
 
@@ -12231,6 +12260,13 @@ msgstr "创建"
 msgid "current vehicle"
 msgstr "当前设备"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"defines one (id, name, capacity, and the r8 or rgba8 format and size of "
+"every quad's strip of texels), keeping its quads when sent again with the "
+"same layout and emptying it otherwise;"
+msgstr ""
+
 #: src/components/InputElementConfig.vue
 msgid "delete"
 msgstr "删除"
@@ -12277,6 +12313,14 @@ msgid "in:"
 msgstr "输入："
 
 #: src/views/ConfigurationGeneralView.vue
+msgid "is answered with"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "is neither applied nor answered."
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
 msgid "is true. For a GeoTIFF, send"
 msgstr "为 true，叠加层会保存在此计算机上。对于 GeoTIFF，请发送"
 
@@ -12290,6 +12334,14 @@ msgid ""
 "lasts until the widget reloads; indexedDB and cookies are not available. "
 "Requests with fetch reach only servers that accept other origins, as BlueOS "
 "does"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"manage it. Arrays are the base64 of their little-endian bytes. The fields, "
+"how quads are drawn and how to replay a mesh are documented on the matching "
+"helpers of the Cockpit widget API. Every sender shares the same ids, so "
+"prefix them with your software's name."
 msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
@@ -12502,6 +12554,10 @@ msgid ""
 "with its URL instead, and Cockpit downloads it once. Every sender shares "
 "the same ids, so prefix them with your software's name."
 msgstr "改为其 URL，Cockpit 会下载一次。所有发送方共用相同的 id，因此请为其加上您软件名称的前缀。"
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "writes quads into its slots;"
+msgstr ""
 
 #: src/views/ConfigurationVideoView.vue
 msgid "you're trying to restore is not available anymore."

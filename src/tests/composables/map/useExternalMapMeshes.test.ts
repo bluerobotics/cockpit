@@ -277,3 +277,58 @@ describe('strip sizes', () => {
     expect(meshes.meshes.get('strips-refused')).toMatchObject({ stripWidth: 1, stripHeight: 1, capacity: 4, head: 1 })
   })
 })
+
+// A connection that drops and comes back keeps the shared store, so the mesh is as the sender last left it.
+describe('replaying a mesh on a new connection', () => {
+  const write = (id: string, first: number, texels: number[]): Record<string, unknown> => ({
+    type: 'cockpit:setMapMeshQuads',
+    requestId: `write-${first}`,
+    id,
+    first,
+    ...quads(texels.length),
+    texels: Uint8Array.from(texels),
+  })
+  // Texel of every slot, and whether it holds a quad, of a 4-slot mesh of 1-texel strips on one page.
+  const slots = (id: string): [number, boolean][] => {
+    const page = meshes.meshes.get(id)?.pages[0]
+    const floats = page ? page.instanceFloats.length / page.slotCount : 0
+    return [0, 1, 2, 3].map((slot) => [
+      page?.texels[slot] ?? 0,
+      page?.instanceFloats.subarray(slot * floats, (slot + 1) * floats).some((value) => value !== 0) ?? false,
+    ])
+  }
+  const shown = (id: string): void => {
+    send({ type: 'cockpit:setMapMesh', mesh: mesh(id) }, write(id, 0, [1, 2, 3, 4]))
+  }
+
+  test('keeps every quad the replay leaves out when the mesh is set again without clearing it', () => {
+    shown('replay-kept')
+    send({ type: 'cockpit:setMapMesh', mesh: mesh('replay-kept') }, write('replay-kept', 2, [9]))
+    expect(slots('replay-kept')).toEqual([
+      [1, true],
+      [2, true],
+      [9, true],
+      [4, true],
+    ])
+  })
+
+  test('holds only the replayed quads after setting, clearing and replaying it, with the same numbering', () => {
+    shown('replay-cleared')
+    const answers = send(
+      { type: 'cockpit:setMapMesh', requestId: 'set', mesh: mesh('replay-cleared') },
+      { type: 'cockpit:clearMapMesh', requestId: 'clear', id: 'replay-cleared' },
+      write('replay-cleared', 2, [9])
+    )
+    expect(answers.map(({ requestId, ok }) => [requestId, ok])).toEqual([
+      ['set', true],
+      ['clear', true],
+      ['write-2', true],
+    ])
+    expect(slots('replay-cleared')).toEqual([
+      [0, false],
+      [0, false],
+      [9, true],
+      [0, false],
+    ])
+  })
+})
