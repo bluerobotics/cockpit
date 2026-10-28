@@ -10,6 +10,7 @@ import type { TelemetrySystemHardwareInfo } from '@/types/platform'
 import { SDLStatus } from '@/types/sdl'
 import type { SerialData, SerialPortInfo } from '@/types/serial'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
+import type { AdsbAircraftQuery, AdsbLolAircraft, AisStreamReport, AisStreamRequest } from '@/types/traffic'
 import type { PiperVoiceStatus, TtsDownloadProgress, TtsDownloadResult } from '@/types/tts'
 import type { Go2RTCStreamInfo } from '@/types/video'
 
@@ -224,6 +225,35 @@ declare global {
        * @returns {Promise<NearbyOpenCellIdCell[]>} Cells inside `bbox`, possibly empty.
        */
       fetchNearbyOpenCellIdCells: (bbox: OpenCellIdBboxRequest) => Promise<NearbyOpenCellIdCell[]>
+      /**
+       * Fetch the aircraft a public ADS-B feed reports around a point, bypassing browser CORS limits.
+       * @param {AdsbAircraftQuery} query Center and radius of the area to search.
+       * @returns {Promise<AdsbLolAircraft[]>} Aircraft inside the area, possibly empty.
+       */
+      fetchNearbyAdsbAircraft: (query: AdsbAircraftQuery) => Promise<AdsbLolAircraft[]>
+      /**
+       * Open the public AIS feed over an area, replacing any stream already open.
+       * @param {AisStreamRequest} request Area to stream vessels from, and the key to stream it with.
+       * @returns {Promise<void>} Resolves once the stream has been asked for, before the first report arrives.
+       */
+      startAisStream: (request: AisStreamRequest) => Promise<void>
+      /**
+       * Close the public AIS feed, which does nothing when no stream is open.
+       * @returns {Promise<void>} Resolves once the stream is closed.
+       */
+      stopAisStream: () => Promise<void>
+      /**
+       * Register a callback for the vessel reports the open AIS stream coalesces, handed over about once a second.
+       * @param {(reports: AisStreamReport[]) => void} callback - Receives the reports gathered since the last batch.
+       * @returns {void}
+       */
+      onAisStreamReports: (callback: (reports: AisStreamReport[]) => void) => void
+      /**
+       * Register a callback for the reason the AIS stream could not be opened or was dropped.
+       * @param {(message: string) => void} callback - Receives the reason, as the feed phrased it.
+       * @returns {void}
+       */
+      onAisStreamError: (callback: (message: string) => void) => void
       /**
        * Fast TCP port probe used as a pre-filter during vehicle discovery
        * @param host IPv4 address to probe
