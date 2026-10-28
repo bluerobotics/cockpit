@@ -84,8 +84,8 @@ describe('MapMeshStore', () => {
   it('writes after the previous write without `first`, wrapping around at the capacity', () => {
     const store = new MapMeshStore()
     store.set(definition({ capacity: 4 }))
-    store.writeQuads('test-mesh', quads(3))
-    store.writeQuads('test-mesh', quads(2, undefined, 10))
+    expect(store.writeQuads('test-mesh', quads(3))).toEqual({ first: 0, count: 3 })
+    expect(store.writeQuads('test-mesh', quads(2, undefined, 10))).toEqual({ first: 3, count: 2 })
     const mesh = meshOf(store)
     expect(slotTexels(mesh, 3)).toEqual([10, 10])
     expect(slotTexels(mesh, 0)).toEqual([11, 11])
@@ -96,7 +96,7 @@ describe('MapMeshStore', () => {
   it('writes at an explicit `first`, and writes nothing when the quads do not fit', () => {
     const store = new MapMeshStore()
     store.set(definition())
-    store.writeQuads('test-mesh', quads(2, 5, 20))
+    expect(store.writeQuads('test-mesh', quads(2, 5, 20))).toEqual({ first: 5, count: 2 })
     const mesh = meshOf(store)
     expect(slotTexels(mesh, 5)).toEqual([20, 20])
     expect(slotTexels(mesh, 6)).toEqual([21, 21])

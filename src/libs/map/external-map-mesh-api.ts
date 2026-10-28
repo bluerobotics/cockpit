@@ -12,6 +12,12 @@ const externalMapMeshIdSchema = z
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, digits and single dashes.')
 
 /**
+ * Version of the map mesh commands. It is bumped only when a change would break senders written for an older version;
+ * new optional fields do not bump it, since unknown fields are ignored.
+ */
+const externalMapMeshApiVersion = 1
+
+/**
  * Texel formats a mesh's strips can have
  */
 const externalMapMeshTexelFormats = ['r8', 'rgba8'] as const
@@ -200,19 +206,34 @@ const validateMeshQuads = (quads: MeshQuads, context: z.core.$RefinementCtx<Mesh
 }
 
 /**
+ * Id a sender attaches to a map mesh command so that Cockpit answers it: a string of 1 to 256 characters or an integer,
+ * echoed back in the answer as it was sent
+ */
+export const externalMapRequestIdSchema = z.union([z.string().min(1).max(256), z.number().int()])
+
+/**
+ * A valid `requestId`
+ */
+export type ExternalMapRequestId = z.output<typeof externalMapRequestIdSchema>
+
+const requestId = externalMapRequestIdSchema.optional()
+
+/**
  * Commands external software (embedded iframes, WebSocket servers) can send to manage map meshes.
  */
 export const externalMapMeshCommandSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('cockpit:setMapMesh'), mesh: externalMapMeshSchema }),
-  z.object({ type: z.literal('cockpit:setMapMeshQuads'), ...meshQuadsShape }).superRefine(validateMeshQuads),
+  z.object({ type: z.literal('cockpit:setMapMesh'), requestId, mesh: externalMapMeshSchema }),
+  z.object({ type: z.literal('cockpit:setMapMeshQuads'), requestId, ...meshQuadsShape }).superRefine(validateMeshQuads),
   z.object({
     type: z.literal('cockpit:removeMapMeshQuads'),
+    requestId,
     id: externalMapMeshIdSchema,
     first: z.number().int().min(0),
     count: z.number().int().min(1).max(maxMeshCapacity),
   }),
-  z.object({ type: z.literal('cockpit:clearMapMesh'), id: externalMapMeshIdSchema }),
-  z.object({ type: z.literal('cockpit:removeMapMesh'), id: externalMapMeshIdSchema }),
+  z.object({ type: z.literal('cockpit:clearMapMesh'), requestId, id: externalMapMeshIdSchema }),
+  z.object({ type: z.literal('cockpit:removeMapMesh'), requestId, id: externalMapMeshIdSchema }),
+  z.object({ type: z.literal('cockpit:getMapCapabilities'), requestId: externalMapRequestIdSchema }),
 ])
 
 /**
@@ -239,6 +260,102 @@ export type ExternalMapMeshQuads = Omit<z.input<z.ZodObject<typeof meshQuadsShap
  * Validated quads written into a map mesh
  */
 export type ValidatedMapMeshQuads = Omit<MeshQuads, 'id'>
+
+/**
+ * Cockpit's answer to a map mesh command that carried a `requestId`. Commands without one are never answered.
+ */
+export interface ExternalMapMeshResult {
+  /**
+   * Kind of message
+   */
+  type: 'cockpit:mapMeshResult'
+  /**
+   * The command's `requestId`
+   */
+  requestId: ExternalMapRequestId
+  /**
+   * Id of the mesh the command was for, or an empty string if it had none
+   */
+  id: string
+  /**
+   * Whether the command was applied. Meshes are kept even where they cannot be drawn.
+   */
+  ok: boolean
+  /**
+   * Why the command was rejected
+   */
+  error?: string
+  /**
+   * First slot a `cockpit:setMapMeshQuads` wrote
+   */
+  first?: number
+  /**
+   * How many slots it wrote, from `first` on, wrapping around at the capacity
+   */
+  count?: number
+  /**
+   * Slot the next `cockpit:setMapMeshQuads` without `first` writes at, while the mesh exists
+   */
+  head?: number
+  /**
+   * Slots the mesh holds, while it exists
+   */
+  capacity?: number
+}
+
+/**
+ * What this Cockpit offers external software drawing map meshes, answering `cockpit:getMapCapabilities`
+ */
+export interface ExternalMapCapabilities {
+  /**
+   * Kind of message
+   */
+  type: 'cockpit:mapCapabilities'
+  /**
+   * The query's `requestId`
+   */
+  requestId: ExternalMapRequestId
+  /**
+   * Map meshes
+   */
+  meshes: typeof externalMapMeshLimits & {
+    /**
+     * Version of the mesh commands, {@link externalMapMeshApiVersion}
+     */
+    version: number
+    /**
+     * Whether this computer draws meshes. Without WebGL2, meshes are still kept and their commands answered, but
+     * nothing is shown.
+     */
+    drawn: boolean
+    /**
+     * Texel formats a mesh's strips can have
+     */
+    formats: (typeof externalMapMeshTexelFormats)[number][]
+  }
+}
+
+/**
+ * Sends a message back to the software a map command came from, through the same iframe or WebSocket
+ */
+export type ExternalMapReply = (message: ExternalMapMeshResult | ExternalMapCapabilities) => void
+
+/**
+ * Answers a `cockpit:getMapCapabilities`
+ * @param {ExternalMapRequestId} queryId - The query's `requestId`
+ * @param {boolean} drawn - Whether this computer draws meshes
+ * @returns {ExternalMapCapabilities} The answer
+ */
+export const externalMapCapabilities = (queryId: ExternalMapRequestId, drawn: boolean): ExternalMapCapabilities => ({
+  type: 'cockpit:mapCapabilities',
+  requestId: queryId,
+  meshes: {
+    version: externalMapMeshApiVersion,
+    drawn,
+    ...externalMapMeshLimits,
+    formats: [...externalMapMeshTexelFormats],
+  },
+})
 
 /**
  * Tells whether a message is meant as a map mesh command, before validating it.
