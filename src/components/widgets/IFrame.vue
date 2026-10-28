@@ -268,7 +268,7 @@ import { openSnackbar } from '@/composables/snackbar'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { widgetDraggingKey, widgetLivePositionKey, widgetLiveSizeKey } from '@/composables/useWidgetGeometry'
 import { getDataLakeVariableData, listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
-import { isValidURL } from '@/libs/utils'
+import { isValidURL, replyToMessageSender } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -701,7 +701,7 @@ const apiEventCallback = (event: MessageEvent): void => {
   if (event.source === iframe.value?.contentWindow) {
     handleExternalPoiMessage(event.data)
     handleExternalMapOverlayMessage(event.data)
-    handleExternalMapMeshMessage(event.data)
+    handleExternalMapMeshMessage(event.data, replyToMessageSender(event))
   }
   if (event.data.type !== 'cockpit:listenToDatalakeVariables') {
     return
