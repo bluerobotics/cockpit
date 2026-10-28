@@ -77,8 +77,10 @@ import InteractionDialog, { type Action } from '@/components/InteractionDialog.v
 import { useSnackbar } from '@/composables/snackbar'
 import { useUnitInput } from '@/composables/useUnitInput'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 const { openSnackbar } = useSnackbar()
+const vehicleStore = useMainVehicleStore()
 
 const showDialog = defineModel<boolean>({ required: true })
 
@@ -140,26 +142,23 @@ const closeDialog = (): void => {
   showDialog.value = false
 }
 
-const saveGlobalOrigin = (): void => {
+const saveGlobalOrigin = async (): Promise<void> => {
   if (!isValid.value || isSaving.value) {
     return
   }
   logUserAction('Set vehicle global origin')
 
-  if (
-    props.vehicle === undefined ||
-    props.vehicle.dateLastHeartbeat() === undefined ||
-    props.vehicle.dateLastHeartbeat()! > new Date(Date.now() - 5000)
-  ) {
+  if (props.vehicle === undefined || !vehicleStore.isVehicleOnline) {
     openSnackbar({ message: 'Cannot set global origin. Vehicle does not appear to be online.', variant: 'error' })
     return
   }
 
   isSaving.value = true
   try {
-    props.vehicle.setGlobalOrigin([latitude.value, longitude.value], altitude.value)
-    openSnackbar({ message: 'Global origin set successfully.', variant: 'success' })
-    emit('origin-set', latitude.value, longitude.value) // eslint-disable-line
+    const origin = await props.vehicle.setGlobalOrigin([latitude.value, longitude.value], altitude.value)
+    const confirmedPosition = `${origin.latitude.toFixed(7)}°, ${origin.longitude.toFixed(7)}°`
+    openSnackbar({ message: `Global origin confirmed by the vehicle at ${confirmedPosition}.`, variant: 'success' })
+    emit('origin-set', origin.latitude, origin.longitude) // eslint-disable-line
     closeDialog()
   } catch (error) {
     openSnackbar({ message: `Failed to set global origin: ${error}`, variant: 'error' })

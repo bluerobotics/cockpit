@@ -9,7 +9,12 @@ import {
 } from '@/libs/actions/data-lake'
 import { ensureCockpitTransformingFunction } from '@/libs/actions/data-lake-transformations'
 import { sendMavlinkMessage } from '@/libs/communication/mavlink'
-import type { MAVLinkMessageDictionary, Package, Type } from '@/libs/connection/m2r/messages/mavlink2rest'
+import type {
+  MAVLinkMessageDictionary,
+  Message as MavMessage,
+  Package,
+  Type,
+} from '@/libs/connection/m2r/messages/mavlink2rest'
 import {
   getMAVLinkMessageId,
   GpsFixType,
@@ -46,6 +51,7 @@ import {
 import { downloadMissionItems } from '@/libs/vehicle/mavlink/mission-download'
 import { MissionRefusedError, uploadMissionItems } from '@/libs/vehicle/mavlink/mission-upload'
 import {
+  type GlobalOrigin,
   type MAVLinkParameterSetData,
   type MessageIntervalOptions,
   type SendCommandLongOptions,
@@ -1323,14 +1329,75 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * Set global origin on vehicle (sets the GNSS coordinates of the local origin)
    * @param { [number, number] } coordinates Coordinates of the origin (latitude, longitude)
    * @param { number } altitude Altitude of the origin (MSL)
+   * @returns { Promise<GlobalOrigin> } The origin as read back from the vehicle
    */
-  setGlobalOrigin(coordinates: [number, number], altitude: number): void {
+  async setGlobalOrigin(coordinates: [number, number], altitude: number): Promise<GlobalOrigin> {
     sendMavlinkMessage({
       type: MAVLinkType.SET_GPS_GLOBAL_ORIGIN,
+      target_system: this.currentSystemId,
       latitude: Math.round(coordinates[0] * 1e7),
       longitude: Math.round(coordinates[1] * 1e7),
       altitude: Math.round(altitude * 1e3),
     })
+
+    const origin = await this.fetchGlobalOrigin()
+
+    // The vehicle keeps latitude and longitude as the same degE7 integers we sent, so any difference there means it
+    // refused the new origin. The altitude is only kept to the centimeter, and would differ just from rounding.
+    const sameLatitude = Math.round(origin.latitude * 1e7) === Math.round(coordinates[0] * 1e7)
+    const sameLongitude = Math.round(origin.longitude * 1e7) === Math.round(coordinates[1] * 1e7)
+    if (!sameLatitude || !sameLongitude) {
+      const reportedPosition = `${origin.latitude.toFixed(7)}, ${origin.longitude.toFixed(7)}`
+      throw new Error(`Vehicle rejected the new origin and kept the one it had, at ${reportedPosition}.`)
+    }
+
+    return origin
+  }
+
+  /**
+   * Fetch the GNSS coordinates of the vehicle's local origin
+   * @returns { Promise<GlobalOrigin> } The origin currently in use by the vehicle
+   */
+  async fetchGlobalOrigin(): Promise<GlobalOrigin> {
+    const requestTime = new Date().getTime()
+    // The reply itself is the confirmation, so a lost or unsupported acknowledgment must not fail the read.
+    const messageId = getMAVLinkMessageId(MAVLinkType.GPS_GLOBAL_ORIGIN)
+    await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_MESSAGE, messageId, 0, 0, 0, 0, 0, 0, { awaitAck: false })
+
+    // The vehicle reports its origin on every change, so only a message newer than our request tells us the
+    // origin it has now, instead of one it was asked for earlier.
+    const origin = await this.waitForMessageAfter<Message.GpsGlobalOrigin>(MAVLinkType.GPS_GLOBAL_ORIGIN, requestTime)
+    if (origin === undefined) {
+      throw new Error('Vehicle did not report a local origin. It may not have one set yet.')
+    }
+
+    return {
+      latitude: origin.latitude / 1e7,
+      longitude: origin.longitude / 1e7,
+      altitude: origin.altitude / 1e3,
+    }
+  }
+
+  /**
+   * Wait for a message of the given type that arrived after a point in time
+   * @param { MAVLinkType } type Type of the message to wait for
+   * @param { number } sinceEpoch Only messages received after this epoch (ms) are accepted
+   * @param { number } timeoutMs How long to wait, counted from sinceEpoch, before giving up
+   * @returns { Promise<T | undefined> } The message, or undefined if none arrived in time
+   */
+  private async waitForMessageAfter<T extends MavMessage>(
+    type: MAVLinkType,
+    sinceEpoch: number,
+    timeoutMs = 5000
+  ): Promise<T | undefined> {
+    while (new Date().getTime() - sinceEpoch < timeoutMs) {
+      await sleep(100)
+      const lastMessage = this._messages.get(type)
+      if (lastMessage !== undefined && lastMessage.epoch > sinceEpoch) {
+        return lastMessage as T
+      }
+    }
+    return undefined
   }
 
   /**
@@ -1341,15 +1408,8 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   async fetchHomeWaypoint(): Promise<Waypoint> {
     const startTime = new Date().getTime()
     await this.sendCommandLong(MavCmd.MAV_CMD_REQUEST_MESSAGE, getMAVLinkMessageId(MAVLinkType.HOME_POSITION))
-    let homePosition: Message.HomePosition | undefined = undefined
-    while (!homePosition && new Date().getTime() - startTime < 5000) {
-      await sleep(100)
-      // Only a reply to this request, so home is not reported from the one cached before it last moved.
-      const lastHomePositionMessage = this._messages.get(MAVLinkType.HOME_POSITION)
-      if (lastHomePositionMessage !== undefined && lastHomePositionMessage.epoch > startTime) {
-        homePosition = lastHomePositionMessage as Message.HomePosition
-      }
-    }
+    // Only a reply to this request, so home is not reported from the one cached before it last moved.
+    const homePosition = await this.waitForMessageAfter<Message.HomePosition>(MAVLinkType.HOME_POSITION, startTime)
     if (!homePosition) {
       throw new Error('Home position not received from vehicle.')
     }
