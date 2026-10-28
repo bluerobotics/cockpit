@@ -21,8 +21,12 @@ import { onClickOutside } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
+import { useWidgetManagerStore } from '@/stores/widgetManager'
 
 const interfaceStore = useAppInterfaceStore()
+const widgetStore = useWidgetManagerStore()
+
+const menuItemBarGapPx = 5
 
 type ModalPosition = 'left' | 'center' | 'menuitem'
 
@@ -154,15 +158,17 @@ const modalPositionStyle = computed(() => {
         transform: 'translateY(-50%)',
         zIndex: zIndexToggle.value,
       }
-    case 'menuitem':
+    case 'menuitem': {
+      const topInset = widgetStore.currentTopBarHeightPixelsScaled + menuItemBarGapPx
+      const bottomInset = widgetStore.currentBottomBarHeightPixelsScaled + menuItemBarGapPx
       return {
-        top: '50%',
-        left: interfaceStore.isOnSmallScreen
-          ? `${interfaceStore.mainMenuWidth - 20}px`
-          : `${interfaceStore.mainMenuWidth + 30}px`,
+        top: `calc(50% + ${(topInset - bottomInset) / 2}px)`,
+        left: `${interfaceStore.mainMenuRenderedWidth + (interfaceStore.isOnSmallScreen ? 15 : 30)}px`,
+        maxHeight: `calc(100vh - ${topInset + bottomInset}px)`,
         transform: 'translateY(-50%)',
         zIndex: zIndexToggle.value,
       }
+    }
     case 'center':
     default:
       return {
