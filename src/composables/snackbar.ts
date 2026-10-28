@@ -15,6 +15,20 @@ export interface SnackbarAction {
 }
 
 /**
+ * Offer to stop showing a snackbar, for a warning the user can deliberately accept.
+ */
+export interface SnackbarSuppression {
+  /**
+   * Tooltip of the button, saying what will no longer be shown.
+   */
+  tooltip: string
+  /**
+   * Called when the button is pressed, after the snackbar is dismissed, to record that it should not come back.
+   */
+  handler: () => void
+}
+
+/**
  * Options to configure the snackbar.
  */
 export interface SnackbarOptions {
@@ -44,6 +58,10 @@ export interface SnackbarOptions {
    * Action to offer alongside the message, so a warning can take the user where it can be dealt with.
    */
   action?: SnackbarAction
+  /**
+   * Offer to stop showing this snackbar. Its sender decides what that means and how long it lasts.
+   */
+  suppress?: SnackbarSuppression
 }
 
 type SnackbarType = SnackbarOptions & {
