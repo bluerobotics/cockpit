@@ -262,6 +262,7 @@ import { msgid, ngettext, t } from 'ttag'
 import { computed, inject, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import { defaultBlueOsAddress } from '@/assets/defaults'
+import { useExternalMapMeshes } from '@/composables/map/useExternalMapMeshes'
 import { useExternalMapOverlays } from '@/composables/map/useExternalMapOverlays'
 import { openSnackbar } from '@/composables/snackbar'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
@@ -693,12 +694,14 @@ const apiListenerIds = new Map<string, string>()
 
 const { handleExternalPoiMessage } = usePointsOfInterest()
 const { handleExternalMapOverlayMessage } = useExternalMapOverlays()
+const { handleExternalMapMeshMessage } = useExternalMapMeshes()
 
 const apiEventCallback = (event: MessageEvent): void => {
   // Every iframe widget hears every message, so only the one embedding the sender applies a command.
   if (event.source === iframe.value?.contentWindow) {
     handleExternalPoiMessage(event.data)
     handleExternalMapOverlayMessage(event.data)
+    handleExternalMapMeshMessage(event.data)
   }
   if (event.data.type !== 'cockpit:listenToDatalakeVariables') {
     return
