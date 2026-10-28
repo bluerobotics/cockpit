@@ -64,3 +64,18 @@ export const findOffDefaultAxisEndpoints = (
   (['min', 'max'] as const).filter(
     (endpoint) => range[endpoint] !== defaultRange.min && range[endpoint] !== defaultRange.max
   )
+
+/**
+ * The mapped axes whose range is off-center against the vehicle-type default, so they move the vehicle at rest.
+ * @param {JoystickProtocolActionsMapping} mapping - The joystick mapping to check
+ * @param {MavType} vehicleType - The vehicle's type
+ * @returns {AxisCorrespondence[]} The off-center axes, empty when none is or the vehicle type has no default
+ */
+export const findOffCenterAxes = (
+  mapping: JoystickProtocolActionsMapping,
+  vehicleType: MavType
+): AxisCorrespondence[] =>
+  Object.values(mapping.axesCorrespondencies).filter((correspondence) => {
+    const defaultRange = getDefaultAxisCorrespondence(vehicleType, correspondence.action.id)
+    return defaultRange !== undefined && findAxisRangeIssues(correspondence, defaultRange).includes('off-center')
+  })

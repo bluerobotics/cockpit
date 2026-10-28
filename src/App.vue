@@ -191,6 +191,7 @@ import {
 } from './composables/menuRouting'
 import { useSnackbar } from './composables/snackbar'
 import { useMcpBridge } from './composables/useMcpBridge'
+import { useOffCenterAxisWarning } from './composables/useOffCenterAxisWarning'
 import { usePointsOfInterest } from './composables/usePointsOfInterest'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
@@ -252,6 +253,9 @@ useSnapshotStore()
 // Listen for `vehicle-sync-complete` events to auto-import vehicle-type defaults or open the
 // VehicleDefaultsAutoImportModal when the user still needs to make a decision.
 useVehicleDefaultsAutoImport()
+
+// Registered after the defaults flow, so it checks the joystick mapping that flow may have just imported.
+useOffCenterAxisWarning()
 
 // Upload custom map tile archives imported while offline to the vehicle once it comes online.
 useCustomTileProviderVehicleSync()
