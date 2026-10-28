@@ -7,6 +7,8 @@
     :color="selectedVariantColor"
     :timeout="messageDuration"
     content-class="bg-[#4f4f4f44] backdrop-filter backdrop-blur-lg text-white"
+    @pointerenter="id !== undefined && pauseSnackbar(id)"
+    @pointerleave="id !== undefined && resumeSnackbar(id)"
   >
     {{ message }}
     <template v-if="closeButton || action || suppress" #actions>
@@ -34,7 +36,13 @@
 <script setup lang="ts">
 import { onMounted, PropType, ref, watch } from 'vue'
 
-import { closeSnackbar as removeSnackbar, SnackbarAction, SnackbarSuppression } from '@/composables/snackbar'
+import {
+  closeSnackbar as removeSnackbar,
+  pauseSnackbar,
+  resumeSnackbar,
+  SnackbarAction,
+  SnackbarSuppression,
+} from '@/composables/snackbar'
 
 const props = defineProps({
   id: { type: Number, default: undefined },

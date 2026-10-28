@@ -77,9 +77,28 @@ const state = reactive({
 
 let idCounter = 0
 
+const closeTimers = new Map<number, ReturnType<typeof setTimeout>>()
+
+export const pauseSnackbar = (id: number): void => {
+  clearTimeout(closeTimers.get(id))
+  closeTimers.delete(id)
+}
+
 export const closeSnackbar = (id: number): void => {
+  pauseSnackbar(id)
   const index = state.snackbars.findIndex((s): boolean => s.id === id)
   if (index !== -1) state.snackbars.splice(index, 1)
+}
+
+// Restarts the full duration, as Vuetify does for its own timer when the pointer leaves the snackbar.
+export const resumeSnackbar = (id: number): void => {
+  const snackbar = state.snackbars.find((s): boolean => s.id === id)
+  if (!snackbar || snackbar.persistent || !snackbar.duration || snackbar.duration <= 0) return
+  pauseSnackbar(id)
+  closeTimers.set(
+    id,
+    setTimeout((): void => closeSnackbar(id), snackbar.duration)
+  )
 }
 
 export const openSnackbar = (options: SnackbarOptions): number => {
@@ -87,9 +106,7 @@ export const openSnackbar = (options: SnackbarOptions): number => {
   // Persistent snackbars have no timeout, so the close button is the only way to dismiss them.
   if (snackbar.persistent) snackbar.closeButton = true
   state.snackbars.push(snackbar)
-  if (!snackbar.persistent && snackbar.duration && snackbar.duration > 0) {
-    setTimeout((): void => closeSnackbar(snackbar.id), snackbar.duration)
-  }
+  resumeSnackbar(snackbar.id)
   return snackbar.id
 }
 
