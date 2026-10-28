@@ -15,6 +15,7 @@ import { setupOsmRefererService } from './services/osm-referer'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
 import { setupSystemInfoService } from './services/system-info'
+import { setTrafficServiceMainWindow, setupTrafficService } from './services/traffic'
 import { setupTTSService } from './services/tts'
 import { setupUserAgentService } from './services/user-agent'
 import { setupVideoRecordingService } from './services/video-recording'
@@ -100,6 +101,7 @@ function createWindow(): void {
   })
 
   linkService.setMainWindow(mainWindow)
+  setTrafficServiceMainWindow(mainWindow)
 
   // Route external links to the OS preferred browser instead of opening them inside Electron
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -172,6 +174,7 @@ protocol.registerSchemesAsPrivileged([
 setupFilesystemStorage()
 setupNetworkService()
 setupOpenCellIdService()
+setupTrafficService()
 setupResourceMonitoringService()
 setupSystemInfoService()
 setupHardwareTelemetryService()

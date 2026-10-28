@@ -89,6 +89,25 @@ select:focus {
     padding: 6px 8px;
 }
 
+/* Traffic tooltips read like the vehicle marker's, and both maps draw them, so the glass block lives here rather
+   than being repeated in each view's scoped styles. The glass variables come from the map root above them. */
+.traffic-tooltip {
+    background-color: var(--glass-background) !important;
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+    border: var(--glass-border) !important;
+    box-shadow: var(--glass-box-shadow);
+    color: var(--glass-color);
+    padding: 0.75rem;
+    border-radius: 8px;
+}
+.traffic-tooltip.leaflet-tooltip-right::before {
+    border-right-color: var(--glass-background) !important;
+}
+.traffic-tooltip.leaflet-tooltip-left::before {
+    border-left-color: var(--glass-background) !important;
+}
+
 /* Speed-dial content is teleported to <body>, so no component's scoped styles reach it. Shared by every
    map speed dial, which is why it cannot live in whichever one happens to be mounted. */
 .speed-dial-glow {

@@ -998,6 +998,7 @@ import { useMissionPlacement } from '@/composables/map/useMissionPlacement'
 import { type SurveyPreview, useSurveyArrowOverlay } from '@/composables/map/useSurveyArrowOverlay'
 import { useSurveyEdgeDragging } from '@/composables/map/useSurveyEdgeDragging'
 import { useTouchDrawing } from '@/composables/map/useTouchDrawing'
+import { useTrafficOverlay } from '@/composables/map/useTrafficOverlay'
 import { useVertexAngleOverlay } from '@/composables/map/useVertexAngleOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { goToMenuPage } from '@/composables/menuRouting'
@@ -1413,6 +1414,9 @@ const overlaysDialogOpen = ref(false)
 
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
+
+// Draws the aircraft and vessels Cockpit is tracking around the vehicle
+const { initTrafficOverlay } = useTrafficOverlay()
 
 // Frame the map on a GeoTIFF overlay when requested from the configuration panel
 watch(
@@ -5043,6 +5047,8 @@ onMounted(async () => {
 
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   initCustomTileProviders(planningMap.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
+
+  initTrafficOverlay(planningMap.value, layerControl)
 
   // Initialize scale control (always show)
   createScaleControl()

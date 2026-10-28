@@ -287,6 +287,7 @@ import { useMapTileLayers } from '@/composables/map/useMapTileLayers'
 import { useMapTileLayerSelection } from '@/composables/map/useMapTileLayerSelection'
 import { useMapVehicleMarker } from '@/composables/map/useMapVehicleMarker'
 import { useMapVehiclePathLayer } from '@/composables/map/useMapVehiclePathLayer'
+import { useTrafficOverlay } from '@/composables/map/useTrafficOverlay'
 import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { useActiveMenuRoute } from '@/composables/menuRouting'
 import { openSnackbar } from '@/composables/snackbar'
@@ -666,6 +667,9 @@ const mapOverlays = useMapOverlays()
 const overlayLoadingIds = mapOverlays.loadingIds
 const overlaysDialogOpen = ref(false)
 
+// Draws the aircraft and vessels Cockpit is tracking around the vehicle
+const { initTrafficOverlay } = useTrafficOverlay()
+
 // Registers user-defined custom tile providers (URL templates and imported archives) as selectable base layers
 const { init: initCustomTileProviders, destroy: destroyCustomTileProviders } = useCustomTileProviders()
 
@@ -954,6 +958,8 @@ onMounted(async () => {
   // Register any user-defined custom tile providers as selectable base layers on the layer control
   if (map.value)
     initCustomTileProviders(map.value, layerControl, Object.values(tileLayers.baseMaps), preferredBaseLayer)
+
+  if (map.value) initTrafficOverlay(map.value, layerControl)
 
   if (missionStore.followVehicleOnMap === true) {
     targetFollower.follow(WhoToFollow.VEHICLE)

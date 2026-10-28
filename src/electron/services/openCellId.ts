@@ -2,6 +2,7 @@ import { createHash } from 'crypto'
 import { ipcMain } from 'electron'
 
 import type { NearbyOpenCellIdCell, OpenCellIdBboxRequest } from '../../types/baseStation'
+import { fetchWithTimeout } from '../utils'
 
 /* eslint-disable jsdoc/require-jsdoc -- Internal OpenCellID DTOs; field meanings follow upstream API docs. */
 type OpenCellIdOfficialResponse = {
@@ -61,16 +62,6 @@ const validateBbox = (bbox: OpenCellIdBboxRequest): void => {
   }
   if (bbox.south >= bbox.north) throw new Error('OpenCellID: bbox south must be < north.')
   if (bbox.west >= bbox.east) throw new Error('OpenCellID: bbox west must be < east.')
-}
-
-const fetchWithTimeout = async (url: string, timeoutMs: number): Promise<Response> => {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await fetch(url, { signal: controller.signal })
-  } finally {
-    clearTimeout(timer)
-  }
 }
 
 const sleep = async (delayMs: number): Promise<void> => {
