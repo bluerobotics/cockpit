@@ -31,7 +31,7 @@
       </template>
       <div v-else class="flex items-center align-center justify-center w-full h-full">
         <v-icon :size="props.iconSize || calculatedIconSize" :class="iconClass">{{ icon }}</v-icon>
-        <div class="text-white select-none" :class="labelClass">
+        <div class="text-white select-none" :class="labelClass" data-glass-button-label>
           {{ label }}
         </div>
       </div>
@@ -40,6 +40,7 @@
       v-if="isRound || isUncontained"
       class="flex justify-center align-center text-center select-none text-white px-4 font-semibold leading-[17px]"
       :class="[labelClass, interfaceStore.isOnPhoneScreen ? 'mt-0' : 'mt-2']"
+      data-glass-button-label
     >
       {{ label }}
     </div>
