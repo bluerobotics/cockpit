@@ -20,6 +20,14 @@ export const CockpitActionsFunction = {
   toggle_recording_all_streams: 'toggle_recording_all_streams',
   take_snapshot: 'take_snapshot',
   hold_to_confirm: 'hold_to_confirm',
+  gimbal_center: 'gimbal_center',
+  gimbal_point_down: 'gimbal_point_down',
+  gimbal_point_home: 'gimbal_point_home',
+  gimbal_retract: 'gimbal_retract',
+  gimbal_toggle_yaw_lock: 'gimbal_toggle_yaw_lock',
+  vehicle_camera_take_picture: 'vehicle_camera_take_picture',
+  vehicle_camera_toggle_recording: 'vehicle_camera_toggle_recording',
+  vehicle_camera_auto_focus: 'vehicle_camera_auto_focus',
 } as const
 
 /**
@@ -61,6 +69,14 @@ export const predefinedCockpitActions: { [key in CockpitActionsFunction]: Cockpi
   [CockpitActionsFunction.toggle_recording_all_streams]: new CockpitAction(CockpitActionsFunction.toggle_recording_all_streams, 'Toggle recording all streams'),
   [CockpitActionsFunction.take_snapshot]: new CockpitAction(CockpitActionsFunction.take_snapshot, 'Take snapshot'),
   [CockpitActionsFunction.hold_to_confirm]: new CockpitAction(CockpitActionsFunction.hold_to_confirm, 'Hold to confirm'),
+  [CockpitActionsFunction.gimbal_center]: new CockpitAction(CockpitActionsFunction.gimbal_center, 'Center gimbal'),
+  [CockpitActionsFunction.gimbal_point_down]: new CockpitAction(CockpitActionsFunction.gimbal_point_down, 'Point gimbal down'),
+  [CockpitActionsFunction.gimbal_point_home]: new CockpitAction(CockpitActionsFunction.gimbal_point_home, 'Point gimbal at home'),
+  [CockpitActionsFunction.gimbal_retract]: new CockpitAction(CockpitActionsFunction.gimbal_retract, 'Retract gimbal'),
+  [CockpitActionsFunction.gimbal_toggle_yaw_lock]: new CockpitAction(CockpitActionsFunction.gimbal_toggle_yaw_lock, 'Toggle gimbal yaw lock'),
+  [CockpitActionsFunction.vehicle_camera_take_picture]: new CockpitAction(CockpitActionsFunction.vehicle_camera_take_picture, 'Take picture with vehicle camera'),
+  [CockpitActionsFunction.vehicle_camera_toggle_recording]: new CockpitAction(CockpitActionsFunction.vehicle_camera_toggle_recording, 'Toggle vehicle camera recording'),
+  [CockpitActionsFunction.vehicle_camera_auto_focus]: new CockpitAction(CockpitActionsFunction.vehicle_camera_auto_focus, 'Autofocus vehicle camera'),
 }
 
 export type CockpitActionCallback = () => void | Promise<void>
