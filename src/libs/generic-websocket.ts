@@ -36,7 +36,12 @@ const persistentConnectionsKey = 'cockpit-generic-websocket-connections'
 const connections: Record<string, GenericWebSocketConnection> = {}
 const sockets: Record<string, WebSocket | null> = {}
 const connectionListeners: Record<string, (connections: Record<string, GenericWebSocketConnection>) => void> = {}
-const jsonMessageListeners = new Set<(message: unknown) => void>()
+/**
+ * Sends a JSON message back on the WebSocket a command came from
+ */
+export type GenericWebSocketReply = (message: object) => void
+
+const jsonMessageListeners = new Set<(message: unknown, reply: GenericWebSocketReply) => void>()
 // Senders repeat the same payload on every tick, so each skipped path is only worth one log line.
 // ponytail: never cleared, so it grows with every distinct path skipped; clear it per connection if senders vary keys
 const warnedSkippedJsonPaths = new Set<string>()
@@ -270,6 +275,11 @@ const connectToWebSocket = (url: string): void => {
 
   try {
     const socket = new WebSocket(resolvedUrl)
+    // Bound to this socket, so an answer to a command from a closed connection is dropped rather than sent on the
+    // next one.
+    const reply: GenericWebSocketReply = (message) => {
+      if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message))
+    }
 
     socket.onopen = () => {
       logInfo(`Connected to ${resolvedUrl}`)
@@ -283,7 +293,7 @@ const connectToWebSocket = (url: string): void => {
         if (message.trimStart().startsWith('{')) {
           const parsedMessage: Record<string, unknown> = JSON.parse(message)
           if (isCommandMessage(parsedMessage)) {
-            jsonMessageListeners.forEach((listener) => listener(parsedMessage))
+            jsonMessageListeners.forEach((listener) => listener(parsedMessage, reply))
             return
           }
           injectJsonValues(parsedMessage)
@@ -388,10 +398,13 @@ export const listenToGenericWebSocketConnections = (
 /**
  * Subscribe to JSON command messages (those whose `type` starts with 'cockpit:') received on any generic WebSocket
  * connection. They carry commands rather than data-lake values, so they are not injected into the data lake.
- * @param {(message: unknown) => void} listener Function called with each parsed message
+ * @param {(message: unknown, reply: GenericWebSocketReply) => void} listener Function called with each parsed
+ * message, and a function sending a JSON answer back on the same connection
  * @returns {() => void} A function to unsubscribe
  */
-export const listenToGenericWebSocketJsonMessages = (listener: (message: unknown) => void): (() => void) => {
+export const listenToGenericWebSocketJsonMessages = (
+  listener: (message: unknown, reply: GenericWebSocketReply) => void
+): (() => void) => {
   jsonMessageListeners.add(listener)
   return () => jsonMessageListeners.delete(listener)
 }
