@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center justify-center gap-x-1 w-[88px] min-w-[88px]">
     <div class="flex justify-center w-5">
-      <v-tooltip v-if="dirty" :text="statusTooltip" location="top">
+      <v-tooltip v-if="dirty || rangeIssues?.length" :text="statusTooltip" location="top">
         <template #activator="{ props: tooltipProps }">
           <v-icon
             v-bind="tooltipProps"
@@ -57,7 +57,7 @@ const props = defineProps<{
   canSave: boolean
   /** Axis that still holds the selected function and has to be saved first */
   blockingAxis?: number
-  /** What is wrong with the pending range for the connected vehicle */
+  /** What is wrong with the axis range, saved or pending, for the connected vehicle */
   rangeIssues?: AxisRangeIssue[]
 }>()
 
@@ -73,11 +73,11 @@ const rangeIssueTexts: Record<AxisRangeIssue, string> = {
   'beyond-limits': 'It goes past the vehicle default limits.',
 }
 
-const statusTooltip = computed(() =>
-  props.rangeIssues?.length
-    ? `Unsaved range differs from the default. ${props.rangeIssues.map((issue) => rangeIssueTexts[issue]).join(' ')}`
-    : 'Unsaved changes'
-)
+const statusTooltip = computed(() => {
+  if (!props.rangeIssues?.length) return 'Unsaved changes'
+  const range = props.dirty ? 'Unsaved range' : 'Range'
+  return `${range} differs from the default. ${props.rangeIssues.map((issue) => rangeIssueTexts[issue]).join(' ')}`
+})
 
 const saveTooltip = computed(() => {
   if (!props.dirty) return 'No changes to save'
