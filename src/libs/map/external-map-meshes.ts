@@ -228,6 +228,20 @@ export interface MapMeshChange {
 }
 
 /**
+ * Consecutive slots one write filled, wrapping around at the mesh's capacity
+ */
+export interface MapMeshWrittenSlots {
+  /**
+   * First slot written
+   */
+  first: number
+  /**
+   * How many slots were written
+   */
+  count: number
+}
+
+/**
  * Receives what changed in the meshes since the last flush, to keep their GPU copies in sync
  */
 export interface MapMeshRenderer {
@@ -419,9 +433,9 @@ export class MapMeshStore {
    * wrapping around at the mesh's capacity. Nothing is written if any of it does not fit.
    * @param {string} id - Id of the mesh
    * @param {ValidatedMapMeshQuads} quads - The quads
-   * @returns {number} How many quads were written
+   * @returns {MapMeshWrittenSlots} The slots written
    */
-  writeQuads(id: string, quads: ValidatedMapMeshQuads): number {
+  writeQuads(id: string, quads: ValidatedMapMeshQuads): MapMeshWrittenSlots {
     const mesh = this.existing(id)
     const count = quads.corners.length / 8
     const stripBytes = mesh.stripWidth * mesh.stripHeight * mesh.bytesPerTexel
@@ -448,7 +462,7 @@ export class MapMeshStore {
     mesh.highWater = end > mesh.capacity ? mesh.capacity : Math.max(mesh.highWater, end)
     mesh.head = ((end - 1) % mesh.capacity) + 1
     this.emit({ id, bounds: this.absolute(mesh, bounds) })
-    return count
+    return { first, count }
   }
 
   /**
