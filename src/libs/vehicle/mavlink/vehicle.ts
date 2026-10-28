@@ -35,6 +35,7 @@ import {
 import { settingsManager } from '@/libs/settings-management'
 import { Signal, SignalTyped } from '@/libs/signal'
 import { degrees, frequencyHzToIntervalUs, isEqual, round, sleep } from '@/libs/utils'
+import { setVehicleCameraRecordingRequested } from '@/libs/vehicle/mavlink/camera-gimbal-actions'
 import { injectMavlinkPackageIntoDataLake } from '@/libs/vehicle/mavlink/data-lake-injection'
 import { defaultMessageIntervalsOptions } from '@/libs/vehicle/mavlink/defaults'
 import {
@@ -348,6 +349,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   sendStartVideoCaptureCommand(): void {
     // Broadcast: stream id 0 (all streams), no periodic status, camera id 0 (all cameras).
     this.sendCameraCommand(MavCmd.MAV_CMD_VIDEO_START_CAPTURE, MavComponent.MAV_COMP_ID_ALL, [0, 0, 0])
+    setVehicleCameraRecordingRequested(true)
   }
 
   /**
@@ -357,6 +359,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
   sendStopVideoCaptureCommand(): void {
     // Broadcast: stream id 0 (all streams), camera id 0 (all cameras).
     this.sendCameraCommand(MavCmd.MAV_CMD_VIDEO_STOP_CAPTURE, MavComponent.MAV_COMP_ID_ALL, [0, 0])
+    setVehicleCameraRecordingRequested(false)
   }
 
   /**
