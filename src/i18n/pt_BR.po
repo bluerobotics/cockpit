@@ -346,6 +346,12 @@ msgstr "(${ 0 } do total)"
 msgid "(Drag card to add)"
 msgstr "(Arraste o cartão para adicionar)"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"(an integer, or a string of 1 to 256 characters) is answered on the same "
+"connection, in order, with a"
+msgstr ""
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 msgid "(empty)"
 msgstr "(vazio)"
@@ -410,6 +416,18 @@ msgstr "Inicialização do aplicativo 3-4x mais lenta"
 msgid "3D model with attitude and altitude (copters and boats)"
 msgstr ""
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+": the version (1), whether meshes are drawn (they need WebGL2), the limits "
+"and the formats. Meshes are kept in memory only: a reloaded Cockpit has "
+"none and a dropped connection keeps them, so set them again on every "
+"connection."
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "; one with any other"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
 msgstr "@ cursor:"
@@ -430,6 +448,10 @@ msgid ""
 msgstr ""
 "Muitos dados estão passando pela conexão WiFi do veículo. Conectar pela "
 "rede cabeada deve dar melhor qualidade de vídeo e menos atraso."
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "A mesh command with a"
+msgstr ""
 
 #: src/components/UpdateNotification.vue
 msgid ""
@@ -5069,6 +5091,12 @@ msgstr ""
 #: src/views/ConfigurationLogsView.vue
 msgid "For additional Help, refer to documentation or contact us."
 msgstr "Para mais ajuda, consulte a documentação ou entre em contato conosco."
+
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"For georeferenced imagery sent many times a second, they can draw meshes of "
+"textured quads:"
+msgstr ""
 
 #: src/components/OtherControlStationWarningDialog.vue
 msgid "Force forwarding"
@@ -13073,6 +13101,7 @@ msgstr ""
 
 #: src/components/configuration/JavascriptActionConfig.vue
 #: src/views/ConfigurationAlertsView.vue
+#: src/views/ConfigurationGeneralView.vue
 msgid "and"
 msgstr "e"
 
@@ -13184,6 +13213,13 @@ msgstr "criar"
 msgid "current vehicle"
 msgstr "veículo atual"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"defines one (id, name, capacity, and the r8 or rgba8 format and size of "
+"every quad's strip of texels), keeping its quads when sent again with the "
+"same layout and emptying it otherwise;"
+msgstr ""
+
 #: src/components/InputElementConfig.vue
 msgid "delete"
 msgstr "excluir"
@@ -13232,6 +13268,14 @@ msgid "in:"
 msgstr "entrada:"
 
 #: src/views/ConfigurationGeneralView.vue
+msgid "is answered with"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "is neither applied nor answered."
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
 msgid "is true. For a GeoTIFF, send"
 msgstr "seja true. Para um GeoTIFF, envie"
 
@@ -13245,6 +13289,14 @@ msgid ""
 "lasts until the widget reloads; indexedDB and cookies are not available. "
 "Requests with fetch reach only servers that accept other origins, as BlueOS "
 "does"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"manage it. Arrays are the base64 of their little-endian bytes. The fields, "
+"how quads are drawn and how to replay a mesh are documented on the matching "
+"helpers of the Cockpit widget API. Every sender shares the same ids, so "
+"prefix them with your software's name."
 msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
@@ -13468,6 +13520,10 @@ msgid ""
 msgstr ""
 "com a URL dele, e o Cockpit o baixa uma vez. Todos os remetentes "
 "compartilham os mesmos IDs, então prefixe-os com o nome do seu software."
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "writes quads into its slots;"
+msgstr ""
 
 #: src/views/ConfigurationVideoView.vue
 msgid "you're trying to restore is not available anymore."
