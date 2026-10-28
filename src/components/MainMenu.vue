@@ -248,29 +248,7 @@ const UPPER_RATIO = 1
 
 const simplifiedMainMenu = computed(() => interfaceStore.isMainMenuSimplified)
 
-const mainMenuHasOverflow = computed(() => {
-  let height
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  height = windowHeight.value
-  if (scrollContainerRef.value) {
-    return scrollContainerRef.value.scrollHeight > scrollContainerRef.value.clientHeight
-  }
-  return false
-})
-
-const subMenuHasOverflow = computed(() => {
-  let height
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  height = windowHeight.value
-  if (subMenuScrollContainerRef.value) {
-    return subMenuScrollContainerRef.value.scrollHeight > subMenuScrollContainerRef.value.clientHeight
-  }
-  return false
-})
-
-const hasOverflow = computed(() => {
-  return interfaceStore.mainMenuCurrentStep === 1 ? mainMenuHasOverflow.value : subMenuHasOverflow.value
-})
+const hasOverflow = ref(false)
 
 useResizeObserver(scrollContainerRef, (entries) => {
   if (entries.length) {
@@ -355,8 +333,14 @@ const handleScroll = (): void => {
     interfaceStore.mainMenuCurrentStep === 1 ? scrollContainerRef.value : subMenuScrollContainerRef.value
   if (scrollContainer) {
     const { scrollTop, scrollHeight, clientHeight } = scrollContainer
+    // Measured to the last item's label, so the item's own bottom padding overflowing does not count as more content
+    const lastLabel = [...scrollContainer.querySelectorAll('[data-glass-button-label]')].pop()
+    const hiddenBelow = lastLabel
+      ? lastLabel.getBoundingClientRect().bottom - scrollContainer.getBoundingClientRect().bottom
+      : scrollHeight - clientHeight - scrollTop
+    hasOverflow.value = scrollTop > 0 || hiddenBelow > 1
     isScrolledToTop.value = scrollTop === 0
-    isScrolledToBottom.value = scrollTop + clientHeight >= scrollHeight
+    isScrolledToBottom.value = hiddenBelow <= 1
   }
 }
 
@@ -443,6 +427,8 @@ const currentSubMenu = computed(() => {
   if (activeSubMenu.value === undefined) return []
   return menuPagesOfSubMenu(activeSubMenu.value, interfaceStore.pirateMode)
 })
+
+watch([currentSubMenu, simplifiedMainMenu], () => nextTick(handleScroll))
 
 onClickOutside(mainMenu, () => {
   if (interfaceStore.mainMenuCurrentStep === 1 && !interfaceStore.isTutorialVisible) {
