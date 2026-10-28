@@ -115,10 +115,10 @@ export const useAppInterfaceStore = defineStore('responsive', {
       if (state.width >= 1600 && state.width < 1920) return 121
       return 130
     },
-    // Width the main menu actually renders, which narrows to icons only when the buttons stop fitting the
-    // visible height, and to a single column for the submenu on small screens.
+    // Width the main menu actually renders, which narrows to icons with short labels when the buttons stop fitting
+    // the visible height, and to a single column for the submenu on small screens.
     mainMenuRenderedWidth(state): number {
-      if (state.isMainMenuSimplified) return 45
+      if (state.isMainMenuSimplified) return 52
       if (this.isOnSmallScreen && state.mainMenuCurrentStep === 2) return 60
       return this.mainMenuWidth
     },

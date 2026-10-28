@@ -1,7 +1,8 @@
 <template>
   <div
-    class="flex flex-col items-center w-full 2xl:gap-y-1 xl: gap-y-1 py-2"
+    class="flex flex-col items-center w-full 2xl:gap-y-1 xl: gap-y-1"
     :class="[
+      paddingClass ?? 'py-2',
       isUncontained && !isSelected ? (isNoEffects ? '' : 'mark-on-hover') : '',
       isSelected === true ? 'frosted-button-selected' : '',
       isDisabled ? 'opacity-[0.4] cursor-default' : 'opacity-100 cursor-pointer',
@@ -108,6 +109,10 @@ const props = defineProps<{
    * No effects on hover.
    */
   noEffects?: boolean
+  /**
+   * Vertical padding classes for the button's wrapper, replacing the default `py-2`.
+   */
+  paddingClass?: string
 }>()
 
 const label = computed(() => props.label)
