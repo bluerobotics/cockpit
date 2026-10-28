@@ -5,6 +5,7 @@ import {
   externalMapMeshCommandSchema,
   externalMapMeshLimits,
 } from '@/libs/map/external-map-mesh-api'
+import { MapMeshStore } from '@/libs/map/external-map-meshes'
 
 type Quads = Required<Pick<ValidatedMapMeshQuads, 'corners' | 'uv' | 'texels'>>
 
@@ -114,19 +115,22 @@ describe('cockpit:setMapMeshQuads', () => {
       view.set(bytes)
       return view
     }
-    const parsedTexels = (texels: Uint8Array | Uint8ClampedArray, tint: Uint8Array | Uint8ClampedArray): Uint8Array => {
+    const storedTexels = (texels: Uint8Array | Uint8ClampedArray, tint: Uint8Array | Uint8ClampedArray): Uint8Array => {
       const result = parseQuads({ corners, uv, texels, tint })
       expect(result.success).toBe(true)
       const data = result.data as unknown as ValidatedMapMeshQuads
       expect(data.texels).toBeInstanceOf(Uint8Array)
       expect([...data.texels]).toEqual(strips)
       expect(data.tint).toBeInstanceOf(Uint8Array)
-      expect([...(data.tint ?? [])]).toEqual([...tint])
-      return data.texels
+      const store = new MapMeshStore()
+      const texelLayout = { format: 'rgba8', width: 2, height: 1 } as const
+      store.set({ id: 'test-mesh', name: 'Test', capacity: 2, texels: texelLayout, filter: 'nearest', opacity: 1 })
+      store.writeQuads('test-mesh', data)
+      return store.meshes.get('test-mesh')?.pages[0]?.texels ?? new Uint8Array()
     }
     const tint = [255, 255, 255, 255, 10, 20, 30, 40]
-    const fromClamped = parsedTexels(clamped(strips), clamped(tint))
-    expect([...fromClamped]).toEqual([...parsedTexels(Uint8Array.from(strips), Uint8Array.from(tint))])
+    const fromClamped = storedTexels(clamped(strips), clamped(tint))
+    expect(fromClamped).toEqual(storedTexels(Uint8Array.from(strips), Uint8Array.from(tint)))
     expect(fromClamped.includes(255) && !fromClamped.includes(77)).toBe(true)
   })
 
