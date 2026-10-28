@@ -107,20 +107,12 @@ export const useAppInterfaceStore = defineStore('responsive', {
     // Mirrors the scale `WidgetBar` actually applies to the top/bottom bars on small screens, so overlays can
     // align with the rendered bar height (not the logical 48px) from a single source of truth.
     renderedBarScale: (state) => (state.width <= 1280 ? state.width / 1800 : 1),
-    mainMenuWidth: (state) => {
-      if (state.width < 720) return 78
-      if (state.width >= 720 && state.width < 980) return 95
-      if (state.width >= 980 && state.width < 1280) return 95
-      if (state.width >= 1280 && state.width < 1600) return 102
-      if (state.width >= 1600 && state.width < 1920) return 121
-      return 130
-    },
     // Width the main menu actually renders, which narrows to icons with short labels when the buttons stop fitting
-    // the visible height, and to a single column for the submenu on small screens.
+    // the visible height, and to a single column for the submenu.
     mainMenuRenderedWidth(state): number {
       if (state.isMainMenuSimplified) return 52
-      if (this.isOnSmallScreen && state.mainMenuCurrentStep === 2) return 60
-      return this.mainMenuWidth
+      if (state.mainMenuCurrentStep === 2) return 60
+      return 79
     },
     isVideoLibraryVisible: (state) => state.videoLibraryVisibility,
     isMissionLibraryVisible: (state) => state.missionLibraryVisibility,

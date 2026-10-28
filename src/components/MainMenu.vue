@@ -13,13 +13,8 @@
             class="relative flex flex-col max-h-[95vh] w-full overflow-y-auto scrollbar-hide"
           >
             <div
-              class="h-full justify-between align-center items-center select-none"
-              :class="[
-                interfaceStore.isOnSmallScreen
-                  ? 'gap-y-0 pt-2 pb-3 sm:sm:py-0 sm:-ml-[3px] xs:xs:py-0 xs:-ml-[3px]'
-                  : 'lg:gap-y-2 xl:gap-y-3 gap-y-4 py-4',
-                { '!pt-2 !pb-4': simplifiedMainMenu },
-              ]"
+              class="h-full justify-between align-center items-center select-none pt-2"
+              :class="simplifiedMainMenu ? 'pb-4' : 'pb-3'"
             >
               <GlassButton
                 v-if="baseRouteName === 'widgets-view'"
@@ -30,7 +25,7 @@
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
-                :width="buttonSize"
+                :width="mainMenuIconSize"
                 @click="toggleEditMode"
                 ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="Edit Mode Icon" />
               </GlassButton>
@@ -42,7 +37,7 @@
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
-                :width="buttonSize"
+                :width="mainMenuIconSize"
                 @click="goToFlightView"
                 ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="Flight Icon" />
               </GlassButton>
@@ -54,7 +49,7 @@
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
-                :width="buttonSize"
+                :width="mainMenuIconSize"
                 @click="goToMissionPlanning"
                 ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon" />
               </GlassButton>
@@ -65,7 +60,7 @@
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? 'Settings' : undefined"
-                :width="buttonSize"
+                :width="mainMenuIconSize"
                 :selected="showSubMenu"
                 class="mb-1"
                 :style="
@@ -84,7 +79,7 @@
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
-                :width="buttonSize"
+                :width="mainMenuIconSize"
                 :selected="showSubMenu"
                 class="mb-1"
                 @click="selectSubMenu(SubMenuName.tools)"
@@ -98,7 +93,7 @@
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
                 :button-class="simplifiedMainMenu ? '-mb-2' : ''"
-                :width="buttonSize"
+                :width="mainMenuIconSize"
                 :selected="false"
                 @click="toggleFullscreenAndCloseMenu"
                 ><img
@@ -115,7 +110,7 @@
                 variant="uncontained"
                 :tooltip="simplifiedMainMenu ? 'About' : undefined"
                 :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
-                :width="buttonSize"
+                :width="mainMenuIconSize"
                 :selected="showSubMenu"
                 @click="openAboutDialog"
                 ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
@@ -130,10 +125,12 @@
                 v-for="menuitem in currentSubMenu"
                 :key="menuitem.title"
                 :label="menuitem.title"
-                :label-class="simplifiedMainMenu ? [simplifiedMenuLabelClass, '!mt-1 mb-px'] : menuLabelSize"
+                :label-class="
+                  simplifiedMainMenu ? [simplifiedMenuLabelClass, '!mt-1 mb-px'] : [menuLabelSize, '!px-2 mb-1']
+                "
                 :tooltip="simplifiedMainMenu ? menuitem.title : undefined"
                 :padding-class="simplifiedMainMenu ? 'py-0.5' : undefined"
-                :button-class="interfaceStore.isOnSmallScreen ? '-ml-[2px]' : ''"
+                button-class="-ml-[2px]"
                 :icon="menuitem.icon"
                 :selected="activeMenuPage === menuitem.componentName"
                 variant="uncontained"
@@ -157,8 +154,8 @@
                 :label-class="menuLabelSize"
                 tooltip="Back"
                 icon="mdi-arrow-left"
-                :icon-class="interfaceStore.isOnSmallScreen ? '' : '-mb-[1px]'"
-                :button-class="interfaceStore.isOnSmallScreen ? (simplifiedMainMenu ? '-mt-1' : 'mt-1') : undefined"
+                icon-class="translate-y-[0.6px]"
+                :button-class="simplifiedMainMenu ? '-mt-1' : 'mt-1'"
                 variant="round"
                 :width="buttonSize / 2.4"
                 :selected="false"
@@ -336,33 +333,14 @@ const mainMenuWidth = computed(() => ({
   ...(simplifiedMainMenu.value ? { borderRadius: '0 10px 10px 0' } : {}),
 }))
 
-const buttonSize = computed(() => {
-  if (interfaceStore.is2xl) return 72
-  if (interfaceStore.isXl) return 66
-  if (interfaceStore.isLg) return 60
-  if (interfaceStore.isMd) return 54
-  if (interfaceStore.isSm && windowHeight.value > 700) return 60
-  if (interfaceStore.isSm && windowHeight.value < 700) return 48
-  if (interfaceStore.isXs && windowHeight.value >= 700) return 60
-  return 48
-})
-
-const menuLabelSize = computed(() => {
-  if (interfaceStore.is2xl) return 'text-[15px]'
-  if (interfaceStore.isXl) return 'text-[14px]'
-  if (interfaceStore.isLg) return 'text-[13px]'
-  if (interfaceStore.isMd) return 'text-[12px]'
-  if (interfaceStore.isSm) return 'text-[10px]'
-  if (interfaceStore.isXs && windowHeight.value >= 700) return 'text-[12px]'
-  return 'text-[10px]'
-})
+const buttonSize = 54
+const mainMenuIconSize = buttonSize * 0.9
+const menuLabelSize = 'text-[10px]'
 
 const simplifiedMenuLabelClass = 'text-[9px] !leading-[10px] !px-0 whitespace-nowrap'
 
 const mainMenuButtonProps = computed(() => ({
-  labelClass: simplifiedMainMenu.value
-    ? [simplifiedMenuLabelClass, '!mt-2 mb-1.5']
-    : [menuLabelSize.value, '-mb-0.5 mt-6'],
+  labelClass: simplifiedMainMenu.value ? [simplifiedMenuLabelClass, '!mt-2 mb-1.5'] : [menuLabelSize, 'mt-6 !px-2'],
   paddingClass: simplifiedMainMenu.value ? 'py-1' : undefined,
 }))
 

@@ -163,7 +163,7 @@ const modalPositionStyle = computed(() => {
       const bottomInset = widgetStore.currentBottomBarHeightPixelsScaled + menuItemBarGapPx
       return {
         top: `calc(50% + ${(topInset - bottomInset) / 2}px)`,
-        left: `${interfaceStore.mainMenuRenderedWidth + (interfaceStore.isOnSmallScreen ? 15 : 30)}px`,
+        left: `${interfaceStore.mainMenuRenderedWidth + 15}px`,
         maxHeight: `calc(100vh - ${topInset + bottomInset}px)`,
         transform: 'translateY(-50%)',
         zIndex: zIndexToggle.value,
