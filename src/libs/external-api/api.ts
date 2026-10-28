@@ -3,6 +3,9 @@ import type { ExternalPoi, ExternalPoiUpdate } from '@/libs/poi/external-api'
 
 import { CallbackRateLimiter } from './callback-rate-limiter'
 
+export type { MapMeshQuadAround, MapMeshQuadBounds, MapMeshWedge } from './map-mesh-geometry'
+export { quadAround, quadFromBounds, wedge } from './map-mesh-geometry'
+
 /**
  * Current version of the Cockpit Widget API
  */
