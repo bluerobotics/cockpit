@@ -11,7 +11,7 @@
       >
         <div
           class="flex flex-row w-full align-center"
-          :class="isCompact ? 'gap-x-[1vw] py-2' : 'gap-x-[3vw] py-[1.5vh]'"
+          :class="[isCompact ? 'gap-x-[1vw]' : 'gap-x-[3vw]', isCompact || isSmallScreenLayout ? 'py-2' : 'py-3']"
         >
           <div class="flex flex-col w-full">
             <div
