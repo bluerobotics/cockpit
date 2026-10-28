@@ -9,8 +9,21 @@
     content-class="bg-[#4f4f4f44] backdrop-filter backdrop-blur-lg text-white"
   >
     {{ message }}
-    <template v-if="closeButton || action" #actions>
+    <template v-if="closeButton || action || suppress" #actions>
       <v-btn v-if="action" color="white" variant="text" @click="triggerAction">{{ action.label }}</v-btn>
+      <v-tooltip v-if="suppress" :text="suppress.tooltip" location="top">
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            color="white"
+            variant="text"
+            :aria-label="suppress.tooltip"
+            @click="triggerSuppression"
+          >
+            <v-icon>mdi-eye-off</v-icon>
+          </v-btn>
+        </template>
+      </v-tooltip>
       <v-btn v-if="closeButton" color="white" variant="text" aria-label="Dismiss" @click="closeSnackbar">
         <v-icon>mdi-close</v-icon>
       </v-btn>
@@ -21,7 +34,7 @@
 <script setup lang="ts">
 import { onMounted, PropType, ref, watch } from 'vue'
 
-import { closeSnackbar as removeSnackbar, SnackbarAction } from '@/composables/snackbar'
+import { closeSnackbar as removeSnackbar, SnackbarAction, SnackbarSuppression } from '@/composables/snackbar'
 
 const props = defineProps({
   id: { type: Number, default: undefined },
@@ -32,6 +45,7 @@ const props = defineProps({
   variant: { type: String, default: 'info' },
   persistent: { type: Boolean, default: false },
   action: { type: Object as PropType<SnackbarAction>, default: undefined },
+  suppress: { type: Object as PropType<SnackbarSuppression>, default: undefined },
 })
 
 const emits = defineEmits(['update:showSnackbar'])
@@ -77,6 +91,12 @@ const triggerAction = (): void => {
   logUserAction(`Took the '${props.action?.label}' action from a snackbar`)
   closeSnackbar()
   props.action?.handler()
+}
+
+const triggerSuppression = (): void => {
+  logUserAction(`Chose to stop showing the snackbar '${props.message}'`)
+  closeSnackbar()
+  props.suppress?.handler()
 }
 
 watch(
