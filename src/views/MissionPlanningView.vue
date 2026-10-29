@@ -948,9 +948,6 @@ import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'le
 import { v4 as uuid } from 'uuid'
 import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
 
-import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
-import brov2MarkerImage from '@/assets/brov2-marker.avif'
-import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import GeoFenceDrawingActionButtons from '@/components/geofence/GeoFenceDrawingActionButtons.vue'
 import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
@@ -1050,6 +1047,7 @@ import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/librar
 import { endpointSplicePosition } from '@/libs/mission/planning-endpoints'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { degrees, escapeHtml, messageFromError, round, toPlain } from '@/libs/utils'
+import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
@@ -5144,11 +5142,7 @@ const timeAgoSeenText = computed(() => {
   return lastBeat ? `${formatDistanceToNow(lastBeat ?? 0, { includeSeconds: true })} ago` : 'never'
 })
 
-const planningVehicleIconUrl = computed(() => {
-  if (vehicleStore.vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) return blueboatMarkerImage
-  if (vehicleStore.vehicleType === MavType.MAV_TYPE_SUBMARINE) return brov2MarkerImage
-  return genericVehicleMarkerImage
-})
+const planningVehicleIconUrl = computed(() => vehicleMarkerImageUrl(vehicleStore.vehicleType))
 
 const vehicleTooltipState = computed<VehicleTooltipState>(() => ({
   coordinates: vehiclePosition.value,
