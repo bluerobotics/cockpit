@@ -5161,6 +5161,10 @@ msgstr "隐藏已应用的操作"
 msgid "Hide applied mappings"
 msgstr "隐藏已应用的映射"
 
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Hide below"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Hide console"
 msgstr "隐藏控制台"
@@ -6462,6 +6466,10 @@ msgstr "中阈值（V）"
 msgid "Menu"
 msgstr "菜单"
 
+#: src/components/widgets/Map.vue
+msgid "Mesh layers"
+msgstr ""
+
 #: src/views/ConfigurationMAVLinkView.vue
 msgid "Message"
 msgstr "消息"
@@ -7543,6 +7551,10 @@ msgstr "抱歉，似乎是某个视频分片无法保存。正在重试……"
 #: src/views/ConfigurationUIView.vue
 msgid "Opacity"
 msgstr "不透明度"
+
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Opaque above"
+msgstr ""
 
 #: src/composables/appUpdater.ts
 msgid "Open"
@@ -10732,6 +10744,10 @@ msgid ""
 "Transforming functions, DIY widgets, and saving or running actions, which "
 "may command the vehicle"
 msgstr "转换函数、DIY 小部件，以及保存或运行操作，这些操作可能会控制设备"
+
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Transparency"
+msgstr ""
 
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Transport"
