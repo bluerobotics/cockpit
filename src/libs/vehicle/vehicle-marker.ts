@@ -2,13 +2,17 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import copterMarkerImage from '@/assets/copter-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
+import planeMarkerImage from '@/assets/plane-marker.avif'
+import roverMarkerImage from '@/assets/rover-marker.avif'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 
 const markerImageByVehicleType: Partial<Record<VehicleType, string>> = {
   [VehicleType.Sub]: brov2MarkerImage,
+  [VehicleType.Rover]: roverMarkerImage,
   [VehicleType.Copter]: copterMarkerImage,
+  [VehicleType.Plane]: planeMarkerImage,
 }
 
 /**
