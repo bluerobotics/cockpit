@@ -3,14 +3,13 @@ import blueboatMarkerImage from '@/assets/blueboat-marker.avif'
 import brov2MarkerImage from '@/assets/brov2-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
+import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 
-const copterTypes: MavType[] = [
-  MavType.MAV_TYPE_QUADROTOR,
-  MavType.MAV_TYPE_HEXAROTOR,
-  MavType.MAV_TYPE_OCTOROTOR,
-  MavType.MAV_TYPE_TRICOPTER,
-  MavType.MAV_TYPE_DODECAROTOR,
-]
+const markerImageByVehicleType: Partial<Record<VehicleType, string>> = {
+  [VehicleType.Sub]: brov2MarkerImage,
+  [VehicleType.Copter]: copterMarkerImage,
+}
 
 /**
  * Resolves the top-view marker image that best represents a vehicle type, falling back to a generic marker.
@@ -19,8 +18,8 @@ const copterTypes: MavType[] = [
  */
 export const vehicleMarkerImageUrl = (vehicleType: MavType | undefined): string => {
   if (vehicleType === undefined) return genericVehicleMarkerImage
+  // Boats share the Rover class with ground rovers, so they are told apart before classifying.
   if (vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) return blueboatMarkerImage
-  if (vehicleType === MavType.MAV_TYPE_SUBMARINE) return brov2MarkerImage
-  if (copterTypes.includes(vehicleType)) return copterMarkerImage
-  return genericVehicleMarkerImage
+  const vehicleClass = getVehicleTypeFromMavType(vehicleType)
+  return (vehicleClass && markerImageByVehicleType[vehicleClass]) ?? genericVehicleMarkerImage
 }
