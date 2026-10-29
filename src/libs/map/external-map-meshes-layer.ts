@@ -44,9 +44,28 @@ const intersects = (a: MercatorBounds, b: MercatorBounds): boolean =>
   a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY
 
 /**
+ * Transparency range [hideBelow, opaqueAbove] every map starts with. With a sonar palette whose alpha is its index
+ * over 255, it hides blue (about 0.25) and draws copper (0.5), yellow (0.75) and white solid.
+ */
+export const defaultMeshAlphaCurve: readonly [number, number] = [0.25, 0.5]
+
+/**
+ * A map's transparency range as the renderer takes it
+ * @param {unknown} curve - [hideBelow, opaqueAbove]; each is clamped to 0..1
+ * @returns {[number, number]} A new range, or a copy of {@link defaultMeshAlphaCurve} when `curve` is not a pair of
+ * finite numbers
+ */
+export const normalizeMeshAlphaCurve = (curve: unknown): [number, number] => {
+  if (!Array.isArray(curve) || curve.length !== 2 || !curve.every(Number.isFinite)) return [...defaultMeshAlphaCurve]
+  const [hideBelow, opaqueAbove] = curve.map((value: number) => Math.min(Math.max(value, 0), 1))
+  return [hideBelow, opaqueAbove]
+}
+
+/**
  * Leaflet layer drawing the map meshes of a {@link MapMeshStore} on one canvas, padded past the view. Every draw
  * is a full redraw, made when the meshes change in view (once per frame), when a pan leaves the padding, when the
- * zoom or size changes, and when the map becomes shown. Zooms scale the last drawing until they end.
+ * zoom or size changes, when the map's transparency range changes, and when the map becomes shown. Zooms scale the
+ * last drawing until they end.
  */
 export class ExternalMapMeshesLayer extends L.Layer {
   private canvas?: HTMLCanvasElement
@@ -60,6 +79,7 @@ export class ExternalMapMeshesLayer extends L.Layer {
   private drawnOrigin?: L.LatLng
   private drawnZoom = 0
   private drawnBounds?: MercatorBounds
+  private alphaCurve = defaultMeshAlphaCurve
 
   /**
    * @param {ExternalMapMeshesLayerOptions} config - What to draw, and with what
@@ -118,6 +138,18 @@ export class ExternalMapMeshesLayer extends L.Layer {
   }
 
   /**
+   * Sets this map's transparency range, which the renderer applies before each mesh's own opacity, and redraws on the
+   * next frame if it changed
+   * @param {[number, number]} curve - [hideBelow, opaqueAbove], as {@link normalizeMeshAlphaCurve} takes it
+   */
+  setMapAlphaCurve(curve: readonly [number, number]): void {
+    const [hideBelow, opaqueAbove] = normalizeMeshAlphaCurve(curve)
+    if (hideBelow === this.alphaCurve[0] && opaqueAbove === this.alphaCurve[1]) return
+    this.alphaCurve = [hideBelow, opaqueAbove]
+    this.redraw()
+  }
+
+  /**
    * Sets whether the map is shown, as a map hidden behind another view draws nothing and releases its canvas. Kept
    * while the layer is removed, so it draws when added again.
    * @param {boolean} shown - Whether the map is shown
@@ -135,7 +167,6 @@ export class ExternalMapMeshesLayer extends L.Layer {
   }
 
   /* eslint-disable jsdoc/require-jsdoc -- private helpers, commented where they need it. */
-
   private releaseCanvas(): void {
     if (!this.canvas) return
     this.canvas.width = 0
@@ -237,7 +268,7 @@ export class ExternalMapMeshesLayer extends L.Layer {
     context.clearRect(0, 0, width, height)
     const view = { width, height, originX, originY, metresPerPixel: metresPerCssPixel / pixelRatio }
     for (const mesh of meshes) {
-      if (!renderer.render(mesh, view)) continue
+      if (!renderer.render(mesh, view, this.alphaCurve)) continue
       context.globalAlpha = mesh.opacity
       const source = renderer.canvas
       context.drawImage(source, 0, source.height - height, width, height, 0, 0, width, height)
