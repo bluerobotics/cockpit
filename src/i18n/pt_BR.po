@@ -5550,6 +5550,10 @@ msgid "Hide map overlays"
 msgstr "Ocultar sobreposições do mapa"
 
 #: src/components/widgets/MiniMap.vue
+msgid "Hide mesh layers"
+msgstr ""
+
+#: src/components/widgets/MiniMap.vue
 msgid "Hide mission"
 msgstr "Ocultar missão"
 
@@ -6903,6 +6907,7 @@ msgid "Menu"
 msgstr "Menu"
 
 #: src/components/widgets/Map.vue
+#: src/components/widgets/MiniMap.vue
 msgid "Mesh layers"
 msgstr ""
 
@@ -9980,6 +9985,10 @@ msgstr "Mostrar chaves legadas/internas"
 #: src/components/widgets/MiniMap.vue
 msgid "Show map overlays"
 msgstr "Mostrar sobreposições do mapa"
+
+#: src/components/widgets/MiniMap.vue
+msgid "Show mesh layers"
+msgstr ""
 
 #: src/components/widgets/MiniMap.vue
 msgid "Show mission"
