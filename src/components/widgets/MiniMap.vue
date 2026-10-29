@@ -194,6 +194,7 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch
 
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
+import { useExternalMapMeshLayers } from '@/composables/map/useExternalMapMeshLayers'
 import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
 import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
 import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
@@ -376,6 +377,9 @@ const mapOverlays = useMapOverlays()
 const externalOverlayLayers = useExternalMapOverlayLayers()
 const hasMapOverlays = useHasAnyMapOverlay()
 
+// Draws the meshes external software sent onto this map, which the GeoTIFF option above does not gate.
+const externalMeshLayers = useExternalMapMeshLayers()
+
 const bindMapOverlays = (): void => {
   if (!map.value) return
   mapOverlays
@@ -391,6 +395,7 @@ const unbindMapOverlays = (): void => {
 
 onMounted(() => {
   if (mapEl.value) init(mapEl.value)
+  if (map.value) externalMeshLayers.init(map.value, () => widgetStore.isWidgetVisible(widget.value))
   if (widget.value.options.showMapOverlays) bindMapOverlays()
 })
 
@@ -403,6 +408,7 @@ watch(
 )
 
 onBeforeUnmount(unbindMapOverlays)
+onBeforeUnmount(externalMeshLayers.destroy)
 
 // The minimap has no leaflet dragging, so this handle temporarily flags the widget as movable, letting the
 // WidgetHugger drag it even outside edit mode, then restores the flag when the drag ends.
