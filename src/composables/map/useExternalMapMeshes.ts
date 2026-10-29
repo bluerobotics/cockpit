@@ -1,3 +1,5 @@
+import { type ComputedRef, computed, ref } from 'vue'
+
 import { listenToGenericWebSocketJsonMessages } from '@/libs/generic-websocket'
 import {
   type ExternalMapMeshCommand,
@@ -21,6 +23,10 @@ export interface ExternalMapMeshesState {
    */
   meshes: MapMeshStore
   /**
+   * How many map meshes exist
+   */
+  meshCount: ComputedRef<number>
+  /**
    * Applies a map mesh command from external software, ignoring any other message. Mesh commands carrying a
    * `requestId`, and capability queries, are answered through `reply`.
    */
@@ -39,6 +45,9 @@ let state: ExternalMapMeshesState | undefined
 
 const createState = (): ExternalMapMeshesState => {
   const meshes = new MapMeshStore()
+  // Runs on every quad write, but only a changed count reaches the components reading it.
+  const meshCount = ref(0)
+  meshes.subscribe(() => (meshCount.value = meshes.meshes.size))
 
   const applyCommand = (command: ExternalMapMeshCommand): MapMeshWrittenSlots | undefined => {
     switch (command.type) {
@@ -113,7 +122,7 @@ const createState = (): ExternalMapMeshesState => {
   // The singleton outlives every consumer, so this listener is never removed.
   listenToGenericWebSocketJsonMessages(handleExternalMapMeshMessage)
 
-  return { meshes, handleExternalMapMeshMessage }
+  return { meshes, meshCount: computed(() => meshCount.value), handleExternalMapMeshMessage }
 }
 
 /**
