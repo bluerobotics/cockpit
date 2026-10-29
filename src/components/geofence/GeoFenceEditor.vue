@@ -96,15 +96,28 @@
             >
               <v-icon icon="mdi-vector-polygon" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Polygon {{ idx + 1 }}</p>
+              <p
+                class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap"
+                @mouseenter="onPolygonNameHover($event, polygon.id)"
+                @mouseleave="truncatedNameId = undefined"
+              >
+                {{ polygon.name ?? `Polygon ${idx + 1}` }}
+                <v-tooltip
+                  activator="parent"
+                  location="top"
+                  :open-on-hover="false"
+                  :model-value="truncatedNameId === polygon.id"
+                  :text="polygon.name ?? `Polygon ${idx + 1}`"
+                />
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="polygon.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onTogglePolygonInclusion(polygon.id)"
               >
                 {{ polygon.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete polygon">
                   <template #activator="{ props: tooltipProps }">
@@ -145,6 +158,7 @@
         elevation-effect
         :is-expanded="fenceStore.circles.length > 0"
         darken-content
+        no-bottom-divider
       >
         <template #title>
           <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
@@ -176,15 +190,17 @@
             >
               <v-icon icon="mdi-vector-circle-variant" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
-              <p class="ml-3 grow overflow-hidden text-xs text-ellipsis whitespace-nowrap">Circle {{ idx + 1 }}</p>
+              <p class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
+                Circle {{ idx + 1 }}
+              </p>
               <span
-                class="text-[10px] font-medium uppercase tracking-wide px-2 py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
+                class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="circle.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onToggleCircleInclusion(circle.id)"
               >
                 {{ circle.inclusion ? 'Inclusion' : 'Exclusion' }}
               </span>
-              <div class="flex justify-start items-center w-[65px]">
+              <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
                 <v-tooltip location="top" text="Delete circle">
                   <template #activator="{ props: tooltipProps }">
@@ -217,11 +233,18 @@
       </ExpansiblePanel>
     </div>
 
-    <div class="flex flex-col ma-2 py-2 px-4 border-[1px] border-[#FFFFFF22] bg-[#00000022] rounded-md p-2">
+    <GeoFenceParametersPanel />
+
+    <slot name="below-fence-lists" />
+
+    <div
+      v-if="fenceStore.isArduPilot || canAddBreachReturn || fenceStore.breachReturn"
+      class="flex flex-col mx-2 mt-2.5 mb-[5px] py-2 px-4 border-[1px] border-[#FFFFFF44] bg-[#00000022] rounded-md p-2"
+    >
       <div v-if="fenceStore.isArduPilot" class="flex items-center justify-between gap-x-2 fence-autoenable-row">
-        <p class="text-xs">Auto enable fence on takeoff</p>
+        <p class="text-xs">{{ autoEnableLabel }}</p>
         <v-switch
-          :model-value="fenceStore.fenceAutoEnableMode !== undefined && fenceStore.fenceAutoEnableMode > 0"
+          :model-value="autoEnabled"
           color="#3B78A8"
           density="compact"
           hide-details
@@ -231,7 +254,10 @@
           @update:model-value="onToggleFenceAutoEnable"
         />
       </div>
-      <v-divider class="opacity-10 my-1 mx-12" />
+      <v-divider
+        v-if="fenceStore.isArduPilot && (canAddBreachReturn || fenceStore.breachReturn)"
+        class="opacity-10 my-1 mx-12"
+      />
       <div v-if="fenceStore.breachReturn" class="flex items-center justify-between gap-x-2">
         <p class="text-xs">Breach return altitude</p>
         <div class="flex items-center gap-x-1">
@@ -280,7 +306,7 @@
           </v-tooltip>
         </div>
       </div>
-      <div v-if="!fenceStore.breachReturn" class="flex flex-row items-center gap-x-2 mt-1">
+      <div v-if="!fenceStore.breachReturn && canAddBreachReturn" class="flex flex-row items-center gap-x-2 mt-1">
         <button
           class="flex-1 h-auto py-1 px-2 text-xs rounded-md elevation-1 bg-[#FFFFFF22] hover:bg-[#FFFFFF33] transition-colors duration-200"
           @click="onAddBreachReturn"
@@ -300,11 +326,7 @@
               Click <em>Add breach return point</em> to seed it at the map center, then drag the orange
               <strong>B</strong> marker to fine-tune the location and edit the altitude (relative to home) inline.
             </p>
-            <p>
-              Behavior on breach is governed by the autopilot fence parameters (<code>FENCE_ACTION</code> on ArduPilot,
-              <code>GF_ACTION</code> on PX4) — typically set them to <em>RTL</em> or <em>Land</em> for the rally point
-              to be honored.
-            </p>
+            <p>Only ArduPilot planes fly to it, when the fence action is set to fly to the breach return point.</p>
           </div>
         </v-tooltip>
       </div>
@@ -322,8 +344,26 @@
     >
       PX4: multiple inclusion polygons are AND-ed (intersection), not OR-ed.
     </p>
-
-    <GeoFenceParametersPanel />
+    <v-tooltip
+      v-if="breachOutcome"
+      location="top"
+      max-width="300"
+      :open-on-hover="false"
+      open-on-click
+      @update:model-value="onBreachOutcomeTooltip"
+    >
+      <template #activator="{ props: tooltipProps }">
+        <p
+          v-bind="tooltipProps"
+          class="px-3 py-2 mx-2 mt-1 text-[13px] text-center text-orange-300 rounded-md bg-[#33333366] border-[1px] border-orange-300/50 cursor-pointer"
+        >
+          {{ breachOutcome }}
+        </p>
+      </template>
+      <p class="text-xs pa-1">
+        Set this under <code>{{ breachActionParameter }}</code> in <strong>Fence parameters</strong>, above.
+      </p>
+    </v-tooltip>
 
     <div class="flex w-full justify-between my-2 px-4 pt-1">
       <v-tooltip location="top" text="Save fence to file">
@@ -381,27 +421,33 @@
       </v-tooltip>
     </div>
 
-    <button
-      :disabled="!fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
-      :class="{
-        'bg-[#FFFFFF11] hover:bg-[#FFFFFF11] text-[#FFFFFF22] elevation-0':
-          !fenceStore.hasItems || !vehicleStore.isVehicleOnline || fenceStore.syncInProgress,
-      }"
-      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#3B78A8] hover:bg-[#3B78A8] transition-colors duration-200"
-      @click="onUpload"
-    >
-      UPLOAD FENCE TO VEHICLE
-    </button>
-    <button
+    <UploadActionsButton
       v-if="fenceStore.hasItems"
-      class="h-auto py-1 px-1 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
-      @click="onClearLocal"
+      label="UPLOAD FENCE TO VEHICLE"
+      actions-name="fence actions"
+      indicator
+      :disabled="!vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
+      @upload="onUpload"
     >
-      CLEAR CURRENT FENCE
-    </button>
+      <button
+        class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        @click="onClearLocal"
+      >
+        CLEAR CURRENT FENCE
+      </button>
+      <button
+        :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
+        class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+        :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
+        @click="onDownload"
+      >
+        DOWNLOAD FENCE FROM VEHICLE
+      </button>
+    </UploadActionsButton>
     <button
+      v-else
       :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
-      class="h-auto py-2 px-2 m-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+      class="h-auto py-2 px-2 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
       :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
       @click="onDownload"
     >
@@ -419,17 +465,20 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceParametersPanel from '@/components/geofence/GeoFenceParametersPanel.vue'
 import GeoFenceTooLargeDialog from '@/components/geofence/GeoFenceTooLargeDialog.vue'
+import UploadActionsButton from '@/components/mission-planning/UploadActionsButton.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useMapContext } from '@/composables/map/useMapContext'
 import { type SnackbarOptions, useSnackbar } from '@/composables/snackbar'
+import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import { fenceItemCount, fencePlanExtentPoints, fencePointCapacity } from '@/libs/geo-fence'
 import { fitMapToWaypoints, isLeafletMapReady } from '@/libs/map/utils-map'
+import { FENCE_AUTOENABLE_WHEN_ARMED } from '@/libs/vehicle/fence-actions'
 import {
   geoFencePlanToMavlinkPlanFile,
   mavlinkPlanFileToGeoFencePlan,
@@ -458,8 +507,22 @@ const fenceStore = useGeoFenceStore()
 const fenceDraft = useGeoFenceEditorDraft()
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
-const { showDialog, closeDialog } = useInteractionDialog()
+const { showDialog, confirmAction } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
+const {
+  outcome: breachOutcome,
+  parameterName: breachActionParameter,
+  canAddBreachReturn,
+  autoEnablesOnTakeoff,
+  autoEnabled,
+} = useFenceBreachAction()
+const autoEnableLabel = computed(() =>
+  autoEnablesOnTakeoff.value ? 'Auto enable fence on takeoff' : 'Auto enable fence when armed'
+)
+
+const onBreachOutcomeTooltip = (open: boolean): void => {
+  if (open) logUserAction('Opened the help on where to change the fence breach action')
+}
 
 const { map } = useMapContext()
 
@@ -477,6 +540,12 @@ const importedPlanSections = ref<Pick<MavlinkPlanFile, 'mission' | 'rallyPoints'
 const syncProgress = ref(0)
 const tooLargeOffer = ref<FenceTooLargeOffer>()
 const breachAltTooltipOpen = ref(false)
+const truncatedNameId = ref<string>()
+
+const onPolygonNameHover = (event: MouseEvent, id: string): void => {
+  const name = event.currentTarget as HTMLElement
+  truncatedNameId.value = name.scrollWidth > name.clientWidth ? id : undefined
+}
 
 const onToggleShapeInteractive = (id: string): void => {
   const willSelect = fenceDraft.interactiveShapeId !== id
@@ -567,8 +636,9 @@ const onBreachReturnAltInput = (value: string): void => {
 }
 
 const onToggleFenceAutoEnable = (value: boolean | null): void => {
-  const target = value ? fenceStore.lastAutoEnableMode : 0
-  logUserAction(target ? 'Enabled auto-enable fence on takeoff' : 'Disabled auto-enable fence on takeoff')
+  const onMode = autoEnablesOnTakeoff.value ? fenceStore.lastAutoEnableMode : FENCE_AUTOENABLE_WHEN_ARMED
+  const target = value ? onMode : 0
+  logUserAction(`${target ? 'Enabled' : 'Disabled'} the "${autoEnableLabel.value}" switch`)
   try {
     fenceStore.setFenceAutoEnable(target)
   } catch (error) {
@@ -579,41 +649,6 @@ const onToggleFenceAutoEnable = (value: boolean | null): void => {
       timer: 4000,
     })
   }
-}
-
-const confirmAction = async (
-  title: string,
-  message: string | string[],
-  confirmText: string,
-  maxWidth = '520px'
-): Promise<boolean> => {
-  let confirmed = false
-  try {
-    // Awaiting the dialog's own promise is what keeps Escape and backdrop
-    // clicks from stranding the caller: those reject rather than press a button.
-    await showDialog({
-      variant: 'warning',
-      title,
-      message,
-      persistent: false,
-      maxWidth,
-      actions: [
-        { text: 'Cancel', action: () => undefined },
-        {
-          text: confirmText,
-          class: 'bg-[#FFFFFF33]',
-          action: () => {
-            confirmed = true
-          },
-        },
-      ],
-    })
-  } catch {
-    return false
-  } finally {
-    closeDialog()
-  }
-  return confirmed
 }
 
 const confirmPx4MultipleInclusionsIfNeeded = async (): Promise<boolean> => {

@@ -128,6 +128,14 @@
           hide-details
           @update:model-value="setShowArmedMenuWarning"
         />
+        <v-switch
+          :model-value="!alertStore.neverShowBoatDriftFenceWarning"
+          label="Show warning when picking a fence action that leaves a boat drifting"
+          color="white"
+          class="mb-2 ml-3"
+          hide-details
+          @update:model-value="setShowBoatDriftWarning"
+        />
       </div>
     </template>
   </BaseConfigurationView>
@@ -208,6 +216,12 @@ const setShowArmedMenuWarning = (value: boolean | null): void => {
   const show = value ?? false
   logUserAction(`${show ? 'Enabled' : 'Disabled'} armed-vehicle menu warning`)
   alertStore.neverShowArmedMenuWarning = !show
+}
+
+const setShowBoatDriftWarning = (value: boolean | null): void => {
+  const show = value ?? false
+  logUserAction(`${show ? 'Enabled' : 'Disabled'} the boat drift warning for fence actions`)
+  alertStore.neverShowBoatDriftFenceWarning = !show
 }
 
 const downloadOutcomes = {

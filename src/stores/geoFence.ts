@@ -25,6 +25,7 @@ import {
   sameFenceGeometry,
   simplifyFencePolygons,
 } from '@/libs/geo-fence'
+import { fenceActionParameter } from '@/libs/vehicle/fence-actions'
 import type { Parameter } from '@/libs/vehicle/types'
 import * as Vehicle from '@/libs/vehicle/vehicle'
 import type { BreachReturnPoint, FenceCircle, FenceLatLng, FencePolygon, GeoFencePlan } from '@/types/geofence'
@@ -173,6 +174,13 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   // on restores the operator's configured mode instead of flattening 2–4 to 1.
   const lastAutoEnableMode = ref(1)
 
+  // Current fence action (`FENCE_ACTION` on ArduPilot, `GF_ACTION` on PX4), `undefined` until the vehicle answers.
+  const fenceAction = ref<number | undefined>(undefined)
+  const fenceActionParam = computed(() => {
+    const v = mainVehicleStore.mainVehicle
+    return v ? fenceActionParameter(v.firmware()) : undefined
+  })
+
   // Whether the vehicle reports being outside its fence (FENCE_STATUS.breach_status), which the alerter announces.
   // `undefined` while unknown (no vehicle, or the link is down), so a reconnect outside the fence warns again and
   // losing track of the fence is never announced as the vehicle getting back inside.
@@ -293,6 +301,8 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
       const mode = Math.round(param.value)
       fenceAutoEnableMode.value = mode
       if (mode > 0) lastAutoEnableMode.value = mode
+    } else if (param.name === fenceActionParam.value) {
+      fenceAction.value = Math.round(param.value)
     }
   }
   watch(
@@ -351,6 +361,15 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
       if (vis !== 'visible') return
       refreshFenceEnabled()
       fenceEnablePollHandle = setInterval(refreshFenceEnabled, FENCE_ENABLE_POLL_INTERVAL_MS)
+    },
+    { immediate: true }
+  )
+
+  watch(
+    [fenceActionParam, () => mainVehicleStore.isVehicleOnline],
+    ([name, online]) => {
+      fenceAction.value = undefined
+      if (name && online) mainVehicleStore.mainVehicle?.requestParameter(name)
     },
     { immediate: true }
   )
@@ -430,6 +449,29 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
   }
 
   /**
+   * Adds a ready-made polygon to the fence, for callers that build one from
+   * something other than the click-to-draw flow.
+   * @param { FenceLatLng[] } vertices Ordered vertices, with the closing one left implicit.
+   * @param { boolean } inclusion Whether the vehicle is restricted to the inside of the polygon.
+   * @param { string } [name] Name shown for the polygon in the editor.
+   * @returns { FencePolygon | undefined } The added polygon, or `undefined` when given fewer than 3 vertices.
+   */
+  const addPolygon = (vertices: FenceLatLng[], inclusion: boolean, name?: string): FencePolygon | undefined => {
+    if (vertices.length < 3) return undefined
+    const polygon: FencePolygon = {
+      id: uuid(),
+      inclusion,
+      vertices: cloneVertices(vertices),
+      ...(name ? { name } : {}),
+    }
+    polygons.push(polygon)
+    draft.setInteractive(polygon.id)
+    markDirty()
+    persistDraft()
+    return polygon
+  }
+
+  /**
    * Commits the polygon currently being drawn into the persistent fence
    * model. Requires at least 3 vertices, otherwise it cancels silently.
    * @returns { FencePolygon | undefined } The committed polygon, or `undefined` if not enough vertices.
@@ -495,6 +537,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
         id: p.id ?? uuid(),
         inclusion: p.inclusion,
         vertices: cloneVertices(p.vertices),
+        ...(p.name ? { name: p.name } : {}),
       }))
     )
     circles.splice(
@@ -522,7 +565,12 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
    */
   const exportPlan = (): GeoFencePlan => ({
     version: 2,
-    polygons: polygons.map((p) => ({ id: p.id, inclusion: p.inclusion, vertices: cloneVertices(p.vertices) })),
+    polygons: polygons.map((p) => ({
+      id: p.id,
+      inclusion: p.inclusion,
+      vertices: cloneVertices(p.vertices),
+      ...(p.name ? { name: p.name } : {}),
+    })),
     circles: circles.map((c) => ({
       id: c.id,
       inclusion: c.inclusion,
@@ -714,6 +762,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     fenceBreached,
     fenceAutoEnableMode,
     lastAutoEnableMode,
+    fenceAction,
     readFenceEnabled,
     setFenceEnabled,
     setFenceAutoEnable,
@@ -727,6 +776,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     toggleCircleInclusion,
     deletePolygon,
     deleteCircle,
+    addPolygon,
     finishDrawingPolygon,
     finishDrawingCircle,
     setBreachReturn,

@@ -10,6 +10,7 @@ export const useAlertStore = defineStore('alert', () => {
   const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
   const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   const neverShowArmedMenuWarning = useBlueOsStorage('cockpit-never-show-armed-menu-warning', false)
+  const neverShowBoatDriftFenceWarning = useBlueOsStorage('cockpit-never-show-boat-drift-fence-warning', false)
   const skipArmedMenuWarningThisSession = ref(false)
   const { speak, cancelSpeech } = useTextToSpeech()
   const enabledAlertLevels = useBlueOsStorage('cockpit-enabled-alert-levels', [
@@ -103,6 +104,7 @@ export const useAlertStore = defineStore('alert', () => {
     pushWarningAlert,
     pushCriticalAlert,
     neverShowArmedMenuWarning,
+    neverShowBoatDriftFenceWarning,
     skipArmedMenuWarningThisSession,
     alertVolume,
     lastSpokenAlertIndex,

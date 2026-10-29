@@ -6,17 +6,31 @@
       </template>
       <template #content>
         <div class="flex flex-col w-full">
-          <p v-if="!isApm && !isPx4" class="text-xs opacity-70 px-3 py-2">
-            Connect a vehicle to view its geofence parameters.
-          </p>
-          <p v-else class="text-[11px] opacity-70 px-3 pt-2 pb-1">
-            These parameters apply to all fences uploaded to the vehicle.
-          </p>
+          <div class="flex items-start justify-between gap-x-2 px-3">
+            <p v-if="!isApm && !isPx4" class="text-xs opacity-70 py-2">
+              Connect a vehicle to view its geofence parameters.
+            </p>
+            <p v-else class="text-[11px] opacity-70 pt-2 pb-1">
+              These parameters apply to all fences uploaded to the vehicle.
+            </p>
+            <v-tooltip location="top" text="Reload values from vehicle">
+              <template #activator="{ props }">
+                <v-btn v-bind="props" variant="text" size="x-small" icon class="mt-1 -mr-2" @click="onRefreshAllParams">
+                  <v-icon size="14">mdi-refresh</v-icon>
+                </v-btn>
+              </template>
+            </v-tooltip>
+          </div>
+
+          <div v-if="!isApm && !isPx4 && breachOptions.length" class="px-3 pb-2 text-[11px]">
+            <p class="opacity-70 mb-1">On a fence breach, the planned vehicle can be set to:</p>
+            <p v-for="action in breachOptions" :key="action.value">{{ action.label }}</p>
+          </div>
 
           <div
-            v-for="param in activeParams"
+            v-for="param in rows"
             :key="param.name"
-            class="flex w-full justify-between items-center border-b-[1px] border-[#FFFFFF22] h-[36px] px-3"
+            class="flex w-full justify-between items-center gap-x-2 border-b-[1px] last:border-b-0 border-[#FFFFFF22] min-h-[36px] px-3"
           >
             <p class="text-start text-[12px] flex-1 truncate">{{ param.name }}</p>
             <div class="flex items-center gap-x-2">
@@ -37,27 +51,65 @@
                 </template>
                 <div class="text-xs whitespace-pre-line pa-1 leading-snug">{{ param.description }}</div>
               </v-tooltip>
+              <v-select
+                v-if="param.options"
+                :model-value="paramValues[param.name]"
+                :items="param.options"
+                item-title="label"
+                item-value="value"
+                hide-details
+                density="compact"
+                theme="dark"
+                variant="plain"
+                center-affix
+                class="flex-none w-[150px] text-xs [&_.v-field\_\_input]:py-0 [&_.v-field\_\_input]:min-h-7 [&_.v-field\_\_input]:justify-end [&_.v-field\_\_append-inner]:-translate-y-1"
+                @update:model-value="(value: number) => onSelectParam(param, value)"
+              >
+                <template #selection="{ item }">
+                  <span class="text-xs truncate">{{ item.raw.label }}</span>
+                  <span class="text-[10px] opacity-60 ml-1">{{ item.raw.value }}</span>
+                </template>
+                <template #item="{ props: itemProps, item }">
+                  <v-list-item v-bind="itemProps">
+                    <template #append>
+                      <span class="text-[10px] opacity-60 ml-2">{{ item.raw.value }}</span>
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-select>
               <input
+                v-else
                 type="number"
                 class="p-1 bg-[#FFFFFF11] w-[90px] text-xs text-right rounded-sm"
+                :min="param.min"
+                :max="param.max"
                 :value="paramValues[param.name] ?? ''"
-                @change="onWriteParam(param.name, ($event.target as HTMLInputElement).value, param.type)"
+                @change="onNumberInput(param, $event.target as HTMLInputElement)"
               />
             </div>
-          </div>
-
-          <div class="flex flex-row justify-end px-3 py-2">
-            <v-tooltip location="top" text="Reload values from vehicle">
-              <template #activator="{ props }">
-                <v-btn v-bind="props" variant="text" size="x-small" icon @click="onRefreshAllParams">
-                  <v-icon size="14">mdi-refresh</v-icon>
-                </v-btn>
-              </template>
-            </v-tooltip>
           </div>
         </div>
       </template>
     </ExpansiblePanel>
+    <InteractionDialog
+      :show-dialog="pendingDriftWrite !== undefined"
+      title="This leaves the boat drifting"
+      variant="text-only"
+      max-width="560px"
+      :message="DRIFT_WARNING"
+      @update:show-dialog="(open: boolean) => !open && pendingDriftWrite && closeDriftWarning(false)"
+    >
+      <template #actions>
+        <div class="flex items-center w-full gap-x-2 px-2 pb-2">
+          <v-checkbox v-model="dontShowDriftAgain" hide-details density="compact" class="flex-none">
+            <template #label><span class="text-sm">Don't show again</span></template>
+          </v-checkbox>
+          <div class="flex-1" />
+          <v-btn variant="text" size="small" @click="closeDriftWarning(false)">Cancel</v-btn>
+          <v-btn size="small" class="bg-[#FFFFFF33] text-white" @click="closeDriftWarning(true)">Use this action</v-btn>
+        </div>
+      </template>
+    </InteractionDialog>
   </div>
 </template>
 
@@ -65,10 +117,14 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import InteractionDialog from '@/components/InteractionDialog.vue'
 import { useSnackbar } from '@/composables/snackbar'
+import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
 import type { MavParamType as DialectMavParamType } from '@/libs/connection/m2r/dialects/ardupilotmega/MavParamType'
 import { MAVLinkType, MavParamType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { constrain } from '@/libs/utils'
 import * as Vehicle from '@/libs/vehicle/vehicle'
+import { useAlertStore } from '@/stores/alert'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 
 /**
@@ -90,49 +146,83 @@ interface ParamDescriptor {
    * expected by the MAVLink parameter API.
    */
   type: DialectMavParamType
+  /**
+   * Lowest value the autopilot accepts, for numeric parameters.
+   */
+  min?: number
+  /**
+   * Highest value the autopilot accepts, for numeric parameters.
+   */
+  max?: number
+  /**
+   * The accepted values, for parameters picked from a list.
+   */
+  options?: ParamOption[]
+}
+
+/**
+ * One accepted value of a list parameter.
+ */
+interface ParamOption {
+  /**
+   * Parameter value.
+   */
+  value: number
+  /**
+   * What the value does, in operator terms.
+   */
+  label: string
+  /**
+   * Whether the value leaves a boat drifting after a breach.
+   */
+  drifts?: boolean
+}
+
+/**
+ * A fence action write held back until the operator confirms the boat drift warning.
+ */
+interface PendingDriftWrite {
+  /**
+   * The parameter to write.
+   */
+  param: ParamDescriptor
+  /**
+   * The value to write.
+   */
+  value: number
 }
 
 const apmParams: ParamDescriptor[] = [
   {
     name: 'FENCE_ACTION',
-    description: [
-      'Action taken when the fence is breached. Available values vary by vehicle type:',
-      '0 → Report only (no autopilot reaction).',
-      '1 → RTL, falling back to Land if RTL is unavailable.',
-      '2 → Always Land (Copter only).',
-      '3 → SmartRTL, falling back to RTL or Land (Copter only).',
-      '4 → Brake, falling back to Land (Copter only).',
-      '5 → SmartRTL, falling back to Land (Copter only).',
-      '6 → Switch to Guided mode (Plane only).',
-      '7 → Switch to Guided mode while passing pilot throttle (Plane only).',
-    ].join('\n'),
+    description: 'What the vehicle does when it crosses the fence. The options depend on the vehicle type.',
     type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 } as DialectMavParamType,
   },
   {
     name: 'FENCE_ALT_MAX',
     description: 'Maximum altitude (meters) before the fence triggers. Numeric value, range 10 to 1000, increment 1.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 10,
+    max: 1000,
   },
   {
     name: 'FENCE_ALT_MIN',
     description: 'Minimum altitude (meters) before the fence triggers. Numeric value, range -100 to 100, increment 1.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: -100,
+    max: 100,
   },
   {
     name: 'FENCE_MARGIN',
     description:
       'Buffer distance (meters) the autopilot tries to keep from the fence boundary to avoid breaching. Numeric value, range 1 to 10.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 1,
+    max: 10,
   },
   {
     name: 'FENCE_AUTOENABLE',
-    description: [
-      'Controls whether the fence is automatically enabled by the autopilot:',
-      '0 → Off (only enabled manually via FENCE_ENABLE).',
-      '1 → Auto-enable on takeoff once the configured altitude is reached.',
-      '2 → Auto-enable on takeoff; the minimum-altitude floor is disabled during landing.',
-      '3 → Auto-enable as soon as the vehicle is armed.',
-    ].join('\n'),
+    description: 'Whether the autopilot turns the fence on by itself, and when.',
     type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 } as DialectMavParamType,
   },
 ]
@@ -140,15 +230,7 @@ const apmParams: ParamDescriptor[] = [
 const px4Params: ParamDescriptor[] = [
   {
     name: 'GF_ACTION',
-    description: [
-      'Action taken when the fence is breached:',
-      '0 → None (no autopilot reaction).',
-      '1 → Warning only (notification, no behavior change).',
-      '2 → Hold (switch to Hold mode and stop in place).',
-      '3 → Return (switch to Return mode / RTL).',
-      '4 → Terminate (immediate flight termination, vehicle disarm/crash).',
-      '5 → Land (switch to Land mode at current position).',
-    ].join('\n'),
+    description: 'What the vehicle does when it crosses the fence.',
     type: { type: MavParamType.MAV_PARAM_TYPE_INT32 } as DialectMavParamType,
   },
   {
@@ -156,26 +238,32 @@ const px4Params: ParamDescriptor[] = [
     description:
       'Maximum horizontal distance (meters) the vehicle may travel from the home position. Numeric value. 0 → no horizontal limit.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 0,
+    max: 10000,
   },
   {
     name: 'GF_MAX_VER_DIST',
     description:
       'Maximum vertical distance (meters) the vehicle may travel above the home position. Numeric value. 0 → no vertical limit.',
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
+    min: 0,
+    max: 1000,
   },
   {
     name: 'GF_PREDICT',
-    description: [
-      'Predictive geofence breach detection. The autopilot acts based on the projected position when enabled:',
-      '0 → Disabled (act only after a breach has occurred).',
-      '1 → Enabled (act as soon as a breach is predicted).',
-    ].join('\n'),
+    description: 'Whether the autopilot acts as soon as a breach is predicted, rather than once it has happened.',
     type: { type: MavParamType.MAV_PARAM_TYPE_INT32 } as DialectMavParamType,
+    options: [
+      { value: 0, label: 'Off' },
+      { value: 1, label: 'On' },
+    ],
   },
 ]
 
 const vehicleStore = useMainVehicleStore()
+const alertStore = useAlertStore()
 const { openSnackbar } = useSnackbar()
+const { parameterName: actionParam, options: breachOptions, autoEnableOptions } = useFenceBreachAction()
 
 const paramValues = reactive<Record<string, number | undefined>>({})
 const openTooltip = ref<string | null>(null)
@@ -183,6 +271,20 @@ const openTooltip = ref<string | null>(null)
 const isApm = computed<boolean>(() => vehicleStore.mainVehicle?.firmware() === Vehicle.Firmware.ArduPilot)
 const isPx4 = computed<boolean>(() => vehicleStore.mainVehicle?.firmware() === Vehicle.Firmware.PX4)
 const activeParams = computed<ParamDescriptor[]>(() => (isApm.value ? apmParams : isPx4.value ? px4Params : []))
+
+// Only what the vehicle answered for, since the parameter set differs between vehicle types and firmware versions.
+const rows = computed<ParamDescriptor[]>(() => {
+  const vehicleOptions: Record<string, ParamOption[]> = { FENCE_AUTOENABLE: autoEnableOptions.value }
+  if (actionParam.value) vehicleOptions[actionParam.value] = breachOptions.value
+  return activeParams.value
+    .filter((param) => paramValues[param.name] !== undefined)
+    .map((param) => {
+      const options = vehicleOptions[param.name] ?? param.options
+      const value = paramValues[param.name] as number
+      if (!options || options.some((option) => option.value === value)) return { ...param, options }
+      return { ...param, options: [...options, { value, label: 'Not used by this vehicle' }] }
+    })
+})
 
 const refreshAllParams = (): void => {
   activeParams.value.forEach((p) => vehicleStore.requestParameter(p.name))
@@ -193,10 +295,48 @@ const onRefreshAllParams = (): void => {
   refreshAllParams()
 }
 
-const onWriteParam = (name: string, valueStr: string, type: DialectMavParamType): void => {
+const DRIFT_WARNING =
+  'When the boat crosses the fence, this action cuts its motors. Any current, tide or wind then carries it ' +
+  'further past the fence, toward whatever lies beyond, and it will not come back by itself. Unless someone ' +
+  'can reach the boat quickly, pick an action that returns home or holds position instead.'
+
+const pendingDriftWrite = ref<PendingDriftWrite>()
+const dontShowDriftAgain = ref(false)
+
+const onSelectParam = (param: ParamDescriptor, value: number): void => {
+  const drifts = param.options?.find((option) => option.value === value)?.drifts
+  if (!drifts || alertStore.neverShowBoatDriftFenceWarning) {
+    onWriteParam(param.name, value, param.type)
+    return
+  }
+  dontShowDriftAgain.value = false
+  pendingDriftWrite.value = { param, value }
+}
+
+const closeDriftWarning = (confirmed: boolean): void => {
+  const pending = pendingDriftWrite.value
+  pendingDriftWrite.value = undefined
+  if (!confirmed || !pending) {
+    logUserAction('Kept the previous fence action after the boat drift warning')
+    return
+  }
+  if (dontShowDriftAgain.value) {
+    alertStore.neverShowBoatDriftFenceWarning = true
+    logUserAction('Turned off the boat drift warning for fence actions')
+  }
+  onWriteParam(pending.param.name, pending.value, pending.param.type)
+}
+
+const onNumberInput = (param: ParamDescriptor, input: HTMLInputElement): void => {
+  const typed = Number(input.value)
+  if (input.value === '' || !Number.isFinite(typed)) return
+  const value = constrain(typed, param.min ?? -Infinity, param.max ?? Infinity)
+  input.value = String(value)
+  onWriteParam(param.name, value, param.type)
+}
+
+const onWriteParam = (name: string, value: number, type: DialectMavParamType): void => {
   if (!vehicleStore.mainVehicle) return
-  const value = Number(valueStr)
-  if (!Number.isFinite(value)) return
   logUserAction(`Wrote fence parameter ${name} as ${value}`)
   try {
     vehicleStore.mainVehicle.setParameter({ id: name, value, type })
