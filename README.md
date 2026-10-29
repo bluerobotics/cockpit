@@ -156,7 +156,7 @@ ArduCopter support has been physically tested, but the primary development team 
         <em>ArduRover</em>
       </td>
       <td align="center">
-        <img src="src/assets/arducopter-top-view.avif" width="80"><br>
+        <img src="src/assets/copter-marker.avif" width="80"><br>
         <strong>Drones</strong><br>
         <em>ArduCopter</em>
       </td>
