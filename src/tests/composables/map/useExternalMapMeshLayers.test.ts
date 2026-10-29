@@ -11,16 +11,16 @@ vi.mock('@/composables/map/useExternalMapMeshes', () => ({
   useExternalMapMeshes: () => ({ meshes: { meshes: new Map(), subscribe: () => () => undefined } }),
 }))
 
-const { useExternalMapMeshLayers } = await import('@/composables/map/useExternalMapMeshLayers')
+const { defaultMeshAlphaCurve, useExternalMapMeshLayers } = await import('@/composables/map/useExternalMapMeshLayers')
 
 let map: L.Map
 const meshCanvas = (): HTMLCanvasElement | null | undefined => map.getPane('externalMeshPane')?.querySelector('canvas')
-const meshLayer = (): ExternalMapMeshesLayer | undefined => {
-  let found: ExternalMapMeshesLayer | undefined
-  map.eachLayer((layer) => {
-    if (layer instanceof ExternalMapMeshesLayer) found = layer
+const meshAlphaCurve = (onMap = map): readonly [number, number] | undefined => {
+  let curve: readonly [number, number] | undefined
+  onMap.eachLayer((layer) => {
+    if (layer instanceof ExternalMapMeshesLayer) curve = Reflect.get(layer, 'alphaCurve')
   })
-  return found
+  return curve
 }
 
 beforeEach(() => {
@@ -35,6 +35,127 @@ beforeEach(() => {
 afterEach(() => {
   map.remove()
   vi.restoreAllMocks()
+})
+
+describe('useExternalMapMeshLayers mesh transparency range', () => {
+  test('defaults to hiding below 25% and drawing opaque from 50%', () => {
+    expect(defaultMeshAlphaCurve).toEqual([0.25, 0.5])
+  })
+
+  test('draws a new map at the default until it is set otherwise', () => {
+    const layers = useExternalMapMeshLayers()
+    layers.init(map)
+    expect(meshAlphaCurve()).toEqual(defaultMeshAlphaCurve)
+    layers.destroy()
+  })
+
+  test('applies a range set before init, keeps it across a destroy and a new init, and redraws on a change', () => {
+    const layers = useExternalMapMeshLayers()
+    layers.setMeshAlphaCurve([0.1, 0.3])
+    layers.init(map)
+    expect(meshAlphaCurve()).toEqual([0.1, 0.3])
+
+    layers.destroy()
+    expect(meshCanvas()).toBeNull()
+    layers.init(map)
+    expect(meshAlphaCurve()).toEqual([0.1, 0.3])
+
+    vi.mocked(requestAnimationFrame).mockClear()
+    layers.setMeshAlphaCurve([0.4, 0.8])
+    expect(meshAlphaCurve()).toEqual([0.4, 0.8])
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(1)
+    layers.setMeshAlphaCurve([0.4, 0.8])
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(1)
+    expect(meshCanvas()?.style.opacity).toBe('')
+    layers.destroy()
+  })
+
+  test('normalizes a range set before init', () => {
+    const layers = useExternalMapMeshLayers()
+    layers.setMeshAlphaCurve([-1, 2])
+    layers.init(map)
+    expect(meshAlphaCurve()).toEqual([0, 1])
+    layers.destroy()
+  })
+
+  test('keeps the range of each map to that map', () => {
+    const otherContainer = document.createElement('div')
+    document.body.appendChild(otherContainer)
+    const otherMap = L.map(otherContainer, { zoomAnimation: false }).setView([-27.59, -48.55], 15)
+    const layers = useExternalMapMeshLayers()
+    const otherLayers = useExternalMapMeshLayers()
+    layers.init(map)
+    otherLayers.init(otherMap)
+
+    otherLayers.setMeshAlphaCurve([0, 0])
+    expect(meshAlphaCurve()).toEqual(defaultMeshAlphaCurve)
+    expect(meshAlphaCurve(otherMap)).toEqual([0, 0])
+    layers.setMeshAlphaCurve([0.6, 0.7])
+    expect(meshAlphaCurve()).toEqual([0.6, 0.7])
+    expect(meshAlphaCurve(otherMap)).toEqual([0, 0])
+
+    layers.destroy()
+    otherLayers.destroy()
+    otherMap.remove()
+  })
+})
+
+describe('useExternalMapMeshLayers mesh visibility', () => {
+  test('hides and shows the meshes after init, keeping their transparency range', () => {
+    const layers = useExternalMapMeshLayers()
+    layers.setMeshAlphaCurve([0.3, 0.6])
+    layers.init(map)
+
+    layers.setMeshesShown(false)
+    expect(meshCanvas()).toBeNull()
+
+    layers.setMeshesShown(true)
+    expect(meshAlphaCurve()).toEqual([0.3, 0.6])
+    layers.destroy()
+  })
+
+  test('redraws the meshes each time they are shown again', () => {
+    const layers = useExternalMapMeshLayers()
+    layers.init(map)
+    for (let toggle = 0; toggle < 3; toggle++) {
+      layers.setMeshesShown(false)
+      vi.mocked(requestAnimationFrame).mockClear()
+      layers.setMeshesShown(true)
+      expect(requestAnimationFrame).toHaveBeenCalledTimes(1)
+    }
+    layers.destroy()
+  })
+
+  test('applies a hide set before init, across a destroy and a new init', () => {
+    const layers = useExternalMapMeshLayers()
+    layers.setMeshesShown(false)
+    layers.init(map)
+    expect(meshCanvas()).toBeNull()
+
+    layers.destroy()
+    layers.init(map)
+    expect(meshCanvas()).toBeNull()
+
+    layers.setMeshesShown(true)
+    expect(meshCanvas()).toBeTruthy()
+    layers.destroy()
+    expect(meshCanvas()).toBeNull()
+  })
+
+  test('leaves the other map layers drawn while the meshes are hidden', () => {
+    const geoTiff = L.imageOverlay('data:,', map.getBounds()).addTo(map)
+    const layers = useExternalMapMeshLayers()
+    layers.init(map)
+
+    layers.setMeshesShown(false)
+    expect(meshCanvas()).toBeNull()
+    expect(map.hasLayer(geoTiff)).toBe(true)
+
+    layers.setMeshesShown(true)
+    expect(meshCanvas()).toBeTruthy()
+    expect(map.hasLayer(geoTiff)).toBe(true)
+    layers.destroy()
+  })
 })
 
 describe('useExternalMapMeshLayers in a component that awaits other layers before init', () => {
@@ -69,15 +190,23 @@ describe('useExternalMapMeshLayers in a component that awaits other layers befor
     expect(meshCanvas()).toBeFalsy()
     await finishOverlays()
     expect(meshCanvas()).toBeTruthy()
+    expect(meshAlphaCurve()).toEqual(defaultMeshAlphaCurve)
 
     unmount()
     expect(meshCanvas()).toBeNull()
-    expect(meshLayer()).toBeUndefined()
+    expect(meshAlphaCurve()).toBeUndefined()
     expect(setIntervalSpy).not.toHaveBeenCalled()
   })
 })
 
 describe('useExternalMapMeshLayers on a map that is shown and hidden', () => {
+  const meshLayer = (): ExternalMapMeshesLayer | undefined => {
+    let found: ExternalMapMeshesLayer | undefined
+    map.eachLayer((layer) => {
+      if (layer instanceof ExternalMapMeshesLayer) found = layer
+    })
+    return found
+  }
   const isLayerShown = (): boolean | undefined => Reflect.get(meshLayer() ?? {}, 'shown')
 
   test('hides the meshes as soon as a reactive isShown turns false, and shows them when it turns true', async () => {
@@ -152,5 +281,14 @@ describe('useExternalMapMeshLayers on a map that is shown and hidden', () => {
     shown.value = true
     await nextTick()
     expect(isShown).not.toHaveBeenCalled()
+  })
+
+  test('keeps the meshes shown across hiding and showing them on the map', () => {
+    const layers = useExternalMapMeshLayers()
+    layers.init(map)
+    layers.setMeshesShown(false)
+    layers.setMeshesShown(true)
+    expect(isLayerShown()).toBe(true)
+    layers.destroy()
   })
 })

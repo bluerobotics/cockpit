@@ -6,7 +6,9 @@ import { useExternalMapMeshes } from '@/composables/map/useExternalMapMeshes'
 import { openSnackbar } from '@/composables/snackbar'
 import type { MapMesh } from '@/libs/map/external-map-meshes'
 import { mapMeshGlRenderer } from '@/libs/map/external-map-meshes-gl'
-import { ExternalMapMeshesLayer } from '@/libs/map/external-map-meshes-layer'
+import { defaultMeshAlphaCurve, ExternalMapMeshesLayer } from '@/libs/map/external-map-meshes-layer'
+
+export { defaultMeshAlphaCurve }
 
 const MESH_PANE = 'externalMeshPane'
 
@@ -29,6 +31,15 @@ export interface UseExternalMapMeshLayersReturn {
    */
   init: (map: LeafletMap, isShown?: () => boolean) => void
   /**
+   * Sets, before or after `init`, this map's transparency range [hideBelow, opaqueAbove]: texels of alpha below
+   * hideBelow are hidden and those from opaqueAbove drawn opaque. [0, 0] draws every non-empty texel opaque.
+   */
+  setMeshAlphaCurve: (curve: readonly [number, number]) => void
+  /**
+   * Shows or hides the meshes on this map, before or after `init`, leaving the other layers drawn.
+   */
+  setMeshesShown: (shown: boolean) => void
+  /**
    * Removes the meshes from the map.
    */
   destroy: () => void
@@ -43,6 +54,8 @@ export const useExternalMapMeshLayers = (): UseExternalMapMeshLayersReturn => {
   const { meshes } = useExternalMapMeshes()
 
   let meshLayer: ExternalMapMeshesLayer | undefined
+  let meshAlphaCurve = defaultMeshAlphaCurve
+  let meshesShown = true
   let mapRef: LeafletMap | undefined
   let stopWatchingShown: (() => void) | undefined
 
@@ -58,8 +71,22 @@ export const useExternalMapMeshLayers = (): UseExternalMapMeshLayersReturn => {
       pane: MESH_PANE,
     })
     meshLayer = layer
+    layer.setMapAlphaCurve(meshAlphaCurve)
     stopWatchingShown = watch(isShown, (shown) => layer.setShown(shown), { immediate: true })
-    map.addLayer(layer)
+    if (meshesShown) map.addLayer(layer)
+  }
+
+  const setMeshAlphaCurve = (curve: readonly [number, number]): void => {
+    meshAlphaCurve = curve
+    meshLayer?.setMapAlphaCurve(curve)
+  }
+
+  // The uploaded meshes belong to the shared renderer, so re-adding the layer only redraws them.
+  const setMeshesShown = (shown: boolean): void => {
+    meshesShown = shown
+    if (!meshLayer || !mapRef) return
+    if (shown) mapRef.addLayer(meshLayer)
+    else mapRef.removeLayer(meshLayer)
   }
 
   const destroy = (): void => {
@@ -70,5 +97,5 @@ export const useExternalMapMeshLayers = (): UseExternalMapMeshLayersReturn => {
     mapRef = undefined
   }
 
-  return { init, destroy }
+  return { init, setMeshAlphaCurve, setMeshesShown, destroy }
 }

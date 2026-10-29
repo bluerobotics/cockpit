@@ -65,6 +65,7 @@ uniform sampler2D palette;
 uniform bool paletted;
 uniform vec2 stripSize;
 uniform vec2 pageSize;
+uniform vec2 alphaCurve;
 in vec2 uv;
 flat in vec2 stripOrigin;
 flat in vec4 quadTint;
@@ -75,11 +76,25 @@ void main() {
   vec4 texel = texture(texels, (stripOrigin + inStrip) / pageSize);
   vec4 straight = paletted ? texture(palette, vec2((texel.r * 255.0 + 0.5) / 256.0, 0.5)) : texel;
   straight *= quadTint;
+  // Empty texels are never drawn; the rest are hidden below alphaCurve.x and opaque from alphaCurve.y, eased between,
+  // or cut at alphaCurve.x when alphaCurve.y is not above it, where smoothstep is undefined.
+  float a = clamp(straight.a, 0.0, 1.0);
+  vec2 curve = clamp(alphaCurve, 0.0, 1.0);
+  float alpha = a > 0.0 ? (curve.y <= curve.x ? step(curve.x, a) : smoothstep(curve.x, curve.y, a)) : 0.0;
   // Premultiplied, and mixed into what older quads of the mesh drew by the blend state render() sets.
-  color = vec4(straight.rgb * straight.a, straight.a);
+  color = vec4(straight.rgb * alpha, alpha);
 }`
 
-const uniformNames = ['offset', 'scale', 'firstSlot', 'stripsPerRow', 'stripSize', 'pageSize', 'paletted'] as const
+const uniformNames = [
+  'offset',
+  'scale',
+  'firstSlot',
+  'stripsPerRow',
+  'stripSize',
+  'pageSize',
+  'paletted',
+  'alphaCurve',
+] as const
 
 /**
  * Weight with which a quad mixes into what older quads of its mesh drew beneath it, wherever it is not the first to
@@ -192,9 +207,12 @@ export class MapMeshGlRenderer implements MapMeshRenderer {
    * valid until the current task ends.
    * @param {MapMesh} mesh - The mesh
    * @param {MapMeshView} view - Area of the map
+   * @param {[number, number]} alphaCurve - The map's transparency range [hideBelow, opaqueAbove], drawing
+   * each texel's alpha a > 0 as smoothstep(hideBelow, opaqueAbove, a), or as step(hideBelow, a) when opaqueAbove is
+   * not above hideBelow
    * @returns {boolean} Whether anything was drawn
    */
-  render(mesh: MapMesh, view: MapMeshView): boolean {
+  render(mesh: MapMesh, view: MapMeshView, alphaCurve: readonly [number, number]): boolean {
     const { gl, canvas } = this
     if (gl.isContextLost()) return false
     this.store.flush(this)
@@ -221,6 +239,7 @@ export class MapMeshGlRenderer implements MapMeshRenderer {
     gl.uniform1i(uniforms.stripsPerRow, mesh.stripsPerRow)
     gl.uniform2f(uniforms.stripSize, mesh.stripWidth, mesh.stripHeight)
     gl.uniform1i(uniforms.paletted, mesh.format === 'r8' ? 1 : 0)
+    gl.uniform2f(uniforms.alphaCurve, alphaCurve[0], alphaCurve[1])
     gl.activeTexture(gl.TEXTURE1)
     gl.bindTexture(gl.TEXTURE_2D, gpu.palette)
     gl.activeTexture(gl.TEXTURE0)

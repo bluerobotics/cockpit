@@ -61,7 +61,7 @@ const renderWrappedRing = (): GlCall[] => {
   const originX = lonToMercatorX(-48.55) - 100
   const originY = latToMercatorY(-27.59) + 100
   const mesh = store.meshes.get('scan') as MapMesh
-  expect(renderer.render(mesh, { width: 400, height: 400, originX, originY, metresPerPixel: 1 })).toBe(true)
+  expect(renderer.render(mesh, { width: 400, height: 400, originX, originY, metresPerPixel: 1 }, [0.3, 0.7])).toBe(true)
   return calls
 }
 
@@ -70,18 +70,25 @@ afterEach(() => {
 })
 
 describe('MapMeshGlRenderer', () => {
-  test('outputs premultiplied color after the palette and tint, discarding nothing', () => {
+  test('outputs premultiplied color after the palette, tint and transparency range, discarding nothing', () => {
     const [gl, calls] = recordingGl()
     new MapMeshGlRenderer(document.createElement('canvas'), gl, new MapMeshStore())
     const fragment = fragmentSource(calls)
     expect(fragment).not.toContain('discard')
     const tinted = fragment.indexOf('straight *= quadTint;')
     expect(tinted).toBeGreaterThan(0)
-    expect(fragment.indexOf('color = vec4(straight.rgb * straight.a, straight.a);')).toBeGreaterThan(tinted)
+    const clamped = fragment.indexOf('vec2 curve = clamp(alphaCurve, 0.0, 1.0);')
+    expect(clamped).toBeGreaterThan(tinted)
+    const ranged = fragment.indexOf(
+      'float alpha = a > 0.0 ? (curve.y <= curve.x ? step(curve.x, a) : smoothstep(curve.x, curve.y, a)) : 0.0;'
+    )
+    expect(ranged).toBeGreaterThan(clamped)
+    expect(fragment.indexOf('color = vec4(straight.rgb * alpha, alpha);')).toBeGreaterThan(ranged)
   })
 
-  test('draws a wrapped ring oldest to newest, across pages, first exactly then mixed', () => {
+  test("draws a wrapped ring oldest to newest, across pages, with the map's range, first exactly then mixed", () => {
     const calls = renderWrappedRing()
+    expect(calls).toContainEqual(['uniform2f', ['alphaCurve', 0.3, 0.7]])
     expect(calls).toContainEqual(['clearStencil', [0]])
 
     // Pages hold 4 slots: slots 2 and 3 of the first page, 4 and 5 of the second, then 0 and 1 of the first.
@@ -170,7 +177,7 @@ describe('MapMeshGlRenderer releasing meshes', () => {
     }
     const [gl, calls] = recordingGl()
     const renderer = new MapMeshGlRenderer(document.createElement('canvas'), gl, store)
-    for (const id of ids) expect(renderer.render(store.meshes.get(id) as MapMesh, view)).toBe(true)
+    for (const id of ids) expect(renderer.render(store.meshes.get(id) as MapMesh, view, [0, 0])).toBe(true)
     return [store, renderer, calls]
   }
 
@@ -188,7 +195,7 @@ describe('MapMeshGlRenderer releasing meshes', () => {
     expect(freed).toHaveLength(3)
 
     const drawnFrom = calls.length
-    expect(renderer.render(store.meshes.get('survey') as MapMesh, view)).toBe(true)
+    expect(renderer.render(store.meshes.get('survey') as MapMesh, view, [0, 0])).toBe(true)
     const bound = calls
       .slice(drawnFrom)
       .filter(([name]) => name === 'bindTexture' || name === 'bindBuffer')
@@ -216,7 +223,8 @@ describe('MapMeshGlRenderer releasing meshes', () => {
     const [store, renderer, calls] = drawnMeshes(['scan', 'survey'])
     renderer.canvas.dispatchEvent(new Event('webglcontextrestored'))
     const from = calls.length
-    for (const id of ['scan', 'survey']) expect(renderer.render(store.meshes.get(id) as MapMesh, view)).toBe(true)
+    for (const id of ['scan', 'survey'])
+      expect(renderer.render(store.meshes.get(id) as MapMesh, view, [0, 0])).toBe(true)
     expect(calls.slice(from).filter(([name]) => name === 'bufferSubData')).toHaveLength(2)
   })
 
@@ -317,7 +325,7 @@ describe('MapMeshGlRenderer releasing meshes', () => {
     const releaseMesh = vi.spyOn(renderer, 'releaseMesh')
 
     const mesh = store.meshes.get('scan') as MapMesh
-    expect(renderer.render(mesh, view)).toBe(true)
+    expect(renderer.render(mesh, view, [0, 0])).toBe(true)
     const page = mesh.pages[0] as MapMeshPage
     expect(uploaded(calls)).toEqual([mesh.palette, page.instances, page.texels])
     expect(releaseMesh).not.toHaveBeenCalled()
@@ -370,7 +378,7 @@ describe('MapMeshGlRenderer releasing meshes', () => {
     store.set(tinyMesh('scan'))
     store.writeQuads('scan', { corners: quad(), uv: new Float32Array(8), texels: Uint8Array.of(7) })
     const from = calls.length
-    expect(renderer.render(store.meshes.get('scan') as MapMesh, view)).toBe(true)
+    expect(renderer.render(store.meshes.get('scan') as MapMesh, view, [0, 0])).toBe(true)
     const mesh = store.meshes.get('scan') as MapMesh
     const page = mesh.pages[0] as MapMeshPage
     expect(uploaded(calls.slice(from))).toEqual([mesh.palette, page.instances, page.texels])
@@ -394,7 +402,7 @@ describe('MapMeshGlRenderer releasing meshes', () => {
       throw new Error('Context lost.')
     })
     const releaseMesh = vi.spyOn(renderer, 'releaseMesh')
-    expect(() => renderer.render(store.meshes.get('scan') as MapMesh, view)).toThrow('Context lost.')
+    expect(() => renderer.render(store.meshes.get('scan') as MapMesh, view, [0, 0])).toThrow('Context lost.')
     expect(gpuMeshes(renderer).has('scan')).toBe(true)
 
     store.remove('scan')
