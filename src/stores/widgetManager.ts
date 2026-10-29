@@ -1,6 +1,6 @@
 import '@/libs/cosmos'
 
-import { useStorage, useWindowSize } from '@vueuse/core'
+import { useDocumentVisibility, useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { t } from 'ttag'
@@ -65,6 +65,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const viewsGroup = useBlueOsStorage<Profile>(viewsGroupKey, migrateLegacyViewsGroup() ?? blankViewsGroup)
   const currentViewIndex = useBlueOsStorage<number>('cockpit-current-view-index-v1', 0)
   const unmountHiddenViews = useStorage('cockpit-unmount-hidden-views', false)
+  const documentVisibility = useDocumentVisibility()
 
   // Self-heal: if we booted with a blank ViewsGroup but legacy data is reachable now (e.g. from raw localStorage or
   // from a late settings-manager import), migrate it in place so the user doesn't have to lose their profile.
@@ -379,7 +380,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * @param { Widget } widget - Widget
    */
   const isWidgetOnActiveView = (widget: Widget): boolean => {
-    return document.visibilityState === 'visible' && viewFromWidget(widget).hash === currentView.value.hash
+    return documentVisibility.value === 'visible' && viewFromWidget(widget).hash === currentView.value.hash
   }
 
   /**

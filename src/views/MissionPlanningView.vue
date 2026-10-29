@@ -963,6 +963,7 @@ import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissio
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
 import { useDragMeasureOverlay } from '@/composables/map/useDragMeasureOverlay'
+import { useExternalMapMeshLayers } from '@/composables/map/useExternalMapMeshLayers'
 import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
 import { useFenceDrawing } from '@/composables/map/useFenceDrawing'
 import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
@@ -1346,6 +1347,9 @@ const overlaysDialogOpen = ref(false)
 
 // Draws the overlays external software (BlueOS extensions, embedded pages) sent onto the planning map
 const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
+
+// Draws the meshes external software (BlueOS extensions, embedded pages) sent onto the planning map
+const { init: initExternalMeshLayers, destroy: destroyExternalMeshLayers } = useExternalMapMeshLayers()
 
 // Draws the coastline, restricted-area and airspace advisories the operator has loaded
 const { initHazardOverlay, destroyHazardOverlay, shownHazardAreaAt } = useHazardOverlay()
@@ -5072,6 +5076,7 @@ onMounted(async () => {
   await mapOverlays.initOverlays(planningMap.value, layerControl)
   if (unmounted) return
   initExternalOverlayLayers(planningMap.value, layerControl)
+  initExternalMeshLayers(planningMap.value)
 
   initHazardOverlay(planningMap.value, layerControl)
 
@@ -5160,6 +5165,7 @@ onUnmounted(() => {
   stopTileFallbackWatcher = undefined
   mapOverlays.destroyOverlays()
   destroyExternalOverlayLayers()
+  destroyExternalMeshLayers()
   destroyHazardOverlay()
   destroyCustomTileProviders()
 

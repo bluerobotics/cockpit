@@ -1794,6 +1794,11 @@ msgstr "无法将地图居中到设备（设备位置未定义）。"
 msgid "Cannot delete the current active session"
 msgstr "无法删除当前活动会话"
 
+#: src/composables/map/useExternalMapMeshLayers.ts
+#, javascript-format
+msgid "Cannot draw the map mesh \"${ 0 }\": ${ 1 }"
+msgstr ""
+
 #: src/composables/map/useMissionInsertion.ts
 msgid "Cannot insert mission: invalid segment."
 msgstr "无法插入任务：线段无效。"
@@ -12402,6 +12407,12 @@ msgstr "因此保存或删除该操作会停止它们。"
 #: src/views/ConfigurationGeneralView.vue
 msgid "starts with"
 msgstr "以以下内容开头："
+
+#: src/composables/map/useExternalMapMeshLayers.ts
+msgid ""
+"this browser or graphics driver does not support WebGL2. Try enabling "
+"hardware acceleration."
+msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue
 msgid "this computer's"

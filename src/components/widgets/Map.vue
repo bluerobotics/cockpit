@@ -278,6 +278,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { useExternalMapMeshLayers } from '@/composables/map/useExternalMapMeshLayers'
 import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
 import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
 import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
@@ -641,6 +642,9 @@ const overlaysDialogOpen = ref(false)
 const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
 const hasAnyMapOverlay = useHasAnyMapOverlay()
 
+// Draws the meshes external software (BlueOS extensions, embedded pages) sent onto this map
+const { init: initExternalMeshLayers, destroy: destroyExternalMeshLayers } = useExternalMapMeshLayers()
+
 // Draws the coastline, restricted-area and airspace advisories the operator has loaded
 // Chosen per widget, so hiding a layer here leaves Mission Planning's hazard checks alone.
 const shownHazardSources = computed<HazardSourceId[]>({
@@ -889,6 +893,7 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
   if (map.value) initExternalOverlayLayers(map.value, layerControl)
+  if (map.value) initExternalMeshLayers(map.value, () => widgetStore.isWidgetVisible(widget.value))
 
   if (map.value) initHazardOverlay(map.value, layerControl)
 
@@ -1107,6 +1112,7 @@ onBeforeUnmount(() => {
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
   destroyExternalOverlayLayers()
+  destroyExternalMeshLayers()
   destroyHazardOverlay()
   destroyCustomTileProviders()
 
