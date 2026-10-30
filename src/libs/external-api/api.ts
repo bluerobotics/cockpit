@@ -1,3 +1,4 @@
+import type { ExternalMapGeoTiff, ExternalMapOverlay } from '@/libs/map/external-overlay-api'
 import type { ExternalPoi, ExternalPoiUpdate } from '@/libs/poi/external-api'
 
 import { CallbackRateLimiter } from './callback-rate-limiter'
@@ -72,4 +73,78 @@ export function updatePointOfInterest(poi: ExternalPoiUpdate): void {
  */
 export function removePointOfInterest(id: string): void {
   window.parent.postMessage({ type: 'cockpit:removePointOfInterest', id }, '*')
+}
+
+/**
+ * Draws a GeoJSON overlay on Cockpit's maps, replacing any overlay already using its id. Features are styled by
+ * their simplestyle-spec properties (`stroke`, `stroke-width`, `stroke-opacity`, `fill`, `fill-opacity`,
+ * `marker-color`, `marker-size`). A point with a `radius` property is drawn as a circle of that radius in metres,
+ * styled like a polygon. The overlay is saved on the computer running Cockpit, unless `live` is true,
+ * which suits data that is re-sent as it changes.
+ * @param {ExternalMapOverlay} overlay - The overlay. Every sender shares the same ids, so prefix it with your
+ * extension's name
+ * @example
+ * ```typescript
+ * setMapOverlay({
+ *   id: 'my-extension-route',
+ *   name: 'Route',
+ *   geojson: {
+ *     type: 'FeatureCollection',
+ *     features: [{
+ *       type: 'Feature',
+ *       properties: { stroke: '#FFFF00' },
+ *       geometry: { type: 'LineString', coordinates: [[-48.5585, -27.5935], [-48.5575, -27.5925]] },
+ *     }],
+ *   },
+ * })
+ * ```
+ */
+export function setMapOverlay(overlay: ExternalMapOverlay): void {
+  window.parent.postMessage({ type: 'cockpit:setMapOverlay', overlay }, '*')
+}
+
+/**
+ * Adds features to a map overlay without re-sending the ones it already has, for a track that grows as the
+ * vehicle moves.
+ * @param {string} id - The id of an overlay already sent with `setMapOverlay`
+ * @param {ExternalMapOverlay['geojson']['features']} features - The GeoJSON features to add
+ */
+export function appendMapOverlayFeatures(id: string, features: ExternalMapOverlay['geojson']['features']): void {
+  window.parent.postMessage({ type: 'cockpit:appendMapOverlayFeatures', id, features }, '*')
+}
+
+/**
+ * Removes every feature from a map overlay, keeping the overlay itself to be appended to again.
+ * @param {string} id - The id of the overlay
+ */
+export function clearMapOverlay(id: string): void {
+  window.parent.postMessage({ type: 'cockpit:clearMapOverlay', id }, '*')
+}
+
+/**
+ * Has Cockpit download a GeoTIFF and show it on its maps, replacing the one already using its id. The file is
+ * downloaded once and saved like a GeoTIFF the operator loaded, so send it again to update it. The server must
+ * allow Cockpit's origin through CORS.
+ * @param {ExternalMapGeoTiff} geoTiff - Id, name, URL and render mode of the overlay. Data-lake inputs in the URL
+ * are resolved, so `{{ vehicle-address }}` becomes the address Cockpit reaches the vehicle at
+ * @example
+ * ```typescript
+ * setMapGeoTiff({
+ *   id: 'my-extension-depth',
+ *   name: 'Depth',
+ *   url: 'http://{{ vehicle-address }}:9000/survey/depth.tif',
+ *   renderMode: 'bathymetry',
+ * })
+ * ```
+ */
+export function setMapGeoTiff(geoTiff: ExternalMapGeoTiff): void {
+  window.parent.postMessage({ type: 'cockpit:setMapGeoTiff', geoTiff }, '*')
+}
+
+/**
+ * Removes a map overlay from Cockpit, GeoJSON or GeoTIFF, including its saved copy.
+ * @param {string} id - The id of the overlay
+ */
+export function removeMapOverlay(id: string): void {
+  window.parent.postMessage({ type: 'cockpit:removeMapOverlay', id }, '*')
 }

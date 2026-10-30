@@ -191,6 +191,8 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch
 
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
+import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
+import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
 import { useMapMissionLayer } from '@/composables/map/useMapMissionLayer'
 import { useMapOverlays } from '@/composables/map/useMapOverlays'
 import { useMapPoiMarkers } from '@/composables/map/useMapPoiMarkers'
@@ -371,13 +373,20 @@ useMapVehiclePathLayer(map, {
 // Which GeoTIFFs are visible is a mission-wide setting, so the widget option gates the whole registry rather
 // than individual overlays: while it is off nothing is bound, and no raster is rendered for this widget.
 const mapOverlays = useMapOverlays()
-const hasMapOverlays = computed(() => missionStore.mapOverlays.length > 0)
+const externalOverlayLayers = useExternalMapOverlayLayers()
+const hasMapOverlays = useHasAnyMapOverlay()
 
 const bindMapOverlays = (): void => {
   if (!map.value) return
   mapOverlays
     .initOverlays(map.value)
     .catch((error) => console.error('Failed to show the map overlays on the MiniMap:', error))
+  externalOverlayLayers.init(map.value)
+}
+
+const unbindMapOverlays = (): void => {
+  mapOverlays.destroyOverlays()
+  externalOverlayLayers.destroy()
 }
 
 onMounted(() => {
@@ -389,11 +398,11 @@ watch(
   () => widget.value.options.showMapOverlays,
   (show) => {
     if (show) bindMapOverlays()
-    else mapOverlays.destroyOverlays()
+    else unbindMapOverlays()
   }
 )
 
-onBeforeUnmount(mapOverlays.destroyOverlays)
+onBeforeUnmount(unbindMapOverlays)
 
 // The minimap has no leaflet dragging, so this handle temporarily flags the widget as movable, letting the
 // WidgetHugger drag it even outside edit mode, then restores the flag when the drag ends.

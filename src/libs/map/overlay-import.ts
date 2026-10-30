@@ -47,12 +47,14 @@ export const isGeoTiffFile = (file: File): boolean => {
  * to the overlay storage (IndexedDB); the caller is responsible for adding the returned metadata to the
  * mission store.
  * @param {File} file - The GeoTIFF file to import.
+ * @param {MapOverlayRenderMode} renderMode - Color mapping to render the raster with.
  * @returns {Promise<MapOverlayMeta>} The metadata describing the stored overlay.
  * @throws {OverlayStorageQuotaError} When the file would exceed the available IndexedDB quota (Lite only).
  */
-export const importGeoTiffFile = async (file: File): Promise<MapOverlayMeta> => {
-  const renderMode: MapOverlayRenderMode = 'grayscale'
-
+export const importGeoTiffFile = async (
+  file: File,
+  renderMode: MapOverlayRenderMode = 'grayscale'
+): Promise<MapOverlayMeta> => {
   // Render once here (read + colorize) — this both validates the GeoTIFF before we consume storage and produces
   // the image we cache, so the first display and later reloads reuse it instead of parsing the raster again.
   const { dataUrl, bounds } = await renderGeoTiffImage(file, renderMode)
