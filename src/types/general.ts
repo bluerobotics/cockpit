@@ -52,12 +52,14 @@ export enum SubMenuComponentName {
   SettingsCloud = 'settings-cloud',
   SettingsMission = 'settings-mission',
   SettingsActions = 'settings-actions',
+  SettingsDiyWidgets = 'settings-diy-widgets',
   SettingsSources = 'settings-sources',
   SettingsMAVLink = 'settings-mavlink',
   ToolsMAVLink = 'tools-mavlink',
   ToolsDataLake = 'tools-datalake',
   ToolsLogs = 'tools-logs',
   ToolsMap = 'tools-map',
+  ToolsRecipes = 'tools-recipes',
 }
 
 export interface StorageDB {

@@ -158,6 +158,7 @@ import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
 import ConfigurationCloudView from '@/views/ConfigurationCloudView.vue'
 import ConfigurationDevelopmentView from '@/views/ConfigurationDevelopmentView.vue'
+import ConfigurationDiyWidgetsView from '@/views/ConfigurationDiyWidgetsView.vue'
 import ConfigurationGeneralView from '@/views/ConfigurationGeneralView.vue'
 import ConfigurationJoystickView from '@/views/ConfigurationJoystickView.vue'
 import ConfigurationTelemetryView from '@/views/ConfigurationLogsView.vue'
@@ -171,6 +172,7 @@ import ToolsDataLakeView from '@/views/ToolsDataLakeView.vue'
 import ToolsLogsView from '@/views/ToolsLogsView.vue'
 import ToolsMapView from '@/views/ToolsMapView.vue'
 import ToolsMAVLinkView from '@/views/ToolsMAVLinkView.vue'
+import ToolsRecipesView from '@/views/ToolsRecipesView.vue'
 import WidgetsView from '@/views/WidgetsView.vue'
 
 import About from './components/About.vue'
@@ -214,6 +216,7 @@ const menuPageComponents: Record<SubMenuComponentName, Component> = {
   [SubMenuComponentName.SettingsDev]: ConfigurationDevelopmentView,
   [SubMenuComponentName.SettingsMission]: ConfigurationMissionView,
   [SubMenuComponentName.SettingsActions]: ConfigurationActionsView,
+  [SubMenuComponentName.SettingsDiyWidgets]: ConfigurationDiyWidgetsView,
   [SubMenuComponentName.SettingsSources]: ConfigurationSourcesView,
   [SubMenuComponentName.SettingsMAVLink]: ConfigurationMAVLinkView,
   [SubMenuComponentName.SettingsCloud]: ConfigurationCloudView,
@@ -221,6 +224,7 @@ const menuPageComponents: Record<SubMenuComponentName, Component> = {
   [SubMenuComponentName.ToolsDataLake]: ToolsDataLakeView,
   [SubMenuComponentName.ToolsLogs]: ToolsLogsView,
   [SubMenuComponentName.ToolsMap]: ToolsMapView,
+  [SubMenuComponentName.ToolsRecipes]: ToolsRecipesView,
 }
 
 const activeMenuPagePanel = computed(() =>

@@ -9,11 +9,13 @@ import {
 } from '@/libs/actions/auto-run'
 import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import { settingsManager } from '@/libs/settings-management'
+import type { CockpitSetting } from '@/types/settings-management'
 
 vi.mock('@/libs/settings-management', () => ({
   settingsManager: {
     getKeyValue: vi.fn(),
     setKeyValue: vi.fn(),
+    registerListener: vi.fn(),
   },
 }))
 
@@ -21,7 +23,11 @@ vi.mock('@/libs/joystick/protocols/cockpit-actions', () => ({
   executeActionCallback: vi.fn(),
 }))
 
+const onStoredConfigsChange = vi.mocked(settingsManager.registerListener).mock.calls[0][1]
+const storeConfigs = (value: unknown): void => onStoredConfigsChange({ value } as CockpitSetting)
+
 beforeEach(() => {
+  storeConfigs(null)
   vi.useFakeTimers()
   vi.mocked(settingsManager.getKeyValue).mockReturnValue(undefined)
   vi.mocked(settingsManager.setKeyValue).mockImplementation(async (_key, value): Promise<void> => {
@@ -50,8 +56,20 @@ test('can save a trigger after removing its previous configuration', () => {
   expect(executeActionCallback).toHaveBeenCalledTimes(2)
 })
 
+test('keeps every trigger saved before the settings write lands', () => {
+  vi.mocked(settingsManager.setKeyValue).mockImplementation(async (): Promise<void> => undefined)
+
+  saveAutoRunConfig('first', { type: 'once', delayMs: 1000 })
+  saveAutoRunConfig('second', { type: 'once', delayMs: 2000 })
+
+  expect(settingsManager.setKeyValue).toHaveBeenLastCalledWith('cockpit-actions-auto-run-options', {
+    first: { type: 'once', delayMs: 1000 },
+    second: { type: 'once', delayMs: 2000 },
+  })
+})
+
 test('loads startup and interval triggers stored as JSON strings', () => {
-  vi.mocked(settingsManager.getKeyValue).mockReturnValue(
+  storeConfigs(
     JSON.stringify({
       startup: { type: 'once', delayMs: 1000 },
       repeated: { type: 'interval', delayMs: 2000 },
@@ -68,7 +86,7 @@ test('loads startup and interval triggers stored as JSON strings', () => {
 })
 
 test('removing a trigger preserves other stored triggers as an object', () => {
-  vi.mocked(settingsManager.getKeyValue).mockReturnValue(
+  storeConfigs(
     JSON.stringify({
       removed: { type: 'once', delayMs: 1000 },
       retained: { type: 'interval', delayMs: 2000 },

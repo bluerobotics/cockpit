@@ -27,15 +27,24 @@ interface AutoRunStorage {
 // Timers for interval actions
 const intervalTimers: Record<string, number> = {}
 
+const parseStoredConfigs = (storedConfig: unknown): AutoRunStorage => {
+  if (storedConfig === undefined || storedConfig === null) return {}
+  if (typeof storedConfig === 'string') return JSON.parse(storedConfig) as AutoRunStorage
+  return structuredClone(storedConfig) as AutoRunStorage
+}
+
+// Writes to the settings manager are debounced, so reading it back between two saves would drop the first one.
+let autoRunConfigs: AutoRunStorage = parseStoredConfigs(settingsManager.getKeyValue(STORAGE_KEY))
+settingsManager.registerListener(STORAGE_KEY, (setting) => {
+  autoRunConfigs = parseStoredConfigs(setting.value)
+})
+
 /**
- * Retrieves all auto-run configurations from local storage
+ * Retrieves all auto-run configurations
  * @returns {AutoRunStorage} Object containing all action auto-run configurations
  */
 export function getAllAutoRunConfigs(): AutoRunStorage {
-  const storedConfig = settingsManager.getKeyValue(STORAGE_KEY)
-  if (storedConfig === undefined) return {}
-  if (typeof storedConfig === 'string') return JSON.parse(storedConfig) as AutoRunStorage
-  return storedConfig as AutoRunStorage
+  return structuredClone(autoRunConfigs)
 }
 
 /**
@@ -54,9 +63,8 @@ export function getAutoRunConfig(actionId: string): AutoRunConfig | null {
  * @param {AutoRunConfig} config The auto-run configuration to save
  */
 export function saveAutoRunConfig(actionId: string, config: AutoRunConfig): void {
-  const allConfigs = getAllAutoRunConfigs()
-  allConfigs[actionId] = config
-  settingsManager.setKeyValue(STORAGE_KEY, allConfigs)
+  autoRunConfigs[actionId] = config
+  settingsManager.setKeyValue(STORAGE_KEY, structuredClone(autoRunConfigs))
 
   // For interval-based configurations, start the interval immediately
   if (config.type === 'interval') {
@@ -80,10 +88,9 @@ export function saveAutoRunConfig(actionId: string, config: AutoRunConfig): void
  * @param {string} actionId The ID of the action
  */
 export function removeAutoRunConfig(actionId: string): void {
-  const allConfigs = getAllAutoRunConfigs()
-  if (allConfigs[actionId]) {
-    delete allConfigs[actionId]
-    settingsManager.setKeyValue(STORAGE_KEY, allConfigs)
+  if (autoRunConfigs[actionId]) {
+    delete autoRunConfigs[actionId]
+    settingsManager.setKeyValue(STORAGE_KEY, structuredClone(autoRunConfigs))
   }
 
   // Clear any existing interval timer
