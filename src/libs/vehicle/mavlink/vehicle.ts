@@ -21,7 +21,6 @@ import {
   MavMissionType,
   MavModeFlag,
   MavParamType,
-  MavResult,
   MavState,
   MavType,
 } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
@@ -62,6 +61,7 @@ import {
   CommandAck,
   Coordinates,
   FixTypeGPS,
+  isCommandAckConfirmed,
   Parameter,
   PowerSupply,
   StatusGPS,
@@ -185,15 +185,40 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
     if (!awaitAck) return
 
     // Monitor the acknowledgment of the command and throw an error if it fails or reaches a timeout
+    const timeout = 5000
+    const commandAck = await this.waitForCommandAck(commandMessage.command.type, timeout)
+
+    if (!commandAck) {
+      throw Error(
+        `No acknowledgment received for command '${commandMessage.command.type}' before timeout (${timeout / 1000}s).`
+      )
+    }
+
+    console.debug('Received command acknowledgment:', commandAck)
+
+    if (isCommandAckConfirmed(commandAck)) {
+      return
+    }
+
+    throw new Error(`Command '${commandAck.command.type}' failed with result '${commandAck.result.type}'.`)
+  }
+
+  /**
+   * Wait for the vehicle to acknowledge a command. It listens from the moment it is called, so call it before sending
+   * the command when the acknowledgment may come back quickly.
+   * @param {MavCmd} command - The command whose acknowledgment to wait for
+   * @param {number} timeout - How long to wait, in milliseconds
+   * @returns {Promise<CommandAck | undefined>} The acknowledgment, or undefined if none came in time
+   */
+  async waitForCommandAck(command: MavCmd, timeout: number): Promise<CommandAck | undefined> {
     let incomingAckCommand: CommandAck | undefined = undefined
     let receivedCommandAck = false
     let timeoutReached = false
-    const timeout = 5000
 
     // Acks for other commands keep arriving while this one waits (arming triggers a home request, for one), and the
     // loop below only polls every 100 ms, so keeping just the latest ack would let them hide the one it waits for.
     const ackHandler = (commandAck: CommandAck): void => {
-      if (commandAck.command.type === commandMessage.command.type) incomingAckCommand = commandAck
+      if (commandAck.command.type === command) incomingAckCommand = commandAck
     }
 
     const dateCommand = new Date()
@@ -208,23 +233,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
 
     this.onCommandAck.remove(ackHandler)
 
-    if (!receivedCommandAck) {
-      throw Error(
-        `No acknowledgment received for command '${commandMessage.command.type}' before timeout (${timeout / 1000}s).`
-      )
-    }
-
-    // We already tested the ack and know that it is of the correct type
-    const commandAck = incomingAckCommand as unknown as CommandAck
-
-    console.debug('Received command acknowledgment:', commandAck)
-
-    const confirmationResults = [MavResult.MAV_RESULT_ACCEPTED, MavResult.MAV_RESULT_IN_PROGRESS]
-    if (confirmationResults.includes(commandAck.result.type)) {
-      return
-    }
-
-    throw new Error(`Command '${commandAck.command.type}' failed with result '${commandAck.result.type}'.`)
+    return incomingAckCommand
   }
 
   /**

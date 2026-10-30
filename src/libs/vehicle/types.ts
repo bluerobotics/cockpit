@@ -124,6 +124,14 @@ export class CommandAck {
 }
 
 /**
+ * Whether the vehicle took up the acknowledged command, either done or still running
+ * @param {CommandAck} ack - The acknowledgment
+ * @returns {boolean} True when the command was accepted or is in progress
+ */
+export const isCommandAckConfirmed = (ack: CommandAck): boolean =>
+  [MavResult.MAV_RESULT_ACCEPTED, MavResult.MAV_RESULT_IN_PROGRESS].includes(ack.result.type)
+
+/**
  * Body frame attitude
  */
 export class Attitude {
