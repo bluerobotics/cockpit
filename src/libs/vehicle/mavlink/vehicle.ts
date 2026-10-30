@@ -602,6 +602,7 @@ export abstract class MAVLinkVehicle<Modes> extends Vehicle.AbstractVehicle<Mode
    * @param {boolean} force
    */
   async _arm(arm: boolean, force?: boolean): Promise<void> {
+    console.info(`Sending ${force ? 'forced ' : ''}${arm ? 'arm' : 'disarm'} command to the vehicle.`)
     await this.sendCommandLong(
       MavCmd.MAV_CMD_COMPONENT_ARM_DISARM,
       arm ? 1 : 0, // 0: Disarm, 1: ARM
