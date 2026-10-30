@@ -76,6 +76,9 @@ export const useControllerStore = defineStore('controller', () => {
   // Every other writer of enableForwarding is one of Cockpit's own lifecycle hooks, so the conflict check can only
   // tell a deliberate choice from an internal toggle if the gesture is stamped here, where the user actually makes it.
   let userChangedForwarding = false
+  // Without a joystick, forwarding only drives the vehicle through other inputs (e.g. the keyboard), so only the user
+  // turns it on, and the automatic re-enables only restore that choice.
+  let userWantsForwarding = false
   // The latch holds the sticks off while a conflict is known and the user is not holding forwarding on by hand, so
   // both writers derive it here instead of setting it directly — getting either side wrong lets the next internal
   // off/on cycle revoke or restore control at a moment the user cannot connect to anything they did. Call it only
@@ -83,7 +86,19 @@ export const useControllerStore = defineStore('controller', () => {
   const updateForwardingPrevention = (): void => {
     preventJoystickForwarding.value = otherSourceWasDetected && !enableForwarding.value
   }
-  const setForwardingByUser = (value: boolean): void => {
+  const setForwardingByUser = async (value: boolean): Promise<void> => {
+    userWantsForwarding = value
+    if (value && joysticks.value.size === 0) {
+      releaseJoystickInputs()
+      // With no joystick nothing has checked for another station yet, and Cockpit is about to start sending, so the
+      // check decides here, as it would for a first joystick
+      if (otherSourcesCheck === 'pending') {
+        otherSourcesCheck = 'running'
+        userChangedForwarding = false
+        await runOtherSourcesCheck()
+        return
+      }
+    }
     userChangedForwarding = true
     enableForwarding.value = value
     updateForwardingPrevention()
@@ -204,7 +219,7 @@ export const useControllerStore = defineStore('controller', () => {
       showOtherControlStationWarning.value = true
     } else if (!userChangedForwarding) {
       console.info('No other sources of joystick commands detected. Enabling joystick forwarding.')
-      enableForwarding.value = true
+      enableJoystickForwardingIfSafe()
     }
   }
 
@@ -243,6 +258,7 @@ export const useControllerStore = defineStore('controller', () => {
       console.info(`Joystick ${key} (${model ?? 'Unknown model'}) disconnected.`)
       if (joysticks.value.size === 0) {
         console.warn('Disabling joystick forwarding.')
+        userWantsForwarding = false
         enableForwarding.value = false
       }
     }
@@ -310,18 +326,31 @@ export const useControllerStore = defineStore('controller', () => {
     // If joystick forwarding is disabled, disable the callback processing
     if (!enableForwarding.value) return
 
+    runUpdateCallbacks(currentState)
+  }
+
+  const runUpdateCallbacks = (state: JoystickState): void => {
     for (const callback of updateCallbacks.value) {
       try {
         callback(
-          currentState,
+          state,
           protocolMapping.value,
-          activeButtonActions(currentState, protocolMapping.value),
+          activeButtonActions(state, protocolMapping.value),
           actionsJoystickConfirmRequired.value
         )
       } catch (error) {
         console.error('Error while processing joystick state event:', error)
       }
     }
+  }
+
+  // A centred stick with nothing pressed, so forwarding without a joystick starts from the vehicle's neutral rather
+  // than the boot-time zeros (full descent on a Sub) or whatever a joystick held when it was unplugged
+  const releaseJoystickInputs = (): void => {
+    const { axesCorrespondencies, buttonsCorrespondencies } = protocolMapping.value
+    const axesCount = Math.max(-1, ...Object.keys(axesCorrespondencies).map(Number)) + 1
+    const buttonsCount = Math.max(-1, ...Object.keys(buttonsCorrespondencies.regular).map(Number)) + 1
+    runUpdateCallbacks({ axes: Array(axesCount).fill(0), buttons: Array(buttonsCount).fill(0) })
   }
 
   const activeButtonActions = (
@@ -477,6 +506,7 @@ export const useControllerStore = defineStore('controller', () => {
       console.warn('Joystick forwarding is being prevented explicitly. Not enabling.')
       return
     }
+    if (joysticks.value.size === 0 && !userWantsForwarding) return
     enableForwarding.value = true
   }
 

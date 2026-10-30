@@ -10,7 +10,7 @@
         >
           <FontAwesomeIcon icon="fa-solid fa-gamepad" size="xl" />
           <FontAwesomeIcon
-            v-if="!joystickConnected || !controllerStore.enableForwarding"
+            v-if="!controllerStore.enableForwarding"
             icon="fa-solid fa-slash"
             size="xl"
             class="absolute left-0"
@@ -33,9 +33,12 @@
             hide-details
             :label="switchLabel"
             color="white"
-            :disabled="!joystickConnected"
             @update:model-value="setJoystickForwarding"
           />
+          <p v-if="!joystickConnected" class="text-sm text-center opacity-70">
+            With no joystick, the sticks are held centred and only the keys set up in the Controllers menu move the
+            vehicle.
+          </p>
         </div>
       </template>
       <template #actions>
@@ -74,24 +77,28 @@ onMounted(() => {
 })
 
 const indicatorClass = computed(() => {
+  if (controllerStore.enableForwarding) return 'text-slate-50'
   if (!joystickConnected.value) return 'text-gray-700'
-  if (!controllerStore.enableForwarding) return 'text-yellow-500'
-  return 'text-slate-50'
+  return 'text-yellow-500'
 })
 
 const tooltipText = computed(() => {
-  if (!joystickConnected.value) return 'Joystick disconnected'
+  if (!joystickConnected.value) {
+    return controllerStore.enableForwarding
+      ? 'Joystick disconnected, keyboard commands enabled'
+      : 'Joystick disconnected'
+  }
   if (!controllerStore.enableForwarding) return 'Joystick connected but disabled'
   return 'Joystick connected and enabled'
 })
 
 const switchLabel = computed(() => {
-  if (controllerStore.enableForwarding) return 'Joystick commands enabled'
-  return 'Joystick commands paused'
+  if (controllerStore.enableForwarding) return 'Manual control enabled'
+  return 'Manual control paused'
 })
 
 const setJoystickForwarding = (value: boolean | null): void => {
-  logUserAction(`${value ? 'Enabled' : 'Disabled'} joystick command forwarding`)
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} manual control forwarding`)
   controllerStore.setForwardingByUser(Boolean(value))
 }
 </script>
