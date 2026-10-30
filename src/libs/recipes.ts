@@ -43,6 +43,13 @@ const compoundVariableSchema = z.object({
 const actionCommonFields = {
   id: z.string().min(1),
   link: z.object({ variables: z.array(z.string()), minInterval: z.number().nonnegative() }).optional(),
+  // The same floors the auto-run settings check on save, so a recipe made from those settings always reads back.
+  autoRun: z
+    .discriminatedUnion('type', [
+      z.object({ type: z.literal('once'), delayMs: z.number().nonnegative() }),
+      z.object({ type: z.literal('interval'), delayMs: z.number().min(1) }),
+    ])
+    .optional(),
 }
 const actionSchema = z.discriminatedUnion('type', [
   z.object({
