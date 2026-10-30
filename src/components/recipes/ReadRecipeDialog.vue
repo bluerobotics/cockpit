@@ -100,6 +100,7 @@ const warnings = computed(() => {
       ? ['connect to other computers']
       : []),
     ...(chosen.actions.some((action) => action.link) ? ['run actions by themselves when variables change'] : []),
+    ...(chosen.actions.some((action) => action.autoRun) ? ['run actions by themselves on a timer'] : []),
   ]
   const leftOut = selected.value.length < items.value.length
   const leftOutNeeded = Object.keys(missingDependencies(selected.value, dependencies.value)).length > 0

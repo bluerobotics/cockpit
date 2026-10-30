@@ -1,3 +1,4 @@
+import type { AutoRunConfig } from '@/libs/actions/auto-run'
 import type { TransformingFunction } from '@/libs/actions/data-lake-transformations'
 import type { DiyWidgetTemplate } from '@/libs/diy-widget-library'
 import type { DataLakeVariable } from '@/types/data-lake'
@@ -47,6 +48,10 @@ export type RecipeAction = {
      */
     minInterval: number
   }
+  /**
+   * When the action runs by itself, once after Cockpit starts or repeatedly
+   */
+  autoRun?: AutoRunConfig
 } & (
   | {
       /**

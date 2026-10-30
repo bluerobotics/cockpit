@@ -43,6 +43,13 @@ const compoundVariableSchema = z.object({
 const actionCommonFields = {
   id: z.string().min(1),
   link: z.object({ variables: z.array(z.string()), minInterval: z.number().nonnegative() }).optional(),
+  // The interval floor matches the least the auto-run settings allow, so a file cannot make an action run nonstop.
+  autoRun: z
+    .discriminatedUnion('type', [
+      z.object({ type: z.literal('once'), delayMs: z.number().nonnegative() }),
+      z.object({ type: z.literal('interval'), delayMs: z.number().min(100) }),
+    ])
+    .optional(),
 }
 const actionSchema = z.discriminatedUnion('type', [
   z.object({

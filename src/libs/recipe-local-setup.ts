@@ -1,4 +1,5 @@
 import { getActionLink, removeActionLink, saveActionLink } from '@/libs/actions/action-links'
+import { getAutoRunConfig, removeAutoRunConfig, saveAutoRunConfig } from '@/libs/actions/auto-run'
 import {
   createDataLakeVariable,
   getAllDataLakeVariablesInfo,
@@ -27,9 +28,14 @@ import type { CockpitRecipe, RecipeAction } from '@/types/recipes'
 
 const cockpitActionIds = (): (string | undefined)[] => [mavlinkCameraZoomActionId, mavlinkCameraFocusActionId]
 
-const withLink = (action: RecipeAction): RecipeAction => {
+const withTriggers = (action: RecipeAction): RecipeAction => {
   const link = getActionLink(action.id)
-  return link ? { ...action, link: { variables: link.variables, minInterval: link.minInterval } } : action
+  const autoRun = getAutoRunConfig(action.id)
+  return {
+    ...action,
+    ...(link && { link: { variables: link.variables, minInterval: link.minInterval } }),
+    ...(autoRun && { autoRun: { ...autoRun } }),
+  }
 }
 
 /**
@@ -67,7 +73,7 @@ export const userSetupAsRecipe = (): CockpitRecipe => {
     })),
   ]
     .filter((action) => !cockpitActionIds().includes(action.id))
-    .map((action) => withLink(structuredClone(action)))
+    .map((action) => withTriggers(structuredClone(action)))
   recipe.websocketConnections = Object.keys(getGenericWebSocketConnections())
   recipe.diyWidgets = Object.entries(getAllDiyWidgetTemplates()).map(([id, template]) => ({ id, template }))
   return recipe
@@ -128,6 +134,10 @@ const registerAction = (action: RecipeAction): void => {
   } else {
     removeActionLink(action.id)
   }
+
+  // Saving alone would leave a running interval behind when the recipe switches the action to run once.
+  removeAutoRunConfig(action.id)
+  if (action.autoRun) saveAutoRunConfig(action.id, action.autoRun)
 }
 
 /**

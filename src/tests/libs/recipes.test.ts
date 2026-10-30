@@ -43,6 +43,7 @@ const sampleRecipe = (): CockpitRecipe => ({
         body: '',
       },
       link: { variables: ['user/custom/unused'], minInterval: 100 },
+      autoRun: { type: 'interval', delayMs: 5000 },
     },
     {
       id: 'javascript-action (Alarm)',
@@ -81,11 +82,15 @@ describe('parseRecipe', () => {
   it('leaves out malformed entries and keeps the rest', () => {
     const file = {
       ...sampleRecipe(),
-      actions: [...sampleRecipe().actions, { id: 'x', type: 'javascript', config: { name: 'No code' } }],
+      actions: [
+        ...sampleRecipe().actions,
+        { id: 'x', type: 'javascript', config: { name: 'No code' } },
+        { ...sampleRecipe().actions[1], autoRun: { type: 'interval', delayMs: 0 } },
+      ],
       websocketConnections: ['', 42, 'ws://host:1'],
     }
     const { recipe, droppedEntries } = parseRecipe(JSON.stringify(file))
-    expect(droppedEntries).toBe(3)
+    expect(droppedEntries).toBe(4)
     expect(recipe.actions).toHaveLength(2)
     expect(recipe.websocketConnections).toEqual(['ws://host:1'])
   })
