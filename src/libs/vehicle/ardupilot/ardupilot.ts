@@ -1,5 +1,6 @@
 import type { MetadataFile } from '@/types/ardupilot-metadata'
 
+import { registerCameraGimbalActions } from '../mavlink/camera-gimbal-actions'
 import * as MAVLinkVehicle from '../mavlink/vehicle'
 import * as Vehicle from '../vehicle'
 import { registerModeActions } from './common'
@@ -22,6 +23,7 @@ export abstract class ArduPilotVehicle<Modes> extends MAVLinkVehicle.MAVLinkVehi
   constructor(type: Vehicle.Type, systemId: number, modeEnum: Record<string, string | number>) {
     super(Vehicle.Firmware.ArduPilot, type, systemId)
     registerModeActions(type, modeEnum, this)
+    registerCameraGimbalActions(this)
   }
 
   /**
