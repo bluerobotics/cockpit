@@ -94,7 +94,7 @@ export function useInteractionDialog(): {
    */
   showDialog: (options: DialogOptions) => Promise<DialogResult>
   /**
-   * Closes the dialog.
+   * Closes the dialog and resolves its pending result as dismissed.
    * @returns {void}
    */
   closeDialog: () => void
@@ -181,14 +181,15 @@ export function useInteractionDialog(): {
   }
 
   const closeDialog = (): void => {
+    resolveFn?.({ isConfirmed: false })
+    resolveFn = undefined
+    rejectFn = undefined
     dialogProps.showDialog = false
     openDialogPromise = undefined
     unmountDialog()
   }
 
-  onUnmounted(() => {
-    unmountDialog()
-  })
+  onUnmounted(closeDialog)
 
   // Flight stays mounted on Plan, so onUnmounted no longer removes body-mounted dialogs from that view.
   if (getCurrentInstance()) {
