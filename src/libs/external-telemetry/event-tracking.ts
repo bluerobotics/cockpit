@@ -169,6 +169,10 @@ export interface SystemTelemetryInfo {
    */
   arch: string | null
   /**
+   * The architecture this build of Cockpit was made for; differs from `arch` when it runs emulated. Null in the web build
+   */
+  processArch: string | null
+  /**
    * The width of the window in pixels
    */
   windowWidth: number
@@ -216,12 +220,14 @@ export const getSystemInfoForTelemetry = async (): Promise<SystemTelemetryInfo> 
 
   let platform: string | null = null
   let arch: string | null = null
+  let processArch: string | null = null
   let displays: SystemTelemetryInfo['displays'] = []
 
   if (runningInElectron && window.electronAPI?.getSystemInfo) {
     const systemInfo = await window.electronAPI.getSystemInfo()
     platform = systemInfo.platform
     arch = systemInfo.arch
+    processArch = systemInfo.processArch
     displays = systemInfo.displays
   } else {
     platform = navigator.userAgentData?.platform ?? navigator.platform ?? null
@@ -249,6 +255,7 @@ export const getSystemInfoForTelemetry = async (): Promise<SystemTelemetryInfo> 
     isElectron: runningInElectron,
     platform,
     arch,
+    processArch,
     windowWidth: window.innerWidth,
     windowHeight: window.innerHeight,
     displays,
