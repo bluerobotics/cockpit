@@ -206,7 +206,10 @@
       "icon": "public/icon-mac-512x512.png",
       "hardenedRuntime": true,
       "entitlements": "./src/assets/entitlements.mac.plist",
-      "entitlementsInherit": "./src/assets/entitlements.mac.plist"
+      "entitlementsInherit": "./src/assets/entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Cockpit records voice notes from your microphone."
+      }
     },
     "afterSign": "scripts/notarize.mjs",
     "win": {
