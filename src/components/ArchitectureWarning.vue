@@ -31,6 +31,7 @@
 import { onBeforeMount, ref } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
+import { openSnackbar } from '@/composables/snackbar'
 import { isElectron } from '@/libs/utils'
 import { PlatformUtils } from '@/types/platform'
 
@@ -65,11 +66,13 @@ const checkArchitectureAndWarn = async (): Promise<void> => {
     const systemInfo = await window.electronAPI.getSystemInfo()
 
     // Only show warning if we detect x64 on ARM64 Mac
-    showArchWarningDialog.value = PlatformUtils.isX64OnArm64Mac(
-      systemInfo.platform,
-      systemInfo.arch,
-      systemInfo.processArch
-    )
+    if (!PlatformUtils.isX64OnArm64Mac(systemInfo.platform, systemInfo.arch, systemInfo.processArch)) return
+    openSnackbar({
+      message: 'This Cockpit version is made for Intel Macs and runs much slower on this Mac.',
+      variant: 'warning',
+      persistent: true,
+      action: { label: 'Details', handler: () => (showArchWarningDialog.value = true) },
+    })
   } catch (error) {
     console.error('Failed to get system info for architecture check:', error)
   }

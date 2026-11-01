@@ -46,9 +46,9 @@ export const useVehicleDefaultsAutoImportWizard = () => {
       `On the next screens you can review joystick mapping and views group defaults. For views, you may append the ` +
         `default views after yours or replace your entire views group. For joystick mapping, select which default ` +
         `bindings to import.`,
-      `This dialog opens automatically only once, the first time we detect this for this vehicle. After you finish ` +
-        `this walkthrough, it will not open on its own again. You can still import defaults later from the Edit menu ` +
-        `(views) or Joystick configuration (import button on the mapping toolbar).`,
+      `Cockpit offers this walkthrough for this vehicle until you finish it. After that, it will not be offered ` +
+        `again. You can still import defaults later from the Edit menu (views) or Joystick configuration (import ` +
+        `button on the mapping toolbar).`,
     ]
   })
 

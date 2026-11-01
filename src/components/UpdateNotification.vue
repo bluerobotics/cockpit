@@ -36,6 +36,7 @@ import { onBeforeMount, ref } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
 import { userAskedForUpdates } from '@/composables/appUpdater'
+import { openSnackbar } from '@/composables/snackbar'
 import { app_version } from '@/libs/cosmos'
 import { isElectron } from '@/libs/utils'
 
@@ -154,7 +155,14 @@ onBeforeMount(() => {
       return
     }
 
-    showUpdateDialog.value = true
+    // A check the user started already has the dialog up; the startup check offers the update without interrupting.
+    if (showUpdateDialog.value) return
+    openSnackbar({
+      message: `Cockpit ${info.version} is available.`,
+      variant: 'info',
+      persistent: true,
+      action: { label: 'See update', handler: () => (showUpdateDialog.value = true) },
+    })
   })
 
   window.electronAPI.onDownloadProgress((progressInfo) => {
