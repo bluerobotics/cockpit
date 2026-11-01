@@ -449,6 +449,15 @@ jobs:
           overwrite: true
           prerelease: true
 
+      # Only once this leg's binaries are on the release, so the merged feed never lists a missing file.
+      - name: Upload macOS update metadata artifact
+        if: matrix.suffix == 'mac' && startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-update-metadata-${{ matrix.arch }}
+          path: dist/${{ matrix.latestMetadataName }}
+          if-no-files-found: error
+
       - name: Configure AWS Credentials (for Stable Release)
         uses: aws-actions/configure-aws-credentials@v6
         if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') && success()
@@ -462,6 +471,44 @@ jobs:
         # Upload to version-less file, to provide static URLs for the latest stable release build
         run: |
           aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }} s3://bcloud-public/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.uploadExtension }}
+
+  # Runs after every deploy-electron job, so its latest-mac.yml replaces the Intel-only one the x64 job uploaded. A
+  # failed Windows or Linux leg must not skip it; a failed Mac leg leaves a feed missing, which fails the merge.
+  merge-mac-update-metadata:
+    needs: deploy-electron
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      # The merge only needs js-yaml, so the binary downloads in postinstall are skipped.
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --ignore-scripts --network-timeout 600000
+
+      - name: Download the per-architecture macOS update metadata
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mac-update-metadata-*
+          merge-multiple: true
+          path: mac-metadata
+
+      - name: Merge them into a single latest-mac.yml
+        run: node scripts/merge-mac-update-feeds.mjs mac-metadata/latest-mac.yml mac-metadata/latest-mac-arm64.yml mac-metadata/latest-mac.yml
+
+      - name: Upload the merged latest-mac.yml
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: mac-metadata/latest-mac.yml
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
 
   deploy-flatpak:
     needs: test
