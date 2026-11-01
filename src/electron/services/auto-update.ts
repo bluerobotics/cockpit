@@ -1,23 +1,37 @@
-import { BrowserWindow, ipcMain } from 'electron'
-import electronUpdater, { type AppUpdater } from 'electron-updater'
+import { execFileSync } from 'child_process'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import electronUpdater, { type AppUpdater, type UpdateInfo } from 'electron-updater'
 
-import { PlatformUtils } from '../../types/platform'
-import { getSystemInfo } from './system-info'
+/**
+ * Whether electron-updater would download the build for this Mac's processor. It falls back to the Intel build when
+ * the feed lists no arm64 one, and takes "ARM" anywhere in `uname -a`, the computer name included, as Apple Silicon.
+ * @param {UpdateInfo} info - The update the feed offers
+ * @returns {boolean} False when the download would be a build this Mac should not run
+ */
+const offersBuildForThisMac = (info: UpdateInfo): boolean => {
+  const offersArm64 = info.files.some((file) => file.url.includes('arm64'))
+  const offersIntel = info.files.some((file) => !file.url.includes('arm64'))
+  // A native arm64 install refuses the Intel fallback, which would quietly move it onto Rosetta.
+  if (process.arch === 'arm64') return offersArm64
+  // Under Rosetta either build runs, so the arm64 one it prefers and the Intel fallback are both fine.
+  if (app.runningUnderARM64Translation) return true
+  if (!offersIntel) return false
+  if (!offersArm64) return true
+  // ponytail: mirrors MacUpdater's `uname -a` check as of electron-updater 6.6.2-6.8.11; drop this once it stops
+  // matching the computer name, or Intel Macs named like "PHARMA-MBP" stay refused updates they could install.
+  try {
+    return !execFileSync('uname', ['-a'], { encoding: 'utf8' }).includes('ARM')
+  } catch {
+    // electron-updater reads a failed uname as Intel too, so it picks the Intel build.
+    return true
+  }
+}
 
 /**
  * Setup auto updater
  * @param {BrowserWindow} mainWindow - The main Electron window
  */
 export const setupAutoUpdater = (mainWindow: BrowserWindow): void => {
-  const systemInfo = getSystemInfo()
-
-  // Skip auto-updates for ARM64 Macs to prevent downloading wrong architecture
-  if (PlatformUtils.isArm64Mac(systemInfo.platform, systemInfo.arch)) {
-    console.log('Skipping auto-updater setup on ARM64 Mac to prevent architecture mismatch issues')
-    ipcMain.handle('check-for-updates', () => false)
-    return
-  }
-
   const autoUpdater: AppUpdater = electronUpdater.autoUpdater
   autoUpdater.logger = console
   autoUpdater.autoDownload = false // Prevent automatic downloads
@@ -50,6 +64,12 @@ export const setupAutoUpdater = (mainWindow: BrowserWindow): void => {
   })
 
   autoUpdater.on('update-available', (info) => {
+    if (process.platform === 'darwin' && !offersBuildForThisMac(info)) {
+      const releasesUrl = 'https://github.com/bluerobotics/cockpit/releases'
+      const message = `Cockpit cannot download version ${info.version} automatically on this Mac. Get it from ${releasesUrl}`
+      mainWindow.webContents.send('update-error', message)
+      return
+    }
     mainWindow.webContents.send('update-available', info)
   })
 
