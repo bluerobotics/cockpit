@@ -142,6 +142,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { closeSnackbar, openSnackbar } from '@/composables/snackbar'
 import { isElectron } from '@/libs/utils'
 import { useVideoStore } from '@/stores/video'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -164,6 +165,7 @@ const dismissedReplacements = useBlueOsStorage<string[]>('cockpit-dismissed-came
 const replacementMap = ref<Record<string, string>>({})
 
 let stabilizationTimer: ReturnType<typeof setTimeout> | undefined
+let offerId: number | undefined
 
 onMounted(() => {
   stabilizationTimer = setTimeout(() => {
@@ -383,6 +385,7 @@ watch(
 
     if (!hasOrphans || !hasReplacements) {
       if (showDialog.value) showDialog.value = false
+      if (offerId !== undefined) closeSnackbar(offerId)
       dialogTriggered.value = false
       return
     }
@@ -390,8 +393,19 @@ watch(
     if (dialogTriggered.value) return
 
     dialogTriggered.value = true
-    initReplacementMap()
-    showDialog.value = true
+    offerId = openSnackbar({
+      message: 'A camera used by your widgets is gone, and another one is available.',
+      variant: 'warning',
+      persistent: true,
+      action: {
+        label: 'Replace',
+        handler: () => {
+          initReplacementMap()
+          showDialog.value = true
+        },
+      },
+      suppress: { tooltip: 'Do not offer to replace this camera again', handler: markDismissed },
+    })
   },
   { immediate: true }
 )

@@ -1641,15 +1641,10 @@ const checkForBlueOSJoystickSuggestions = async (): Promise<void> => {
 }
 
 /**
- * Guard to prevent the isVisible watcher from re-fetching when auto-opened on mount
+ * Whether the pending features have already been announced in this session, so transient
+ * vehicle reconnections don't re-announce them after the user has dismissed the notice.
  */
-let isAutoOpening = false
-
-/**
- * Whether the modal has already been auto-opened in this session, so transient
- * vehicle reconnections don't re-pop the modal after the user has dismissed it.
- */
-let hasAutoOpened = false
+let hasAnnounced = false
 
 /**
  * Fetch features from BlueOS without changing modal visibility
@@ -1659,23 +1654,32 @@ const fetchBlueOSFeatures = async (): Promise<void> => {
 }
 
 /**
- * Auto-open the modal if there are pending features and it has not been auto-opened yet
+ * Announce pending features through a snackbar that opens the modal, if they have not been announced yet
  */
-const autoOpenIfPending = (): void => {
-  if (hasAutoOpened || !hasPendingBlueOSFeatures.value) return
-  hasAutoOpened = true
-  isAutoOpening = true
-  isVisible.value = true
-  if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
-    activeTab.value = 'joystick-suggestions'
-  }
+const announceIfPending = (): void => {
+  if (hasAnnounced || !hasPendingBlueOSFeatures.value) return
+  hasAnnounced = true
+  openSnackbar({
+    message: 'Your vehicle has extensions offering new features.',
+    variant: 'info',
+    persistent: true,
+    action: {
+      label: 'Review',
+      handler: () => {
+        if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
+          activeTab.value = 'joystick-suggestions'
+        }
+        isVisible.value = true
+      },
+    },
+  })
 }
 
-// Wait for settings sync before auto-opening; vehicle-online alone can show stale pending state.
+// Wait for settings sync before announcing; vehicle-online alone can show stale pending state.
 const onVehicleSyncComplete = async (): Promise<void> => {
   if (!props.autoCheckOnMount) return
   await fetchBlueOSFeatures()
-  autoOpenIfPending()
+  announceIfPending()
 }
 
 onMounted(() => {
@@ -1690,10 +1694,9 @@ onBeforeUnmount(() => {
 watch(isVisible, (visible, oldVisible) => {
   if (!visible) return
   actionRegistryVersion.value++
-  if (!oldVisible && !isAutoOpening) {
+  if (!oldVisible) {
     fetchBlueOSFeatures()
   }
-  isAutoOpening = false
 })
 
 watch(activeTab, () => {

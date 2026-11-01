@@ -1,7 +1,7 @@
 import { type Ref, onUnmounted } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
-import { openSnackbar } from '@/composables/snackbar'
+import { closeSnackbar, openSnackbar } from '@/composables/snackbar'
 import {
   buildFreshViewsGroupFromDefault,
   buildReplacementMapping,
@@ -26,8 +26,8 @@ export const useVehicleDefaultsHandledFlag = (): Ref<boolean> =>
  * Behaviour, evaluated on every sync-complete event:
  * - If the per-vehicle `cockpit-vehicle-defaults-handled` flag is set, do nothing.
  * - Otherwise run the evaluator, silently auto-import any side that comes back as `auto-import`
- *   (with a per-side success snackbar), then re-evaluate. Open the auto import modal when any side
- *   still says `offer`; if nothing is left to offer, just persist the handled flag.
+ *   (with a per-side success snackbar), then re-evaluate. Offer the auto import modal through a snackbar when
+ *   any side still says `offer`; if nothing is left to offer, just persist the handled flag.
  *
  * The flag lives in `useBlueOsStorage`, so settings-v2 scopes it automatically to the current
  * (user, vehicle) pair — no per-vehicle-type bookkeeping is needed.
@@ -38,6 +38,7 @@ export const useVehicleDefaultsAutoImport = (): void => {
   const interfaceStore = useAppInterfaceStore()
   const mainVehicleStore = useMainVehicleStore()
   const defaultsHandled = useVehicleDefaultsHandledFlag()
+  let offerId: number | undefined
 
   const handleSyncComplete = (): void => {
     try {
@@ -72,12 +73,20 @@ export const useVehicleDefaultsAutoImport = (): void => {
       const stillNeedsDecision = evaluation.views.action === 'offer' || evaluation.joystick.action === 'offer'
       if (stillNeedsDecision) {
         if (
+          interfaceStore.isVehicleDefaultsAutoImportModalVisible ||
           interfaceStore.isVehicleDefaultsViewsImportModalVisible ||
           interfaceStore.isVehicleDefaultsJoystickImportModalVisible
         ) {
           return
         }
-        interfaceStore.openVehicleDefaultsAutoImport()
+        // Every sync re-evaluates, so replace the previous offer instead of stacking another one.
+        if (offerId !== undefined) closeSnackbar(offerId)
+        offerId = openSnackbar({
+          message: `Cockpit has a default configuration for ${evaluation.vehicleTypeName} that you are not using.`,
+          variant: 'info',
+          persistent: true,
+          action: { label: 'Review', handler: () => interfaceStore.openVehicleDefaultsAutoImport() },
+        })
       } else {
         defaultsHandled.value = true
       }

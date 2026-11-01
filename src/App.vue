@@ -199,7 +199,7 @@ import { useAppInterfaceStore } from './stores/appInterface'
 import { useDevelopmentStore } from './stores/development'
 import { useMainVehicleStore } from './stores/mainVehicle'
 import { useWidgetManagerStore } from './stores/widgetManager'
-const { openSnackbar } = useSnackbar()
+const { openSnackbar, closeSnackbar } = useSnackbar()
 import { useSnapshotStore } from './stores/snapshot'
 
 const { baseRouteName, isFlightVisible, activeMenuPage, isAboutOpen } = useActiveMenuRoute()
@@ -250,7 +250,7 @@ watch(isFlightVisible, (visible) => {
 // Initialize the snapshot store to register action callbacks
 useSnapshotStore()
 
-// Listen for `vehicle-sync-complete` events to auto-import vehicle-type defaults or open the
+// Listen for `vehicle-sync-complete` events to auto-import vehicle-type defaults or offer the
 // VehicleDefaultsAutoImportModal when the user still needs to make a decision.
 useVehicleDefaultsAutoImport()
 
@@ -406,40 +406,49 @@ onBeforeUnmount(() => {
 const currentBottomBarHeightPixels = computed(() => `${widgetStore.currentBottomBarHeightPixels}px`)
 
 const showDiscoveryDialog = ref(false)
-const discoveryDialogAutoOpened = ref(false)
 const preventAutoSearch = useStorage('cockpit-prevent-auto-vehicle-discovery-dialog', false)
+let discoveryOfferId: number | undefined
 
 onMounted(() => {
   if (isElectron() && !preventAutoSearch.value) {
     // Wait 5 seconds to check if we're connected to a vehicle
     setTimeout(() => {
       if (vehicleStore.isVehicleOnline) return
-      showDiscoveryDialog.value = true
-      discoveryDialogAutoOpened.value = true
+      discoveryOfferId = openSnackbar({
+        message: 'No vehicle connected yet.',
+        variant: 'info',
+        persistent: true,
+        action: { label: 'Search for vehicles', handler: () => (showDiscoveryDialog.value = true) },
+        suppress: {
+          tooltip: 'Do not offer a vehicle search on startup',
+          handler: () => (preventAutoSearch.value = true),
+        },
+      })
     }, 5000)
   }
 
   if (!interfaceStore.userHasSeenTutorial) {
     setTimeout(() => {
-      interfaceStore.isTutorialVisible = true
+      openSnackbar({
+        message: 'New to Cockpit? A short tour shows where everything is.',
+        variant: 'info',
+        persistent: true,
+        action: { label: 'Start tour', handler: () => (interfaceStore.isTutorialVisible = true) },
+        suppress: {
+          tooltip: 'Do not offer the tour again',
+          handler: () => (interfaceStore.userHasSeenTutorial = true),
+        },
+      })
     }, 6000)
   }
 })
 
-watch(showDiscoveryDialog, (isOpen) => {
-  if (!isOpen) discoveryDialogAutoOpened.value = false
-})
-
-// Auto-close the discovery dialog if the vehicle comes online while it's open, but only when the
-// dialog was opened automatically (not when the user explicitly opened it). Handles cases where the
-// first heartbeat arrives late (e.g. slow mDNS resolution of `blueos-avahi.local`), so the dialog
-// gets auto-opened even though the configured address would have connected on its own.
+// The first heartbeat can arrive late (e.g. slow mDNS resolution of `blueos-avahi.local`), so the offer may already
+// be up when the configured address connects on its own.
 watch(
   () => vehicleStore.isVehicleOnline,
   (isOnline) => {
-    if (isOnline && showDiscoveryDialog.value && discoveryDialogAutoOpened.value) {
-      showDiscoveryDialog.value = false
-    }
+    if (isOnline && discoveryOfferId !== undefined) closeSnackbar(discoveryOfferId)
   }
 )
 </script>
