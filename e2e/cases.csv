@@ -1,0 +1,700 @@
+ID,Original item,Sub-test,Preconditions,Steps (instructions for the test agent),Pass criteria (what the video must show + state check),Web vs Electron,Needs,Notes
+MP-01.1,A mission with both a simple path and a survey can be created,Create a simple path from the sidebar,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; empty mission,"1. Click the sidebar button ""Create simple path"" (.mdi-vector-polyline).
+2. Left-click 4 distinct points on the map, ~50 m apart, near the vehicle.
+3. Click ""END SIMPLE PATH"".","Video: 4 waypoint markers appear one per click, joined by the path line.
+State: mission store has 4 waypoints, in click order, at the clicked coordinates.",Same behaviour (no platform branch on this code path),—,
+MP-01.2,A mission with both a simple path and a survey can be created,Add a survey after the simple path,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Click the sidebar button ""Add survey area"" (.mdi-grid).
+2. Click 4 polygon corners on an empty area of the map.
+3. Click ""GENERATE WAYPOINTS"".","Video: survey polygon drawn, lawnmower waypoints generated; snackbar ""Waypoints generated from survey path.""
+State: the 4 path waypoints are unchanged and the survey waypoints are appended after them; one path.survey-polygon.",Same behaviour (no platform branch on this code path),—,
+MP-01.3,A mission with both a simple path and a survey can be created,Create a mission starting with a survey and then a simple path,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; empty mission,"1. ""Add survey area"", draw a 4-corner polygon, ""GENERATE WAYPOINTS"".
+2. ""Create simple path"", click 3 points, ""END SIMPLE PATH"".","Video: path continues from the last survey waypoint.
+State: survey waypoints first, then the 3 path waypoints; numbering is continuous.",Same behaviour (no platform branch on this code path),—,
+MP-02.1,A mission with both a simple path and a survey can be uploaded,Upload a path + survey mission,Path + survey mission with mission home set near the vehicle; vehicle online and disarmed,"1. Click ""UPLOAD MISSION TO VEHICLE"".
+2. Wait for the progress bar to finish.
+3. Close the result dialog with ""Close"".","Video: ""Uploading mission to vehicle..."" progress, then dialog ""Mission upload succeeded"".
+State (vehicle oracle via mavlink2rest): vehicle mission item count = Cockpit waypoints + home.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MP-02.2,A mission with both a simple path and a survey can be uploaded,Download the uploaded mission back,Mission uploaded by MP-02.1,"1. Clear the planning mission (delete all waypoints).
+2. Click ""DOWNLOAD MISSION FROM VEHICLE"".","Video: snackbar ""Mission download succeeded!"" and the same path and survey reappear on the map.
+State: waypoint count and coordinates (±1e-6°) match what was uploaded.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MP-03.1,Any survey created on a mission can be edited,Move a survey polygon vertex and regenerate,Mission with a 4-waypoint simple path followed by one survey (as left by MP-01.2),"1. Right-click the survey polygon (path.survey-polygon).
+2. Click the pencil ""Edit survey's polygon"" (.mdi-pencil) in the orbit menu.
+3. Drag one corner (.survey-vertex-icon) ~40 px outward.
+4. Click ""GENERATE WAYPOINTS"".","Video: polygon reshapes under the cursor and the survey lines follow.
+State: survey waypoints changed; the 4 path waypoints untouched; still one survey.",Same behaviour (no platform branch on this code path),—,
+MP-03.2,Any survey created on a mission can be edited,Change survey line spacing and angle,Mission with a 4-waypoint simple path followed by one survey (as left by MP-01.2),"1. Enter survey edit (as MP-03.1 steps 1–2).
+2. Halve the line spacing value.
+3. Rotate the angle dial by ~45°.
+4. ""GENERATE WAYPOINTS"".","Video: denser, rotated lawnmower pattern.
+State: survey waypoint count increases after halving spacing; line bearing changes by ~45°.",Same behaviour (no platform branch on this code path),—,
+MP-03.3,Any survey created on a mission can be edited,Toggle crosshatch (90º re-fly),Mission with a 4-waypoint simple path followed by one survey (as left by MP-01.2),"1. Right-click the survey polygon.
+2. Click the crosshatch button (.mdi-grid) in the orbit menu.","Video: a second, perpendicular pass is drawn.
+State: survey waypoint count roughly doubles.",Same behaviour (no platform branch on this code path),—,
+MP-03.4,Any survey created on a mission can be edited,Edit a survey that sits between waypoints (not the last element),Mission with a survey inserted between waypoints 2 and 3 (as left by MP-05.1),1. Edit that survey's polygon (MP-03.1 steps 1–4).,State: only that survey's waypoints change; waypoints before and after it keep their coordinates and order.,Same behaviour (no platform branch on this code path),—,
+MP-03.5,Any survey created on a mission can be edited,Delete a survey,Mission with a 4-waypoint simple path followed by one survey (as left by MP-01.2),"1. Right-click the survey polygon.
+2. Click ""Delete survey"".","Video: polygon and its waypoints disappear.
+State: only the 4 path waypoints remain; no path.survey-polygon.",Same behaviour (no platform branch on this code path),—,
+MP-04.1,Undo and redo functions work appropriately,Undo and redo with the toolbar buttons,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Add a 5th waypoint.
+2. Click undo (.mdi-undo).
+3. Click redo (.mdi-redo).","Video: the 5th waypoint disappears on undo and comes back on redo.
+State: waypoint count 5 → 4 → 5, coordinates restored exactly.",Same behaviour (no platform branch on this code path),—,
+MP-04.2,Undo and redo functions work appropriately,Undo and redo with keyboard shortcuts,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Add a 5th waypoint.
+2. Press Cmd/Ctrl+Z.
+3. Press Cmd/Ctrl+Shift+Z (and Ctrl+Y on a second round).","Same as MP-04.1, driven by the keyboard; a key-press caption is shown in the video.",Same behaviour (no platform branch on this code path),—,
+MP-04.3,Undo and redo functions work appropriately,Undo a survey generation and a waypoint drag,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Add a survey and generate its waypoints.
+2. Drag waypoint 2.
+3. Undo twice.
+4. Redo twice.","State: first undo restores waypoint 2's position, second removes the survey; redos re-apply both in order.",Same behaviour (no platform branch on this code path),—,
+MP-04.4,Undo and redo functions work appropriately,End of the undo/redo stack,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; empty mission,"1. Add 1 waypoint.
+2. Undo until nothing is left, then once more.
+3. Redo until nothing is left, then once more.","Video: snackbars ""No more steps to undo."" and ""No more steps to redo.""; buttons become disabled at the ends.",Same behaviour (no platform branch on this code path),—,
+MP-05.1,Is possible to add a survey in between two waypoints,"Insert a survey with the segment ""+"" knob",Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Hover the segment between waypoints 2 and 3; wait ~0.5 s.
+2. Click the ""+"" knob (.mission-segment-add-knob).
+3. Click ""Insert survey here"" in the radial menu.
+4. Draw a 4-corner polygon and click ""GENERATE WAYPOINTS"".","Video: path line now runs waypoint 2 → survey → old waypoint 3.
+State: survey waypoints spliced right after waypoint 2; old waypoints 3–4 follow, unchanged.",Same behaviour (no platform branch on this code path),—,
+MP-05.2,Is possible to add a survey in between two waypoints,Insert a survey from the map context menu,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Right-click on the map right next to the segment between waypoints 1 and 2.
+2. Click ""Add element here"".
+3. Click ""Insert survey here"".
+4. Draw the polygon and generate.","Same as MP-05.1, between waypoints 1 and 2.",Same behaviour (no platform branch on this code path),—,
+MP-06.1,Waypoints can be dragged (and uploading them do change the position in the mission inside the vehicle),Drag a waypoint,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Press on waypoint 2 (.waypoint-marker-icon), move ~80 px, release.
+2. Right-click waypoint 2 to show its card.","Video: marker and path line follow the cursor; card shows the new Lat./Long.
+State: only waypoint 2 coordinates changed.",Same behaviour (no platform branch on this code path),—,
+MP-06.2,Waypoints can be dragged (and uploading them do change the position in the mission inside the vehicle),A dragged waypoint reaches the vehicle on upload,Path + survey mission with mission home set near the vehicle; vehicle online and disarmed,"1. Upload the mission.
+2. Drag waypoint 2 to a new place.
+3. Upload again.
+4. Clear the plan and ""DOWNLOAD MISSION FROM VEHICLE"".","State: downloaded waypoint 2 = dragged position, and the vehicle-side mission item (mavlink2rest oracle) agrees.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MP-07.1,Waypoints can be created between others and the subsequent wps will be renumbered,"Insert a waypoint with the segment ""+"" knob",Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Hover the segment between waypoints 2 and 3.
+2. Click the ""+"" knob.
+3. Click ""Add waypoint"".","Video: a new marker appears on that segment.
+State: 5 waypoints, the new one at index 3 (between old 2 and 3).",Same behaviour (no platform branch on this code path),—,
+MP-07.2,Waypoints can be created between others and the subsequent wps will be renumbered,Insert a waypoint with Cmd/Ctrl+click on a segment,Mission with a 4-waypoint simple path (as left by MP-01.1),1. Cmd/Ctrl+click on the segment between waypoints 1 and 2.,"State: 5 waypoints, the new one at index 2.",Same behaviour (no platform branch on this code path),—,
+MP-07.3,Waypoints can be created between others and the subsequent wps will be renumbered,Subsequent waypoints are renumbered,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Toggle ""Always show waypoint numbers"" (.mdi-numeric-1-circle-outline).
+2. Insert a waypoint between 2 and 3 (MP-07.1).",Video: labels after the inserted waypoint shift by one; no duplicated or missing numbers.,Same behaviour (no platform branch on this code path),—,
+MP-08.1,"Home waypoint can be added, dragged and uploaded and the changes reflects on mission runtime","Set the mission home from the ""Set mission home"" pill",Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Click the ""Set mission home"" pill (.mdi-home-circle).
+2. Click a map point ~30 m from the vehicle.","Video: home marker placed; snackbar ""Mission home set to <lat>, <lng>…"".
+State: planned home = clicked point.",Same behaviour (no platform branch on this code path),—,
+MP-08.2,"Home waypoint can be added, dragged and uploaded and the changes reflects on mission runtime",Set the mission home from the map context menu,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Right-click on the map.
+2. Click ""Set mission home"".",Same as MP-08.1.,Same behaviour (no platform branch on this code path),—,
+MP-08.3,"Home waypoint can be added, dragged and uploaded and the changes reflects on mission runtime",Drag the home marker,Mission home set (MP-08.1),1. Drag the home marker ~60 px.,"Video: home marker follows the cursor.
+State: planned home = drop point.",Same behaviour (no platform branch on this code path),—,
+MP-08.4,"Home waypoint can be added, dragged and uploaded and the changes reflects on mission runtime",Uploaded home reaches the vehicle,Mission home dragged to a new place (MP-08.3); vehicle online,"1. Click ""UPLOAD MISSION TO VEHICLE"".
+2. Close the success dialog.",State (vehicle oracle): HOME_POSITION / mission item 0 = planned home (±1e-6°).,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MP-08.5,"Home waypoint can be added, dragged and uploaded and the changes reflects on mission runtime",New home is used at mission runtime,Home uploaded by MP-08.4,"1. Go to the Flight view.
+2. Arm.
+3. Switch to AUTO and let it reach waypoint 1.
+4. Switch to RTL.","Video: Map widget shows home at the new place; vehicle heads to it.
+State: distance to the new home decreases during RTL.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and runs AUTO,
+MP-09.1,Mission estimates board will show up and have reactive values that seem realistic,Estimates board shows up with all rows,Mission with a 4-waypoint simple path followed by one survey (as left by MP-01.2),"1. Look at the bottom-right card ""Mission estimates"".","Video: rows Length, Max distance from home, ETA, Energy, Total survey coverage, Mission area (≈) all filled.",Same behaviour (no platform branch on this code path),—,
+MP-09.2,Mission estimates board will show up and have reactive values that seem realistic,Estimates react to mission changes,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Note Length and ETA.
+2. Add a waypoint ~100 m beyond the last one.","Video: Length and ETA grow right after the click.
+State: Length grows by ≈ the new segment length.",Same behaviour (no platform branch on this code path),—,
+MP-09.3,Mission estimates board will show up and have reactive values that seem realistic,ETA reacts to cruise speed,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Note ETA.
+2. Double the sidebar ""Cruise speed"".",State: ETA roughly halves.,Same behaviour (no platform branch on this code path),—,
+MP-09.4,Mission estimates board will show up and have reactive values that seem realistic,Estimates are realistic,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Read Length and ETA.
+2. Compute the geodesic sum of segments and Length / cruise speed independently.",State: Length within 2% of the independent sum; ETA ≥ Length / cruise speed and within 30% of it.,Same behaviour (no platform branch on this code path),—,
+MP-10.1,A MAVLink command can be added in a waypoint and will be performed,Add a MAVLink command to a waypoint,Mission with a 4-waypoint simple path (as left by MP-01.1),"1. Click waypoint 2 (or right-click → pencil ""Edit waypoint"").
+2. In ""Waypoint Commands"", click ""Append New Command"".
+3. Pick MAV_CMD_DO_SET_SERVO, servo = a free output, PWM 1900.
+4. Click ""Add"".","Video: command listed in the panel; command-count badge on the marker.
+State: waypoint 2 carries the command.",Same behaviour (no platform branch on this code path),—,
+MP-10.2,A MAVLink command can be added in a waypoint and will be performed,The command survives upload and download,Waypoint 2 has DO_SET_SERVO (MP-10.1); home set; vehicle online,"1. Upload.
+2. Clear the plan.
+3. Download from the vehicle.
+4. Open waypoint 2.",State: the downloaded waypoint 2 has the same command and parameters.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MP-10.3,A MAVLink command can be added in a waypoint and will be performed,The command is performed during the mission,Mission from MP-10.2 on the vehicle,"1. Flight view.
+2. Arm.
+3. AUTO.
+4. Wait for the vehicle to reach waypoint 2.",State (vehicle oracle): SERVO_OUTPUT_RAW for that output reads 1900 after waypoint 2 and not before.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and runs AUTO,
+MP-11.1,Changing the cruise speed of a mission actually changes the speed of the vehicle,Mission cruise speed sets the vehicle speed,"Straight 4-waypoint mission, legs ≥ 60 m; home set","1. Set sidebar ""Cruise speed"" to 1 m/s.
+2. Upload.
+3. Flight view, arm, AUTO.
+4. Let it cruise for 15 s.",State (vehicle oracle): VFR_HUD groundspeed settles at 1 ± 0.3 m/s mid-leg.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and runs AUTO,
+MP-11.2,Changing the cruise speed of a mission actually changes the speed of the vehicle,A different cruise speed gives a different speed,Same mission as MP-11.1,"1. Set ""Cruise speed"" to 3 m/s.
+2. Upload.
+3. Run as in MP-11.1.",State: groundspeed settles at 3 ± 0.5 m/s.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and runs AUTO,
+MP-11.3,Changing the cruise speed of a mission actually changes the speed of the vehicle,Changing speed during the mission,Mission running in AUTO (MP-11.1),"1. Open the mission control panel speed button (.mdi-speedometer).
+2. Drag the slider to 2 m/s.",State: groundspeed moves from ~1 to 2 ± 0.4 m/s within 10 s.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and runs AUTO,
+POI-12.1,Creating a Point of Interest works in any map instance (widget and mp) and shows in all map instances,Create a POI in mission planning,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; empty mission,"1. Right-click on the map.
+2. Click ""Place point of interest"".
+3. Type a Name.
+4. Click ""Save"".","Video: POI marker (.poi-marker-icon) appears at the clicked point with its name.
+State: POI list has it with the clicked coordinates.",Same behaviour (no platform branch on this code path),—,
+POI-12.2,Creating a Point of Interest works in any map instance (widget and mp) and shows in all map instances,Create a POI in the Map widget,Fresh profile; Cockpit on the Flight view with a Map widget; connected to the SITL boat,"1. Right-click on the Map widget.
+2. Click ""Place Point of Interest"".
+3. Type a Name.
+4. Click ""Save"".","Same as POI-12.1, on the widget.",Same behaviour (no platform branch on this code path),—,
+POI-12.3,Creating a Point of Interest works in any map instance (widget and mp) and shows in all map instances,A POI created in one map shows in the other,POIs from POI-12.1 and POI-12.2,1. Switch between the Flight view and Mission planning.,Video: both POIs visible in both maps at the same coordinates.,Same behaviour (no platform branch on this code path),—,
+POI-12.4,Creating a Point of Interest works in any map instance (widget and mp) and shows in all map instances,Two Map widgets in the same view stay in sync,Flight view with two Map widgets (add the second one in edit mode),1. Create a POI in widget A.,"Video: it appears in widget B immediately, same coordinates.",Same behaviour (no platform branch on this code path),—,
+POI-13.1,Moving a Point of Interest works in any map instance (widget and mp) and shows in all map instances,Move a POI in the Map widget,One POI; Flight view,"1. Drag the POI marker ~80 px in the widget.
+2. Open Mission planning.","Video: marker follows the cursor; planning shows it at the new place.
+State: POI coordinates updated.",Same behaviour (no platform branch on this code path),—,
+POI-13.2,Moving a Point of Interest works in any map instance (widget and mp) and shows in all map instances,Move a POI in mission planning,One POI; Mission planning,"1. Drag the POI marker.
+2. Open the Flight view.","Same as POI-13.1, in the other direction (and in both widgets when two are present).",Same behaviour (no platform branch on this code path),—,
+POI-14.1,Panning Points of Interest out of the map range shows it in the edge and pans-back if clicking it,Off-screen POI shows an edge pin,One POI; Flight view Map widget,"1. Drag-pan the map until the POI is out of view.
+2. Hover the edge pin (.poi-edge-pin).","Video: pin sits on the edge facing the POI; tooltip ""<name> - <distance>"".",Same behaviour (no platform branch on this code path),—,
+POI-14.2,Panning Points of Interest out of the map range shows it in the edge and pans-back if clicking it,Clicking the edge pin pans back to the POI,Edge pin visible (POI-14.1),1. Click the edge pin.,"Video: map pans back; POI centred.
+State: map centre ≈ POI coordinates.",Same behaviour (no platform branch on this code path),—,
+POI-14.3,Panning Points of Interest out of the map range shows it in the edge and pans-back if clicking it,Edge pin in mission planning,One POI; Mission planning,1. Repeat POI-14.1 and POI-14.2 on the planning map.,Same as POI-14.1 and POI-14.2.,Same behaviour (no platform branch on this code path),—,
+POI-14.4,Panning Points of Interest out of the map range shows it in the edge and pans-back if clicking it,A left edge pin stays clear of the main-menu tab,Fresh profile; Cockpit on the Flight view (Map widget); a POI left of the centre at mid-height,1. Pan the map left until the POI leaves the view.,"Video: the POI's edge pin is visible on the left edge, not hidden under the main-menu tab.",Same behaviour (no platform branch on this code path),—,
+POI-15.1,All Points of Interest are preserved between boots,POIs survive a page reload,Two POIs created; wait > 3 s (sync debounce),1. Reload the page.,"Video: same POIs, names and positions after reload.",Same behaviour (no platform branch on this code path),—,
+POI-15.2,All Points of Interest are preserved between boots,POIs survive a browser restart,Two POIs created,"1. Close the browser.
+2. Relaunch it with the same profile and open Cockpit.",Same as POI-15.1.,Same behaviour (no platform branch on this code path),—,
+POI-15.3,All Points of Interest are preserved between boots,POIs are restored from the vehicle on a new computer,"Two POIs created and synced; Cockpit user ""release-tests""","1. Open Cockpit in a brand-new browser profile.
+2. Pick the same user and connect to the same vehicle.",Video: the POIs appear after the vehicle settings sync.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+VID-16.1,Recording a long video (1 hour) works,1-hour recording in Standalone with UsbCam on WebRTC,"Electron app; vehicle online; ""Stream /dev/video2"" playing in a Video widget","1. Click the mini recorder red dot.
+2. In ""Choose a stream to record"", pick ""Stream /dev/video2"" (WebRTC chip).
+3. Click ""Record"".
+4. Check the timer every 5 min.
+5. At 60 min click the dot again to stop.
+6. Wait for ""Video processing completed."".
+7. Open the video library.","Video (time-lapse of the hour): timer keeps running; recording indicator stays red; snackbar ""Video processing completed.""; recording listed in the library.
+State: ffprobe duration of the saved file ≥ 59 min; frames at start, middle and end are not black.",Differs: Electron writes chunks to disk and live-processes them; Web keeps chunks in IndexedDB,Camera (UsbCam) — Electron only,Recordings go to the run folder (the Cockpit folder is pointed there for the case). Set COCKPIT_E2E_RECORDING_MINUTES for a shorter check.
+VID-16.2,Recording a long video (1 hour) works,1-hour recording in Web with UsbCam on WebRTC (stand-in for the RadCam web test),"Web build; vehicle online; ""Stream /dev/video2"" playing","Same steps as VID-16.1, in the web build.",Same as VID-16.1; the recording is stored in the browser and can be downloaded from the library.,Differs: Electron writes chunks to disk and live-processes them; Web keeps chunks in IndexedDB,Camera (UsbCam),Not in the original list; added because there is no RadCam.
+VID-16.3,Recording a long video (1 hour) works,1-hour recording in Standalone with RadCam on RTSP,—,—,—,RTSP recording is Standalone-only (go2rtc),Camera (RadCam),
+VID-16.4,Recording a long video (1 hour) works,1-hour recording in Web with RadCam on WebRTC,—,—,—,Differs: Electron writes chunks to disk and live-processes them; Web keeps chunks in IndexedDB,Camera (RadCam),
+MAP-17.1,Downloading the mission that is in the vehicle works correctly (it is entirely downloaded to the map and mission-planning view),Download the vehicle mission into the Map widget,A path + survey mission already on the vehicle (uploaded before the case); Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; no mission drawn on the map,"1. Mission control panel: click the menu (.mdi-dots-vertical).
+2. Click ""Download mission from vehicle"".","Video: the whole mission appears on the Map widget.
+State: drawn waypoints match the vehicle mission read back over MAVLink (count, order, coordinates ±1e-6°).",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-17.2,Downloading the mission that is in the vehicle works correctly (it is entirely downloaded to the map and mission-planning view),"Download the vehicle mission into mission planning, commands included",A mission with a survey and a DO_SET_SERVO on one waypoint already on the vehicle; Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; empty plan,"1. Click ""DOWNLOAD MISSION FROM VEHICLE"".
+2. Open the waypoint that carries the command.","Video: snackbar ""Mission download succeeded!""; full mission drawn.
+State: every waypoint and the extra command match the vehicle read-back.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-17.3,Downloading the mission that is in the vehicle works correctly (it is entirely downloaded to the map and mission-planning view),A large mission downloads completely,A dense survey mission of 150+ items on the vehicle; Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; empty plan,"1. Click ""DOWNLOAD MISSION FROM VEHICLE"".
+2. Wait for it to finish.",State: downloaded item count equals the vehicle MISSION_COUNT; last waypoint coordinates match.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-18.1,Running the mission that is in the vehicle works correctly (for both missions that were already there or were just uploaded),Run a mission that was just uploaded,Short mission near the vehicle uploaded from mission planning in this session,"1. In the upload result dialog click ""Switch to Flight Mode"".
+2. Press play on the Mission control panel.
+3. Let it run to the end.","Video: vehicle drives the route.
+State: vehicle armed in AUTO; MISSION_CURRENT advances through every waypoint and reaches the last one.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-18.2,Running the mission that is in the vehicle works correctly (for both missions that were already there or were just uploaded),Run a mission that was already on the vehicle,Mission uploaded to the vehicle by another ground station before Cockpit opens; Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat,"1. Wait for Cockpit to show the vehicle mission on the map.
+2. Press play on the Mission control panel.
+3. Let it run to the end.","Same as MAP-18.1, for a mission this Cockpit never uploaded.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-18.3,Running the mission that is in the vehicle works correctly (for both missions that were already there or were just uploaded),The map shows mission progress while it runs,Mission running (MAP-18.1),"1. Watch the Map widget and the panel's ""Curr. WP"" while the vehicle drives.","Video: reached waypoints change style; the current one is highlighted.
+State: ""Curr. WP"" matches MISSION_CURRENT at each change.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-19.1,The GoTo functionality moves the vehicle to the correct position,GoTo from the Map widget moves the vehicle there,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; vehicle armed,"1. Right-click the map ~60 m from the vehicle.
+2. Click ""GoTo"".","Video: vehicle drives to the clicked point.
+State: vehicle switches to GUIDED; final position within 3 m of the clicked point (GLOBAL_POSITION_INT).",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-19.2,The GoTo functionality moves the vehicle to the correct position,GoTo while disarmed gives visible feedback,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; vehicle disarmed,"1. Right-click the map.
+2. Click ""GoTo"".","Video: Cockpit tells the user why the vehicle did not move (snackbar or dialog).
+State: vehicle position unchanged.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-19.3,The GoTo functionality moves the vehicle to the correct position,GoTo a point of interest,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; one POI ~60 m away; vehicle armed,"1. Click the POI marker.
+2. In its popup, click ""GoTo"".",State: vehicle ends within 3 m of the POI.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-20.1,Centering a vehicle or map center works on both instant and following mode,Center on the vehicle (instant),Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; map panned so the vehicle is off screen,"1. Open the centering control (.mdi-crosshairs-gps).
+2. Click the vehicle button (.mdi-airplane-marker).","Video: map jumps back to the vehicle.
+State: map centre within a few metres of the vehicle position.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-20.2,Centering a vehicle or map center works on both instant and following mode,Follow the vehicle,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; vehicle driving (mission or GoTo),"1. Double-click the vehicle button.
+2. Let the vehicle drive for 20 s.","Video: button turns red; the vehicle stays centred as it moves.
+State: map centre tracks the vehicle within a few metres throughout.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-20.3,Centering a vehicle or map center works on both instant and following mode,Panning the map stops following,Following the vehicle (MAP-20.2),1. Drag the map away.,Video: map stays where it was dragged and the button is no longer red.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-21.1,Centering a mission or map works,Center on the mission in the Map widget,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; a mission on the map; map panned/zoomed away from it,"1. Open the centering control.
+2. Click ""center on mission"" (.mdi-map-marker-path).","Video: the whole mission fits on screen.
+State: every waypoint is inside the visible map bounds.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-21.2,Centering a mission or map works,Center on the mission in mission planning,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; a planned mission; map panned away,Same as MAP-21.1 on the planning map.,Same as MAP-21.1.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-22.1,Centering a mission or Home works,Center on home (instant),Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat; home on the map; map panned away,"1. Open the centering control.
+2. Click the home button (.mdi-home-search).","Video: map jumps to the home marker.
+State: map centre within a few metres of home.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-22.2,Centering a mission or Home works,Track home,As MAP-22.1,"1. Double-click the home button.
+2. Drag the map away a little and release.",Video: button turns red and stays on home; dragging ends the tracking.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-22.3,Centering a mission or Home works,Center on home in mission planning,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; mission home set; map panned away,Same as MAP-22.1 on the planning map.,Same as MAP-22.1.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAP-23.1,Mission control panel works during a mission,Pause and resume,Mission running in AUTO,"1. Press pause (.mdi-pause) on the Mission control panel.
+2. Wait 10 s.
+3. Press play.","State: vehicle leaves AUTO and stops on pause; back in AUTO on play, continuing from the same waypoint.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-23.2,Mission control panel works during a mission,Skip to the next and previous waypoint,Mission running in AUTO,"1. Press next (.mdi-skip-next).
+2. Press previous (.mdi-skip-previous).","State: MISSION_CURRENT goes +1, then -1; ""Curr. WP"" follows.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-23.3,Mission control panel works during a mission,Return home from the panel,Mission running in AUTO,1. Press return home (.mdi-home-circle).,State: vehicle switches to SMART_RTL or RTL and its distance to home decreases.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-23.4,Mission control panel works during a mission,The panel stays usable after coming from mission planning with a waypoint selected,"In mission planning, a waypoint selected (its side panel open), mission uploaded","1. Click ""Switch to Flight Mode"" without deselecting the waypoint.
+2. Press play, then pause, on the Mission control panel.","State: both buttons respond (vehicle enters AUTO, then leaves it). Covers the invisible overlay found on 2026-10-07.",Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+MAP-24.1,Receive and view data from external vehicles,Telemetry from an extra vehicle reaches the data lake,A second vehicle with a different system ID reachable over a MAVLink2Rest WebSocket (the stand-in announces system 2 and circles 150 m east of the boat),"1. General settings: add the second vehicle's address under the extra vehicles.
+2. Open the data lake tool.",State: variables under /mavlink/<its system id>/ appear and update (e.g. GLOBAL_POSITION_INT).,Same behaviour (no platform branch on this code path),"Vehicle (SITL); a second vehicle, here a stand-in (e2e/lib/fake-vehicle.mjs) announcing its own system ID over a MAVLink2Rest WebSocket",
+MAP-24.2,Receive and view data from external vehicles,An extra vehicle can be followed on the map with a POI,MAP-24.1 done,"1. Add the second vehicle as in MAP-24.1.
+2. Press its ""Place this vehicle on the map"" button.",Video: the POI sits on the extra vehicle and moves with it.,Same behaviour (no platform branch on this code path),"Vehicle (SITL); a second vehicle, here a stand-in (e2e/lib/fake-vehicle.mjs) announcing its own system ID over a MAVLink2Rest WebSocket",
+MAP-24.3,Receive and view data from external vehicles,A system ID clash is reported,"A second vehicle announcing system ID 1, the same as the piloted one (the stand-in, 150 m from the boat)",1. Add it in General settings.,"Video: the panel warns about the clash.
+State: the main vehicle's variables are not overwritten.",Same behaviour (no platform branch on this code path),"Vehicle (SITL); a second vehicle, here a stand-in (e2e/lib/fake-vehicle.mjs) announcing its own system ID over a MAVLink2Rest WebSocket",
+POI-25.1,Points of Interest heading integration works,A fixed heading points the POI marker,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat,"1. Place a POI with ""Heading (optional)"" = 90.",Video: the marker grows a tip pointing east.,Same behaviour (no platform branch on this code path),—,
+POI-25.2,Points of Interest heading integration works,A heading taken from a data lake variable turns live,"Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; a user data lake variable ""poi_heading"" = 0","1. Place a POI with its heading bound to ""poi_heading"".
+2. Change the variable to 180, then 270.","Video: the tip turns to south, then west, without reloading.",Same behaviour (no platform branch on this code path),—,
+POI-25.3,Points of Interest heading integration works,Clearing the heading removes the tip,POI with a heading (POI-25.1),"1. Edit the POI and clear ""Heading (optional)"".",Video: the tip disappears.,Same behaviour (no platform branch on this code path),—,
+BASE-26.1,"BaseStation position (including serial GPS) + antenna range (including all celular, etc)",Set the base station on the map,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat,"1. Right-click the map.
+2. Click ""Set base station here"".",Video: base station marker and its coverage rings appear at the clicked point.,Same behaviour (no platform branch on this code path),—,
+BASE-26.2,"BaseStation position (including serial GPS) + antenna range (including all celular, etc)",Antenna settings change the range,Base station set (BASE-26.1),"1. Open the base station panel.
+2. Change the antenna height and the BlueBoat antenna mast.",Video: the range rings grow or shrink accordingly.,Same behaviour (no platform branch on this code path),—,
+BASE-26.3,"BaseStation position (including serial GPS) + antenna range (including all celular, etc)",Cellular coverage from OpenStreetMap,Base station set; mobile data selected,"1. Pick OpenStreetMap as the coverage provider.
+2. Load the coverage.",Video: cell coverage appears around the area.,Same behaviour (no platform branch on this code path),—,
+BASE-26.4,"BaseStation position (including serial GPS) + antenna range (including all celular, etc)",Cellular coverage from OpenCellID,Base station set; mobile data selected; an OpenCellID API key (Standalone),"1. Pick OpenCellID.
+2. Standalone: enter the key and load. Web: try to load.",Standalone: coverage loads. Web: the message says it cannot be loaded from a browser and suggests OpenStreetMap or Standalone.,Differs: OpenCellID loads only in Standalone; Web shows an explanation,OpenCellID API key,
+BASE-26.5,"BaseStation position (including serial GPS) + antenna range (including all celular, etc)",Serial GPS sets the base station position,Standalone; a USB GNSS receiver with a fix plugged in,"1. Base station panel: ""Find a connected GNSS receiver…"".
+2. Pick the serial device and confirm.",Video: fix quality and satellites shown; the base station moves to the receiver's position.,Differs: Standalone only (Electron) (serial ports),USB GNSS receiver,"A pty cannot stand in for the receiver: Cockpit only connects a GNSS device to a port that SerialPort.list() reports, and a pty never shows there."
+FENCE-27.1,Geofence,Draw an inclusion polygon fence,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat,"1. Open the GeoFence tab.
+2. Draw a polygon around the vehicle.
+3. Click ""Finish polygon fence"".",Video: fence polygon drawn and listed in the editor.,Same behaviour (no platform branch on this code path),—,
+FENCE-27.2,Geofence,Add a circle and an exclusion zone,Polygon fence drawn (FENCE-27.1),"1. Add a circle fence.
+2. Add an exclusion polygon inside the inclusion one.",Video: both drawn with the right style (inclusion vs exclusion).,Same behaviour (no platform branch on this code path),—,
+FENCE-27.3,Geofence,The fence reaches the vehicle,Fence drawn (FENCE-27.1/27.2),1. Send the fence to the vehicle.,"State: the vehicle's fence items, read back over MAVLink (mission type FENCE), match the drawn polygons and circle.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+FENCE-27.4,Geofence,Live fence overlay and enforcement toggle in flight,Fence on the vehicle; Flight view,"1. Show the fence on the Map widget (shield button).
+2. Toggle fence enforcement off and on.","Video: fence drawn on the Map widget.
+State: FENCE_ENABLE follows the toggle.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+FENCE-27.5,Geofence,A breach triggers the fence action,Fence enforced; vehicle armed inside it,1. GoTo a point outside the fence.,State: vehicle performs the fence action (e.g. RTL/hold) before leaving; Cockpit shows the breach alert.,Same behaviour (no platform branch on this code path),Vehicle (SITL) — arms and drives,
+FENCE-27.6,Geofence,Save and load the fence file,Fence drawn,"1. ""Save fence to file"".
+2. Clear the fence.
+3. ""Load fence from file (.cfp / .plan)"" with the saved file.",State: the loaded fence equals the saved one.,Same behaviour (no platform branch on this code path),—,
+MAPSRC-28.1,Custom map sources - GeoTIFFs + custom map providers,Import a GeoTIFF overlay,Fresh profile; Cockpit on /mission-planning; connected to the SITL boat; a sample GeoTIFF of the area,"1. Right-click the map, ""Add overlay (GeoTIFF)"".
+2. Pick the file.",Video: the image appears at its georeferenced place (corners on the expected coordinates).,Mostly same; Web stores overlays in limited browser storage and shows a warning,Sample GeoTIFF,
+MAPSRC-28.2,Custom map sources - GeoTIFFs + custom map providers,The GeoTIFF overlay persists,Overlay imported (MAPSRC-28.1),1. Reload Cockpit.,Video: overlay still there. Web: the storage warning is visible in the overlays dialog.,Differs: Web storage can be cleared by the browser and has a smaller quota,Sample GeoTIFF,
+MAPSRC-28.3,Custom map sources - GeoTIFFs + custom map providers,Add a custom tile provider,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat,"1. Open the map layers menu.
+2. Add a provider from a URL template.
+3. Select it.",Video: map tiles switch to the new provider.,Same behaviour (no platform branch on this code path),Internet,
+MAPSRC-28.4,Custom map sources - GeoTIFFs + custom map providers,Brightness and contrast of a provider,Custom provider selected (MAPSRC-28.3),1. Change its brightness and contrast.,Video: map rendering changes accordingly.,Same behaviour (no platform branch on this code path),Internet,
+MAPSRC-28.5,Custom map sources - GeoTIFFs + custom map providers,Custom providers follow the user to another computer,Custom provider added; vehicle connected,1. Open Cockpit in a brand-new profile with the same user.,Video: the custom provider is available there too.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+CONN-29.1,Vehicle discovery dialog finds vehicles,Discovery finds the vehicle on the network,Standalone; BlueOS vehicle on the local network,"1. Open the vehicle discovery dialog (General settings).
+2. Search.
+3. Pick the vehicle found.",Video: the vehicle shows with its name and address; picking it connects to it.,Differs: Standalone only (Electron),Vehicle (SITL),
+CONN-29.2,Vehicle discovery dialog finds vehicles,Web explains discovery is Standalone-only,Web build,"1. Open Settings → General and look at ""Vehicle network connection (global address)"", where Standalone offers ""Search for vehicles"".","Video: the panel says that finding vehicles needs Cockpit Standalone.
+State: no ""Search for vehicles"" button (window.electronAPI absent).",Differs: Standalone only (Electron),—,"Cockpit has the message (""finding vehicles is only available in Cockpit standalone""), but only throws it from the scan, which the web build never offers; the button is hidden with no explanation."
+CONN-30.1,Vehicle discovery dialog appears automatically if no vehicle is connected,The dialog opens on its own with no vehicle,Standalone; fresh profile with an unreachable vehicle address,"1. Launch Cockpit and wait.
+2. Click ""Search for vehicles"" in the offer.","Video: about 5 s after start a ""No vehicle connected yet."" message offers ""Search for vehicles"", which opens the Vehicle Discovery dialog.",Differs: Standalone only (Electron),—,Cockpit no longer opens the dialog by itself; it offers it in a message (src/App.vue).
+CONN-30.2,Vehicle discovery dialog appears automatically if no vehicle is connected,Opting out of the automatic search sticks,Dialog shown (CONN-30.1),"1. In the ""No vehicle connected yet."" message, click the eye-off button (""Do not offer a vehicle search on startup"").
+2. Relaunch.","Video: the offer does not come back.
+State: localStorage cockpit-prevent-auto-vehicle-discovery-dialog is true.",Differs: Standalone only (Electron),—,
+CONN-30.3,Vehicle discovery dialog appears automatically if no vehicle is connected,No dialog when the vehicle is reachable,Standalone; vehicle reachable,1. Launch Cockpit.,"Video: no ""No vehicle connected yet."" offer; vehicle connects.",Differs: Standalone only (Electron),Vehicle (SITL),
+MAV-31.1,Inspector shows both incoming and outgoing messages correctly,Incoming messages are listed with the right values,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat,"1. Open the MAVLink tools (main menu), Inspector.
+2. Look at HEARTBEAT and ATTITUDE.",State: shown values match the vehicle's messages read independently over mavlink2rest.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAV-31.2,Inspector shows both incoming and outgoing messages correctly,Outgoing messages are listed,Inspector open (MAV-31.1),"1. Change the flight mode from the bottom bar.
+2. Find the outgoing command in the Inspector.",Video: the outgoing command appears with the right fields.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAV-31.3,Inspector shows both incoming and outgoing messages correctly,Filtering messages,Inspector open,1. Filter by a message name.,Video: only matching messages remain.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAV-31.4,Inspector shows both incoming and outgoing messages correctly,Tracked messages survive reopening the page,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat,"1. MAVLink tools, Inspector: track HEARTBEAT and ATTITUDE.
+2. Close the MAVLink page and open it again.",Video: both messages are still tracked and keep updating.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAV-32.1,STATUSTEXT messages are coming through and being read aloud,STATUSTEXT shows in the alert bar,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat,"1. Arm the vehicle (it sends ""Throttle armed"").","Video: the alert bar shows ""Throttle armed"".",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAV-32.2,STATUSTEXT messages are coming through and being read aloud,STATUSTEXT is read aloud,Voice alerts enabled,1. Arm the vehicle.,"State: the text-to-speech engine is asked to say ""Throttle armed"" (Web: browser speech; Standalone: Piper). The screen video carries no audio, so this is checked from the app.","Differs: Web uses the browser speech engine, Standalone uses Piper",Vehicle (SITL),
+MAV-32.3,STATUSTEXT messages are coming through and being read aloud,Muted voice alerts are not spoken,Voice alerts disabled in settings,1. Arm the vehicle.,"State: the alert still shows, nothing is spoken.","Differs: Web uses the browser speech engine, Standalone uses Piper",Vehicle (SITL),
+MAV-33.1,Message dumper saves messages,Dump messages and download the file,Fresh profile; Cockpit on the Flight view (Map widget); connected to the SITL boat,"1. MAVLink tools: start the message dumper.
+2. Wait 30 s.
+3. Stop.
+4. ""Download dump"".","State: the downloaded file parses and holds HEARTBEAT, ATTITUDE and GLOBAL_POSITION_INT over the dumped time span.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MAV-33.2,Message dumper saves messages,Open the dump in the viewer and plot a field,Dump file from MAV-33.1,"1. Open the dump viewer.
+2. Load the file.
+3. Plot ATTITUDE.roll.",Video: the plot shows the field over time.,Same behaviour (no platform branch on this code path),—,
+EXT-34.1,"Iframe widgets are loading from a BlueOS extension (e.g.: RadCam Manager), with a proper icon",Add an extension's widget from the edit menu,"Fresh profile; connected to the SITL boat; the 4K Cam Manager extension installed on BlueOS; the test user has no extension feature decided yet. No extension on the test vehicle offers a widget, so one RadCam-style entry (its own page, its favicon as icon) is added to 4K Cam Manager's extras in transit","1. Main menu → Edit interface.
+2. Find the extension card (marked External, with its icon).
+3. Drag it onto the view.
+4. Exit edit mode.",Video: the card shows the extension's icon; the widget shows the extension's page. State: an IFrame widget with the extension path; the page and its script load (200).,Same behaviour; Web: run with the BlueOS /extensionv2 duplicate Access-Control-Allow-Origin header collapsed in transit,"Vehicle (SITL), BlueOS extension","Stand-in widget entry, since no extension on the test vehicle offers one. Headless Chrome needs site isolation off to capture cross-origin iframes."
+EXT-35.1,Accepting an Action suggestion from a BlueOS Extension adds it and the action is functional,Accept an extension's action and run it,Fresh profile; connected to the SITL boat; the 4K Cam Manager extension installed on BlueOS; the test user has no extension feature decided yet,"1. Start Cockpit; wait for ""BlueOS Extension Features"".
+2. Add Action on ""4K Cam One-Push White Balance (All)"".
+3. Settings → Actions: find it, press its play button.","Video: the action moves out of New Actions and appears under Settings → Actions as an HTTP request. State: pressing play POSTs to the extension, which answers 200.",Same behaviour; Web: run with the BlueOS /extensionv2 duplicate Access-Control-Allow-Origin header collapsed in transit,"Vehicle (SITL), BlueOS extension",
+EXT-36.1,Accepting a joystick button suggestion from a BlueOS Extension adds it to the mapping and its function works,Apply an extension's joystick suggestion and press the button,Fresh profile; connected to the SITL boat; the 4K Cam Manager extension installed on BlueOS; the test user has no extension feature decided yet; a gamepad (virtual in Web),"1. Start Cockpit; Add Action (the suggestion uses it).
+2. Joystick Mappings → ""4K Cam on any vehicle types"" → Apply on ""4K Cam One-Push White Balance (All)"" → Apply.
+3. Press button 10.",Video: confirmation shows Button 10 → the action; success snackbar; the suggestion cards keep their joystick drawings inside. State: mapping regular[10] is the action; pressing it POSTs once to the extension (200).,"Web only here: Standalone reads joysticks through SDL, which a virtual gamepad cannot reach","Vehicle (SITL), BlueOS extension, gamepad",Web uses a virtual standard gamepad (navigator.getGamepads stand-in).
+EXT-37.1,"The External Features dialog appears automatically during boot, warns if there are pending suggestions on close and does reopen on next boot if not",The dialog opens by itself at boot,Fresh profile; connected to the SITL boat; the 4K Cam Manager extension installed on BlueOS; the test user has no extension feature decided yet,1. Start Cockpit and wait.,"Video: ""BlueOS Extension Features"" opens with no input, listing the pending action, the Joystick Mappings tab flagged.",Same behaviour; Web: run with the BlueOS /extensionv2 duplicate Access-Control-Allow-Origin header collapsed in transit,"Vehicle (SITL), BlueOS extension",
+EXT-37.2,"The External Features dialog appears automatically during boot, warns if there are pending suggestions on close and does reopen on next boot if not",Closing with pending items warns,Fresh profile; connected to the SITL boat; the 4K Cam Manager extension installed on BlueOS; the test user has no extension feature decided yet,"1. Start Cockpit; close the dialog with its X.
+2. Keep reviewing.
+3. Close again → Close anyway.","Video: ""Pending Extension Features"" lists the pending action and joystick mappings and says the dialog will reopen at next start; Keep reviewing goes back; Close anyway closes.",Same behaviour; Web: run with the BlueOS /extensionv2 duplicate Access-Control-Allow-Origin header collapsed in transit,"Vehicle (SITL), BlueOS extension",
+EXT-37.3,"The External Features dialog appears automatically during boot, warns if there are pending suggestions on close and does reopen on next boot if not",Reopens at next boot only while something is undecided,Fresh profile; connected to the SITL boat; the 4K Cam Manager extension installed on BlueOS; the test user has no extension feature decided yet,"1. Close the dialog undecided; restart.
+2. Ignore the action and the remaining suggestions; restart.",Video: it reopens after the first restart; after deciding everything it closes without a warning and stays closed on the next restart.,Same behaviour; Web: run with the BlueOS /extensionv2 duplicate Access-Control-Allow-Origin header collapsed in transit,"Vehicle (SITL), BlueOS extension",
+CLOUD-38.1,Log in through Cockpit,Log in to BlueOS Cloud from Cockpit,A BlueOS Cloud account,1. Log in through Cockpit with the account.,The session shows the account as logged in.,—,BlueOS Cloud credentials,"Needs a real account password, which the test agent does not enter."
+CONN-39.1,"Cockpit can connect to TCP, UDP and Serial endpoints",Main connection over TCP,Standalone; fresh profile; SITL serial 1 on TCP 5762,"1. Settings → General → main connection: enable custom, tcpout://<vehicle>:5999 (nothing listens), Apply.
+2. Then tcpout://<vehicle>:5762, Apply.","Video: the vehicle goes offline on the dead port, comes back on TCP, the panel says connected. State: heartbeats keep arriving.",Standalone only (Web has WebSocket and Serial only),Vehicle (SITL),
+CONN-39.2,"Cockpit can connect to TCP, UDP and Serial endpoints",Main connection over UDP,"Standalone; fresh profile; BlueOS ""GCS Server Link"" UDP 14550","1. As CONN-39.1 step 1.
+2. Then udpout://<vehicle>:14550, Apply.","As CONN-39.1, over UDP.",Standalone only,Vehicle (SITL),
+CONN-39.3,"Cockpit can connect to TCP, UDP and Serial endpoints",Main connection over serial,"Standalone; fresh profile; a serial device (here a pty relaying SITL serial 2, TCP 5763)","1. As CONN-39.1 step 1.
+2. Then serial:///dev/<tty>?baudrate=115200, Apply.","As CONN-39.1, over serial.",Standalone (Web Serial not covered here),Vehicle (SITL); serial device,No USB adapter on the simulator: e2e/lib/serial-bridge.py makes a pty that relays SITL serial 2.
+CONN-39.4,"Cockpit can connect to TCP, UDP and Serial endpoints",The panel reports a link that took over without a gap,Standalone; fresh profile; connected over the default MAVLink2Rest link,"1. Settings → General → main connection straight to tcpout://<vehicle>:5762, Apply.
+2. Wait 7 s.",Video: the panel says connected. State: heartbeats keep arriving.,Standalone only,Vehicle (SITL),
+ACT-41.1,Creating an HTTP action works and its fields are passed correctly on calls,Create an HTTP action and check every field reaches the server,Fresh profile; connected to the SITL boat; no custom actions; a local server that records requests,"1. Settings → Actions → New action → HTTP Request Action.
+2. PUT to <server>/release/{{ vehicle-address }}?source=cockpit; URL parameters fixed=yes and sysid=autopilotSystemId; header X-Release-Mode: {{ /mavlink/1/1/HEARTBEAT/custom_mode }}; JSON body with {{ /mavlink/1/1/VFR_HUD/groundspeed }} and {{ vehicle-address }}.
+3. Create, then press its play button.","Video: the request the server received. State: PUT, path with the vehicle address, all three query parameters, the header with the current mode, a JSON body with the live groundspeed as a number.",Same behaviour (Web needs the server to answer CORS),Vehicle (SITL),
+ACT-41.2,Creating an HTTP action works and its fields are passed correctly on calls,"An edited HTTP action calls with its new fields, also after a restart",The ACT-41.1 action exists,"1. Edit it: GET, path /edited.
+2. Play.
+3. Reload Cockpit, Settings → Actions, play again.",State: both calls are GET /edited with the parameters and header kept and no body.,Same behaviour,Vehicle (SITL),
+ACT-41.3,Creating an HTTP action works and its fields are passed correctly on calls,Renaming an HTTP action keeps a single action,The ACT-41.1 action exists,"1. Edit it and change only its name.
+2. Save.","State: the table and the registered actions hold one action, under the new name, and it still runs.",Same behaviour,Vehicle (SITL),
+ACT-42.1,"All actions types run properly (HTTP, MAVLink Message, JS and Built-in)",MAVLink message actions reach the vehicle,"Fresh profile; connected to the SITL boat, disarmed in Hold; no custom actions","1. New MAVLink Message Action, COMMAND_LONG with the dialog defaults (arm), Create.
+2. Another: MAV_CMD_DO_SET_MODE, param1 1, param2 0 (Manual), Create.
+3. Play each.","State (read from the vehicle): armed after the first, custom mode 0 after the second.",Same behaviour,Vehicle (SITL),
+ACT-42.2,"All actions types run properly (HTTP, MAVLink Message, JS and Built-in)",A JavaScript action runs its code,Fresh profile; no custom actions,"1. New JavaScript Action: cockpit.setDataLakeVariableData('release-test/js-ran', Date.now()).
+2. Test Action.
+3. Create, then play.",State: the variable gets a stamp on Test Action and a newer one on play.,Same behaviour,Vehicle (SITL),
+ACT-42.3,"All actions types run properly (HTTP, MAVLink Message, JS and Built-in)",Built-in actions run from a custom widget button,"Fresh profile; connected to the SITL boat, disarmed in Hold","1. Edit Interface: drag a Collapsible Container onto the view.
+2. Drop three Buttons into it: Mavlink arm, Manual Mode (ArduPilot Rover), Toggle top bar.
+3. Exit, press each (the last one twice).","State: the vehicle arms, switches to Manual, and the top bar hides and comes back.",Same behaviour,Vehicle (SITL),
+DL-43.1,Data-lake raw logger (CSV/JSON output),Record chosen variables at a fixed interval and download them as CSV,Fresh profile; connected to the SITL boat; no variables recorded,"1. Tools → Data Logs → export settings: fixed interval 500 ms.
+2. Tools → Data-lake: tick Record on SYSTEM_TIME/time_boot_ms and VFR_HUD/groundspeed.
+3. Wait ~10 s.
+4. Data Logs: current session → Download as CSV.","State: columns epoch, timestamp and the two variables; a row every 500 ms; the boot clock tracks the vehicle's; groundspeed numeric once recorded.",Same behaviour,Vehicle (SITL),
+DL-43.2,Data-lake raw logger (CSV/JSON output),Download a recorded session as JSON,As DL-43.1,"1. Default 1000 ms interval.
+2. Record SYSTEM_TIME/time_boot_ms and HEARTBEAT/custom_mode for ~10 s.
+3. Download as JSON.","State: a list of {epoch, data} points, one per second, with the flight mode the vehicle reports.",Same behaviour,Vehicle (SITL),
+DL-43.3,Data-lake raw logger (CSV/JSON output),Raw logging records every value change,As DL-43.1,"1. Export settings: Raw.
+2. Record ATTITUDE/time_boot_ms for ~8 s.
+3. Download as CSV.","State: every row a new ATTITUDE stamp, several rows per second.",Same behaviour,Vehicle (SITL),
+DL-43.4,Data-lake raw logger (CSV/JSON output),Column labels follow the export setting,As DL-43.1,"1. Export settings: Column labels → Variable name.
+2. Record two variables, download as CSV.","State: the columns are the variable names (without the MAVLink system suffix), not their IDs.",Same behaviour,Vehicle (SITL),
+UNIT-44.1,"Unit support (metric/imperial buttons for depth/temp widgets, JavaScript unit conversion API, mission speed)",Depth and temperature widgets follow the display units,Fresh profile; connected to the SITL boat; a Depth indicator on a stand-in variable at 12.5 m (the boat has no depth sensor) and a generic indicator on SCALED_PRESSURE/temperature; metric,"1. Read both.
+2. Settings → Interface → Display units: imperial.
+3. Then Depth alone back to Meters.",Video and state: 12.5 m / 35.0 °C → 41.0 ft / 95.0 °F → 12.5 m / 95.0 °F with the system shown as Mixed.,Same behaviour,Vehicle (SITL),
+UNIT-44.2,"Unit support (metric/imperial buttons for depth/temp widgets, JavaScript unit conversion API, mission speed)",A unit suffix converts a variable inside an expression,Fresh profile; connected to the SITL boat,"1. Tools → Data-lake → Add compound variable: {{ /mavlink/1/1/SCALED_PRESSURE/temperature : imperial }}, unit degF.
+2. Another with : metric, unit degC.","State: the first reads the water temperature in °F, the second in °C.",Same behaviour,Vehicle (SITL),
+UNIT-44.3,"Unit support (metric/imperial buttons for depth/temp widgets, JavaScript unit conversion API, mission speed)",Mission cruise speed is set and shown in the display speed unit,Fresh profile; connected to the SITL boat,"1. Settings → Interface → Speed: Miles per hour.
+2. Mission planning: a long path, type 4.5 in Cruise speed (mph).
+3. Upload, run from the Flight view.",State: the field keeps 4.5; the mission is planned and run in m/s at the speed the field shows; the mission panel shows it in mph.,Same behaviour,Vehicle (SITL),
+CONN-45.1,Switching vehicles by setting a new vehicle URL works,Pointing Cockpit at an address with no vehicle drops the vehicle,Fresh profile; connected to the SITL boat at 192.168.0.2,"1. Settings → General → global address: 192.168.0.250, Apply.
+2. Cockpit restarts.","State: the address and the MAVLink link follow the new address, and no vehicle is online.",Same behaviour,Vehicle (SITL),
+CONN-45.2,Switching vehicles by setting a new vehicle URL works,Setting a vehicle address connects to the vehicle there,Global address set to 192.168.0.250 (nothing there),"1. Settings → General → global address: blueos.local, Apply.
+2. Cockpit restarts.","State: online over ws://blueos.local/..., heartbeats flowing, same BlueOS vehicle ID as before. Only one vehicle on the test network, so the switch is to the same vehicle by another address.",Same behaviour,Vehicle (SITL),
+VID-40.1,Changing the subtitle configuration works and changes the generated .ass file,Overlay options and variables change the .ass,"Fresh profile; connected to the SITL boat; ""Stream /dev/video2"" in a Video widget and the mini recorder in the bottom bar; default overlay","1. Record ~6 s with the mini recorder.
+2. Settings → Telemetry → Overlay Options: font size 44, Bold, font colour red; remove ""Battery voltage"" from the grid.
+3. Record ~6 s again.
+4. Compare the two .ass files.","Video: both .ass files shown. State: Fontsize 30 → 44, Bold 0 → -1, PrimaryColour &H00FFFFFF → &H000000FF, Battery voltage gone from the dialogue lines, Battery current kept.","Same; Standalone writes the recording and its .ass to the Cockpit folder, Web to the browser's storage","Vehicle (SITL), camera",
+VID-40.2,Changing the subtitle configuration works and changes the generated .ass file,Telemetry frequency sets how often the subtitles change,As VID-40.1,"1. Record ~8 s at the default 1 Hz.
+2. Settings → Telemetry → Settings: Telemetry frequency 5 Hz.
+3. Record ~8 s again.",State: dialogue lines start 1 s apart in the first file and 0.2 s apart in the second.,"Same; Standalone writes the recording and its .ass to the Cockpit folder, Web to the browser's storage","Vehicle (SITL), camera",
+VID-40.3,Changing the subtitle configuration works and changes the generated .ass file,"Outline colour, shadow size and shadow colour reach the .ass",As VID-40.1,"1. Overlay Options: outline colour blue, shadow size 4, shadow colour green.
+2. Record ~6 s.","State: OutlineColour &H00FF0000, Shadow 4, BackColour (the shadow colour in ASS) &H0000FF00.","Same; Standalone writes the recording and its .ass to the Cockpit folder, Web to the browser's storage","Vehicle (SITL), camera",
+VID-46.1,Downloading the chunks zip from a previously recorded video works on web,A recording's chunks download as a zip from the video library,Web build; a Video widget and the mini video recorder on the UsbCam stream,"1. Record about 8 s with the mini recorder and stop.
+2. Open the video library → Videos → RAW.
+3. Press the download button on the new chunk group.","Video: the chunk group with its download button, then ""Downloaded N chunks in 1 archive(s)"".
+State: chunks_<hash>.zip is saved holding every chunk listed and the recording's .ass file, and the chunks joined play back for about the recorded time (ffprobe).",Web only (Standalone downloads groups through its own path),Vehicle (SITL); UsbCam stream (Stream /dev/video2),
+VID-47.1,Processing the previous chunks zip works on standalone,Standalone processes a chunks zip downloaded from the web build,Standalone; the zip VID-46.1 downloaded,"1. Open the video library → Videos → PROCESSING.
+2. Select and Process ZIP File(s) and pick the zip from VID-46.1.
+3. View Videos.","Video: ""ZIP file processed successfully!"", ""Processing Complete!"" and the new video on PROCESSED.
+State: an mp4 and its .ass are written to the Cockpit folder, and the mp4 lasts about as long as its chunks (ffprobe).",Standalone only,"Standalone; the zip from VID-46.1 (the native file picker is answered through the app's inspector, --inspect)",
+VID-48.1,Video library displays both processed and chunks of all cams in desktop and downloadable chunk groups in the web one,Standalone's library lists the processed video and the raw chunks of every camera,Standalone; live processing and raw chunk backup on (defaults),"1. Add a Video widget and a mini recorder for each of the two streams.
+2. Record both together for about 8 s and stop.
+3. Open the video library: PROCESSED, then RAW.","Video: PROCESSED lists one processed video per camera; RAW lists one chunk group per camera, each with process and download buttons.
+State: both mp4 files are in the Cockpit folder.",Standalone,Vehicle (SITL); two camera streams (Stream /dev/video2 and PRTest Ball),
+VID-48.2,Video library displays both processed and chunks of all cams in desktop and downloadable chunk groups in the web one,The web library lists a downloadable chunk group for every camera,Web build,"1. Add a Video widget and a mini recorder for each of the two streams.
+2. Record both together for about 8 s and stop.
+3. Open the video library, then RAW.
+4. Download the second camera's group.","Video: PROCESSED and PROCESSING are disabled; RAW lists one chunk group per camera with a download button.
+State: the second camera's zip downloads with every chunk listed.",Web,Vehicle (SITL); two camera streams (Stream /dev/video2 and PRTest Ball),
+VID-49.1,A change in the mission name gets reflected in the video recording filename,A renamed mission names the next recording (web),Web build; UsbCam stream,"1. Click the mission name in the top bar, type ""Release test mission"", Save → Rename current mission.
+2. Record about 5 s and stop.","Video: the top bar shows the new name.
+State: the recording's file name and its .ass file start with ""Release test mission ("".",Web,Vehicle (SITL); UsbCam stream (Stream /dev/video2),
+VID-49.2,A change in the mission name gets reflected in the video recording filename,A renamed mission names the next processed video (Standalone),Standalone; UsbCam stream,"1. Rename the mission from the top bar to ""Release test mission"" (Rename current mission).
+2. Record about 6 s and stop.
+3. Open the video library → PROCESSED.","State: the processed mp4 in the Cockpit folder starts with ""Release test mission ("", and the library lists it under that name.",Standalone,Vehicle (SITL); UsbCam stream (Stream /dev/video2),
+VID-49.3,A change in the mission name gets reflected in the video recording filename,A chunks zip processed in Standalone keeps the mission name of its recording,Standalone; the zip VID-46.1 downloaded (its recording had a mission name),"1. Video library → PROCESSING → Select and Process ZIP File(s), pick the zip from VID-46.1.","State: the processed mp4 is named after the mission the recording had (the name the zip's .ass file carries), not ""Cockpit"".",Standalone only,Standalone; the zip from VID-46.1,
+VID-49.4,A change in the mission name gets reflected in the video recording filename,A raw chunk group processed from the library keeps the mission name of its recording,Standalone; UsbCam stream; live processing off,"1. Rename the mission from the top bar to ""Release test mission"" (Rename current mission).
+2. Turn live processing off and record about 6 s.
+3. Video library → RAW → process the chunk group.","State: the recording stays as raw chunks until processed; Cockpit reports it processed; the processed mp4 starts with ""Release test mission ("", not ""Cockpit"".",Standalone only,Vehicle (SITL); UsbCam stream (Stream /dev/video2),
+VID-49.5,A change in the mission name gets reflected in the video recording filename,Processing a recording's chunks again keeps the video it already has,Standalone; UsbCam stream; default settings (live processing on),"1. Record about 6 s with the defaults, so the video is processed live and the raw chunks stay as a backup.
+2. Video library → RAW → process the same chunk group again.","State: Cockpit reports it processed; the new video gets a numbered name (""… (2) #<hash>.mp4""); the first video keeps its size and duration.",Standalone only,Vehicle (SITL); UsbCam stream (Stream /dev/video2),
+ACT-50.1,"Action auto-triggers (data-lake, on startup, repeated, cleanup on save/delete)","A data-lake trigger runs the action once per change, and no faster than its limit",An HTTP action calling the local server,"1. Create an HTTP action calling the local server.
+2. Its link icon → Automatic Triggers: Data Lake Variables /mavlink/1/1/HEARTBEAT/custom_mode, No faster than 1 change/s, Save.
+3. Leave the mode alone 4 s, then change it three times 3 s apart.
+4. Link it to /mavlink/1/1/ATTITUDE/time_boot_ms instead (it changes about 14 times a second), No faster than 1 change/s, and watch 6 s.","Video: the table lists the linked variable and 1000 ms.
+State: no calls while the mode stays, one call per mode change (3), and with the fast variable no more than one call a second (at most 7 in 6 s).",Same behaviour (no platform branch on this code path),Vehicle (SITL); a local HTTP server the action calls (the runner starts one),
+ACT-50.2,"Action auto-triggers (data-lake, on startup, repeated, cleanup on save/delete)","An ""On startup"" trigger runs the action once, its delay after Cockpit starts",An HTTP action calling the local server,"1. Automatic Triggers → On startup, Run after 2 s, Save.
+2. Wait 4 s.
+3. Restart Cockpit and wait 15 s.","State: saving does not run it; after the restart it runs exactly once, no sooner than 2 s after Cockpit started loading.",Same behaviour (no platform branch on this code path),Vehicle (SITL); a local HTTP server the action calls (the runner starts one),
+ACT-50.3,"Action auto-triggers (data-lake, on startup, repeated, cleanup on save/delete)","A ""Repeatedly"" trigger runs the action at its interval, also after a restart",An HTTP action calling the local server,"1. Automatic Triggers → Repeatedly, Run every 1 s, Save.
+2. Watch 6 s.
+3. Restart Cockpit and watch 6 s.","State: about one call a second (median gap 0.8–1.3 s, at least 4 calls) after saving and again after the restart.",Same behaviour (no platform branch on this code path),Vehicle (SITL); a local HTTP server the action calls (the runner starts one),
+ACT-50.4,"Action auto-triggers (data-lake, on startup, repeated, cleanup on save/delete)","Removing and setting a time trigger again keeps it working, and leaves other actions alone","Two HTTP actions, A and B, calling the local server","1. Set both to Repeatedly, every 1 s.
+2. A → No time trigger, Save.
+3. A → Repeatedly, every 1 s, Save; reopen A's dialog.
+4. Restart Cockpit.","State: A stops while B keeps running; A runs again once set back; A's dialog shows Repeatedly, 1 s; the stored time triggers are an object (not a string) with both actions; both run after the restart.",Same behaviour (no platform branch on this code path),Vehicle (SITL); a local HTTP server the action calls (the runner starts one),
+ACT-50.5,"Action auto-triggers (data-lake, on startup, repeated, cleanup on save/delete)","Deleting an action stops its triggers and removes them, also after a restart",Two HTTP actions calling the local server,"1. Action 1: Repeatedly every 1 s and linked to the flight mode. Action 2: Repeatedly every 1 s.
+2. Delete action 1 (trash icon).
+3. Wait 5 s and change the mode twice.
+4. Restart Cockpit and change the mode twice.","State: the deleted action never calls again (timer or mode change, before or after the restart), its link and time trigger leave the stored settings, and action 2 keeps running.",Same behaviour (no platform branch on this code path),Vehicle (SITL); a local HTTP server the action calls (the runner starts one),
+PRF-51.1,It's possible to connect to a vehicle,Connect to the SITL boat from a fresh profile,Fresh profile; Cockpit pointed at an address with no vehicle; SITL boat on BlueOS reachable,"1. Open Settings → General.
+2. Set the global vehicle address to the SITL BlueOS address and click Apply.
+3. Wait for Cockpit to restart and the top bar to settle.","Video: the vehicle goes online: the bottom bar Armer button shows ""Disarmed"" (not ""...""), the flight mode selector shows the current mode.
+State: HEARTBEATs from system 1 keep arriving (data-lake /mavlink/1/1/HEARTBEAT/custom_mode is set and its last-update time keeps moving); the address stored is the one typed.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+PRF-51.2,It's possible to connect to a vehicle,Reconnects after the vehicle link drops,Fresh profile; connected to the SITL boat,"1. Freeze the BlueOS container for 15 s (docker pause).
+2. Unfreeze it and wait up to 30 s.","Video: the vehicle shows as offline/disconnected, then online again without reloading Cockpit.
+State: /mavlink/1/1/HEARTBEAT data resumes updating after the link is restored.",Same behaviour (no platform branch on this code path),Vehicle (SITL),"A smoke check for connection-touching PRs; CONN-39/45 cover endpoint types and address changes in depth. Needs the BlueOS container on the runner (COCKPIT_E2E_BLUEOS_CONTAINER, default ""blueos"")."
+PRF-52.1,Buttons have vehicle feedback (e.g.: arm/disarm),A joystick button mapped to arm/disarm arms the vehicle and the UI follows,"Fresh profile; connected to the SITL boat, disarmed in Hold; a gamepad connected; joystick commands enabled (Joystick indicator in the top bar says ""Joystick commands enabled"")","1. Settings → Joystick → Table: on button 0 click ""Map function to button"".
+2. In ""Input mapping"" pick ""Cockpit Action"" and search ""Mavlink arm""; select it. Map button 1 to ""Mavlink disarm"" the same way. Close.
+3. Leave the Joystick page (forwarding is paused while it is open) and go back to the Flight view.
+4. Press button 0. If a ""Confirm Arm"" slider appears, slide it.
+5. Press button 1 and confirm the disarm slider if shown.","Video: the Armer button in the bottom bar flips to ""Armed"" (red) after button 0 and back to ""Disarmed"" after button 1.
+State: HEARTBEAT base_mode armed bit (128) read over mavlink2rest is set after button 0 and cleared after button 1.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","Vehicle (SITL), Joystick (virtual gamepad)","The checklist wording is generic; for a PR touching widget buttons rather than joystick buttons, run INP-69.4 instead."
+PRF-52.2,Buttons have vehicle feedback (e.g.: arm/disarm),The Armer button reflects an arm done outside Cockpit,"Fresh profile; connected to the SITL boat, disarmed","1. Arm the vehicle over mavlink2rest (COMMAND_LONG MAV_CMD_COMPONENT_ARM_DISARM param1 1), not from Cockpit.
+2. Wait 2 s.
+3. Disarm it the same way.","Video: the Armer button changes to ""Armed"" and back to ""Disarmed"" with no Cockpit input.
+State: HEARTBEAT base_mode armed bit matches what the Armer button shows at each step.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+PRF-53.1,Buttons perform Cockpit Actions (e.g.: switch view),"A joystick button runs ""Go to next view""",Fresh profile; a second view added in Edit interface (the boat profile has one); a gamepad connected; joystick commands enabled,"1. Settings → Joystick → Table: map button 2 to Cockpit Action ""Go to next view"".
+2. Leave the Joystick page, return to the Flight view and note the current view name (View selector in the top bar).
+3. Press button 2 once.","Video: the main area switches to the next view and the View selector shows its name.
+State: widget store current view index advanced by one (cockpit-current-view-index-v1).","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+PRF-53.2,Buttons perform Cockpit Actions (e.g.: switch view),"A widget Button runs ""Go to next view""",Fresh profile; a second view added in Edit interface (the boat profile has one),"1. Main menu → Edit interface.
+2. Widget type: Input → ""Add new container"".
+3. Drag a ""Button"" card into the new Collapsible Container.
+4. Click the button; in the side panel under Actions set ""Action to trigger"" to ""Go to next view"".
+5. Exit edit mode and click the button.","Video: the view changes to the next one.
+State: current view index advanced by one.",Same behaviour (no platform branch on this code path),None,"The container exists only on the current view, so the button is not on the next view; going back is done with the View selector."
+PRF-54.1,Buttons and axes correctly set data-lake variables,A joystick button sets a data-lake variable,Fresh profile; a user number variable release-test/btn created in Tools → Data-lake (initial value 0); a gamepad connected,"1. Settings → Joystick → Table: map button 3 → ""Data Lake Variable"" → release-test/btn.
+2. Open Tools → Data-lake and search ""release-test"".
+3. Hold button 3 for 2 s, then release.","Video: the variable reads 1 while the button is held and 0 after release.
+State: getDataLakeVariableData(""release-test/btn"") is 1 during the press and 0 after.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+PRF-54.2,Buttons and axes correctly set data-lake variables,A joystick axis sets a data-lake variable scaled to its min/max,As PRF-54.1; a user number variable release-test/axis,"1. Settings → Joystick → Table: in the axis 0 row set Min -10, the select to release-test/axis, Max 10, and click its save icon.
+2. Move axis 0 to -1, 0, +0.5 and +1, holding each for 1 s.","Video: the Preview column moves with the stick; the variable follows in the data-lake view.
+State: release-test/axis reads -10, 0, 5 and 10 (±0.1) at each position.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+PRF-55.1,Compound variables react to changes in linked variables,The MANUAL_CONTROL output variables follow their input variables,Fresh profile; connected to the SITL boat; a gamepad connected with the default mapping,"1. Open Tools → Data-lake and search ""mavlink/axis"".
+2. Move the left stick (mapped to Axis X/Y by default).
+3. Release it.","Video: inputs/mavlink/axis-x and the compound outputs/mavlink/axis-x change together and return to 0.
+State: outputs/mavlink/axis-x equals inputs/mavlink/axis-x at every sample.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","Vehicle (SITL), Joystick (virtual gamepad)",outputs/mavlink/axis-* are compound variables whose expression is {{inputs/mavlink/axis-*}} (src/libs/joystick/protocols/predefined-resources.ts).
+PRF-55.2,Compound variables react to changes in linked variables,A user compound variable recomputes on each input change,Fresh profile; user number variables release-test/a = 1 and release-test/b = 2,"1. Tools → Data-lake → ""Add compound variable"": Variable Name ""Release test sum"", type Number, Expression {{release-test/a}} + {{release-test/b}}. Save.
+2. Edit release-test/a to 10.
+3. Edit release-test/b to -4.","Video: the sum reads 3, then 12, then 6.
+State: getDataLakeVariableData(""release-test/sum"") follows each edit within 1 s.",Same behaviour (no platform branch on this code path),None,DL-82 covers compound variables linked to vehicle data. The dialog derives the ID from the name.
+PRF-56.1,"Widgets load as expected (e.g.: arm toggle, slider input and virtual horizon)",Armer button loads and shows the arm state,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface: the boat profile already has ""Armer Button"" in the bottom bar.
+2. Exit edit mode.","Video: the Armer button shows ""Disarmed"" (not ""...""), and clicking it arms (confirming the slider if shown).
+State: HEARTBEAT armed bit set after the click.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+PRF-56.2,"Widgets load as expected (e.g.: arm toggle, slider input and virtual horizon)",Slider input element loads and moves its variable,Fresh profile; no vehicle needed,"1. Main menu → Edit interface.
+2. Input → ""Add new container"", drag a ""Slider"" into it.
+3. Click the slider; under Actions → Data-lake variable click ""create"", Name release-test/slider, save.
+4. Exit edit mode and drag the slider to about the middle.","Video: the slider renders with its tooltip and moves under the cursor.
+State: the slider variable reads about 50 (default range 0–100).",Same behaviour (no platform branch on this code path),None,The element names its variable user/inputs/<name>.
+PRF-56.3,"Widgets load as expected (e.g.: arm toggle, slider input and virtual horizon)",Virtual Horizon loads and follows the attitude,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface.
+2. Regular → drag ""Virtual Horizon"" onto the view, exit edit mode.
+3. Arm, drive the boat in a turn for 10 s.","Video: the horizon renders (no blank box) and tilts with the boat.
+State: shown roll/pitch track /mavlink/1/1/ATTITUDE/roll and pitch (degrees).",Same behaviour (no platform branch on this code path),Vehicle (SITL),The boat barely rolls; a visible change may need a sharp turn. The widget renders even at zero attitude.
+PRF-57.1,Memory usage is within bounds (does not surpass 750MB during the first minute),Memory stays under 750 MB during the first minute,Fresh profile; connected to the SITL boat; default profile (video widget on the Flight view),"1. Start Cockpit from a cold start.
+2. Open Tools → Data-lake and search ""memory"".
+3. Sample cockpit-memory-usage every second for 60 s.","Video: the data-lake row for ""Cockpit Memory Usage"" over the minute.
+State: max(cockpit-memory-usage) over the first 60 s < 750 MB.","Differs: Web reports the renderer JS heap; Standalone reports the total of all its processes (also split into cockpit-main-memory, cockpit-renderers-memory, cockpit-gpu-memory), so the Standalone number is much larger for the same load",Vehicle (SITL),cockpit-memory-usage is written every 100 ms (src/stores/omniscientLogger.ts). Decide per platform whether 750 MB applies to the Standalone total; record both numbers either way.
+PRF-58.1,Switching user switches the settings (e.g.: widget profile),Switching user loads that user's views,"Fresh profile; connected to the SITL boat; users ""relusera"" and ""reluserb"" exist on the vehicle (create them via ""add new user""); BlueOS settings sync on (Settings → Dev)","1. Settings → General → ""Manage users"": pick relusera.
+2. Main menu → Edit interface: add a view (the + under Views), rename it ""User A view"", exit.
+3. Manage users: pick reluserb.
+4. Look at the view list (View selector or Edit interface).
+5. Switch back to relusera.","Video: ""User A view"" is in the list as relusera, absent as reluserb, and back when switching to relusera.
+State: the views group read from the settings for each user on the vehicle (BlueOS bag) differs: only relusera's holds ""User A view"".",Same behaviour (no platform branch on this code path),Vehicle (SITL),Usernames need at least 3 characters. Cockpit may reload when the user changes.
+PRF-58.2,Switching user switches the settings (e.g.: widget profile),A per-user setting other than views follows the user,As PRF-58.1,"1. As relusera: Settings → Interface, change the display units to imperial.
+2. Switch to reluserb.
+3. Switch back to relusera.","Video: units show imperial for relusera, the default for reluserb, imperial again for relusera.
+State: the stored unit preference differs between the two users.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+PRF-59.1,"Critical vehicle functions work properly (e.g.: arm/disarm, switch mode)",Arm and disarm from the Armer button,"Fresh profile; connected to the SITL boat, disarmed in Hold","1. Click the Armer button in the bottom bar; slide to confirm if asked.
+2. Wait 3 s.
+3. Click it again; confirm the disarm slider.","Video: ""Armed"" then ""Disarmed"".
+State: HEARTBEAT base_mode armed bit (128) set, then cleared (mavlink2rest).",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+PRF-59.2,"Critical vehicle functions work properly (e.g.: arm/disarm, switch mode)",Switch flight mode from the mode selector,"Fresh profile; connected to the SITL boat, in Hold","1. Open the flight mode selector in the bottom bar.
+2. Pick ""Manual"".
+3. Pick ""Hold"".","Video: the selector shows each mode as the vehicle confirms it.
+State: HEARTBEAT custom_mode 0 (Manual), then 4 (Hold).",Same behaviour (no platform branch on this code path),Vehicle (SITL),Mode numbers are ArduRover's; on ArduSub use Manual 19 / Depth hold 2.
+PRF-59.3,"Critical vehicle functions work properly (e.g.: arm/disarm, switch mode)",Vehicle moves under joystick control in Manual,"Fresh profile; connected to the SITL boat, armed in Manual; a gamepad connected; joystick commands enabled","1. Push the throttle stick (default mapping) forward for 3 s.
+2. Release.","Video: the boat moves on the map.
+State: VFR_HUD groundspeed > 0.3 m/s during the push; MANUAL_CONTROL leaves Cockpit (Inspector, outgoing).","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","Vehicle (SITL), Joystick (virtual gamepad)","ArduRover accepts MANUAL_CONTROL as RC override; if the boat does not move, check RC override settings before failing Cockpit."
+VIEW-60.1,Creating a new View works and changes to it,Create a view and rename it,Fresh profile; no vehicle needed,"1. Main menu → Edit interface.
+2. Under Views click the + icon (mdi-plus-circle).
+3. In the rename dialog, ""New view name"": ""Release test view""; Save.","Video: a new view named ""Release test view"" at the top of the list and selected, empty main area.
+State: the current profile has the new view first, with no widgets and the three bottom containers.",Same behaviour (no platform branch on this code path),None,"The new view gets a random ""<animal> view"" name until renamed."
+VIEW-60.2,Creating a new View works and changes to it,Changes to the new view persist across a reload,The VIEW-60.1 view selected in edit mode,"1. Regular → drag ""Compass"" onto the view; resize it.
+2. Mini → drag ""Clock"" into the Bottom Bar.
+3. Exit edit mode, wait 3 s, reload the page.","Video: after the reload the view still holds the Compass (same place/size) and the Clock.
+State: cockpit-views-group-v1 holds the view with those widgets.",Same behaviour (no platform branch on this code path),None,
+VIEW-60.3,Creating a new View works and changes to it,"Hide, duplicate and delete the view",The VIEW-60.1 view exists,"1. Edit interface: select another view (the view being shown cannot be hidden), then click its eye icon, then its copy icon.
+2. Delete the copy with its trash icon, confirming if asked.","Video: eye closes and the view disappears from the View selector; a copy appears and is removed again.
+State: visible false on the original; view count back to what it was after the delete.",Same behaviour (no platform branch on this code path),None,
+WID-61.1,Switching the source of a Video Widget between RadCam and USBCam works and loads the stream,Switch the Video widget between two streams,"Fresh profile; connected to the SITL boat; BlueOS serving ""Stream /dev/video2"" (UsbCam) and a second stream (e.g. ""PRTest Ball"")","1. Main menu → Edit interface: drag ""Video Player"" onto the view (the boat's default views have none); open its cog in ""Widgets in <view>"".
+2. In ""Video widget config"" → Stream, pick ""Stream /dev/video2"". Close and wait 10 s.
+3. Switch Stream to the second stream and wait 10 s.
+4. Switch back.","Video: each stream plays in the widget after the switch (moving image, no ""not available"" message).
+State: widget option stream is the internal stream name; the <video> element has advancing currentTime after each switch.",Same behaviour (no platform branch on this code path),"Vehicle (SITL), two camera streams","The checklist names RadCam and USBCam; RadCam is not available in CI, so a second stream stands in. Run it with a real RadCam on the release bench."
+WID-61.2,Switching the source of a Video Widget between RadCam and USBCam works and loads the stream,A RadCam stream plays in the Video widget,Fresh profile; a vehicle with RadCam and a UsbCam,"1. Video widget config → Stream: pick the RadCam stream; wait 10 s.
+2. Pick the UsbCam stream; wait 10 s.","Video: both play.
+State: video currentTime advances for each.",Same behaviour (no platform branch on this code path),Vehicle with RadCam,Hardware only; mark as not run in CI.
+WID-61.3,Switching the source of a Video Widget between RadCam and USBCam works and loads the stream,An RTSP stream plays in the Video widget,"Standalone; an RTSP stream added (the stream list shows an ""RTSP"" chip)",1. Video widget config → Stream: pick the RTSP stream; wait 10 s.,"Video: the stream plays; the selection shows the orange RTSP chip.
+State: video currentTime advances.",Standalone only (RTSP goes through go2rtc in Electron),"Standalone, RTSP camera",
+WID-62.1,"At least one HUD widget (e.g.: depth, attitude) works and shows changes properly",Depth HUD follows its altitude source,Fresh profile; connected to the SITL boat; a stand-in depth variable (number) since the boat has no depth,"1. Main menu → Edit interface: Regular → drag ""Depth HUD"" onto the view; open its cog.
+2. ""Depth HUD config"": tick ""Use custom data lake variable"" and pick the stand-in variable.
+3. Exit; set the variable to -2, then -7.5 (it is an altitude, so the HUD reads depth 2.0 and 7.5).","Video: the HUD ruler scrolls and the readout shows 2.0 then 7.5.
+State: widget option altitudeVariableId is the stand-in id.",Same behaviour (no platform branch on this code path),Vehicle (SITL),"On a SITL sub the default ""Altitude source"" can be used with VFR_HUD/alt or the depth from the autopilot."
+WID-62.2,"At least one HUD widget (e.g.: depth, attitude) works and shows changes properly",Compass HUD follows the heading,"Fresh profile; connected to the SITL boat, armed in Manual","1. Edit interface: drag ""Compass HUD"" onto the view, exit.
+2. Drive a 90° turn.","Video: the HUD tape scrolls through ~90° and the yaw value changes (Show yaw value is on by default).
+State: shown yaw matches degrees(/mavlink/1/1/ATTITUDE/yaw) within 2°.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+WID-62.3,"At least one HUD widget (e.g.: depth, attitude) works and shows changes properly",Attitude HUD follows roll and pitch,Fresh profile; connected to the SITL boat,"1. Edit interface: drag ""Attitude"" onto the view; in its config check ""Show roll/pitch values"" is on (the default); exit.
+2. Drive a sharp turn.","Video: the pitch lines move/rotate and the values update.
+State: values match ATTITUDE roll/pitch in degrees within 1°.",Same behaviour (no platform branch on this code path),Vehicle (SITL),The boat's roll/pitch is small; on a SITL sub it is larger.
+WID-63.1,"At least one gauge widget (e.g.: compass, virtual horizon) works and shows changes properly",Compass follows the heading,"Fresh profile; connected to the SITL boat, armed in Manual","1. Main menu → Edit interface: drag ""Compass"" onto the view, exit.
+2. Drive a 180° turn.","Video: the needle/dial rotates through ~180°.
+State: shown heading = degrees(ATTITUDE yaw) normalised to 0–360 within 2°.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+WID-63.2,"At least one gauge widget (e.g.: compass, virtual horizon) works and shows changes properly",Virtual Horizon follows roll and pitch,Fresh profile; connected to the SITL boat,"1. Edit interface: drag ""Virtual Horizon"" onto the view, exit.
+2. Drive a sharp turn, or inject attitude on a SITL sub.","Video: the horizon rotates/shifts with the vehicle.
+State: rendered roll/pitch match ATTITUDE within 1°.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+WID-64.1,Plotter shows changes in a linked variable (on both the plot itself as well as in the legends),Plotter plots a linked variable and its statistics update,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface: drag ""Plotter"" onto the view; open its cog.
+2. ""Plotter config"" → Data Source → Data Lake variable: /mavlink/1/1/VFR_HUD/groundspeed. Under Statistics Display keep Current, Min, Max, Avg ticked. Close and exit.
+3. Arm in Manual, drive for 10 s, stop.","Video: the line rises and falls with the speed; the Current/Min/Max/Avg labels change, Max ≥ the peak shown.
+State: Current equals the latest VFR_HUD/groundspeed (to the set decimal places); Min ≤ Avg ≤ Max.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+WID-64.2,Plotter shows changes in a linked variable (on both the plot itself as well as in the legends),Plotter follows a user variable step,Fresh profile; user number variable release-test/plot = 0,"1. Plotter Data Lake variable: release-test/plot.
+2. Edit the variable to 5, wait 3 s, then to -2.","Video: the line steps to 5 then -2; Current reads 5 then -2, Max 5, Min -2.
+State: stats match those values.",Same behaviour (no platform branch on this code path),None,"Tick ""Update on constant value"" if the plot does not scroll while the value is constant."
+WID-65.1,IFrame shows the linked page,IFrame shows the URL set in its settings,Fresh profile; a local page that answers 200 (the runner starts one),"1. Main menu → Edit interface: drag ""IFrame"" onto the view; open its cog.
+2. ""Iframe Source"": type the page URL; click the check (""Set"").
+3. Exit edit mode.","Video: the page content is visible inside the widget.
+State: the iframe src is the URL and the page was requested (200).",Same behaviour (no platform branch on this code path),None,Headless Chrome needs site isolation off to capture cross-origin iframes.
+WID-65.2,IFrame shows the linked page,"IFrame with ""Use vehicle address as base URL""",Fresh profile; connected to the SITL boat,"1. IFrame settings → Advanced options: tick ""Use vehicle address as base URL"".
+2. Iframe Source: /network (a BlueOS page); Set.","Video: the BlueOS page loads inside the widget.
+State: iframe src = http://<vehicle address>/network.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+WID-66.1,DIY widget shows and load modifications properly,DIY widget shows an HTML/CSS/JS change after Apply,Fresh profile; no vehicle needed,"1. Main menu → Edit interface: drag ""Do It Yourself"" onto the view; open its cog.
+2. In ""DIY widget configuration"": HTML <div id=""r"">Release test</div>; JS document.getElementById('r').textContent += ' OK'; CSS #r { color: red }.
+3. Click Apply, close.","Video: the widget shows ""Release test OK"" in red (was ""Create your own widget!"").
+State: widget options html/css/js hold the new code.",Same behaviour (no platform branch on this code path),None,
+WID-66.2,DIY widget shows and load modifications properly,DIY changes persist and reload,The DIY-66.1 widget,"1. Reload Cockpit.
+2. Open the DIY configuration, change the text, click Reset.","Video: after the reload it still shows ""Release test OK""; Reset brings back the last saved code.
+State: stored options unchanged after the reload.",Same behaviour (no platform branch on this code path),None,
+WID-66.3,DIY widget shows and load modifications properly,DIY widget reads a data-lake variable,Fresh profile; connected to the SITL boat,"1. JS: setInterval(() => document.getElementById('r').textContent = cockpit.getDataLakeVariableData('/mavlink/1/1/VFR_HUD/heading'), 500)
+2. Apply; drive a turn.","Video: the number follows the heading.
+State: shown value = VFR_HUD heading.",Same behaviour (no platform branch on this code path),Vehicle (SITL),Export/Import configuration buttons exist too; not required for this item.
+MINI-67.1,Create a VGI and see if it changes its values based on the configuration,A VGI from a preset shows the vehicle value,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface: Mini → drag ""Very Generic Indicator"" into the Bottom Bar.
+2. Open its config (cog in the Bottom Bar list); Presets tab → ""Speed"".
+3. Done; exit; arm in Manual and drive.","Video: the indicator labelled ""Speed"" shows the speed and changes while driving.
+State: shown value = /mavlink/1/1/VFR_HUD/groundspeed (to the decimals shown).",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MINI-67.2,Create a VGI and see if it changes its values based on the configuration,VGI custom settings change what it shows,The MINI-67.1 VGI,"1. Config → Custom: Display name ""Spd x2"", untick ""Use the variable's own unit"" (it disables Unit and Multiplier), Multiplier 2, Decimal places 2, Unit ""kt"", pick another icon. Done.","Video: label, icon, unit and two decimals change at once.
+State: shown = groundspeed × 2 to two decimals; options saved.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MINI-67.3,Create a VGI and see if it changes its values based on the configuration,VGI template mode,Fresh profile; connected to the SITL boat,1. Custom → Variable: Hdg {{ /mavlink/1/1/VFR_HUD/heading }}° (text template).,"Video: it shows ""Hdg <n>°"" and follows a turn.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+MINI-68.1,"Make sure at least one mini-widget indicator works (e.g. battery, GPS, etc)",Battery indicator shows the vehicle voltage,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface: Mini → drag ""Battery Indicator"" into the Top Bar if absent; exit.","Video: voltage in V and current shown, not blank.
+State: shown voltage = SYS_STATUS voltage_battery / 1000 (or BATTERY_STATUS) to 0.1 V.",Same behaviour (no platform branch on this code path),Vehicle (SITL),Change SIM_BATT_VOLTAGE on SITL to see it move.
+MINI-68.2,"Make sure at least one mini-widget indicator works (e.g. battery, GPS, etc)",Satellite indicator shows sats and fix,Fresh profile; connected to the SITL boat,"1. Mini → drag ""Satellite Indicator"" into the Top Bar; exit.","Video: ""<n> sats"" and the fix type.
+State: n = GPS_RAW_INT satellites_visible; fix matches fix_type.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+INP-69.1,"Clicking a button widget runs the actions that is tied to it (test with HTTP, MAVLink, Javascript and Built-in functions)",A widget Button runs an HTTP action,Fresh profile; connected to the SITL boat; an HTTP Request Action calling the local server (Settings → Actions),"1. Main menu → Edit interface: Input → ""Add new container""; drag a ""Button"" into it.
+2. Click the button; Actions → ""Action to trigger"": the HTTP action.
+3. Exit; click the button once.","Video: the server shows one request.
+State: exactly one request with the configured method/path.",Same (Web needs the server to answer CORS),Vehicle (SITL); a local HTTP server,
+INP-69.2,"Clicking a button widget runs the actions that is tied to it (test with HTTP, MAVLink, Javascript and Built-in functions)",A widget Button runs a MAVLink message action,"Fresh profile; connected to the SITL boat, disarmed; a MAVLink Message Action COMMAND_LONG with the defaults (arm)","1. Button ""Action to trigger"": the MAVLink action.
+2. Exit; click it.","Video: the Armer button turns ""Armed"".
+State: HEARTBEAT armed bit set.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+INP-69.3,"Clicking a button widget runs the actions that is tied to it (test with HTTP, MAVLink, Javascript and Built-in functions)",A widget Button runs a JavaScript action,"Fresh profile; user number variable release-test/js-btn created in Tools → Data-lake; JavaScript Action: cockpit.setDataLakeVariableData('<its id, user/custom/release-test-js-btn>', Date.now())","1. Button ""Action to trigger"": the JS action.
+2. Exit; click it twice, 2 s apart.","Video: the variable in Tools → Data-lake updates on each click.
+State: release-test/js-btn holds two increasing timestamps.",Same behaviour (no platform branch on this code path),None,
+INP-69.4,"Clicking a button widget runs the actions that is tied to it (test with HTTP, MAVLink, Javascript and Built-in functions)",A widget Button runs a built-in action,Fresh profile; connected to the SITL boat,"1. Button ""Action to trigger"": ""Toggle top bar"". Add a second Button with ""Mavlink arm"".
+2. Exit; click the first twice, the second once (confirm slider if asked).","Video: the top bar hides and comes back; the vehicle arms.
+State: HEARTBEAT armed bit set.",Same behaviour (no platform branch on this code path),Vehicle (SITL),ACT-42.3 covers the same in more depth; this one is the button wiring check.
+INP-70.1,Interacting with a widget changes the value of a variable tied to it,Switch writes its boolean variable,Fresh profile; no vehicle needed,"1. Main menu → Edit interface: Input → ""Add new container""; drag a ""Switch"" into it.
+2. Click it; Actions → Data-lake variable → ""create"": Name release-test/switch; save.
+3. Exit; toggle the switch off and on.","Video: the variable in Tools → Data-lake flips false/true.
+State: getDataLakeVariableData matches the switch.",Same behaviour (no platform branch on this code path),None,
+INP-70.2,Interacting with a widget changes the value of a variable tied to it,Slider writes its number variable within its range,As INP-70.1,"1. Drag a ""Slider""; Options: Min Value -10, Max Value 10; create variable release-test/slider.
+2. Exit; drag to both ends and the middle.","Video: tooltip shows -10, 0, 10.
+State: variable reads -10, ~0, 10.",Same behaviour (no platform branch on this code path),None,
+INP-70.3,Interacting with a widget changes the value of a variable tied to it,"Checkbox, Dial and Dropdown write their variables",As INP-70.1,"1. Add a ""Checkbox"", a ""Dial"" and a ""Dropdown"" (two options name/value a/1, b/2), each with a created variable.
+2. Exit; tick the checkbox, turn the dial, pick option b.","Video: each variable changes accordingly.
+State: checkbox true, dial a number in its range, dropdown 2.",Same behaviour (no platform branch on this code path),None,
+INP-71.1,Changes to the value of variables created externally are reflected on the widget,A Switch follows a variable changed outside the widget,Fresh profile; user boolean variable release-test/ext-bool created in Tools → Data-lake,"1. Main menu → Edit interface: add a Switch; Actions → ""select"" release-test/ext-bool.
+2. Exit; in Tools → Data-lake edit release-test/ext-bool to true, then false.","Video: the switch flips with each edit.
+State: switch state equals the variable.",Same behaviour (no platform branch on this code path),None,
+INP-71.2,Changes to the value of variables created externally are reflected on the widget,A Slider follows a variable set by a JS action,"Fresh profile; user number variable release-test/ext-num created in Tools → Data-lake (id user/custom/release-test-ext-num); JS action cockpit.setDataLakeVariableData('user/custom/release-test-ext-num', 75)","1. Add a Slider (0–100) bound to release-test/ext-num (""select"").
+2. Run the JS action from Settings → Actions (play).","Video: the slider jumps to 75.
+State: slider value 75.",Same behaviour (no platform branch on this code path),None,
+CONT-72.1,Adding both mini and input widgets to the top and bottom bars work properly,Mini widget added to the top and bottom bars,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface. Widget type: Mini.
+2. Drag ""Clock"" into the Top Bar and ""Very Generic Indicator"" into the Bottom Bar.
+3. Exit; reload.","Video: both appear where dropped and work (clock ticks); still there after the reload.
+State: the Top/Bottom containers of the profile list them.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+CONT-72.2,Adding both mini and input widgets to the top and bottom bars work properly,Input widget added to the top and bottom bars,Fresh profile; no vehicle needed,"1. Edit interface. Widget type: Input.
+2. Drag a ""Button"" into the Top Bar and a ""Switch"" into the Bottom Bar.
+3. Click each to configure (Button: label, action ""Toggle bottom bar""; Switch: create a variable); exit and use them.","Video: both render in the bars and react to clicks; config panel opens on click in edit mode.
+State: switch variable toggles; button action runs.",Same behaviour (no platform branch on this code path),None,
+CONT-72.3,Adding both mini and input widgets to the top and bottom bars work properly,Remove from the bars,After CONT-72.1/72.2,1. Edit interface: trash icon next to each added widget under Top Bar / Bottom Bar.,"Video: they disappear from the bars.
+State: removed from the stored containers.",Same behaviour (no platform branch on this code path),None,
+CONT-73.1,Adding both mini and input widgets to the MiniWidgetBar and CollapsibleContainer widgets work properly,Mini and input widgets inside a Mini Widgets Bar,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface: Regular → drag ""Mini Widgets Bar"" onto the view.
+2. Mini → drag ""Battery Indicator"" into it; Input → drag a ""Button"" into it, beside the indicator, action ""Toggle top bar"".
+3. Exit; reload.","Video: both show inside the floating bar and work; still there after reload.
+State: widget options.miniWidgetsContainer.widgets lists both.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+CONT-73.2,Adding both mini and input widgets to the MiniWidgetBar and CollapsibleContainer widgets work properly,Mini and input widgets inside a Collapsible Container,Fresh profile; connected to the SITL boat,"1. Edit interface: Input → ""Add new container"".
+2. Drag a ""Slider"" and, from Mini, ""Clock"" into it.
+3. Exit; collapse and expand the container; reload.","Video: both inside, hidden on collapse, back on expand, kept after reload.
+State: container lists both elements.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+SNAP-74.1,A change in the mission name gets reflected in the snapshot filename,A renamed mission names the next snapshot,"Fresh profile; connected to the SITL boat; ""Stream /dev/video2"" playing; Snapshot Tool in the bottom bar (add it from Mini if absent)","1. Click the mission name in the top bar, type ""Release test mission"", Save → ""Rename current mission"".
+2. Click the Snapshot Tool camera icon.
+3. Open the snapshot library (arrow → ""Open snapshot library"").","Video: the new snapshot is listed.
+State: its file name starts with ""Release test mission ("" and ends with ""#<internal stream name>.jpeg"".","Same naming; Web stores in IndexedDB ""Cockpit - Snapshots"", Standalone in the Cockpit folder","Vehicle (SITL), camera stream",Filename format: src/libs/snapshot.ts snapshotFilename.
+SNAP-74.2,A change in the mission name gets reflected in the snapshot filename,Without a mission name the default prefix is used,As SNAP-74.1 with the mission name cleared/automatic,1. Take a snapshot.,"State: name starts with the automatic mission name (or ""Cockpit"" when empty).",Same behaviour (no platform branch on this code path),"Vehicle (SITL), camera stream",
+SNAP-75.1,"Snapshoting with all cams and workspace works in both desktop and web version (workspace only on desktop), for both WebRTC and RTSP streams",Snapshot all WebRTC streams (Web),"Web build; two WebRTC streams (""Stream /dev/video2"", ""PRTest Ball"") in Video widgets; Snapshot Tool","1. Snapshot Tool config (edit mode): make sure ""Snapshot all available sources"" is ticked (default).
+2. Take a single capture.
+3. Open the snapshot library.","Video: one new snapshot per stream; ""Capture Cockpit work area"" is greyed out.
+State: two .jpeg files with each internal stream name, decodable, non-black.",Web: work area capture disabled,"Vehicle (SITL), two camera streams",
+SNAP-75.2,"Snapshoting with all cams and workspace works in both desktop and web version (workspace only on desktop), for both WebRTC and RTSP streams",Snapshot all streams plus workspace (Standalone),Standalone; same streams,"1. Tick ""Snapshot all available sources"" and ""Capture Cockpit work area (standalone-only feature)"".
+2. Take a single capture.","Video: the screen flashes; library lists one per stream plus the workspace.
+State: files in the Cockpit folder: one #<stream>.jpeg per stream and one #workspace.jpeg; all valid JPEG (not PNG under .jpeg).",Standalone only,"Standalone, two camera streams",
+SNAP-75.3,"Snapshoting with all cams and workspace works in both desktop and web version (workspace only on desktop), for both WebRTC and RTSP streams",Snapshot an RTSP stream (Standalone),Standalone; an RTSP stream (orange RTSP chip) in a Video widget,"1. ""Streams to capture"": pick the RTSP stream only.
+2. Take a single capture.","Video: the snapshot shows the RTSP picture.
+State: one #<rtsp stream>.jpeg, valid JPEG.",Standalone only (RTSP),"Standalone, RTSP camera",
+SNAP-75.4,"Snapshoting with all cams and workspace works in both desktop and web version (workspace only on desktop), for both WebRTC and RTSP streams",Timed multi-capture,As SNAP-75.1,"1. Arrow → ""Timed multi-capture""; interval 2 s (Timed snapshot interval (seconds)).
+2. Press play, wait ~7 s, press stop.","Video: about 3 captures per stream.
+State: count of new files per stream = 3 or 4; none after stop.",Same behaviour (no platform branch on this code path),"Vehicle (SITL), camera stream",
+ACT-76.1,Creating a MAVLink actions works and its fields are passed correctly on calls (e.g.: arm/disarm),A MAVLink action arms and a second one disarms,"Fresh profile; connected to the SITL boat, disarmed in Hold; no custom actions","1. Settings → Actions → New action → ""MAVLink Message Action"".
+2. Action Name ""Arm (release)"", Message Type COMMAND_LONG, keep the defaults (MAV_CMD_COMPONENT_ARM_DISARM, param1 1). Save.
+3. Another, ""Disarm (release)"", same but param1 0. Save.
+4. Play ""Arm (release)"", wait 3 s, play ""Disarm (release)"".","Video: both listed with type ""MAVLink Message""; Cockpit shows the vehicle armed, then disarmed.
+State: HEARTBEAT armed bit set then cleared; the COMMAND_LONG messages Cockpit sends (its outgoing-message hook, which feeds the Inspector) have command MAV_CMD_COMPONENT_ARM_DISARM (400) and param1 1 / 0.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+ACT-76.2,Creating a MAVLink actions works and its fields are passed correctly on calls (e.g.: arm/disarm),A data-lake placeholder in a field is resolved on each call,Fresh profile; connected to the SITL boat; user number variable release-test/mode = 0,"1. New MAVLink action COMMAND_LONG: Command ID MAV_CMD_DO_SET_MODE, Parameter 1 1, Parameter 2 {{ release-test/mode }}. Create.
+2. Play. Set release-test/mode to 4 (Tools → Data-lake, its edit pencil); play again.","Video: mode selector shows Manual then Hold.
+State: HEARTBEAT custom_mode 0 then 4.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+ACT-76.3,Creating a MAVLink actions works and its fields are passed correctly on calls (e.g.: arm/disarm),Edited fields are used after a reload,The ACT-76.1 actions,"1. Edit ""Disarm (release)"": param1 1. Save. Reload Cockpit.
+2. Play it while disarmed.",State: vehicle arms (the stored action carries the edited field).,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+ACT-77.1,Creating a Javascript actions works and its content is run properly (e.g.: console log),A JS action's console.log reaches the system log,"Fresh profile; system logging on (Settings → Dev → ""Enable system logging"")","1. Settings → Actions → New action → ""JavaScript Action"".
+2. Action Name ""Log (release)"", code console.log('release-test JS ran'). Click ""Test Action"", then save.
+3. Play it.
+4. Settings → Dev → System logs: open the current log.","Video: the log shows ""release-test JS ran"" twice (test and play).
+State: the current system log entry (IndexedDB ""Cockpit - System Logs"", or the Standalone log file) contains the line twice.",Same; Standalone writes the system log to a file as well,None,
+ACT-77.2,Creating a Javascript actions works and its content is run properly (e.g.: console log),A JS action reads a data-lake variable through a {{ }} placeholder,Fresh profile; connected to the SITL boat,"1. New JS action: type cockpit.setDataLakeVariableData('release-test/heading-copy', then {{ and pick VFR_HUD/heading from the suggestions, which inserts cockpit.getDataLakeVariableData('/mavlink/1/1/VFR_HUD/heading'); close with ). Create. (JavaScript actions do not resolve {{ }} placeholders; {{ is only the autocompletion.)
+2. Play; drive a turn; play again.",State: release-test/heading-copy equals the heading at each play.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+ACT-77.3,Creating a Javascript actions works and its content is run properly (e.g.: console log),A JS action that throws reports the error,Fresh profile,1. New JS action: throw new Error('release-test boom'). Test Action.,Video: an error snackbar/dialog mentions the error; Cockpit keeps running.,Same behaviour (no platform branch on this code path),None,
+DL-78.1,Values from MAVLink change accordingly (e.g.: AHRS2/pitch),MAVLink values in the data lake match the vehicle,Fresh profile; connected to the SITL boat,"1. Tools → Data-lake; search ""AHRS2"".
+2. Watch pitch, roll, yaw for 10 s.","Video: values update live.
+State: /mavlink/1/1/AHRS2/pitch etc. match AHRS2 read over mavlink2rest within the message rate.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+DL-78.2,Values from MAVLink change accordingly (e.g.: AHRS2/pitch),A vehicle change shows in the data lake,"Fresh profile; connected to the SITL boat, armed in Manual","1. Search ""VFR_HUD/heading"" and ""HEARTBEAT/custom_mode"".
+2. Drive a 90° turn; switch to Hold.","Video: heading sweeps ~90°; custom_mode changes 0 → 4.
+State: within 1 s of the vehicle.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+DL-79.1,Values from BlueOS change properly (e.g. CPU usage),BlueOS CPU usage updates,Fresh profile; connected to the SITL boat,"1. Tools → Data-lake; search ""BlueOS"".
+2. Watch ""BlueOS CPU Usage (average)"" for 15 s; load the BlueOS CPU if needed.","Video: value present and changing.
+State: blueos/cpu/usageAverage is a 0–100 number close to <vehicle>/system-information/system/cpu (mean usage).",Same behaviour (no platform branch on this code path),Vehicle (SITL),"BlueOS variables are polled by Cockpit (src/stores/mainVehicle.ts); also per-CPU usage/frequency, CPU temperature (blueos/cpu/tempC) and network rates."
+DL-79.2,Values from BlueOS change properly (e.g. CPU usage),BlueOS network counters update,Fresh profile; connected to the SITL boat,"1. Search ""BlueOS network"".",State: total received MB for the active interface increases.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+DL-80.1,Values from Cockpit change properly (e.g. memory usage),Cockpit memory and frame rate update,Fresh profile,"1. Tools → Data-lake; search ""Cockpit"".
+2. Watch ""Cockpit Memory Usage"" and ""Cockpit App Frame Rate"" for 10 s.","Video: both update about every 100 ms.
+State: cockpit-memory-usage > 0 MB and varies; cockpit-app-frame-rate is 1–200 fps.","Differs: Standalone also has cockpit-main-memory, cockpit-renderers-memory, cockpit-gpu-memory and cockpit-cpu-usage",None,
+DL-80.2,Values from Cockpit change properly (e.g. memory usage),Standalone-only CPU usage reacts to load,Standalone,1. Watch cockpit-cpu-usage; open Mission planning and pan the map hard.,State: cockpit-cpu-usage rises during the panning.,Standalone only,Standalone,
+DL-81.1,Creating an user variable works (as well as persistence of creation and state between sessions),Create a user variable,Fresh profile,"1. Tools → Data-lake → ""Add variable"".
+2. Variable ID release-test/user-var (editable after its pencil; it otherwise follows the name), Variable Name ""Release user var"", type Number, Initial Value 5, Unit m; tick ""Persist variable between boots"" and ""Save variable value between boots"". Save.","Video: row appears with value 5 m.
+State: variable info and value 5 present.",Same behaviour (no platform branch on this code path),None,
+DL-81.2,Creating an user variable works (as well as persistence of creation and state between sessions),Creation and value persist across a reload,The DL-81.1 variable,1. Edit its value to 12. Reload.,"Video: the variable is still listed with 12.
+State: value 12 after restart.",Same behaviour (no platform branch on this code path),None,
+DL-81.3,Creating an user variable works (as well as persistence of creation and state between sessions),"Without ""Save value"" only the creation persists",Fresh profile,"1. Add release-test/user-var2, Initial Value 1, ""Persist variable"" ticked, ""Save variable value"" unticked. Edit to 9. Reload.","Video: listed with 1, not 9.",Same behaviour (no platform branch on this code path),None,
+DL-82.1,Creating a compound variable works and it reacts to changes in the linked variables,A compound variable from vehicle data,"Fresh profile; connected to the SITL boat, armed in Manual","1. Tools → Data-lake → ""Add compound variable"": Variable ID release-test/speed-kmh (editable after its pencil), Number, Unit km/h, Expression {{ /mavlink/1/1/VFR_HUD/groundspeed }} * 3.6. Save.
+2. Drive for 10 s.","Video: row updates while driving.
+State: equals groundspeed × 3.6.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+DL-82.2,Creating a compound variable works and it reacts to changes in the linked variables,A compound variable of two user variables,"Fresh profile; release-test/a = 2, release-test/b = 3",1. Add compound: {{ release-test/a }} * {{ release-test/b }}. Edit a to 4.,"Video: 6, then 12.",Same behaviour (no platform branch on this code path),None,
+DL-82.3,Creating a compound variable works and it reacts to changes in the linked variables,The compound variable survives a reload,After DL-82.1,1. Reload; check it is listed and still updates.,State: definition kept; value recomputes.,Same behaviour (no platform branch on this code path),Vehicle (SITL),
+JOY-83.1,Assigning a button to a Cockpit Action works and runs it,A button mapped to a Cockpit Action runs it,Fresh profile; a gamepad connected; Flight view with the top bar visible,"1. Settings → Joystick → Table: on button 4 click ""Map function to button"" → ""Cockpit Action"" → ""Toggle top bar"".
+2. Leave the Joystick page; check joystick commands are enabled in the top bar indicator.
+3. Press button 4; press it again.","Video: top bar hides and comes back.
+State: protocolMapping regular[4] is the Toggle top bar action.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),Forwarding is disabled while the Joystick page is open (src/views/ConfigurationJoystickView.vue).
+JOY-83.2,Assigning a button to a Cockpit Action works and runs it,A button mapped to a custom action runs it,An HTTP action calling the local server,"1. Map button 5 → Cockpit Action → the HTTP action.
+2. Leave the page; press button 5 once.",State: one request on the server.,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","Joystick (virtual gamepad), local HTTP server",
+JOY-84.1,Assigning a button to a data-lake variable works and changes it,A button mapped to a data-lake variable sets it while held,Fresh profile; user number variable release-test/joy-btn = 0; a gamepad,"1. Map button 6 → ""Data Lake Variable"" → release-test/joy-btn.
+2. Leave the Joystick page; hold button 6 for 2 s; release.","Video: data-lake row reads 1 while held, 0 after.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-84.2,Assigning a button to a data-lake variable works and changes it,Shift-layer mapping writes only with shift held,As JOY-84.1; a button mapped to Shift,"1. Map shift + button 6 to release-test/joy-shift.
+2. Press button 6 alone, then with shift.",State: joy-btn changes only without shift; joy-shift only with shift.,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-85.1,Assigning a button to a MAVLink Manual Control (ArduSub) works and runs it,A button mapped to a MANUAL_CONTROL function changes the vehicle,"Fresh profile; connected to an ArduSub SITL (the boat has no BTNn_FUNCTION params, so Cockpit sends no button bits to it); a gamepad; disarmed","1. Settings → Joystick → Table: map button 7 → ""MAVLink Manual Control"" → ""Arm"" (Cockpit hides the MANUAL_CONTROL Arm and Disarm functions from this list, so use another function such as ""Lights1 brighter"" and check its BTNn_FUNCTION param and button bit).
+2. Wait for the vehicle BTNn_FUNCTION params to update (a few seconds).
+3. Leave the page; press button 7.","Video: vehicle arms.
+State: the BTNn_FUNCTION param for that button is 3 (arm); MANUAL_CONTROL buttons bit 7 set during the press (Inspector); HEARTBEAT armed bit set.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","ArduSub SITL, Joystick (virtual gamepad)",ArduSub only. On the SITL boat this cannot pass.
+JOY-85.2,Assigning a button to a MAVLink Manual Control (ArduSub) works and runs it,A MANUAL_CONTROL mode button switches mode,As JOY-85.1,"1. Map button 8 → ""Mode depth hold"". Press it.",State: HEARTBEAT custom_mode = 2 (ALT_HOLD).,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","ArduSub SITL, Joystick (virtual gamepad)",
+JOY-86.1,Assigning an axis to a MAVLink Manual Control axis works and activates it,An axis mapped to a MANUAL_CONTROL axis drives it,Fresh profile; connected to the SITL boat; a gamepad; armed in Manual,"1. Settings → Joystick → Table: axis 1 row: Min -1000, Axis ""Axis Z"", Max 1000; save it and the axis it was taken from.
+2. Leave the page; push axis 1 fully for 3 s.","Video: the boat drives.
+State: outputs/mavlink/axis-z = ±1000; outgoing MANUAL_CONTROL z = ±1000; VFR_HUD groundspeed > 0.3 m/s.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","Vehicle (SITL), Joystick (virtual gamepad)","Axis direction sign depends on the Direction column. ArduRover reads only y (steering) and z (throttle) from MANUAL_CONTROL, so Axis X cannot move the boat."
+JOY-86.2,Assigning an axis to a MAVLink Manual Control axis works and activates it,Remapping changes which MANUAL_CONTROL field moves,As JOY-86.1,"1. Push axis 1 mapped to ""Axis Z"", then map it to ""Axis Y"" instead and push it again.",State: as Z: MANUAL_CONTROL z moves and y stays 0; as Y: y moves and z stays 0. The vehicle's RC_CHANNELS throttle (3) and steering (1) channels follow.,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","Vehicle (SITL), Joystick (virtual gamepad)",
+JOY-87.1,Assigning an axis to a data-lake variable works and changes it,An axis mapped to a data-lake variable writes the scaled value,Fresh profile; user number variable release-test/joy-axis; a gamepad,"1. Axis 2 → Axis mapping: Min 0, select release-test/joy-axis, Max 100.
+2. Move axis 2 to -1, 0, +1.","State: variable 0, 50, 100 (±0.5).","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-88.1,Calibrating a deadzone works and causes the axis to change its behavior,A deadband keeps the output at 0 inside the band,"Fresh profile; axis 0 mapped to release-test/joy-axis (Min -1, Max 1); a gamepad","1. Settings → Joystick → Axis Calibration → Calibrate.
+2. Tick ""Deadband/Deadzone""; for Axis 0 set Deadband 0.2. Save.
+3. Set axis 0 to 0.15, then 0.6, then -0.6.","Video: the calibration graph shows the red band.
+State: variable 0 at 0.15; 0.5 (= (0.6-0.2)/0.8) at 0.6; -0.5 at -0.6.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),Formula from src/libs/joystick/calibration.ts applyDeadband.
+JOY-88.2,Calibrating a deadzone works and causes the axis to change its behavior,"""Auto calibrate deadzones"" sets a band from stick noise",As JOY-88.1,"1. Calibrate → ""Auto calibrate deadzones""; jitter axis 0 by ±0.05 during it.
+2. Save.",State: axis 0 deadband ≥ 0.05; inside it the variable stays 0.,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-89.1,Changing an exponential scaling works and causes the axis to change its behavior,Exponential scaling bends the axis curve,As JOY-88.1 with deadband off,"1. Calibrate: tick ""Exponential Scaling""; Axis 0 Exponential 2. Save.
+2. Set axis 0 to 0.5, then 1, then -0.5.","Video: the curve on the graph bends.
+State: variable 0.25, 1, -0.25.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),applyExponential: sign × |v|^factor.
+JOY-89.2,Changing an exponential scaling works and causes the axis to change its behavior,Deadband and exponential combined,"Both enabled: deadband 0.2, exponential 2",1. Set axis 0 to 0.6.,"State: variable 0.25 (deadband to 0.5, then squared).","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-90.1,Table and visual interface make sense with respect to the joystick,Visual tab follows the physical joystick,Fresh profile; a gamepad,"1. Settings → Joystick → Visual tab.
+2. Press buttons 0–3 one at a time; move both sticks in a circle.",Video: the matching buttons light up and the stick dots move in the same direction.,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-90.2,Table and visual interface make sense with respect to the joystick,Table tab matches the mapping,As JOY-90.1,"1. Table tab: check each axis row (Name, Preview, Direction, Min, Axis, Max) and button row (Name, Function, Custom label).
+2. Change button 0 mapping and switch back to Visual.","Video: Preview bars move with the sticks; the new function shows in both tabs.
+State: mapping stored once, same in both views.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-91.1,Having multiple joysticks with only one enabled causes that one to be in control,Only the enabled joystick controls,"Fresh profile; two virtual gamepads with different model ids; button 4 mapped to ""Toggle top bar""","1. Joystick page: for the second controller switch ""Enabled"" to ""Disabled"".
+2. Leave the page. Press button 4 on the disabled one, then on the enabled one.","Video: the disabled controller is greyed; only the enabled one toggles the top bar.
+State: disabledJoysticks lists the second model.","Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Two joysticks (virtual gamepads),"Disabling is per model (controllerStore.disabledJoysticks holds models), so two identical joysticks enable/disable together."
+JOY-92.1,"Use axes for arbitrary data-lake variables, use non-joystick for MANUAL_CONTROL axes",An axis drives an arbitrary data-lake variable feeding a compound,Fresh profile; a gamepad,"1. Map axis 3 → camera-zoom-increase (Min -1, Max 1; with Min 0 the stick at rest gives 0.5).
+2. Push axis 3 to +1.
+3. Tools → Data-lake: watch ""Camera Zoom"".",State: camera-zoom-increase 1; compound camera-zoom = 1; back to 0 on release.,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick",Joystick (virtual gamepad),
+JOY-92.2,"Use axes for arbitrary data-lake variables, use non-joystick for MANUAL_CONTROL axes",MANUAL_CONTROL axis fed by a non-joystick input,"Fresh profile; connected to the SITL boat; a gamepad connected once (Cockpit only builds the MANUAL_CONTROL state after a joystick update); axis mapped to Axis X unmapped (""No function"")","1. Main menu → Edit interface: add a Slider (Min Value -1000, Max Value 1000) bound (""select"") to inputs/mavlink/axis-x.
+2. Exit; move the slider to 500 (a click at 3/4 of its track).",State: outputs/mavlink/axis-x ≈ 500 (±25); outgoing MANUAL_CONTROL x equals it.,"Web only with the virtual gamepad; Standalone reads joysticks through SDL, so run it there with a real joystick","Vehicle (SITL), Joystick (virtual gamepad)","Without the unmapping, the joystick overwrites inputs/mavlink/axis-x every update."
