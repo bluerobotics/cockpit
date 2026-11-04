@@ -1,0 +1,129 @@
+{
+ "name": "Map performance tests",
+ "hash": "1abe8afa-bc35-4741-b914-ff1af9ac5c90",
+ "views": [
+  {
+   "hash": "f9786d5d-7f90-4b70-bf41-2b252cd42979",
+   "name": "Map performance",
+   "showBottomBarOnBoot": true,
+   "visible": true,
+   "widgets": [
+    {
+     "hash": "0ffcb1a7-3f9d-4676-9dd5-b872bfbc86d4",
+     "name": "MissionControlPanel",
+     "component": "MissionControlPanel",
+     "position": {
+      "x": 0.837604,
+      "y": 0.804823
+     },
+     "size": {
+      "width": 0.14638572402097255,
+      "height": 0.09641222207770606
+     },
+     "options": {}
+    },
+    {
+     "hash": "37fdf8f3-8a75-44cf-ba18-0f8bfaea7224",
+     "name": "VirtualHorizon",
+     "component": "VirtualHorizon",
+     "position": {
+      "x": 0.8470340414647122,
+      "y": 0.05257393209200438
+     },
+     "size": {
+      "width": 0.06129068105944188,
+      "height": 0.11777527653033051
+     },
+     "options": {}
+    },
+    {
+     "hash": "4c513177-9589-4997-bf38-f207a4aacc2e",
+     "name": "Compass",
+     "component": "Compass",
+     "position": {
+      "x": 0.7791262675380712,
+      "y": 0.05257393209200438
+     },
+     "size": {
+      "width": 0.06129068105944188,
+      "height": 0.11777527653033051
+     },
+     "options": {
+      "headingStyle": "North Up"
+     }
+    },
+    {
+     "hash": "6a7780c6-c451-4935-a635-cbe137a4f8b7",
+     "name": "Main Map",
+     "component": "Map",
+     "position": {
+      "x": 0,
+      "y": 0
+     },
+     "size": {
+      "width": 1,
+      "height": 1
+     },
+     "options": {
+      "showVehiclePath": true,
+      "showCoordinateGrid": false,
+      "showPoiArrows": true,
+      "showHomeArrow": true,
+      "showVehicleArrow": true,
+      "showBaseStationArrow": true
+     }
+    }
+   ],
+   "miniWidgetContainers": [
+    {
+     "name": "Bottom-left container",
+     "widgets": [
+      {
+       "hash": "3b8789d3-745f-4c0b-ba4c-ace436c1761e",
+       "component": "ViewSelector",
+       "name": "ViewSelector",
+       "options": {}
+      }
+     ]
+    },
+    {
+     "name": "Bottom-center container",
+     "widgets": [
+      {
+       "component": "ArmerButton",
+       "name": "ArmerButton",
+       "options": {},
+       "hash": "c5c09964-57cc-4e1a-8b8d-a5b80d4c8d03"
+      },
+      {
+       "component": "VeryGenericIndicator",
+       "name": "Speed (GPS)",
+       "options": {
+        "displayName": "Speed (GPS)",
+        "variableName": "VFR_HUD/groundspeed",
+        "iconName": "mdi-speedometer",
+        "variableUnit": "m/s",
+        "variableMultiplier": 1,
+        "decimalPlaces": 1,
+        "widgetWidth": 160,
+        "useVariableUnit": true
+       },
+       "hash": "baf76846-a786-4808-a017-3d61ecf5b1b7"
+      }
+     ]
+    },
+    {
+     "name": "Bottom-right container",
+     "widgets": [
+      {
+       "component": "ModeSelector",
+       "name": "ModeSelector",
+       "options": {},
+       "hash": "225d20a7-07e1-419b-aba2-cd10f78e3125"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
