@@ -198,6 +198,23 @@ export class SettingsManager {
   public currentVehicleId: string = fallbackVehicleId
   private listeners: SettingsListeners = {}
   private keyValueUpdateTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
+  private pendingKeyValues: Record<
+    string,
+    {
+      /**
+       * User the write belongs to
+       */
+      userId: string
+      /**
+       * Vehicle the write belongs to
+       */
+      vehicleId: string
+      /**
+       * Value being written
+       */
+      value: SettingValue
+    }
+  > = {}
   private lastLocalUserVehicleSettings: SettingsPackage = {}
   private currentVehicleAddress: string = nullValue
   private keyValueVehicleUpdateQueue: KeyValueVehicleUpdateQueue = {}
@@ -247,7 +264,9 @@ export class SettingsManager {
       clearTimeout(this.keyValueUpdateTimeouts[key])
     }
 
+    this.pendingKeyValues[key] = { userId: userId!, vehicleId: vehicleId!, value: value ?? null }
     this.keyValueUpdateTimeouts[key] = setTimeout(async () => {
+      delete this.pendingKeyValues[key]
       const newEpoch = epochChange !== undefined ? epochChange : Date.now()
       console.log(`[SettingsManager] Updating value of key '${key}' for user '${userId}' and vehicle '${vehicleId}'.`)
       // `undefined` is dropped by JSON.stringify, so it would reach storage and the vehicle as a setting with no value
@@ -299,6 +318,10 @@ export class SettingsManager {
     if (vehicleId === undefined) {
       vehicleId = this.currentVehicleId
     }
+
+    // Writes are debounced, so a read right after one would otherwise return the value it replaces.
+    const pending = this.pendingKeyValues[key]
+    if (pending?.userId === userId && pending.vehicleId === vehicleId) return pending.value as T
 
     const localSettings = this.getLocalSettings()
 
