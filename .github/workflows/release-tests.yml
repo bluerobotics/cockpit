@@ -1,0 +1,78 @@
+name: Release tests
+
+# Drives the web build through the release checklist cases in e2e/, against a BlueOS running ArduRover SITL as a
+# boat in a container, and keeps each case's video as the proof.
+on:
+  workflow_dispatch:
+    inputs:
+      cases:
+        description: Case ids or group prefixes, space-separated
+        required: true
+        default: MP-01.1 MP-01.2 MP-01.3 MP-02.1 MP-02.2 MP-03.1 MP-04.1 MP-05.1 MP-06.1 POI-12.1
+
+env:
+  NODE_OPTIONS: --max-old-space-size=6144
+  # Pinned, so a BlueOS release cannot change a run's results.
+  BLUEOS_IMAGE: bluerobotics/blueos-core:1.4.6
+
+jobs:
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Pulled and started first: it takes about a minute to boot, which the install and build cover.
+      # A bridge network rather than BlueOS's usual host one, so its network manager cannot touch the runner's.
+      # Published on port 80, since Cockpit's vehicle address field takes a host without a port.
+      # 6021 is mavlink-camera-manager's WebRTC signalling, which Cockpit reaches on the vehicle address directly.
+      - name: Start BlueOS
+        run: docker run -d --name blueos --privileged -p 80:80 -p 6021:6021 "$BLUEOS_IMAGE"
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Install and build
+        run: |
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
+
+      - name: Serve the build
+        run: |
+          yarn preview > preview.log 2>&1 &
+          timeout 60 bash -c 'until curl -sf -o /dev/null http://localhost:5050/; do sleep 1; done'
+
+      - name: Make the vehicle an ArduRover SITL boat
+        run: node e2e/ci/blueos-sitl.mjs localhost
+
+      # The container has no camera, so mavlink-camera-manager serves two test-pattern streams instead: one under the
+      # name BlueOS gives a UsbCam, which the VID cases use, and a second one to switch to.
+      - name: Serve two test-pattern camera streams
+        run: node e2e/ci/fake-streams.mjs localhost
+
+      - name: Run the cases
+        env:
+          CASES: ${{ inputs.cases }}
+        # CASES is left unquoted on purpose: it is a list of ids.
+        run: node e2e/run.mjs $CASES --url http://localhost:5050 --vehicle localhost --build "${GITHUB_REF_NAME} ${GITHUB_SHA::10}" --out e2e/output
+
+      - name: Upload the videos and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-tests-web
+          path: e2e/output
+          if-no-files-found: ignore
+
+      - name: BlueOS logs
+        if: failure()
+        run: docker logs --tail 200 blueos
