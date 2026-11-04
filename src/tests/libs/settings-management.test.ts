@@ -98,3 +98,11 @@ test('notifies listeners when another tab clears a setting with null', () => {
 
   expect(changed).toHaveBeenCalledWith(newSetting)
 })
+
+test('reads back a write still waiting on the debounce', async () => {
+  await manager.setKeyValue('cockpit-scale', { zoom: 3 })
+
+  expect(manager.getKeyValue('cockpit-scale')).toEqual({ zoom: 3 })
+  vi.advanceTimersByTime(100)
+  expect(manager.getKeyValue('cockpit-scale')).toEqual({ zoom: 3 })
+})
