@@ -121,5 +121,20 @@ module.exports = {
         'max-len': ['off'],
       },
     },
+    {
+      // Node scripts driving the release tests, written in plain JavaScript without return types.
+      files: ['e2e/**/*.mjs'],
+      env: { node: true },
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off',
+      },
+    },
+    {
+      // Every case receives the same runner context, so its parameters are not documented case by case.
+      files: ['e2e/cases/*.mjs'],
+      rules: {
+        'jsdoc/require-param': 'off',
+      },
+    },
   ],
 }
