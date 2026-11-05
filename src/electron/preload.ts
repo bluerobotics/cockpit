@@ -4,6 +4,7 @@ import type { OpenCellIdBboxRequest } from '@/types/baseStation'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import type { McpConfig, McpToolCall, McpToolDefinition, McpToolResult } from '@/types/mcp'
 import type { FileDialogOptions, FileStats } from '@/types/storage'
+import type { AdsbAircraftQuery, AisStreamReport, AisStreamRequest } from '@/types/traffic'
 import type { TtsDownloadProgress } from '@/types/tts'
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -13,6 +14,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   abortTcpPortProbes: () => ipcRenderer.invoke('abort-tcp-port-probes'),
   fetchNearbyOpenCellIdCells: (bbox: OpenCellIdBboxRequest) =>
     ipcRenderer.invoke('fetch-nearby-open-cell-id-cells', bbox),
+  fetchNearbyAdsbAircraft: (query: AdsbAircraftQuery) => ipcRenderer.invoke('fetch-nearby-adsb-aircraft', query),
+  startAisStream: (request: AisStreamRequest) => ipcRenderer.invoke('start-ais-stream', request),
+  stopAisStream: () => ipcRenderer.invoke('stop-ais-stream'),
+  onAisStreamReports: (callback: (reports: AisStreamReport[]) => void) =>
+    ipcRenderer.on('ais-stream-reports', (_event, reports) => callback(reports)),
+  onAisStreamError: (callback: (message: string) => void) =>
+    ipcRenderer.on('ais-stream-error', (_event, message) => callback(message)),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>
     ipcRenderer.on('update-available', (_event, info) => callback(info)),

@@ -111,6 +111,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **ArduSub Simulator (`sitl://ardusub`)** | Only on the GitHub Pages version, in browsers with cross-origin isolation support (Chrome, Edge, Firefox). Embedded pages, like iframe widgets, may not load while it runs | ❌ Not available |
 | **External Serial GNSS** | ❌ Not available (browsers can't access serial devices outside a secure context) | ✅ Read one or more USB/serial NMEA GNSS receivers into the data-lake |
 | **Mobile Coverage Heatmap** | Limited to OpenStreetMap tower data | ✅ Also supports OpenCellID, with a personal API key |
+| **Air and Vessel Traffic** | Limited to what the vehicle's own ADS-B/AIS receivers report | ✅ Also supports the public adsb.lol and aisstream.io feeds |
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
 | **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |
@@ -195,6 +196,7 @@ ArduCopter support has been physically tested, but the primary development team 
 - **Mission import/export** for easy backup and reuse
 - **Real-time mission monitoring** and execution
 - **Custom map tile providers** via XYZ URLs or imported ZIP/MBTiles/PMTiles archives
+- **Air and vessel traffic** on the map, from the vehicle's ADS-B/AIS receivers or from public feeds
 
 ### 📊 **Data Management**
 - **[Data Lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake)** for centralized variable storage and retrieval
