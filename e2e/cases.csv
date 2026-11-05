@@ -453,15 +453,16 @@ PRF-57.1,Memory usage is within bounds (does not surpass 750MB during the first 
 2. Open Tools → Data-lake and search ""memory"".
 3. Sample cockpit-memory-usage every second for 60 s.","Video: the data-lake row for ""Cockpit Memory Usage"" over the minute.
 State: max(cockpit-memory-usage) over the first 60 s < 750 MB.","Differs: Web reports the renderer JS heap; Standalone reports the total of all its processes (also split into cockpit-main-memory, cockpit-renderers-memory, cockpit-gpu-memory), so the Standalone number is much larger for the same load",Vehicle (SITL),cockpit-memory-usage is written every 100 ms (src/stores/omniscientLogger.ts). Decide per platform whether 750 MB applies to the Standalone total; record both numbers either way.
-PRF-58.1,Switching user switches the settings (e.g.: widget profile),Switching user loads that user's views,"Fresh profile; connected to the SITL boat; users ""relusera"" and ""reluserb"" exist on the vehicle (create them via ""add new user""); BlueOS settings sync on (Settings → Dev)","1. Settings → General → ""Manage users"": pick relusera.
+PRF-58.1,Switching user switches the settings (e.g.: widget profile),Switching user loads that user's views,"Fresh profile; connected to the SITL boat; user ""relusera"" exists on the vehicle (create it via ""add new user""); BlueOS settings sync on (Settings → Dev)","1. Settings → General → ""Manage users"": pick relusera.
 2. Main menu → Edit interface: add a view (the + under Views), rename it ""User A view"", exit.
-3. Manage users: pick reluserb.
-4. Look at the view list (View selector or Edit interface).
-5. Switch back to relusera.","Video: ""User A view"" is in the list as relusera, absent as reluserb, and back when switching to relusera.
+3. Manage users: add a new user.
+4. When Cockpit asks whether to copy relusera's settings or start from its defaults, pick the defaults.
+5. Look at the view list (View selector or Edit interface).
+6. Switch back to relusera.","Video: Cockpit asks how to start the new user; ""User A view"" is in the list as relusera, absent as the new user, and back when switching to relusera.
 State: the views group read from the settings for each user on the vehicle (BlueOS bag) differs: only relusera's holds ""User A view"".",Same behaviour (no platform branch on this code path),Vehicle (SITL),Usernames need at least 3 characters. Cockpit may reload when the user changes.
 PRF-58.2,Switching user switches the settings (e.g.: widget profile),A per-user setting other than views follows the user,As PRF-58.1,"1. As relusera: Settings → Interface, change the display units to imperial.
-2. Switch to reluserb.
-3. Switch back to relusera.","Video: units show imperial for relusera, the default for reluserb, imperial again for relusera.
+2. Add a new user and pick Cockpit's defaults when asked how to start it.
+3. Switch back to relusera.","Video: Cockpit asks how to start the new user; units show imperial for relusera, the default for the new user, imperial again for relusera.
 State: the stored unit preference differs between the two users.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
 PRF-59.1,"Critical vehicle functions work properly (e.g.: arm/disarm, switch mode)",Arm and disarm from the Armer button,"Fresh profile; connected to the SITL boat, disarmed in Hold","1. Click the Armer button in the bottom bar; slide to confirm if asked.
 2. Wait 3 s.
