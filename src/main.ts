@@ -1,5 +1,7 @@
 // eslint-disable-next-line simple-import-sort/imports -- The settings manager must be imported before any other system, as they can depend on it
 import { settingsManager } from '@/libs/settings-management'
+// Translations must be loaded before any other module evaluates its strings
+import i18n from '@/plugins/i18n'
 
 import 'floating-vue/dist/style.css'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
@@ -83,7 +85,7 @@ if (!import.meta.env.DEV) {
 app.component('FontAwesomeIcon', FontAwesomeIcon)
 app.component('VueDraggableResizable', VueDraggableResizable)
 app.directive('contextmenu', contextMenu)
-app.use(router).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
+app.use(router).use(i18n).use(vuetify).use(createPinia()).use(FloatingVue).use(VueVirtualScroller)
 app.mount('#app')
 
 // Initialize the logger store

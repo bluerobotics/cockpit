@@ -1,4 +1,5 @@
 import vue from '@vitejs/plugin-vue'
+import gettextParser from 'gettext-parser'
 import path from 'path'
 import { defineConfig } from 'vite'
 import electron, { startup, treeKillSync } from 'vite-plugin-electron'
@@ -44,6 +45,13 @@ const baseConfig = {
         },
       ]),
     vue(),
+    {
+      name: 'gettext-catalog',
+      transform: (code: string, id: string) => {
+        if (!id.endsWith('.po')) return
+        return `export default ${JSON.stringify(gettextParser.po.parse(code))}`
+      },
+    },
     vuetify({
       autoImport: true,
     }),
