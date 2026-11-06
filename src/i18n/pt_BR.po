@@ -236,6 +236,16 @@ msgstr "${ 0 } blocos offline salvos!"
 msgid "${ 0 } placed on the map, tracking the live position."
 msgstr "${ 0 } posicionado no mapa, acompanhando a posição em tempo real."
 
+#: src/composables/useStreamStats.ts
+#, javascript-format
+msgid ""
+"${ 0 } recorded video stream statistic now follows its stream's name in "
+"Cockpit. Select it again in any widget that showed it."
+msgid_plural ""
+"${ 0 } recorded video stream statistics now follow their streams' names in "
+"Cockpit. Select them again in any widget that showed them."
+msgstr[0] ""
+
 #: src/stores/geoFence.ts
 #, javascript-format
 msgid "${ 0 } redundant point was removed to fit it."

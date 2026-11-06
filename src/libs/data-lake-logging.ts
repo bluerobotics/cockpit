@@ -144,7 +144,6 @@ interface DataLakeSessionRecord {
  */
 export class DataLakeLogger {
   private isLogging = false
-  private _recordedVariableIds?: string[]
   private _exportVariableKey?: DataLakeExportVariableKey
   private _logInterval?: DataLakeLogInterval
   private intervalTimer: ReturnType<typeof setTimeout> | null = null
@@ -164,6 +163,19 @@ export class DataLakeLogger {
 
   // Metadata of the session currently being written, kept in memory and mirrored to sessionsDB.
   private currentSession: DataLakeSessionRecord | null = null
+
+  /**
+   * Create a logger that reacts when a settings sync (e.g. a vehicle switch) replaces the recorded
+   * selection as it does when the selection is edited here
+   */
+  constructor() {
+    settingsManager.registerListener(recordedDataLakeVariablesKey, () => {
+      recordedVariableIdsChangedHandlers.forEach((handler) => handler())
+      if (this.shouldBeLogging() && this.logInterval === 'raw') {
+        this.applyLoggingMode()
+      }
+    })
+  }
 
   static logsDB = new IndexedDbStore({
     name: 'Cockpit - Data Lake Logs',
@@ -303,18 +315,15 @@ export class DataLakeLogger {
    * @returns {string[]} IDs of data lake variables selected for recording
    */
   get recordedVariableIds(): string[] {
-    if (this._recordedVariableIds === undefined) {
-      const savedValue = settingsManager.getKeyValue(recordedDataLakeVariablesKey) as string[] | undefined
-      this._recordedVariableIds = savedValue ?? []
-    }
-    return this._recordedVariableIds
+    // Read through on every access: the settings manager already caches it and returns pending writes,
+    // and a copy kept here would outlive a vehicle switch whose settings do not hold the key yet
+    return (settingsManager.getKeyValue(recordedDataLakeVariablesKey) as string[] | undefined) ?? []
   }
 
   /**
    * @param {string[]} value - Variable IDs to record
    */
   set recordedVariableIds(value: string[]) {
-    this._recordedVariableIds = value
     settingsManager.setKeyValue(recordedDataLakeVariablesKey, value)
     recordedVariableIdsChangedHandlers.forEach((handler) => handler())
   }
@@ -369,8 +378,7 @@ export class DataLakeLogger {
   }
 
   /**
-   * Toggle whether a data lake variable should be recorded. IDs are only ever added or removed
-   * here, in direct response to the user's selection; nothing prunes the list automatically.
+   * Toggle whether a data lake variable should be recorded, in direct response to the user's selection.
    * @param {string} variableId - Data lake variable ID
    * @param {boolean} recorded - Whether the variable should be recorded
    */
@@ -391,6 +399,35 @@ export class DataLakeLogger {
   }
 
   /**
+   * Swap recorded variable IDs in one write. Used when a stream rename moves armed stats onto the
+   * new ids, so the selection is persisted and raw listeners are rebuilt once.
+   * @param {Record<string, string>} replacements - Map of old variable id to new variable id
+   */
+  replaceRecordedVariableIds(replacements: Record<string, string>): void {
+    if (Object.keys(replacements).length === 0) return
+
+    const nextIds: string[] = []
+    const seen = new Set<string>()
+    let changed = false
+
+    this.recordedVariableIds.forEach((id) => {
+      const next = replacements[id] ?? id
+      if (next !== id) changed = true
+      if (seen.has(next)) return
+      seen.add(next)
+      nextIds.push(next)
+    })
+
+    if (!changed) return
+
+    this.recordedVariableIds = nextIds
+
+    if (this.shouldBeLogging() && this.logInterval === 'raw') {
+      this.applyLoggingMode()
+    }
+  }
+
+  /**
    * Start recording. Re-reads the recorded selection from settings on each fresh start, so a
    * stop/start cycle applies external changes. No-op when already running.
    */
@@ -398,7 +435,6 @@ export class DataLakeLogger {
     if (this.isLogging) return
 
     this.isLogging = true
-    this._recordedVariableIds = undefined
     this.applyLoggingMode()
   }
 
