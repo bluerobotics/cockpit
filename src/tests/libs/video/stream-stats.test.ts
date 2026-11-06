@@ -1,16 +1,59 @@
 import { expect, test } from 'vitest'
 
 import {
+  derivedWebRtcStreamStats,
   externalIdStatRecordingReplacements,
   go2rtcStreamStatKeys,
   go2rtcStreamStatVariableId,
   staleStreamStatRecordedIds,
+  streamStatDisplayName,
   streamStatVariableId,
   webRtcStreamStatKeys,
 } from '@/libs/video/stream-stats'
+import type { WebRTCVideoStats } from '@/types/video'
 
 const webRtcKey = webRtcStreamStatKeys[0]
 const go2rtcKey = go2rtcStreamStatKeys[0]
+
+const webRtcStats = (bitrate?: number): WebRTCVideoStats => ({ bitrate } as WebRTCVideoStats)
+
+test('WebRTC bitrate is published in bits per second, named so it cannot be plotted against the RTSP kbps series as one series', () => {
+  expect(streamStatVariableId('front', 'bitrate')).toBe('stream-front-bitrateBps')
+  expect(streamStatDisplayName('front', 'bitrate')).toBe("Stream 'front' - bitrateBps")
+})
+
+test('the WebRTC bitrate is published in kbps too, under an id the rtsp infix keeps apart from the go2rtc one', () => {
+  expect(streamStatVariableId('front', 'bitrateKbps')).toBe('stream-front-bitrateKbps')
+  expect(streamStatDisplayName('front', 'bitrateKbps')).toBe("Stream 'front' - bitrateKbps")
+  expect(streamStatVariableId('front', 'bitrateKbps')).not.toBe(go2rtcStreamStatVariableId('front', 'bitrateKbps'))
+})
+
+test('the WebRTC bitrate in kbps is its bits per second rounded to whole kbps, as the go2rtc series is', () => {
+  expect(derivedWebRtcStreamStats(webRtcStats(1500000))).toEqual({ bitrateKbps: 1500 })
+  expect(derivedWebRtcStreamStats(webRtcStats(1500600))).toEqual({ bitrateKbps: 1501 })
+  expect(derivedWebRtcStreamStats(webRtcStats(400))).toEqual({ bitrateKbps: 0 })
+})
+
+test('an unknown WebRTC bitrate derives no kbps rather than a zero that would read as a stall', () => {
+  expect(derivedWebRtcStreamStats(webRtcStats(undefined))).toEqual({})
+  expect(derivedWebRtcStreamStats(webRtcStats(NaN))).toEqual({})
+})
+
+test('other WebRTC stats keep the library key in both the id and the display name', () => {
+  expect(streamStatVariableId('front', 'frameHeight')).toBe('stream-front-frameHeight')
+  expect(streamStatDisplayName('front', 'frameHeight')).toBe("Stream 'front' - frameHeight")
+})
+
+test('the bitrate stats of a live stream are not stale, and those of a deleted one are', () => {
+  const bitrateIds = (name: string): string[] => [
+    streamStatVariableId(name, 'bitrate'),
+    streamStatVariableId(name, 'bitrateKbps'),
+    streamStatVariableId(name, 'frameHeight'),
+  ]
+
+  expect(staleStreamStatRecordedIds(bitrateIds('Front Camera'), ['Front Camera'])).toEqual([])
+  expect(staleStreamStatRecordedIds(bitrateIds('Old Camera'), ['Front Camera'])).toEqual(bitrateIds('Old Camera'))
+})
 
 test('a recording made under a stream external id carries over to its internal name', () => {
   const recorded = ['stream-UDP Stream 0-bytesReceived', 'stream-UDP Stream 0-jitter', '/mavlink/1/1/HEARTBEAT/type']

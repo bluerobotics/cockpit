@@ -15,6 +15,7 @@ import { addRecordedVariableIdsChangedHandler, dataLakeLogger } from '@/libs/dat
 import { isElectron } from '@/libs/utils'
 import {
   buildGo2rtcStreamSample,
+  derivedWebRtcStreamStats,
   externalIdStatRecordingReplacements,
   Go2rtcIngestCounters,
   Go2rtcStreamSample,
@@ -22,8 +23,10 @@ import {
   go2rtcStreamStatKeys,
   go2rtcStreamStatVariableId,
   staleStreamStatRecordedIds,
+  streamStatDisplayName,
   streamStatVariableId,
   webRtcStreamStatKeys,
+  webRtcStreamStatVariableKeys,
 } from '@/libs/video/stream-stats'
 import { monitorStreamPeerConnection, noteStreamBytesReceived } from '@/libs/webrtc/stats'
 import { useVideoStore } from '@/stores/video'
@@ -176,7 +179,7 @@ const initialize = (): void => {
   // before any of them, so names swapped in one change swap their recordings instead of merging them.
   const carryOverStreamStatRecordings = (newNameByOldName: Record<string, string>, liveNames: string[]): void => {
     const statIds = (name: string): string[] => [
-      ...webRtcStreamStatKeys.map((key) => streamStatVariableId(name, key)),
+      ...webRtcStreamStatVariableKeys.map((key) => streamStatVariableId(name, key)),
       ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
     ]
     const recordedIds = new Set(dataLakeLogger.recordedVariableIds)
@@ -228,14 +231,15 @@ const initialize = (): void => {
     const internalName = internalStreamName(streamName)
     if (internalName === undefined) return
 
-    webRtcStreamStatKeys.forEach((key) => {
+    webRtcStreamStatVariableKeys.forEach((key) => {
       const variableId = streamStatVariableId(internalName, key)
       if (getDataLakeVariableInfo(variableId) === undefined) {
+        const publishedKey = variableId.slice(`stream-${internalName}-`.length)
         const streamVariable = {
           id: variableId,
-          name: `Stream '${internalName}' - ${key}`,
+          name: streamStatDisplayName(internalName, key),
           type: 'number',
-          description: `WebRTC stat '${key}' of the '${internalName}' video stream.`,
+          description: `WebRTC stat '${publishedKey}' of the '${internalName}' video stream.`,
         } as DataLakeVariable
         createDataLakeVariable(streamVariable)
       }
@@ -327,7 +331,11 @@ const initialize = (): void => {
 
             ensureWebRtcStatVariables(streamName)
             webRtcStreamStatKeys.forEach((key) => {
-              setDataLakeVariableData(streamStatVariableId(internalName, key), videoData[key])
+              const value = videoData[key]
+              if (value !== undefined) setDataLakeVariableData(streamStatVariableId(internalName, key), value)
+            })
+            Object.entries(derivedWebRtcStreamStats(videoData)).forEach(([key, value]) => {
+              if (value !== undefined) setDataLakeVariableData(streamStatVariableId(internalName, key), value)
             })
           } catch (error) {
             console.error('Error while logging WebRTC statistics:', error)
