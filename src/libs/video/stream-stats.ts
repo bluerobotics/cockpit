@@ -1,4 +1,4 @@
-import type { Go2RTCStreamInfo, WebRTCVideoStat } from '@/types/video'
+import type { Go2RTCStreamInfo, VideoStreamCorrespondency, WebRTCVideoStat } from '@/types/video'
 
 /**
  * The raw cumulative ingest counters of a go2rtc stream and the epoch they were sampled at
@@ -138,3 +138,28 @@ export const streamStatVariableId = (internalName: string, statKey: string): str
  */
 export const go2rtcStreamStatVariableId = (internalName: string, statKey: Go2rtcStreamStatKey): string =>
   `stream-${internalName}-rtsp-${statKey}`
+
+/**
+ * Map recorded WebRTC stat ids that are still keyed by a stream's external id, as they were before
+ * ids were keyed by internal name, to the ids the stream publishes now
+ * @param {string[]} recordedIds - Currently recorded data-lake variable IDs
+ * @param {Pick<VideoStreamCorrespondency, 'externalId' | 'name'>[]} correspondency - Configured streams
+ * @returns {Record<string, string>} Old id to new id, for each recorded id that needs carrying over
+ */
+export const externalIdStatRecordingReplacements = (
+  recordedIds: string[],
+  correspondency: Pick<VideoStreamCorrespondency, 'externalId' | 'name'>[]
+): Record<string, string> => {
+  const recorded = new Set(recordedIds)
+  const replacements: Record<string, string> = {}
+  correspondency.forEach(({ externalId, name }) => {
+    // An external id that is also a configured stream's name keys that stream's live ids
+    if (externalId === name || correspondency.some((other) => other.name === externalId)) return
+
+    webRtcStreamStatKeys.forEach((key) => {
+      const oldId = streamStatVariableId(externalId, key)
+      if (recorded.has(oldId)) replacements[oldId] = streamStatVariableId(name, key)
+    })
+  })
+  return replacements
+}
