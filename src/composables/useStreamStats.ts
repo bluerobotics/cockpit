@@ -1,7 +1,8 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
-import { msgid, ngettext } from 'ttag'
+import { msgid, ngettext, t } from 'ttag'
 import { computed, effectScope, reactive, watch } from 'vue'
 
+import { goToMenuPage } from '@/composables/menuRouting'
 import { openSnackbar } from '@/composables/snackbar'
 import {
   createDataLakeVariable,
@@ -20,11 +21,13 @@ import {
   Go2rtcStreamStatKey,
   go2rtcStreamStatKeys,
   go2rtcStreamStatVariableId,
+  staleStreamStatRecordedIds,
   streamStatVariableId,
   webRtcStreamStatKeys,
 } from '@/libs/video/stream-stats'
 import { monitorStreamPeerConnection, noteStreamBytesReceived } from '@/libs/webrtc/stats'
 import { useVideoStore } from '@/stores/video'
+import { SubMenuComponentName } from '@/types/general'
 import { type Go2RTCStreamInfo, WebRTCStatsEvent, WebRTCVideoStats } from '@/types/video'
 
 // Data lake variable types of the go2rtc ingest stats
@@ -68,6 +71,35 @@ let go2rtcPanelConsumers = 0
 const go2rtcFastSampleIntervalMs = 100
 // Set by initialize so a live consumer can restart an idle sampler at the fast cadence
 let pokeGo2rtcSampler: () => void = () => undefined
+
+/**
+ * Stop recording the stream statistics of streams that are gone, telling the user how many
+ * selections went so the loss is visible now rather than when an export comes back empty.
+ * @param {string[] | undefined} liveInternalNames - Internal stream names currently in the correspondency,
+ * or undefined while that list cannot be trusted to describe the configured streams
+ */
+export const dropStaleStreamStatRecordings = (liveInternalNames: string[] | undefined): void => {
+  const staleIds = staleStreamStatRecordedIds(dataLakeLogger.recordedVariableIds, liveInternalNames)
+  if (staleIds.length === 0) return
+
+  dataLakeLogger.removeRecordedVariableIds(staleIds)
+  openSnackbar({
+    message: ngettext(
+      msgid`Stopped recording ${staleIds.length} video stream statistic that is no longer available. You can select it again once its stream is back.`,
+      `Stopped recording ${staleIds.length} video stream statistics that are no longer available. You can select them again once their streams are back.`,
+      staleIds.length
+    ),
+    variant: 'warning',
+    duration: 10000,
+    action: {
+      label: t`Data-lake`,
+      handler: (): void => {
+        logUserAction('Opened the Data-lake tool')
+        goToMenuPage(SubMenuComponentName.ToolsDataLake)
+      },
+    },
+  })
+}
 
 let initialized = false
 // Detached scope: the collector watch must live for the app's lifetime, not the first caller's
@@ -309,7 +341,7 @@ const initialize = (): void => {
     // does not detach the watcher.
     watch(
       () => videoStore.streamsCorrespondency,
-      (corrs) => {
+      (corrs, previousCorrs) => {
         const newNameByOldName: Record<string, string> = {}
         corrs.forEach((corr) => {
           const lastName = lastInternalNames[corr.externalId]
@@ -325,6 +357,9 @@ const initialize = (): void => {
           if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
         })
         carryOverExternalIdStatRecordings()
+        // The boot pass sees whatever correspondency happens to be loaded, which is not evidence
+        // that a stream was deleted; only a later genuine change is.
+        dropStaleStreamStatRecordings(previousCorrs === undefined ? undefined : corrs.map((corr) => corr.name))
       },
       { deep: true, immediate: true }
     )

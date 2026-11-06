@@ -163,3 +163,60 @@ export const externalIdStatRecordingReplacements = (
   })
   return replacements
 }
+
+const isRtspUrlStreamStatId = (id: string): boolean => /^stream-rtsps?:\/\//i.test(id)
+
+// Peel `stream-<name>` from an id that ends with a minting-function suffix, then remint to confirm.
+// endsWith alone is not enough: one published key can be a suffix of another, and stream names have hyphens.
+const nameBeforeStreamStatSuffix = (id: string, suffix: string): string | undefined => {
+  if (!id.startsWith('stream-') || !id.endsWith(suffix)) return undefined
+  const name = id.slice('stream-'.length, id.length - suffix.length)
+  return name.length > 0 ? name : undefined
+}
+
+const isWebRtcStreamStatId = (id: string): boolean =>
+  webRtcStreamStatKeys.some((key) => {
+    const suffix = streamStatVariableId('', key).slice('stream-'.length)
+    const name = nameBeforeStreamStatSuffix(id, suffix)
+    return name !== undefined && streamStatVariableId(name, key) === id
+  })
+
+const isGo2rtcStreamStatId = (id: string): boolean =>
+  go2rtcStreamStatKeys.some((key) => {
+    const suffix = go2rtcStreamStatVariableId('', key).slice('stream-'.length)
+    const name = nameBeforeStreamStatSuffix(id, suffix)
+    return name !== undefined && go2rtcStreamStatVariableId(name, key) === id
+  })
+
+const isStreamStatVariableId = (id: string): boolean => isWebRtcStreamStatId(id) || isGo2rtcStreamStatId(id)
+
+/**
+ * Pick the recorded stream-stat IDs that are no longer worth recording: those of deleted streams,
+ * and pre-switch IDs keyed by external id (an RTSP URL may carry credentials into an export header).
+ * @param {string[]} recordedIds - Currently recorded data-lake variable IDs
+ * @param {string[] | undefined} liveInternalNames - Internal stream names currently in the correspondency,
+ * or undefined while that list cannot be trusted to describe the configured streams
+ * @returns {string[]} Recorded IDs that should be dropped
+ */
+export const staleStreamStatRecordedIds = (
+  recordedIds: string[],
+  liveInternalNames: string[] | undefined
+): string[] => {
+  // An empty or not-yet-loaded correspondency is not evidence that a stream is gone, so it only ever
+  // drops the credential-bearing ids, which must not persist whichever streams are live.
+  if (liveInternalNames === undefined || liveInternalNames.length === 0) {
+    return recordedIds.filter(isRtspUrlStreamStatId)
+  }
+
+  const liveIds = new Set(
+    liveInternalNames.flatMap((name) => [
+      ...webRtcStreamStatKeys.map((key) => streamStatVariableId(name, key)),
+      ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
+    ])
+  )
+
+  return recordedIds.filter((id) => {
+    if (isRtspUrlStreamStatId(id)) return true
+    return isStreamStatVariableId(id) && !liveIds.has(id)
+  })
+}
