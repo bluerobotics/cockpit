@@ -1,4 +1,5 @@
 import vue from '@vitejs/plugin-vue'
+import fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
 import electron, { startup, treeKillSync } from 'vite-plugin-electron'
@@ -65,6 +66,8 @@ const baseConfig = {
   define: {
     'process.env': {},
     '__APP_VERSION__': JSON.stringify(getVersion().version),
+    // Only the GitHub Pages deploy downloads the ArduSub build into public/sitl
+    '__SITL_AVAILABLE__': JSON.stringify(fs.existsSync(path.resolve(__dirname, 'public/sitl/ardusub.js'))),
     '__APP_VERSION_DATE__': JSON.stringify(getVersion().date),
     '__APP_VERSION_LINK__': JSON.stringify(getVersion().link),
   },

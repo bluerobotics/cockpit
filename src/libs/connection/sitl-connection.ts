@@ -8,6 +8,15 @@ const RELOAD_KEY = 'cockpit-sitl-isolation-reload'
 const SERVICE_WORKER_TIMEOUT_MS = 60_000
 const ONLY_ON_PAGES = 'The simulator only runs in the Cockpit web version on GitHub Pages.'
 
+declare const __SITL_AVAILABLE__: boolean
+
+/**
+ * Whether the simulator can run here: the build includes it and the page can be cross-origin isolated
+ * @returns {boolean}
+ */
+export const isSitlAvailable = (): boolean =>
+  __SITL_AVAILABLE__ && window.isSecureContext && 'serviceWorker' in navigator && !isElectron()
+
 /**
  * ArduPilot SITL compiled to WebAssembly, running in a worker inside Cockpit (public/sitl/worker.js).
  * The URI host is the binary under sitl/ (sitl://ardusub loads sitl/ardusub.js),
@@ -24,6 +33,13 @@ export class SitlConnection extends Connection.Abstract {
    * Resolves once the simulator sends its first bytes, rejects with a message for the user otherwise.
    */
   async initialize(): Promise<void> {
+    if (sessionStorage.getItem(RELOAD_KEY) === 'added') {
+      // The address only carried the simulator for the isolation reload, it must not outlive it,
+      // even when isolation failed
+      const url = new URL(window.location.href)
+      url.searchParams.delete('MAVLink2RestWebsocketURI')
+      window.history.replaceState(window.history.state, '', url)
+    }
     if (!crossOriginIsolated) {
       await this.reloadWithIsolation()
       return
@@ -60,14 +76,15 @@ export class SitlConnection extends Connection.Abstract {
    * the page yet on the first visit, so navigate once more with the SITL in the URL.
    */
   private async reloadWithIsolation(): Promise<void> {
-    if (isElectron() || !window.isSecureContext || !('serviceWorker' in navigator)) {
+    if (!isSitlAvailable()) {
       throw new Error(ONLY_ON_PAGES)
     }
     const browserMessage = 'This browser could not prepare the page for the simulator. Use Chrome, Edge or Firefox.'
     if (sessionStorage.getItem(RELOAD_KEY) !== null) {
       throw new Error(browserMessage)
     }
-    sessionStorage.setItem(RELOAD_KEY, 'true')
+    const hadParameter = new URLSearchParams(window.location.search).has('MAVLink2RestWebsocketURI')
+    sessionStorage.setItem(RELOAD_KEY, hadParameter ? 'true' : 'added')
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(browserMessage)), SERVICE_WORKER_TIMEOUT_MS)
     })
