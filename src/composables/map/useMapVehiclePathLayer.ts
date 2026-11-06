@@ -36,6 +36,7 @@ export const useMapVehiclePathLayer = (
   const renderer = L.canvas({ pane: VEHICLE_PATH_PANE })
   const polyline = shallowRef<Polyline>()
   let lastDrawnLength = 0
+  let lastDrawnPath: WaypointCoordinates[] | undefined
 
   const removeLine = (): void => {
     if (polyline.value && map.value) map.value.removeLayer(polyline.value)
@@ -64,16 +65,17 @@ export const useMapVehiclePathLayer = (
       lastDrawnLength = 0
     }
 
-    if (points.length > lastDrawnLength && lastDrawnLength > 0) {
+    if (points === lastDrawnPath && points.length > lastDrawnLength && lastDrawnLength > 0) {
       // Append only the new points — O(1) per fire instead of an O(N) full rebuild.
       for (let i = lastDrawnLength; i < points.length; i++) {
         polyline.value.addLatLng(points[i] as LatLngExpression)
       }
     } else {
-      // First draw, or the trail shrank (clear/simplify) / stayed the same length (push+shift): full rebuild.
+      // First draw, a replaced history (clear/simplify/restore) or the same length (push+shift): full rebuild.
       polyline.value.setLatLngs(points as LatLngExpression[])
     }
     lastDrawnLength = points.length
+    lastDrawnPath = points
   }
 
   watch([() => options.revision(), () => options.show()], redraw)
