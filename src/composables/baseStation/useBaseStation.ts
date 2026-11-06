@@ -1,5 +1,5 @@
 import { useStorage, useThrottleFn } from '@vueuse/core'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, effectScope, reactive, ref, watch } from 'vue'
 
 import type { DialogOptions, DialogResult } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -256,7 +256,8 @@ let api: ReturnType<typeof initialize> | null = null
  * @returns {ReturnType<typeof initialize>} Reactive base-station state and actions.
  */
 export const useBaseStation = (): ReturnType<typeof initialize> => {
-  if (!api) api = initialize()
+  // Detached, so the state outlives whichever component happened to create it
+  if (!api) api = effectScope(true).run(initialize)!
   return api
 }
 
