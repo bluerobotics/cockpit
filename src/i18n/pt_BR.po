@@ -3395,6 +3395,7 @@ msgstr "Configurações de exportação de dados"
 msgid "Data lake"
 msgstr "Data lake"
 
+#: src/composables/useStreamStats.ts
 #: src/libs/menu-pages.ts
 msgid "Data-lake"
 msgstr "Data lake"
@@ -10290,6 +10291,16 @@ msgstr "Parar de acompanhar esta mensagem"
 #: src/components/mini-widgets/VoiceRecorder.vue
 msgid "Stop voice recording"
 msgstr ""
+
+#: src/composables/useStreamStats.ts
+#, javascript-format
+msgid ""
+"Stopped recording ${ 0 } video stream statistic that is no longer "
+"available. You can select it again once its stream is back."
+msgid_plural ""
+"Stopped recording ${ 0 } video stream statistics that are no longer "
+"available. You can select them again once their streams are back."
+msgstr[0] ""
 
 #: src/stores/video.ts
 #, javascript-format

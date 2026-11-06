@@ -478,6 +478,23 @@ export class DataLakeLogger {
   }
 
   /**
+   * Disarm recorded variable IDs in one write, so the selection is persisted and raw listeners are
+   * rebuilt once however many IDs are dropped.
+   * @param {string[]} variableIds - Data lake variable IDs to stop recording
+   */
+  removeRecordedVariableIds(variableIds: string[]): void {
+    const dropped = new Set(variableIds)
+    const nextIds = this.recordedVariableIds.filter((id) => !dropped.has(id))
+    if (nextIds.length === this.recordedVariableIds.length) return
+
+    this.recordedVariableIds = nextIds
+
+    if (this.shouldBeLogging() && this.logInterval === 'raw') {
+      this.applyLoggingMode()
+    }
+  }
+
+  /**
    * Start recording. Re-reads the recorded selection from settings on each fresh start, so a
    * stop/start cycle applies external changes. No-op when already running.
    */
