@@ -1,4 +1,4 @@
-import type { Go2RTCStreamInfo, VideoStreamCorrespondency, WebRTCVideoStat } from '@/types/video'
+import type { Go2RTCStreamInfo, VideoStreamCorrespondency, WebRTCVideoStat, WebRTCVideoStats } from '@/types/video'
 
 /**
  * The raw cumulative ingest counters of a go2rtc stream and the epoch they were sampled at
@@ -64,7 +64,7 @@ export const buildGo2rtcStreamSample = (
 })
 
 // WebRTC stats published to the data lake for every monitored stream
-const webRtcCumulativeStatKeys: WebRTCVideoStat[] = [
+export const webRtcStreamStatKeys: WebRTCVideoStat[] = [
   'bytesReceived',
   'firCount',
   'framesDecoded',
@@ -88,9 +88,9 @@ const webRtcCumulativeStatKeys: WebRTCVideoStat[] = [
   'totalPausesDuration',
   'totalProcessingDelay',
   'totalSquaredInterFrameDelay',
-] // Keys that have cumulative values
-const webRtcAverageStatKeys: WebRTCVideoStat[] = [
+  'bitrate',
   'clockRate',
+  'frameHeight',
   'framesAssembledFromMultiplePackets',
   'framesPerSecond',
   'jitter',
@@ -98,8 +98,28 @@ const webRtcAverageStatKeys: WebRTCVideoStat[] = [
   'jitterBufferMinimumDelay',
   'jitterBufferTargetDelay',
   'packetRate',
-] // Keys that have average values
-export const webRtcStreamStatKeys = [...webRtcCumulativeStatKeys, ...webRtcAverageStatKeys]
+]
+
+// Published alongside them, but computed here rather than reported by the WebRTC library
+const derivedWebRtcStreamStatKeys = ['bitrateKbps'] as const
+
+type DerivedWebRtcStreamStatKey = (typeof derivedWebRtcStreamStatKeys)[number]
+
+// Every WebRTC stat variable a stream gets: one per reported key, plus one per derived stat
+export const webRtcStreamStatVariableKeys: string[] = [...webRtcStreamStatKeys, ...derivedWebRtcStreamStatKeys]
+
+/**
+ * Derive the WebRTC stats the library does not report. A stat whose source is missing or not finite
+ * is left out, so a rate that is merely not known is never published as the zero that means a
+ * stalled stream.
+ * @param {WebRTCVideoStats} stats - Latest inbound video stats of a stream
+ * @returns {Partial<Record<DerivedWebRtcStreamStatKey, number>>} Derived stats that are known
+ */
+export const derivedWebRtcStreamStats = (
+  stats: WebRTCVideoStats
+): Partial<Record<DerivedWebRtcStreamStatKey, number>> =>
+  // Whole kbps like the go2rtc series this one exists to be plotted against; bitrateBps keeps the full resolution
+  Number.isFinite(stats.bitrate) ? { bitrateKbps: Math.round(stats.bitrate / 1000) } : {}
 
 // go2rtc ingest stats published to the data lake for every active RTSP stream (Standalone only)
 export const go2rtcStreamStatKeys = [
@@ -120,6 +140,10 @@ export const go2rtcStreamStatKeys = [
  */
 export type Go2rtcStreamStatKey = (typeof go2rtcStreamStatKeys)[number]
 
+// The WebRTC library reports bitrate in bits/sec; the published name carries that unit so it cannot
+// be plotted against the go2rtc bitrateKbps series as if they shared a scale
+const publishedWebRtcStatKey = (statKey: string): string => (statKey === 'bitrate' ? 'bitrateBps' : statKey)
+
 /**
  * Build the data lake variable id of a stream's WebRTC stat
  * @param {string} internalName - Internal stream name (persisted artifacts never use the external id)
@@ -127,7 +151,16 @@ export type Go2rtcStreamStatKey = (typeof go2rtcStreamStatKeys)[number]
  * @returns {string} Data lake variable id
  */
 export const streamStatVariableId = (internalName: string, statKey: string): string =>
-  `stream-${internalName}-${statKey}`
+  `stream-${internalName}-${publishedWebRtcStatKey(statKey)}`
+
+/**
+ * Build the data lake display name of a stream's WebRTC stat
+ * @param {string} internalName - Internal stream name (persisted artifacts never use the external id)
+ * @param {string} statKey - WebRTC stat key
+ * @returns {string} Data lake variable display name
+ */
+export const streamStatDisplayName = (internalName: string, statKey: string): string =>
+  `Stream '${internalName}' - ${publishedWebRtcStatKey(statKey)}`
 
 /**
  * Build the data lake variable id of a stream's go2rtc ingest stat. The 'rtsp' infix keeps the two
@@ -175,7 +208,7 @@ const nameBeforeStreamStatSuffix = (id: string, suffix: string): string | undefi
 }
 
 const isWebRtcStreamStatId = (id: string): boolean =>
-  webRtcStreamStatKeys.some((key) => {
+  webRtcStreamStatVariableKeys.some((key) => {
     const suffix = streamStatVariableId('', key).slice('stream-'.length)
     const name = nameBeforeStreamStatSuffix(id, suffix)
     return name !== undefined && streamStatVariableId(name, key) === id
@@ -210,7 +243,7 @@ export const staleStreamStatRecordedIds = (
 
   const liveIds = new Set(
     liveInternalNames.flatMap((name) => [
-      ...webRtcStreamStatKeys.map((key) => streamStatVariableId(name, key)),
+      ...webRtcStreamStatVariableKeys.map((key) => streamStatVariableId(name, key)),
       ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
     ])
   )
