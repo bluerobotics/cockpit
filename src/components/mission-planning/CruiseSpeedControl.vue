@@ -2,7 +2,7 @@
   <div class="relative flex items-center -mt-[2px]">
     <v-menu :close-on-content-click="false" location="top" offset="8">
       <template #activator="{ props: speedProps }">
-        <v-tooltip location="top" open-delay="800" :text="`Cruise speed (${speedReadout})`">
+        <v-tooltip location="top" open-delay="800" :text="t`Cruise speed (${speedReadout})`">
           <template #activator="{ props: speedTooltipProps }">
             <v-btn
               v-bind="{ ...speedProps, ...speedTooltipProps }"
@@ -17,7 +17,7 @@
       </template>
       <div class="flex flex-col p-3 rounded-lg w-[210px] text-white" :style="interfaceStore.globalGlassMenuStyles">
         <div class="flex justify-between items-center mb-1 text-xs">
-          <span>Cruise speed</span>
+          <span>{{ t`Cruise speed` }}</span>
           <span class="font-bold">{{ speedReadout }}</span>
         </div>
         <v-slider
@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -92,7 +93,7 @@ const {
 const displayedSpeedBound = (metersPerSecond: number): number => speedToDisplayBound(metersPerSecond, 1)
 
 const speedReadout = computed(() =>
-  followsVehicleDefault.value ? 'vehicle default' : `${displayedCruiseSpeed.value.toFixed(1)} ${speedUnit.value}`
+  followsVehicleDefault.value ? t`vehicle default` : `${displayedCruiseSpeed.value.toFixed(1)} ${speedUnit.value}`
 )
 
 // Debounce live speed commands so dragging the slider doesn't flood the vehicle with DO_CHANGE_SPEED.
@@ -103,7 +104,8 @@ const handleCruiseSpeedInput = (value: number): void => {
   cruiseSpeedDebounce = setTimeout(() => {
     logUserAction(`Set the cruise speed to ${value.toFixed(1)} ${speedUnit.value}`)
     missionStore.applyCruiseSpeed(speedToRawUnit(value)).catch((err) => {
-      openSnackbar({ message: `Failed to set cruise speed: ${(err as Error).message}`, variant: 'error' })
+      const errorMessage = (err as Error).message
+      openSnackbar({ message: t`Failed to set cruise speed: ${errorMessage}`, variant: 'error' })
     })
   }, 300)
 }

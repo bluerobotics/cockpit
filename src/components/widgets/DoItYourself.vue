@@ -21,34 +21,43 @@
         <v-icon class="absolute top-[12px] right-[12px] cursor-pointer" @click="showHelp = !showHelp">
           mdi-help-circle-outline
         </v-icon>
-        <v-card-title class="w-full text-center mt-2">DIY widget configuration</v-card-title>
+        <v-card-title class="w-full text-center mt-2">{{ t`DIY widget configuration` }}</v-card-title>
         <v-card-text class="mx-2 flex flex-col gap-y-3">
           <v-expand-transition>
             <div v-if="showHelp" class="help-panel mb-4 p-4 rounded bg-white/5">
-              <h3 class="text-lg mb-2">Editor instructions</h3>
+              <h3 class="text-lg mb-2">{{ t`Editor instructions` }}</h3>
               <ul class="text-sm text-white/70 list-disc pl-4 space-y-1">
-                <li>Use the HTML, CSS, and JS editors to create your custom widget</li>
-                <li>Changes are applied when you click Apply or press Cmd/Ctrl + Enter/S</li>
-                <li>Navigate between editors using Cmd/Ctrl + Option/Alt + ↑/↓</li>
-                <li>Reset to last saved state using the Reset button</li>
-                <li>Your code runs in the widget's context and has access to the DOM</li>
+                <li>{{ t`Use the HTML, CSS, and JS editors to create your custom widget` }}</li>
+                <li>{{ t`Changes are applied when you click Apply or press Cmd/Ctrl + Enter/S` }}</li>
+                <li>{{ t`Navigate between editors using Cmd/Ctrl + Option/Alt + ↑/↓` }}</li>
+                <li>{{ t`Reset to last saved state using the Reset button` }}</li>
+                <li>{{ t`Your code runs in the widget's context and has access to the DOM` }}</li>
                 <li>
-                  With "Run script in its own scope" on, the script gets <code>root</code>, this widget's element, and
-                  <code>cockpit</code>, whose <code>listenDataLakeVariable</code>, <code>setInterval</code> and
-                  <code>setTimeout</code> are undone when the widget is removed or the script is applied again. Use
-                  <code>cockpit.onCleanup(fn)</code> for anything else. Top-level functions are not global then, so
-                  attach event listeners from the script instead of using inline <code>onclick</code> attributes.
-                  Cockpit versions older than this one ignore the setting and run the script globally, where
-                  <code>root</code> and these helpers do not exist, so the widget's script fails there. Switching an
-                  existing widget to this mode takes effect at once, but what its old global script started keeps
-                  running until Cockpit is reloaded
+                  {{ t`With "Run script in its own scope" on, the script gets` }} <code>root</code>,
+                  {{ t`this widget's element, and` }} <code>cockpit</code>, {{ t`whose` }}
+                  <code>listenDataLakeVariable</code>, <code>setInterval</code> {{ t`and` }} <code>setTimeout</code>
+                  {{ t`are undone when the widget is removed or the script is applied again. Use` }}
+                  <code>cockpit.onCleanup(fn)</code>
+                  {{
+                    t`for anything else. Top-level functions are not global then, so attach event listeners from the script instead of using inline`
+                  }}
+                  <code>onclick</code>
+                  {{
+                    t`attributes. Cockpit versions older than this one ignore the setting and run the script globally, where`
+                  }}
+                  <code>root</code>
+                  {{ t`and these helpers do not exist, so the widget's script fails there.` }}
+                  {{
+                    t`Switching an existing widget to this mode takes effect at once, but what its old global script started keeps running until Cockpit is reloaded`
+                  }}
                 </li>
-                <li>You can use the console to debug your code</li>
+                <li>{{ t`You can use the console to debug your code` }}</li>
                 <li>
-                  You can use the data-lake system to inject or consume data from Cockpit. Check the docs for more
-                  information around this.
+                  {{
+                    t`You can use the data-lake system to inject or consume data from Cockpit. Check the docs for more information around this.`
+                  }}
                 </li>
-                <li>Click on each editor's header to expand it to full size</li>
+                <li>{{ t`Click on each editor's header to expand it to full size` }}</li>
               </ul>
             </div>
           </v-expand-transition>
@@ -76,10 +85,10 @@
             </v-expansion-panel>
           </v-expansion-panels>
 
-          <v-checkbox v-model="autoSave" label="Auto Save" density="compact" class="-mb-2" hide-details />
+          <v-checkbox v-model="autoSave" :label="t`Auto Save`" density="compact" class="-mb-2" hide-details />
           <v-checkbox
             :model-value="widget.options.scopedScript"
-            label="Run script in its own scope"
+            :label="t`Run script in its own scope`"
             density="compact"
             class="-mb-2"
             hide-details
@@ -87,7 +96,7 @@
           />
           <v-checkbox
             v-model="widget.options.inheritCockpitStyles"
-            label="Inherit Cockpit interface styles"
+            :label="t`Inherit Cockpit interface styles`"
             density="compact"
             class="-mb-2"
             hide-details
@@ -95,27 +104,27 @@
         </v-card-text>
         <v-card-actions>
           <div class="flex justify-between items-center px-4 w-full h-full">
-            <v-btn class="text-white/60" variant="text" @click="closeDialog">Close</v-btn>
+            <v-btn class="text-white/60" variant="text" @click="closeDialog">{{ t`Close` }}</v-btn>
             <div class="flex gap-x-3">
-              <v-btn class="text-white/60" variant="text" title="Export configuration" @click="exportConfig">
+              <v-btn class="text-white/60" variant="text" :title="t`Export configuration`" @click="exportConfig">
                 <v-icon class="mr-1 mt-[2px]">mdi-download</v-icon>
-                Export
+                {{ t`Export` }}
               </v-btn>
-              <v-btn class="text-white/60" variant="text" title="Import configuration" @click="importConfig">
+              <v-btn class="text-white/60" variant="text" :title="t`Import configuration`" @click="importConfig">
                 <v-icon class="mr-1 mt-[2px]">mdi-upload</v-icon>
-                Import
+                {{ t`Import` }}
               </v-btn>
               <v-btn
                 class="text-white/60 mr-10"
                 variant="text"
-                title="Save to the DIY widget library"
+                :title="t`Save to the DIY widget library`"
                 @click="saveToLibrary"
               >
                 <v-icon class="mr-1 mt-[2px]">mdi-bookshelf</v-icon>
-                Save to library
+                {{ t`Save to library` }}
               </v-btn>
-              <v-btn class="text-white/60" variant="text" @click="resetChanges">Reset</v-btn>
-              <v-btn class="text-white" variant="text" @click="applyChanges">Apply</v-btn>
+              <v-btn class="text-white/60" variant="text" @click="resetChanges">{{ t`Reset` }}</v-btn>
+              <v-btn class="text-white" variant="text" @click="applyChanges">{{ t`Apply` }}</v-btn>
             </div>
           </div>
         </v-card-actions>
@@ -125,6 +134,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -401,9 +411,10 @@ const storeInLibrary = (libraryId: string | undefined): void => {
     },
     libraryId
   )
-  const verb = libraryId ? 'Updated' : 'Saved'
   openSnackbar({
-    message: `${verb} "${widget.value.name}" in the DIY widget library.`,
+    message: libraryId
+      ? t`Updated "${widget.value.name}" in the DIY widget library.`
+      : t`Saved "${widget.value.name}" in the DIY widget library.`,
     variant: 'success',
     duration: 3000,
   })
@@ -423,15 +434,15 @@ const saveToLibrary = (): void => {
   if (!sharedWithOthers) return storeInLibrary(libraryId)
 
   showDialog({
-    title: 'Update the library entry?',
+    title: t`Update the library entry?`,
     variant: 'warning',
     maxWidth: 520,
     // Neither choice is safe to take by mistake, so closing the dialog leaves the library as it was.
     persistent: false,
-    message: `Other widgets also come from "${entry.name}" in the library. Update that entry, or save this widget as a new one?`,
+    message: t`Other widgets also come from "${entry.name}" in the library. Update that entry, or save this widget as a new one?`,
     actions: [
       {
-        text: 'Save as new',
+        text: t`Save as new`,
         action: () => {
           logUserAction(`Saved Do-It-Yourself widget "${widget.value.name}" as a new library entry`)
           closeInteractionDialog()
@@ -439,7 +450,7 @@ const saveToLibrary = (): void => {
         },
       },
       {
-        text: 'Update entry',
+        text: t`Update entry`,
         class: 'bg-[#FFFFFF33] text-white',
         action: () => {
           logUserAction(`Updated the library entry "${entry.name}" from a Do-It-Yourself widget`)
@@ -493,7 +504,7 @@ const importConfig = (): void => {
         applyChanges()
       } catch (error) {
         console.error('Error importing configuration:', error)
-        alert('Invalid configuration file')
+        alert(t`Invalid configuration file`)
       }
     }
 

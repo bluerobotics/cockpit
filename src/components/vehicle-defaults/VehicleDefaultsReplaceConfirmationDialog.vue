@@ -4,20 +4,22 @@
       <v-card-title class="pb-0 pt-4 text-center">
         <div class="flex items-center justify-center gap-2">
           <v-icon color="warning" size="24">mdi-alert</v-icon>
-          <h2 class="text-xl font-semibold">Replace existing configuration?</h2>
+          <h2 class="text-xl font-semibold">{{ t`Replace existing configuration?` }}</h2>
         </div>
       </v-card-title>
 
       <v-card-text class="px-6 pb-2">
         <p class="text-center text-sm">
-          This will <strong>permanently delete your current {{ viewsCount }} view(s)</strong> and replace them with the
-          selected default view(s) for {{ vehicleTypeName }}. This action cannot be undone.
+          {{ t`This will` }} <strong>{{ t`permanently delete your current ${viewsCount} view(s)` }}</strong>
+          {{
+            t`and replace them with the selected default view(s) for ${vehicleTypeName}. This action cannot be undone.`
+          }}
         </p>
       </v-card-text>
 
       <v-card-actions class="justify-space-between px-6 pb-4">
-        <v-btn variant="text" @click="$emit('cancel')">Cancel</v-btn>
-        <v-btn color="error" @click="$emit('confirm')">Replace</v-btn>
+        <v-btn variant="text" @click="$emit('cancel')">{{ t`Cancel` }}</v-btn>
+        <v-btn color="error" @click="$emit('confirm')">{{ t`Replace` }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

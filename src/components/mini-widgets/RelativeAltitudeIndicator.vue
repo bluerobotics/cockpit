@@ -6,12 +6,12 @@
         <span class="font-mono text-xl font-semibold leading-6 w-fit">{{ parsedState }}</span>
         <span class="text-xl font-semibold leading-6 w-fit"> {{ String.fromCharCode(0x20) }} {{ altitudeUnit }} </span>
       </div>
-      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">Alt (Rel)</span>
+      <span class="w-full text-sm font-semibold leading-4 whitespace-nowrap">{{ t`Alt (Rel)` }}</span>
     </div>
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Relative Altitude Indicator Config</v-card-title>
+      <v-card-title class="text-center">{{ t`Relative Altitude Indicator Config` }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <div class="absolute top-2 right-2 z-10">
           <v-btn
@@ -19,7 +19,7 @@
             size="30"
             variant="text"
             class="text-white text-[22px]"
-            aria-label="Close"
+            :aria-label="t`Close`"
             @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
           >
             <i class="mdi mdi-close"></i>
@@ -28,7 +28,7 @@
         <v-select
           v-if="!configUseCustomAltitudeVariable"
           v-model="configAltitudeVariableId"
-          label="Altitude source"
+          :label="t`Altitude source`"
           :items="altitudeSourceOptions"
           item-title="title"
           item-value="value"
@@ -46,8 +46,8 @@
           item-title="name"
           item-value="id"
           :value-comparator="isSameDataLakeVariableId"
-          label="Data lake variable"
-          hint="Select any numeric data lake variable"
+          :label="t`Data lake variable`"
+          :hint="t`Select any numeric data lake variable`"
           persistent-hint
           theme="dark"
           variant="outlined"
@@ -58,7 +58,7 @@
         />
         <v-checkbox
           v-model="configUseCustomAltitudeVariable"
-          label="Use custom data lake variable"
+          :label="t`Use custom data lake variable`"
           hide-details
           @update:model-value="onUseCustomAltitudeVariableToggled"
         />

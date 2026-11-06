@@ -23,15 +23,17 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title><p class="ml-10">Base station</p></template>
+        <template #title
+          ><p class="ml-10">{{ t`Base station` }}</p></template
+        >
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
-              <p class="config-label">Name</p>
+              <p class="config-label">{{ t`Name` }}</p>
               <input v-model="config.name" type="text" class="config-input" @blur="onNameBlur" />
             </div>
             <div class="config-row">
-              <p class="config-label">Latitude</p>
+              <p class="config-label">{{ t`Latitude` }}</p>
               <input
                 :value="latText"
                 type="number"
@@ -43,7 +45,7 @@
               />
             </div>
             <div class="config-row">
-              <p class="config-label">Longitude</p>
+              <p class="config-label">{{ t`Longitude` }}</p>
               <input
                 :value="lngText"
                 type="number"
@@ -61,33 +63,34 @@
                 size="small"
                 prepend-icon="mdi-usb-port"
                 :disabled="!gnss.isSupported"
-                title="Find a connected GNSS receiver and let it set the base station position"
+                :title="t`Find a connected GNSS receiver and let it set the base station position`"
                 @click="openGnssSetup"
               >
-                Use serial/USB device
+                {{ t`Use serial/USB device` }}
               </v-btn>
             </div>
             <p v-if="!gnss.isSupported" class="px-1 pt-1 text-[10px] leading-tight opacity-70">
-              Serial devices cannot be read from a browser. Install Cockpit Standalone to set the base station position
-              from a connected GNSS receiver.
+              {{
+                t`Serial devices cannot be read from a browser. Install Cockpit Standalone to set the base station position from a connected GNSS receiver.`
+              }}
             </p>
             <div class="config-row config-gps-row" :class="{ 'config-row-with-source': store.trackByGps }">
               <div class="config-label-with-info">
-                <p class="config-label">Track by GPS</p>
+                <p class="config-label">{{ t`Track by GPS` }}</p>
                 <v-tooltip v-if="hasLocalGnssSource" location="top">
                   <template #activator="{ props }">
                     <button
                       type="button"
                       class="config-info-btn"
-                      title="Set up a serial GNSS receiver"
-                      aria-label="Set up a serial GNSS receiver"
+                      :title="t`Set up a serial GNSS receiver`"
+                      :aria-label="t`Set up a serial GNSS receiver`"
                       v-bind="props"
                       @click="openGnssSetup"
                     >
                       <v-icon icon="mdi-cog" size="14" />
                     </button>
                   </template>
-                  Set up a serial GNSS receiver
+                  {{ t`Set up a serial GNSS receiver` }}
                 </v-tooltip>
               </div>
               <v-checkbox
@@ -102,13 +105,13 @@
                 v-if="store.trackByGps"
                 :value="store.gpsSource"
                 class="config-input"
-                aria-label="GPS source"
+                :aria-label="t`GPS source`"
                 @change="onGpsSourceChange"
               >
                 <option v-for="source in store.gpsSourceOptions" :key="source.id" :value="source.id">
                   {{ source.label }}
                 </option>
-                <option :value="configureSourcesOption">Configure sources...</option>
+                <option :value="configureSourcesOption">{{ t`Configure sources...` }}</option>
               </select>
             </div>
           </div>
@@ -124,17 +127,19 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title><p class="ml-10">Setup</p></template>
+        <template #title
+          ><p class="ml-10">{{ t`Setup` }}</p></template
+        >
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
-              <p class="config-label">Comms</p>
+              <p class="config-label">{{ t`Comms` }}</p>
               <select :value="config.commsType" class="config-input" @change="onCommsTypeChange">
                 <option v-for="comms in commsTypes" :key="comms" :value="comms">{{ comms }}</option>
               </select>
             </div>
             <div v-if="isMobileData" class="config-row">
-              <p class="config-label">Coverage</p>
+              <p class="config-label">{{ t`Coverage` }}</p>
               <div class="config-input-actions">
                 <div class="config-coverage-buttons">
                   <button
@@ -142,8 +147,8 @@
                     type="button"
                     class="config-target-btn"
                     :class="{ 'config-target-btn-active': store.mobileCoverageTargetToolActive }"
-                    title="Click to pick a point on the map, or drag onto it"
-                    aria-label="Pick a point on the map to fetch coverage"
+                    :title="t`Click to pick a point on the map, or drag onto it`"
+                    :aria-label="t`Pick a point on the map to fetch coverage`"
                     draggable="true"
                     @click="toggleMobileCoverageTargetTool"
                     @dragstart="onMobileCoverageFetchDragStart"
@@ -155,8 +160,8 @@
                       <button
                         type="button"
                         class="config-actions-menu-btn"
-                        title="Coverage actions"
-                        aria-label="Coverage actions"
+                        :title="t`Coverage actions`"
+                        :aria-label="t`Coverage actions`"
                         v-bind="props"
                       >
                         <v-icon icon="mdi-dots-vertical" size="16" />
@@ -169,7 +174,7 @@
                     >
                       <v-list-item v-if="isOpenCellId && isStandalone" @click="toggleOpenCellIdApiKeyField">
                         <v-list-item-title>{{
-                          showOpenCellIdApiKeyField ? 'Hide API key' : 'Show API key'
+                          showOpenCellIdApiKeyField ? t`Hide API key` : t`Show API key`
                         }}</v-list-item-title>
                         <template #append>
                           <v-icon icon="mdi-cog" size="14" class="-mt-[3px] -mr-[4px]" />
@@ -180,7 +185,7 @@
                         :disabled="store.mobileCoverageLoading || !config.position"
                         @click="reloadMobileCoverage"
                       >
-                        <v-list-item-title>Reload coverage data</v-list-item-title>
+                        <v-list-item-title>{{ t`Reload coverage data` }}</v-list-item-title>
                         <template #append>
                           <v-icon
                             :icon="store.mobileCoverageLoading ? 'mdi-loading' : 'mdi-refresh'"
@@ -191,7 +196,7 @@
                       </v-list-item>
                       <v-divider class="config-actions-divider" />
                       <v-list-item :disabled="store.mobileCoverageLoading" @click="resetVisibleMobileCoverageData">
-                        <v-list-item-title>Reset visible data</v-list-item-title>
+                        <v-list-item-title>{{ t`Reset visible data` }}</v-list-item-title>
                         <template #append>
                           <v-icon icon="mdi-delete-sweep-outline" size="16" class="-mb-[2px] -mr-[6px]" />
                         </template>
@@ -231,11 +236,12 @@
               v-if="isMobileData && isOpenCellId && !isStandalone"
               class="px-1 pt-1 text-[10px] leading-tight opacity-70"
             >
-              OpenCellID cannot be loaded from a browser. Switch to OpenStreetMap coverage, or install Cockpit
-              Standalone to use OpenCellID.
+              {{
+                t`OpenCellID cannot be loaded from a browser. Switch to OpenStreetMap coverage, or install Cockpit Standalone to use OpenCellID.`
+              }}
             </p>
             <div v-if="showOpenCellIdApiKeyField" class="config-row">
-              <p class="config-label">API key</p>
+              <p class="config-label">{{ t`API key` }}</p>
               <div class="config-input-actions">
                 <v-icon
                   v-if="store.openCellIdApiKey.trim() && store.openCellIdApiKeyStatus === 'valid'"
@@ -256,17 +262,18 @@
                     <button
                       type="button"
                       class="config-info-btn"
-                      title="OpenCellID API information"
-                      aria-label="OpenCellID API information"
+                      :title="t`OpenCellID API information`"
+                      :aria-label="t`OpenCellID API information`"
                       v-bind="props"
                     >
                       <v-icon icon="mdi-information-outline" size="14" />
                     </button>
                   </template>
                   <div class="config-open-cell-id-tip">
-                    OpenCellID has no anonymous access, so tower data is fetched with your own key and against your own
-                    request quota. Get a key at `opencellid.org/register.php`, then copy it from your dashboard/API
-                    access page.
+                    {{
+                      t`OpenCellID has no anonymous access, so tower data is fetched with your own key and against your own request quota. Get a key at`
+                    }}
+                    `opencellid.org/register.php`{{ t`, then copy it from your dashboard/API access page.` }}
                   </div>
                 </v-tooltip>
                 <input
@@ -278,9 +285,9 @@
               </div>
             </div>
             <div v-if="isMobileData && isOsmOverpass" class="config-row">
-              <p class="config-label">Operator</p>
+              <p class="config-label">{{ t`Operator` }}</p>
               <select :value="config.mobileCoverage.osmOperator" class="config-input" @change="onOsmOperatorChange">
-                <option value="">All operators</option>
+                <option value="">{{ t`All operators` }}</option>
                 <option v-for="op in store.availableOsmOperators" :key="op" :value="op">{{ op }}</option>
               </select>
             </div>
@@ -288,20 +295,20 @@
               v-if="isMobileData && isOpenCellId && store.availableOpenCellIdOperators.length > 0"
               class="config-row"
             >
-              <p class="config-label">Operator</p>
+              <p class="config-label">{{ t`Operator` }}</p>
               <select
                 :value="config.mobileCoverage.openCellIdOperator"
                 class="config-input"
                 @change="onOpenCellIdOperatorChange"
               >
-                <option value="">All operators</option>
+                <option value="">{{ t`All operators` }}</option>
                 <option v-for="op in store.availableOpenCellIdOperators" :key="op" :value="op">{{ op }}</option>
               </select>
             </div>
             <div v-if="isMobileData && isCustomCoverage" class="config-row">
-              <p class="config-label">Tile URL</p>
+              <p class="config-label">{{ t`Tile URL` }}</p>
               <button type="button" class="config-input config-text-btn" @click="openCustomCoverageDialog">
-                {{ config.mobileCoverage.customTileUrl ? 'Edit URL' : 'Set URL' }}
+                {{ config.mobileCoverage.customTileUrl ? t`Edit URL` : t`Set URL` }}
               </button>
             </div>
           </div>
@@ -312,14 +319,14 @@
         <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
           <v-card-title class="text-h6 py-3 px-6">
             <div class="relative flex items-center justify-center w-full min-h-[28px]">
-              <span class="text-center">Custom coverage tile URL</span>
+              <span class="text-center">{{ t`Custom coverage tile URL` }}</span>
               <v-btn
                 icon="mdi-close"
                 size="small"
                 variant="text"
                 color="white"
                 class="absolute right-0 -mr-4"
-                aria-label="Close custom coverage tile URL dialog"
+                :aria-label="t`Close custom coverage tile URL dialog`"
                 @click="closeCustomCoverageDialog"
               />
             </div>
@@ -327,9 +334,11 @@
           <v-card-text class="px-6">
             <v-text-field
               v-model="customTileUrlDraft"
-              label="Tile URL"
+              :label="t`Tile URL`"
               placeholder="https://tiles.example.com/{z}/{x}/{y}.png"
-              hint="Leaflet TileLayer URL with {z}, {x}, {y} placeholders. Add an API key to the URL itself if your provider requires one."
+              :hint="
+                t`Leaflet TileLayer URL with {z}, {x}, {y} placeholders. Add an API key to the URL itself if your provider requires one.`
+              "
               persistent-hint
               variant="outlined"
               density="compact"
@@ -340,9 +349,9 @@
             <v-divider class="opacity-10 border-[#fafafa] w-full" />
           </div>
           <v-card-actions class="px-6 pb-2 pt-2">
-            <v-btn variant="text" color="white" @click="closeCustomCoverageDialog">Cancel</v-btn>
+            <v-btn variant="text" color="white" @click="closeCustomCoverageDialog">{{ t`Cancel` }}</v-btn>
             <v-spacer />
-            <v-btn variant="elevated" class="bg-[#FFFFFF33] text-white" @click="saveCustomTileUrl">Save</v-btn>
+            <v-btn variant="elevated" class="bg-[#FFFFFF33] text-white" @click="saveCustomTileUrl">{{ t`Save` }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -357,17 +366,19 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title><p class="ml-10">Radio</p></template>
+        <template #title
+          ><p class="ml-10">{{ t`Radio` }}</p></template
+        >
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
-              <p class="config-label">Radio model</p>
+              <p class="config-label">{{ t`Radio model` }}</p>
               <select :value="config.radioBaseStationKind" class="config-input" @change="onRadioKindChange">
                 <option v-for="kind in radioKinds" :key="kind" :value="kind">{{ kind }}</option>
               </select>
             </div>
             <div v-if="isCustomRadio" class="config-row">
-              <p class="config-label">TX power (mW)</p>
+              <p class="config-label">{{ t`TX power (mW)` }}</p>
               <input
                 :value="txPowerText"
                 type="number"
@@ -380,30 +391,32 @@
               />
             </div>
             <div class="config-row">
-              <p class="config-label">Antenna</p>
+              <p class="config-label">{{ t`Antenna` }}</p>
               <select :value="config.antenna.type" class="config-input" @change="onAntennaTypeChange">
                 <option v-for="type in antennaTypes" :key="type" :value="type">{{ type }}</option>
               </select>
             </div>
             <div class="config-row">
               <div class="config-label-with-info">
-                <p class="config-label">Antenna height ({{ heightUnit }})</p>
+                <p class="config-label">{{ t`Antenna height (${heightUnit})` }}</p>
                 <v-tooltip location="top" max-width="300">
                   <template #activator="{ props }">
                     <button
                       type="button"
                       class="config-info-btn"
-                      title="Base station antenna height information"
-                      aria-label="Base station antenna height information"
+                      :title="t`Base station antenna height information`"
+                      :aria-label="t`Base station antenna height information`"
                       v-bind="props"
                     >
                       <v-icon icon="mdi-information-outline" size="14" />
                     </button>
                   </template>
                   <div class="config-open-cell-id-tip">
-                    Higher antennas see farther over the horizon. For line-of-sight links, usable range grows roughly
-                    with the square root of height (for example, 4× the height ≈ 2× the range). The default 1 m matches
-                    the baseline used for the preset range values.
+                    {{ t`Higher antennas see farther over the horizon.` }}
+                    {{
+                      t`For line-of-sight links, usable range grows roughly with the square root of height (for example, 4× the height ≈ 2× the range).`
+                    }}
+                    {{ t`The default 1 m matches the baseline used for the preset range values.` }}
                   </div>
                 </v-tooltip>
               </div>
@@ -418,7 +431,7 @@
               />
             </div>
             <div class="config-row">
-              <p class="config-label">Gain (dBi)</p>
+              <p class="config-label">{{ t`Gain (dBi)` }}</p>
               <input
                 :value="gainText"
                 type="number"
@@ -430,7 +443,7 @@
               />
             </div>
             <div class="config-row">
-              <p class="config-label">Beamwidth (°)</p>
+              <p class="config-label">{{ t`Beamwidth (°)` }}</p>
               <input
                 v-model.number="config.antenna.beamwidth"
                 type="number"
@@ -443,7 +456,7 @@
               />
             </div>
             <div class="config-row">
-              <p class="config-label">Range ({{ distanceUnit }})</p>
+              <p class="config-label">{{ t`Range (${distanceUnit})` }}</p>
               <input
                 v-model.number="displayedAntennaRange"
                 type="number"
@@ -456,23 +469,23 @@
             </div>
             <div class="config-row config-checkbox-row">
               <div class="config-label-with-info">
-                <p class="config-label">Vehicle has antenna mast</p>
+                <p class="config-label">{{ t`Vehicle has antenna mast` }}</p>
                 <v-tooltip location="top" max-width="300">
                   <template #activator="{ props }">
                     <button
                       type="button"
                       class="config-info-btn"
-                      title="BlueBoat antenna mast information"
-                      aria-label="BlueBoat antenna mast information"
+                      :title="t`BlueBoat antenna mast information`"
+                      :aria-label="t`BlueBoat antenna mast information`"
                       v-bind="props"
                     >
                       <v-icon icon="mdi-information-outline" size="14" />
                     </button>
                   </template>
                   <div class="config-open-cell-id-tip">
-                    The BlueBoat Antenna and Accessory Mast raises the vehicle antenna about 50 cm above the deck for
-                    clearer line of sight, which can increase communication range by up to 1.75× compared with the
-                    default deck mount.
+                    {{
+                      t`The BlueBoat Antenna and Accessory Mast raises the vehicle antenna about 50 cm above the deck for clearer line of sight, which can increase communication range by up to 1.75× compared with the default deck mount.`
+                    }}
                   </div>
                 </v-tooltip>
               </div>
@@ -485,7 +498,7 @@
               />
             </div>
             <div v-if="!isOmni" class="config-row">
-              <p class="config-label">Bearing (°)</p>
+              <p class="config-label">{{ t`Bearing (°)` }}</p>
               <input
                 :value="bearingText"
                 type="number"
@@ -505,7 +518,7 @@
                 :disabled="!canSnapToVehicle"
                 @click="snapBearingToVehicle"
               >
-                Aim at vehicle
+                {{ t`Aim at vehicle` }}
               </v-btn>
               <v-btn
                 size="x-small"
@@ -514,7 +527,7 @@
                 :disabled="!canSnapToMission"
                 @click="snapBearingToMission"
               >
-                Aim at mission
+                {{ t`Aim at mission` }}
               </v-btn>
             </div>
 
@@ -525,7 +538,7 @@
               prepend-icon="mdi-restore"
               @click="resetAntenna"
             >
-              Reset antenna defaults
+              {{ t`Reset antenna defaults` }}
             </v-btn>
           </div>
         </template>
@@ -541,11 +554,13 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title><p class="ml-10">Tether</p></template>
+        <template #title
+          ><p class="ml-10">{{ t`Tether` }}</p></template
+        >
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div class="config-row">
-              <p class="config-label">Length ({{ distanceUnit }})</p>
+              <p class="config-label">{{ t`Length (${distanceUnit})` }}</p>
               <input
                 v-model.number="displayedTetherLength"
                 type="number"
@@ -570,11 +585,13 @@
         invert-chevron
         :is-expanded="true"
       >
-        <template #title><p class="ml-10">Display</p></template>
+        <template #title
+          ><p class="ml-10">{{ t`Display` }}</p></template
+        >
         <template #content>
           <div class="flex flex-col pt-1 w-full gap-y-1">
             <div v-if="isMissionPlanningContext" class="config-row config-checkbox-row">
-              <p class="config-label" style="width: auto; white-space: nowrap">Show comms coverage on path</p>
+              <p class="config-label" style="width: auto; white-space: nowrap">{{ t`Show comms coverage on path` }}</p>
               <v-checkbox
                 :model-value="missionStore.showMissionPathSignalStrength"
                 hide-details
@@ -584,7 +601,7 @@
               />
             </div>
             <div class="config-row config-checkbox-row">
-              <p class="config-label">Show signal on map</p>
+              <p class="config-label">{{ t`Show signal on map` }}</p>
               <v-checkbox
                 :model-value="config.showSignalOnMap"
                 hide-details
@@ -594,7 +611,7 @@
               />
             </div>
             <div v-if="isRadioLink || isTethered" class="config-row">
-              <p class="config-label">Color</p>
+              <p class="config-label">{{ t`Color` }}</p>
               <v-menu :close-on-content-click="false" location="bottom end" @update:model-value="onColorMenuToggle">
                 <template #activator="{ props: activatorProps }">
                   <button
@@ -602,7 +619,7 @@
                     type="button"
                     class="config-input config-color-swatch"
                     :style="{ backgroundColor: config.coverageColor }"
-                    aria-label="Pick coverage color"
+                    :aria-label="t`Pick coverage color`"
                   />
                 </template>
                 <v-color-picker
@@ -616,7 +633,7 @@
               </v-menu>
             </div>
             <div v-if="isMobileData && (isOpenCellId || isOsmOverpass)" class="config-row">
-              <p class="config-label">Signal view</p>
+              <p class="config-label">{{ t`Signal view` }}</p>
               <select :value="config.mobileCoverage.displayMode" class="config-input" @change="onDisplayModeChange">
                 <option v-for="mode in mobileCoverageDisplayModes" :key="mode" :value="mode">{{ mode }}</option>
               </select>
@@ -625,7 +642,7 @@
               v-if="isMobileData && (isOpenCellId || isOsmOverpass) && isCoverageRingsMode"
               class="config-row config-checkbox-row"
             >
-              <p class="config-label">Show ring labels</p>
+              <p class="config-label">{{ t`Show ring labels` }}</p>
               <v-checkbox
                 :model-value="config.mobileCoverage.showRingLabels"
                 hide-details
@@ -638,7 +655,7 @@
               v-if="isMobileData && (isOpenCellId || isOsmOverpass) && isHeatmapMode"
               class="config-row config-slider-row"
             >
-              <p class="config-label">Heatmap intensity</p>
+              <p class="config-label">{{ t`Heatmap intensity` }}</p>
               <v-slider
                 v-model="config.mobileCoverage.heatmapIntensity"
                 :min="0"
@@ -658,7 +675,7 @@
               </p>
             </div>
             <div class="config-row config-slider-row">
-              <p class="config-label">Opacity</p>
+              <p class="config-label">{{ t`Opacity` }}</p>
               <v-slider
                 v-model="displayOpacityModel"
                 :min="0"
@@ -687,7 +704,7 @@
           prepend-icon="mdi-delete"
           @click="removeBaseStation"
         >
-          Remove base station
+          {{ t`Remove base station` }}
         </v-btn>
         <v-btn
           class="base-station-panel-info-btn bg-[#FFFFFF22] text-white"
@@ -695,7 +712,7 @@
           size="small"
           rounded="sm"
           icon="mdi-information-outline"
-          aria-label="About coverage estimates"
+          :aria-label="t`About coverage estimates`"
           @click="estimatesInfoDialogOpen = true"
         />
       </div>
@@ -704,34 +721,38 @@
         <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
           <v-card-title class="text-h6 py-3 px-6">
             <div class="relative flex items-center justify-center w-full min-h-[28px]">
-              <span class="text-center">About coverage estimates</span>
+              <span class="text-center">{{ t`About coverage estimates` }}</span>
               <v-btn
                 icon="mdi-close"
                 size="small"
                 variant="text"
                 color="white"
                 class="absolute right-0 -mr-4"
-                aria-label="Close about coverage estimates dialog"
+                :aria-label="t`Close about coverage estimates dialog`"
                 @click="estimatesInfoDialogOpen = false"
               />
             </div>
           </v-card-title>
           <v-card-text class="text-body-2 base-station-estimates-dialog-text px-8">
             <p>
-              The ranges and overlays shown here are estimates, not a guarantee of what you will see on the water or in
-              the field.
+              {{
+                t`The ranges and overlays shown here are estimates, not a guarantee of what you will see on the water or in the field.`
+              }}
             </p>
             <p>
-              <strong>Radio and tether links</strong> are modeled from Blue Robotics product specifications — antenna
-              patterns, transmit power, and typical operating assumptions for our radios and related gear.
+              <strong>{{ t`Radio and tether links` }}</strong>
+              {{
+                t`are modeled from Blue Robotics product specifications — antenna patterns, transmit power, and typical operating assumptions for our radios and related gear.`
+              }}
             </p>
             <p>
-              <strong>Mobile data coverage</strong> comes from open-source tower databases (OpenCellID and
-              OpenStreetMap). Records can be incomplete or out of date, and carriers change their networks over time.
+              <strong>{{ t`Mobile data coverage` }}</strong>
+              {{ t`comes from open-source tower databases (OpenCellID and OpenStreetMap).` }}
+              {{ t`Records can be incomplete or out of date, and carriers change their networks over time.` }}
             </p>
             <p class="mb-0">
-              Real-world signal also depends on terrain, weather, interference, and how your vehicle is set up. Use
-              these visuals to compare options, and verify connectivity on site when it really matters.
+              {{ t`Real-world signal also depends on terrain, weather, interference, and how your vehicle is set up.` }}
+              {{ t`Use these visuals to compare options, and verify connectivity on site when it really matters.` }}
             </p>
           </v-card-text>
           <div class="flex justify-center w-full px-6">
@@ -739,9 +760,9 @@
           </div>
           <v-card-actions class="px-6 pb-2 pt-2">
             <v-spacer />
-            <v-btn variant="text" color="white" class="-mt-[1px]" @click="estimatesInfoDialogOpen = false"
-              >Got it</v-btn
-            >
+            <v-btn variant="text" color="white" class="-mt-[1px]" @click="estimatesInfoDialogOpen = false">{{
+              t`Got it`
+            }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -752,6 +773,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import BaseStationGnssSetupDialog from '@/components/BaseStationGnssSetupDialog.vue'
@@ -892,9 +914,9 @@ const formatTxPower = (mw: number): string => Math.round(mw).toString()
 
 const formatHeatmapIntensityLabel = (intensity: number): string => {
   const percent = Math.round(intensity * 100)
-  if (percent <= 25) return 'Low'
-  if (percent >= 75) return 'High'
-  return 'Med'
+  if (percent <= 25) return t`Low`
+  if (percent >= 75) return t`High`
+  return t`Med`
 }
 
 watch(

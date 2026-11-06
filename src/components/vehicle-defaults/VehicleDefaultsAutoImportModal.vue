@@ -4,7 +4,7 @@
       <div class="relative w-[740px] max-w-[95vw] p-4">
         <div class="mb-2 flex flex-col items-center justify-center gap-1">
           <h2 class="text-xl font-semibold">{{ modalTitle }}</h2>
-          <p v-if="evaluation" class="text-xs opacity-60">Step {{ autoWizardStepNumber }} of 4</p>
+          <p v-if="evaluation" class="text-xs opacity-60">{{ t`Step ${autoWizardStepNumber} of 4` }}</p>
         </div>
         <v-btn
           icon="mdi-close"
@@ -15,7 +15,7 @@
         />
 
         <p v-if="!evaluation" class="py-8 text-center opacity-70">
-          Connect a vehicle so Cockpit can identify which defaults are available.
+          {{ t`Connect a vehicle so Cockpit can identify which defaults are available.` }}
         </p>
 
         <template v-else>
@@ -54,30 +54,33 @@
   <v-dialog v-if="isVisible" v-model="ignoreConfirmationVisible" max-width="500px" persistent>
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="pb-0 pt-4 text-center">
-        <h2 class="text-xl font-semibold">Ignore all defaults?</h2>
+        <h2 class="text-xl font-semibold">{{ t`Ignore all defaults?` }}</h2>
       </v-card-title>
 
       <v-card-text class="px-6 pb-2">
         <p class="mb-3 text-center text-sm">
-          You will keep your current views group and joystick mapping for {{ evaluation?.vehicleTypeName }}. This
-          walkthrough will not open automatically again for this vehicle.
+          {{
+            t`You will keep your current views group and joystick mapping for ${vehicleTypeName}. This walkthrough will not open automatically again for this vehicle.`
+          }}
         </p>
-        <p class="mb-3 text-center text-sm opacity-80">You can still import defaults later:</p>
+        <p class="mb-3 text-center text-sm opacity-80">{{ t`You can still import defaults later:` }}</p>
         <ul class="space-y-2 text-sm">
           <li>
-            <strong>Default views</strong> — open the <strong>Edit menu</strong> and choose
-            <strong>Import vehicle defaults</strong>
+            <strong>{{ t`Default views` }}</strong> — {{ t`open the` }} <strong>{{ t`Edit menu` }}</strong>
+            {{ t`and choose` }}
+            <strong>{{ t`Import vehicle defaults` }}</strong>
           </li>
           <li>
-            <strong>Default joystick mapping</strong> — open <strong>Joystick configuration</strong> and use the import
-            button on the mapping toolbar
+            <strong>{{ t`Default joystick mapping` }}</strong> — {{ t`open` }}
+            <strong>{{ t`Joystick configuration` }}</strong>
+            {{ t`and use the import button on the mapping toolbar` }}
           </li>
         </ul>
       </v-card-text>
 
       <v-card-actions class="justify-space-between px-6 pb-4">
-        <v-btn variant="text" @click="cancelIgnoreAll">Keep reviewing</v-btn>
-        <v-btn variant="text" @click="confirmIgnoreAll">Ignore</v-btn>
+        <v-btn variant="text" @click="cancelIgnoreAll">{{ t`Keep reviewing` }}</v-btn>
+        <v-btn variant="text" @click="confirmIgnoreAll">{{ t`Ignore` }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -87,27 +90,28 @@
       <v-card-title class="pb-0 pt-4 text-center">
         <div class="flex items-center justify-center gap-2">
           <v-icon color="warning" size="24">mdi-alert</v-icon>
-          <h2 class="text-xl font-semibold">Finish the walkthrough first</h2>
+          <h2 class="text-xl font-semibold">{{ t`Finish the walkthrough first` }}</h2>
         </div>
       </v-card-title>
 
       <v-card-text class="px-6 pb-2">
-        <p class="mb-3 text-center text-sm">Please complete or ignore all steps before closing.</p>
+        <p class="mb-3 text-center text-sm">{{ t`Please complete or ignore all steps before closing.` }}</p>
         <p class="text-center text-xs opacity-80">
-          Having a correct joystick mapping for your vehicle type is important: a mismatched mapping can cause motors to
-          spin unexpectedly the moment the vehicle is armed.
+          {{
+            t`Having a correct joystick mapping for your vehicle type is important: a mismatched mapping can cause motors to spin unexpectedly the moment the vehicle is armed.`
+          }}
         </p>
       </v-card-text>
 
       <v-card-actions class="justify-center px-6 pb-4">
-        <v-btn @click="closeConfirmationVisible = false">Keep reviewing</v-btn>
+        <v-btn @click="closeConfirmationVisible = false">{{ t`Keep reviewing` }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, provide, watch } from 'vue'
+import { computed, onUnmounted, provide, watch } from 'vue'
 
 import GlassModal from '@/components/GlassModal.vue'
 import VehicleDefaultsAutoWizardDonePanel from '@/components/vehicle-defaults/VehicleDefaultsAutoWizardDonePanel.vue'
@@ -150,6 +154,7 @@ const {
 } = wizard
 
 const { replaceConfirmationVisible, currentViewsCount, cancelReplace } = viewsImport
+const vehicleTypeName = computed(() => evaluation.value?.vehicleTypeName)
 
 watch(
   [isVisible, replaceConfirmationVisible],

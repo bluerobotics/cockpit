@@ -5,29 +5,31 @@
         <div class="flex absolute top-0 right-0"><v-btn icon="mdi-close" variant="text" @click="closeDialog" /></div>
         <div class="flex flex-col justify-center align-center w-full h-full">
           <div class="relative">
-            <img :src="CockpitLogo" alt="Cockpit Logo" class="w-64 my-4" />
+            <img :src="CockpitLogo" :alt="t`Cockpit Logo`" class="w-64 my-4" />
             <img
               v-if="!isElectron()"
               :src="lite"
-              alt="Cockpit lite"
+              :alt="t`Cockpit lite`"
               class="absolute w-24 right-4 bottom-5 rotate-[-20deg] my-4"
             />
           </div>
           <div class="w-[90%] flex justify-between my-6 py-3">
             <div class="w-[45%] flex flex-col text-start">
               <p class="mb-1">
-                Cockpit is an intuitive and customizable cross-platform ground control station for remote vehicles of
-                all types.
+                {{
+                  t`Cockpit is an intuitive and customizable cross-platform ground control station for remote vehicles of all types.`
+                }}
               </p>
-              <p class="my-3">It was created by Blue Robotics and is entirely open-source.</p>
+              <p class="my-3">{{ t`It was created by Blue Robotics and is entirely open-source.` }}</p>
               <p class="mt-1">
-                It currently supports Ardupilot-based vehicles, but has plans to support any generic vehicle, be it
-                communicating MAVLink or not.
+                {{
+                  t`It currently supports Ardupilot-based vehicles, but has plans to support any generic vehicle, be it communicating MAVLink or not.`
+                }}
               </p>
             </div>
             <div class="w-[45%] flex flex-col justify-end text-end">
               <p class="mb-1">
-                Version
+                {{ t`Version` }}
                 <a
                   :href="app_version.link"
                   target="_blank"
@@ -37,7 +39,7 @@
                   {{ app_version.version }}
                 </a>
                 <br />
-                <span class="text-sm text-gray-500">Released: {{ app_version.date }}</span>
+                <span class="text-sm text-gray-500">{{ t`Released: ${app_version.date}` }}</span>
               </p>
               <v-btn
                 v-if="isElectron()"
@@ -47,10 +49,10 @@
                 prepend-icon="mdi-update"
                 @click="checkForUpdates"
               >
-                Check for updates
+                {{ t`Check for updates` }}
               </v-btn>
-              <p class="my-3">Created by Blue Robotics</p>
-              <p class="mt-1">Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom</p>
+              <p class="my-3">{{ t`Created by Blue Robotics` }}</p>
+              <p class="mt-1">{{ t`Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom` }}</p>
             </div>
           </div>
           <div class="mb-5 flex justify-center align-center">
@@ -85,7 +87,9 @@
         </div>
       </template>
       <template #actions
-        ><div class="flex w-full justify-end"><v-btn @click="closeDialog">Close</v-btn></div></template
+        ><div class="flex w-full justify-end">
+          <v-btn @click="closeDialog">{{ t`Close` }}</v-btn>
+        </div></template
       >
     </InteractionDialog>
   </teleport>

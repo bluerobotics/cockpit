@@ -1,6 +1,8 @@
 <template>
   <v-tooltip
-    text="This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable"
+    :text="
+      t`This element is in display mode. To make it interactive, create or select a user-controlled data-lake variable`
+    "
     location="top"
     open-delay="500"
     :disabled="isInput || !isConnected"
@@ -50,7 +52,7 @@
             v-if="miniWidget.options.layout?.minValue >= miniWidget.options.layout?.maxValue"
             class="absolute bg-[#880000] pa-2 text-xs mt-2 -ml-12 border-2 border-white rounded-md z-50"
           >
-            Min value is larger than Max value
+            {{ t`Min value is larger than Max value` }}
           </p>
         </div>
         <div
@@ -107,7 +109,7 @@
           color="#b9af1d"
           animation="pulse"
           class="absolute center ml-20 mt-[10px]"
-          tooltip="This element isn't connected to a data-lake variable yet. Click here to configure it."
+          :tooltip="t`This element isn't connected to a data-lake variable yet. Click here to configure it.`"
           @click="widgetStore.showElementPropsDrawer(miniWidget.hash)"
         />
       </div>

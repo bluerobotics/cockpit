@@ -48,7 +48,7 @@
         />
       </template>
     </v-tooltip>
-    <v-tooltip location="left" text="Refresh fence from vehicle">
+    <v-tooltip location="left" :text="t`Refresh fence from vehicle`">
       <template #activator="{ props: tooltipProps }">
         <v-btn
           key="reload"
@@ -69,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { type StyleValue, computed, defineModel } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -110,15 +111,15 @@ const onFenceSpeedDialToggle = (open: boolean): void => {
 }
 
 const fenceMainButtonTooltip = computed<string>(() => {
-  if (!hasVehicleFence.value) return 'No geofence on the vehicle'
+  if (!hasVehicleFence.value) return t`No geofence on the vehicle`
   return fenceStore.fenceEnabled
-    ? 'Geofence enforcement on (double-click to disable)'
-    : 'Geofence enforcement off (double-click to enable)'
+    ? t`Geofence enforcement on (double-click to disable)`
+    : t`Geofence enforcement off (double-click to enable)`
 })
 
 const fenceToggleItemTooltip = computed<string>(() => {
-  if (!hasVehicleFence.value) return 'No geofence on the vehicle'
-  return fenceStore.fenceEnabled ? 'Disable fence enforcement on vehicle' : 'Enable fence enforcement on vehicle'
+  if (!hasVehicleFence.value) return t`No geofence on the vehicle`
+  return fenceStore.fenceEnabled ? t`Disable fence enforcement on vehicle` : t`Enable fence enforcement on vehicle`
 })
 
 const onFenceMainDblclick = (): void => {
@@ -135,7 +136,7 @@ const onToggleFenceEnforcement = (): void => {
   } catch (error) {
     showDialog({
       variant: 'error',
-      title: target ? 'Failed to enable geofence' : 'Failed to disable geofence',
+      title: target ? t`Failed to enable geofence` : t`Failed to disable geofence`,
       message: error instanceof Error ? error.message : String(error),
       timer: 4000,
     })
@@ -147,7 +148,7 @@ const onRefreshFenceOverlay = (): void => {
   fenceStore.refreshVehicleFenceOverlay().catch((error) => {
     showDialog({
       variant: 'error',
-      title: 'Geofence refresh failed',
+      title: t`Geofence refresh failed`,
       message: error instanceof Error ? error.message : String(error),
       timer: 5000,
     })

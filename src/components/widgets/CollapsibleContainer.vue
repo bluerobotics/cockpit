@@ -53,16 +53,16 @@
 
             <v-list>
               <v-list-item @click="handleOptionClick('options')">
-                <v-list-item-title>Options</v-list-item-title>
+                <v-list-item-title>{{ t`Options` }}</v-list-item-title>
               </v-list-item>
               <v-list-item @click="handleOptionClick('save')">
-                <v-list-item-title>Save</v-list-item-title>
+                <v-list-item-title>{{ t`Save` }}</v-list-item-title>
               </v-list-item>
               <v-list-item @click="handleOptionClick('load')">
-                <v-list-item-title>Load</v-list-item-title>
+                <v-list-item-title>{{ t`Load` }}</v-list-item-title>
               </v-list-item>
               <v-list-item @click="handleOptionClick('copy-to-view')">
-                <v-list-item-title>Clone to another view</v-list-item-title>
+                <v-list-item-title>{{ t`Clone to another view` }}</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>
@@ -166,7 +166,7 @@
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" persistent>
       <GlassModal :is-visible="widgetStore.widgetManagerVars(widget.hash).configMenuOpen">
         <v-card class="px-8 pb-6 pt-2 rounded-lg w-[400px] bg-transparent">
-          <v-card-title class="text-center -mt-1">Custom Widget options</v-card-title>
+          <v-card-title class="text-center -mt-1">{{ t`Custom Widget options` }}</v-card-title>
           <v-btn
             class="absolute top-3 right-0 text-lg rounded-full"
             variant="text"
@@ -176,9 +176,9 @@
             <v-icon>mdi-close</v-icon>
           </v-btn>
           <div class="flex flex-col justify-start items-start gap-x-4 mt-3 w-full">
-            <p class="text-start">Name:</p>
+            <p class="text-start">{{ t`Name:` }}</p>
             <v-text-field ref="nameInput" v-model="widget.name" density="compact" class="w-3/4" />
-            <p class="text-start">Columns:</p>
+            <p class="text-start">{{ t`Columns:` }}</p>
             <v-text-field
               ref="nameInput"
               v-model="widget.options.columns"
@@ -188,9 +188,9 @@
               density="compact"
               class="w-1/4"
             />
-            <p class="mt-1">Background color</p>
+            <p class="mt-1">{{ t`Background color` }}</p>
             <input v-model="widget.options.backgroundColor" type="color" class="p-0 w-20 mr-4" />
-            <p class="mt-3">Background opacity:</p>
+            <p class="mt-3">{{ t`Background opacity:` }}</p>
             <v-slider
               v-model="widget.options.backgroundOpacity"
               min="0"
@@ -199,7 +199,7 @@
               thumb-label
               width="250"
             />
-            <p class="mt-3">Background blur:</p>
+            <p class="mt-3">{{ t`Background blur:` }}</p>
             <v-slider v-model="widget.options.backgroundBlur" min="0" max="100" color="white" thumb-label width="250" />
           </div>
         </v-card>
@@ -237,7 +237,7 @@
         <v-card class="px-3 pb-6 pt-2 rounded-lg w-auto bg-transparent z-40">
           <v-card-title class="flex justify-around -mt-1 w-full px-0">
             <div />
-            <p class="mx-8">Clone widget to</p>
+            <p class="mx-8">{{ t`Clone widget to` }}</p>
             <v-icon class="cursor-pointer self-end" @click="selectViewToShareDialog = false">mdi-close</v-icon>
           </v-card-title>
           <div class="flex w-full justify-center items-center mt-4">
@@ -266,6 +266,7 @@
 import { useWindowSize } from '@vueuse/core'
 import saveAs from 'file-saver'
 import type SortableEvent from 'sortablejs'
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
@@ -314,12 +315,12 @@ const handleCopyWidgetToView = (): void => {
       widgetStore.copyWidgetToView(currentWidget.value, selectedViewToShareWidget.value)
       openSnackbar({
         variant: 'success',
-        message: 'Widget cloned successfully.',
+        message: t`Widget cloned successfully.`,
       })
     } catch (error: any) {
       openSnackbar({
         variant: 'error',
-        message: error.message || 'Error cloning widget.',
+        message: error.message || t`Error cloning widget.`,
       })
     }
     selectViewToShareDialog.value = false
@@ -371,7 +372,7 @@ const saveName = (): void => {
 const loadWidget = (event: Event): void => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) {
-    openSnackbar({ variant: 'error', message: 'No file selected.', duration: 3000 })
+    openSnackbar({ variant: 'error', message: t`No file selected.`, duration: 3000 })
     return
   }
   logUserAction('Loaded custom widget from file')
@@ -383,7 +384,7 @@ const loadWidget = (event: Event): void => {
       const hash = currentWidget.value.hash
       widgetStore.loadWidgetFromFile(hash, loadedWidget)
     } catch (error) {
-      openSnackbar({ variant: 'error', message: 'Invalid widget file format.', duration: 3000 })
+      openSnackbar({ variant: 'error', message: t`Invalid widget file format.`, duration: 3000 })
     }
   }
 
@@ -525,7 +526,7 @@ const loadWidgetFromStore = (): void => {
       currentWidget.value = loadedWidget
     }
   } catch (error) {
-    openSnackbar({ variant: 'warning', message: 'Error reading widget file.', duration: 1000 })
+    openSnackbar({ variant: 'warning', message: t`Error reading widget file.`, duration: 1000 })
   }
 }
 

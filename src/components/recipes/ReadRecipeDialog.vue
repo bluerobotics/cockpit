@@ -1,12 +1,12 @@
 <template>
   <RecipeDialog
     :model-value="modelValue"
-    title="Read recipe"
+    :title="t`Read recipe`"
     :items="items"
     :dependencies="dependencies"
     :selected="selected"
     :conflicts="conflicts"
-    primary-text="Read recipe"
+    :primary-text="t`Read recipe`"
     :primary-disabled="recipe === undefined || selected.length === 0"
     @update:model-value="emit('update:modelValue', $event)"
     @update:selected="selected = $event"
@@ -17,24 +17,24 @@
         <div v-if="recipe" class="flex flex-col min-w-0">
           <span class="text-h6 truncate">{{ recipe.name }}</span>
           <span v-if="recipe.createdAt" class="text-caption text-white/60">
-            Created {{ new Date(recipe.createdAt).toLocaleString() }}
+            {{ t`Created` }} {{ new Date(recipe.createdAt).toLocaleString() }}
           </span>
         </div>
-        <span v-else class="text-body-2 text-white/70">Choose a recipe file to see what it holds.</span>
+        <span v-else class="text-body-2 text-white/70">{{ t`Choose a recipe file to see what it holds.` }}</span>
         <v-btn
           size="small"
           class="bg-[#FFFFFF22] text-white shrink-0"
           prepend-icon="mdi-file-upload-outline"
           @click="chooseFile"
         >
-          {{ recipe ? 'Choose another file' : 'Choose recipe file' }}
+          {{ recipe ? t`Choose another file` : t`Choose recipe file` }}
         </v-btn>
       </div>
       <template v-if="recipe">
         <p v-if="recipe.description" class="text-body-2 whitespace-pre-wrap">{{ recipe.description }}</p>
         <p class="text-body-2">
-          {{ selected.length }} of {{ items.length }} item(s) chosen.
-          <span v-if="conflicts.length > 0">{{ conflicts.length }} already exist here and will be replaced.</span>
+          {{ t`${selected.length} of ${items.length} item(s) chosen.` }}
+          <span v-if="conflicts.length > 0">{{ t`${conflicts.length} already exist here and will be replaced.` }}</span>
         </p>
         <div v-for="warning in warnings" :key="warning" class="flex items-start gap-x-3 rounded-lg bg-[#FFFFFF11] p-3">
           <v-icon size="20" color="amber">mdi-alert-outline</v-icon>
@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -93,25 +94,26 @@ const warnings = computed(() => {
   // Anything here starts working as soon as the recipe is read, with no further step from the user.
   const effects = [
     ...(chosen.diyWidgets.length > 0 || actionTypes.includes(customActionTypes.javascript)
-      ? ['run code in Cockpit']
+      ? [t`run code in Cockpit`]
       : []),
-    ...(actionTypes.includes(customActionTypes.mavlinkMessage) ? ['send messages to the vehicle'] : []),
+    ...(actionTypes.includes(customActionTypes.mavlinkMessage) ? [t`send messages to the vehicle`] : []),
     ...(actionTypes.includes(customActionTypes.httpRequest) || chosen.websocketConnections.length > 0
-      ? ['connect to other computers']
+      ? [t`connect to other computers`]
       : []),
-    ...(chosen.actions.some((action) => action.link) ? ['run actions by themselves when variables change'] : []),
-    ...(chosen.actions.some((action) => action.autoRun) ? ['run actions by themselves on a timer'] : []),
+    ...(chosen.actions.some((action) => action.link) ? [t`run actions by themselves when variables change`] : []),
+    ...(chosen.actions.some((action) => action.autoRun) ? [t`run actions by themselves on a timer`] : []),
   ]
   const leftOut = selected.value.length < items.value.length
   const leftOutNeeded = Object.keys(missingDependencies(selected.value, dependencies.value)).length > 0
+  const effectList = effects.join(', ')
   return [
-    ...(effects.length > 0 ? [`Only read recipes you trust. The chosen items ${effects.join(', ')}.`] : []),
+    ...(effects.length > 0 ? [t`Only read recipes you trust. The chosen items ${effectList}.`] : []),
     // The dialog itself warns when what is left out is needed, so this only covers the rest.
     ...(leftOut && !leftOutNeeded
-      ? ['The recipe is meant to be read as a whole. Leaving items out may stop the rest from working.']
+      ? [t`The recipe is meant to be read as a whole. Leaving items out may stop the rest from working.`]
       : []),
     ...(droppedEntries.value > 0
-      ? [`${droppedEntries.value} item(s) of the file are damaged or would replace Cockpit's own, and are not listed.`]
+      ? [t`${droppedEntries.value} item(s) of the file are damaged or would replace Cockpit's own, and are not listed.`]
       : []),
   ]
 })
@@ -130,8 +132,9 @@ const chooseFile = async (): Promise<void> => {
     conflicts.value = selected.value.filter((key) => existing.has(key))
     logUserAction(`Loaded recipe "${parsed.recipe.name}" from file`)
   } catch (error) {
+    const errorMessage = (error as Error).message
     openSnackbar({
-      message: `Could not read ${file.name}: ${(error as Error).message}`,
+      message: t`Could not read ${file.name}: ${errorMessage}`,
       variant: 'error',
       duration: 5000,
     })
@@ -143,16 +146,17 @@ const apply = (): void => {
   const result = applyRecipe(pickRecipeItems(recipe.value, selected.value))
   const name = recipe.value.name
   logUserAction(`Read recipe "${name}", adding ${result.applied} item(s)`)
-  const diyNote = recipe.value.diyWidgets.length > 0 ? ' DIY widgets are in Settings > DIY widgets.' : ''
+  const diyNote = recipe.value.diyWidgets.length > 0 ? ` ${t`DIY widgets are in Settings > DIY widgets.`}` : ''
   if (result.failed.length > 0) {
+    const failures = result.failed.join('; ')
     openSnackbar({
-      message: `Read "${name}", but ${result.failed.length} item(s) failed: ${result.failed.join('; ')}`,
+      message: t`Read "${name}", but ${result.failed.length} item(s) failed: ${failures}`,
       variant: 'error',
       duration: 10000,
     })
   } else {
     openSnackbar({
-      message: `Read "${name}": ${result.applied} item(s) added.${diyNote}`,
+      message: t`Read "${name}": ${result.applied} item(s) added.${diyNote}`,
       variant: 'success',
       duration: 5000,
     })
@@ -168,24 +172,26 @@ const confirmAndApply = (): void => {
   const missing = Object.values(missingDependencies(selected.value, dependencies.value)).flat()
   const missingNames = [...new Set(missing)].map((key) => items.value.find((item) => item.key === key)?.name ?? key)
   logUserAction('Opened the confirmation to read part of a recipe')
+  const leftOutCount = items.value.length - selected.value.length
+  const missingList = missingNames.join(', ')
   showDialog({
-    title: 'Read part of the recipe?',
+    title: t`Read part of the recipe?`,
     variant: 'warning',
     maxWidth: 520,
     message: [
-      `${items.value.length - selected.value.length} item(s) of the recipe were left out, so it may not work as made.`,
-      ...(missingNames.length > 0 ? [`Chosen items need: ${missingNames.join(', ')}.`] : []),
+      t`${leftOutCount} item(s) of the recipe were left out, so it may not work as made.`,
+      ...(missingNames.length > 0 ? [t`Chosen items need: ${missingList}.`] : []),
     ],
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         action: () => {
           logUserAction('Cancelled reading part of a recipe')
           closeDialog()
         },
       },
       {
-        text: 'Read anyway',
+        text: t`Read anyway`,
         class: 'bg-[#FFFFFF33] text-white',
         action: () => {
           logUserAction('Confirmed reading part of a recipe')

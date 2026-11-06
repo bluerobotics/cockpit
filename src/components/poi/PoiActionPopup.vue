@@ -16,7 +16,7 @@
         <div class="flex shrink-0 items-center gap-x-3">
           <v-icon
             v-if="!isGotoTarget"
-            v-tooltip="{ text: 'GoTo Point of Interest', zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`GoTo Point of Interest`, zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-crosshairs-gps"
             rounded="full"
@@ -28,7 +28,7 @@
           <v-icon
             v-else
             v-tooltip="{
-              text: 'Cancel GoTo command (vehicle will hold at current position)',
+              text: t`Cancel GoTo command (vehicle will hold at current position)`,
               zIndex: POI_POPUP_TOOLTIP_Z_INDEX,
             }"
             variant="text"
@@ -40,7 +40,7 @@
             @click="onCancelGotoClick"
           ></v-icon>
           <v-icon
-            v-tooltip="{ text: 'Delete Point of Interest', zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Delete Point of Interest`, zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-trash-can"
             rounded="full"
@@ -50,7 +50,7 @@
             @click="onDeleteClick"
           ></v-icon>
           <v-icon
-            v-tooltip="{ text: 'Edit Point of Interest', zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Edit Point of Interest`, zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-pencil"
             rounded="full"
@@ -69,7 +69,7 @@
       >
         <div class="flex w-full items-center gap-x-2 text-[10px] py-[1px] mb-[2px]">
           <v-icon
-            v-tooltip="{ text: 'Copy latitude to clipboard', zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Copy latitude to clipboard`, zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-content-copy"
             size="x-small"
@@ -77,13 +77,13 @@
             class="text-[12px] cursor-pointer shrink-0"
             @click="onCopyCoordinate(0)"
           ></v-icon>
-          <p class="flex-1">Lat.:</p>
+          <p class="flex-1">{{ t`Lat.:` }}</p>
           <p>{{ selectedPoi.coordinates[0].toFixed(7) }}</p>
         </div>
         <v-divider class="border-black w-full" />
         <div class="flex w-full items-center gap-x-2 text-[10px] py-[1px]">
           <v-icon
-            v-tooltip="{ text: 'Copy longitude to clipboard', zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Copy longitude to clipboard`, zIndex: POI_POPUP_TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-content-copy"
             size="x-small"
@@ -91,7 +91,7 @@
             class="text-[12px] cursor-pointer shrink-0"
             @click="onCopyCoordinate(1)"
           ></v-icon>
-          <p class="flex-1">Long.:</p>
+          <p class="flex-1">{{ t`Long.:` }}</p>
           <p>{{ selectedPoi.coordinates[1].toFixed(7) }}</p>
         </div>
       </div>
@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -208,13 +209,13 @@ const onDeleteClick = (): void => {
   logUserAction(`Opened delete confirmation for PoI "${poi.name}"`)
   showDialog({
     variant: 'warning',
-    message: `Delete "${poi.name}"?`,
+    message: t`Delete "${poi.name}"?`,
     persistent: false,
     maxWidth: '350px',
     actions: [
-      { text: 'Cancel', color: 'white', action: closeDialog },
+      { text: t`Cancel`, color: 'white', action: closeDialog },
       {
-        text: 'Delete',
+        text: t`Delete`,
         color: 'white',
         action: () => {
           logUserAction(`Deleted PoI "${poi.name}"`)

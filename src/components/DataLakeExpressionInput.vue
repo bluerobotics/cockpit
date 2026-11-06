@@ -9,10 +9,10 @@
         <div class="max-w-xs">
           <slot name="hint" />
           <p v-if="!ignoresUnitSuffix" class="text-sm mt-2">
-            End a variable with ": metric", ": imperial" or ": nautical" — e.g. &#123;&#123;
-            /mavlink/1/1/GLOBAL_POSITION_INT/lat : metric &#125;&#125; — to read it in that unit system, instead of the
-            raw value the vehicle sends. Older Cockpit versions cannot read it, so leave it off if you share this
-            vehicle with one.
+            {{ t`End a variable with ": metric", ": imperial" or ": nautical" — e.g.` }} &#123;&#123;
+            /mavlink/1/1/GLOBAL_POSITION_INT/lat : metric &#125;&#125;
+            {{ t`— to read it in that unit system, instead of the raw value the vehicle sends.` }}
+            {{ t`Older Cockpit versions cannot read it, so leave it off if you share this vehicle with one.` }}
           </p>
         </div>
       </v-tooltip>
@@ -44,6 +44,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { computed, nextTick, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
 
@@ -131,8 +132,8 @@ const filteredVariables = computed(() => {
 // not by changing what they typed.
 const emptyDropdownMessage = computed(() =>
   availableVariables.value.length === 0
-    ? 'No variables found to choose from. Please make sure your vehicle is connected.'
-    : 'No matching variables'
+    ? t`No variables found to choose from. Please make sure your vehicle is connected.`
+    : t`No matching variables`
 )
 
 const textUntilCursor = (): string => {

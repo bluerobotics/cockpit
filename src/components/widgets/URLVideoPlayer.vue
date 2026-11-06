@@ -13,9 +13,9 @@
     </video>
     <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
       <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-        <v-card-title class="text-center">Video Source</v-card-title>
+        <v-card-title class="text-center">{{ t`Video Source` }}</v-card-title>
         <v-card-text>
-          <a>Video Source</a>
+          <a>{{ t`Video Source` }}</a>
           <v-text-field
             variant="filled"
             :model-value="widget.options.source"
@@ -24,22 +24,22 @@
             @keydown.enter="widget.options.source = $event.srcElement.value"
           ></v-text-field>
           <div>
-            <span class="text-xs font-semibold leading-3 text-slate-600">Fit style</span>
+            <span class="text-xs font-semibold leading-3 text-slate-600">{{ t`Fit style` }}</span>
             <Dropdown
               v-model="widget.options.fitStyle"
               :options="['cover', 'fill', 'contain']"
               variant="outlined"
               class="max-w-[144px]"
             />
-            <v-checkbox v-model="widget.options.autoplay" label="Autoplay" hide-details />
-            <v-checkbox v-model="widget.options.controls" label="Controls" hide-details />
-            <v-checkbox v-model="widget.options.loop" label="Loop" hide-details />
-            <v-checkbox v-model="widget.options.muted" label="Muted" hide-details />
+            <v-checkbox v-model="widget.options.autoplay" :label="t`Autoplay`" hide-details />
+            <v-checkbox v-model="widget.options.controls" :label="t`Controls`" hide-details />
+            <v-checkbox v-model="widget.options.loop" :label="t`Loop`" hide-details />
+            <v-checkbox v-model="widget.options.muted" :label="t`Muted`" hide-details />
           </div>
         </v-card-text>
         <v-card-actions class="flex justify-end">
           <v-btn color="white" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
-            Close
+            {{ t`Close` }}
           </v-btn>
         </v-card-actions>
       </v-card>
