@@ -4,6 +4,7 @@ import { computed, effectScope, reactive, watch } from 'vue'
 import {
   createDataLakeVariable,
   DataLakeVariable,
+  deleteDataLakeVariable,
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
@@ -11,6 +12,7 @@ import { addRecordedVariableIdsChangedHandler, dataLakeLogger } from '@/libs/dat
 import { isElectron } from '@/libs/utils'
 import {
   buildGo2rtcStreamSample,
+  externalIdStatRecordingReplacements,
   Go2rtcIngestCounters,
   Go2rtcStreamSample,
   Go2rtcStreamStatKey,
@@ -48,6 +50,10 @@ const streamsAlreadyTrackingWebRTCStats: string[] = []
 // Latest go2rtc ingest sample per stream, keyed by external stream id. Shared by the stats-for-nerds
 // panel and any other live consumer.
 const go2rtcStreamSamples = reactive<Record<string, Go2rtcStreamSample | undefined>>({})
+
+// Last known internal name per external stream id, so a rename can carry the stream's recording
+// over to the new variable ids
+const lastInternalNames: Record<string, string> = {}
 
 // The sampler differences over its own fixed window, never over a caller-dependent shared one
 const prevGo2rtcCounters: Record<string, Go2rtcIngestCounters> = {}
@@ -131,6 +137,41 @@ const initialize = (): void => {
     }
   }
 
+  // Carry armed streams' recordings over renames: swap the old ids for the new ones in the recorded
+  // set and drop the dead old variables from the data lake. Every swap is worked out from the selection
+  // before any of them, so names swapped in one change swap their recordings instead of merging them.
+  const carryOverStreamStatRecordings = (newNameByOldName: Record<string, string>, liveNames: string[]): void => {
+    const statIds = (name: string): string[] => [
+      ...webRtcStreamStatKeys.map((key) => streamStatVariableId(name, key)),
+      ...go2rtcStreamStatKeys.map((key) => go2rtcStreamStatVariableId(name, key)),
+    ]
+    const recordedIds = new Set(dataLakeLogger.recordedVariableIds)
+    const replacements: Record<string, string> = {}
+    Object.entries(newNameByOldName).forEach(([oldName, newName]) => {
+      const newIds = statIds(newName)
+      statIds(oldName).forEach((oldId, index) => {
+        if (recordedIds.has(oldId)) replacements[oldId] = newIds[index]
+      })
+    })
+    dataLakeLogger.replaceRecordedVariableIds(replacements)
+    // An old name another stream has taken over keys that stream's live variables
+    Object.keys(newNameByOldName)
+      .filter((oldName) => !liveNames.includes(oldName))
+      .forEach((oldName) => {
+        statIds(oldName).forEach((oldId) => {
+          if (getDataLakeVariableInfo(oldId) !== undefined) deleteDataLakeVariable(oldId)
+        })
+      })
+  }
+
+  // Run on every correspondency change and every selection change, since either a settings sync or
+  // a newly configured stream can bring in a selection made before ids were keyed by internal name
+  const carryOverExternalIdStatRecordings = (): void => {
+    dataLakeLogger.replaceRecordedVariableIds(
+      externalIdStatRecordingReplacements(dataLakeLogger.recordedVariableIds, videoStore.streamsCorrespondency)
+    )
+  }
+
   // Register a stream's WebRTC stat variables if missing. Called on every stats event, not only on
   // activation, so a rename (here or synced from another topside) re-registers under the new ids
   // instead of publishing into the void
@@ -191,6 +232,7 @@ const initialize = (): void => {
   }
 
   addRecordedVariableIdsChangedHandler(pokeGo2rtcSampler)
+  addRecordedVariableIdsChangedHandler(carryOverExternalIdStatRecordings)
 
   collectorScope.run(() => {
     // Monitor the active streams to add the connections to the WebRTC statistics
@@ -244,6 +286,31 @@ const initialize = (): void => {
         })
       })
     })
+
+    // Seed the name map and carry recording over renames, whether made here or synced from
+    // another topside. Watch the getter so a whole-array replacement (discovery, BlueOS sync)
+    // does not detach the watcher.
+    watch(
+      () => videoStore.streamsCorrespondency,
+      (corrs) => {
+        const newNameByOldName: Record<string, string> = {}
+        corrs.forEach((corr) => {
+          const lastName = lastInternalNames[corr.externalId]
+          if (lastName !== undefined && lastName !== corr.name) newNameByOldName[lastName] = corr.name
+          lastInternalNames[corr.externalId] = corr.name
+        })
+        carryOverStreamStatRecordings(
+          newNameByOldName,
+          corrs.map((corr) => corr.name)
+        )
+        // A deleted stream's name ends its lineage: a re-added stream starts unarmed
+        Object.keys(lastInternalNames).forEach((externalId) => {
+          if (!corrs.some((corr) => corr.externalId === externalId)) delete lastInternalNames[externalId]
+        })
+        carryOverExternalIdStatRecordings()
+      },
+      { deep: true, immediate: true }
+    )
 
     // The go2rtc sampler runs only while at least one RTSP stream is active
     const hasActiveRtspStreams = computed(() =>
