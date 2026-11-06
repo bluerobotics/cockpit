@@ -98,6 +98,8 @@ export class IndexedDbStore {
     return new Promise<T>((resolve, reject) => {
       const transaction = db.transaction(this.storeName, mode)
       const request = operation(transaction.objectStore(this.storeName))
+      // Committing right away, instead of when the request returns, lets a write started as the page closes finish.
+      transaction.commit?.()
       transaction.onabort = () => reject(transaction.error)
       transaction.onerror = () => reject(transaction.error)
       transaction.oncomplete = () => resolve(request.result as T)
