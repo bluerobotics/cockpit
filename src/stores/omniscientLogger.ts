@@ -11,7 +11,7 @@ import {
 } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { isElectron } from '@/libs/utils'
-import { monitorStreamPeerConnection, streamStatVariableId } from '@/libs/webrtc/stats'
+import { monitorStreamPeerConnection, noteStreamBytesReceived, streamStatVariableId } from '@/libs/webrtc/stats'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useMainVehicleStore } from './mainVehicle'
@@ -204,9 +204,12 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
       monitorStreamPeerConnection(webrtcStreamStats[streamName], pcInfo)
 
       storedKeys.forEach((key) => {
-        if (getDataLakeVariableInfo(streamStatVariableId(streamName, key)) === undefined) {
+        const statId = streamStatVariableId(streamName, key)
+        if (statId === undefined) return
+
+        if (getDataLakeVariableInfo(statId) === undefined) {
           const streamVariable = {
-            id: streamStatVariableId(streamName, key),
+            id: statId,
             name: `Stream '${streamName}' - ${key}`,
             type: 'number',
             description: `WebRTC stat '${key}' of the '${streamName}' video stream.`,
@@ -226,8 +229,11 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
           const videoData = ev.data.video.inbound[0]
           if (videoData === undefined) return
 
+          noteStreamBytesReceived(streamName, videoData.bytesReceived)
           storedKeys.forEach((key) => {
-            setDataLakeVariableData(streamStatVariableId(streamName, key), videoData[key])
+            const statId = streamStatVariableId(streamName, key)
+            if (statId === undefined) return
+            setDataLakeVariableData(statId, videoData[key])
           })
         } catch (error) {
           console.error('Error while logging WebRTC statistics:', error)
