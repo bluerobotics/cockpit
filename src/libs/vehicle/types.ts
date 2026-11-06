@@ -1,7 +1,7 @@
 import { Unit } from 'mathjs'
 
 import type { Type } from '@/libs/connection/m2r/messages/mavlink2rest'
-import { MavCmd, MavResult } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { GpsFixType, MavCmd, MavResult } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { AlertLevel } from '@/types/alert'
 
 /**
@@ -212,6 +212,18 @@ export enum FixTypeGPS {
   RTK_FIXED = 'RTK fix',
   STATIC = 'Static',
   PPP = 'PPP fix',
+}
+
+export const gpsFixTypeLabels: Record<GpsFixType, FixTypeGPS> = {
+  [GpsFixType.GPS_FIX_TYPE_NO_GPS]: FixTypeGPS.NO_GPS,
+  [GpsFixType.GPS_FIX_TYPE_NO_FIX]: FixTypeGPS.NO_FIX,
+  [GpsFixType.GPS_FIX_TYPE_2D_FIX]: FixTypeGPS.FIX_2D,
+  [GpsFixType.GPS_FIX_TYPE_3D_FIX]: FixTypeGPS.FIX_3D,
+  [GpsFixType.GPS_FIX_TYPE_DGPS]: FixTypeGPS.DGPS,
+  [GpsFixType.GPS_FIX_TYPE_RTK_FLOAT]: FixTypeGPS.RTK_FLOAT,
+  [GpsFixType.GPS_FIX_TYPE_RTK_FIXED]: FixTypeGPS.RTK_FIXED,
+  [GpsFixType.GPS_FIX_TYPE_STATIC]: FixTypeGPS.STATIC,
+  [GpsFixType.GPS_FIX_TYPE_PPP]: FixTypeGPS.PPP,
 }
 
 /**
