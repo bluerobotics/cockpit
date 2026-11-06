@@ -1,16 +1,18 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuid } from 'uuid'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
 import { defaultMapFallbackBaseColor, defaultMapFallbackNoiseIntensity } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { openSnackbar } from '@/composables/snackbar'
 import { useMissionThumbnails } from '@/composables/useMissionThumbnails'
 import { askForUsername } from '@/composables/usernamePrompDialog'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { generateSessionSeed } from '@/libs/map/map-tile-fallback'
 import { simplifyPath } from '@/libs/map/path-simplify'
+import { loadVehiclePositionHistory, saveVehiclePositionHistory } from '@/libs/map/vehicle-position-history-storage'
 import {
   AUTOMATIC_MISSION_NAME_MIN_IDLE_MS,
   generateAutomaticMissionName,
@@ -46,6 +48,10 @@ import {
   WaypointCoordinates,
 } from '@/types/mission'
 import { cockpitLastConnectedUserKey, fallbackUsername } from '@/types/settings-management'
+import {
+  clearLegacyVehiclePositionHistory,
+  readLegacyVehiclePositionHistory,
+} from '@/utils/vehicle-position-history-migration'
 
 import { useMainVehicleStore } from './mainVehicle'
 
@@ -386,20 +392,55 @@ export const useMissionStore = defineStore('mission', () => {
     redoStack.length = 0
     syncCounts()
   }
-  const persistedPositionHistory = useStorage<WaypointCoordinates[]>('cockpit-vehicle-position-history', [])
   const isVehiclePositionHistoryPersistent = useBlueOsStorage('cockpit-vehicle-position-history-persistent', true)
-  const vehiclePositionHistory = ref<WaypointCoordinates[]>([...persistedPositionHistory.value])
+  // Shallow, since a deep ref makes every push, shift and flush walk the whole history.
+  const vehiclePositionHistory = shallowRef<WaypointCoordinates[]>([])
   // Revision counter for `vehiclePositionHistory` mutations.
   const vehiclePositionHistoryRevision = ref(0)
 
   let positionHistoryDirty = false
   let simplifiedBoundary = 0
+  // Nothing is written before the stored history is read, so a slow read cannot be overwritten by a shorter trail.
+  let positionHistoryLoaded = false
+  let positionHistoryCleared = false
 
-  const flushPositionHistory = (): void => {
+  // Reported once per session, as the flush keeps failing on its timer while storage is unavailable.
+  let positionHistoryStorageWarningShown = false
+  const warnPositionHistoryStorage = (message: string): void => {
+    if (positionHistoryStorageWarningShown) return
+    positionHistoryStorageWarningShown = true
+    openSnackbar({ message, variant: 'warning', duration: 8000 })
+  }
+
+  loadVehiclePositionHistory()
+    .then((stored) => {
+      const restored = positionHistoryCleared ? [] : stored ?? readLegacyVehiclePositionHistory() ?? []
+      positionHistoryLoaded = true
+      if (restored.length === 0) return
+      vehiclePositionHistory.value = [...restored, ...vehiclePositionHistory.value]
+      vehiclePositionHistoryRevision.value += 1
+      if (stored === null) positionHistoryDirty = true
+    })
+    .catch((error) => {
+      console.error('Could not restore the vehicle position history.', error)
+      warnPositionHistoryStorage(
+        'Could not open the saved vehicle path history. The previous path is not shown, and this one will not be saved.'
+      )
+    })
+
+  const flushPositionHistory = async (): Promise<void> => {
     if (!isVehiclePositionHistoryPersistent.value) return
-    if (!positionHistoryDirty) return
+    if (!positionHistoryLoaded || !positionHistoryDirty) return
     positionHistoryDirty = false
-    persistedPositionHistory.value = [...vehiclePositionHistory.value]
+    try {
+      await saveVehiclePositionHistory(vehiclePositionHistory.value)
+    } catch (error) {
+      console.error('Could not save the vehicle position history.', error)
+      positionHistoryDirty = true
+      warnPositionHistoryStorage(
+        'Could not save the vehicle path history. It is still shown, but may be lost when Cockpit closes.'
+      )
+    }
   }
 
   const positionHistoryFlushInterval = 10000
@@ -409,10 +450,12 @@ export const useMissionStore = defineStore('mission', () => {
   const clearVehicleHistory = (): void => {
     vehiclePositionHistory.value = []
     vehiclePositionHistoryRevision.value += 1
-    positionHistoryDirty = false
+    positionHistoryDirty = true
+    positionHistoryCleared = true
     simplifiedBoundary = 0
     if (isVehiclePositionHistoryPersistent.value) {
-      persistedPositionHistory.value = []
+      flushPositionHistory()
+      clearLegacyVehiclePositionHistory()
     }
   }
 
