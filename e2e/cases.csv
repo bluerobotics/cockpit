@@ -453,15 +453,16 @@ PRF-57.1,Memory usage is within bounds (does not surpass 750MB during the first 
 2. Open Tools → Data-lake and search ""memory"".
 3. Sample cockpit-memory-usage every second for 60 s.","Video: the data-lake row for ""Cockpit Memory Usage"" over the minute.
 State: max(cockpit-memory-usage) over the first 60 s < 750 MB.","Differs: Web reports the renderer JS heap; Standalone reports the total of all its processes (also split into cockpit-main-memory, cockpit-renderers-memory, cockpit-gpu-memory), so the Standalone number is much larger for the same load",Vehicle (SITL),cockpit-memory-usage is written every 100 ms (src/stores/omniscientLogger.ts). Decide per platform whether 750 MB applies to the Standalone total; record both numbers either way.
-PRF-58.1,Switching user switches the settings (e.g.: widget profile),Switching user loads that user's views,"Fresh profile; connected to the SITL boat; users ""relusera"" and ""reluserb"" exist on the vehicle (create them via ""add new user""); BlueOS settings sync on (Settings → Dev)","1. Settings → General → ""Manage users"": pick relusera.
+PRF-58.1,Switching user switches the settings (e.g.: widget profile),Switching user loads that user's views,"Fresh profile; connected to the SITL boat; user ""relusera"" exists on the vehicle (create it via ""add new user""); BlueOS settings sync on (Settings → Dev)","1. Settings → General → ""Manage users"": pick relusera.
 2. Main menu → Edit interface: add a view (the + under Views), rename it ""User A view"", exit.
-3. Manage users: pick reluserb.
-4. Look at the view list (View selector or Edit interface).
-5. Switch back to relusera.","Video: ""User A view"" is in the list as relusera, absent as reluserb, and back when switching to relusera.
+3. Manage users: add a new user.
+4. When Cockpit asks whether to copy relusera's settings or start from its defaults, pick the defaults.
+5. Look at the view list (View selector or Edit interface).
+6. Switch back to relusera.","Video: Cockpit asks how to start the new user; ""User A view"" is in the list as relusera, absent as the new user, and back when switching to relusera.
 State: the views group read from the settings for each user on the vehicle (BlueOS bag) differs: only relusera's holds ""User A view"".",Same behaviour (no platform branch on this code path),Vehicle (SITL),Usernames need at least 3 characters. Cockpit may reload when the user changes.
 PRF-58.2,Switching user switches the settings (e.g.: widget profile),A per-user setting other than views follows the user,As PRF-58.1,"1. As relusera: Settings → Interface, change the display units to imperial.
-2. Switch to reluserb.
-3. Switch back to relusera.","Video: units show imperial for relusera, the default for reluserb, imperial again for relusera.
+2. Add a new user and pick Cockpit's defaults when asked how to start it.
+3. Switch back to relusera.","Video: Cockpit asks how to start the new user; units show imperial for relusera, the default for the new user, imperial again for relusera.
 State: the stored unit preference differs between the two users.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
 PRF-59.1,"Critical vehicle functions work properly (e.g.: arm/disarm, switch mode)",Arm and disarm from the Armer button,"Fresh profile; connected to the SITL boat, disarmed in Hold","1. Click the Armer button in the bottom bar; slide to confirm if asked.
 2. Wait 3 s.
@@ -485,7 +486,7 @@ State: cockpit-views-group-v1 holds the view with those widgets.",Same behaviour
 VIEW-60.3,Creating a new View works and changes to it,"Hide, duplicate and delete the view",The VIEW-60.1 view exists,"1. Edit interface: select another view (the view being shown cannot be hidden), then click its eye icon, then its copy icon.
 2. Delete the copy with its trash icon, confirming if asked.","Video: eye closes and the view disappears from the View selector; a copy appears and is removed again.
 State: visible false on the original; view count back to what it was after the delete.",Same behaviour (no platform branch on this code path),None,
-WID-61.1,Switching the source of a Video Widget between RadCam and USBCam works and loads the stream,Switch the Video widget between two streams,"Fresh profile; connected to the SITL boat; BlueOS serving ""Stream /dev/video2"" (UsbCam) and a second stream (e.g. ""PRTest Ball"")","1. Main menu → Edit interface: drag ""Video Player"" onto the view (the boat's default views have none); open its cog in ""Widgets in <view>"".
+WID-61.1,Switching the source of a Video Widget between RadCam and USBCam works and loads the stream,Switch the Video widget between two streams,"Fresh profile; connected to the SITL boat; BlueOS serving ""Stream /dev/video2"" (UsbCam) and a second stream (e.g. ""PRTest Ball""); in CI both are mavlink-camera-manager test-pattern streams (e2e/ci/fake-streams.mjs)","1. Main menu → Edit interface: drag ""Video Player"" onto the view (the boat's default views have none); open its cog in ""Widgets in <view>"".
 2. In ""Video widget config"" → Stream, pick ""Stream /dev/video2"". Close and wait 10 s.
 3. Switch Stream to the second stream and wait 10 s.
 4. Switch back.","Video: each stream plays in the widget after the switch (moving image, no ""not available"" message).
@@ -523,8 +524,8 @@ WID-65.1,IFrame shows the linked page,IFrame shows the URL set in its settings,F
 3. Exit edit mode.","Video: the page content is visible inside the widget.
 State: the iframe src is the URL and the page was requested (200).",Same behaviour (no platform branch on this code path),None,Headless Chrome needs site isolation off to capture cross-origin iframes.
 WID-65.2,IFrame shows the linked page,"IFrame with ""Use vehicle address as base URL""",Fresh profile; connected to the SITL boat,"1. IFrame settings → Advanced options: tick ""Use vehicle address as base URL"".
-2. Iframe Source: /network (a BlueOS page); Set.","Video: the BlueOS page loads inside the widget.
-State: iframe src = http://<vehicle address>/network.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
+2. Iframe Source: / (the BlueOS root page; BlueOS 1.4.6 answers 404 for /network); Set.","Video: the BlueOS page loads inside the widget.
+State: iframe src = http://<vehicle address>/ and the page answered 200.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
 WID-66.1,DIY widget shows and load modifications properly,DIY widget shows an HTML/CSS/JS change after Apply,Fresh profile; no vehicle needed,"1. Main menu → Edit interface: drag ""Do It Yourself"" onto the view; open its cog.
 2. In ""DIY widget configuration"": HTML <div id=""r"">Release test</div>; JS document.getElementById('r').textContent += ' OK'; CSS #r { color: red }.
 3. Click Apply, close.","Video: the widget shows ""Release test OK"" in red (was ""Create your own widget!"").
@@ -543,7 +544,7 @@ MINI-67.2,Create a VGI and see if it changes its values based on the configurati
 State: shown = groundspeed × 2 to two decimals; options saved.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
 MINI-67.3,Create a VGI and see if it changes its values based on the configuration,VGI template mode,Fresh profile; connected to the SITL boat,1. Custom → Variable: Hdg {{ /mavlink/1/1/VFR_HUD/heading }}° (text template).,"Video: it shows ""Hdg <n>°"" and follows a turn.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
 MINI-68.1,"Make sure at least one mini-widget indicator works (e.g. battery, GPS, etc)",Battery indicator shows the vehicle voltage,Fresh profile; connected to the SITL boat,"1. Main menu → Edit interface: Mini → drag ""Battery Indicator"" into the Top Bar if absent; exit.","Video: voltage in V and current shown, not blank.
-State: shown voltage = SYS_STATUS voltage_battery / 1000 (or BATTERY_STATUS) to 0.1 V.",Same behaviour (no platform branch on this code path),Vehicle (SITL),Change SIM_BATT_VOLTAGE on SITL to see it move.
+State: shown voltage = SYS_STATUS voltage_battery / 1000 (or BATTERY_STATUS) to 0.1 V.",Same behaviour (no platform branch on this code path),Vehicle (SITL),Change SIM_BATT_VOLTAGE on SITL to see it move. The CI boat has no battery monitor (SYS_STATUS reads 0 V); the case sets BATT_MONITOR=4 and reboots the autopilot once.
 MINI-68.2,"Make sure at least one mini-widget indicator works (e.g. battery, GPS, etc)",Satellite indicator shows sats and fix,Fresh profile; connected to the SITL boat,"1. Mini → drag ""Satellite Indicator"" into the Top Bar; exit.","Video: ""<n> sats"" and the fix type.
 State: n = GPS_RAW_INT satellites_visible; fix matches fix_type.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
 INP-69.1,"Clicking a button widget runs the actions that is tied to it (test with HTTP, MAVLink, Javascript and Built-in functions)",A widget Button runs an HTTP action,Fresh profile; connected to the SITL boat; an HTTP Request Action calling the local server (Settings → Actions),"1. Main menu → Edit interface: Input → ""Add new container""; drag a ""Button"" into it.
@@ -648,7 +649,7 @@ DL-81.1,Creating an user variable works (as well as persistence of creation and 
 State: variable info and value 5 present.",Same behaviour (no platform branch on this code path),None,
 DL-81.2,Creating an user variable works (as well as persistence of creation and state between sessions),Creation and value persist across a reload,The DL-81.1 variable,1. Edit its value to 12. Reload.,"Video: the variable is still listed with 12.
 State: value 12 after restart.",Same behaviour (no platform branch on this code path),None,
-DL-81.3,Creating an user variable works (as well as persistence of creation and state between sessions),"Without ""Save value"" only the creation persists",Fresh profile,"1. Add release-test/user-var2, Initial Value 1, ""Persist variable"" ticked, ""Save variable value"" unticked. Edit to 9. Reload.","Video: listed with 1, not 9.",Same behaviour (no platform branch on this code path),None,
+DL-81.3,Creating an user variable works (as well as persistence of creation and state between sessions),"Without ""Save value"" only the creation persists",Fresh profile,"1. Add release-test/user-var2, Initial Value 1, ""Persist variable"" ticked, ""Save variable value"" unticked. Edit to 9. Reload.",Video: listed again with no value (neither 1 nor 9).,Same behaviour (no platform branch on this code path),None,
 DL-82.1,Creating a compound variable works and it reacts to changes in the linked variables,A compound variable from vehicle data,"Fresh profile; connected to the SITL boat, armed in Manual","1. Tools → Data-lake → ""Add compound variable"": Variable ID release-test/speed-kmh (editable after its pencil), Number, Unit km/h, Expression {{ /mavlink/1/1/VFR_HUD/groundspeed }} * 3.6. Save.
 2. Drive for 10 s.","Video: row updates while driving.
 State: equals groundspeed × 3.6.",Same behaviour (no platform branch on this code path),Vehicle (SITL),
