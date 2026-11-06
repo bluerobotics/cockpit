@@ -1,31 +1,8 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 
-import { StreamPeerConnectionInfo, WebRTCVideoStat } from '@/types/video'
+import { StreamPeerConnectionInfo } from '@/types/video'
 
 const maxVideoStatAge = 2000
-
-// Callers hold the external id, and the video store registers the internal stream name used in persisted ids
-let publishedStreamName: (externalId: string) => string | undefined = () => undefined
-
-/**
- * Choose the stream name persisted in data-lake stat ids
- * @param {(externalId: string) => string | undefined} resolve - Maps the caller's external id to the internal name
- */
-export const setStreamStatPublishedName = (resolve: (externalId: string) => string | undefined): void => {
-  publishedStreamName = resolve
-}
-
-/**
- * Data-lake variable id under which a stream's inbound-video stat is published
- * @param {string} streamName - Name of the stream the stat belongs to, as the caller holds it
- * @param {WebRTCVideoStat} statName - Stat published under the id
- * @returns {string | undefined} The data-lake variable id, or undefined when the stream has no internal name
- */
-export const streamStatVariableId = (streamName: string, statName: WebRTCVideoStat): string | undefined => {
-  const internalName = publishedStreamName(streamName)
-  if (internalName === undefined) return undefined
-  return `stream-${internalName}-${statName}`
-}
 
 // Latest bytes received per stream, keyed by the external id its callers hold, so the watchdog follows every
 // active stream whether or not it has a correspondency entry

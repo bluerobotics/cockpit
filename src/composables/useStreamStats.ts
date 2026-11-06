@@ -7,49 +7,35 @@ import {
   getDataLakeVariableInfo,
   setDataLakeVariableData,
 } from '@/libs/actions/data-lake'
+import { addRecordedVariableIdsChangedHandler, dataLakeLogger } from '@/libs/data-lake-logging'
 import { isElectron } from '@/libs/utils'
-import { buildGo2rtcStreamSample, Go2rtcIngestCounters, Go2rtcStreamSample } from '@/libs/video/stream-stats'
-import { monitorStreamPeerConnection, noteStreamBytesReceived, streamStatVariableId } from '@/libs/webrtc/stats'
+import {
+  buildGo2rtcStreamSample,
+  Go2rtcIngestCounters,
+  Go2rtcStreamSample,
+  Go2rtcStreamStatKey,
+  go2rtcStreamStatKeys,
+  go2rtcStreamStatVariableId,
+  streamStatVariableId,
+  webRtcStreamStatKeys,
+} from '@/libs/video/stream-stats'
+import { monitorStreamPeerConnection, noteStreamBytesReceived } from '@/libs/webrtc/stats'
 import { useVideoStore } from '@/stores/video'
-import { type Go2RTCStreamInfo, WebRTCStatsEvent, WebRTCVideoStat, WebRTCVideoStats } from '@/types/video'
+import { type Go2RTCStreamInfo, WebRTCStatsEvent, WebRTCVideoStats } from '@/types/video'
 
-// Track the WebRTC statistics, warn about changes in cumulative values and log the average values
-const cumulativeKeys: WebRTCVideoStat[] = [
-  'bytesReceived',
-  'firCount',
-  'framesDecoded',
-  'framesDropped',
-  'framesReceived',
-  'freezeCount',
-  'headerBytesReceived',
-  'jitterBufferEmittedCount',
-  'keyFramesDecoded',
-  'lastPacketReceivedTimestamp',
-  'nackCount',
-  'packetsLost',
-  'packetsReceived',
-  'pauseCount',
-  'pliCount',
-  'timestamp',
-  'totalAssemblyTime',
-  'totalDecodeTime',
-  'totalFreezesDuration',
-  'totalInterFrameDelay',
-  'totalPausesDuration',
-  'totalProcessingDelay',
-  'totalSquaredInterFrameDelay',
-] // Keys that have cumulative values
-const averageKeys: WebRTCVideoStat[] = [
-  'clockRate',
-  'framesAssembledFromMultiplePackets',
-  'framesPerSecond',
-  'jitter',
-  'jitterBufferDelay',
-  'jitterBufferMinimumDelay',
-  'jitterBufferTargetDelay',
-  'packetRate',
-] // Keys that have average values
-const storedKeys = [...cumulativeKeys, ...averageKeys] // Keys to store in the history
+// Data lake variable types of the go2rtc ingest stats
+const go2rtcStreamStatTypes: Record<Go2rtcStreamStatKey, 'number' | 'string'> = {
+  bytes: 'number',
+  packets: 'number',
+  sampleEpoch: 'number',
+  bitrateKbps: 'number',
+  packetsPerSec: 'number',
+  codec: 'string',
+  width: 'number',
+  height: 'number',
+  fps: 'string',
+  protocol: 'string',
+}
 
 // Latest inbound video stats per stream, keyed by external stream id, updated at the collector's
 // 100 ms cadence. Shared by the stats-for-nerds panel and any other live consumer.
@@ -69,8 +55,8 @@ let go2rtcSamplerTimer: ReturnType<typeof setTimeout> | null = null
 let go2rtcSamplerEnabled = false
 let go2rtcSamplerRunning = false
 let go2rtcPanelConsumers = 0
-// 10 Hz while a panel consumes the samples; otherwise consume the video store's 5 s poll so idle
-// Standalone does not query go2rtc twice
+// 10 Hz while a panel or an armed recording consumes the samples; otherwise consume the video
+// store's 5 s poll so idle Standalone does not query go2rtc twice
 const go2rtcFastSampleIntervalMs = 100
 // Set by initialize so a live consumer can restart an idle sampler at the fast cadence
 let pokeGo2rtcSampler: () => void = () => undefined
@@ -81,6 +67,31 @@ const collectorScope = effectScope(true)
 
 const initialize = (): void => {
   const videoStore = useVideoStore()
+
+  // Persisted artifacts use the internal stream name; skip unmapped streams so the external id
+  // (an RTSP URL, credentials included) never reaches a variable name
+  const internalStreamName = (streamName: string): string | undefined =>
+    videoStore.internalStreamNameFromExternal(streamName)
+
+  // Publish one go2rtc sample to the data lake, creating the stream's variables on first sight. The
+  // raw counters are exact, so any rate over any window is derivable offline; the derived rates are
+  // published for live use (Plotter, overlay, widgets).
+  const publishGo2rtcSample = (internalName: string, sample: Go2rtcStreamSample): void => {
+    go2rtcStreamStatKeys.forEach((key) => {
+      const variableId = go2rtcStreamStatVariableId(internalName, key)
+      if (getDataLakeVariableInfo(variableId) === undefined) {
+        createDataLakeVariable({
+          id: variableId,
+          name: `Stream '${internalName}' - RTSP ${key}`,
+          type: go2rtcStreamStatTypes[key],
+          description: `Incoming video stat '${key}' of the '${internalName}' RTSP stream.`,
+        } as DataLakeVariable)
+      }
+
+      const value = sample[key]
+      if (value !== undefined) setDataLakeVariableData(variableId, value)
+    })
+  }
 
   const applyGo2rtcStreamsInfo = (allInfo: Record<string, Go2RTCStreamInfo>): void => {
     // Drop counters and samples of streams that left, so a returning stream starts a fresh window
@@ -93,8 +104,16 @@ const initialize = (): void => {
     })
 
     Object.entries(allInfo).forEach(([streamName, info]) => {
-      go2rtcStreamSamples[streamName] = buildGo2rtcStreamSample(info, prevGo2rtcCounters[streamName])
+      // A go2rtc stream Cockpit no longer maps is not one it can publish stats for - skipping it
+      // also keeps the external id (an RTSP URL, credentials included) out of variable names
+      const internalName = videoStore.internalStreamNameFromExternal(streamName)
+      if (internalName === undefined) return
+
+      const sample = buildGo2rtcStreamSample(info, prevGo2rtcCounters[streamName])
       prevGo2rtcCounters[streamName] = { bytes: info.bytes, packets: info.packets, sampleEpoch: info.sampleEpoch }
+
+      go2rtcStreamSamples[streamName] = sample
+      publishGo2rtcSample(internalName, sample)
     })
   }
 
@@ -103,7 +122,7 @@ const initialize = (): void => {
     try {
       const allInfo = await window.electronAPI.go2rtcGetStreamsInfo()
       // A failed or not-yet-ready query is not "no streams" - skip the tick so counters and
-      // rates stay at the last good sample instead of a fabricated stall
+      // published rates stay at the last good sample instead of a fabricated stall
       if (allInfo === undefined) return
 
       applyGo2rtcStreamsInfo(allInfo)
@@ -112,7 +131,39 @@ const initialize = (): void => {
     }
   }
 
-  const isGo2rtcFastSampling = (): boolean => go2rtcPanelConsumers > 0
+  // Register a stream's WebRTC stat variables if missing. Called on every stats event, not only on
+  // activation, so a rename (here or synced from another topside) re-registers under the new ids
+  // instead of publishing into the void
+  const ensureWebRtcStatVariables = (streamName: string): void => {
+    const internalName = internalStreamName(streamName)
+    if (internalName === undefined) return
+
+    webRtcStreamStatKeys.forEach((key) => {
+      const variableId = streamStatVariableId(internalName, key)
+      if (getDataLakeVariableInfo(variableId) === undefined) {
+        const streamVariable = {
+          id: variableId,
+          name: `Stream '${internalName}' - ${key}`,
+          type: 'number',
+          description: `WebRTC stat '${key}' of the '${internalName}' video stream.`,
+        } as DataLakeVariable
+        createDataLakeVariable(streamVariable)
+      }
+    })
+  }
+
+  // Recording is the other demanding consumer: any recorded rtsp-* variable of an active RTSP stream
+  const isAnyActiveRtspStreamArmed = (): boolean =>
+    Object.keys(videoStore.activeStreams).some((streamName) => {
+      if (videoStore.activeStreams[streamName]?.go2rtcManager === undefined) return false
+      const internalName = videoStore.internalStreamNameFromExternal(streamName)
+      if (internalName === undefined) return false
+      return go2rtcStreamStatKeys.some((key) =>
+        dataLakeLogger.recordedVariableIds.includes(go2rtcStreamStatVariableId(internalName, key))
+      )
+    })
+
+  const isGo2rtcFastSampling = (): boolean => go2rtcPanelConsumers > 0 || isAnyActiveRtspStreamArmed()
 
   const runGo2rtcSampler = async (): Promise<void> => {
     go2rtcSamplerTimer = null
@@ -139,6 +190,8 @@ const initialize = (): void => {
     go2rtcSamplerTimer = setTimeout(() => void runGo2rtcSampler(), 0)
   }
 
+  addRecordedVariableIdsChangedHandler(pokeGo2rtcSampler)
+
   collectorScope.run(() => {
     // Monitor the active streams to add the connections to the WebRTC statistics
     watch(videoStore.activeStreams, (streams) => {
@@ -162,23 +215,7 @@ const initialize = (): void => {
 
         monitorStreamPeerConnection(collectors[streamName], pcInfo)
 
-        storedKeys.forEach((key) => {
-          const statId = streamStatVariableId(streamName, key)
-          if (statId === undefined) return
-
-          // The external id of an RTSP stream is its URL, credentials included, so the user-facing
-          // name and description use the internal name, like the persisted id
-          const internalName = videoStore.internalStreamNameFromExternal(streamName)
-          if (getDataLakeVariableInfo(statId) === undefined) {
-            const streamVariable = {
-              id: statId,
-              name: `Stream '${internalName}' - ${key}`,
-              type: 'number',
-              description: `WebRTC stat '${key}' of the '${internalName}' video stream.`,
-            } as DataLakeVariable
-            createDataLakeVariable(streamVariable)
-          }
-        })
+        ensureWebRtcStatVariables(streamName)
 
         if (streamsAlreadyTrackingWebRTCStats.includes(streamName)) return
         streamsAlreadyTrackingWebRTCStats.push(streamName)
@@ -194,10 +231,12 @@ const initialize = (): void => {
             webRtcStreamStatsSnapshots[streamName] = videoData
             noteStreamBytesReceived(streamName, videoData.bytesReceived)
 
-            storedKeys.forEach((key) => {
-              const statId = streamStatVariableId(streamName, key)
-              if (statId === undefined) return
-              setDataLakeVariableData(statId, videoData[key])
+            const internalName = internalStreamName(streamName)
+            if (internalName === undefined) return
+
+            ensureWebRtcStatVariables(streamName)
+            webRtcStreamStatKeys.forEach((key) => {
+              setDataLakeVariableData(streamStatVariableId(internalName, key), videoData[key])
             })
           } catch (error) {
             console.error('Error while logging WebRTC statistics:', error)

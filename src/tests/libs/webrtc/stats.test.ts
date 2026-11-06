@@ -1,12 +1,6 @@
 import { expect, test, vi } from 'vitest'
 
-import {
-  monitorStreamPeerConnection,
-  noteStreamBytesReceived,
-  setStreamStatPublishedName,
-  streamStatVariableId,
-  trackVideoArrival,
-} from '@/libs/webrtc/stats'
+import { monitorStreamPeerConnection, noteStreamBytesReceived, trackVideoArrival } from '@/libs/webrtc/stats'
 
 test('Registers the new peer connection before dropping the previous one', () => {
   const calls: string[] = []
@@ -31,18 +25,6 @@ test('Registers the new peer connection before dropping the previous one', () =>
 
   expect(calls).toEqual(['add:new', 'remove:old'])
   expect(Object.keys(peersToMonitor)).toEqual(['new'])
-})
-
-test('Resolves stat ids to the internal stream name, and to nothing for an unmapped stream', () => {
-  const unmappedId = 'rtsp://user:secret@10.0.0.1/cam'
-  setStreamStatPublishedName((externalId) => (externalId === 'ext-cam' ? 'front' : undefined))
-
-  try {
-    expect(streamStatVariableId('ext-cam', 'bytesReceived')).toBe('stream-front-bytesReceived')
-    expect(streamStatVariableId(unmappedId, 'bytesReceived')).toBeUndefined()
-  } finally {
-    setStreamStatPublishedName(() => undefined)
-  }
 })
 
 test('Follows the video of a stream by its external id, whether or not it has a correspondency entry', () => {
