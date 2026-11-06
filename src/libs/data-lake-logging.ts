@@ -116,7 +116,7 @@ export interface DataLakeSessionInfo {
 /**
  * Lightweight session metadata persisted alongside the raw log points
  */
-interface DataLakeSessionRecord {
+export interface DataLakeSessionRecord {
   /**
    * Unique identifier for the session
    */
@@ -137,6 +137,54 @@ interface DataLakeSessionRecord {
    * Number of data points recorded in the session
    */
   dataPointCount: number
+}
+
+const sessionGapThresholdMs = 5 * 60 * 1000
+
+/**
+ * Widen a session's time range to cover a flushed batch, starting a new session when the gap is too
+ * large. Leaves dataPointCount unchanged so the count is credited only after the batch write lands.
+ * @param {DataLakeSessionRecord | null} session - Session currently being written, if any
+ * @param {number} bootId - Identifier of the Cockpit run producing the session
+ * @param {number} firstEpoch - Epoch of the first point in the batch
+ * @param {number} lastEpoch - Epoch of the last point in the batch
+ * @returns {DataLakeSessionRecord} Session covering the batch's range
+ */
+export const sessionRangeCoveringBatch = (
+  session: DataLakeSessionRecord | null,
+  bootId: number,
+  firstEpoch: number,
+  lastEpoch: number
+): DataLakeSessionRecord => {
+  if (!session || firstEpoch - session.endTime > sessionGapThresholdMs) {
+    return {
+      id: `session-${firstEpoch}`,
+      bootId,
+      startTime: firstEpoch,
+      endTime: lastEpoch,
+      dataPointCount: 0,
+    }
+  }
+
+  return { ...session, endTime: lastEpoch }
+}
+
+/**
+ * Credit a landed batch to the session covering it. Returns null when the epoch falls outside the
+ * session, so a late credit after a new session has started is dropped rather than applied to the wrong one.
+ * @param {DataLakeSessionRecord} session - Session that should own the batch
+ * @param {number} epoch - Epoch of the landed batch's first point
+ * @param {number} pointCount - Number of points in the landed batch
+ * @returns {DataLakeSessionRecord | null} Session with the points credited, or null when the epoch is out of range
+ */
+export const sessionWithCreditedPoints = (
+  session: DataLakeSessionRecord,
+  epoch: number,
+  pointCount: number
+): DataLakeSessionRecord | null => {
+  if (epoch < session.startTime || epoch > session.endTime) return null
+
+  return { ...session, dataPointCount: session.dataPointCount + pointCount }
 }
 
 /**
@@ -193,7 +241,7 @@ export class DataLakeLogger {
     description: 'Metadata for recorded data lake sessions (point count and time range).',
   })
 
-  static SESSION_GAP_THRESHOLD_MS = 5 * 60 * 1000
+  static SESSION_GAP_THRESHOLD_MS = sessionGapThresholdMs
 
   // ID of the session the running logger is currently writing to; only this one is "current".
   private static activeSessionId: string | null = null
@@ -458,8 +506,8 @@ export class DataLakeLogger {
   }
 
   /**
-   * Persist all buffered points as a single batched IndexedDB entry and update the session metadata
-   * once. No-op when the buffer is empty.
+   * Persist all buffered points as a single batched IndexedDB entry and widen the session range.
+   * Point count is credited after the write lands. No-op when the buffer is empty.
    */
   private flushPendingPoints(): void {
     if (this.pendingPoints.length === 0) return
@@ -471,34 +519,45 @@ export class DataLakeLogger {
     const lastEpoch = batch[batch.length - 1].epoch
     const key = `boot=${this.bootId};epoch=${firstEpoch};seq=${this.logPointSequence++}`
 
-    DataLakeLogger.logsDB.setItem(key, batch).catch((error) => {
-      console.error('Failed to store data lake log points:', error)
-    })
+    // Advance the session range synchronously so export and deletion can find the batch even on
+    // beforeunload, whose promise callbacks may never run. Count only after the batch write lands.
+    this.updateCurrentSessionRange(firstEpoch, lastEpoch)
 
-    this.updateCurrentSession(firstEpoch, lastEpoch, batch.length)
+    DataLakeLogger.logsDB
+      .setItem(key, batch)
+      .then(() => this.creditSessionPointCount(firstEpoch, batch.length))
+      .catch((error) => {
+        console.error('Failed to store data lake log points:', error)
+      })
   }
 
   /**
-   * Advance the current session's metadata for a freshly flushed batch, starting a new session when
-   * the gap since the last point exceeds the threshold (a restart already starts with no session).
+   * Credit a batch that finished storing to the session covering it, so the session's point count
+   * never overstates what is on disk
+   * @param {number} epoch - Epoch of the landed batch's first point
+   * @param {number} pointCount - Number of points in the landed batch
+   */
+  private creditSessionPointCount(epoch: number, pointCount: number): void {
+    const session = this.currentSession
+    if (!session) return
+
+    const credited = sessionWithCreditedPoints(session, epoch, pointCount)
+    if (credited === null) return
+
+    this.currentSession = credited
+    DataLakeLogger.sessionsDB.setItem(credited.id, { ...credited }).catch((error) => {
+      console.error('Failed to update data lake session record:', error)
+    })
+  }
+
+  /**
+   * Advance the current session's time range for a freshly flushed batch, starting a new session
+   * when the gap since the last point exceeds the threshold (a restart already starts with no session).
    * @param {number} firstEpoch - Epoch of the first point in the batch
    * @param {number} lastEpoch - Epoch of the last point in the batch
-   * @param {number} pointCount - Number of points in the batch
    */
-  private updateCurrentSession(firstEpoch: number, lastEpoch: number, pointCount: number): void {
-    if (!this.currentSession || firstEpoch - this.currentSession.endTime > DataLakeLogger.SESSION_GAP_THRESHOLD_MS) {
-      this.currentSession = {
-        id: `session-${firstEpoch}`,
-        bootId: this.bootId,
-        startTime: firstEpoch,
-        endTime: lastEpoch,
-        dataPointCount: pointCount,
-      }
-    } else {
-      this.currentSession.endTime = lastEpoch
-      this.currentSession.dataPointCount += pointCount
-    }
-
+  private updateCurrentSessionRange(firstEpoch: number, lastEpoch: number): void {
+    this.currentSession = sessionRangeCoveringBatch(this.currentSession, this.bootId, firstEpoch, lastEpoch)
     DataLakeLogger.activeSessionId = this.currentSession.id
     DataLakeLogger.sessionsDB.setItem(this.currentSession.id, { ...this.currentSession }).catch((error) => {
       console.error('Failed to update data lake session record:', error)
