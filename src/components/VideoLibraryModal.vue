@@ -53,10 +53,13 @@
                   >
                     <div class="flex flex-col p-2 gap-y-2">
                       <div>
-                        <strong>Computer:</strong> Command+click, Ctrl+click or Long click to select multiple videos.
+                        <strong>{{ t`Computer:` }}</strong>
+                        {{ t`Command+click, Ctrl+click or Long click to select multiple videos.` }}
                       </div>
 
-                      <div><strong>Mobile:</strong> Long press to select multiple videos.</div>
+                      <div>
+                        <strong>{{ t`Mobile:` }}</strong> {{ t`Long press to select multiple videos.` }}
+                      </div>
                     </div>
                   </v-tooltip>
                 </button>
@@ -68,7 +71,7 @@
                 >
                   <v-icon class="text-[18px]">mdi-close</v-icon>
                 </div>
-                <div class="text-sm">Close</div>
+                <div class="text-sm">{{ t`Close` }}</div>
               </button>
             </div>
           </div>
@@ -98,7 +101,7 @@
                       v-if="picture.thumbnail"
                       :src="(picture as any).thumbUrl"
                       class="w-full h-full object-cover"
-                      alt="Picture thumbnail"
+                      :alt="t`Picture thumbnail`"
                     />
                     <div reactive class="fullscreen-button" @click="openPicInFullScreen(picture)">
                       <v-icon size="40" class="text-white"> mdi-fullscreen </v-icon>
@@ -129,16 +132,16 @@
                 </div>
               </div>
               <div v-else class="flex flex-1 min-h-0 pt-6 items-center justify-center text-xl text-center px-6">
-                {{ loadingData ? 'Loading' : 'No pictures found' }}
+                {{ loadingData ? t`Loading` : t`No pictures found` }}
               </div>
               <div class="shrink-0 h-14 flex justify-between items-center px-4 border-t border-white/10">
                 <div class="flex items-center gap-2">
                   <template v-if="availablePictures.length > 1">
                     <v-btn variant="text" size="small" @click="toggleSelectionMode">
                       <v-tooltip open-delay="500" activator="parent" location="bottom">
-                        Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                        {{ isMultipleSelectionMode ? t`Select single files` : t`Select multiple files` }}
                       </v-tooltip>
-                      {{ isMultipleSelectionMode ? 'Single selection' : 'Multi selection' }}
+                      {{ isMultipleSelectionMode ? t`Single selection` : t`Multi selection` }}
                     </v-btn>
                     <v-btn
                       variant="text"
@@ -148,9 +151,9 @@
                       "
                     >
                       <v-tooltip open-delay="500" activator="parent" location="bottom">
-                        Select {{ selectedPicSet.size === availablePictures.length ? 'none' : 'all files' }}
+                        {{ selectedPicSet.size === availablePictures.length ? t`Select none` : t`Select all files` }}
                       </v-tooltip>
-                      {{ selectedPicSet.size === availablePictures.length ? 'None' : 'All' }}
+                      {{ selectedPicSet.size === availablePictures.length ? t`None` : t`All` }}
                     </v-btn>
                   </template>
                 </div>
@@ -162,7 +165,7 @@
                       :disabled="selectedPictures.length === 0"
                       @click="downloadPictures()"
                     >
-                      Download
+                      {{ t`Download` }}
                     </v-btn>
                     <v-btn
                       variant="text"
@@ -170,11 +173,13 @@
                       :disabled="selectedPictures.length === 0"
                       @click="handleDeletePictures()"
                     >
-                      Delete
+                      {{ t`Delete` }}
                     </v-btn>
                   </template>
                   <v-btn icon variant="text" class="mb-1" @click="openSnapshotFolder">
-                    <v-tooltip open-delay="500" activator="parent" location="bottom"> Open snapshots folder </v-tooltip>
+                    <v-tooltip open-delay="500" activator="parent" location="bottom">
+                      {{ t`Open snapshots folder` }}
+                    </v-tooltip>
                     <v-icon>mdi-folder-open-outline</v-icon>
                   </v-btn>
                 </div>
@@ -210,9 +215,9 @@
                   <div class="flex flex-col h-full min-h-0">
                     <div class="mx-5 pt-4 shrink-0">
                       <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium">Processed Videos</h3>
+                        <h3 class="text-lg font-medium">{{ t`Processed Videos` }}</h3>
                         <div class="flex items-center gap-4">
-                          <span class="text-sm text-white/70">Final videos with telemetry overlay</span>
+                          <span class="text-sm text-white/70">{{ t`Final videos with telemetry overlay` }}</span>
                         </div>
                       </div>
                     </div>
@@ -242,7 +247,7 @@
                           <!-- Video Info -->
                           <div class="flex-1 ml-4">
                             <div class="font-medium text-white">
-                              {{ parseDateFromTitle(video.fileName) || 'Cockpit video' }}
+                              {{ parseDateFromTitle(video.fileName) || t`Cockpit video` }}
                             </div>
                             <div class="text-sm text-white/70 mt-1">
                               {{ video.fileName }}
@@ -262,12 +267,12 @@
                               <span class="text-xs text-white/60 ml-1">
                                 {{
                                   video.isProcessed
-                                    ? 'Processed'
+                                    ? t`Processed`
                                     : isRecordingOngoing()
-                                    ? 'Recording ongoing'
+                                    ? t`Recording ongoing`
                                     : isFinalizingRecording()
-                                    ? 'Finishing up'
-                                    : 'Raw format'
+                                    ? t`Finishing up`
+                                    : t`Raw format`
                                 }}
                               </span>
                             </div>
@@ -281,7 +286,9 @@
                               size="small"
                               @click.stop="playVideoInDefaultPlayer(video.fileName)"
                             >
-                              <v-tooltip open-delay="500" activator="parent" location="bottom"> Play video </v-tooltip>
+                              <v-tooltip open-delay="500" activator="parent" location="bottom">
+                                {{ t`Play video` }}
+                              </v-tooltip>
                               <v-icon size="22">mdi-play</v-icon>
                             </v-btn>
                             <v-btn
@@ -292,7 +299,7 @@
                               @click.stop="handleDeleteVideos([video])"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                Delete video
+                                {{ t`Delete video` }}
                               </v-tooltip>
                               <v-icon>mdi-delete</v-icon>
                             </v-btn>
@@ -302,7 +309,7 @@
                     </div>
 
                     <div v-else class="flex flex-1 min-h-0 items-center justify-center text-xl text-center px-4">
-                      {{ loadingData ? 'Loading' : 'No videos on storage' }}
+                      {{ loadingData ? t`Loading` : t`No videos on storage` }}
                     </div>
 
                     <!-- Fixed Bottom Controls -->
@@ -311,9 +318,9 @@
                         <template v-if="availableVideos.length > 0">
                           <v-btn variant="text" size="small" @click="toggleSelectionMode">
                             <v-tooltip open-delay="500" activator="parent" location="bottom">
-                              Select {{ isMultipleSelectionMode ? 'single' : 'multiple' }} files
+                              {{ isMultipleSelectionMode ? t`Select single files` : t`Select multiple files` }}
                             </v-tooltip>
-                            {{ isMultipleSelectionMode ? 'Single' : 'Multi' }}
+                            {{ isMultipleSelectionMode ? t`Single` : t`Multi` }}
                           </v-btn>
                           <v-btn
                             variant="text"
@@ -323,9 +330,11 @@
                             "
                           >
                             <v-tooltip open-delay="500" activator="parent" location="bottom">
-                              Select {{ selectedVideos.length === availableVideos.length ? 'none' : 'all files' }}
+                              {{
+                                selectedVideos.length === availableVideos.length ? t`Select none` : t`Select all files`
+                              }}
                             </v-tooltip>
-                            {{ selectedVideos.length === availableVideos.length ? 'None' : 'All' }}
+                            {{ selectedVideos.length === availableVideos.length ? t`None` : t`All` }}
                           </v-btn>
                         </template>
                       </div>
@@ -333,7 +342,7 @@
                       <div class="flex items-center gap-2">
                         <template v-if="availableVideos.length > 0">
                           <span v-if="selectedVideos.length > 1" class="text-sm text-white/70">
-                            {{ selectedVideos.length }} videos selected
+                            {{ t`${selectedVideos.length} videos selected` }}
                           </span>
 
                           <v-btn
@@ -345,7 +354,7 @@
                             @click="handleDeleteVideos(selectedVideos)"
                           >
                             <v-tooltip open-delay="500" activator="parent" location="bottom">
-                              Delete {{ selectedVideos.length }} selected videos
+                              {{ t`Delete ${selectedVideos.length} selected videos` }}
                             </v-tooltip>
                             <v-icon>mdi-delete</v-icon>
                           </v-btn>
@@ -353,7 +362,7 @@
 
                         <v-btn icon variant="text" class="mb-1" @click="openVideoFolder">
                           <v-tooltip open-delay="500" activator="parent" location="bottom">
-                            Open videos folder
+                            {{ t`Open videos folder` }}
                           </v-tooltip>
                           <v-icon>mdi-folder-open-outline</v-icon>
                         </v-btn>
@@ -368,12 +377,12 @@
                     <!-- Browser: expandable instructions header -->
                     <div v-if="!isElectron()" class="px-4 pt-6 pb-3 shrink-0">
                       <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium">Raw Video Chunks</h3>
+                        <h3 class="text-lg font-medium">{{ t`Raw Video Chunks` }}</h3>
                         <div
                           class="flex items-center gap-2 cursor-pointer"
                           @click="isInstructionsExpanded = !isInstructionsExpanded"
                         >
-                          <span class="text-sm text-white/70">Cockpit Lite Instructions</span>
+                          <span class="text-sm text-white/70">{{ t`Cockpit Lite Instructions` }}</span>
                           <v-icon
                             class="text-white/70 transition-transform duration-200"
                             :class="{ 'rotate-180': isInstructionsExpanded }"
@@ -392,35 +401,38 @@
                             <v-icon class="text-white/70 mt-1">mdi-information</v-icon>
                             <div class="text-white/80 text-sm space-y-1">
                               <p>
-                                These are raw video chunks that need to be processed. The processing can be done
-                                exclusively in Cockpit standalone. Cockpit Lite can only record the video chunks.
+                                {{ t`These are raw video chunks that need to be processed.` }}
+                                {{ t`The processing can be done exclusively in Cockpit standalone.` }}
+                                {{ t`Cockpit Lite can only record the video chunks.` }}
                               </p>
                               <div>
-                                <p class="font-medium mb-2">To process your videos:</p>
+                                <p class="font-medium mb-2">{{ t`To process your videos:` }}</p>
                                 <ol class="space-y-0">
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">1.</span>
-                                    <span>Download your video chunks using the download buttons</span>
+                                    <span>{{ t`Download your video chunks using the download buttons` }}</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">2.</span>
-                                    <span>Open Cockpit standalone</span>
+                                    <span>{{ t`Open Cockpit standalone` }}</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">3.</span>
-                                    <span>Go to the "Processing" tab in the video library</span>
+                                    <span>{{ t`Go to the "Processing" tab in the video library` }}</span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">4.</span>
                                     <span>
-                                      Select and process your downloaded ZIP files (large recordings are split into
-                                      multiple part-zips — pick them all together, or just one and the rest will be
-                                      auto-detected if they're in the same folder)
+                                      {{
+                                        t`Select and process your downloaded ZIP files (large recordings are split into multiple part-zips — pick them all together, or just one and the rest will be auto-detected if they're in the same folder)`
+                                      }}
                                     </span>
                                   </li>
                                   <li class="flex items-start gap-2">
                                     <span class="text-white font-bold">5.</span>
-                                    <span>Once sure the video is processed, delete the raw video chunks from here</span>
+                                    <span>{{
+                                      t`Once sure the video is processed, delete the raw video chunks from here`
+                                    }}</span>
                                   </li>
                                 </ol>
                               </div>
@@ -432,8 +444,8 @@
                     <!-- Electron: simple header -->
                     <div v-else class="mx-5 pt-4 shrink-0">
                       <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium">Raw Video Chunks</h3>
-                        <span class="text-sm text-white/70">Backup raw data</span>
+                        <h3 class="text-lg font-medium">{{ t`Raw Video Chunks` }}</h3>
+                        <span class="text-sm text-white/70">{{ t`Backup raw data` }}</span>
                       </div>
                     </div>
 
@@ -451,7 +463,7 @@
                               {{ formatDate(group.firstChunkDate) }}
                             </div>
                             <div class="text-sm text-white/50 mt-1">
-                              {{ group.chunkCount }} chunks • ~{{ group.estimatedDuration }}s duration •
+                              {{ t`${group.chunkCount} chunks • ~${group.estimatedDuration}s duration` }} •
                               {{ formatBytes(group.totalSize) }}
                             </div>
                           </div>
@@ -465,7 +477,7 @@
                               @click="onProcessChunkGroup(group)"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                Process video chunks
+                                {{ t`Process video chunks` }}
                               </v-tooltip>
                               <v-icon>mdi-file-cog</v-icon>
                             </v-btn>
@@ -477,7 +489,7 @@
                               @click="onDownloadChunkGroup(group)"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                {{ isElectron() ? 'Download chunk group as ZIP' : 'Download chunk group' }}
+                                {{ isElectron() ? t`Download chunk group as ZIP` : t`Download chunk group` }}
                               </v-tooltip>
                               <v-icon>mdi-download</v-icon>
                             </v-btn>
@@ -489,7 +501,7 @@
                               @click="onDeleteChunkGroup(group)"
                             >
                               <v-tooltip open-delay="500" activator="parent" location="bottom">
-                                Delete chunk group
+                                {{ t`Delete chunk group` }}
                               </v-tooltip>
                               <v-icon>mdi-delete</v-icon>
                             </v-btn>
@@ -503,19 +515,19 @@
                       <div class="max-w-md mx-auto">
                         <template v-if="chunkLoadingData">
                           <v-progress-circular indeterminate color="white" size="60" width="3" class="mb-4" />
-                          <h4 class="text-lg font-medium text-white mb-2">Loading Video Chunks</h4>
-                          <p class="text-white/70 text-sm">Counting chunks and calculating sizes...</p>
+                          <h4 class="text-lg font-medium text-white mb-2">{{ t`Loading Video Chunks` }}</h4>
+                          <p class="text-white/70 text-sm">{{ t`Counting chunks and calculating sizes...` }}</p>
                         </template>
                         <template v-else>
                           <v-icon size="60" class="text-white/30 mb-4">mdi-folder-multiple-outline</v-icon>
                           <h4 class="text-lg font-medium text-white mb-2">
-                            {{ isElectron() ? 'No Raw Chunks Found' : 'No Video Chunks Found' }}
+                            {{ isElectron() ? t`No Raw Chunks Found` : t`No Video Chunks Found` }}
                           </h4>
                           <p class="text-white/70 text-sm">
                             {{
                               isElectron()
-                                ? 'Start recording videos to create raw chunks.'
-                                : 'Start recording videos to create chunks that can be downloaded.'
+                                ? t`Start recording videos to create raw chunks.`
+                                : t`Start recording videos to create chunks that can be downloaded.`
                             }}
                           </p>
                         </template>
@@ -524,16 +536,16 @@
 
                     <!-- Footer -->
                     <div class="shrink-0 h-14 flex justify-end items-center gap-4 px-4 border-t border-white/10">
-                      <span class="text-sm text-white/70">Total: {{ formatBytes(totalChunkSize) }}</span>
+                      <span class="text-sm text-white/70">{{ t`Total:` }} {{ formatBytes(totalChunkSize) }}</span>
                       <v-btn icon variant="text" class="mb-1" :disabled="isProcessingChunks" @click="onDeleteAllChunks">
                         <v-tooltip open-delay="500" activator="parent" location="bottom">
-                          Delete all raw chunks
+                          {{ t`Delete all raw chunks` }}
                         </v-tooltip>
                         <v-icon>mdi-delete</v-icon>
                       </v-btn>
                       <v-btn v-if="isElectron()" icon variant="text" class="mb-1" @click="onOpenVideoChunksFolder">
                         <v-tooltip open-delay="500" activator="parent" location="bottom">
-                          Open raw chunks folder
+                          {{ t`Open raw chunks folder` }}
                         </v-tooltip>
                         <v-icon>mdi-folder-open-outline</v-icon>
                       </v-btn>
@@ -547,9 +559,11 @@
                     <!-- Processing Container (Top) -->
                     <div class="flex-1 overflow-y-auto px-4 py-6">
                       <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium">Process ZIP Files</h3>
+                        <h3 class="text-lg font-medium">{{ t`Process ZIP Files` }}</h3>
                         <div class="flex items-center gap-4">
-                          <span class="text-sm text-white/70">Process raw chunks from Cockpit Lite (web version)</span>
+                          <span class="text-sm text-white/70">{{
+                            t`Process raw chunks from Cockpit Lite (web version)`
+                          }}</span>
                         </div>
                       </div>
 
@@ -557,7 +571,7 @@
                       <div v-if="isProcessingZip" class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 mb-4">
                         <div class="flex items-center gap-3 mb-3">
                           <v-progress-circular indeterminate color="blue" size="24" width="2" />
-                          <span class="text-blue-200 font-medium">Processing ZIP file(s)...</span>
+                          <span class="text-blue-200 font-medium">{{ t`Processing ZIP file(s)...` }}</span>
                         </div>
                         <div class="text-blue-100 text-sm">
                           {{ zipProcessingMessage }}
@@ -579,20 +593,21 @@
                       >
                         <div class="flex items-center gap-3 mb-3">
                           <v-icon color="green" size="24">mdi-check-circle</v-icon>
-                          <span class="text-green-200 font-medium">Processing Complete!</span>
+                          <span class="text-green-200 font-medium">{{ t`Processing Complete!` }}</span>
                         </div>
                         <div class="text-green-100 text-sm">
-                          The ZIP file(s) have been successfully processed. The video is now available in the Videos
-                          tab.
+                          {{
+                            t`The ZIP file(s) have been successfully processed. The video is now available in the Videos tab.`
+                          }}
                         </div>
                         <div class="mt-4 flex gap-2">
                           <v-btn variant="outlined" size="small" @click="onProcessAnotherZip">
                             <v-icon class="mr-2">mdi-plus</v-icon>
-                            Process More ZIP Files
+                            {{ t`Process More ZIP Files` }}
                           </v-btn>
                           <v-btn variant="outlined" size="small" @click="currentVideoSubTab = 'processed'">
                             <v-icon class="mr-2">mdi-video</v-icon>
-                            View Videos
+                            {{ t`View Videos` }}
                           </v-btn>
                         </div>
                       </div>
@@ -604,16 +619,18 @@
                       >
                         <div class="text-center">
                           <v-icon size="48" class="text-slate-400 mb-3">mdi-zip-box</v-icon>
-                          <h4 class="text-lg font-medium text-white mb-2">Process ZIP File(s)</h4>
+                          <h4 class="text-lg font-medium text-white mb-2">{{ t`Process ZIP File(s)` }}</h4>
                           <p class="text-white/70 text-sm mb-4">
-                            Select one or more ZIP files containing raw video chunks downloaded from Cockpit Lite.
-                            Recordings larger than 1GB are split into multiple part-zips — select all of them (or just
-                            one and we'll auto-detect the rest in the same folder) so we can stitch every chunk into a
-                            single video.
+                            {{
+                              t`Select one or more ZIP files containing raw video chunks downloaded from Cockpit Lite.`
+                            }}
+                            {{
+                              t`Recordings larger than 1GB are split into multiple part-zips — select all of them (or just one and we'll auto-detect the rest in the same folder) so we can stitch every chunk into a single video.`
+                            }}
                           </p>
                           <v-btn variant="outlined" size="large" @click="handleProcessVideoChunksZip">
                             <v-icon class="mr-2">mdi-folder-open</v-icon>
-                            Select and Process ZIP File(s)
+                            {{ t`Select and Process ZIP File(s)` }}
                           </v-btn>
                         </div>
                       </div>
@@ -624,27 +641,32 @@
                       <div class="flex items-start gap-3">
                         <v-icon class="mt-1 text-white/70">mdi-information</v-icon>
                         <div class="flex flex-col w-full">
-                          <h4 class="text-white font-medium mb-3">Processing Instructions</h4>
+                          <h4 class="text-white font-medium mb-3">{{ t`Processing Instructions` }}</h4>
                           <ol class="text-white/80 text-sm space-y-2">
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">1.</span>
-                              <span>Download raw video chunks from Cockpit Lite's "Raw" tab</span>
+                              <span>{{ t`Download raw video chunks from Cockpit Lite's "Raw" tab` }}</span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">2.</span>
                               <span>
-                                Select all ZIP files for the recording (recordings over 1GB are split into multiple
-                                part-zips). Picking a single part-zip is fine too — sibling parts in the same folder are
-                                auto-detected.
+                                {{
+                                  t`Select all ZIP files for the recording (recordings over 1GB are split into multiple part-zips).`
+                                }}
+                                {{
+                                  t`Picking a single part-zip is fine too — sibling parts in the same folder are auto-detected.`
+                                }}
                               </span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">3.</span>
-                              <span>Click "Process ZIP" to extract every part and stitch the chunks into one MP4</span>
+                              <span>{{
+                                t`Click "Process ZIP" to extract every part and stitch the chunks into one MP4`
+                              }}</span>
                             </li>
                             <li class="flex items-start gap-2">
                               <span class="text-white font-bold">4.</span>
-                              <span>The processed video will appear in the "Videos" tab</span>
+                              <span>{{ t`The processed video will appear in the "Videos" tab` }}</span>
                             </li>
                           </ol>
                         </div>
@@ -673,7 +695,7 @@
           v-if="fullScreenPicture"
           :src="fullScreenPicture.blob ? createObjectURL(fullScreenPicture.blob) : ''"
           class="block object-contain max-w-full h-[90vh]"
-          alt="Full Screen Picture"
+          :alt="t`Full Screen Picture`"
         />
         <v-btn
           class="absolute top-2 right-2 p-1 bg-[#00000055] text-white"
@@ -719,6 +741,7 @@
 
 <script setup lang="ts">
 import * as Hammer from 'hammerjs'
+import { msgid, ngettext, t } from 'ttag'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -830,24 +853,24 @@ const menuButtons = [
 const videoSubTabs = [
   {
     name: 'processed',
-    label: 'Processed',
+    label: t`Processed`,
     icon: 'mdi-video',
     disabled: !isElectron(),
-    tooltip: isElectron() ? '' : 'Only available in Cockpit standalone',
+    tooltip: isElectron() ? '' : t`Only available in Cockpit standalone`,
   },
   {
     name: 'raw',
-    label: 'Raw',
+    label: t`Raw`,
     icon: 'mdi-folder-multiple-outline',
     disabled: false,
-    tooltip: 'Manage raw video chunks',
+    tooltip: t`Manage raw video chunks`,
   },
   {
     name: 'processing',
-    label: 'Processing',
+    label: t`Processing`,
     icon: 'mdi-cog-outline',
     disabled: !isElectron(),
-    tooltip: isElectron() ? 'Process ZIP files with raw video chunks' : 'Only available in Cockpit standalone',
+    tooltip: isElectron() ? t`Process ZIP files with raw video chunks` : t`Only available in Cockpit standalone`,
   },
 ]
 
@@ -856,7 +879,7 @@ const openElectronFolder = (opener: () => void): void => {
     opener()
   } else {
     openSnackbar({
-      message: 'This feature is only available in Cockpit standalone.',
+      message: t`This feature is only available in Cockpit standalone.`,
       duration: 3000,
       variant: 'error',
       closeButton: true,
@@ -878,7 +901,7 @@ const playVideoInDefaultPlayer = (fileName: string): void => {
   if (isElectron() && window.electronAPI) {
     window.electronAPI?.openVideoFile(fileName)
   } else {
-    openSnackbar({ message: 'This feature is only available in Cockpit standalone.', variant: 'error' })
+    openSnackbar({ message: t`This feature is only available in Cockpit standalone.`, variant: 'error' })
   }
 }
 
@@ -894,7 +917,7 @@ const deletePictures = async (pictureFileName?: string): Promise<void> => {
     deleteButtonLoading.value = true
     await snapshotStore.deleteSnapshotFiles(pictureFileName ? [pictureFileName] : selectedPictures.value)
     openSnackbar({
-      message: 'Snapshots deleted successfully.',
+      message: t`Snapshots deleted successfully.`,
       duration: 3000,
       variant: 'success',
       closeButton: true,
@@ -903,7 +926,8 @@ const deletePictures = async (pictureFileName?: string): Promise<void> => {
     deselectAllPictures()
     await fetchPictures()
   } catch (error) {
-    const errorMsg = `Error deleting picture: ${(error as Error).message ?? error!.toString()}`
+    const reason = (error as Error).message ?? error!.toString()
+    const errorMsg = t`Error deleting picture: ${reason}`
     console.error(errorMsg)
     openSnackbar({
       message: errorMsg,
@@ -917,17 +941,18 @@ const deletePictures = async (pictureFileName?: string): Promise<void> => {
 }
 
 const handleDeletePictures = (picture?: SnapshotLibraryFile): void => {
+  const target = picture ? picture.filename : selectedPictures.value.length
   showDialog({
     variant: 'warning',
-    message: `Delete ${picture ? picture.filename : selectedPictures.value.length} picture(s)?`,
+    message: t`Delete ${target} picture(s)?`,
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         size: 'small',
         action: closeDialog,
       },
       {
-        text: 'Delete',
+        text: t`Delete`,
         size: 'small',
         action: () => {
           deletePictures(picture ? picture.filename : undefined)
@@ -940,20 +965,19 @@ const handleDeletePictures = (picture?: SnapshotLibraryFile): void => {
 
 const handleDeleteVideos = (videos: VideoLibraryFile[]): void => {
   const videoCount = videos.length
-  const videoText = videoCount === 1 ? 'video' : 'videos'
 
   showDialog({
     variant: 'warning',
-    title: `Delete ${videoCount} ${videoText}?`,
-    message: 'Are you sure you want to delete the selected videos?',
+    title: ngettext(msgid`Delete ${videoCount} video?`, `Delete ${videoCount} videos?`, videoCount),
+    message: t`Are you sure you want to delete the selected videos?`,
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         size: 'small',
         action: closeDialog,
       },
       {
-        text: 'Delete',
+        text: t`Delete`,
         size: 'small',
         action: () => {
           discardVideosAndUpdateDB(videos)
@@ -969,13 +993,14 @@ const downloadPictures = async (pictureFileName?: string): Promise<void> => {
     logUserAction(`Downloaded ${pictureFileName ? `picture '${pictureFileName}'` : 'selected pictures'}`)
     await snapshotStore.downloadFilesFromSnapshotDB(pictureFileName ? [pictureFileName] : selectedPictures.value)
     openSnackbar({
-      message: 'Pictures downloaded successfully.',
+      message: t`Pictures downloaded successfully.`,
       duration: 3000,
       variant: 'success',
       closeButton: true,
     })
   } catch (error) {
-    const errorMsg = `Error downloading picture: ${(error as Error).message ?? error!.toString()}`
+    const reason = (error as Error).message ?? error!.toString()
+    const errorMsg = t`Error downloading picture: ${reason}`
     console.error(errorMsg)
     openSnackbar({
       message: errorMsg,
@@ -1096,7 +1121,7 @@ const discardVideosAndUpdateDB = async (videos?: VideoLibraryFile[]): Promise<vo
   const dataLogFilesAdded = addLogDataToFileList(processedVideosToDiscard)
   await videoStore.discardProcessedFilesFromVideoDB(dataLogFilesAdded)
 
-  snackbarMessage.value = `${selectedVideoArraySize} video(s) discarded.`
+  snackbarMessage.value = t`${selectedVideoArraySize} video(s) discarded.`
   openSnackbar({
     message: snackbarMessage.value,
     duration: 3000,
@@ -1345,7 +1370,7 @@ const loadVideoBlobIntoPlayer = async (videoFileName: string): Promise<void> => 
       videoPlayer.load()
     }
   } catch (error) {
-    const msg = 'Error loading video blob into player'
+    const msg = t`Error loading video blob into player`
     openSnackbar({ message: msg, duration: 3000, variant: 'error', closeButton: true })
     videoLoadError.value = true
   } finally {

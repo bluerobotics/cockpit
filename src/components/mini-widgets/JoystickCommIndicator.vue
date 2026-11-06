@@ -21,7 +21,7 @@
 
     <InteractionDialog
       v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
-      :title="joystickConnected ? 'Joystick connected' : 'Joystick disconnected'"
+      :title="joystickConnected ? t`Joystick connected` : t`Joystick disconnected`"
       max-width="400px"
       variant="text-only"
     >
@@ -39,13 +39,14 @@
         </div>
       </template>
       <template #actions>
-        <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">Close</v-btn>
+        <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">{{ t`Close` }}</v-btn>
       </template>
     </InteractionDialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onMounted, ref, toRefs } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
@@ -80,14 +81,14 @@ const indicatorClass = computed(() => {
 })
 
 const tooltipText = computed(() => {
-  if (!joystickConnected.value) return 'Joystick disconnected'
-  if (!controllerStore.enableForwarding) return 'Joystick connected but disabled'
-  return 'Joystick connected and enabled'
+  if (!joystickConnected.value) return t`Joystick disconnected`
+  if (!controllerStore.enableForwarding) return t`Joystick connected but disabled`
+  return t`Joystick connected and enabled`
 })
 
 const switchLabel = computed(() => {
-  if (controllerStore.enableForwarding) return 'Joystick commands enabled'
-  return 'Joystick commands paused'
+  if (controllerStore.enableForwarding) return t`Joystick commands enabled`
+  return t`Joystick commands paused`
 })
 
 const setJoystickForwarding = (value: boolean | null): void => {

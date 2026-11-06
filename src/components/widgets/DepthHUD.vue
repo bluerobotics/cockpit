@@ -4,12 +4,12 @@
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Depth HUD config</v-card-title>
+      <v-card-title class="text-center">{{ t`Depth HUD config` }}</v-card-title>
       <v-card-text>
         <v-select
           v-if="!configUseCustomAltitudeVariable"
           v-model="configAltitudeVariableId"
-          label="Altitude source"
+          :label="t`Altitude source`"
           :items="altitudeSourceOptions"
           item-title="title"
           item-value="value"
@@ -28,8 +28,8 @@
           item-title="name"
           item-value="id"
           :value-comparator="isSameDataLakeVariableId"
-          label="Data lake variable"
-          hint="Select any numeric data lake variable"
+          :label="t`Data lake variable`"
+          :hint="t`Select any numeric data lake variable`"
           persistent-hint
           theme="dark"
           variant="outlined"
@@ -41,14 +41,14 @@
         />
         <v-checkbox
           v-model="configUseCustomAltitudeVariable"
-          label="Use custom data lake variable"
+          :label="t`Use custom data lake variable`"
           hide-details
           class="mb-2"
           @update:model-value="onUseCustomAltitudeVariableToggled"
         />
         <v-switch
           class="ma-1"
-          label="Show height value"
+          :label="t`Show height value`"
           :model-value="widget.options.showDepthValue"
           :color="widget.options.showDepthValue ? 'white' : undefined"
           hide-details
@@ -56,7 +56,7 @@
         />
         <v-expansion-panels theme="dark">
           <v-expansion-panel class="bg-[#FFFFFF11] text-white">
-            <v-expansion-panel-title>Color</v-expansion-panel-title>
+            <v-expansion-panel-title>{{ t`Color` }}</v-expansion-panel-title>
             <v-expansion-panel-text>
               <v-color-picker
                 v-model="widget.options.hudColor"

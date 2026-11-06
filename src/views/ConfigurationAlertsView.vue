@@ -1,22 +1,22 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Alerts configuration</template>
+    <template #title>{{ t`Alerts configuration` }}</template>
     <template #content>
       <div
         class="flex flex-col justify-around align-start ml-5 max-h-[85vh] overflow-y-auto"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[70vw]' : 'max-w-[40vw]'"
       >
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen" no-top-divider>
-          <template #title>Voice alerts:</template>
+          <template #title>{{ t`Voice alerts:` }}</template>
           <template #info>
-            Enable voice alerts to receive audible notifications about system and vehicle activities. <br />
-            Select specific alert levels to customize which types of notifications you receive.
+            {{ t`Enable voice alerts to receive audible notifications about system and vehicle activities.` }} <br />
+            {{ t`Select specific alert levels to customize which types of notifications you receive.` }}
           </template>
           <template #content>
             <div class="flex justify-between">
               <v-switch
                 :model-value="alertStore.enableVoiceAlerts"
-                label="Enable voice alerts"
+                :label="t`Enable voice alerts`"
                 color="white"
                 class="ml-3"
                 @update:model-value="setVoiceAlertsEnabled"
@@ -27,13 +27,13 @@
                 max="1"
                 step="0.05"
                 hide-details
-                label="Alerts volume"
+                :label="t`Alerts volume`"
                 color="white"
                 class="max-w-[300px]"
                 :disabled="!alertStore.enableVoiceAlerts"
               />
             </div>
-            <span class="text-sm font-medium mt-4">Alert levels:</span>
+            <span class="text-sm font-medium mt-4">{{ t`Alert levels:` }}</span>
             <div class="flex flex-wrap items-center justify-start">
               <div
                 v-for="enabledLevel in alertStore.enabledAlertLevels"
@@ -49,7 +49,7 @@
                 />
               </div>
             </div>
-            <span class="text-sm font-medium mt-4">Alert voice:</span>
+            <span class="text-sm font-medium mt-4">{{ t`Alert voice:` }}</span>
             <div class="flex items-center gap-x-3 mt-2 mb-2 ml-2 max-w-[620px]">
               <v-select
                 v-if="voiceOptions.length > 0"
@@ -57,7 +57,7 @@
                 :items="voiceOptions"
                 item-title="name"
                 item-value="value"
-                aria-label="Alert voice"
+                :aria-label="t`Alert voice`"
                 theme="dark"
                 density="compact"
                 variant="outlined"
@@ -66,9 +66,10 @@
                 @update:model-value="setAlertVoice"
               />
               <p v-else-if="voiceListSettled" class="text-sm text-yellow-300 max-w-[350px]">
-                Voice system not working: no speech voice found.
+                {{ t`Voice system not working: no speech voice found.` }}
                 <template v-if="hostOs === 'Linux'">
-                  Install <span class="font-mono">speech-dispatcher</span> and <span class="font-mono">espeak-ng</span>.
+                  {{ t`Install` }} <span class="font-mono">speech-dispatcher</span> {{ t`and` }}
+                  <span class="font-mono">espeak-ng</span>.
                 </template>
               </p>
               <template v-if="piperAvailable && !allHdVoicesDownloaded">
@@ -79,13 +80,13 @@
                   class="text-none bg-[#FFFFFF22] text-white shrink-0"
                   @click="promptDownloadHdVoices"
                 >
-                  Download higher-quality voices
+                  {{ t`Download higher-quality voices` }}
                 </v-btn>
                 <div v-else class="flex items-center gap-x-2 shrink-0">
                   <div class="w-[220px]">
                     <v-progress-linear :model-value="hdDownloadPercent" height="4" color="white" rounded />
                     <p class="text-xs opacity-70 mt-1 text-center leading-none">
-                      {{ hdDownloadProgress.completed }} of {{ hdDownloadProgress.total }} voices
+                      {{ t`${hdDownloadProgress.completed} of ${hdDownloadProgress.total} voices` }}
                     </p>
                   </div>
                   <v-btn
@@ -94,7 +95,7 @@
                     class="text-none bg-[#FFFFFF22] text-white"
                     @click="cancelHdVoiceDownload"
                   >
-                    Cancel
+                    {{ t`Cancel` }}
                   </v-btn>
                 </div>
               </template>
@@ -105,7 +106,7 @@
                 class="text-none bg-[#FFFFFF22] text-white shrink-0 ml-auto"
                 @click="promptDeleteHdVoices"
               >
-                Remove higher-quality voices
+                {{ t`Remove higher-quality voices` }}
               </v-btn>
             </div>
             <v-checkbox
@@ -122,7 +123,7 @@
         <!-- Armed Menu Warning Toggle -->
         <v-switch
           :model-value="!alertStore.neverShowArmedMenuWarning"
-          label="Show warning when opening menu with armed vehicle"
+          :label="t`Show warning when opening menu with armed vehicle`"
           color="white"
           class="mt-3 mb-2 ml-3"
           hide-details
@@ -134,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { capitalize, computed } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -167,7 +169,8 @@ const {
 } = useTextToSpeech()
 
 const hostOs = hostOsName()
-const osVoicesLabel = `Also list ${hostOs ?? "this computer's"} default speech voices`
+const osVoicesHost = hostOs ?? t`this computer's`
+const osVoicesLabel = t`Also list ${osVoicesHost} default speech voices`
 
 const hdDownloadPercent = computed(() => {
   const { completed, total, voiceProgress } = hdDownloadProgress.value
@@ -192,7 +195,7 @@ const setAlertVoice = (value: unknown): void => {
   logUserAction(`Set alert voice to '${value}'`)
   selectedVoiceId.value = value as string
   if (alertStore.alertVolume === 0) {
-    openSnackbar({ message: 'Voice set. Raise the alerts volume to hear it.', variant: 'info', duration: 5000 })
+    openSnackbar({ message: t`Voice set. Raise the alerts volume to hear it.`, variant: 'info', duration: 5000 })
     return
   }
   void speak('Voice alerts will sound like this.', alertStore.alertVolume)
@@ -211,10 +214,13 @@ const setShowArmedMenuWarning = (value: boolean | null): void => {
 }
 
 const downloadOutcomes = {
-  ok: { message: 'Higher-quality voices downloaded.', variant: 'success' },
-  cancelled: { message: 'Higher-quality voices download cancelled.', variant: 'info' },
-  failed: { message: 'Could not download all voices. Check your internet connection and try again.', variant: 'error' },
-  busy: { message: 'A voice download is already running.', variant: 'info' },
+  ok: { message: t`Higher-quality voices downloaded.`, variant: 'success' },
+  cancelled: { message: t`Higher-quality voices download cancelled.`, variant: 'info' },
+  failed: {
+    message: t`Could not download all voices. Check your internet connection and try again.`,
+    variant: 'error',
+  },
+  busy: { message: t`A voice download is already running.`, variant: 'info' },
 } as const
 
 const startHdVoiceDownload = async (): Promise<void> => {
@@ -232,23 +238,23 @@ const cancelHdVoiceDownload = (): void => {
 const promptDownloadHdVoices = (): void => {
   logUserAction('Opened the higher-quality voices download dialog')
   showDialog({
-    title: 'Download higher-quality voices',
+    title: t`Download higher-quality voices`,
     variant: 'info',
     maxWidth: 520,
     message: [
-      'Downloads four higher-quality neural voices: Amy and Lessac (female), Ryan and Joe (male).',
-      'This transfers about 250 MB and uses roughly the same amount of disk space. The voices then work offline.',
+      t`Downloads four higher-quality neural voices: Amy and Lessac (female), Ryan and Joe (male).`,
+      t`This transfers about 250 MB and uses roughly the same amount of disk space. The voices then work offline.`,
     ],
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         action: () => {
           logUserAction('Cancelled the higher-quality voices download')
           closeDialog()
         },
       },
       {
-        text: 'Download',
+        text: t`Download`,
         class: 'bg-[#FFFFFF33] text-white',
         action: () => {
           logUserAction('Confirmed the higher-quality voices download')
@@ -263,7 +269,7 @@ const promptDownloadHdVoices = (): void => {
 const removeHdVoices = async (): Promise<void> => {
   const success = await deleteHdVoices()
   openSnackbar({
-    message: success ? 'Higher-quality voices removed.' : 'Could not remove the downloaded voices.',
+    message: success ? t`Higher-quality voices removed.` : t`Could not remove the downloaded voices.`,
     variant: success ? 'success' : 'error',
     duration: 5000,
   })
@@ -272,23 +278,23 @@ const removeHdVoices = async (): Promise<void> => {
 const promptDeleteHdVoices = (): void => {
   logUserAction('Opened the remove higher-quality voices dialog')
   showDialog({
-    title: 'Remove higher-quality voices',
+    title: t`Remove higher-quality voices`,
     variant: 'warning',
     maxWidth: 520,
     message: [
-      'Delete the downloaded higher-quality voices and free up their disk space?',
-      'Amy reverts to the built-in voice, and the others are removed until downloaded again.',
+      t`Delete the downloaded higher-quality voices and free up their disk space?`,
+      t`Amy reverts to the built-in voice, and the others are removed until downloaded again.`,
     ],
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         action: () => {
           logUserAction('Cancelled removing the higher-quality voices')
           closeDialog()
         },
       },
       {
-        text: 'Remove',
+        text: t`Remove`,
         class: 'bg-[#FFFFFF33] text-white',
         action: () => {
           logUserAction('Confirmed removing the higher-quality voices')

@@ -20,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed } from 'vue'
 
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -27,9 +28,9 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 const store = useMainVehicleStore()
 
 const commTooltip = computed((): string => {
-  if (store.isVehicleOnline) return 'Vehicle connected'
-  if (store.isVehicleConnectionLost) return 'Vehicle disconnected'
-  return 'No vehicle connected'
+  if (store.isVehicleOnline) return t`Vehicle connected`
+  if (store.isVehicleConnectionLost) return t`Vehicle disconnected`
+  return t`No vehicle connected`
 })
 </script>
 

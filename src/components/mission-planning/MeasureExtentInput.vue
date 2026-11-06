@@ -1,7 +1,7 @@
 <template>
   <input
     ref="inputEl"
-    :aria-label="`${label} in ${unit}`"
+    :aria-label="t`${label} in ${unit}`"
     class="absolute z-[641] w-[110px] h-[30px] -translate-x-1/2 -translate-y-1/2 bg-transparent text-transparent caret-transparent outline-none pointer-events-none"
     :style="{ left: `${left}px`, top: `${top}px` }"
     type="number"

@@ -14,7 +14,7 @@
           >
             mdi-drag
           </v-icon>
-          <div class="select-none text-[14px] font-bold mt-[1px]">Mission control panel</div>
+          <div class="select-none text-[14px] font-bold mt-[1px]">{{ t`Mission control panel` }}</div>
           <v-btn
             :icon="isWrapped ? 'mdi-chevron-up' : 'mdi-chevron-down'"
             variant="text"
@@ -31,7 +31,7 @@
             style="border-radius: 3px"
           >
             <div class="flex justify-around items-center w-full">
-              <v-tooltip location="top" open-delay="800" text="Skip to previous waypoint">
+              <v-tooltip location="top" open-delay="800" :text="t`Skip to previous waypoint`">
                 <template #activator="{ props: skipPrevProps }">
                   <v-btn
                     v-bind="skipPrevProps"
@@ -47,7 +47,7 @@
               <v-tooltip
                 location="top"
                 open-delay="800"
-                :text="missionStore.isMissionRunning ? 'Pause mission' : 'Start / resume mission'"
+                :text="missionStore.isMissionRunning ? t`Pause mission` : t`Start / resume mission`"
               >
                 <template #activator="{ props: playPauseProps }">
                   <v-btn
@@ -61,7 +61,7 @@
                   />
                 </template>
               </v-tooltip>
-              <v-tooltip location="top" open-delay="800" text="Skip to next waypoint">
+              <v-tooltip location="top" open-delay="800" :text="t`Skip to next waypoint`">
                 <template #activator="{ props: skipNextProps }">
                   <v-btn
                     v-bind="skipNextProps"
@@ -76,7 +76,7 @@
               </v-tooltip>
               <v-divider vertical class="h-[25px] mt-[3px] mx-1 opacity-10" />
               <CruiseSpeedControl />
-              <v-tooltip location="top" open-delay="800" text="Return to home">
+              <v-tooltip location="top" open-delay="800" :text="t`Return to home`">
                 <template #activator="{ props: homeProps }">
                   <v-btn
                     v-bind="homeProps"
@@ -94,7 +94,7 @@
               <div
                 class="flex flex-col justify-center items-center w-[54px] h-[35px] mx-1 text-[10px] border-[1px] border-[#ffffff33] rounded-[4px] elevation-1 bg-[#EFFFFF22] select-none"
               >
-                <div class="w-full text-nowrap text-center font-bold text-shadow-md">Curr. WP</div>
+                <div class="w-full text-nowrap text-center font-bold text-shadow-md">{{ t`Curr. WP` }}</div>
                 <div class="text-[12px] -mt-[2px] font-bold">{{ currentWaypointOnMission }}</div>
               </div>
               <v-menu v-model="moreMenuOpen" offset-y theme="dark">
@@ -114,11 +114,11 @@
                     class="cursor-pointer"
                     @click="handleDownloadMissionOnMap"
                   >
-                    <v-list-item-title>Download mission from vehicle</v-list-item-title>
+                    <v-list-item-title>{{ t`Download mission from vehicle` }}</v-list-item-title>
                   </v-list-item>
 
                   <v-list-item class="cursor-pointer" @click="handleClearMissionOnMap">
-                    <v-list-item-title>Clear mission on map</v-list-item-title>
+                    <v-list-item-title>{{ t`Clear mission on map` }}</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -131,6 +131,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeMount, ref, toRefs, watch } from 'vue'
 
 import CruiseSpeedControl from '@/components/mission-planning/CruiseSpeedControl.vue'
@@ -217,24 +218,25 @@ onBeforeMount(() => {
 
 const handleReturnHome = (): void => {
   showDialog({
-    title: 'Return to home',
-    message: 'Are you sure you want to send the vehicle home?',
+    title: t`Return to home`,
+    message: t`Are you sure you want to send the vehicle home?`,
     variant: 'warning',
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         size: 'small',
         action: closeDialog,
       },
       {
-        text: 'Confirm',
+        text: t`Confirm`,
         size: 'small',
         action: () => {
           logUserAction('Confirmed return to home from mission control panel')
           closeDialog()
           vehicleStore.returnHome().catch((err) => {
+            const errorMessage = (err as Error).message
             openSnackbar({
-              message: `Failed to return home: ${(err as Error).message}`,
+              message: t`Failed to return home: ${errorMessage}`,
               variant: 'error',
             })
           })
@@ -254,8 +256,11 @@ const handlePlayAndPause = async (): Promise<void> => {
       await vehicleStore.pauseMission()
     }
   } catch (err) {
+    const errorMessage = (err as Error).message
     openSnackbar({
-      message: `Failed to ${missionStore.isMissionRunning ? 'pause' : 'start'} mission: ${(err as Error).message}`,
+      message: missionStore.isMissionRunning
+        ? t`Failed to pause mission: ${errorMessage}`
+        : t`Failed to start mission: ${errorMessage}`,
       variant: 'error',
     })
   }

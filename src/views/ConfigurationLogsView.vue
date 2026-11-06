@@ -6,7 +6,7 @@
           icon="mdi-help-circle-outline"
           :icon-size="interfaceStore.isOnSmallScreen ? 14 : 18"
           :icon-class="interfaceStore.isOnSmallScreen ? '-mt-[2px]' : '-mb-[3px]'"
-          tooltip="Help"
+          :tooltip="t`Help`"
           tooltip-location="bottom"
           variant="uncontained"
           no-effects
@@ -14,7 +14,7 @@
         />
       </template>
       <template #title
-        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">On screen telemetry data</div></template
+        ><div :class="interfaceStore.isOnPhoneScreen ? '' : 'mt-1'">{{ t`On screen telemetry data` }}</div></template
       >
       <template #content>
         <div
@@ -33,7 +33,7 @@
           >
             <div id="leftColumn" class="flex flex-col justify-start align-start mt-[2vh] overflow-auto">
               <ExpansiblePanel compact follow-window-width mark-expanded darken-content hover-effect>
-                <template #title>Overlay Options</template>
+                <template #title>{{ t`Overlay Options` }}</template>
                 <template #content>
                   <div>
                     <div class="flex flex-col flex-wrap justify-between align-start gap-y-0 pt-3">
@@ -41,7 +41,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Font size</span
+                          >{{ t`Font size` }}</span
                         >
                         <v-text-field
                           v-model="telemetryDisplayOptions.fontSize"
@@ -53,7 +53,7 @@
                         <span
                           class="font-bold text-white text-start mb-5"
                           :class="interfaceStore.isOnSmallScreen ? ' text-xs w-[75px]' : 'text-sm w-[125px]'"
-                          >Shadow size</span
+                          >{{ t`Shadow size` }}</span
                         >
                         <v-text-field
                           v-model="telemetryDisplayOptions.fontShadowSize"
@@ -78,7 +78,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Font color</span
+                                >{{ t`Font color` }}</span
                               >
                               <div
                                 v-bind="props"
@@ -103,7 +103,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Outline color</span
+                                >{{ t`Outline color` }}</span
                               >
                               <div
                                 v-bind="props"
@@ -127,7 +127,7 @@
                               <span
                                 :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
                                 class="text-sm font-bold text-white text-start"
-                                >Shadow color</span
+                                >{{ t`Shadow color` }}</span
                               >
                               <div
                                 v-bind="props"
@@ -150,7 +150,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Bold</span
+                            >{{ t`Bold` }}</span
                           >
                         </div>
                         <div
@@ -161,7 +161,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Italic</span
+                            >{{ t`Italic` }}</span
                           >
                         </div>
                         <div
@@ -172,7 +172,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Underline</span
+                            >{{ t`Underline` }}</span
                           >
                         </div>
                         <div
@@ -183,7 +183,7 @@
                           <span
                             class="text-sm font-bold text-white -mt-[20px] text-start"
                             :class="interfaceStore.isOnSmallScreen ? ' text-xs' : 'text-sm'"
-                            >Strikethrough</span
+                            >{{ t`Strikethrough` }}</span
                           >
                         </div>
                       </div>
@@ -192,7 +192,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Vehicle Variables</template>
+                <template #title>{{ t`Vehicle Variables` }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="loggedVariables"
@@ -221,7 +221,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Mission Variables</template>
+                <template #title>{{ t`Mission Variables` }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="otherLoggingElements"
@@ -250,11 +250,11 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Data Lake Variables</template>
+                <template #title>{{ t`Data Lake Variables` }}</template>
                 <template #content>
                   <v-text-field
                     v-model="dataLakeSearch"
-                    placeholder="Search variables..."
+                    :placeholder="t`Search variables...`"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -295,7 +295,7 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Custom Messages</template>
+                <template #title>{{ t`Custom Messages` }}</template>
                 <template #content>
                   <VueDraggable
                     v-model="customMessageElements"
@@ -334,7 +334,7 @@
                           v-bind="props"
                           icon="mdi-plus-circle-outline"
                           :icon-size="interfaceStore.isOnSmallScreen ? 16 : 20"
-                          tooltip="Add custom message element"
+                          :tooltip="t`Add custom message element`"
                           variant="uncontained"
                           no-effects
                           @click="props.click"
@@ -343,10 +343,10 @@
                       <div
                         class="frosted-button backdrop-blur-md rounded-lg overflow-visible w-[400px] flex flex-col px-4 pt-2 pb-3 elevation-2"
                       >
-                        <span class="text-sm font-bold text-white text-center w-full">Enter message</span>
-                        <span v-pre class="text-[10px] text-slate-400 text-center w-full mt-1"
-                          >Type {{ to autocomplete data lake variables</span
-                        >
+                        <span class="text-sm font-bold text-white text-center w-full">{{ t`Enter message` }}</span>
+                        <span class="text-[10px] text-slate-400 text-center w-full mt-1">{{
+                          t`Type {{ to autocomplete data lake variables`
+                        }}</span>
                         <div
                           ref="messageEditorContainer"
                           class="h-[60px] w-full mt-2 border border-[#FFFFFF33] rounded-lg"
@@ -359,7 +359,7 @@
                           prepend-icon="mdi-plus"
                           @click="addCustomMessageElement()"
                         >
-                          Add
+                          {{ t`Add` }}
                         </v-btn>
                       </div>
                     </v-menu>
@@ -367,9 +367,9 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Settings</template>
+                <template #title>{{ t`Settings` }}</template>
                 <template #content>
-                  <p class="text-[12px] mt-2 ml-1">Telemetry frequency - 1 to 100 Hz (default 1 Hz)</p>
+                  <p class="text-[12px] mt-2 ml-1">{{ t`Telemetry frequency - 1 to 100 Hz (default 1 Hz)` }}</p>
                   <div class="flex mb-1 justify">
                     <v-slider
                       v-model="newFrequency"
@@ -395,14 +395,14 @@
                 </template>
               </ExpansiblePanel>
               <ExpansiblePanel compact follow-window-width mark-expanded no-top-divider darken-content hover-effect>
-                <template #title>Stored Telemetry Data</template>
+                <template #title>{{ t`Stored Telemetry Data` }}</template>
                 <template #content>
                   <div class="flex flex-col gap-y-2 pt-2 pb-1 px-1">
                     <p class="text-[12px]">
-                      Total stored entries: <span class="font-bold">{{ totalLogEntriesLabel }}</span>
+                      {{ t`Total stored entries:` }} <span class="font-bold">{{ totalLogEntriesLabel }}</span>
                     </p>
                     <p class="text-[11px] text-white/60 -mt-1">
-                      Remove telemetry entries recorded before a chosen date to free up space.
+                      {{ t`Remove telemetry entries recorded before a chosen date to free up space.` }}
                     </p>
                     <v-text-field
                       v-model="deletionDate"
@@ -410,13 +410,13 @@
                       density="compact"
                       variant="outlined"
                       hide-details
-                      label="Delete entries before"
+                      :label="t`Delete entries before`"
                       class="mt-1 telemetry-date-field"
                     />
                     <p v-if="deletionDate" class="text-[12px]">
-                      Entries before this date: <span class="font-bold">{{ entriesBeforeDateLabel }}</span>
+                      {{ t`Entries before this date:` }} <span class="font-bold">{{ entriesBeforeDateLabel }}</span>
                       <span v-if="entriesBeforePercentageLabel" class="text-white/60">
-                        ({{ entriesBeforePercentageLabel }} of total)</span
+                        {{ t`(${entriesBeforePercentageLabel} of total)` }}</span
                       >
                     </p>
                     <div class="flex justify-end w-full mt-1">
@@ -427,7 +427,7 @@
                         :disabled="!deletionDate || !entriesBeforeDate"
                         @click="openDeleteOldTelemetryDialog"
                       >
-                        Delete old entries
+                        {{ t`Delete old entries` }}
                         <v-icon size="18" class="ml-2">mdi-trash-can-outline</v-icon>
                       </v-btn>
                     </div>
@@ -436,7 +436,7 @@
               </ExpansiblePanel>
               <div class="flex justify-end w-full mt-2">
                 <v-btn size="x-small" variant="text" class="mr-2" @click="resetAllChips">
-                  Reset Positions
+                  {{ t`Reset Positions` }}
                   <v-icon size="18" class="ml-2">mdi-restore</v-icon>
                 </v-btn>
               </div>
@@ -501,6 +501,7 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import type * as monacoTypes from 'monaco-editor'
+import { msgid, ngettext, t } from 'ttag'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
@@ -708,12 +709,12 @@ const getClassForConfig = computed(() => {
 const openHelpDialog = (): void => {
   logUserAction('Opened telemetry overlay help dialog')
   showDialog({
-    title: 'Video Configuration Help',
+    title: t`Video Configuration Help`,
     message: [
       // eslint-disable-next-line vue/max-len
-      'On this screen, you can configure the telemetry data that will be displayed on the subtitle file for recorded videos. You can change the font size, color, and style, as well as the position of each variable on the screen. You can also add custom messages that will be displayed on the video player screen.',
-      'Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.',
-      'For additional Help, refer to documentation or contact us.',
+      t`On this screen, you can configure the telemetry data that will be displayed on the subtitle file for recorded videos. You can change the font size, color, and style, as well as the position of each variable on the screen. You can also add custom messages that will be displayed on the video player screen.`,
+      t`Drag and drop variables from the left panel to the desired position on the Telemetry Data Display.`,
+      t`For additional Help, refer to documentation or contact us.`,
     ],
     variant: 'text-only',
     maxWidth: interfaceStore.isOnSmallScreen ? '80vw' : '60vw',
@@ -841,11 +842,15 @@ const deleteOldTelemetryEntries = async (cutoff: Date, amount: number): Promise<
     logUserAction(`Deleted ${amount} telemetry entries recorded before ${format(cutoff, 'yyyy-MM-dd')}`)
     openSnackbar({
       variant: 'success',
-      message: `Deleted ${amount} old telemetry ${amount === 1 ? 'entry' : 'entries'}.`,
+      message: ngettext(
+        msgid`Deleted ${amount} old telemetry entry.`,
+        `Deleted ${amount} old telemetry entries.`,
+        amount
+      ),
       duration: 3000,
     })
   } catch (error) {
-    openSnackbar({ variant: 'error', message: `Failed to delete telemetry entries: ${error}`, duration: 5000 })
+    openSnackbar({ variant: 'error', message: t`Failed to delete telemetry entries: ${error}`, duration: 5000 })
   }
   await refreshLogEntryCounts()
 }
@@ -856,16 +861,19 @@ const openDeleteOldTelemetryDialog = (): void => {
   if (!cutoff || !amount) return
 
   logUserAction('Opened delete-old-telemetry-entries dialog')
+  const cutoffDate = format(cutoff, 'LLL dd, yyyy')
   showDialog({
     variant: 'warning',
-    title: 'Delete old telemetry entries?',
-    message: `This will permanently remove ${amount} telemetry ${
-      amount === 1 ? 'entry' : 'entries'
-    } recorded before ${format(cutoff, 'LLL dd, yyyy')}. This cannot be undone.`,
+    title: t`Delete old telemetry entries?`,
+    message: ngettext(
+      msgid`This will permanently remove ${amount} telemetry entry recorded before ${cutoffDate}. This cannot be undone.`,
+      `This will permanently remove ${amount} telemetry entries recorded before ${cutoffDate}. This cannot be undone.`,
+      amount
+    ),
     actions: [
-      { text: 'Cancel', size: 'small', action: closeDialog },
+      { text: t`Cancel`, size: 'small', action: closeDialog },
       {
-        text: 'Delete',
+        text: t`Delete`,
         size: 'small',
         action: () => {
           closeDialog()

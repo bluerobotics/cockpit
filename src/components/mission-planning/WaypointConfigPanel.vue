@@ -14,7 +14,7 @@
     >
       <template #title>
         <p class="ml-10 text-center text-[13px] font-normal">
-          {{ selectedWaypoint.id === 'home' ? 'Home' : `Waypoint parameters` }}
+          {{ selectedWaypoint.id === 'home' ? t`Home` : t`Waypoint parameters` }}
         </p>
       </template>
       <template #content>
@@ -23,7 +23,7 @@
           class="flex flex-col justify-center w-full items-center py-1 px-2 my-2 bg-[#EEEEEE22] text-white rounded-bl-md rounded-br-md"
         >
           <div class="flex w-full gap-x-4 my-[4px] justify-between text-[12px] text-center mb-[2px]">
-            <p class="w-[50px] text-start">Latitude:</p>
+            <p class="w-[50px] text-start">{{ t`Latitude:` }}</p>
             <input
               :value="editableLat"
               class="text-right w-[130px] mt-[2px] bg-transparent h-[15px] border-transparent focus:outline-none text-xs"
@@ -33,7 +33,7 @@
           </div>
           <v-divider class="border-black w-full" />
           <div class="flex w-full gap-x-4 my-[4px] justify-between text-[12px] text-center pt-[1px]">
-            <p class="w-[50px] text-start">Longitude:</p>
+            <p class="w-[50px] text-start">{{ t`Longitude:` }}</p>
             <input
               :value="editableLng"
               class="text-right w-[130px] mt-[2px] bg-transparent h-[15px] border-transparent focus:outline-none text-xs"
@@ -43,7 +43,7 @@
           </div>
           <v-divider class="border-black w-full" />
           <div class="flex w-full gap-x-4 h-[30px] justify-between items-center text-[12px] text-center">
-            <p class="w-[140px] text-start">Altitude:</p>
+            <p class="w-[140px] text-start">{{ t`Altitude:` }}</p>
             <div class="flex w-full pr-2 h-[35px] items-center">
               <v-text-field
                 v-model.number="displayedAltitude"
@@ -89,7 +89,7 @@
     >
       <template #title>
         <p class="ml-4 text-center text-[13px] font-normal">
-          Waypoint Commands ({{ waypointOnMissionStore?.commands?.length || 0 }})
+          {{ t`Waypoint Commands` }} ({{ waypointOnMissionStore?.commands?.length || 0 }})
         </p>
       </template>
       <template #content>
@@ -132,8 +132,8 @@
                     location="top"
                     :text="
                       isProtectedNavWaypoint(command)
-                        ? 'A waypoint must keep a MAV_CMD_NAV_WAYPOINT command'
-                        : 'Delete command'
+                        ? t`A waypoint must keep a MAV_CMD_NAV_WAYPOINT command`
+                        : t`Delete command`
                     "
                   >
                     <template #activator="{ props: deleteTooltipProps }">
@@ -163,7 +163,7 @@
             prepend-icon="mdi-plus"
             @click="showCommandForm = true"
           >
-            Append New Command
+            {{ t`Append New Command` }}
           </v-btn>
 
           <!-- Command Input Form -->
@@ -187,7 +187,7 @@
         prepend-icon="mdi-delete"
         @click="handleRemoveWaypoint(selectedWaypoint)"
       >
-        Delete waypoint
+        {{ t`Delete waypoint` }}
       </v-btn>
     </div>
   </div>

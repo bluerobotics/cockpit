@@ -22,7 +22,7 @@
         }"
         @click="handleClick"
       >
-        {{ miniWidget.options.layout?.label || 'Button' }}
+        {{ miniWidget.options.layout?.label || t`Button` }}
       </v-btn>
     </div>
   </div>

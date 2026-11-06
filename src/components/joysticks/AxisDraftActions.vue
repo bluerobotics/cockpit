@@ -14,14 +14,14 @@
         </template>
       </v-tooltip>
     </div>
-    <v-tooltip :text="dirty ? 'Revert changes' : 'No changes to revert'" location="top">
+    <v-tooltip :text="dirty ? t`Revert changes` : t`No changes to revert`" location="top">
       <template #activator="{ props: tooltipProps }">
         <span v-bind="tooltipProps">
           <v-btn
             icon="mdi-undo"
             size="x-small"
             variant="text"
-            aria-label="Revert changes"
+            :aria-label="t`Revert changes`"
             :disabled="!dirty"
             @click="$emit('revert')"
           />
@@ -35,7 +35,7 @@
             icon="mdi-content-save"
             size="x-small"
             variant="text"
-            aria-label="Save changes"
+            :aria-label="t`Save changes`"
             :disabled="!canSave"
             @click="$emit('save')"
           />
@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed } from 'vue'
 
 import type { AxisRangeIssue } from '@/libs/joystick/default-mappings'
@@ -69,19 +70,21 @@ defineEmits<{
 }>()
 
 const rangeIssueTexts: Record<AxisRangeIssue, string> = {
-  'off-center': 'Its center is away from the vehicle default, so the motors can spin with the stick at rest.',
-  'beyond-limits': 'It goes past the vehicle default limits.',
+  'off-center': t`Its center is away from the vehicle default, so the motors can spin with the stick at rest.`,
+  'beyond-limits': t`It goes past the vehicle default limits.`,
 }
 
 const statusTooltip = computed(() => {
-  if (!props.rangeIssues?.length) return 'Unsaved changes'
-  const range = props.dirty ? 'Unsaved range' : 'Range'
-  return `${range} differs from the default. ${props.rangeIssues.map((issue) => rangeIssueTexts[issue]).join(' ')}`
+  if (!props.rangeIssues?.length) return t`Unsaved changes`
+  const issues = props.rangeIssues.map((issue) => rangeIssueTexts[issue]).join(' ')
+  return props.dirty
+    ? t`Unsaved range differs from the default. ${issues}`
+    : t`Range differs from the default. ${issues}`
 })
 
 const saveTooltip = computed(() => {
-  if (!props.dirty) return 'No changes to save'
-  if (props.blockingAxis === undefined) return 'Save changes'
-  return `Axis ${props.blockingAxis} still uses this function. Save axis ${props.blockingAxis} first.`
+  if (!props.dirty) return t`No changes to save`
+  if (props.blockingAxis === undefined) return t`Save changes`
+  return t`Axis ${props.blockingAxis} still uses this function. Save axis ${props.blockingAxis} first.`
 })
 </script>

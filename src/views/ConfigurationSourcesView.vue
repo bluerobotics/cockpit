@@ -1,21 +1,24 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Sources</template>
+    <template #title>{{ t`Sources` }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Positioning</template>
+          <template #title>{{ t`Positioning` }}</template>
           <template #info>
             <div class="w-full">
               <p>
-                Read one or more external USB/serial GNSS receivers and inject their position and fix data into the
-                data-lake, where it can drive live points of interest and widgets.
+                {{
+                  t`Read one or more external USB/serial GNSS receivers and inject their position and fix data into the data-lake, where it can drive live points of interest and widgets.`
+                }}
               </p>
               <p class="mt-2">
-                Message formats are detected automatically (standard NMEA 0183). Each device publishes variables under
+                {{
+                  t`Message formats are detected automatically (standard NMEA 0183). Each device publishes variables under`
+                }}
                 <span class="font-mono">external/positioning/gnss/&lt;id&gt;/*</span>.
               </p>
             </div>
@@ -28,22 +31,24 @@
                   <div>
                     <h4 class="text-amber-200 font-medium mb-2">Cockpit Lite</h4>
                     <p class="text-amber-100 text-sm">
-                      Reading external serial GNSS receivers is only available in Cockpit standalone. Browsers cannot
-                      access serial devices outside of a secure context, so this feature is disabled here.
+                      {{ t`Reading external serial GNSS receivers is only available in Cockpit standalone.` }}
+                      {{
+                        t`Browsers cannot access serial devices outside of a secure context, so this feature is disabled here.`
+                      }}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div v-if="gnss.devices.value.length === 0" class="text-sm opacity-60 py-4 text-center">
-                No GNSS devices configured.
+                {{ t`No GNSS devices configured.` }}
               </div>
 
               <div v-else class="flex flex-col">
                 <div class="flex items-center gap-2 px-3 py-1 text-xs uppercase opacity-60">
-                  <span class="flex-1">Name</span>
-                  <span class="w-[30%] text-center">Port</span>
-                  <span class="w-[24%] text-center">Status</span>
+                  <span class="flex-1">{{ t`Name` }}</span>
+                  <span class="w-[30%] text-center">{{ t`Port` }}</span>
+                  <span class="w-[24%] text-center">{{ t`Status` }}</span>
                   <span class="w-[24px]" />
                 </div>
                 <div
@@ -63,7 +68,7 @@
                     icon="mdi-cog"
                     variant="text"
                     size="x-small"
-                    title="Configure"
+                    :title="t`Configure`"
                     @click="openDialog(device.id)"
                   />
                 </div>
@@ -72,7 +77,7 @@
               <div class="flex justify-center mt-3">
                 <v-btn variant="outlined" class="rounded-lg" :disabled="!gnss.isSupported" @click="onAddDevice">
                   <v-icon start>mdi-plus</v-icon>
-                  Add USB/serial GNSS source
+                  {{ t`Add USB/serial GNSS source` }}
                 </v-btn>
               </div>
             </div>
@@ -92,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -121,8 +127,8 @@ const onAddDevice = (): void => {
 const fixLabel = (id: string): string => {
   if ((gnss.statuses[id] ?? 'disconnected') === 'disconnected') return '—'
   const fix = gnss.latestFixes[id]
-  if (!fix) return 'No data'
-  return fix.fixQualityLabel ?? (fix.hasValidFix ? 'Fix' : 'No fix')
+  if (!fix) return t`No data`
+  return fix.fixQualityLabel ?? (fix.hasValidFix ? t`Fix` : t`No fix`)
 }
 
 const statusColor = (id: string): string => gnssStatusColor(gnss.statuses[id] ?? 'disconnected')

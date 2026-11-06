@@ -9,7 +9,7 @@
     <div :id="mapId" ref="map" class="map">
       <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
         <template #activator="{ props: menuProps }">
-          <v-tooltip location="top" text="Download tiles for offline use">
+          <v-tooltip location="top" :text="t`Download tiles for offline use`">
             <template #activator="{ props: tooltipProps }">
               <v-btn
                 v-show="showButtons"
@@ -26,19 +26,19 @@
         </template>
 
         <v-list :style="interfaceStore.globalGlassMenuStyles" class="py-0 min-w-[220px] rounded-lg border-[1px]">
-          <v-list-item class="py-0" title="Save visible Esri tiles" @click="saveEsri" />
+          <v-list-item class="py-0" :title="t`Save visible Esri tiles`" @click="saveEsri" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible OSM tiles" @click="saveOSM" />
+          <v-list-item class="py-0" :title="t`Save visible OSM tiles`" @click="saveOSM" />
           <v-divider />
-          <v-list-item class="py-0" title="Save visible Seamarks tiles" @click="saveSeamarks" />
+          <v-list-item class="py-0" :title="t`Save visible Seamarks tiles`" @click="saveSeamarks" />
         </v-list>
       </v-menu>
       <v-tooltip
         location="top"
         :text="
           missionStore.alwaysShowWaypointNumbers
-            ? 'Hide waypoint numbers when zoomed out'
-            : 'Always show waypoint numbers'
+            ? t`Hide waypoint numbers when zoomed out`
+            : t`Always show waypoint numbers`
         "
       >
         <template #activator="{ props: tooltipProps }">
@@ -56,13 +56,13 @@
           />
         </template>
       </v-tooltip>
-      <v-tooltip v-if="showButtons" location="top" text="Switch to Mission Planning mode">
+      <v-tooltip v-if="showButtons" location="top" :text="t`Switch to Mission Planning mode`">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
             class="absolute right-[193px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
-            text="Edit mission"
+            :text="t`Edit mission`"
             append-icon="mdi-map-marker-radius-outline"
             style="z-index: 1002; border-radius: 0px"
             :style="interfaceStore.globalGlassMenuStyles"
@@ -129,17 +129,17 @@
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Map widget settings</v-card-title>
+      <v-card-title class="text-center">{{ t`Map widget settings` }}</v-card-title>
       <v-card-text>
         <ExpansiblePanel compact :is-expanded="!interfaceStore.isOnSmallScreen" no-bottom-divider no-top-divider>
-          <template #title>Display</template>
+          <template #title>{{ t`Display` }}</template>
           <template #content>
             <v-row>
               <v-col cols="4">
                 <v-switch
                   v-model="widget.options.showVehiclePath"
                   class="my-1"
-                  label="Vehicle path"
+                  :label="t`Vehicle path`"
                   :color="widget.options.showVehiclePath ? 'white' : undefined"
                   hide-details
                 />
@@ -148,7 +148,7 @@
                 <v-switch
                   v-model="widget.options.showCoordinateGrid"
                   class="my-1"
-                  label="Coordinate grid"
+                  :label="t`Coordinate grid`"
                   :color="widget.options.showCoordinateGrid ? 'white' : undefined"
                   hide-details
                 />
@@ -157,7 +157,7 @@
                 <v-switch
                   v-model="widget.options.showPoiArrows"
                   class="my-1"
-                  label="Point of Interest arrows"
+                  :label="t`Point of Interest arrows`"
                   :color="widget.options.showPoiArrows ? 'white' : undefined"
                   hide-details
                 />
@@ -166,7 +166,7 @@
                 <v-switch
                   v-model="widget.options.showHomeArrow"
                   class="my-1"
-                  label="Home arrow"
+                  :label="t`Home arrow`"
                   :color="widget.options.showHomeArrow ? 'white' : undefined"
                   hide-details
                 />
@@ -175,7 +175,7 @@
                 <v-switch
                   v-model="widget.options.showVehicleArrow"
                   class="my-1"
-                  label="Vehicle arrow"
+                  :label="t`Vehicle arrow`"
                   :color="widget.options.showVehicleArrow ? 'white' : undefined"
                   hide-details
                 />
@@ -184,7 +184,7 @@
                 <v-switch
                   v-model="widget.options.showBaseStationArrow"
                   class="my-1"
-                  label="Base station arrow"
+                  :label="t`Base station arrow`"
                   :color="widget.options.showBaseStationArrow ? 'white' : undefined"
                   hide-details
                 />
@@ -210,7 +210,7 @@
     :style="{ top: topProgressBarDisplacement }"
     class="absolute left-[7px] mt-4 flex text-md font-bold text-white z-30 drop-shadow-md"
   >
-    Loading mission...
+    {{ t`Loading mission...` }}
   </p>
 
   <PoiManager ref="poiManagerMapWidgetRef" />
@@ -233,7 +233,7 @@
     :style="interfaceStore.globalGlassMenuStyles"
   >
     <p>
-      Saving offline map content
+      {{ t`Saving offline map content` }}
       <span v-if="savingLayerName">({{ savingLayerName }})</span>:&nbsp; {{ savePercentage }}%
       <span v-if="estimatedDownloadedMB && estimatedTotalMB">
         (~{{ estimatedDownloadedMB }} / {{ estimatedTotalMB }} MB)
@@ -246,6 +246,7 @@
 import { useDebounceFn, useElementHover } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map } from 'leaflet'
+import { t } from 'ttag'
 import {
   computed,
   nextTick,
@@ -610,16 +611,16 @@ const sendGoToCommand = async (
 }
 
 const issueGoto = (coordinates: WaypointCoordinates): Promise<void> =>
-  sendGoToCommand(coordinates, 'GoTo request failed')
+  sendGoToCommand(coordinates, t`GoTo request failed`)
 
 const updateGotoTarget = (coordinates: WaypointCoordinates): Promise<void> =>
-  sendGoToCommand(coordinates, 'Failed to update GoTo target', true)
+  sendGoToCommand(coordinates, t`Failed to update GoTo target`, true)
 
 const poiGoTo = useMapPoiGoTo(poiMarkers, { issueGoto, updateGotoTarget })
 
 const onPoiEdit = (poi: ResolvedPointOfInterest): void => {
   if (!poiManagerMapWidgetRef.value) {
-    openSnackbar({ message: 'POI Manager (map widget) is not available.', variant: 'error' })
+    openSnackbar({ message: t`POI Manager (map widget) is not available.`, variant: 'error' })
     return
   }
   poiManagerMapWidgetRef.value.openDialog(undefined, poi)
@@ -1113,7 +1114,7 @@ const checkIfMissionChanged = async (): Promise<void> => {
       missionStore.bumpVehicleMissionRevision(downloadedMission)
 
       openSnackbar({
-        message: 'Mission changed on the vehicle. Using vehicle mission.',
+        message: t`Mission changed on the vehicle. Using vehicle mission.`,
         variant: 'info',
         duration: 2500,
       })
@@ -1286,7 +1287,7 @@ const homeMarkerContent = computed(() => {
 
 // Carried by the marker rather than by its tooltip, which is not interactive and so never sees the pointer.
 const homeMarkerTitle = computed(() =>
-  isHomeConfirmedByVehicle.value ? '' : 'The vehicle has not reported this home position'
+  isHomeConfirmedByVehicle.value ? '' : t`The vehicle has not reported this home position`
 )
 
 // Watches the map too, so a home already known when the widget mounts still gets a marker once the map exists.
@@ -1317,7 +1318,7 @@ watch([home, map, isHomeConfirmedByVehicle], () => {
       if (missionStore.homeMarkerSource === 'mission') {
         if (home.value) marker.setLatLng(home.value as LatLngTuple)
         openSnackbar({
-          message: 'This home point comes from the mission. Use "Set home waypoint" on the map menu to move it.',
+          message: t`This home point comes from the mission. Use "Set home waypoint" on the map menu to move it.`,
           variant: 'info',
           duration: 5000,
         })
@@ -1440,28 +1441,32 @@ const globalOriginLongitude = ref(0)
 const globalOriginMarker = shallowRef<L.Marker>()
 
 const staticTopMenuItems = [
-  { item: 'Set home waypoint', action: () => onMenuOptionSelect('set-home-waypoint'), icon: 'mdi-home-map-marker' },
-  { item: 'Set Global Origin', action: () => onMenuOptionSelect('set-global-origin'), icon: 'mdi-crosshairs-question' },
-  { item: 'Place Point of Interest', action: () => onMenuOptionSelect('place-poi'), icon: 'mdi-map-marker-plus' },
+  { item: t`Set home waypoint`, action: () => onMenuOptionSelect('set-home-waypoint'), icon: 'mdi-home-map-marker' },
   {
-    item: 'Add overlay (GeoTIFF)',
+    item: t`Set Global Origin`,
+    action: () => onMenuOptionSelect('set-global-origin'),
+    icon: 'mdi-crosshairs-question',
+  },
+  { item: t`Place Point of Interest`, action: () => onMenuOptionSelect('place-poi'), icon: 'mdi-map-marker-plus' },
+  {
+    item: t`Add overlay (GeoTIFF)`,
     action: () => onMenuOptionSelect('add-overlay'),
     icon: 'mdi-image-plus',
     _isOverlay: true,
   },
-  { item: 'Copy coordinates', action: () => onMenuOptionSelect('copy-coordinates'), icon: 'mdi-content-copy' },
+  { item: t`Copy coordinates`, action: () => onMenuOptionSelect('copy-coordinates'), icon: 'mdi-content-copy' },
 ]
 
 const staticBottomMenuItems = [
-  { item: 'GoTo', action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
-  { item: 'Set vehicle position', action: () => onMenuOptionSelect('set-position'), icon: 'mdi-map-marker-check' },
+  { item: t`GoTo`, action: () => onMenuOptionSelect('goto'), icon: 'mdi-crosshairs-gps' },
+  { item: t`Set vehicle position`, action: () => onMenuOptionSelect('set-position'), icon: 'mdi-map-marker-check' },
   {
-    item: 'Set default map position',
+    item: t`Set default map position`,
     action: () => onMenuOptionSelect('set-default-map-position'),
     icon: 'mdi-map-check',
   },
   {
-    item: 'Clear vehicle path history',
+    item: t`Clear vehicle path history`,
     action: () => onMenuOptionSelect('clear-vehicle-path-history'),
     icon: 'mdi-gesture',
   },
@@ -1505,7 +1510,7 @@ const missionControlPanelMenuEntries = computed(() => {
   if (hasPanel) return []
   return [
     {
-      item: 'Add mission control panel',
+      item: t`Add mission control panel`,
       action: () => onMenuOptionSelect('add-mission-control-panel'),
       icon: 'mdi-plus-box',
     },
@@ -1541,7 +1546,7 @@ const updateSkipToWpMenu = (): void => {
 
   if (want && !lastIsSkip) {
     menuItems.push({
-      item: `Skip mission to this Waypoint`,
+      item: t`Skip mission to this Waypoint`,
       action: () => onMenuOptionSelect('skip-to-wp'),
       icon: 'mdi-skip-next-circle',
       _isSkipToWp: true,
@@ -1549,14 +1554,14 @@ const updateSkipToWpMenu = (): void => {
   } else if (!want && lastIsSkip) {
     menuItems.pop()
   } else if (want && lastIsSkip) {
-    last.item = `Skip mission to this Waypoint`
+    last.item = t`Skip mission to this Waypoint`
   }
 }
 
 const updateOverlayMenuLabel = (): void => {
   const overlayItem = menuItems.find((item) => (item as any)._isOverlay === true)
   if (overlayItem) {
-    overlayItem.item = missionStore.mapOverlays.length > 0 ? 'Manage overlays' : 'Add overlay (GeoTIFF)'
+    overlayItem.item = missionStore.mapOverlays.length > 0 ? t`Manage overlays` : t`Add overlay (GeoTIFF)`
   }
 }
 
@@ -1591,7 +1596,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
 
   try {
     await missionStore.setDefaultMapPosition(clickedLocation.value, zoom.value)
-    openSnackbar({ message: 'Default map position set', variant: 'success' })
+    openSnackbar({ message: t`Default map position set`, variant: 'success' })
 
     const tempMarker = L.marker(clickedLocation.value as LatLngTuple, {
       icon: L.divIcon({
@@ -1630,7 +1635,7 @@ const setDefaultMapPosition = async (): Promise<void> => {
     }, 1500)
   } catch (error) {
     console.error(error)
-    openSnackbar({ message: 'Failed to set default map position', variant: 'error' })
+    openSnackbar({ message: t`Failed to set default map position`, variant: 'error' })
   }
 }
 
@@ -1682,9 +1687,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       const accuracy = metersPerPixel(latitude, zoom.value) * clickUncertaintyPixels
       try {
         await vehicleStore.sendExternalPositionEstimate(latitude, longitude, accuracy)
-        openSnackbar({ message: 'Vehicle position updated.', variant: 'success' })
+        openSnackbar({ message: t`Vehicle position updated.`, variant: 'success' })
       } catch (error) {
-        openSnackbar({ message: `Could not set the vehicle position: ${(error as Error).message}`, variant: 'error' })
+        const reason = (error as Error).message
+        openSnackbar({ message: t`Could not set the vehicle position: ${reason}`, variant: 'error' })
       }
       break
     }
@@ -1699,9 +1705,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
         try {
           await copyToClipboard(coordinates)
           logUserAction('Copied map coordinates from the context menu')
-          openSnackbar({ message: `Coordinates copied: ${coordinates}`, variant: 'success' })
+          openSnackbar({ message: t`Coordinates copied: ${coordinates}`, variant: 'success' })
         } catch (error) {
-          openSnackbar({ message: `Failed to copy coordinates: ${(error as Error).message}`, variant: 'error' })
+          const reason = (error as Error).message
+          openSnackbar({ message: t`Failed to copy coordinates: ${reason}`, variant: 'error' })
         }
       }
       break
@@ -1714,10 +1721,10 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       if (clickedLocation.value && poiManagerMapWidgetRef.value) {
         poiManagerMapWidgetRef.value.openDialog(clickedLocation.value)
       } else if (!clickedLocation.value) {
-        openSnackbar({ message: 'Cannot place Point of Interest without map coordinates.', variant: 'error' })
+        openSnackbar({ message: t`Cannot place Point of Interest without map coordinates.`, variant: 'error' })
         console.error('Cannot open POI dialog without click coordinates for new POI')
       } else if (!poiManagerMapWidgetRef.value) {
-        openSnackbar({ message: 'POI Manager (map widget) is not available.', variant: 'error' })
+        openSnackbar({ message: t`POI Manager (map widget) is not available.`, variant: 'error' })
         console.error('Cannot open POI dialog, POI Manager (map widget) ref is not set.')
       }
       break
@@ -1739,26 +1746,27 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
     case 'skip-to-wp': {
       const idx = contextMenuSelectedWpIndex.value
       if (!vehicleStore.isVehicleOnline || idx == null) {
-        openSnackbar({ message: 'Cannot skip (vehicle offline or invalid WP).', variant: 'error' })
+        openSnackbar({ message: t`Cannot skip (vehicle offline or invalid WP).`, variant: 'error' })
         break
       }
       try {
         vehicleStore.setMissionCurrent(idx)
       } catch (error) {
-        openSnackbar({ message: `Failed to skip to WP #${idx}: ${(error as Error).message}`, variant: 'error' })
+        const reason = (error as Error).message
+        openSnackbar({ message: t`Failed to skip to WP #${idx}: ${reason}`, variant: 'error' })
       }
       break
     }
     case 'clear-vehicle-path-history':
       missionStore.clearVehicleHistory()
-      openSnackbar({ message: 'Vehicle path history cleared', variant: 'success' })
+      openSnackbar({ message: t`Vehicle path history cleared`, variant: 'success' })
       break
 
     case 'place-base-station':
       if (!clickedLocation.value) {
         openSnackbar({
           variant: 'error',
-          message: 'No map position under the cursor. Right-click on the map where the base station should go.',
+          message: t`No map position under the cursor. Right-click on the map where the base station should go.`,
           duration: 4000,
         })
         break
@@ -1785,7 +1793,7 @@ const onMenuOptionSelect = async (option: string): Promise<void> => {
       const added = widgetStore.addWidget(missionControlPanelSetup, widgetStore.currentView)
       widgetStore.allowMovingAndResizing(added.hash, widgetStore.editingMode)
       logUserAction('Added a mission control panel from the map context menu')
-      openSnackbar({ message: 'Mission control panel added to this view', variant: 'success' })
+      openSnackbar({ message: t`Mission control panel added to this view`, variant: 'success' })
       break
     }
 
@@ -1937,9 +1945,10 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
     rebuildMissionSeqMapping(missionItemsInVehicle.value as Waypoint[])
     drawMission(missionItemsInVehicle.value as Waypoint[], { fromVehicle: true })
 
-    openSnackbar({ variant: 'success', message: 'Mission download succeeded!', duration: 3000 })
+    openSnackbar({ variant: 'success', message: t`Mission download succeeded!`, duration: 3000 })
   } catch (error) {
-    openSnackbar({ variant: 'error', message: `Mission download failed: ${messageFromError(error)}`, duration: 5000 })
+    const reason = messageFromError(error)
+    openSnackbar({ variant: 'error', message: t`Mission download failed: ${reason}`, duration: 5000 })
   } finally {
     fetchingMission.value = false
   }
@@ -1953,9 +1962,9 @@ const setHomePosition = async (homePosition: [number, number]): Promise<void> =>
   // standing somewhere the vehicle never accepted.
   try {
     await vehicleStore.setHomeWaypoint(newHome, 0)
-    openSnackbar({ variant: 'success', message: 'Home position set on the vehicle.', duration: 3000 })
+    openSnackbar({ variant: 'success', message: t`Home position set on the vehicle.`, duration: 3000 })
   } catch (error) {
-    openSnackbar({ variant: 'error', message: `Failed to set the home position: ${error}`, duration: 5000 })
+    openSnackbar({ variant: 'error', message: t`Failed to set the home position: ${error}`, duration: 5000 })
   }
 
   if (contextMenuVisible.value) {
@@ -1969,7 +1978,8 @@ const executeMissionOnVehicle = async (): Promise<void> => {
   try {
     await missionStore.executeMissionOnVehicle()
   } catch (error) {
-    openSnackbar({ message: `Failed to start mission: ${(error as Error).message}`, variant: 'error' })
+    const reason = (error as Error).message
+    openSnackbar({ message: t`Failed to start mission: ${reason}`, variant: 'error' })
   }
 }
 

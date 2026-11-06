@@ -15,14 +15,14 @@
       <div v-if="device" class="flex flex-col gap-y-4 px-1 -mt-7 text-white">
         <v-text-field
           v-model="device.name"
-          label="Name"
+          :label="t`Name`"
           variant="outlined"
           density="compact"
           hide-details
           :disabled="!gnss.isSupported"
         />
         <div v-if="create" class="-mt-2 text-xs opacity-60">
-          Planned ID: <span class="font-mono">{{ plannedId }}</span>
+          {{ t`Planned ID:` }} <span class="font-mono">{{ plannedId }}</span>
         </div>
 
         <div class="flex items-center gap-x-2">
@@ -31,27 +31,27 @@
             :items="gnss.availablePorts.value"
             item-title="path"
             item-value="path"
-            label="Serial port"
+            :label="t`Serial port`"
             theme="dark"
             variant="outlined"
             density="compact"
             hide-details
             :disabled="!gnss.isSupported"
-            no-data-text="No serial ports found"
+            :no-data-text="t`No serial ports found`"
             class="flex-1"
             @update:model-value="onPortSelected"
           />
           <v-btn icon="mdi-refresh" variant="text" size="small" :disabled="!gnss.isSupported" @click="onRefreshPorts" />
         </div>
         <div v-if="device.port && !device.usbMatch?.vendorId" class="-mt-2 text-xs text-amber-300/80">
-          This device reports no USB model id, so auto-connect won't follow it to other computers.
+          {{ t`This device reports no USB model id, so auto-connect won't follow it to other computers.` }}
         </div>
 
         <div class="flex items-center gap-x-2">
           <v-select
             v-model="device.baud"
             :items="commonBaudRates"
-            label="Baud rate"
+            :label="t`Baud rate`"
             theme="dark"
             variant="outlined"
             density="compact"
@@ -66,7 +66,7 @@
             :disabled="!gnss.isSupported || !device.port"
             @click="onAutodetect"
           >
-            Auto-detect
+            {{ t`Auto-detect` }}
           </v-btn>
         </div>
 
@@ -82,7 +82,7 @@
             class="bg-[#FFFFFF22]"
             @click="gnss.disconnectDevice(activeId)"
           >
-            Disconnect
+            {{ t`Disconnect` }}
           </v-btn>
           <v-btn
             v-else
@@ -92,12 +92,12 @@
             :disabled="!gnss.isSupported || !device.port"
             @click="gnss.connectDevice(activeId)"
           >
-            Connect
+            {{ t`Connect` }}
           </v-btn>
         </div>
 
         <ExpansiblePanel compact no-top-divider no-bottom-divider :is-expanded="false">
-          <template #title>Device Status</template>
+          <template #title>{{ t`Device Status` }}</template>
           <template #content>
             <div v-if="fix" class="grid grid-cols-2 gap-2 w-full text-sm mt-2">
               <div
@@ -109,19 +109,21 @@
                 <span class="font-mono">{{ item.value }}</span>
               </div>
             </div>
-            <div v-else class="text-sm opacity-60 mt-2">No data received yet.</div>
+            <div v-else class="text-sm opacity-60 mt-2">{{ t`No data received yet.` }}</div>
           </template>
         </ExpansiblePanel>
 
         <div class="flex items-center justify-between">
-          <span class="text-xs opacity-60 font-mono">Variables: external/positioning/gnss/{{ displayId }}/*</span>
+          <span class="text-xs opacity-60 font-mono"
+            >{{ t`Variables:` }} external/positioning/gnss/{{ displayId }}/*</span
+          >
           <v-btn
             variant="text"
             size="small"
             :prepend-icon="consoleOpen ? 'mdi-chevron-up' : 'mdi-console-line'"
             @click="toggleConsole"
           >
-            {{ consoleOpen ? 'Hide console' : 'Serial console' }}
+            {{ consoleOpen ? t`Hide console` : t`Serial console` }}
           </v-btn>
         </div>
 
@@ -130,7 +132,7 @@
             :get-recent-events="() => getRecentSerialLines(activeId)"
             :subscribe="(listener) => subscribeToSerialLines(activeId, listener)"
             :levels="[]"
-            empty-message="No serial data received yet. Connect the device to see incoming data."
+            :empty-message="t`No serial data received yet. Connect the device to see incoming data.`"
           />
         </div>
       </div>
@@ -138,18 +140,19 @@
     <template #actions>
       <template v-if="create">
         <v-spacer></v-spacer>
-        <v-btn text :disabled="!device?.name" @click="onAdd">Add device</v-btn>
+        <v-btn text :disabled="!device?.name" @click="onAdd">{{ t`Add device` }}</v-btn>
       </template>
       <template v-else>
-        <v-btn text @click="onDelete">Delete device</v-btn>
+        <v-btn text @click="onDelete">{{ t`Delete device` }}</v-btn>
         <v-spacer></v-spacer>
-        <v-btn text @click="close">Close</v-btn>
+        <v-btn text @click="close">{{ t`Close` }}</v-btn>
       </template>
     </template>
   </InteractionDialog>
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, ref } from 'vue'
 
 import ConsoleViewer from '@/components/ConsoleViewer.vue'
@@ -192,7 +195,11 @@ const device = computed(() =>
 const activeId = computed(() => device.value?.id ?? '')
 const plannedId = computed(() => gnss.planDeviceId(device.value?.name ?? ''))
 const displayId = computed(() => (props.create ? plannedId.value : activeId.value))
-const dialogTitle = computed(() => (props.create ? 'Add GNSS device' : `Configure ${device.value?.name ?? 'device'}`))
+const dialogTitle = computed(() => {
+  if (props.create) return t`Add GNSS device`
+  const deviceName = device.value?.name ?? 'device'
+  return t`Configure ${deviceName}`
+})
 
 const interfaceStore = useAppInterfaceStore()
 
@@ -238,7 +245,7 @@ const onAutodetect = async (): Promise<void> => {
   const detected = await gnss.autodetect(activeId.value)
   openSnackbar({
     message:
-      detected !== null ? `Detected baud rate: ${detected}` : 'Could not detect a baud rate with valid GNSS data.',
+      detected !== null ? t`Detected baud rate: ${detected}` : t`Could not detect a baud rate with valid GNSS data.`,
     variant: detected !== null ? 'success' : 'error',
     duration: 4000,
   })
@@ -249,9 +256,10 @@ const onAdd = async (): Promise<void> => {
   try {
     await gnss.commitCreate()
   } catch (error) {
+    const errorMessage = (error as Error).message
     openSnackbar({
       variant: 'error',
-      message: `Added "${name}", but could not connect to it: ${(error as Error).message}`,
+      message: t`Added "${name}", but could not connect to it: ${errorMessage}`,
       duration: 5000,
     })
   }
@@ -262,12 +270,12 @@ const onDelete = (): void => {
   const name = device.value?.name ?? activeId.value
   showDialog({
     variant: 'warning',
-    title: 'Delete GNSS device?',
-    message: `Delete "${name}"? This disconnects it and removes its data-lake variables.`,
+    title: t`Delete GNSS device?`,
+    message: t`Delete "${name}"? This disconnects it and removes its data-lake variables.`,
     actions: [
-      { text: 'Cancel', size: 'small', action: closeDialog },
+      { text: t`Cancel`, size: 'small', action: closeDialog },
       {
-        text: 'Delete',
+        text: t`Delete`,
         size: 'small',
         action: async () => {
           closeDialog()

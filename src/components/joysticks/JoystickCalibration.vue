@@ -11,7 +11,7 @@
               class="mt-0"
               @update:model-value="setDeadbandEnabled"
             />
-            <span>Deadband/Deadzone</span>
+            <span>{{ t`Deadband/Deadzone` }}</span>
           </div>
           <div class="flex items-center gap-1">
             <v-checkbox
@@ -21,10 +21,12 @@
               class="mt-0"
               @update:model-value="setExponentialEnabled"
             />
-            <span>Exponential Scaling</span>
+            <span>{{ t`Exponential Scaling` }}</span>
           </div>
         </div>
-        <v-btn variant="flat" class="bg-[#FFFFFF22] px-3 elevation-1" @click="openCalibrationModal"> Calibrate </v-btn>
+        <v-btn variant="flat" class="bg-[#FFFFFF22] px-3 elevation-1" @click="openCalibrationModal">
+          {{ t`Calibrate` }}
+        </v-btn>
       </div>
     </div>
   </div>
@@ -33,7 +35,7 @@
     <InteractionDialog v-model="showCalibrationModal" max-width="1000px" variant="text-only" persistent backdrop>
       <template #title>
         <div class="flex justify-center w-full font-bold mt-1 relative">
-          Joystick Calibration
+          {{ t`Joystick Calibration` }}
           <v-icon class="absolute right-2 top-1 cursor-pointer" size="24" @click="toggleInstructions">
             mdi-information-outline
           </v-icon>
@@ -45,30 +47,40 @@
           <v-expand-transition>
             <div v-if="showInstructions" class="help-panel mb-4 p-4 rounded bg-white/5 w-full">
               <div class="mb-1">
-                <div class="font-semibold text-base mb-1">Deadband Calibration</div>
+                <div class="font-semibold text-base mb-1">{{ t`Deadband Calibration` }}</div>
                 <p class="text-xs text-gray-400 mb-1">
-                  This allows ignoring small unwanted movements near the center of each joystick.
+                  {{ t`This allows ignoring small unwanted movements near the center of each joystick.` }}
                 </p>
                 <p class="text-xs text-gray-400 mb-1">
-                  The deadband regions are the red regions in the center of each graph, specifying how much of the
-                  joystick axis range to ignore. Within each deadband the output is clamped to 0, and the output curve
-                  (linear or exponential) starts at the edges of the region. This is useful if a spring-loaded joystick
-                  does not get consistently returned to the exact center of each axis.
+                  {{
+                    t`The deadband regions are the red regions in the center of each graph, specifying how much of the joystick axis range to ignore.`
+                  }}
+                  {{
+                    t`Within each deadband the output is clamped to 0, and the output curve (linear or exponential) starts at the edges of the region.`
+                  }}
+                  {{
+                    t`This is useful if a spring-loaded joystick does not get consistently returned to the exact center of each axis.`
+                  }}
                 </p>
                 <p class="text-xs text-gray-400 mb-2">
-                  To calibrate the deadband, click and drag the deadband regions on the graphs, set the region width
-                  numbers directly with the text-input, or click the "auto calibrate deadband" button at the bottom. If
-                  auto-calibrating, gently touch the sticks during the calibration, while trying not to actually move
-                  them.
+                  {{
+                    t`To calibrate the deadband, click and drag the deadband regions on the graphs, set the region width numbers directly with the text-input, or click the "auto calibrate deadband" button at the bottom.`
+                  }}
+                  {{
+                    t`If auto-calibrating, gently touch the sticks during the calibration, while trying not to actually move them.`
+                  }}
                 </p>
               </div>
               <div>
-                <div class="font-semibold text-base mb-1">Exponential Calibration</div>
-                <p class="text-xs text-gray-400 mb-1">This adjusts the sensitivity curve of your joysticks.</p>
+                <div class="font-semibold text-base mb-1">{{ t`Exponential Calibration` }}</div>
+                <p class="text-xs text-gray-400 mb-1">{{ t`This adjusts the sensitivity curve of your joysticks.` }}</p>
                 <p class="text-xs text-gray-400 mb-2">
-                  Exponential scaling allows reducing the sensitivity of an axis near the center, for more precise
-                  control, which then steepens the curve near the edges to use the full range. A value of 1 will result
-                  in a linear curve, while greater values result in more rounded exponentials.
+                  {{
+                    t`Exponential scaling allows reducing the sensitivity of an axis near the center, for more precise control, which then steepens the curve near the edges to use the full range.`
+                  }}
+                  {{
+                    t`A value of 1 will result in a linear curve, while greater values result in more rounded exponentials.`
+                  }}
                 </p>
               </div>
             </div>
@@ -82,7 +94,7 @@
                 hide-details
                 @update:model-value="setDeadbandEnabled"
               />
-              <span>Deadband/Deadzone</span>
+              <span>{{ t`Deadband/Deadzone` }}</span>
             </div>
             <div class="flex items-center gap-2">
               <v-checkbox
@@ -91,13 +103,13 @@
                 hide-details
                 @update:model-value="setExponentialEnabled"
               />
-              <span>Exponential Scaling</span>
+              <span>{{ t`Exponential Scaling` }}</span>
             </div>
           </div>
           <!-- Deadband Calibration Section -->
           <div v-if="isCalibrating && calibratingAxis === null" class="w-full">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs text-blue-400 ml-2"> Calibrating all inputs... </span>
+              <span class="text-xs text-blue-400 ml-2">{{ t`Calibrating all inputs...` }}</span>
               <v-progress-linear
                 :model-value="((Date.now() - calibrationStartTime) / 5000) * 100"
                 color="primary"
@@ -130,10 +142,10 @@
 
                   <!-- Axis labels (rendered inside the viewBox so they always align with the gridlines) -->
                   <text x="102" y="9" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="start">
-                    out: {{ numberToTwoDigitsSigned(processedInputValues[index]) }}
+                    {{ t`out:` }} {{ numberToTwoDigitsSigned(processedInputValues[index]) }}
                   </text>
                   <text x="198" y="56" class="font-mono" fill="#9ca3af" font-size="9" text-anchor="end">
-                    in: {{ numberToTwoDigitsSigned(rawInputValues[index]) }}
+                    {{ t`in:` }} {{ numberToTwoDigitsSigned(rawInputValues[index]) }}
                   </text>
 
                   <!-- Deadband region -->
@@ -207,7 +219,7 @@
                     class="text-xs"
                     :class="currentCalibration.deadband.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
                   >
-                    Deadband:
+                    {{ t`Deadband:` }}
                   </span>
                   <div class="w-full" />
                   <div
@@ -222,7 +234,7 @@
                       step="0.01"
                       class="calibration-input w-full min-w-0 px-2 group-focus-within:pr-7 py-1 text-[13px] text-white bg-transparent disabled:cursor-not-allowed"
                       :disabled="!currentCalibration.deadband.enabled"
-                      :aria-label="`Deadband for ${inputName(index)}`"
+                      :aria-label="t`Deadband for ${inputNames[index]}`"
                     />
                     <div class="absolute inset-y-0 right-0 hidden group-focus-within:flex flex-col" @mousedown.prevent>
                       <v-btn
@@ -231,7 +243,7 @@
                         rounded="0"
                         :width="24"
                         class="flex-1 !h-0 min-h-0"
-                        :aria-label="`Increase deadband for ${inputName(index)}`"
+                        :aria-label="t`Increase deadband for ${inputNames[index]}`"
                         :disabled="!currentCalibration.deadband.enabled || deadzoneThresholds[index] >= 1"
                         @click="stepDeadband(index, 1)"
                       >
@@ -243,7 +255,7 @@
                         rounded="0"
                         :width="24"
                         class="flex-1 !h-0 min-h-0"
-                        :aria-label="`Decrease deadband for ${inputName(index)}`"
+                        :aria-label="t`Decrease deadband for ${inputNames[index]}`"
                         :disabled="!currentCalibration.deadband.enabled || deadzoneThresholds[index] <= 0"
                         @click="stepDeadband(index, -1)"
                       >
@@ -258,7 +270,7 @@
                     :disabled="deadzoneThresholds[index] === 0"
                     @click="resetDeadband(index)"
                   >
-                    RESET
+                    {{ t`RESET` }}
                   </v-btn>
                 </div>
               </div>
@@ -267,7 +279,7 @@
                   class="text-xs"
                   :class="currentCalibration.exponential.enabled ? 'text-gray-300' : 'text-[#FFFFFF66]'"
                 >
-                  Exponential:
+                  {{ t`Exponential:` }}
                 </span>
                 <div class="w-full" />
                 <v-slider
@@ -294,22 +306,22 @@
                   :disabled="exponentialFactors[index] === 1.0 || !currentCalibration.exponential.enabled"
                   @click="resetExponential(index)"
                 >
-                  RESET
+                  {{ t`RESET` }}
                 </v-btn>
               </div>
             </div>
           </div>
           <p v-if="analogButtons.size === 0" class="text-xs text-gray-400">
-            Analog buttons get a card here once pressed partway. On/off buttons have no calibration.
+            {{ t`Analog buttons get a card here once pressed partway. On/off buttons have no calibration.` }}
           </p>
         </div>
       </template>
       <template #actions>
         <div class="flex w-full justify-between items-center px-1 py-2">
-          <v-btn variant="text" size="small" @click="cancelCalibration">Cancel</v-btn>
+          <v-btn variant="text" size="small" @click="cancelCalibration">{{ t`Cancel` }}</v-btn>
           <div class="flex gap-x-10">
             <v-btn variant="text" size="small" :disabled="isCalibrating" @click="startCalibration()">
-              Auto calibrate deadzones
+              {{ t`Auto calibrate deadzones` }}
             </v-btn>
             <v-btn
               size="small"
@@ -317,7 +329,7 @@
               :disabled="!allowSavingCalibration"
               @click="saveCalibration"
             >
-              Save
+              {{ t`Save` }}
             </v-btn>
           </div>
         </div>
@@ -385,6 +397,8 @@ const calibrationPanels = computed<number[]>(() => [
   ...Array.from({ length: numAxes.value }, (_, index) => index),
   ...[...analogButtons.value].sort((a, b) => a - b).map((button) => numAxes.value + button),
 ])
+
+const inputNames = computed(() => Object.fromEntries(calibrationPanels.value.map((index) => [index, inputName(index)])))
 
 const savedOrFilled = (saved: number[], length: number, fill: number): number[] =>
   Array.from({ length }, (_, index) => saved[index] ?? fill)

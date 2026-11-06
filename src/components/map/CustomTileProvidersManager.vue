@@ -2,7 +2,7 @@
   <div class="flex flex-col w-full mt-2 pb-2">
     <div class="flex flex-col gap-y-2">
       <div class="flex items-center justify-between gap-x-3 flex-wrap">
-        <p class="text-md">Import tile archive</p>
+        <p class="text-md">{{ t`Import tile archive` }}</p>
         <v-btn
           variant="elevated"
           class="bg-[#FFFFFF22]"
@@ -11,29 +11,30 @@
           :loading="importing"
           @click="importArchives"
         >
-          Import (.zip, .mbtiles, .pmtiles)
+          {{ t`Import (.zip, .mbtiles, .pmtiles)` }}
         </v-btn>
       </div>
       <div v-if="!vehicleOnline" class="flex items-start gap-x-2 text-xs opacity-80">
         <v-icon icon="mdi-information-outline" size="16" class="mt-[2px]" />
         <span>
-          Archives are saved on this device and uploaded to the vehicle automatically once it's online. URL providers
-          and already-cached archives work fully offline.
+          {{
+            t`Archives are saved on this device and uploaded to the vehicle automatically once it's online. URL providers and already-cached archives work fully offline.`
+          }}
         </span>
       </div>
       <div v-if="importing" class="flex items-center gap-x-3">
         <v-progress-linear indeterminate color="white" height="6" rounded class="flex-1" />
-        <span class="text-xs opacity-80 whitespace-nowrap">Importing…</span>
+        <span class="text-xs opacity-80 whitespace-nowrap">{{ t`Importing…` }}</span>
       </div>
     </div>
 
     <v-divider class="my-3" />
 
     <div class="flex flex-col gap-y-2">
-      <p class="text-md mb-1">Add provider by URL</p>
+      <p class="text-md mb-1">{{ t`Add provider by URL` }}</p>
       <v-text-field
         v-model="urlForm.name"
-        label="Name"
+        :label="t`Name`"
         density="compact"
         variant="outlined"
         hide-details
@@ -41,7 +42,7 @@
       />
       <v-text-field
         v-model="urlForm.urlTemplate"
-        label="Tile URL (e.g. https://host/tiles/{z}/{x}/{y}.png)"
+        :label="t`Tile URL (e.g. https://host/tiles/{z}/{x}/{y}.png)`"
         density="compact"
         variant="outlined"
         hide-details
@@ -50,7 +51,7 @@
       <div class="flex items-center gap-x-3 flex-wrap">
         <v-text-field
           v-model.number="urlForm.maxZoom"
-          label="Max zoom"
+          :label="t`Max zoom`"
           type="number"
           density="compact"
           variant="outlined"
@@ -60,7 +61,7 @@
         />
         <v-text-field
           v-model="urlForm.attribution"
-          label="Attribution (optional)"
+          :label="t`Attribution (optional)`"
           density="compact"
           variant="outlined"
           hide-details
@@ -80,8 +81,9 @@
             />
           </template>
           <span>
-            Tile Map Service (TMS) flips the Y axis so row 0 is at the bottom. Enable if your tile server uses TMS
-            instead of the more common XYZ (Google/OSM) convention.
+            {{
+              t`Tile Map Service (TMS) flips the Y axis so row 0 is at the bottom. Enable if your tile server uses TMS instead of the more common XYZ (Google/OSM) convention.`
+            }}
           </span>
         </v-tooltip>
         <v-btn
@@ -91,25 +93,26 @@
           :prepend-icon="editingProviderId ? 'mdi-content-save' : 'mdi-link-plus'"
           @click="submitUrlProvider"
         >
-          {{ editingProviderId ? 'Update' : 'Add' }}
+          {{ editingProviderId ? t`Update` : t`Add` }}
         </v-btn>
-        <v-btn v-if="editingProviderId" variant="text" size="small" @click="cancelUrlEdit"> Cancel </v-btn>
+        <v-btn v-if="editingProviderId" variant="text" size="small" @click="cancelUrlEdit">{{ t`Cancel` }}</v-btn>
       </div>
     </div>
 
     <v-divider class="my-4" />
 
     <p v-if="missionStore.customTileProviders.length === 0" class="text-sm opacity-60 py-4 text-center">
-      No custom providers yet. Add one by URL or import a tile archive. They appear as selectable base maps in the map's
-      layer selector.
+      {{
+        t`No custom providers yet. Add one by URL or import a tile archive. They appear as selectable base maps in the map's layer selector.`
+      }}
     </p>
 
     <div v-else class="flex flex-col">
-      <p class="text-md mb-1">Installed providers</p>
+      <p class="text-md mb-1">{{ t`Installed providers` }}</p>
       <div class="flex items-center gap-2 px-3 py-1 text-xs uppercase opacity-60">
-        <span class="flex-1">Name</span>
-        <span class="w-[30%] text-center">Type</span>
-        <span class="w-[24%] text-center">Max zoom</span>
+        <span class="flex-1">{{ t`Name` }}</span>
+        <span class="w-[30%] text-center">{{ t`Type` }}</span>
+        <span class="w-[24%] text-center">{{ t`Max zoom` }}</span>
         <span class="w-[84px]" />
       </div>
       <div
@@ -157,14 +160,14 @@
             @update:model-value="logDisplayMenuToggle"
           >
             <template #activator="{ props: displayProps }">
-              <v-tooltip location="top" open-delay="300" text="Brightness and contrast">
+              <v-tooltip location="top" open-delay="300" :text="t`Brightness and contrast`">
                 <template #activator="{ props: displayTooltipProps }">
                   <v-btn
                     v-bind="{ ...displayProps, ...displayTooltipProps }"
                     icon="mdi-brightness-6"
                     variant="text"
                     size="x-small"
-                    aria-label="Brightness and contrast"
+                    :aria-label="t`Brightness and contrast`"
                   />
                 </template>
               </v-tooltip>
@@ -175,7 +178,7 @@
             >
               <v-slider
                 :model-value="provider.brightness ?? 1"
-                label="Brightness"
+                :label="t`Brightness`"
                 :min="tileDisplayAdjustmentRange.min"
                 :max="tileDisplayAdjustmentRange.max"
                 :step="0.05"
@@ -192,7 +195,7 @@
               </v-slider>
               <v-slider
                 :model-value="provider.contrast ?? 1"
-                label="Contrast"
+                :label="t`Contrast`"
                 :min="tileDisplayAdjustmentRange.min"
                 :max="tileDisplayAdjustmentRange.max"
                 :step="0.05"
@@ -214,30 +217,30 @@
                 :disabled="!isDisplayAdjusted(provider)"
                 @click="resetDisplayAdjustments(provider)"
               >
-                Reset
+                {{ t`Reset` }}
               </v-btn>
             </div>
           </v-menu>
-          <v-tooltip location="top" open-delay="300" text="Edit">
+          <v-tooltip location="top" open-delay="300" :text="t`Edit`">
             <template #activator="{ props: editProps }">
               <v-btn
                 v-bind="editProps"
                 icon="mdi-pencil"
                 variant="text"
                 size="x-small"
-                aria-label="Edit"
+                :aria-label="t`Edit`"
                 @click="editProvider(provider)"
               />
             </template>
           </v-tooltip>
-          <v-tooltip location="top" open-delay="300" text="Remove">
+          <v-tooltip location="top" open-delay="300" :text="t`Remove`">
             <template #activator="{ props: removeProps }">
               <v-btn
                 v-bind="removeProps"
                 icon="mdi-trash-can-outline"
                 variant="text"
                 size="x-small"
-                aria-label="Remove"
+                :aria-label="t`Remove`"
                 @click="removeProvider(provider)"
               />
             </template>
@@ -249,6 +252,7 @@
 </template>
 
 <script setup lang="ts">
+import { msgid, ngettext, t } from 'ttag'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -334,16 +338,16 @@ const pendingSyncIcon = (provider: CustomTileProviderMeta): string =>
 
 const pendingSyncHint = (provider: CustomTileProviderMeta): string => {
   if (!isArchiveAvailableLocally(provider)) {
-    return 'Imported on another computer. It cannot be shown here until that computer uploads it to the vehicle.'
+    return t`Imported on another computer. It cannot be shown here until that computer uploads it to the vehicle.`
   }
   return isBlueOsSettingsSyncEnabled()
-    ? "Saved on this computer. Will upload to the vehicle once it's online."
-    : 'Saved on this computer. BlueOS settings sync is off, so it is not uploaded to the vehicle.'
+    ? t`Saved on this computer. Will upload to the vehicle once it's online.`
+    : t`Saved on this computer. BlueOS settings sync is off, so it is not uploaded to the vehicle.`
 }
 
 const providerTypeLabel = (provider: CustomTileProviderMeta): string => {
   if (provider.type === 'url') return 'URL'
-  return provider.format?.toUpperCase() ?? 'ARCHIVE'
+  return provider.format?.toUpperCase() ?? t`ARCHIVE`
 }
 
 const adjustmentLabel = (value = 1): string => `${Math.round(value * 100)}%`
@@ -393,9 +397,9 @@ const submitUrlProvider = (): void => {
     if (editingProviderId.value) {
       const name = urlForm.name.trim()
       const urlTemplate = urlForm.urlTemplate.trim()
-      if (!name) throw new Error('Provider name is required.')
+      if (!name) throw new Error(t`Provider name is required.`)
       if (!isValidTileUrlTemplate(urlTemplate)) {
-        throw new Error('Tile URL must contain the {z}, {x} and {y} placeholders.')
+        throw new Error(t`Tile URL must contain the {z}, {x} and {y} placeholders.`)
       }
       missionStore.updateCustomTileProvider(editingProviderId.value, {
         name,
@@ -406,7 +410,7 @@ const submitUrlProvider = (): void => {
       })
       draftNames[editingProviderId.value] = name
       logUserAction('Updated a custom map provider')
-      openSnackbar({ message: 'Custom map provider updated.', variant: 'success', duration: 3000 })
+      openSnackbar({ message: t`Custom map provider updated.`, variant: 'success', duration: 3000 })
       cancelUrlEdit()
       return
     }
@@ -421,7 +425,7 @@ const submitUrlProvider = (): void => {
       })
     )
     logUserAction('Added a custom map provider by URL')
-    openSnackbar({ message: 'Custom map provider added.', variant: 'success', duration: 3000 })
+    openSnackbar({ message: t`Custom map provider added.`, variant: 'success', duration: 3000 })
     clearUrlForm()
   } catch (error) {
     openSnackbar({ message: messageFromError(error), variant: 'error', duration: 5000 })
@@ -437,7 +441,7 @@ const importArchives = async (): Promise<void> => {
   let addedCount = 0
   for (const file of files) {
     if (!tileArchiveFormatFromFile(file)) {
-      failures.push(`"${file.name}" is not a .zip, .mbtiles or .pmtiles file.`)
+      failures.push(t`"${file.name}" is not a .zip, .mbtiles or .pmtiles file.`)
       continue
     }
     try {
@@ -445,7 +449,8 @@ const importArchives = async (): Promise<void> => {
       missionStore.addCustomTileProvider(provider)
       addedCount += 1
     } catch (error) {
-      failures.push(`"${file.name}" could not be imported: ${messageFromError(error)}`)
+      const reason = messageFromError(error)
+      failures.push(t`"${file.name}" could not be imported: ${reason}`)
     }
   }
   importing.value = false
@@ -459,10 +464,17 @@ const importArchives = async (): Promise<void> => {
     logUserAction('Imported a custom map tile archive')
     // When online the sync composable uploads immediately and shows its own confirmation; offline, tell the user
     // the archive is saved locally and will sync later.
-    const plural = addedCount > 1 ? 's' : ''
     const message = vehicleOnline.value
-      ? `${addedCount} custom map provider${plural} added.`
-      : `${addedCount} custom map provider${plural} added. Will upload to the vehicle once it's online.`
+      ? ngettext(
+          msgid`${addedCount} custom map provider added.`,
+          `${addedCount} custom map providers added.`,
+          addedCount
+        )
+      : ngettext(
+          msgid`${addedCount} custom map provider added. Will upload to the vehicle once it's online.`,
+          `${addedCount} custom map providers added. Will upload to the vehicle once it's online.`,
+          addedCount
+        )
     openSnackbar({ message, variant: 'success', duration: 3000 })
   }
 }
@@ -515,7 +527,7 @@ const performRemoveProvider = async (provider: CustomTileProviderMeta): Promise<
   } catch (error) {
     // The entry is already gone from the list, so the user has to be told its bytes were left behind.
     const reason = messageFromError(error)
-    const message = `"${provider.name}" was removed, but its stored data could not be deleted: ${reason}`
+    const message = t`"${provider.name}" was removed, but its stored data could not be deleted: ${reason}`
     openSnackbar({ message, variant: 'error', duration: 6000 })
   }
 }
@@ -529,24 +541,24 @@ const vehicleStorageAddress = computed(() =>
 const archiveRemovalNote = (provider: CustomTileProviderMeta): string => {
   if (provider.type !== 'file' || provider.pendingVehicleSync) return ''
   if (!isBlueOsSettingsSyncEnabled()) {
-    return ' The copy stored on the vehicle is kept, since BlueOS settings sync is off on this computer.'
+    return ` ${t`The copy stored on the vehicle is kept, since BlueOS settings sync is off on this computer.`}`
   }
   if (!vehicleStorageAddress.value) {
-    return ' The copy stored on the vehicle is kept, since no vehicle is connected to delete it from.'
+    return ` ${t`The copy stored on the vehicle is kept, since no vehicle is connected to delete it from.`}`
   }
-  return ' This also deletes the archive stored on the vehicle, which cannot be undone.'
+  return ` ${t`This also deletes the archive stored on the vehicle, which cannot be undone.`}`
 }
 
 const removeProvider = (provider: CustomTileProviderMeta): void => {
   const archiveNote = archiveRemovalNote(provider)
   showDialog({
     variant: 'warning',
-    title: 'Remove map provider?',
-    message: `Remove "${provider.name}"?${archiveNote}`,
+    title: t`Remove map provider?`,
+    message: `${t`Remove "${provider.name}"?`}${archiveNote}`,
     actions: [
-      { text: 'Cancel', size: 'small', action: closeDialog },
+      { text: t`Cancel`, size: 'small', action: closeDialog },
       {
-        text: 'Remove',
+        text: t`Remove`,
         size: 'small',
         action: () => {
           closeDialog()

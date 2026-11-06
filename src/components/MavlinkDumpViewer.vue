@@ -5,7 +5,7 @@
         <div class="flex items-center gap-3 min-w-0">
           <v-icon icon="mdi-chart-line" size="22" />
           <div class="min-w-0">
-            <div class="text-base font-semibold">MAVLink dump viewer</div>
+            <div class="text-base font-semibold">{{ t`MAVLink dump viewer` }}</div>
             <div class="text-xs text-white/60 truncate">{{ fileName }}</div>
           </div>
         </div>
@@ -14,23 +14,23 @@
 
       <div class="flex flex-wrap gap-x-6 gap-y-1 px-4 py-2 text-sm text-white/80 border-b border-white/10 shrink-0">
         <span>
-          <span class="text-white/50">Messages: </span>
+          <span class="text-white/50">{{ t`Messages:` }} </span>
           <span class="font-mono">{{ displayedMessageCount.toLocaleString() }}</span>
         </span>
         <span>
-          <span class="text-white/50">Series: </span>
+          <span class="text-white/50">{{ t`Series:` }} </span>
           <span class="font-mono">{{ parsed.seriesList.length.toLocaleString() }}</span>
         </span>
         <span v-if="durationMs > 0">
-          <span class="text-white/50">Duration: </span>
+          <span class="text-white/50">{{ t`Duration:` }} </span>
           <span class="font-mono">{{ formatDurationMs(durationMs) }}</span>
         </span>
         <span v-if="plotBaseTimeMs !== null">
-          <span class="text-white/50">Started: </span>
+          <span class="text-white/50">{{ t`Started:` }} </span>
           <span class="font-mono">{{ formatStartTime(plotBaseTimeMs) }}</span>
         </span>
         <span v-if="parsed.invalidLineCount > 0" class="text-amber-300">
-          <span class="text-amber-300/70">Invalid lines: </span>
+          <span class="text-amber-300/70">{{ t`Invalid lines:` }} </span>
           <span class="font-mono">{{ parsed.invalidLineCount.toLocaleString() }}</span>
         </span>
       </div>
@@ -39,14 +39,14 @@
         <div class="dump-viewer-sidebar flex flex-col border-r border-white/10 shrink-0">
           <div class="p-2 shrink-0 flex flex-col gap-2">
             <div class="flex items-center gap-1 text-xs">
-              <span class="text-white/50 mr-1">Show:</span>
+              <span class="text-white/50 mr-1">{{ t`Show:` }}</span>
               <button
                 type="button"
                 class="direction-filter"
                 :class="{ active: showIncomingSeries }"
                 @click="showIncomingSeries = !showIncomingSeries"
               >
-                ← Incoming
+                ← {{ t`Incoming` }}
               </button>
               <button
                 type="button"
@@ -54,7 +54,7 @@
                 :class="{ active: showOutgoingSeries }"
                 @click="showOutgoingSeries = !showOutgoingSeries"
               >
-                → Outgoing
+                → {{ t`Outgoing` }}
               </button>
             </div>
             <v-autocomplete
@@ -62,7 +62,7 @@
               :items="filteredSeriesList"
               item-title="label"
               item-value="id"
-              label="Variables to plot"
+              :label="t`Variables to plot`"
               multiple
               chips
               closable-chips
@@ -77,7 +77,7 @@
             <div class="flex items-start gap-1">
               <v-text-field
                 v-model="draftMaxPointsPerSeries"
-                label="Max points per series"
+                :label="t`Max points per series`"
                 type="number"
                 suffix="pts"
                 theme="dark"
@@ -94,13 +94,13 @@
                 :disabled="!isDraftMaxPointsDirty"
                 @click="applyMaxPointsPerSeries"
               >
-                Apply
+                {{ t`Apply` }}
               </v-btn>
             </div>
           </div>
           <div class="flex-1 overflow-y-auto px-2 pb-3">
             <div v-if="selectedEntries.length === 0" class="text-center text-white/40 text-sm py-6 px-2">
-              Search and select variables above to plot them.
+              {{ t`Search and select variables above to plot them.` }}
             </div>
             <div
               v-for="entry in selectedEntries"
@@ -114,17 +114,17 @@
                   <span
                     v-if="entry.series.min === entry.series.max"
                     class="text-[10px] px-1.5 py-px rounded bg-amber-500/20 text-amber-300 font-mono"
-                    title="All samples have the same value"
+                    :title="t`All samples have the same value`"
                   >
-                    constant {{ formatValue(entry.series.min) }}
+                    {{ t`constant` }} {{ formatValue(entry.series.min) }}
                   </span>
                 </div>
                 <div class="text-xs text-white/50 font-mono">
-                  min: {{ formatValue(entry.series.min) }} · max: {{ formatValue(entry.series.max) }} ·
-                  {{ entry.series.times.length.toLocaleString() }} pts
+                  {{ t`min:` }} {{ formatValue(entry.series.min) }} · {{ t`max:` }}
+                  {{ formatValue(entry.series.max) }} · {{ entry.series.times.length.toLocaleString() }} pts
                 </div>
                 <div v-if="hoverSeriesValues[entry.series.id] !== undefined" class="text-xs text-cyan-300 font-mono">
-                  @ cursor: {{ formatValue(hoverSeriesValues[entry.series.id]) }}
+                  {{ t`@ cursor:` }} {{ formatValue(hoverSeriesValues[entry.series.id]) }}
                 </div>
               </div>
               <v-btn
@@ -147,11 +147,11 @@
               :disabled="isAtFullExtent"
               @click="resetZoom"
             >
-              Reset zoom
+              {{ t`Reset zoom` }}
             </v-btn>
             <v-checkbox
               v-model="normalizePerSeries"
-              label="Normalize per series"
+              :label="t`Normalize per series`"
               hide-details
               density="compact"
               class="-my-2"
@@ -162,7 +162,7 @@
               t = {{ formatRelTime(hoverTimeMs) }}
             </div>
             <div class="text-sm font-mono text-white/60">
-              window: {{ formatRelTime(viewStartMs) }} → {{ formatRelTime(viewEndMs) }}
+              {{ t`window:` }} {{ formatRelTime(viewStartMs) }} → {{ formatRelTime(viewEndMs) }}
             </div>
           </div>
 
@@ -182,7 +182,7 @@
               v-if="selectedEntries.length === 0"
               class="absolute inset-0 flex items-center justify-center text-white/40 text-sm pointer-events-none"
             >
-              Select one or more variables on the left to start plotting.
+              {{ t`Select one or more variables on the left to start plotting.` }}
             </div>
           </div>
         </div>
@@ -192,8 +192,7 @@
         v-if="showLivePlotResourceWarning"
         class="mx-4 mb-3 mt-1 shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
       >
-        Large buffer ({{ displayedMessageCount.toLocaleString() }} messages). Selected series keep growing in memory as
-        new messages arrive — leaving this open for a long time can use significant CPU and memory.
+        {{ livePlotResourceWarning }}
       </div>
     </v-card>
   </v-dialog>
@@ -202,6 +201,7 @@
 <script setup lang="ts">
 import { useElementSize, useStorage } from '@vueuse/core'
 import { format } from 'date-fns'
+import { t } from 'ttag'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, triggerRef, watch } from 'vue'
 
 import {
@@ -311,6 +311,11 @@ const isLivePlotSource = computed(() => props.fileName.startsWith('In-memory buf
 const displayedMessageCount = computed(() =>
   isLivePlotSource.value ? mavlinkDumperMessageCount.value : parsed.value.messageCount
 )
+
+const livePlotResourceWarning = computed(() => {
+  const count = displayedMessageCount.value.toLocaleString()
+  return t`Large buffer (${count} messages). Selected series keep growing in memory as new messages arrive — leaving this open for a long time can use significant CPU and memory.`
+})
 
 const showLivePlotResourceWarning = computed(
   () => isLivePlotSource.value && mavlinkDumperMessageCount.value >= mavlinkDumperLargeBufferMessageThreshold
@@ -819,23 +824,23 @@ const formatRelTime = (ms: number): string => {
   return `${minutes}m ${remSeconds.toFixed(2)}s`
 }
 
-const findFirstIdxAtOrAfter = (times: number[], t: number): number => {
+const findFirstIdxAtOrAfter = (times: number[], time: number): number => {
   let lo = 0
   let hi = times.length
   while (lo < hi) {
     const mid = (lo + hi) >>> 1
-    if (times[mid] < t) lo = mid + 1
+    if (times[mid] < time) lo = mid + 1
     else hi = mid
   }
   return lo
 }
 
-const findLastIdxAtOrBefore = (times: number[], t: number): number => {
+const findLastIdxAtOrBefore = (times: number[], time: number): number => {
   let lo = 0
   let hi = times.length
   while (lo < hi) {
     const mid = (lo + hi) >>> 1
-    if (times[mid] <= t) lo = mid + 1
+    if (times[mid] <= time) lo = mid + 1
     else hi = mid
   }
   return lo - 1
@@ -1015,8 +1020,8 @@ const renderPlot = (): void => {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
   for (let i = startXStep; i <= endXStep; i++) {
-    const t = i * xStep
-    const x = plotLeft + ((t - startRel) / visibleSpanMs) * plotWidth
+    const time = i * xStep
+    const x = plotLeft + ((time - startRel) / visibleSpanMs) * plotWidth
     if (x < plotLeft - 1 || x > plotRight + 1) continue
     ctx.beginPath()
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
@@ -1024,7 +1029,7 @@ const renderPlot = (): void => {
     ctx.lineTo(x, plotBottom)
     ctx.stroke()
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
-    ctx.fillText(formatRelTime(t), x, plotBottom + 4)
+    ctx.fillText(formatRelTime(time), x, plotBottom + 4)
   }
 
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'

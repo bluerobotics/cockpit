@@ -2,15 +2,17 @@
   <div class="fence-expansible-wrapper -mx-2 w-auto">
     <ExpansiblePanel compact invert-chevron hover-effect elevation-effect :is-expanded="false" darken-content>
       <template #title>
-        <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">Fence parameters</div>
+        <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
+          {{ t`Fence parameters` }}
+        </div>
       </template>
       <template #content>
         <div class="flex flex-col w-full">
           <p v-if="!isApm && !isPx4" class="text-xs opacity-70 px-3 py-2">
-            Connect a vehicle to view its geofence parameters.
+            {{ t`Connect a vehicle to view its geofence parameters.` }}
           </p>
           <p v-else class="text-[11px] opacity-70 px-3 pt-2 pb-1">
-            These parameters apply to all fences uploaded to the vehicle.
+            {{ t`These parameters apply to all fences uploaded to the vehicle.` }}
           </p>
 
           <div
@@ -47,7 +49,7 @@
           </div>
 
           <div class="flex flex-row justify-end px-3 py-2">
-            <v-tooltip location="top" text="Reload values from vehicle">
+            <v-tooltip location="top" :text="t`Reload values from vehicle`">
               <template #activator="{ props }">
                 <v-btn v-bind="props" variant="text" size="x-small" icon @click="onRefreshAllParams">
                   <v-icon size="14">mdi-refresh</v-icon>
@@ -62,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -96,42 +99,41 @@ const apmParams: ParamDescriptor[] = [
   {
     name: 'FENCE_ACTION',
     description: [
-      'Action taken when the fence is breached. Available values vary by vehicle type:',
-      '0 → Report only (no autopilot reaction).',
-      '1 → RTL, falling back to Land if RTL is unavailable.',
-      '2 → Always Land (Copter only).',
-      '3 → SmartRTL, falling back to RTL or Land (Copter only).',
-      '4 → Brake, falling back to Land (Copter only).',
-      '5 → SmartRTL, falling back to Land (Copter only).',
-      '6 → Switch to Guided mode (Plane only).',
-      '7 → Switch to Guided mode while passing pilot throttle (Plane only).',
+      t`Action taken when the fence is breached. Available values vary by vehicle type:`,
+      t`0 → Report only (no autopilot reaction).`,
+      t`1 → RTL, falling back to Land if RTL is unavailable.`,
+      t`2 → Always Land (Copter only).`,
+      t`3 → SmartRTL, falling back to RTL or Land (Copter only).`,
+      t`4 → Brake, falling back to Land (Copter only).`,
+      t`5 → SmartRTL, falling back to Land (Copter only).`,
+      t`6 → Switch to Guided mode (Plane only).`,
+      t`7 → Switch to Guided mode while passing pilot throttle (Plane only).`,
     ].join('\n'),
     type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 } as DialectMavParamType,
   },
   {
     name: 'FENCE_ALT_MAX',
-    description: 'Maximum altitude (meters) before the fence triggers. Numeric value, range 10 to 1000, increment 1.',
+    description: t`Maximum altitude (meters) before the fence triggers. Numeric value, range 10 to 1000, increment 1.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
   },
   {
     name: 'FENCE_ALT_MIN',
-    description: 'Minimum altitude (meters) before the fence triggers. Numeric value, range -100 to 100, increment 1.',
+    description: t`Minimum altitude (meters) before the fence triggers. Numeric value, range -100 to 100, increment 1.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
   },
   {
     name: 'FENCE_MARGIN',
-    description:
-      'Buffer distance (meters) the autopilot tries to keep from the fence boundary to avoid breaching. Numeric value, range 1 to 10.',
+    description: t`Buffer distance (meters) the autopilot tries to keep from the fence boundary to avoid breaching. Numeric value, range 1 to 10.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
   },
   {
     name: 'FENCE_AUTOENABLE',
     description: [
-      'Controls whether the fence is automatically enabled by the autopilot:',
-      '0 → Off (only enabled manually via FENCE_ENABLE).',
-      '1 → Auto-enable on takeoff once the configured altitude is reached.',
-      '2 → Auto-enable on takeoff; the minimum-altitude floor is disabled during landing.',
-      '3 → Auto-enable as soon as the vehicle is armed.',
+      t`Controls whether the fence is automatically enabled by the autopilot:`,
+      t`0 → Off (only enabled manually via FENCE_ENABLE).`,
+      t`1 → Auto-enable on takeoff once the configured altitude is reached.`,
+      t`2 → Auto-enable on takeoff; the minimum-altitude floor is disabled during landing.`,
+      t`3 → Auto-enable as soon as the vehicle is armed.`,
     ].join('\n'),
     type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 } as DialectMavParamType,
   },
@@ -141,34 +143,32 @@ const px4Params: ParamDescriptor[] = [
   {
     name: 'GF_ACTION',
     description: [
-      'Action taken when the fence is breached:',
-      '0 → None (no autopilot reaction).',
-      '1 → Warning only (notification, no behavior change).',
-      '2 → Hold (switch to Hold mode and stop in place).',
-      '3 → Return (switch to Return mode / RTL).',
-      '4 → Terminate (immediate flight termination, vehicle disarm/crash).',
-      '5 → Land (switch to Land mode at current position).',
+      t`Action taken when the fence is breached:`,
+      t`0 → None (no autopilot reaction).`,
+      t`1 → Warning only (notification, no behavior change).`,
+      t`2 → Hold (switch to Hold mode and stop in place).`,
+      t`3 → Return (switch to Return mode / RTL).`,
+      t`4 → Terminate (immediate flight termination, vehicle disarm/crash).`,
+      t`5 → Land (switch to Land mode at current position).`,
     ].join('\n'),
     type: { type: MavParamType.MAV_PARAM_TYPE_INT32 } as DialectMavParamType,
   },
   {
     name: 'GF_MAX_HOR_DIST',
-    description:
-      'Maximum horizontal distance (meters) the vehicle may travel from the home position. Numeric value. 0 → no horizontal limit.',
+    description: t`Maximum horizontal distance (meters) the vehicle may travel from the home position. Numeric value. 0 → no horizontal limit.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
   },
   {
     name: 'GF_MAX_VER_DIST',
-    description:
-      'Maximum vertical distance (meters) the vehicle may travel above the home position. Numeric value. 0 → no vertical limit.',
+    description: t`Maximum vertical distance (meters) the vehicle may travel above the home position. Numeric value. 0 → no vertical limit.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
   },
   {
     name: 'GF_PREDICT',
     description: [
-      'Predictive geofence breach detection. The autopilot acts based on the projected position when enabled:',
-      '0 → Disabled (act only after a breach has occurred).',
-      '1 → Enabled (act as soon as a breach is predicted).',
+      t`Predictive geofence breach detection. The autopilot acts based on the projected position when enabled:`,
+      t`0 → Disabled (act only after a breach has occurred).`,
+      t`1 → Enabled (act as soon as a breach is predicted).`,
     ].join('\n'),
     type: { type: MavParamType.MAV_PARAM_TYPE_INT32 } as DialectMavParamType,
   },
@@ -205,9 +205,10 @@ const onWriteParam = (name: string, valueStr: string, type: DialectMavParamType)
     // the value back so the PARAM_VALUE reply reconciles the optimistic update.
     vehicleStore.requestParameter(name)
   } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
     openSnackbar({
       variant: 'error',
-      message: `Failed to write ${name}: ${error instanceof Error ? error.message : String(error)}`,
+      message: t`Failed to write ${name}: ${reason}`,
       duration: 4000,
     })
   }

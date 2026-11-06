@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, defineAsyncComponent, onMounted, ref, toRefs } from 'vue'
 
 import ContextMenu from '@/components/ContextMenu.vue'
@@ -90,7 +91,7 @@ const openWidgetConfig = (): void => {
 }
 
 const contextMenuItems = computed(() =>
-  isConfigMenuDisabled.value ? [] : [{ item: 'Options', action: openWidgetConfig, icon: 'mdi-cog' }]
+  isConfigMenuDisabled.value ? [] : [{ item: t`Options`, action: openWidgetConfig, icon: 'mdi-cog' }]
 )
 
 const componentFromType = (componentType: string): ReturnType<typeof defineAsyncComponent> => {

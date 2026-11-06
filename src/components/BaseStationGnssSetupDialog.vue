@@ -1,22 +1,31 @@
 <template>
   <InteractionDialog
     :show-dialog="modelValue"
-    title="Use a serial/USB device"
+    :title="t`Use a serial/USB device`"
     variant="text-only"
     max-width="560"
     @update:show-dialog="onDialogUpdate"
   >
     <template #content>
       <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
-        <v-btn icon :width="34" :height="34" variant="text" aria-label="Close" class="bg-transparent" @click="close">
+        <v-btn
+          icon
+          :width="34"
+          :height="34"
+          variant="text"
+          :aria-label="t`Close`"
+          class="bg-transparent"
+          @click="close"
+        >
           <v-icon :size="22">mdi-close</v-icon>
         </v-btn>
       </div>
       <div class="flex flex-col gap-y-4 -mt-7 text-white">
         <template v-if="step === 'select'">
           <p class="text-body-2">
-            Pick the device you believe is your GNSS receiver and we will check it for you. Nothing is saved until you
-            confirm.
+            {{
+              t`Pick the device you believe is your GNSS receiver and we will check it for you. Nothing is saved until you confirm.`
+            }}
           </p>
 
           <div v-if="probeError" class="flex items-start gap-x-3 rounded-lg bg-[#FFFFFF11] p-3">
@@ -25,13 +34,17 @@
           </div>
 
           <div class="flex items-center justify-between">
-            <span class="text-caption">{{ ports.length }} device(s) found</span>
-            <v-btn variant="text" size="small" prepend-icon="mdi-refresh" @click="onRefreshPorts">Refresh</v-btn>
+            <span class="text-caption">{{ t`${ports.length} device(s) found` }}</span>
+            <v-btn variant="text" size="small" prepend-icon="mdi-refresh" @click="onRefreshPorts">{{
+              t`Refresh`
+            }}</v-btn>
           </div>
 
           <div v-if="ports.length === 0" class="flex flex-col items-center gap-y-2 rounded-lg bg-[#FFFFFF11] p-6">
             <v-icon size="28">mdi-usb-port</v-icon>
-            <span class="text-body-2">No serial devices found. Plug the receiver in and refresh the list.</span>
+            <span class="text-body-2">{{
+              t`No serial devices found. Plug the receiver in and refresh the list.`
+            }}</span>
           </div>
           <v-list v-else theme="dark" class="bg-transparent py-0 max-h-[40vh] overflow-y-auto select-none">
             <v-list-item
@@ -49,8 +62,9 @@
           </v-list>
 
           <div v-if="claimingDevice" class="rounded-lg bg-[#FFFFFF11] p-3 text-body-2">
-            This device is already set up as "{{ claimingDevice.name }}". You can use it directly instead of adding it
-            again.
+            {{
+              t`This device is already set up as "${claimingDevice.name}". You can use it directly instead of adding it again.`
+            }}
           </div>
         </template>
 
@@ -58,9 +72,9 @@
           <div class="flex flex-col items-center gap-y-4 py-8">
             <v-progress-circular indeterminate size="42" width="3" />
             <p class="text-body-2">
-              Checking <span class="font-mono">{{ selectedPort?.path }}</span> for GNSS data...
+              {{ t`Checking` }} <span class="font-mono">{{ selectedPort?.path }}</span> {{ t`for GNSS data...` }}
             </p>
-            <p class="text-caption">Every common speed is tried, so this can take up to 15 seconds.</p>
+            <p class="text-caption">{{ t`Every common speed is tried, so this can take up to 15 seconds.` }}</p>
           </div>
         </template>
 
@@ -68,15 +82,15 @@
           <div class="flex items-start gap-x-3 rounded-lg bg-[#FFFFFF11] p-3">
             <v-icon size="20" color="#3B7B62">mdi-check-circle-outline</v-icon>
             <span class="text-body-2">
-              This is a GNSS receiver. Found valid data on
-              <span class="font-mono">{{ selectedPort?.path }}</span> at {{ detectedBaud }} baud.
+              {{ t`This is a GNSS receiver. Found valid data on` }}
+              <span class="font-mono">{{ selectedPort?.path }}</span> {{ t`at ${detectedBaud} baud.` }}
             </span>
           </div>
 
           <div v-if="!draftHasUsbModel" class="flex items-start gap-x-3 rounded-lg bg-[#FFFFFF11] p-3">
             <v-icon size="20" color="amber">mdi-alert-outline</v-icon>
             <span class="text-body-2">
-              This device reports no USB model id, so auto-connect won't follow it to other computers.
+              {{ t`This device reports no USB model id, so auto-connect won't follow it to other computers.` }}
             </span>
           </div>
 
@@ -98,11 +112,11 @@
 
           <v-text-field
             v-model="deviceName"
-            label="Name"
+            :label="t`Name`"
             theme="dark"
             variant="outlined"
             density="compact"
-            hint="How this receiver shows up in the sources list and in the data lake."
+            :hint="t`How this receiver shows up in the sources list and in the data lake.`"
             persistent-hint
             @blur="onNameEdited"
           />
@@ -112,10 +126,10 @@
 
     <template #actions>
       <template v-if="step === 'select'">
-        <v-btn variant="text" size="small" @click="close">Cancel</v-btn>
+        <v-btn variant="text" size="small" @click="close">{{ t`Cancel` }}</v-btn>
         <v-spacer />
         <v-btn v-if="claimingDevice" size="small" class="bg-[#FFFFFF33] text-white" @click="useExistingDevice">
-          Use "{{ claimingDevice.name }}"
+          {{ t`Use "${claimingDevice.name}"` }}
         </v-btn>
         <v-btn
           v-else
@@ -124,15 +138,15 @@
           :disabled="!selectedPort"
           @click="testSelectedPort"
         >
-          Test device
+          {{ t`Test device` }}
         </v-btn>
       </template>
       <template v-else-if="step === 'testing'">
         <v-spacer />
-        <v-btn variant="text" size="small" @click="close">Cancel</v-btn>
+        <v-btn variant="text" size="small" @click="close">{{ t`Cancel` }}</v-btn>
       </template>
       <template v-else>
-        <v-btn variant="text" size="small" @click="backToSelection">Back</v-btn>
+        <v-btn variant="text" size="small" @click="backToSelection">{{ t`Back` }}</v-btn>
         <v-spacer />
         <v-btn
           size="small"
@@ -140,7 +154,7 @@
           :disabled="!deviceName.trim() || draftStatus !== 'connected'"
           @click="confirmDevice"
         >
-          Use this device
+          {{ t`Use this device` }}
         </v-btn>
       </template>
     </template>
@@ -148,6 +162,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
@@ -217,7 +232,7 @@ const previewKeys = ['fixQuality', 'satellitesUsed', 'latitude', 'longitude']
 
 const previewItems = computed(() => {
   const fix = draftFix.value
-  if (!fix) return [{ key: 'data', label: 'Data', value: 'Waiting...' }]
+  if (!fix) return [{ key: 'data', label: t`Data`, value: t`Waiting...` }]
   const items = gnssFixItems(fix, interfaceStore.displayUnitPreferences)
   return previewKeys.flatMap((key) => items.filter((item) => item.key === key))
 })
@@ -225,7 +240,7 @@ const previewItems = computed(() => {
 const portDescription = (port: SerialPortInfo): string => {
   const details = [port.manufacturer, port.vendorId && port.productId ? `${port.vendorId}:${port.productId}` : null]
   const described = details.filter(Boolean).join(' - ')
-  return described || 'No USB descriptors reported'
+  return described || t`No USB descriptors reported`
 }
 
 const discardDraft = async (): Promise<void> => {
@@ -281,7 +296,7 @@ const trackDevice = (id: string, name: string): void => {
   logUserAction(`Set the base station to be positioned by the GNSS device "${name}"`)
   openSnackbar({
     variant: 'success',
-    message: `Connected to "${name}". The base station will follow it as soon as it reports a position.`,
+    message: t`Connected to "${name}". The base station will follow it as soon as it reports a position.`,
     duration: 5000,
   })
 }
@@ -298,7 +313,8 @@ const useExistingDevice = async (): Promise<void> => {
     try {
       await gnss.connectDevice(device.id)
     } catch (error) {
-      probeError.value = `Could not connect to "${device.name}": ${(error as Error).message}`
+      const message = (error as Error).message
+      probeError.value = t`Could not connect to "${device.name}": ${message}`
       return
     }
   }
@@ -321,7 +337,8 @@ const testSelectedPort = async (): Promise<void> => {
     baud = await autodetectBaud(port.path)
   } catch (error) {
     if (probeIsStale(run)) return
-    probeError.value = `Could not read ${port.path}: ${(error as Error).message}`
+    const message = (error as Error).message
+    probeError.value = t`Could not read ${port.path}: ${message}`
     step.value = 'select'
     return
   }
@@ -331,8 +348,7 @@ const testSelectedPort = async (): Promise<void> => {
   if (probeIsStale(run)) return
 
   if (baud === null) {
-    const reason = 'does not look like a GNSS receiver, as no valid positioning data came out of it'
-    probeError.value = `${port.path} ${reason}. Select another device and test it.`
+    probeError.value = t`${port.path} does not look like a GNSS receiver, as no valid positioning data came out of it. Select another device and test it.`
     logUserAction(`Found no GNSS data on the serial device ${port.path}`)
     step.value = 'select'
     return
@@ -355,7 +371,8 @@ const testSelectedPort = async (): Promise<void> => {
   try {
     await gnss.connectDevice(draft.id)
   } catch (error) {
-    probeError.value = `Could not connect to the device: ${(error as Error).message}`
+    const message = (error as Error).message
+    probeError.value = t`Could not connect to the device: ${message}`
     await discardDraft()
     resetToSelection()
     return
@@ -393,7 +410,8 @@ const confirmDevice = async (): Promise<void> => {
   try {
     id = await gnss.commitCreate()
   } catch (error) {
-    probeError.value = `Added "${name}", but could not connect to it: ${(error as Error).message}`
+    const message = (error as Error).message
+    probeError.value = t`Added "${name}", but could not connect to it: ${message}`
     resetToSelection()
     return
   }

@@ -20,9 +20,9 @@
   <teleport to="body">
     <v-dialog v-model="configMenuOpen" max-width="624px">
       <v-card class="rounded-lg relative" :style="interfaceStore.globalGlassMenuStyles">
-        <v-card-title class="text-h6 font-weight-bold py-4 text-center">Mission configuration</v-card-title>
+        <v-card-title class="text-h6 font-weight-bold py-4 text-center">{{ t`Mission configuration` }}</v-card-title>
         <v-card-text class="px-8">
-          <p class="text-subtitle-1 font-weight-bold mb-2">Mission Name</p>
+          <p class="text-subtitle-1 font-weight-bold mb-2">{{ t`Mission Name` }}</p>
           <v-text-field
             :model-value="stagedName"
             append-inner-icon="mdi-close"
@@ -35,15 +35,15 @@
           />
           <div class="flex justify-end mt-2">
             <v-btn variant="text" size="small" class="px-0 text-white" @click="generateNewName">
-              Generate new name
+              {{ t`Generate new name` }}
             </v-btn>
           </div>
         </v-card-text>
         <v-divider class="mt-2 mx-10" />
         <v-card-actions>
           <div class="flex justify-between items-center pa-2 w-full h-full">
-            <v-btn variant="text" @click="cancel">Cancel</v-btn>
-            <v-btn :disabled="!hasChanges" @click="save">Save</v-btn>
+            <v-btn variant="text" @click="cancel">{{ t`Cancel` }}</v-btn>
+            <v-btn :disabled="!hasChanges" @click="save">{{ t`Save` }}</v-btn>
           </div>
         </v-card-actions>
       </v-card>
@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, ref, toRefs, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -127,19 +128,19 @@ const save = (): void => {
   }
   const isAutomatic = stagedIsAutomatic.value
   showDialog({
-    title: 'New mission?',
-    message: 'Do you want to start a new mission with this name, or just rename the current mission?',
+    title: t`New mission?`,
+    message: t`Do you want to start a new mission with this name, or just rename the current mission?`,
     variant: 'info',
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         action: () => {
           logUserAction('Cancelled the mission name change')
           closeDialog()
         },
       },
       {
-        text: 'Rename current mission',
+        text: t`Rename current mission`,
         action: () => {
           logUserAction('Renamed the current mission')
           store.applyMissionName(name, { isAutomatic, startNewMission: false })
@@ -148,7 +149,7 @@ const save = (): void => {
         },
       },
       {
-        text: 'Start new mission',
+        text: t`Start new mission`,
         action: () => {
           logUserAction('Started a new mission from the mission name change')
           store.applyMissionName(name, { isAutomatic, startNewMission: true })

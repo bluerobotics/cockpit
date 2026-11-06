@@ -1,11 +1,11 @@
 <template>
   <RecipeDialog
     :model-value="modelValue"
-    title="Create recipe"
+    :title="t`Create recipe`"
     :items="items"
     :dependencies="dependencies"
     :selected="selected"
-    primary-text="Save recipe"
+    :primary-text="t`Save recipe`"
     :primary-disabled="name.trim() === '' || selected.length === 0"
     @update:model-value="emit('update:modelValue', $event)"
     @update:selected="selected = $event"
@@ -13,12 +13,12 @@
   >
     <template #general>
       <p class="text-body-2 text-white/70">
-        Choose, in each tab, what goes in the recipe. Items the chosen ones need are chosen with them.
+        {{ t`Choose, in each tab, what goes in the recipe. Items the chosen ones need are chosen with them.` }}
       </p>
-      <v-text-field v-model="name" label="Name" density="compact" variant="outlined" hide-details />
+      <v-text-field v-model="name" :label="t`Name`" density="compact" variant="outlined" hide-details />
       <v-textarea
         v-model="description"
-        label="Description"
+        :label="t`Description`"
         density="compact"
         variant="outlined"
         rows="3"
@@ -26,10 +26,14 @@
         hide-details
       />
       <div class="flex items-center justify-between">
-        <span class="text-body-2">{{ selected.length }} of {{ items.length }} item(s) chosen</span>
+        <span class="text-body-2">{{ t`${selected.length} of ${items.length} item(s) chosen` }}</span>
         <div class="flex gap-x-2">
-          <v-btn size="small" variant="text" :disabled="selected.length === 0" @click="selectAll(false)"> Clear </v-btn>
-          <v-btn size="small" class="bg-[#FFFFFF22] text-white" @click="selectAll(true)">Choose everything</v-btn>
+          <v-btn size="small" variant="text" :disabled="selected.length === 0" @click="selectAll(false)">
+            {{ t`Clear` }}
+          </v-btn>
+          <v-btn size="small" class="bg-[#FFFFFF22] text-white" @click="selectAll(true)">{{
+            t`Choose everything`
+          }}</v-btn>
         </div>
       </div>
     </template>
@@ -38,6 +42,7 @@
 
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
+import { t } from 'ttag'
 import { computed, ref, watch } from 'vue'
 
 import { useSnackbar } from '@/composables/snackbar'
@@ -91,7 +96,7 @@ const save = (): void => {
   const fileName = `${sanitizeFilenameComponent(recipe.name)}.cockpit-recipe.json`
   logUserAction(`Saved recipe "${recipe.name}" with ${selected.value.length} item(s)`)
   saveAs(new Blob([JSON.stringify(recipe, null, 2)], { type: 'application/json' }), fileName)
-  openSnackbar({ message: `Recipe saved as ${fileName}.`, variant: 'success', duration: 5000 })
+  openSnackbar({ message: t`Recipe saved as ${fileName}.`, variant: 'success', duration: 5000 })
   emit('update:modelValue', false)
 }
 </script>

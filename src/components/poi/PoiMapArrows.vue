@@ -78,6 +78,7 @@
 <script setup lang="ts">
 import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import L, { type LatLngTuple } from 'leaflet'
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
@@ -211,41 +212,41 @@ const calculateMapEdgesIntersections = (
   const intersections: EdgeIntersection[] = []
   // Top edge
   if (distanceY < 0) {
-    const t = (topEdgeY - centerPoint.y) / distanceY
-    if (t > 0) {
-      const x = centerPoint.x + distanceX * t
+    const ratio = (topEdgeY - centerPoint.y) / distanceY
+    if (ratio > 0) {
+      const x = centerPoint.x + distanceX * ratio
       if (x >= -1 && x <= width + 1) {
-        intersections.push({ t, edge: 'top', x, y: topEdgeY })
+        intersections.push({ t: ratio, edge: 'top', x, y: topEdgeY })
       }
     }
   }
   // Bottom edge
   if (distanceY > 0) {
-    const t = (height - centerPoint.y) / distanceY
-    if (t > 0) {
-      const x = centerPoint.x + distanceX * t
+    const ratio = (height - centerPoint.y) / distanceY
+    if (ratio > 0) {
+      const x = centerPoint.x + distanceX * ratio
       if (x >= -1 && x <= width + 1) {
-        intersections.push({ t, edge: 'bottom', x, y: height })
+        intersections.push({ t: ratio, edge: 'bottom', x, y: height })
       }
     }
   }
   // Left edge
   if (distanceX < 0) {
-    const t = -centerPoint.x / distanceX
-    if (t > 0) {
-      const y = centerPoint.y + distanceY * t
+    const ratio = -centerPoint.x / distanceX
+    if (ratio > 0) {
+      const y = centerPoint.y + distanceY * ratio
       if (y >= validYMin - 1 && y <= height + 1) {
-        intersections.push({ t, edge: 'left', x: 0, y })
+        intersections.push({ t: ratio, edge: 'left', x: 0, y })
       }
     }
   }
   // Right edge
   if (distanceX > 0) {
-    const t = (width - centerPoint.x) / distanceX
-    if (t > 0) {
-      const y = centerPoint.y + distanceY * t
+    const ratio = (width - centerPoint.x) / distanceX
+    if (ratio > 0) {
+      const y = centerPoint.y + distanceY * ratio
       if (y >= validYMin - 1 && y <= height + 1) {
-        intersections.push({ t, edge: 'right', x: width, y })
+        intersections.push({ t: ratio, edge: 'right', x: width, y })
       }
     }
   }
@@ -657,10 +658,10 @@ const calculatePoiEdgeArrows = (): void => {
 const calculateTargetArrows = (): void => {
   const container = map.value instanceof L.Map ? map.value.getContainer() : undefined
   const menuBand = container ? menuTriggerBand(container) : null
-  vehicleEdgeArrow.value = calculateTargetEdgeArrow(props.vehiclePosition, 'Vehicle', '#1e498f', menuBand)
-  homeEdgeArrow.value = calculateTargetEdgeArrow(props.home, 'Home', '#1e498f', menuBand)
+  vehicleEdgeArrow.value = calculateTargetEdgeArrow(props.vehiclePosition, t`Vehicle`, '#1e498f', menuBand)
+  homeEdgeArrow.value = calculateTargetEdgeArrow(props.home, t`Home`, '#1e498f', menuBand)
   baseStationEdgeArrow.value = props.showBaseStationArrow
-    ? calculateTargetEdgeArrow(props.baseStation, 'Base station', props.baseStationColor ?? '#2b5779', menuBand)
+    ? calculateTargetEdgeArrow(props.baseStation, t`Base station`, props.baseStationColor ?? '#2b5779', menuBand)
     : null
 }
 

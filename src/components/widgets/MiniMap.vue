@@ -10,8 +10,8 @@
     <v-icon
       class="minimap-drag-handle touch-none"
       color="white"
-      aria-label="Drag to move the MiniMap"
-      title="Drag to move the MiniMap"
+      :aria-label="t`Drag to move the MiniMap`"
+      :title="t`Drag to move the MiniMap`"
       @pointerdown="enableMovingOnDrag"
       @pointerup="disableMovingOnDrag"
       >mdi-drag</v-icon
@@ -21,7 +21,7 @@
       class="minimap-vehicle"
       :style="{ transform: `translate(-50%, -50%) rotate(${vehicleRotation}deg)` }"
     >
-      <img class="minimap-vehicle-icon" :src="vehicleImageUrl" alt="Vehicle" />
+      <img class="minimap-vehicle-icon" :src="vehicleImageUrl" :alt="t`Vehicle`" />
     </div>
     <PoiMapArrows
       :map-ready="mapReady"
@@ -43,8 +43,8 @@
       type="button"
       class="minimap-north"
       :class="{ 'minimap-north--active': !effectiveHeadingUp }"
-      aria-label="Align map to north"
-      title="Align map to north"
+      :aria-label="t`Align map to north`"
+      :title="t`Align map to north`"
       @click="toggleHeadingUp"
     >
       <MapNorthIndicator
@@ -64,13 +64,13 @@
 
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="35%">
     <v-card class="py-2 px-5" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">MiniMap widget settings</v-card-title>
+      <v-card-title class="text-center">{{ t`MiniMap widget settings` }}</v-card-title>
       <v-btn
         class="absolute top-2 right-2 text-lg rounded-full"
         icon
         variant="text"
         size="small"
-        aria-label="Close the MiniMap settings"
+        :aria-label="t`Close the MiniMap settings`"
         @click="closeConfig"
       >
         <v-icon>mdi-close</v-icon>
@@ -78,7 +78,7 @@
       <v-card-text>
         <v-select
           :model-value="selectedTileProvider"
-          label="Map provider"
+          :label="t`Map provider`"
           :items="tileProviderItems"
           variant="outlined"
           density="compact"
@@ -89,7 +89,7 @@
         />
         <v-slider
           v-model="widget.options.edgeFadeAmount"
-          label="Edge fade"
+          :label="t`Edge fade`"
           color="white"
           :min="0"
           :max="0.9"
@@ -103,42 +103,42 @@
         <v-switch
           v-model="widget.options.headingUp"
           :disabled="trackingPoi"
-          label="Rotate map so the vehicle points up"
+          :label="t`Rotate map so the vehicle points up`"
           :color="widget.options.headingUp ? 'white' : undefined"
           hide-details
           @update:model-value="onHeadingUpToggled"
         />
         <v-switch
           v-model="widget.options.showMission"
-          label="Mission"
+          :label="t`Mission`"
           :color="widget.options.showMission ? 'white' : undefined"
           hide-details
           @update:model-value="onShowMissionToggled"
         />
         <v-switch
           v-model="widget.options.showVehiclePath"
-          label="Vehicle path"
+          :label="t`Vehicle path`"
           :color="widget.options.showVehiclePath ? 'white' : undefined"
           hide-details
           @update:model-value="onShowVehiclePathToggled"
         />
         <v-switch
           v-model="widget.options.showPois"
-          label="Points of interest"
+          :label="t`Points of interest`"
           :color="widget.options.showPois ? 'white' : undefined"
           hide-details
           @update:model-value="onShowPoisToggled"
         />
         <v-switch
           v-model="widget.options.showNorthIndicator"
-          label="North indicator"
+          :label="t`North indicator`"
           :color="widget.options.showNorthIndicator ? 'white' : undefined"
           hide-details
           @update:model-value="onShowNorthIndicatorToggled"
         />
         <v-switch
           v-model="widget.options.showMapOverlays"
-          label="Map overlays (GeoTIFF)"
+          :label="t`Map overlays (GeoTIFF)`"
           :color="widget.options.showMapOverlays ? 'white' : undefined"
           hide-details
           @update:model-value="onShowMapOverlaysToggled"
@@ -146,7 +146,7 @@
 
         <v-divider class="opacity-10 mb-4" />
         <div class="mb-3">
-          <p class="text-md text-white mb-1">Tracking target</p>
+          <p class="text-md text-white mb-1">{{ t`Tracking target` }}</p>
           <div class="flex items-center gap-3">
             <v-radio-group
               v-model="widget.options.trackTarget"
@@ -157,17 +157,17 @@
               class="flex-none"
               @update:model-value="onTrackTargetSelected"
             >
-              <v-radio label="Vehicle" value="vehicle" class="my-2" />
-              <v-radio label="Dynamic POI" value="poi" />
+              <v-radio :label="t`Vehicle`" value="vehicle" class="my-2" />
+              <v-radio :label="t`Dynamic POI`" value="poi" />
             </v-radio-group>
             <div class="flex flex-1 justify-end">
               <v-select
                 v-if="trackingPoi"
                 v-model="widget.options.trackedPoiId"
                 variant="outlined"
-                label="Point of interest"
+                :label="t`Point of interest`"
                 :items="poiSelectItems"
-                no-data-text="No dynamic POIs available"
+                :no-data-text="t`No dynamic POIs available`"
                 density="compact"
                 hide-details
                 theme="dark"
@@ -180,13 +180,14 @@
       </v-card-text>
       <v-divider width="80%" inset />
       <v-card-actions class="flex justify-end mt-2">
-        <v-btn variant="text" @click="closeConfig">Close</v-btn>
+        <v-btn variant="text" @click="closeConfig">{{ t`Close` }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
@@ -299,8 +300,8 @@ const targetOffline = computed(() => !targetOnline.value)
 const showVehicleGlyph = computed(() => !trackingPoi.value && !targetOffline.value)
 
 const offlineText = computed(() => {
-  if (!trackingPoi.value) return 'Vehicle offline'
-  return trackedPoi.value ? 'POI position unavailable' : 'No POI selected'
+  if (!trackingPoi.value) return t`Vehicle offline`
+  return trackedPoi.value ? t`POI position unavailable` : t`No POI selected`
 })
 
 const mapCenter = computed<WaypointCoordinates>(() => trackedPosition.value ?? [0, 0])
@@ -452,31 +453,31 @@ const menuItems = computed<ContextMenuItem[]>(() => {
   const items: ContextMenuItem[] = []
   if (hasMission.value) {
     items.push({
-      item: `${widget.value.options.showMission ? 'Hide' : 'Show'} mission`,
+      item: widget.value.options.showMission ? t`Hide mission` : t`Show mission`,
       icon: 'mdi-map-marker-path',
       action: toggleShowMission,
     })
   }
   if (hasMapOverlays.value) {
     items.push({
-      item: `${widget.value.options.showMapOverlays ? 'Hide' : 'Show'} map overlays`,
+      item: widget.value.options.showMapOverlays ? t`Hide map overlays` : t`Show map overlays`,
       icon: 'mdi-image-multiple',
       action: toggleShowMapOverlays,
     })
   }
   items.push(
     {
-      item: `${widget.value.options.showVehiclePath ? 'Hide' : 'Show'} vehicle path`,
+      item: widget.value.options.showVehiclePath ? t`Hide vehicle path` : t`Show vehicle path`,
       icon: 'mdi-vector-polyline',
       action: toggleShowVehiclePath,
     },
     {
-      item: `${widget.value.options.showNorthIndicator ? 'Hide' : 'Show'} north indicator`,
+      item: widget.value.options.showNorthIndicator ? t`Hide north indicator` : t`Show north indicator`,
       icon: 'mdi-compass',
       action: toggleShowNorthIndicator,
     },
     {
-      item: `${widget.value.options.showPois ? 'Hide' : 'Show'} POIs`,
+      item: widget.value.options.showPois ? t`Hide POIs` : t`Show POIs`,
       icon: 'mdi-map-marker',
       action: toggleShowPois,
     }

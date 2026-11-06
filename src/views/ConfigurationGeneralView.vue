@@ -1,28 +1,31 @@
 <template>
   <BaseConfigurationView>
-    <template #title>General configuration</template>
+    <template #title>{{ t`General configuration` }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-[650px] max-h-[85vh]'"
       >
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>User settings</template>
+          <template #title>{{ t`User settings` }}</template>
           <template #info>
             <p class="w-full">
-              User related configuration. Here you can set the user that is currently set for this device as well as
-              create a new user account.
+              {{
+                t`User related configuration. Here you can set the user that is currently set for this device as well as create a new user account.`
+              }}
               <br />
               <br />
-              <span class="font-semibold">Pirate mode</span> allows Cockpit to expose advanced features, like setting
-              the frequency of MAVLink messages. Take care when enabling this mode.
+              <span class="font-semibold">{{ t`Pirate mode` }}</span>
+              {{
+                t`allows Cockpit to expose advanced features, like setting the frequency of MAVLink messages. Take care when enabling this mode.`
+              }}
             </p>
           </template>
           <template #content>
             <div class="flex flex-col w-full items-start">
               <div class="flex align-center w-full justify-between pr-2 mt-1 mb-3">
                 <div>
-                  <span class="mr-2">Current user:</span>
+                  <span class="mr-2">{{ t`Current user:` }}</span>
                   <span class="font-semibold text-2xl cursor-pointer" @click="manageUsers">{{
                     missionStore.username
                   }}</span>
@@ -35,23 +38,23 @@
                     class="bg-[#FFFFFF22] shadow-2 -mr-2"
                     variant="flat"
                     @click="manageUsers"
-                    >Manage users</v-btn
+                    >{{ t`Manage users` }}</v-btn
                   >
                 </div>
               </div>
               <v-divider class="w-full opacity-[0.08]" />
               <div class="flex flex-row w-full items-center justify-between py-3 gap-x-2 gap-y-3 flex-wrap">
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openTutorial">
-                  Show tutorial
+                  {{ t`Show tutorial` }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openCockpitSettingsDialog">
-                  Manage Cockpit settings
+                  {{ t`Manage Cockpit settings` }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="togglePirateMode">
-                  {{ interfaceStore.pirateMode ? 'Disable pirate mode' : 'Enable pirate mode' }}
+                  {{ interfaceStore.pirateMode ? t`Disable pirate mode` : t`Enable pirate mode` }}
                 </v-btn>
                 <v-btn size="x-small" class="bg-[#FFFFFF22] shadow-1" variant="flat" @click="openExternalFeaturesModal">
-                  Extension features
+                  {{ t`Extension features` }}
                 </v-btn>
                 <v-btn
                   size="x-small"
@@ -60,12 +63,12 @@
                   prepend-icon="mdi-shield-lock-outline"
                   @click="openDataPrivacyModal"
                 >
-                  Shared Data
+                  {{ t`Shared Data` }}
                 </v-btn>
               </div>
               <v-divider v-if="isElectron()" class="w-full opacity-[0.08]" />
               <div v-if="isElectron()" class="flex flex-col w-full py-4 gap-1">
-                <span class="text-md mb-1 text-slate-200">Cockpit folder location:</span>
+                <span class="text-md mb-1 text-slate-200">{{ t`Cockpit folder location:` }}</span>
                 <div class="flex items-center gap-6">
                   <v-tooltip
                     :text="cockpitFolderPath"
@@ -87,7 +90,7 @@
                         <template #append-inner>
                           <v-icon
                             v-if="cockpitFolderPath !== defaultCockpitFolderPath"
-                            v-tooltip.bottom="'Reset to default folder location'"
+                            v-tooltip.bottom="t`Reset to default folder location`"
                             color="white"
                             @click.stop="resetCockpitFolderPath"
                           >
@@ -104,7 +107,7 @@
                     variant="flat"
                     @click="openCockpitFolder"
                   >
-                    Open folder
+                    {{ t`Open folder` }}
                   </v-btn>
                 </div>
               </div>
@@ -113,9 +116,9 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle network connection (global address)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.globalAddress }}</template>
-          <template #info>Sets the network address for device communication. E.g: blueos.local</template>
+          <template #title>{{ t`Vehicle network connection (global address)` }}</template>
+          <template #subtitle>{{ t`Current address: ${mainVehicleStore.globalAddress}` }}</template>
+          <template #info>{{ t`Sets the network address for device communication. E.g: blueos.local` }}</template>
           <template #content>
             <v-btn
               v-if="isElectron()"
@@ -124,7 +127,7 @@
               variant="flat"
               @click="openVehicleDiscoveryDialog"
             >
-              Search for vehicles
+              {{ t`Search for vehicles` }}
             </v-btn>
             <v-form
               ref="globalAddressForm"
@@ -147,14 +150,14 @@
                   variant="filled"
                   type="input"
                   density="compact"
-                  hint="Address of the Vehicle. E.g: blueos.local"
+                  :hint="t`Address of the Vehicle. E.g: blueos.local`"
                   hide-details
                   class="w-[80%]"
                   :rules="[isValidHostAddress, isValidConnectionURI]"
                   @click:append-inner="resetGlobalAddress"
                 >
                   <template #append-inner>
-                    <v-icon v-tooltip.bottom="'Reset global address'" color="white" @click="resetGlobalAddress">
+                    <v-icon v-tooltip.bottom="t`Reset global address`" color="white" @click="resetGlobalAddress">
                       mdi-restore
                     </v-icon>
                   </template>
@@ -167,7 +170,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ t`Apply` }}
                 </v-btn>
               </div>
             </v-form>
@@ -176,10 +179,10 @@
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
           <template #title>MAVLink2REST URI</template>
           <template #subtitle>
-            Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
-            Status:
+            {{ t`Current address:` }} {{ ConnectionManager.mainConnection()?.uri().toString() ?? t`none` }}<br />
+            {{ t`Status:` }}
             {{
-              vehicleConnected ? 'connected' : vehicleConnected === undefined ? 'connecting...' : 'failed to connect'
+              vehicleConnected ? t`connected` : vehicleConnected === undefined ? t`connecting...` : t`failed to connect`
             }}
           </template>
           <template #content>
@@ -201,12 +204,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a Mavlink2Rest"
+                    :hint="t`URI of a Mavlink2Rest`"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="t`Reset to default`"
                         color="white"
                         :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
                         @click="resetMainVehicleConnectionURI"
@@ -223,7 +226,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ t`Apply` }}
                 </v-btn>
               </div>
               <div class="flex justify-end mt-6">
@@ -233,13 +236,13 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="t`Enable custom`"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? t`Enabled` : t`Disabled` }}
                   </div>
                 </div>
               </div>
@@ -247,22 +250,20 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Other vehicles (telemetry only)</template>
-          <template #subtitle>{{ secondaryVehicleUris.length }} configured</template>
+          <template #title>{{ t`Other vehicles (telemetry only)` }}</template>
+          <template #subtitle>{{ t`${secondaryVehicleUris.length} configured` }}</template>
           <template #info>
             <div class="w-full">
               <p>
-                Receives telemetry from other vehicles on your network, each one on its own address. Their data becomes
-                available as data-lake variables named after the vehicle's system ID, so widgets can read it and a point
-                of interest can follow it on the map. Use the map button next to a vehicle to place it on the map, or
-                reference its position variables yourself, e.g.
+                {{
+                  t`Receives telemetry from other vehicles on your network, each one on its own address. Their data becomes available as data-lake variables named after the vehicle's system ID, so widgets can read it and a point of interest can follow it on the map. Use the map button next to a vehicle to place it on the map, or reference its position variables yourself, e.g.`
+                }}
                 <span class="font-mono">{{ exampleSecondaryVehicleCoordinate }}</span>
               </p>
               <p class="mt-2">
-                These vehicles cannot be controlled or armed from here, and no command is ever sent to them. Give each
-                one a different system ID, otherwise only the first one to announce each ID is received, and one using
-                the piloted vehicle's ID is ignored entirely. To change it, set the autopilot's SYSID_THISMAV parameter
-                on the vehicle's autopilot parameters page in BlueOS, then reboot the autopilot.
+                {{
+                  t`These vehicles cannot be controlled or armed from here, and no command is ever sent to them. Give each one a different system ID, otherwise only the first one to announce each ID is received, and one using the piloted vehicle's ID is ignored entirely. To change it, set the autopilot's SYSID_THISMAV parameter on the vehicle's autopilot parameters page in BlueOS, then reboot the autopilot.`
+                }}
               </p>
             </div>
           </template>
@@ -270,11 +271,11 @@
             <ConnectionsList
               v-model="newSecondaryVehicleUri"
               :rows="secondaryVehicleRows"
-              empty-message="No other vehicles configured."
-              address-label="Vehicle telemetry address"
+              :empty-message="t`No other vehicles configured.`"
+              :address-label="t`Vehicle telemetry address`"
               :address-placeholder="exampleSecondaryVehicleUri"
-              add-button-label="Add vehicle"
-              remove-tooltip="Remove vehicle"
+              :add-button-label="t`Add vehicle`"
+              :remove-tooltip="t`Remove vehicle`"
               @add="addNewSecondaryVehicle"
               @remove="removeSecondaryVehicle"
             >
@@ -292,20 +293,25 @@
               </template>
               <template #warning>
                 <div v-if="secondaryVehicleUsesMainVehicleSystemId" class="text-sm text-yellow-400 mb-4">
-                  A vehicle is using the same system ID as the vehicle you are piloting, so it is not being received.
-                  Change its system ID.
+                  {{
+                    t`A vehicle is using the same system ID as the vehicle you are piloting, so it is not being received. Change its system ID.`
+                  }}
                 </div>
                 <div v-if="duplicatedSecondaryVehicleSystemIds.length > 0" class="text-sm text-yellow-400 mb-4">
-                  More than one vehicle is using system ID {{ duplicatedSecondaryVehicleSystemIds.join(', ') }}, so only
-                  the first one to announce it is being received. Give each vehicle a different system ID.
+                  {{ t`More than one vehicle is using system ID` }} {{ duplicatedSecondaryVehicleSystemIds.join(', ')
+                  }}{{
+                    t`, so only the first one to announce it is being received. Give each vehicle a different system ID.`
+                  }}
                 </div>
               </template>
             </ConnectionsList>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Video connection (WebRTC)</template>
-          <template #subtitle>Current address: {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template>
+          <template #title>{{ t`Video connection (WebRTC)` }}</template>
+          <template #subtitle
+            >{{ t`Current address:` }} {{ mainVehicleStore.webRTCSignallingURI?.toString() ?? '' }}</template
+          >
           <template #content>
             <v-form
               ref="webRTCSignallingForm"
@@ -324,12 +330,12 @@
                     variant="filled"
                     type="input"
                     density="compact"
-                    hint="URI of a WebRTC Signalling Server URI"
+                    :hint="t`URI of a WebRTC Signalling Server URI`"
                     :rules="[isValidSocketConnectionURI]"
                   >
                     <template #append-inner>
                       <v-icon
-                        v-tooltip.bottom="'Reset to default'"
+                        v-tooltip.bottom="t`Reset to default`"
                         color="white"
                         :disabled="!mainVehicleStore.customWebRTCSignallingURI.enabled"
                         @click="resetWebRTCSignallingURI"
@@ -346,7 +352,7 @@
                   variant="text"
                   type="submit"
                 >
-                  Apply
+                  {{ t`Apply` }}
                 </v-btn>
               </div>
               <div>
@@ -356,13 +362,13 @@
                 >
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCSignallingURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="t`Enable custom`"
                     class="-mt-5 bg-transparent mr-1 mb-[7px]"
                     density="compact"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customWebRTCSignallingURI.enabled ? t`Enabled` : t`Disabled` }}
                   </div>
                 </div>
               </div>
@@ -370,7 +376,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Custom WebRTC configuration</template>
+          <template #title>{{ t`Custom WebRTC configuration` }}</template>
           <template #content>
             <div class="flex justify-between mt-2 w-full">
               <v-textarea
@@ -378,7 +384,7 @@
                 v-model="customRtcConfiguration"
                 :disabled="!mainVehicleStore.customWebRTCConfiguration.enabled"
                 variant="outlined"
-                label="Custom WebRTC Configuration"
+                :label="t`Custom WebRTC Configuration`"
                 :rows="6"
                 hint="e.g.: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }"
                 class="w-full"
@@ -392,19 +398,19 @@
                   type="submit"
                   @click="handleCustomRtcConfiguration"
                 >
-                  Apply
+                  {{ t`Apply` }}
                 </v-btn>
 
                 <div class="flex flex-col align-end text-[10px] -mt-8">
                   <v-switch
                     v-model="mainVehicleStore.customWebRTCConfiguration.enabled"
-                    v-tooltip.bottom="'Enable custom'"
+                    v-tooltip.bottom="t`Enable custom`"
                     class="-mt-5 bg-transparent"
                     rounded="lg"
                     hide-details
                   />
                   <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? 'Enabled' : 'Disabled' }}
+                    {{ mainVehicleStore.customWebRTCConfiguration.enabled ? t`Enabled` : t`Disabled` }}
                   </div>
                 </div>
               </div>
@@ -412,30 +418,35 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Generic WebSocket connections</template>
+          <template #title>{{ t`Generic WebSocket connections` }}</template>
           <template #info>
             <div class="w-full">
-              <p>Connect to external WebSocket servers to receive data and inject it into the data-lake.</p>
+              <p>{{ t`Connect to external WebSocket servers to receive data and inject it into the data-lake.` }}</p>
               <ul class="list-disc list-inside mt-2">
                 <li>
-                  Messages should be in the format <span class="font-mono">variableName=value</span>, one per message,
-                  or a JSON object with one entry per variable, for example:
+                  {{ t`Messages should be in the format` }} <span class="font-mono">variableName=value</span
+                  >{{ t`, one per message, or a JSON object with one entry per variable, for example:` }}
                   <span class="font-mono">{{ exampleJsonWebSocketMessage }}</span
-                  >. JSON values keep their type, and nested objects and arrays become one variable per value, named by
-                  their path (<span class="font-mono">external/payload/temp</span>,
+                  >{{
+                    t`. JSON values keep their type, and nested objects and arrays become one variable per value, named by their path`
+                  }}
+                  (<span class="font-mono">external/payload/temp</span>,
                   <span class="font-mono">external/cells/0</span>).
                 </li>
                 <li>
-                  JSON messages whose <span class="font-mono">type</span> starts with
-                  <span class="font-mono">cockpit:</span> add, update or remove points of interest instead, for example:
+                  {{ t`JSON messages whose` }} <span class="font-mono">type</span> {{ t`starts with` }}
+                  <span class="font-mono">cockpit:</span>
+                  {{ t`add, update or remove points of interest instead, for example:` }}
                   <span class="font-mono">{{ examplePoiWebSocketMessage }}</span
-                  >. Update with <span class="font-mono">cockpit:updatePointOfInterest</span> and the fields to change,
-                  or remove with <span class="font-mono">{{ exampleRemovePoiWebSocketMessage }}</span
-                  >. Every change is synced to the vehicle, so send occasional updates rather than a stream of
-                  positions.
+                  >{{ t`. Update with` }} <span class="font-mono">cockpit:updatePointOfInterest</span>
+                  {{ t`and the fields to change, or remove with` }}
+                  <span class="font-mono">{{ exampleRemovePoiWebSocketMessage }}</span
+                  >{{
+                    t`. Every change is synced to the vehicle, so send occasional updates rather than a stream of positions.`
+                  }}
                 </li>
                 <li>
-                  You can use data-lake variables to compose the URL, for example:
+                  {{ t`You can use data-lake variables to compose the URL, for example:` }}
                   <span class="font-mono">{{ exampleGenericWebSocketUrl }}</span>
                 </li>
               </ul>
@@ -445,11 +456,11 @@
             <ConnectionsList
               v-model="newGenericWebSocketUrl"
               :rows="genericWebSocketRows"
-              empty-message="No connections configured."
-              address-label="WebSocket address"
+              :empty-message="t`No connections configured.`"
+              :address-label="t`WebSocket address`"
               :address-placeholder="exampleGenericWebSocketUrl"
-              add-button-label="Add connection"
-              remove-tooltip="Remove connection"
+              :add-button-label="t`Add connection`"
+              :remove-tooltip="t`Remove connection`"
               @add="addGenericWebSocket"
               @remove="removeGenericWebSocket"
             />
@@ -457,20 +468,18 @@
         </ExpansiblePanel>
         <McpSettings />
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Vehicle connection timeouts</template>
+          <template #title>{{ t`Vehicle connection timeouts` }}</template>
           <template #info>
             <p class="w-full">
-              Heartbeat timeout: Time without heartbeats before Cockpit considers the vehicle offline. Increase this
-              value when using high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take
-              longer than the default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.
+              {{
+                t`Heartbeat timeout: Time without heartbeats before Cockpit considers the vehicle offline. Increase this value when using high-latency or lossy links (e.g. cellular modems) where heartbeat packets may take longer than the default 5 seconds to arrive. Unrelated to the autopilot's GCS (heartbeat) failsafe.`
+              }}
             </p>
             <br />
             <p class="w-full">
-              Watchdog timeout: Time the MAVLink websocket may stay open without receiving any message before Cockpit
-              forcibly recycles it and reconnects. This is the recovery threshold, not the offline indicator: setting it
-              lower than the heartbeat timeout (above) means a brief link drop can be silently recovered before Cockpit
-              ever flips to "vehicle offline". On high-latency links where short stalls are normal, raise this value so
-              the socket is not torn down on every minor delivery delay.
+              {{
+                t`Watchdog timeout: Time the MAVLink websocket may stay open without receiving any message before Cockpit forcibly recycles it and reconnects. This is the recovery threshold, not the offline indicator: setting it lower than the heartbeat timeout (above) means a brief link drop can be silently recovered before Cockpit ever flips to "vehicle offline". On high-latency links where short stalls are normal, raise this value so the socket is not torn down on every minor delivery delay.`
+              }}
             </p>
           </template>
           <template #content>
@@ -479,7 +488,7 @@
               :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'"
             >
               <div class="min-w-0">
-                <div class="mb-1 text-sm">Heartbeat timeout</div>
+                <div class="mb-1 text-sm">{{ t`Heartbeat timeout` }}</div>
                 <v-form
                   ref="connectionTimeoutForm"
                   v-model="connectionTimeoutFormValid"
@@ -498,7 +507,7 @@
                       :rules="[isValidConnectionTimeout]"
                     >
                       <template #append-inner>
-                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetConnectionTimeout">
+                        <v-icon v-tooltip.bottom="t`Reset to default`" color="white" @click="resetConnectionTimeout">
                           mdi-restore
                         </v-icon>
                       </template>
@@ -510,13 +519,13 @@
                       variant="text"
                       type="submit"
                     >
-                      Apply
+                      {{ t`Apply` }}
                     </v-btn>
                   </div>
                 </v-form>
               </div>
               <div class="min-w-0">
-                <div class="mb-1 text-sm">Watchdog timeout</div>
+                <div class="mb-1 text-sm">{{ t`Watchdog timeout` }}</div>
                 <v-form
                   ref="watchdogTimeoutForm"
                   v-model="watchdogTimeoutFormValid"
@@ -535,7 +544,7 @@
                       :rules="[isValidWatchdogTimeout]"
                     >
                       <template #append-inner>
-                        <v-icon v-tooltip.bottom="'Reset to default'" color="white" @click="resetWatchdogTimeout">
+                        <v-icon v-tooltip.bottom="t`Reset to default`" color="white" @click="resetWatchdogTimeout">
                           mdi-restore
                         </v-icon>
                       </template>
@@ -547,7 +556,7 @@
                       variant="text"
                       type="submit"
                     >
-                      Apply
+                      {{ t`Apply` }}
                     </v-btn>
                   </div>
                 </v-form>
@@ -564,6 +573,7 @@
 
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { defaultGlobalAddress } from '@/assets/defaults'
@@ -648,17 +658,15 @@ const browseCockpitFolder = async (): Promise<void> => {
 
   const selectedName = selected.split(/[/\\]/).filter(Boolean).pop() ?? ''
   showDialog({
-    title: 'Cockpit folder location',
-    message:
-      `The selected folder is not named "Cockpit". Would you like to use ` +
-      `${selected} directly, or create and use a Cockpit subfolder inside it?`,
+    title: t`Cockpit folder location`,
+    message: t`The selected folder is not named "Cockpit". Would you like to use ${selected} directly, or create and use a Cockpit subfolder inside it?`,
     variant: 'info',
     persistent: true,
     maxWidth: 700,
     actions: [
-      { text: 'Cancel', size: 'small', action: () => closeDialog() },
+      { text: t`Cancel`, size: 'small', action: () => closeDialog() },
       {
-        text: `Use ${selectedName}`,
+        text: t`Use ${selectedName}`,
         size: 'small',
         action: () => {
           closeDialog()
@@ -666,7 +674,7 @@ const browseCockpitFolder = async (): Promise<void> => {
         },
       },
       {
-        text: `Use ${selectedName}/Cockpit`,
+        text: t`Use ${selectedName}/Cockpit`,
         size: 'small',
         action: () => {
           closeDialog()
@@ -750,7 +758,7 @@ const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
     mainConnectionSwitchedAt = Date.now()
   } catch (error) {
     console.error(error)
-    alert(`Could not update main connection. ${error}.`)
+    alert(t`Could not update main connection. ${error}.`)
     return
   }
   console.debug(`New connection successfully configured to ${conn.toString()}.`)
@@ -861,9 +869,9 @@ watch(vehicleConnectionTimeoutSeconds, (value) => (newVehicleConnectionTimeoutSe
 
 const isValidConnectionTimeout = (value: number | string): boolean | string => {
   const numericValue = typeof value === 'string' ? Number(value) : value
-  if (!Number.isFinite(numericValue)) return 'Timeout must be a valid number.'
+  if (!Number.isFinite(numericValue)) return t`Timeout must be a valid number.`
   if (numericValue < minVehicleConnectionTimeoutSeconds) {
-    return `Minimum timeout is ${minVehicleConnectionTimeoutSeconds} s.`
+    return t`Minimum timeout is ${minVehicleConnectionTimeoutSeconds} s.`
   }
   return true
 }
@@ -898,9 +906,9 @@ watch(vehicleConnectionWatchdogTimeoutSeconds, (value) => (newVehicleConnectionW
 
 const isValidWatchdogTimeout = (value: number | string): boolean | string => {
   const numericValue = typeof value === 'string' ? Number(value) : value
-  if (!Number.isFinite(numericValue)) return 'Must be a valid number.'
+  if (!Number.isFinite(numericValue)) return t`Must be a valid number.`
   if (numericValue < minVehicleConnectionWatchdogTimeoutSeconds) {
-    return `Minimum timeout is ${minVehicleConnectionWatchdogTimeoutSeconds} s.`
+    return t`Minimum timeout is ${minVehicleConnectionWatchdogTimeoutSeconds} s.`
   }
   return true
 }
@@ -922,19 +930,19 @@ const resetWatchdogTimeout = (): void => {
 }
 
 const isValidHostAddress = (value: string): boolean | string => {
-  return isValidNetworkAddress(value) ?? 'Invalid host address. Should be an IP address or a hostname'
+  return isValidNetworkAddress(value) ?? t`Invalid host address. Should be an IP address or a hostname`
 }
 
 const isValidConnectionURI = (value: string): boolean | string => {
   const forbiddenStartStrings = ['http://', 'https://', 'ws://', 'wss://']
   if (forbiddenStartStrings.some((protocol) => value.startsWith(protocol))) {
-    return 'Address should not include protocol (e.g.: "http://", "wss://").'
+    return t`Address should not include protocol (e.g.: "http://", "wss://").`
   }
 
   try {
     new Connection.URI(`ws://${value}:6040/`)
   } catch (error) {
-    return `Invalid connection URI. ${error}.`
+    return t`Invalid connection URI. ${error}.`
   }
   return true
 }
@@ -943,7 +951,7 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
   try {
     const conn = new Connection.URI(value)
     if (!isElectron() && conn.type() !== Connection.Type.WebSocket && conn.type() !== Connection.Type.Serial) {
-      throw new Error('URI should be of type WebSocket or Serial')
+      throw new Error(t`URI should be of type WebSocket or Serial`)
     }
     if (
       isElectron() &&
@@ -955,10 +963,10 @@ const isValidSocketConnectionURI = (value: string): boolean | string => {
       conn.type() !== Connection.Type.TcpIn &&
       conn.type() !== Connection.Type.TcpOut
     ) {
-      throw new Error('URI should be of type WebSocket, Serial, Udp or Tcp.')
+      throw new Error(t`URI should be of type WebSocket, Serial, Udp or Tcp.`)
     }
   } catch (error) {
-    return `Invalid connection URI. ${error}.`
+    return t`Invalid connection URI. ${error}.`
   }
   return true
 }
@@ -971,7 +979,7 @@ const updateWebRtcConfiguration = (): void => {
     mainVehicleStore.customWebRTCConfiguration.data = newConfig
     reloadCockpitAndWarnUser()
   } catch (error) {
-    alert(`Could not update WebRTC configuration. ${error}.`)
+    alert(t`Could not update WebRTC configuration. ${error}.`)
   }
 }
 
@@ -1040,10 +1048,10 @@ const canPlaceOnMap = (uri: string): boolean => canPlaceSecondaryVehiclesOnMap(s
 
 const placeOnMapTooltip = (uri: string): string => {
   const isPlural = secondaryVehicleSystemIds(uri).length > 1
-  if (canPlaceOnMap(uri)) return isPlural ? 'Place these vehicles on the map' : 'Place this vehicle on the map'
+  if (canPlaceOnMap(uri)) return isPlural ? t`Place these vehicles on the map` : t`Place this vehicle on the map`
   return isPlural
-    ? 'Waiting for these vehicles to report their positions'
-    : 'Waiting for this vehicle to report its position'
+    ? t`Waiting for these vehicles to report their positions`
+    : t`Waiting for this vehicle to report its position`
 }
 
 const secondaryVehicleRows = computed(() =>
@@ -1056,7 +1064,7 @@ const secondaryVehicleRows = computed(() =>
       address: uri,
       status: secondaryConnectionStatus(state, watchdogTimeoutMs),
       statusLabel: secondaryConnectionStatusLabel(state, watchdogTimeoutMs),
-      details: systemIds === '' ? undefined : `System ID ${systemIds}`,
+      details: systemIds === '' ? undefined : t`System ID ${systemIds}`,
     }
   })
 )
@@ -1131,7 +1139,7 @@ const openCockpitFolder = (): void => {
     window.electronAPI?.openCockpitFolder()
   } else {
     openSnackbar({
-      message: 'This feature is only available in Cockpit standalone.',
+      message: t`This feature is only available in Cockpit standalone.`,
       duration: 3000,
       variant: 'error',
       closeButton: true,

@@ -18,48 +18,48 @@
             >
               <GlassButton
                 v-if="baseRouteName === 'widgets-view'"
-                :label="simplifiedMainMenu ? 'Edit' : 'Edit Interface'"
+                :label="simplifiedMainMenu ? t`Edit` : t`Edit Interface`"
                 :selected="widgetStore.editingMode"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-pencil' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
+                :tooltip="simplifiedMainMenu ? t`Edit Mode` : undefined"
                 :width="mainMenuIconSize"
                 @click="toggleEditMode"
-                ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="Edit Mode Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" :alt="t`Edit Mode Icon`" />
               </GlassButton>
               <GlassButton
                 v-if="baseRouteName !== 'widgets-view'"
-                label="Flight"
+                :label="t`Flight`"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-send' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
+                :tooltip="simplifiedMainMenu ? t`Flight` : undefined"
                 :width="mainMenuIconSize"
                 @click="goToFlightView"
-                ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="Flight Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="FlightIcon" :alt="t`Flight Icon`" />
               </GlassButton>
               <GlassButton
                 v-if="baseRouteName !== 'Mission planning'"
-                :label="simplifiedMainMenu ? 'Mission' : 'Mission Planning'"
+                :label="simplifiedMainMenu ? t`Mission` : t`Mission Planning`"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-map-marker-radius-outline' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
+                :tooltip="simplifiedMainMenu ? t`Mission Planning` : undefined"
                 :width="mainMenuIconSize"
                 @click="goToMissionPlanning"
-                ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" :alt="t`MissionPlanning Icon`" />
               </GlassButton>
               <GlassButton
-                label="Settings"
+                :label="t`Settings`"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-cog' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Settings' : undefined"
+                :tooltip="simplifiedMainMenu ? t`Settings` : undefined"
                 :width="mainMenuIconSize"
                 :selected="showSubMenu"
                 class="mb-1"
@@ -70,20 +70,20 @@
                   }
                 "
                 @click="selectSubMenu(SubMenuName.settings)"
-                ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" :alt="t`Settings Icon`" />
               </GlassButton>
               <GlassButton
-                label="Tools"
+                :label="t`Tools`"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-tools' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Tools' : undefined"
+                :tooltip="simplifiedMainMenu ? t`Tools` : undefined"
                 :width="mainMenuIconSize"
                 :selected="showSubMenu"
                 class="mb-1"
                 @click="selectSubMenu(SubMenuName.tools)"
-                ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" :alt="t`Tools Icon`" />
               </GlassButton>
               <GlassButton
                 :label="fullScreenToggleLabel"
@@ -91,7 +91,7 @@
                 :icon="simplifiedMainMenu ? fullScreenToggleIcon : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? (isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen') : undefined"
+                :tooltip="simplifiedMainMenu ? (isFullscreen ? t`Exit Fullscreen` : t`Enter Fullscreen`) : undefined"
                 :button-class="simplifiedMainMenu ? '-mb-2' : ''"
                 :width="mainMenuIconSize"
                 :selected="false"
@@ -99,21 +99,21 @@
                 ><img
                   v-if="!simplifiedMainMenu"
                   :src="isFullscreen ? ExitFullScreenIcon : FullScreenIcon"
-                  alt="Fullscreen Icon"
+                  :alt="t`Fullscreen Icon`"
                 />
               </GlassButton>
               <GlassButton
-                label="About"
+                :label="t`About`"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-information-outline' : undefined"
                 :icon-size="simplifiedMainMenu ? 25 : undefined"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'About' : undefined"
+                :tooltip="simplifiedMainMenu ? t`About` : undefined"
                 :button-class="!simplifiedMainMenu ? '-mt-[5px]' : undefined"
                 :width="mainMenuIconSize"
                 :selected="showSubMenu"
                 @click="openAboutDialog"
-                ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="InfoIcon" :alt="t`Info Icon`" />
               </GlassButton>
             </div>
           </div>
@@ -152,7 +152,7 @@
               <v-divider width="70%" />
               <GlassButton
                 :label-class="menuLabelSize"
-                tooltip="Back"
+                :tooltip="t`Back`"
                 icon="mdi-arrow-left"
                 icon-class="translate-y-[0.6px]"
                 :button-class="simplifiedMainMenu ? '-mt-1' : 'mt-1'"
@@ -189,6 +189,7 @@ import {
   useResizeObserver,
   useWindowSize,
 } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -466,8 +467,8 @@ onMounted(() => {
 
 const fullScreenToggleIcon = computed(() => (isFullscreen.value ? 'mdi-fullscreen-exit' : 'mdi-overscan'))
 const fullScreenToggleLabel = computed(() => {
-  if (simplifiedMainMenu.value) return isFullscreen.value ? 'Exit' : 'Fullscreen'
-  return isFullscreen.value ? 'Exit Fullscreen' : 'Enter Fullscreen'
+  if (simplifiedMainMenu.value) return isFullscreen.value ? t`Exit` : t`Fullscreen`
+  return isFullscreen.value ? t`Exit Fullscreen` : t`Enter Fullscreen`
 })
 </script>
 <style scoped>
