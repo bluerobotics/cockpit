@@ -50,6 +50,24 @@ jobs:
           fi
           echo "No pending-rebase markers found."
 
+      - name: Fail on merge commits
+        if: ${{ !cancelled() }}
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          merges=$(git rev-list --merges "$BASE_SHA".."$HEAD_SHA")
+          if [ -n "$merges" ]; then
+            for sha in $merges; do
+              echo "::error::Commit ${sha:0:8} is a merge commit: \"$(git log -1 --format='%s' "$sha")\""
+            done
+            echo "Rebase the branch onto ${BASE_REF} instead of merging ${BASE_REF} into it."
+            exit 1
+          fi
+          echo "No merge commits found."
+
   # Measures the functions this PR adds or changes and publishes the numbers as an artifact, because
   # the reviewer that acts on them cannot produce them: it holds the Anthropic key, so it never checks
   # out head code and has no interpreter. This workflow already runs head code safely, so the counting
