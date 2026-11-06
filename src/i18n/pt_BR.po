@@ -1,0 +1,107 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=utf-8\n"
+"Language: pt_BR\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/components/MainMenu.vue
+msgid "About"
+msgstr "Sobre"
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Alerts settings"
+msgstr ""
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Armed menu warning disabled. You can re-enable it in the alerts settings."
+msgstr ""
+
+#: src/components/MainMenu.vue
+msgid "Back"
+msgstr ""
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Be careful"
+msgstr "Cuidado"
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Come back later, or proceed carefully with one of the following options:"
+msgstr ""
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Continue and don't warn again during this session"
+msgstr ""
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Continue and never warn again"
+msgstr ""
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Continue anyway"
+msgstr "Continuar mesmo assim"
+
+#: src/components/ArmSafetyDialog.vue
+msgid "Disarm vehicle and continue"
+msgstr "Desarmar o veículo e continuar"
+
+#: src/components/MainMenu.vue
+msgid "Edit"
+msgstr "Editar"
+
+#: src/components/MainMenu.vue
+msgid "Edit Interface"
+msgstr "Editar interface"
+
+#: src/components/MainMenu.vue
+msgid "Edit Mode"
+msgstr ""
+
+#: src/components/MainMenu.vue
+msgid "Enter Fullscreen"
+msgstr "Entrar em tela cheia"
+
+#: src/components/mini-widgets/EnterEditMode.vue
+msgid "Enter edit mode"
+msgstr ""
+
+#: src/components/MainMenu.vue
+msgid "Exit"
+msgstr ""
+
+#: src/components/MainMenu.vue
+msgid "Exit Fullscreen"
+msgstr "Sair da tela cheia"
+
+#: src/components/mini-widgets/EnterEditMode.vue
+msgid "Exit edit mode"
+msgstr "Sair do modo de edição"
+
+#: src/components/MainMenu.vue
+msgid "Flight"
+msgstr "Voo"
+
+#: src/components/MainMenu.vue
+msgid "Fullscreen"
+msgstr ""
+
+#: src/components/MainMenu.vue
+msgid "Mission"
+msgstr "Missão"
+
+#: src/components/MainMenu.vue
+msgid "Mission Planning"
+msgstr "Planejamento de missão"
+
+#: src/components/MainMenu.vue
+msgid "Settings"
+msgstr "Configurações"
+
+#: src/components/ArmSafetyDialog.vue
+msgid ""
+"The vehicle is currently armed, and the main-menu contains configurations "
+"and tools that can cause unsafe situations."
+msgstr ""
+
+#: src/components/MainMenu.vue
+msgid "Tools"
+msgstr "Ferramentas"
