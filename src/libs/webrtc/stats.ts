@@ -1,6 +1,5 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 
-import { getDataLakeVariableData, getDataLakeVariableLastUpdateTimestamp } from '@/libs/actions/data-lake'
 import { StreamPeerConnectionInfo, WebRTCVideoStat } from '@/types/video'
 
 const maxVideoStatAge = 2000
@@ -15,6 +14,31 @@ export const streamStatVariableId = (streamName: string, statName: WebRTCVideoSt
   return `stream-${streamName}-${statName}`
 }
 
+// Latest bytes received per stream, keyed by the external id its callers hold, so the watchdog follows every
+// active stream whether or not it has a correspondency entry
+const bytesReceivedByStream: Record<
+  string,
+  {
+    /**
+     * Bytes received so far by the stream's current session
+     */
+    bytesReceived: number
+    /**
+     * performance.now() when the stat was last reported
+     */
+    updatedAt: number
+  }
+> = {}
+
+/**
+ * Record the bytes a stream's stats report received, for its video-arrival watchdog
+ * @param {string} streamName - External id of the stream
+ * @param {number} bytesReceived - Bytes received so far by the stream's current session
+ */
+export const noteStreamBytesReceived = (streamName: string, bytesReceived: number): void => {
+  bytesReceivedByStream[streamName] = { bytesReceived, updatedAt: performance.now() }
+}
+
 /**
  * Follow how long a stream's video has gone without arriving, going by the bytes its stats report received
  * @param {string} streamName - Name of the stream to follow
@@ -23,26 +47,24 @@ export const streamStatVariableId = (streamName: string, statName: WebRTCVideoSt
  * is missing or stale
  */
 export const trackVideoArrival = (streamName: string, missingStatConsequence: string): (() => number | undefined) => {
-  const statId = streamStatVariableId(streamName, 'bytesReceived')
   let lastBytesReceived: number | undefined
   let lastChangeTime = performance.now()
   let missingStatReported = false
 
   return () => {
-    const bytesReceived = getDataLakeVariableData(statId)
-    if (typeof bytesReceived !== 'number') {
-      if (!missingStatReported) console.warn(`Without '${statId}', ${missingStatConsequence}.`)
+    const sample = bytesReceivedByStream[streamName]
+    if (typeof sample?.bytesReceived !== 'number') {
+      if (!missingStatReported) console.warn(`Without the bytes received stat, ${missingStatConsequence}.`)
       missingStatReported = true
       return undefined
     }
 
     // A stat nobody is publishing any more says nothing about the media, and it starves along with the main thread
-    const lastStatUpdate = getDataLakeVariableLastUpdateTimestamp(statId)
-    if (lastStatUpdate === undefined || performance.now() - lastStatUpdate > maxVideoStatAge) return undefined
+    if (performance.now() - sample.updatedAt > maxVideoStatAge) return undefined
 
     // Any difference counts as traffic, a drop included, since a renewed session restarts the count from zero
-    if (bytesReceived !== lastBytesReceived) {
-      lastBytesReceived = bytesReceived
+    if (sample.bytesReceived !== lastBytesReceived) {
+      lastBytesReceived = sample.bytesReceived
       lastChangeTime = performance.now()
     }
     return (performance.now() - lastChangeTime) / 1000

@@ -11,7 +11,7 @@ import {
 } from '@/libs/actions/data-lake'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { isElectron } from '@/libs/utils'
-import { monitorStreamPeerConnection, streamStatVariableId } from '@/libs/webrtc/stats'
+import { monitorStreamPeerConnection, noteStreamBytesReceived, streamStatVariableId } from '@/libs/webrtc/stats'
 import { WebRTCStatsEvent, WebRTCVideoStat } from '@/types/video'
 
 import { useMainVehicleStore } from './mainVehicle'
@@ -203,13 +203,17 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
 
       monitorStreamPeerConnection(webrtcStreamStats[streamName], pcInfo)
 
+      // Persisted artifacts use the internal stream name; an unmapped stream gets no variables, so the
+      // external id (an RTSP URL, credentials included) never reaches a variable name
       storedKeys.forEach((key) => {
-        if (getDataLakeVariableInfo(streamStatVariableId(streamName, key)) === undefined) {
+        const internalName = videoStore.internalStreamNameFromExternal(streamName)
+        if (internalName === undefined) return
+        if (getDataLakeVariableInfo(streamStatVariableId(internalName, key)) === undefined) {
           const streamVariable = {
-            id: streamStatVariableId(streamName, key),
-            name: `Stream '${streamName}' - ${key}`,
+            id: streamStatVariableId(internalName, key),
+            name: `Stream '${internalName}' - ${key}`,
             type: 'number',
-            description: `WebRTC stat '${key}' of the '${streamName}' video stream.`,
+            description: `WebRTC stat '${key}' of the '${internalName}' video stream.`,
           } as DataLakeVariable
           createDataLakeVariable(streamVariable)
         }
@@ -226,8 +230,11 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
           const videoData = ev.data.video.inbound[0]
           if (videoData === undefined) return
 
+          noteStreamBytesReceived(streamName, videoData.bytesReceived)
+          const internalName = videoStore.internalStreamNameFromExternal(streamName)
+          if (internalName === undefined) return
           storedKeys.forEach((key) => {
-            setDataLakeVariableData(streamStatVariableId(streamName, key), videoData[key])
+            setDataLakeVariableData(streamStatVariableId(internalName, key), videoData[key])
           })
         } catch (error) {
           console.error('Error while logging WebRTC statistics:', error)
