@@ -129,7 +129,7 @@ import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, toR
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
-import { useSnackbar } from '@/composables/snackbar'
+import { openActionErrorSnackbar, useSnackbar } from '@/composables/snackbar'
 import { getAllDiyWidgetTemplates, saveDiyWidgetTemplate } from '@/libs/diy-widget-library'
 import { createMonacoEditor, monaco } from '@/libs/monaco-manager'
 import { createCleanupScope, runUserScript } from '@/libs/user-script'
@@ -306,7 +306,11 @@ const executeUserScript = async (): Promise<void> => {
   if (run !== scriptRunKey.value || !rootElement.value) return
 
   if (widget.value.options.scopedScript) {
-    runUserScript(js, 'DIY widget script', scriptScope, { root: rootElement.value })
+    try {
+      runUserScript(js, `DIY widget "${widget.value.name}" script`, scriptScope, { root: rootElement.value })
+    } catch (error) {
+      openActionErrorSnackbar(error)
+    }
     return
   }
 
