@@ -77,7 +77,7 @@
               <template v-if="typeof currentElement.options.layout[optionKey] === 'number'">
                 <div class="max-w-[120px]">
                   <input
-                    v-model.number="currentElement.options.layout[optionKey]"
+                    v-model.lazy.number="currentElement.options.layout[optionKey]"
                     type="number"
                     class="p-2 bg-[#FFFFFF11] w-[128px]"
                     @blur="validateNumber(optionKey)"
