@@ -55,6 +55,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+import { openActionErrorSnackbar } from '@/composables/snackbar'
 import {
   deleteJavascriptActionConfig,
   executeActionCode,
@@ -168,7 +169,11 @@ const resetNewAction = (): void => {
 const testAction = (): void => {
   logUserAction(`Tested JavaScript action '${newActionConfig.value.name}'`)
   testRuns.cleanUp()
-  executeActionCode(newActionConfig.value.code, testRuns)
+  try {
+    executeActionCode(newActionConfig.value.code, testRuns)
+  } catch (error) {
+    openActionErrorSnackbar(error)
+  }
 }
 
 const exportAction = (id: string): void => {

@@ -82,6 +82,7 @@ export const createCleanupScope = (label: string): CleanupScope => {
  * @param {string} label - What the code is, for the error log
  * @param {CleanupScope} scope - Where the run records what to undo
  * @param {Record<string, unknown>} context - Extra values the code receives as variables, keyed by name
+ * @throws {Error} When the code throws, so the caller can tell the user what went wrong
  */
 export const runUserScript = (
   code: string,
@@ -135,5 +136,6 @@ export const runUserScript = (
     new Function('cockpit', ...Object.keys(context), code)(cockpit, ...Object.values(context))
   } catch (error) {
     console.error(`Error running the ${label}.`, error)
+    throw new Error(`Error running the ${label}: ${error}`)
   }
 }
