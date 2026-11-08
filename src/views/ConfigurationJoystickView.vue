@@ -359,7 +359,7 @@
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            :model-value="axisMapping(item.id as JoystickAxis).min"
+                            :model-value="axisRangeField(item.id as JoystickAxis, 'min')"
                             type="number"
                             density="compact"
                             variant="plain"
@@ -384,7 +384,7 @@
                         </td>
                         <td class="w-[110px] text-center">
                           <v-text-field
-                            :model-value="axisMapping(item.id as JoystickAxis).max"
+                            :model-value="axisRangeField(item.id as JoystickAxis, 'max')"
                             type="number"
                             density="compact"
                             variant="plain"
@@ -645,7 +645,7 @@
               }}
             </v-icon>
             <v-text-field
-              :model-value="axisMapping(input.id).min"
+              :model-value="axisRangeField(input.id, 'min')"
               class="bg-transparent w-[110px]"
               label="Min"
               type="number"
@@ -667,7 +667,7 @@
               @update:model-value="(a) => editAxisAction(input.id, a)"
             />
             <v-text-field
-              :model-value="axisMapping(input.id).max"
+              :model-value="axisRangeField(input.id, 'max')"
               class="bg-transparent w-[110px]"
               label="Max"
               type="number"
@@ -1137,6 +1137,12 @@ const rangeCheckDescription = computed(() => {
   const source = mainVehicleStore.isVehicleOnline ? '' : ' (last vehicle connected)'
   return `Ranges checked against the ${vehicleName} defaults${source}`
 })
+
+// A number field holding only "-" reads as empty, and showing the resulting NaN in it would wipe the "-" mid-typing.
+const axisRangeField = (axis: JoystickAxis, endpoint: 'min' | 'max'): number | '' => {
+  const value = axisMapping(axis)[endpoint]
+  return Number.isNaN(value) ? '' : value
+}
 
 const editAxisRange = (axis: JoystickAxis, endpoint: 'min' | 'max', value: unknown): void => {
   // An emptied field is NaN rather than 0, so it blocks the save instead of silently becoming a valid range.
