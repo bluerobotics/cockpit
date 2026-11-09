@@ -144,10 +144,10 @@ export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {})
   )
   // The grid sources also follow their elevation thresholds, which change far more often than any fetch.
   const gridSignature = computed(() => {
-    const { terrainClearanceMeters, shallowWaterDepthMeters } = hazardStore.settings
+    const { highGroundAboveMeters, shallowWaterDepthMeters } = hazardStore.settings
     const enabled = HAZARD_GRID_SOURCE_IDS.map((sourceId) => (isShown(sourceId) ? 1 : 0)).join('')
     const loadedAt = `${hazardStore.terrainGrid?.fetchedAtMs ?? 0}:${hazardStore.terrainGrid?.clearedAtMs ?? 0}`
-    return `${enabled}:${loadedAt}:${terrainClearanceMeters}:${shallowWaterDepthMeters}`
+    return `${enabled}:${loadedAt}:${highGroundAboveMeters}:${shallowWaterDepthMeters}`
   })
 
   const areasOf = (sourceId: HazardSourceId): HazardArea[] =>
