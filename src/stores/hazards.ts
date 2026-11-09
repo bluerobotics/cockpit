@@ -50,7 +50,7 @@ import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 const DEFAULT_HAZARD_SETTINGS: HazardAdvisorySettings = {
   enabledSources: ['coastline', 'restricted-waters', 'seamarks'],
   proximityMarginMeters: 50,
-  terrainClearanceMeters: 10,
+  highGroundAboveMeters: 10,
   shallowWaterDepthMeters: 2,
   liveAlerts: true,
   exclusionVertexBudget: 60,
@@ -168,7 +168,13 @@ export const useHazardStore = defineStore('hazards', () => {
   const openAipApiKey = useStorage('cockpit-hazard-openaip-api-key', '')
 
   // Merge defaults so a settings payload written before a field existed still has it.
-  settings.value = { ...DEFAULT_HAZARD_SETTINGS, ...settings.value }
+  const saved: Partial<HazardAdvisorySettings & Record<'terrainClearanceMeters', number>> = settings.value
+  settings.value = {
+    ...DEFAULT_HAZARD_SETTINGS,
+    // Saved before the threshold was renamed, and left in place so an older Cockpit still reads it.
+    highGroundAboveMeters: saved.terrainClearanceMeters ?? DEFAULT_HAZARD_SETTINGS.highGroundAboveMeters,
+    ...saved,
+  }
 
   const results = shallowRef<Partial<Record<HazardAreaSourceId, HazardFetchResult>>>({})
   const terrainGrid = shallowRef<TerrainGrid | null>(null)
@@ -211,7 +217,7 @@ export const useHazardStore = defineStore('hazards', () => {
   }
 
   const thresholdOf = (sourceId: HazardGridSourceId): number =>
-    sourceId === 'terrain' ? settings.value.terrainClearanceMeters : settings.value.shallowWaterDepthMeters
+    sourceId === 'terrain' ? settings.value.highGroundAboveMeters : settings.value.shallowWaterDepthMeters
 
   const retrace = async (sourceId: HazardGridSourceId): Promise<void> => {
     const token = ++traceTokens[sourceId]
@@ -653,7 +659,7 @@ export const useHazardStore = defineStore('hazards', () => {
   }
 
   const groundAdvisories = (waypoints: Waypoint[], groundM: (number | null)[]): HazardAdvisory[] => {
-    const { terrainClearanceMeters: thresholdM, shallowWaterDepthMeters: depthM } = settings.value
+    const { highGroundAboveMeters: thresholdM, shallowWaterDepthMeters: depthM } = settings.value
     return [
       ...(isSourceEnabled('terrain')
         ? [
