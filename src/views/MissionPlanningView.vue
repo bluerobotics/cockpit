@@ -913,7 +913,11 @@
     </p>
   </div>
   <div class="absolute right-[10px] bottom-[192px] flex flex-col items-end gap-y-[19px] pointer-events-none">
-    <TerrainPlanningDock @select-waypoint="selectWaypointByIndex" @update:open="onTerrainDockOpen" />
+    <TerrainPlanningDock
+      @select-waypoint="selectWaypointByIndex"
+      @replace-mission="replaceMissionFromTerrain"
+      @update:open="onTerrainDockOpen"
+    />
     <MissionEstimatesPanel :model-value="missionStore.showMissionEstimates" />
   </div>
   <MissionLibraryModal
@@ -998,6 +1002,7 @@ import { goToMenuPage } from '@/composables/menuRouting'
 import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceMapInteraction'
 import { useMissionPreflightChecks } from '@/composables/mission-planning/useMissionPreflightChecks'
 import { useSnackbar } from '@/composables/snackbar'
+import type { TerrainMissionEdit } from '@/composables/terrain/useTerrainDock'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import {
   clearAllSurveyAreas,
@@ -4725,6 +4730,26 @@ const loadDraftMission = async (
   } catch (error) {
     openSnackbar({ variant: 'error', message: t`Failed to load draft mission: ${error}`, duration: 3000 })
   }
+}
+
+// Edited in place, like undo, so the undo history, a survey being drawn and the open config panel all survive.
+const replaceMissionFromTerrain = (mission: TerrainMissionEdit, message: string): void => {
+  missionStore.pushUndoSnapshot('terrain')
+  Object.values(waypointMarkers.value).forEach((marker) => planningMap.value?.removeLayer(marker))
+  waypointMarkers.value = {}
+  const byId: Record<string, Waypoint | undefined> = Object.fromEntries(
+    mission.waypoints.map((waypoint) => [waypoint.id, waypoint])
+  )
+  const linkedSurveys = mission.surveys.map((survey) => ({
+    ...survey,
+    waypoints: survey.waypoints.map((waypoint) => byId[waypoint.id] ?? waypoint),
+  }))
+  missionStore.currentPlanningWaypoints.splice(0, missionStore.currentPlanningWaypoints.length, ...mission.waypoints)
+  missionStore.currentPlanningSurveys.splice(0, missionStore.currentPlanningSurveys.length, ...linkedSurveys)
+  missionStore.currentPlanningWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
+  if (selectedWaypoint.value) selectedWaypoint.value = byId[selectedWaypoint.value.id]
+  updateWaypointMarkers()
+  openSnackbar({ variant: 'success', message, duration: 2000 })
 }
 
 // Backed by a debounced watcher so the deep clone runs at most once per change burst, instead of

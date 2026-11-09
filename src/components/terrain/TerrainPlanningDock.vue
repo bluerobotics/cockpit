@@ -141,6 +141,7 @@
               </v-btn>
             </div>
           </div>
+          <TerrainQuickActionsPanel v-else-if="currentTab === 'actions'" />
           <TerrainVehiclePanel v-else-if="currentTab === 'vehicle'" />
         </div>
 
@@ -252,12 +253,18 @@ import propellerLogo from '@/assets/blue-robotics-logo-white.svg'
 import DrawerPanel from '@/components/DrawerPanel.vue'
 import LoadingText from '@/components/LoadingText.vue'
 import TerrainProfileChart from '@/components/terrain/TerrainProfileChart.vue'
+import TerrainQuickActionsPanel from '@/components/terrain/TerrainQuickActionsPanel.vue'
 import TerrainSafeAltitude from '@/components/terrain/TerrainSafeAltitude.vue'
 import TerrainVehiclePanel from '@/components/terrain/TerrainVehiclePanel.vue'
 import TerrainWarningTriangle from '@/components/terrain/TerrainWarningTriangle.vue'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { openSnackbar } from '@/composables/snackbar'
-import { type TerrainDockFinding, provideTerrainDock, TERRAIN_WARNING_ICON } from '@/composables/terrain/useTerrainDock'
+import {
+  type TerrainDockFinding,
+  type TerrainMissionEdit,
+  provideTerrainDock,
+  TERRAIN_WARNING_ICON,
+} from '@/composables/terrain/useTerrainDock'
 import { automaticBathymetrySource, BATHYMETRY_SOURCES } from '@/libs/terrain/bathymetry'
 import { terrainAttribution } from '@/libs/terrain/elevation-service'
 import type { TerrainFindingKind, TerrainProfileSample } from '@/libs/terrain/mission-profile'
@@ -268,16 +275,17 @@ import { useTerrainStore } from '@/stores/terrain'
 import { SubMenuComponentName } from '@/types/general'
 import type { BathymetrySourceId } from '@/types/terrain'
 
-type TerrainTab = 'findings' | 'vehicle'
+type TerrainTab = 'findings' | 'actions' | 'vehicle'
 
 const emit = defineEmits<{
   (event: 'select-waypoint', waypointIndex: number): void
+  (event: 'replace-mission', mission: TerrainMissionEdit, message: string): void
   (event: 'update:open', open: boolean): void
 }>()
 
 const terrainStore = useTerrainStore()
 const missionStore = useMissionStore()
-const dock = provideTerrainDock()
+const dock = provideTerrainDock((mission, message) => emit('replace-mission', mission, message))
 const currentTab = ref<TerrainTab>('findings')
 
 const analysis = computed(() => dock.terrain.analysis.value)
@@ -307,6 +315,7 @@ const TABS: {
   label: string
 }[] = [
   { id: 'findings', label: 'Findings' },
+  { id: 'actions', label: 'Quick actions' },
   { id: 'vehicle', label: 'Vehicle' },
 ]
 

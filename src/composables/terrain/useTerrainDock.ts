@@ -21,7 +21,7 @@ import type { TerrainTileBounds } from '@/libs/terrain/tiles'
 import { useHazardStore } from '@/stores/hazards'
 import { useMissionStore } from '@/stores/mission'
 import type { GeoBbox } from '@/types/general'
-import type { WaypointCoordinates } from '@/types/mission'
+import type { CockpitMission, WaypointCoordinates } from '@/types/mission'
 
 import { type UseMissionTerrainReturn, useMissionTerrain } from './useMissionTerrain'
 import { type UseSafeAltitudeReturn, useSafeAltitude } from './useSafeAltitude'
@@ -59,6 +59,16 @@ export interface TerrainDockFinding {
    */
   rank: number
 }
+
+/**
+ * The waypoints and surveys of a mission the terrain tools rewrite.
+ */
+export type TerrainMissionEdit = Required<Pick<CockpitMission, 'waypoints' | 'surveys'>>
+
+/**
+ * Asks the planning view to replace the mission with new waypoints and surveys.
+ */
+export type ReplaceMission = (mission: TerrainMissionEdit, message: string) => void
 
 /**
  * State the terrain dock shares with its panels.
@@ -101,6 +111,10 @@ export interface TerrainDockState {
    */
   visibleBounds: () => TerrainTileBounds | null
   /**
+   * Replaces the mission, through the planning view.
+   */
+  replaceMission: ReplaceMission
+  /**
    * Moves a waypoint up or down by some meters, whatever its altitude is measured from.
    */
   setWaypointHeight: (waypointIndex: number, changeM: number) => void
@@ -142,9 +156,10 @@ const bboxUnion = (a: GeoBbox, b: GeoBbox): GeoBbox => ({
 
 /**
  * Creates the terrain dock's shared state, its map drawing included, and provides it to the dock's panels.
+ * @param {ReplaceMission} replaceMission Replaces the mission through the planning view.
  * @returns {TerrainDockState} The state.
  */
-export const provideTerrainDock = (): TerrainDockState => {
+export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockState => {
   const missionStore = useMissionStore()
   const hazardStore = useHazardStore()
   const { map } = useMapContext()
@@ -278,6 +293,7 @@ export const provideTerrainDock = (): TerrainDockState => {
     hover,
     focus: overlay.focus,
     visibleBounds: overlay.visibleBounds,
+    replaceMission,
     setWaypointHeight,
     coastlineMissing,
     loadingCoastline,
