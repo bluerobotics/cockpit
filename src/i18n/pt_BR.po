@@ -2191,6 +2191,10 @@ msgstr ""
 msgid "Submersible"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Survey"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"

@@ -789,6 +789,7 @@
     :nearest-segment-index="contextMenuNearestSegmentIndex"
     :can-create-fence-exclusion="contextMenuHazardArea !== undefined"
     :hazard-record-label="contextMenuHazardArea?.sourceRecord?.label"
+    :sensor-compensation-label="compensationLabel"
     @set-home-position="setHomePositionFromContextMenu"
     @close="hideContextMenu"
     @delete-selected-survey="deleteSelectedSurvey"
@@ -799,6 +800,7 @@
     @undo-generated-waypoints="undoGenerateWaypoints"
     @regenerate-survey-waypoints="regenerateSurveyWaypoints"
     @toggle-crosshatch="toggleSurveyCrosshatch"
+    @toggle-sensor-compensation="toggleSurveySensorCompensation"
     @survey-lines-angle="onSurveyLinesAngleChange"
     @remove-waypoint="removeSelectedWaypoint"
     @place-point-of-interest="openPoiDialog"
@@ -994,6 +996,7 @@ import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceM
 import { useMissionPreflightChecks } from '@/composables/mission-planning/useMissionPreflightChecks'
 import { useNextWaypointAltitude } from '@/composables/mission-planning/useNextWaypointAltitude'
 import { useSnackbar } from '@/composables/snackbar'
+import { useSurveyCompensation } from '@/composables/terrain/useSurveyCompensation'
 import type { TerrainMissionEdit } from '@/composables/terrain/useTerrainDock'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import {
@@ -2875,6 +2878,7 @@ const toggleSurvey = (): void => {
   }
   logUserAction('Enabled mission survey tool')
   surveyDraftEntryCorner.value = 0
+  surveyDraftSensorCompensation.value = null
   isCreatingSurvey.value = true
   isDrawingSurveyPolygon.value = true
   hideContextMenu()
@@ -3118,6 +3122,7 @@ const performUndo = (): void => {
     crosshatchDistanceBetweenLines.value =
       removedSurvey.crosshatchDistanceBetweenLines ?? removedSurvey.distanceBetweenLines
     surveyDraftEntryCorner.value = removedSurvey.entryCorner ?? 0
+    surveyDraftSensorCompensation.value = removedSurvey.sensorCompensation ?? false
 
     clearSurveyPolygonUndoStack()
     const coords = removedSurvey.polygonCoordinates
@@ -3618,6 +3623,8 @@ const rawSurveyLinesAngle = ref(0)
 const rawTurnaroundDistance = ref(0)
 const surveyCrosshatch = ref(false)
 const surveyDraftEntryCorner = ref(0)
+// Null on a new draft, so the survey defaults to compensating when a sensor is picked by the time it is generated.
+const surveyDraftSensorCompensation = ref<boolean | null>(null)
 const existingWaypoints = ref<Waypoint[]>([])
 const surveyWaypoints = ref<Waypoint[]>([])
 
@@ -4208,6 +4215,7 @@ const generateWaypointsFromSurvey = (): void => {
     crosshatch: surveyCrosshatch.value,
     crosshatchDistanceBetweenLines: crosshatchDistanceBetweenLines.value,
     entryCorner: surveyDraftEntryCorner.value,
+    sensorCompensation: surveyDraftSensorCompensation.value ?? false,
     waypoints: newSurveyWaypoints,
   }
 
@@ -4222,6 +4230,7 @@ const generateWaypointsFromSurvey = (): void => {
   isCreatingSurvey.value = false
   isDrawingSurveyPolygon.value = false
   updateWaypointMarkers()
+  if (newSurvey.sensorCompensation) scheduleCompensation(newSurvey.id)
 
   openSnackbar({ variant: 'success', message: 'Waypoints generated from survey path.', duration: 1000 })
 }
@@ -4414,6 +4423,7 @@ const regenerateSelectedSurveyWaypoints = (angle?: number): void => {
 
     newWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
     updateWaypointMarkers()
+    if (selectedSurvey.value.sensorCompensation) scheduleCompensation(selectedSurvey.value.id)
   }
 }
 
@@ -4542,6 +4552,7 @@ const undoGenerateWaypoints = (): void => {
   surveyCrosshatch.value = survey.crosshatch ?? false
   crosshatchDistanceBetweenLines.value = survey.crosshatchDistanceBetweenLines ?? survey.distanceBetweenLines
   surveyDraftEntryCorner.value = survey.entryCorner ?? 0
+  surveyDraftSensorCompensation.value = survey.sensorCompensation ?? false
 
   isCreatingSurvey.value = true
   isDrawingSurveyPolygon.value = false
@@ -4767,6 +4778,18 @@ const replaceMissionFromTerrain = (mission: TerrainMissionEdit, message: string)
   if (selectedWaypoint.value) selectedWaypoint.value = byId[selectedWaypoint.value.id]
   updateWaypointMarkers()
   openSnackbar({ variant: 'success', message, duration: 2000 })
+}
+
+const { compensationLabel, scheduleCompensation } = useSurveyCompensation(replaceMissionFromTerrain)
+
+const toggleSurveySensorCompensation = (): void => {
+  const survey = selectedSurvey.value
+  if (!survey) return
+  logUserAction(`${survey.sensorCompensation ? 'Disabled' : 'Enabled'} sensor compensation on survey`)
+  missionStore.pushUndoSnapshot()
+  survey.sensorCompensation = !survey.sensorCompensation
+  if (survey.sensorCompensation) scheduleCompensation(survey.id, true)
+  else regenerateSelectedSurveyWaypoints()
 }
 
 // Backed by a debounced watcher so the deep clone runs at most once per change burst, instead of
