@@ -2512,6 +2512,10 @@ msgstr ""
 msgid "Codec"
 msgstr "Codec"
 
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Collapse the planning panel"
+msgstr ""
+
 #: src/components/mini-widgets/CameraGimbalControl.vue
 msgid "Collapsed, with the controls in a popup"
 msgstr "Recolhido, com os controles em um popup"
@@ -4518,6 +4522,10 @@ msgstr "Direção de expansão"
 #: src/components/geofence/GeoFenceTooLargeDialog.vue
 msgid "Expand storage"
 msgstr "Expandir armazenamento"
+
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Expand the planning panel"
+msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid "Exponential Calibration"
