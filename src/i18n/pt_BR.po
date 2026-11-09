@@ -55,6 +55,11 @@ msgstr ""
 msgid "${ 0 } itself"
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "${ 0 } m under the keel"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
 msgid "${ 0 } m under the keel from ${ 1 }."
@@ -307,6 +312,16 @@ msgstr ""
 msgid "Be careful"
 msgstr "Cuidado"
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }: ${ 1 }"
+msgstr ""
+
 #: src/components/terrain/TerrainProfileChart.vue
 msgid "Bottom"
 msgstr ""
@@ -334,6 +349,14 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Cap the height above the ground at"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change in the mission settings"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change the draft and minimum under the keel in the mission settings"
 msgstr ""
 
 #: src/libs/terrain/shallows-osm.ts
@@ -496,6 +519,11 @@ msgstr ""
 msgid "Could not keep a safe height: ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not look up the tide stations: ${ 0 }"
+msgstr ""
+
 #: src/composables/terrain/useSafeAltitude.ts
 #, javascript-format
 msgid "Could not raise the waypoints: ${ 0 }"
@@ -516,6 +544,11 @@ msgstr ""
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Could not read the terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not read the tide: ${ 0 }"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -563,6 +596,12 @@ msgid ""
 "Automatic picks the most detailed one published for each point."
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Difference between high and low tide. While no tide predictions are loaded, "
+"the profile outlines this band around the water level."
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Disarm vehicle and continue"
 msgstr "Desarmar o veículo e continuar"
@@ -577,6 +616,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Downloading"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Draft and minimum under the keel"
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -659,6 +702,10 @@ msgstr "Sair do modo de edição"
 msgid "Expand the planning panel"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Expected tide range"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Export"
 msgstr ""
@@ -670,6 +717,10 @@ msgstr ""
 #: src/components/terrain/TerrainSightPanel.vue
 #, javascript-format
 msgid "Eyes ${ 0 } m, moves with the base station"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Findings"
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -755,12 +806,22 @@ msgstr ""
 msgid "Height above home"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Height of the water above the terrain model sea level, for lakes, rivers or "
+"the tide at mission time. Loaded tide predictions are added to it."
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Height over the ground"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Height over the seabed"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "High"
 msgstr ""
 
 #: src/components/terrain/TerrainProfileChart.vue
@@ -939,6 +1000,10 @@ msgstr ""
 msgid "Level flight at"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Link and sight"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid ""
 "Lists the stretches where the ground along the path rises or falls more "
@@ -970,6 +1035,14 @@ msgstr ""
 
 #: src/components/terrain/TerrainShallowsMarker.vue
 msgid "Looking for charted shoals in OpenStreetMap..."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Looking for the tide stations near the mission..."
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "Low"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1027,6 +1100,10 @@ msgstr "Planejamento de missão"
 msgid "Mission area (≈)"
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Mission date"
+msgstr ""
+
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "Mission estimates"
 msgstr ""
@@ -1037,6 +1114,11 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Mission exported."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Mission start on ${ 0 }"
 msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
@@ -1075,6 +1157,15 @@ msgstr ""
 msgid "NOAA coastal models (United States)"
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Nearest to the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Nearest: ${ 0 }"
+msgstr ""
+
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "Never seen"
 msgstr ""
@@ -1089,6 +1180,13 @@ msgstr ""
 
 #: src/composables/terrain/useTerrainDock.ts
 msgid "No observer can see the vehicle here, at any height."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"No tide station within ${ 0 } km of the mission. The water level is the "
+"offset set in the terrain settings."
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -1190,6 +1288,10 @@ msgstr ""
 msgid "Play the ghost run"
 msgstr ""
 
+#: src/components/terrain/TerrainTideChart.vue
+msgid "Point at the chart to read a start time"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Point out slopes steeper than"
 msgstr ""
@@ -1222,6 +1324,20 @@ msgstr ""
 msgid "Precision"
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }, ${ 1 } km from the mission. Wind and pressure can "
+"move the real water by tens of centimeters."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }. Wind and pressure can move the real water by tens "
+"of centimeters."
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid ""
@@ -1247,6 +1363,10 @@ msgid ""
 "Puts every waypoint, surveys included, at the same height above home, so "
 "the vehicle flies level. Ground\n"
 "that rises above home comes closer, so check the findings afterwards."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Quick actions"
 msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
@@ -1294,6 +1414,10 @@ msgstr ""
 msgid "Reaches the coastline from ${ 0 }, onto land."
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Reading the tide..."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Reading..."
 msgstr ""
@@ -1334,6 +1458,7 @@ msgid "Restore"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainTidePanel.vue
 msgid "Retry"
 msgstr ""
 
@@ -1430,6 +1555,16 @@ msgstr ""
 msgid ""
 "Shows where people on the ground can still see the vehicle, with the "
 "terrain in the way."
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }: ${ 1 }"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1656,6 +1791,23 @@ msgstr ""
 msgid "The terrain under the mission is checked once the mission has waypoints."
 msgstr ""
 
+#: src/libs/terrain/water-level.ts
+#, javascript-format
+msgid "The tide service answered HTTP ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no predictions."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no station list."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no usable predictions."
+msgstr ""
+
 #: src/composables/terrain/useTerrainDock.ts
 msgid "The vehicle flies too low for any observer to see it"
 msgstr ""
@@ -1695,6 +1847,23 @@ msgstr ""
 
 #: src/libs/terrain/shallows-osm.ts
 msgid "Tidal flat"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Tide"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide data credit"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Tide over the day: ${ 0 }. ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide station"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -1775,6 +1944,7 @@ msgstr ""
 msgid "Uploading with ${ 0 }."
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainProfileChart.vue
 msgid "Vehicle"
 msgstr ""
@@ -1805,6 +1975,14 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Waiting for the terrain check of the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Water level now"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Water level offset"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1864,6 +2042,15 @@ msgid ""
 "operating area."
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "aground by ${ 0 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "depth unknown"
+msgstr ""
+
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "farthest distance an observer can still make out the vehicle."
 msgstr ""
@@ -1874,13 +2061,27 @@ msgid ""
 "means a clear sky."
 msgstr ""
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "high tide of ${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/libs/terrain/mission-profile.ts
 #, javascript-format
 msgid "home to waypoint ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "low tide of ${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "mission estimates panel"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "no turning point"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -1923,6 +2124,10 @@ msgstr ""
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "under ${ 0 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "unknown"
 msgstr ""
 
 #: src/libs/terrain/mission-profile.ts
