@@ -5,6 +5,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { useMeasuredTerrainRecorder } from '@/composables/terrain/useMeasuredTerrainRecorder'
+import { useTerrainVehicleLink } from '@/composables/terrain/useTerrainVehicleLink'
 import { BATHYMETRY_SOURCES } from '@/libs/terrain/bathymetry'
 import {
   configureTerrainService,
@@ -41,6 +42,7 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   resolveTerrainOnUpload: false,
   terrainFollowToleranceM: 5,
   aimRoiAtGround: false,
+  serveTerrainToVehicle: false,
   measuredTerrainEnabled: true,
   recordMeasuredTerrain: false,
   useMeasuredTerrain: true,
@@ -225,6 +227,7 @@ export const useTerrainStore = defineStore('terrain', () => {
    */
   const waterLevelNowM = (): number =>
     settings.value.waterLevelOffsetM + (waterLevelAt(tidePredictions.value, Date.now()) ?? 0)
+  const vehicleLink = useTerrainVehicleLink(settings)
   const recorder = useMeasuredTerrainRecorder(settings, waterLevelNowM)
 
   /**
@@ -246,6 +249,10 @@ export const useTerrainStore = defineStore('terrain', () => {
     downloadProgress,
     downloadArea,
     cancelDownload,
+    servedBlocks: vehicleLink.servedBlocks,
+    lastRequestAtMs: vehicleLink.lastRequestAtMs,
+    lastReport: vehicleLink.lastReport,
+    checkVehicleTerrain: vehicleLink.checkVehicleTerrain,
     measured: recorder.measured,
     measuredVersion: recorder.measuredVersion,
     receivingRange: recorder.receivingRange,
