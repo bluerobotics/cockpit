@@ -218,6 +218,11 @@ msgstr ""
 msgid "${ 0 } itself"
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "${ 0 } m under the keel"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
 msgid "${ 0 } m under the keel from ${ 1 }."
@@ -1830,6 +1835,16 @@ msgstr "Azimute (°)"
 msgid "Before"
 msgstr "Antes"
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }: ${ 1 }"
+msgstr ""
+
 #: src/components/poi/PoiManager.vue
 msgid "Bike"
 msgstr "Bicicleta"
@@ -2272,6 +2287,14 @@ msgstr "Alterar alt"
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Change color by voltage"
 msgstr "Mudar a cor conforme a tensão"
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change in the mission settings"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change the draft and minimum under the keel in the mission settings"
+msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
 msgid "Changes are applied when you click Apply or press Cmd/Ctrl + Enter/S"
@@ -3377,6 +3400,11 @@ msgstr "Não foi possível carregar o mapa \"${ 0 }\": ${ 1 }"
 msgid "Could not load the fence plan from this file."
 msgstr "Não foi possível carregar o plano da cerca virtual deste arquivo."
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not look up the tide stations: ${ 0 }"
+msgstr ""
+
 #: src/composables/usePwaInstallation.ts
 msgid "Could not open app installation. Try installing from your browser menu."
 msgstr ""
@@ -3423,6 +3451,11 @@ msgstr ""
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Could not read the terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not read the tide: ${ 0 }"
 msgstr ""
 
 #: src/components/VoiceRecordingsLibrary.vue
@@ -4229,6 +4262,12 @@ msgstr "Configuração de desenvolvimento"
 msgid "Device Status"
 msgstr "Status do dispositivo"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Difference between high and low tide. While no tide predictions are loaded, "
+"the profile outlines this band around the water level."
+msgstr ""
+
 #: src/components/mission-planning/ScanDirectionDial.vue
 #: src/views/ConfigurationJoystickView.vue
 msgid "Direction"
@@ -4509,6 +4548,10 @@ msgid ""
 msgstr ""
 "Baixa quatro vozes neurais de maior qualidade: Amy e Lessac (femininas), "
 "Ryan e Joe (masculinas)."
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Draft and minimum under the keel"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "Draft mission loaded."
@@ -5055,6 +5098,10 @@ msgstr "Expandir armazenamento"
 msgid "Expand the planning panel"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Expected tide range"
+msgstr ""
+
 #: src/components/joysticks/JoystickCalibration.vue
 msgid "Exponential Calibration"
 msgstr "Calibração exponencial"
@@ -5472,6 +5519,10 @@ msgid "Find a connected GNSS receiver and let it set the base station position"
 msgstr ""
 "Encontrar um receptor GNSS conectado e deixá-lo definir a posição da "
 "estação base"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Findings"
+msgstr ""
 
 #: src/components/geofence/GeoFenceDrawingActionButtons.vue
 msgid "Finish polygon fence"
@@ -6024,6 +6075,12 @@ msgstr "Intensidade do mapa de calor"
 msgid "Height above home"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Height of the water above the terrain model sea level, for lakes, rivers or "
+"the tide at mission time. Loaded tide predictions are added to it."
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Height over the ground"
 msgstr ""
@@ -6138,6 +6195,7 @@ msgid "Hide waypoint numbers when zoomed out"
 msgstr "Ocultar números dos waypoints ao afastar o zoom"
 
 #: src/components/BaseStationConfigPanel.vue
+#: src/components/terrain/TerrainTideChart.vue
 msgid "High"
 msgstr "Alta"
 
@@ -7246,6 +7304,10 @@ msgstr "Espessura da linha"
 msgid "Lines angle (degrees)"
 msgstr "Ângulo das linhas (graus)"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Link and sight"
+msgstr ""
+
 #: src/views/ConfigurationActionsView.vue
 msgid "Linked Variables"
 msgstr "Variáveis vinculadas"
@@ -7411,11 +7473,16 @@ msgstr ""
 msgid "Looking for new versions of the application..."
 msgstr "Procurando novas versões do aplicativo..."
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Looking for the tide stations near the mission..."
+msgstr ""
+
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Loop"
 msgstr "Repetir"
 
 #: src/components/BaseStationConfigPanel.vue
+#: src/components/terrain/TerrainTideChart.vue
 msgid "Low"
 msgstr "Baixa"
 
@@ -7889,6 +7956,10 @@ msgstr "Painel de controle da missão"
 msgid "Mission control panel added to this view"
 msgstr "Painel de controle da missão adicionado a esta visualização"
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Mission date"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Mission deleted from library."
 msgstr "Missão excluída da biblioteca."
@@ -7971,6 +8042,11 @@ msgstr "Missão salva na biblioteca."
 #: src/components/MissionChecklist.vue
 msgid "Mission settings"
 msgstr "Configurações da missão"
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Mission start on ${ 0 }"
+msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Mission thumbnail"
@@ -8169,6 +8245,15 @@ msgstr "Navegue entre os editores usando Cmd/Ctrl + Option/Alt + ↑/↓"
 #: src/components/poi/PoiManager.vue
 msgid "Navigation"
 msgstr "Navegação"
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Nearest to the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Nearest: ${ 0 }"
+msgstr ""
 
 #: src/components/recipes/RecipeDialog.vue
 #, javascript-format
@@ -8604,6 +8689,13 @@ msgstr "Nenhum levantamento selecionado para excluir."
 #: src/views/MissionPlanningView.vue
 msgid "No survey selected."
 msgstr "Nenhum levantamento selecionado."
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"No tide station within ${ 0 } km of the mission. The water level is the "
+"offset set in the terrain settings."
+msgstr ""
 
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "No time trigger"
@@ -9438,6 +9530,10 @@ msgstr "Plotar última gravação"
 msgid "Plotter config"
 msgstr "Configuração do Plotter"
 
+#: src/components/terrain/TerrainTideChart.vue
+msgid "Point at the chart to read a start time"
+msgstr ""
+
 #: src/components/CameraGimbalControlButtons.vue
 msgid "Point gimbal at home"
 msgstr "Apontar gimbal para o Home"
@@ -9523,6 +9619,20 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Precision"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }, ${ 1 } km from the mission. Wind and pressure can "
+"move the real water by tens of centimeters."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }. Wind and pressure can move the real water by tens "
+"of centimeters."
 msgstr ""
 
 #: src/components/CameraReplacementDialog.vue
@@ -9653,6 +9763,10 @@ msgid ""
 "Puts every waypoint, surveys included, at the same height above home, so "
 "the vehicle flies level. Ground\n"
 "that rises above home comes closer, so check the findings afterwards."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Quick actions"
 msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
@@ -9863,6 +9977,10 @@ msgstr ""
 "A leitura de receptores GNSS seriais externos só está disponível no Cockpit "
 "Standalone. Navegadores não podem acessar dispositivos seriais fora de um "
 "contexto seguro, por isso este recurso está desativado aqui."
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Reading the tide..."
+msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Reading..."
@@ -10361,6 +10479,7 @@ msgid "Retract gimbal"
 msgstr "Recolher gimbal"
 
 #: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainTidePanel.vue
 msgid "Retry"
 msgstr ""
 
@@ -11381,6 +11500,16 @@ msgstr "Estrela"
 msgid "Start"
 msgstr "Iniciar"
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }: ${ 1 }"
+msgstr ""
+
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Start / resume mission"
@@ -12231,6 +12360,23 @@ msgstr ""
 msgid "The terrain under the mission is checked once the mission has waypoints."
 msgstr ""
 
+#: src/libs/terrain/water-level.ts
+#, javascript-format
+msgid "The tide service answered HTTP ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no predictions."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no station list."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no usable predictions."
+msgstr ""
+
 #: src/components/widgets/MissionControlPanel.vue
 #, javascript-format
 msgid ""
@@ -12756,6 +12902,23 @@ msgstr ""
 
 #: src/libs/terrain/shallows-osm.ts
 msgid "Tidal flat"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Tide"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide data credit"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Tide over the day: ${ 0 }. ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide station"
 msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
@@ -13598,6 +13761,7 @@ msgstr "Variáveis:"
 #: src/components/configuration/CockpitSettingsManager.vue
 #: src/components/configuration/FlightModeNamesConfig.vue
 #: src/components/poi/PoiMapArrows.vue
+#: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainProfileChart.vue
 #: src/components/widgets/MiniMap.vue
 #: src/views/MissionPlanningView.vue
@@ -14157,6 +14321,14 @@ msgstr ""
 msgid "Water"
 msgstr "Água"
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Water level now"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Water level offset"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Water under the keel"
@@ -14654,6 +14826,11 @@ msgstr "modo de administrador"
 msgid "after your existing view(s)"
 msgstr "depois das suas visualizações existentes"
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "aground by ${ 0 } m"
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 msgid ""
 "allows Cockpit to expose advanced features, like setting the frequency of "
@@ -14805,6 +14982,10 @@ msgstr "veículo atual"
 msgid "delete"
 msgstr "excluir"
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "depth unknown"
+msgstr ""
+
 #: src/libs/sensors/gnss.ts
 msgid "disconnected"
 msgstr "desconectado"
@@ -14848,6 +15029,11 @@ msgid ""
 "means a clear sky."
 msgstr ""
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "high tide of ${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/libs/terrain/mission-profile.ts
 #, javascript-format
 msgid "home to waypoint ${ 0 }"
@@ -14879,6 +15065,11 @@ msgstr "seja true. Para um GeoTIFF, envie"
 msgid "local network"
 msgstr "rede local"
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "low tide of ${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
 "marker to fine-tune the location and edit the altitude (relative to home) "
@@ -14902,6 +15093,10 @@ msgstr ""
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "no interfaces"
 msgstr "nenhuma interface"
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "no turning point"
+msgstr ""
 
 #: src/libs/monaco-manager.ts
 msgid "no value yet"
@@ -15115,6 +15310,10 @@ msgstr "não atribuído"
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "under ${ 0 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "unknown"
 msgstr ""
 
 #: src/components/InputElementConfig.vue

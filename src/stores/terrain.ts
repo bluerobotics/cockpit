@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { t } from 'ttag'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
@@ -20,6 +20,7 @@ import {
 import { isValidTileUrlTemplate, TERRAIN_SOURCES } from '@/libs/terrain/sources'
 import { type TerrainCacheSummary, clearTerrainCache, summarizeTerrainCache } from '@/libs/terrain/tile-store'
 import type { TerrainTileBounds } from '@/libs/terrain/tiles'
+import { type TideStation, type WaterLevelPoint, fetchTidePredictions, waterLevelAt } from '@/libs/terrain/water-level'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { BathymetrySourceId, TerrainSettings, TerrainSourceId } from '@/types/terrain'
 
@@ -32,6 +33,7 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   minimumUnderKeelM: 0.5,
   vesselDraftM: 0.3,
   waterLevelOffsetM: 0,
+  tideStationId: '',
   tideRangeM: 2,
   checkTerrainOnUpload: false,
   resolveTerrainOnUpload: false,
@@ -180,11 +182,44 @@ export const useTerrainStore = defineStore('terrain', () => {
     { immediate: true }
   )
 
+  const tidePredictions = ref<WaterLevelPoint[]>([])
+  const tideStation = shallowRef<TideStation | null>(null)
+  const loadingTide = ref(false)
+  const tideError = ref<string | null>(null)
+  let tideRun = 0
+
   /**
-   * Water surface height now, as configured.
+   * Reads a station's tide over a time window, replacing what was loaded; a later call supersedes one still running.
+   * @param {string} stationId Tide service id, as `source/id`, or empty to drop the loaded tide.
+   * @param {number} fromMs First moment, in milliseconds since the epoch.
+   * @param {number} toMs Last moment, in milliseconds since the epoch.
+   * @returns {Promise<void>}
+   */
+  const loadTide = async (stationId: string, fromMs: number, toMs: number): Promise<void> => {
+    const run = ++tideRun
+    tidePredictions.value = []
+    tideStation.value = null
+    tideError.value = null
+    loadingTide.value = stationId !== ''
+    if (!stationId) return
+    try {
+      const result = await fetchTidePredictions(stationId, fromMs, toMs)
+      if (run !== tideRun) return
+      tidePredictions.value = result.predictions
+      tideStation.value = result.station
+    } catch (error) {
+      if (run === tideRun) tideError.value = String(error)
+    } finally {
+      if (run === tideRun) loadingTide.value = false
+    }
+  }
+
+  /**
+   * Water surface height now: the configured offset plus the predicted tide, when loaded.
    * @returns {number} Meters above the terrain model's sea level.
    */
-  const waterLevelNowM = (): number => settings.value.waterLevelOffsetM
+  const waterLevelNowM = (): number =>
+    settings.value.waterLevelOffsetM + (waterLevelAt(tidePredictions.value, Date.now()) ?? 0)
 
   return {
     settings,
@@ -200,6 +235,11 @@ export const useTerrainStore = defineStore('terrain', () => {
     downloadArea,
     cancelDownload,
     vehicleParameters,
+    tidePredictions,
+    tideStation,
+    loadingTide,
+    tideError,
+    loadTide,
     waterLevelNowM,
   }
 })
