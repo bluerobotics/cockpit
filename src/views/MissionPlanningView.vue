@@ -3196,7 +3196,9 @@ const handleKeyDown = (event: KeyboardEvent): void => {
   if (event.key === 'Enter' && isCreatingSurvey.value) {
     generateWaypointsFromSurvey()
   }
-  if (event.key === 'Delete' && !interfaceStore.configPanelVisible && !baseStationStore.configPanelOpen) {
+  const target = event.target as HTMLElement | null
+  const typing = !!target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
+  if (event.key === 'Delete' && !typing && !baseStationStore.configPanelOpen) {
     if (selectedWaypoint.value) {
       removeSelectedWaypoint()
       selectedWaypoint.value = undefined
