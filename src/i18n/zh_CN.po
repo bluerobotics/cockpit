@@ -2361,6 +2361,10 @@ msgstr "Cockpit 的默认值为 0 毫秒，但您可以设置自定义值，或�
 msgid "Codec"
 msgstr "编解码器"
 
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Collapse the planning panel"
+msgstr ""
+
 #: src/components/mini-widgets/CameraGimbalControl.vue
 msgid "Collapsed, with the controls in a popup"
 msgstr "已折叠，控件显示在弹出窗口中"
@@ -4244,6 +4248,10 @@ msgstr "展开方向"
 #: src/components/geofence/GeoFenceTooLargeDialog.vue
 msgid "Expand storage"
 msgstr "扩展存储"
+
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Expand the planning panel"
+msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid "Exponential Calibration"
