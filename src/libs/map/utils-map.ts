@@ -3,6 +3,7 @@ import type { Feature, Point, Polygon, Position } from 'geojson'
 import * as L from 'leaflet'
 
 import { bearingBetween, calculateHaversineDistance, deltaBearing } from '@/libs/mission/general-estimates'
+import type { GeoBbox } from '@/types/general'
 import type { SurveyPath, WaypointCoordinates } from '@/types/mission'
 
 /**
@@ -362,6 +363,43 @@ export const fitMapToWaypoints = (
   const bounds = L.latLngBounds(validCoordinates.map((coord) => L.latLng(coord[0], coord[1])))
   map.fitBounds(bounds, { padding: [20, 20], maxZoom: 22, animate: true, ...(options ?? {}) })
   return true
+}
+
+/**
+ * A request for a map to show a place: a point to center on, or an extent to frame.
+ */
+export interface MapCenterRequest {
+  /**
+   * Coordinates to center on when no extent is given.
+   */
+  coordinates: WaypointCoordinates
+  /**
+   * Extent to frame, for a request about a whole area rather than a point.
+   */
+  bounds?: GeoBbox
+}
+
+/**
+ * Shows the place a center request asks for, keeping the current zoom for a point and framing an extent
+ * when one is given.
+ * @param {L.Map} map Leaflet map to move.
+ * @param {MapCenterRequest} request Where to look.
+ * @returns {void}
+ */
+export const applyMapCenterRequest = (map: L.Map, { coordinates, bounds }: MapCenterRequest): void => {
+  if (!bounds) {
+    map.setView(coordinates as L.LatLngTuple, map.getZoom(), { animate: true })
+    return
+  }
+  // Capped where imagery still exists, so a few meters of extent does not frame a screen of fallback tiles.
+  fitMapToWaypoints(
+    map,
+    [
+      [bounds.south, bounds.west],
+      [bounds.north, bounds.east],
+    ],
+    { padding: [40, 40], maxZoom: 19 }
+  )
 }
 
 /**

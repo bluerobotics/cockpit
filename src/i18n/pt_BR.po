@@ -4,6 +4,28 @@ msgstr ""
 "Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" deleted."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" is now drawn on the maps."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"\"${ 0 }\" kept with ${ 1 } measured cells, and copied to the vehicle when "
+"it is online."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" saved as ${ 1 }."
+msgstr ""
+
 #: src/components/terrain/TerrainSightPanel.vue
 msgid ""
 "\"Add observer\", then click the map where a person stands. Eyes is their "
@@ -23,6 +45,12 @@ msgstr ""
 msgid "${ 0 } (Cockpit Standalone)"
 msgstr ""
 
+#: src/composables/terrain/useTerrainLibrary.ts
+#. Live, so the overlay pipeline keeps no second copy of the mesh: the library file stays the only source.
+#, javascript-format
+msgid "${ 0 } (measured terrain)"
+msgstr ""
+
 #: src/components/terrain/TerrainProfileChart.vue
 #, javascript-format
 msgid "${ 0 } along"
@@ -36,6 +64,11 @@ msgstr ""
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "${ 0 } cells measured, ${ 1 } with enough readings to trust."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } cells over the mission"
 msgstr ""
 
 #: src/components/widgets/MiniWidgetsBar.vue
@@ -62,9 +95,25 @@ msgid ""
 "instead."
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } item total"
+msgid_plural "${ 0 } items total"
+msgstr[0] ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "${ 0 } itself"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } m above model"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } m below model"
 msgstr ""
 
 #: src/components/terrain/TerrainTidePanel.vue
@@ -75,6 +124,31 @@ msgstr ""
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
 msgid "${ 0 } m under the keel from ${ 1 }."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"${ 0 } measured cells from \"${ 1 }\" added to the measured terrain, ${ 2 } "
+"feature ignored."
+msgid_plural ""
+"${ 0 } measured cells from \"${ 1 }\" added to the measured terrain, ${ 2 } "
+"features ignored."
+msgstr[0] ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "${ 0 } measured cells from \"${ 1 }\" added to the measured terrain."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } measured cells over the mission on the planner"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "${ 0 } measured cells saved as ${ 1 }."
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -138,11 +212,26 @@ msgstr ""
 msgid "${ 0 } tiles, ${ 1 } MB"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } to ${ 1 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } to ${ 1 } m deep"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "${ 0 } to review"
 msgid_plural "${ 0 } to review"
 msgstr[0] ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } trusted cells"
+msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
@@ -261,8 +350,17 @@ msgstr ""
 msgid "Aim regions of interest at the ground"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Aircraft"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Alerts settings"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+#, javascript-format
+msgid "Also save the measured terrain of this mission (${ 0 } cells)"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -432,6 +530,10 @@ msgstr ""
 msgid "CHS NONNA (Canada)"
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "CSV, every cell"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 #. eslint-disable-next-line max-len, vue/max-len
 msgid ""
@@ -447,6 +549,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Cap the height above the ground at"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Centered the map, but could not draw that dataset:"
 msgstr ""
 
 #: src/components/terrain/TerrainTidePanel.vue
@@ -665,6 +771,10 @@ msgstr ""
 msgid "Could not compute the line of sight: ${ 0 }"
 msgstr ""
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not delete that dataset:"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Could not download the water map. Try again in a minute."
 msgstr ""
@@ -672,6 +782,10 @@ msgstr ""
 #: src/composables/terrain/useSafeAltitude.ts
 #, javascript-format
 msgid "Could not keep a safe height: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not keep the measured terrain:"
 msgstr ""
 
 #: src/components/terrain/TerrainTidePanel.vue
@@ -687,6 +801,10 @@ msgstr ""
 #: src/composables/terrain/useShallowsNotes.ts
 #, javascript-format
 msgid "Could not read OpenStreetMap: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not read that file:"
 msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
@@ -711,9 +829,25 @@ msgstr ""
 msgid "Could not rebuild the terrain model: ${ 0 }"
 msgstr ""
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not save that dataset:"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not save the measured terrain:"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not show that dataset on the map:"
+msgstr ""
+
 #: src/stores/terrain.ts
 #, javascript-format
 msgid "Could not store the terrain for offline use: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not use that dataset as measured terrain:"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -739,6 +873,19 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Deepest"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Delete"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "Delete \"${ 0 }\"?"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Delete dataset"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -868,7 +1015,17 @@ msgid "Expected tide range"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Export"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Export as GeoJSON"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Exporting"
 msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
@@ -930,6 +1087,10 @@ msgstr ""
 msgid "GeoFence"
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "GeoJSON, this mission's area"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "Geoscience Australia's model of the waters around Australia and its "
@@ -971,6 +1132,7 @@ msgstr ""
 msgid "Grade"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
 #: src/components/terrain/TerrainProfileChart.vue
 msgid "Ground"
 msgstr ""
@@ -1009,6 +1171,10 @@ msgstr ""
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Heights on the chart come from ${ 0 }, and depths from ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Hide from the map"
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -1121,7 +1287,13 @@ msgid ""
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Import"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Importing"
 msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
@@ -1329,6 +1501,7 @@ msgid ""
 "cells."
 msgstr ""
 
+#: src/components/MissionLibraryModal.vue
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Measured terrain"
 msgstr ""
@@ -1339,6 +1512,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Measured terrain information"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Measured terrain is kept for this mission"
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -1358,6 +1535,10 @@ msgstr ""
 #: src/components/mission-planning/MissionPlanningSidebar.vue
 msgid "Mission"
 msgstr "Missão"
+
+#: src/components/MissionLibraryModal.vue
+msgid "Mission Library"
+msgstr ""
 
 #: src/components/MainMenu.vue
 msgid "Mission Planning"
@@ -1400,6 +1581,10 @@ msgstr ""
 #: src/components/terrain/TerrainTidePanel.vue
 #, javascript-format
 msgid "Mission start on ${ 0 }"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Missions"
 msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
@@ -1459,12 +1644,28 @@ msgstr ""
 msgid "No deeper than"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "No measurement falls within ${ 0 } m of the mission on the planner"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"No measurement the vehicle recorded falls within ${ 0 } m of this mission. "
+"Record along its path, or load a dataset from a file."
+msgstr ""
+
 #: src/composables/terrain/useTerrainDock.ts
 msgid "No observer can see the vehicle"
 msgstr ""
 
 #: src/composables/terrain/useTerrainDock.ts
 msgid "No observer can see the vehicle here, at any height."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "No terrain saved"
 msgstr ""
 
 #: src/components/terrain/TerrainTidePanel.vue
@@ -1504,6 +1705,11 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Nothing is planned on the map yet"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Nothing measured within ${ 0 } m of the mission"
 msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
@@ -1758,6 +1964,12 @@ msgstr ""
 msgid "Record measured terrain"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid ""
+"Record the ground or bottom under the vehicle, then keep the measurements "
+"of a mission here, or import a GeoJSON file measured elsewhere."
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Record the ground or seabed under the vehicle"
 msgstr ""
@@ -1826,6 +2038,10 @@ msgid ""
 "and buildings."
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Save measured terrain"
+msgstr ""
+
 #: src/components/terrain/TerrainProfileChart.vue
 #, javascript-format
 msgid "Select waypoint ${ 0 }"
@@ -1891,9 +2107,14 @@ msgstr ""
 msgid "Show measured cells on the map"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Show on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Show on the map and center it here"
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -1902,6 +2123,11 @@ msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "Show where the vehicle stays in sight"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "Showing \"${ 0 }\" on the map."
 msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
@@ -1961,6 +2187,11 @@ msgstr ""
 msgid "Storing terrain ${ 0 } / ${ 1 }"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Submersible"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr ""
@@ -2088,6 +2319,12 @@ msgstr ""
 
 #: src/stores/terrain.ts
 msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid ""
+"The dataset is removed from this computer and from the vehicle. "
+"Measurements already added to the measured terrain stay."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -2404,6 +2641,10 @@ msgstr ""
 msgid "Uploading with ${ 0 }."
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Use as measured terrain"
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Use measured terrain"
 msgstr ""
@@ -2415,6 +2656,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Vehicle waypoint check information"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Vessel"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -2534,6 +2779,12 @@ msgid ""
 "operating area."
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"adds the measurements from a GeoJSON file to the measured terrain and keeps "
+"it in the mission library;"
+msgstr ""
+
 #: src/components/terrain/TerrainTidePanel.vue
 #, javascript-format
 msgid "aground by ${ 0 } m"
@@ -2584,6 +2835,18 @@ msgstr ""
 msgid "home to waypoint ${ 0 }"
 msgstr ""
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "it holds no measured points."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "it is not a GeoJSON file."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "its file is not on this computer yet. Connect to the vehicle and try again."
+msgstr ""
+
 #: src/components/terrain/TerrainTideChart.vue
 #, javascript-format
 msgid "low tide of ${ 0 } at ${ 1 }"
@@ -2611,6 +2874,16 @@ msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "receiving readings"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "removes every measurement from this computer."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"saves the cells over this mission as GeoJSON, which opens in mapping "
+"software and can be loaded back here, or every cell as a spreadsheet;"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue

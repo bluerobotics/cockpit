@@ -137,3 +137,16 @@ select:focus {
 .leaflet-tooltip.vehicle-tooltip::before {
     border-right-color: var(--glass-background) !important;
 }
+
+/* Chip of the mission library cards, shared by its missions and its terrain datasets. */
+.info-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #00000066;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 10px;
+    border-radius: 999px;
+    padding: 2px 8px;
+}

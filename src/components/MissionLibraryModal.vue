@@ -6,11 +6,17 @@
           <!-- Left Vertical Menu -->
           <div class="flex flex-col justify-between h-full px-5 py-3 align-center">
             <div class="flex flex-col justify-between pt-2 align-center gap-y-8">
-              <button class="flex flex-col justify-center align-center">
+              <button
+                v-for="entry in SECTIONS"
+                :key="entry.id"
+                class="flex flex-col justify-center align-center"
+                :class="section === entry.id ? 'opacity-100' : 'opacity-60 hover:opacity-90'"
+                @click="selectSection(entry.id)"
+              >
                 <div class="mb-1 text-2xl rounded-full frosted-button w-[46px] h-[46px]">
-                  <v-icon size="30">mdi-map-marker-path</v-icon>
+                  <v-icon size="30">{{ entry.icon }}</v-icon>
                 </div>
-                <div class="text-sm">Missions</div>
+                <div class="text-sm">{{ entry.label }}</div>
               </button>
             </div>
             <div>
@@ -32,12 +38,14 @@
           <div class="flex flex-col flex-1 min-h-0 min-w-0 h-full">
             <!-- Header -->
             <div class="flex justify-between items-center px-6 pt-4 pb-2 shrink-0">
-              <h3 class="text-lg font-medium">Mission Library</h3>
+              <h3 class="text-lg font-medium">{{ sectionTitle }}</h3>
             </div>
+
+            <TerrainLibrarySection v-if="section === 'terrain'" @close="closeModal" />
 
             <!-- Cards Grid -->
             <div
-              v-if="missionStore.savedMissions.length > 0"
+              v-else-if="missionStore.savedMissions.length > 0"
               class="grid gap-4 flex-1 min-h-0 overflow-y-auto w-full pt-4 px-6 pb-4 content-start"
               style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"
             >
@@ -92,6 +100,12 @@
                     <span v-if="mission.vehicleType" class="info-pill">
                       {{ vehicleTypeLabel(mission.vehicleType) }}
                     </span>
+                    <span v-if="hasTerrain(mission)" class="info-pill">
+                      <v-tooltip activator="parent" location="top" open-delay="500">
+                        {{ t`Measured terrain is kept for this mission` }}
+                      </v-tooltip>
+                      <v-icon size="12">mdi-terrain</v-icon>
+                    </span>
                   </div>
                 </div>
                 <div class="flex flex-col justify-center mt-1 text-xs text-white/80">
@@ -114,7 +128,11 @@
             </div>
 
             <!-- Footer -->
-            <div class="shrink-0 h-14 flex justify-between items-center px-4" style="border-top: 1px solid #ffffff0d">
+            <div
+              v-if="section === 'missions'"
+              class="shrink-0 h-14 flex justify-between items-center px-4"
+              style="border-top: 1px solid #ffffff0d"
+            >
               <span class="text-sm text-white/70">
                 {{ missionStore.savedMissions.length }}
                 {{ missionStore.savedMissions.length === 1 ? 'item' : 'items' }} total
@@ -315,6 +333,17 @@
                 class="rounded-md bg-[#FFFFFF11] border border-[#FFFFFF33] text-white text-sm px-3 py-2 resize-y focus:outline-none focus:border-[#FFFFFF77]"
               />
             </div>
+            <v-checkbox
+              v-if="terrainLibrary.missionCellCount.value > 0"
+              v-model="saveForm.withTerrain"
+              density="compact"
+              hide-details
+              color="white"
+              :label="
+                t`Also save the measured terrain of this mission (${terrainLibrary.missionCellCount.value} cells)`
+              "
+              @update:model-value="onToggleSaveTerrain"
+            />
           </div>
         </v-card-text>
         <v-card-actions>
@@ -334,8 +363,10 @@ import { saveAs } from 'file-saver'
 import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import TerrainLibrarySection from '@/components/terrain/TerrainLibrarySection.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
+import { useTerrainLibrary } from '@/composables/terrain/useTerrainLibrary'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { missionCruiseSpeed } from '@/libs/mission/cruise-speed'
 import { computeMissionLocation, isSavedMission, vehicleTypeLabel } from '@/libs/mission/library'
@@ -378,7 +409,17 @@ const missionStore = useMissionStore()
 const { showDialog, closeDialog } = useInteractionDialog()
 const { openSnackbar } = useSnackbar()
 
+const SECTIONS = [
+  { id: 'missions', label: t`Missions`, icon: 'mdi-map-marker-path' },
+  { id: 'terrain', label: t`Terrain`, icon: 'mdi-terrain' },
+] as const
+
+type LibrarySection = (typeof SECTIONS)[number]['id']
+
+const terrainLibrary = useTerrainLibrary()
+
 const isVisible = ref(true)
+const section = ref<LibrarySection>('missions')
 const showDetail = ref(false)
 const detailMission = ref<SavedMission | null>(null)
 const showSaveDialog = ref(false)
@@ -388,7 +429,19 @@ const saveForm = ref({
   name: '',
   description: '',
   id: undefined as string | undefined,
+  withTerrain: false,
 })
+
+const sectionTitle = computed(() => (section.value === 'terrain' ? t`Measured terrain` : t`Mission Library`))
+
+const selectSection = (chosen: LibrarySection): void => {
+  if (section.value === chosen) return
+  section.value = chosen
+  logUserAction(`Switched the mission library to the "${chosen}" section`)
+}
+
+const hasTerrain = (mission: SavedMission): boolean =>
+  terrainLibrary.datasets.value.some((dataset) => dataset.missionId === mission.id)
 
 const canSaveCurrent = computed(() =>
   Boolean(
@@ -452,8 +505,14 @@ const openSaveDialog = (): void => {
     name: missionStore.missionName || `Mission ${format(new Date(), 'LLL dd, yyyy HH:mm')}`,
     description: '',
     id: undefined,
+    withTerrain: false,
   }
+  terrainLibrary.refreshMissionCells()
   showSaveDialog.value = true
+}
+
+const onToggleSaveTerrain = (checked: boolean | null): void => {
+  logUserAction(`${checked ? 'Chose' : 'Chose not'} to save the measured terrain along with the mission`)
 }
 
 onMounted(() => {
@@ -471,7 +530,7 @@ const confirmSaveMission = (): void => {
   if (!props.currentMissionSnapshot) return
   const trimmedName = saveForm.value.name.trim()
   if (!trimmedName) return
-  missionStore.saveMissionToLibrary({
+  const saved = missionStore.saveMissionToLibrary({
     name: trimmedName,
     description: saveForm.value.description.trim(),
     mission: props.currentMissionSnapshot,
@@ -482,6 +541,10 @@ const confirmSaveMission = (): void => {
   showSaveDialog.value = false
   logUserAction(`Saved mission "${trimmedName}" to the library`)
   openSnackbar({ variant: 'success', message: 'Mission saved to library.', duration: 2500 })
+  // Kept as its own dataset linked to the mission, so deleting one never takes the other with it.
+  if (saveForm.value.withTerrain) {
+    terrainLibrary.saveMissionTerrain(`${trimmedName} terrain`, saved.id).catch(() => undefined)
+  }
 }
 
 const onLoadClick = (mission: SavedMission): void => {
@@ -670,17 +733,5 @@ const onImportFileSelected = (event: Event): void => {
 .card-action-button:hover {
   background: #000000aa;
   opacity: 1;
-}
-
-.info-pill {
-  display: inline-flex;
-  align-items: center;
-  background: #00000066;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #fff;
-  font-size: 10px;
-  border-radius: 999px;
-  padding: 2px 8px;
 }
 </style>
