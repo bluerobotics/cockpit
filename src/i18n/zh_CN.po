@@ -82,6 +82,11 @@ msgstr ""
 msgid "${ 0 } (measured terrain)"
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+#, javascript-format
+msgid "${ 0 } Pick another one or \"${ 1 }\" in the survey sensor settings."
+msgstr ""
+
 #: src/components/widgets/IFrame.vue
 #, javascript-format
 msgid "${ 0 } Please enter a valid URL."
@@ -566,6 +571,11 @@ msgid ""
 "the space the signal needs."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+#, javascript-format
+msgid "${ 0 }: no mount."
+msgstr ""
+
 #: src/composables/menuRouting.ts
 #, javascript-format
 msgid "'${ 0 }' is only available with pirate mode on."
@@ -643,6 +653,10 @@ msgstr "应用程序启动时间慢 3-4 倍"
 
 #: src/views/ConfigurationMissionView.vue
 msgid "3D model with attitude and altitude (copters and boats)"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "4K Cam Low-Light ROV Camera"
 msgstr ""
 
 #: src/components/MavlinkDumpViewer.vue
@@ -1639,6 +1653,10 @@ msgstr ""
 msgid "Assign as Shift"
 msgstr "分配为Shift"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Assumed depth"
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid ""
 "At each upload, waypoints set \"Relative to terrain\" are sent as heights "
@@ -1925,6 +1943,10 @@ msgid ""
 "undone"
 msgstr "从设备中删除用户时请小心 - 此过程无法撤销"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Beam across the track"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "Beamwidth (°)"
 msgstr "波束宽度（°）"
@@ -2158,6 +2180,14 @@ msgstr "正在校准所有输入……"
 msgid "Camera"
 msgstr "相机"
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Camera Tilt System at its 63° down limit"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Camera Tilt System, tilted straight down"
+msgstr ""
+
 #: src/components/mini-widgets/CameraGimbalControl.vue
 #, javascript-format
 msgid "Camera and gimbal ${ 0 }"
@@ -2172,9 +2202,23 @@ msgstr "摄像头和云台 ${ 0 } 控制"
 msgid "Camera and gimbal controls"
 msgstr "摄像头和云台控制"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Camera focal length"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Camera sensor width"
+msgstr ""
+
 #: src/components/CameraReplacementDialog.vue
 msgid "Camera stream change detected"
 msgstr "检测到相机流变化"
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"Camera used to judge photo survey resolution and overlap, and that marine "
+"surveys can be re-spaced for."
+msgstr ""
 
 #: src/components/widgets/Attitude.vue
 msgid "Camera vertical FOV"
@@ -2385,6 +2429,26 @@ msgstr "居中左侧标签"
 
 #: src/composables/terrain/useTerrainLibrary.ts
 msgid "Centered the map, but could not draw that dataset:"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 FS"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 SS, pair"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 SS, port only"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 SS, starboard only"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Surveyor 240-16 multibeam"
 msgstr ""
 
 #: src/components/mini-widgets/ChangeAltitudeCommander.vue
@@ -3858,9 +3922,19 @@ msgstr "自定义 WebRTC 配置"
 msgid "Custom Widget options"
 msgstr "自定义小部件选项"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+#: src/libs/terrain/survey-sensors.ts
+msgid "Custom camera"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "Custom coverage tile URL"
 msgstr "自定义覆盖范围瓦片 URL"
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+#: src/libs/terrain/survey-sensors.ts
+msgid "Custom echo sounder"
+msgstr ""
 
 #: src/components/mini-widgets/VeryGenericIndicator.vue
 msgid "Custom icons"
@@ -3919,6 +3993,10 @@ msgstr "从设备下载围栏"
 #: src/views/MissionPlanningView.vue
 msgid "DOWNLOAD MISSION FROM VEHICLE"
 msgstr "从设备下载任务"
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "DWE exploreHD camera"
+msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
 msgid "Data"
@@ -4282,6 +4360,12 @@ msgid ""
 "Automatic picks the most detailed one published for each point."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"Depth used where no bathymetry is available under the survey. Leave at 0 to "
+"rely on the bathymetry only."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 #: src/components/InputElementConfig.vue
 #: src/components/TransformingFunctionDialog.vue
@@ -4503,6 +4587,7 @@ msgstr "不要触碰"
 msgid "Done"
 msgstr "完成"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
 #: src/components/widgets/IFrame.vue
 msgid "Down"
 msgstr "向下"
@@ -4767,6 +4852,18 @@ msgid ""
 "Each variable enters the expression with its own type, so a text value "
 "stays text even when it looks like a number"
 msgstr "每个变量都以自身类型参与表达式，因此文本值即使看起来像数字也仍为文本"
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Echo sounder"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Echo sounders"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Echo sounders:"
+msgstr ""
 
 #: src/components/widgets/MiniMap.vue
 msgid "Edge fade"
@@ -5665,6 +5762,10 @@ msgstr "强制转发"
 msgid "Force joystick forwarding?"
 msgstr "强制转发摇杆？"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Forward"
+msgstr ""
+
 #: src/components/VehicleDiscoveryDialog.vue
 #, javascript-format
 msgid "Found ${ 0 } vehicle so far..."
@@ -6395,6 +6496,10 @@ msgid ""
 "so the vehicle follows the seabed more closely."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "How far the camera sees through the water, for boat and submarine surveys."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid ""
@@ -6418,6 +6523,10 @@ msgstr "应用方式"
 #: src/views/ToolsLogsView.vue
 msgid "How variable columns are labeled in CSV and JSON files."
 msgstr "变量列在 CSV 和 JSON 文件中的标注方式。"
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Hull mounting holes on the starboard keel, looking down"
+msgstr ""
 
 #: src/components/poi/PoiManager.vue
 msgid "ID"
@@ -6546,6 +6655,22 @@ msgstr "已忽略的映射"
 msgid "Image URL"
 msgstr "图像 URL"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Image width"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Imaging sensor"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Imaging sensors"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Imaging sensors:"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 #: src/components/terrain/TerrainLibrarySection.vue
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -6651,6 +6776,14 @@ msgstr "内存缓冲区"
 #: src/components/development/MAVLinkMessagesDumper.vue
 msgid "In-memory buffer (live)"
 msgstr "内存缓冲区（实时）"
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Included adjustable bracket, looking down"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Included bracket under the frame, looking down"
+msgstr ""
 
 #: src/components/ConsoleViewer.vue
 msgid "Including lines that match the filter"
@@ -6886,6 +7019,10 @@ msgstr "它超出了默认限制，设备可能会忽略超出限制的值。"
 msgid "It goes past the vehicle default limits."
 msgstr "它超出了设备的默认限制。"
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "It is made for the BlueBoat and the BlueROV2."
+msgstr ""
+
 #: src/stores/video.ts
 msgid ""
 "It looks like some of your video-related widgets (e.g.: video player, mini "
@@ -6922,6 +7059,12 @@ msgstr ""
 "Cockpit 可以优先使用扩展按钮以减少配置冲突。我们建议使用 BlueOS ≥ 1.2.0，以及基于 ArduPilot 的自动驾驶仪固件 ≥ "
 "4.1.2 版本。"
 
+#: src/libs/terrain/survey-sensors.ts
+msgid ""
+"It takes about half a minute per turn, so it maps from a hover rather than "
+"along survey lines."
+msgstr ""
+
 #: src/components/About.vue
 msgid "It was created by Blue Robotics and is entirely open-source."
 msgstr "它由 Blue Robotics 创建，完全开源。"
@@ -6953,6 +7096,12 @@ msgstr "其中点偏离设备默认值，因此摇杆静止时电机也可能转
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "Its terrain reads ${ 0 } m against Cockpit's."
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid ""
+"Its thin beam builds an image as the ROV turns, so it covers no strip along "
+"a survey line."
 msgstr ""
 
 #: src/components/configuration/HttpRequestActionConfig.vue
@@ -7473,6 +7622,10 @@ msgstr "正在查找应用程序的新版本..."
 msgid "Looking for the tide stations near the mission..."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Looks"
+msgstr ""
+
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Loop"
 msgstr "循环播放"
@@ -7485,6 +7638,10 @@ msgstr "低"
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Low threshold (V)"
 msgstr "低阈值（V）"
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Low-Light HD USB Camera"
+msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid ""
@@ -7640,6 +7797,10 @@ msgstr "映射“${ 0 }”已移至忽略。"
 #, javascript-format
 msgid "Mapping \"${ 0 }\" restored."
 msgstr "映射“${ 0 }”已恢复。"
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "MarineSitu C3 stereo camera"
+msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "Mass added to the vehicle besides batteries and hull."
@@ -8809,6 +8970,7 @@ msgstr "非动态值。"
 
 #: src/components/VideoLibraryModal.vue
 #: src/components/VoiceRecordingsLibrary.vue
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 #: src/libs/terrain/bathymetry.ts
@@ -8925,6 +9087,20 @@ msgstr "之前已提供且未连接："
 #: src/views/ConfigurationVideoView.vue
 msgid "Offline"
 msgstr "离线"
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Offset to starboard"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Omniscan 450 FS bracket, looking forward and tilted 20° down"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid ""
+"Omniscan 450 SS Integration Kit, on the outside of the hull and tilted 20° "
+"down"
+msgstr ""
 
 #: src/components/geofence/GeoFenceParametersPanel.vue
 msgid "On"
@@ -9390,6 +9566,10 @@ msgstr "性能警告"
 msgid "Persist variable between boots"
 msgstr "变量在重启后保持"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Photo side overlap"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "Pick a point on the map to fetch coverage"
 msgstr "在地图上选择一点以获取覆盖数据"
@@ -9416,6 +9596,18 @@ msgstr "图片下载成功。"
 msgid "Pier"
 msgstr "码头"
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Ping Integration Kit, inside the starboard hull, looking down"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Ping2 echosounder"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Ping360 scanning sonar"
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 msgid "Pirate mode"
 msgstr "海盗模式"
@@ -9423,6 +9615,10 @@ msgstr "海盗模式"
 #: src/components/widgets/Attitude.vue
 #: src/components/widgets/VirtualHorizon.vue
 msgid "Pitch source"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Pivoting bracket on the bottom panel, looking down"
 msgstr ""
 
 #: src/components/poi/PoiManager.vue
@@ -10513,6 +10709,10 @@ msgstr ""
 msgid "Roll source"
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Roof Rack with the included bracket, looking forward and tilted 5° down"
+msgstr ""
+
 #: src/views/MissionPlanningView.vue
 msgid "Rotate"
 msgstr "旋转"
@@ -10968,6 +11168,10 @@ msgstr ""
 msgid "Sensitivity"
 msgstr "灵敏度"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Sensor range"
+msgstr ""
+
 #: src/components/development/MAVLinkInspectorItem.vue
 #, javascript-format
 msgid "Sent at: ${ 0 }"
@@ -11346,6 +11550,10 @@ msgid ""
 "terrain in the way."
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Side of the frame, scanning around the ROV"
+msgstr ""
+
 #: src/views/ConfigurationCloudView.vue
 msgid "Sign in"
 msgstr "登录"
@@ -11452,6 +11660,20 @@ msgid ""
 "Something went wrong while assembling the recorded video. Recording is "
 "still running; the saved file may be incomplete."
 msgstr "组装录制视频时出现问题。录制仍在进行；保存的文件可能不完整。"
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"Sonar that marine surveys can be re-spaced for, fitted with the bracket "
+"sold for the BlueBoat or the BlueROV2."
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Sonoptix ECHO, 400 kHz"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Sonoptix ECHO, 700 kHz"
+msgstr ""
 
 #: src/components/CameraReplacementDialog.vue
 #: src/components/VideoPlayerStatsForNerds.vue
@@ -11831,9 +12053,27 @@ msgstr "调查区域已删除。"
 msgid "Survey format"
 msgstr "测绘格式"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"Survey lines are spaced for the echo sounder described below, on any "
+"vehicle."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Survey sensors"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Surveyor Integration Kit, on the starboard hull, looking down"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Surveys"
 msgstr "调查区域"
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Swath overlap"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "Switch to Flight Mode"
@@ -12102,6 +12342,12 @@ msgstr ""
 msgid "The bottom may come close to the surface here. Check a nautical chart."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"The camera described below, on any vehicle. Underwater, it is taken to look "
+"through a flat port."
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid ""
 "The coastline map shows water here, but the bottom may come close to the "
@@ -12255,6 +12501,12 @@ msgstr "处理后的视频将出现在\"视频\"标签页中"
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "The radio link stays clear of the terrain along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"The range set on the sonar, capped at the sonar's maximum. Picking a sonar "
+"sets it to its rated range."
 msgstr ""
 
 #: src/components/joysticks/AxisRangeWarningDialog.vue
@@ -12538,6 +12790,11 @@ msgid ""
 "ignore each suggestion from your BlueOS extensions. Otherwise, this dialog "
 "will open automatically again the next time you start Cockpit."
 msgstr "仍有扩展功能待您决策。请接受或忽略来自 BlueOS 扩展的每条建议，否则下次启动 Cockpit 时此对话框将再次自动打开。"
+
+#: src/libs/terrain/survey-sensors.ts
+#, javascript-format
+msgid "There is no ${ 0 } mount for it."
+msgstr ""
 
 #: src/components/geofence/GeoFenceTooLargeDialog.vue
 #, javascript-format
@@ -12891,6 +13148,10 @@ msgstr ""
 msgid "Tilezen terrain"
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Tilt below the horizon"
+msgstr ""
+
 #: src/components/widgets/Plotter.vue
 msgid "Time Axis"
 msgstr "时间轴"
@@ -12953,6 +13214,10 @@ msgstr "放置到主视图区域"
 msgid "To be placed on the top and bottom bars"
 msgstr "放置到顶部和底部栏"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "To both sides"
+msgstr ""
+
 #: src/components/joysticks/JoystickCalibration.vue
 msgid ""
 "To calibrate the deadband, click and drag the deadband regions on the "
@@ -12971,6 +13236,10 @@ msgid ""
 "information with the Blue Robotics team."
 msgstr "为了帮助我们了解 Cockpit 的使用情况并优化开发方向，应用程序会向 Blue Robotics 团队共享少量匿名信息。"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "To port"
+msgstr ""
+
 #: src/stores/video.ts
 msgid ""
 "To prevent issues and achieve an optimal streaming experience, please open "
@@ -12987,6 +13256,10 @@ msgid ""
 "To solve this problem, please open the video settings and clear the "
 "selected IPs. Then, select an available IP from the list."
 msgstr "要解决此问题，请打开视频设置并清除已选择的 IP。然后从列表中选择一个可用的 IP。"
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "To starboard"
+msgstr ""
 
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Toggle Interval (ms)"
@@ -13866,6 +14139,10 @@ msgstr "顶点"
 msgid "Vertical Range"
 msgstr "垂直范围"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Vertical beam"
+msgstr ""
+
 #: src/components/mini-widgets/VeryGenericIndicator.vue
 msgid "Very Generic Indicator"
 msgstr "通用指示器"
@@ -14197,6 +14474,10 @@ msgstr ""
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Water under the keel"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Water visibility"
 msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
