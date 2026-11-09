@@ -2289,6 +2289,11 @@ msgstr "Fechar a criação de caminho simples"
 msgid "Close survey creation"
 msgstr "Fechar a criação de levantamento"
 
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Close the ${ 0 }"
+msgstr ""
+
 #: src/components/widgets/MiniMap.vue
 msgid "Close the MiniMap settings"
 msgstr "Fechar as configurações do minimapa"
@@ -7067,6 +7072,10 @@ msgstr "Missão baixada com sucesso!"
 msgid "Mission estimates"
 msgstr "Estimativas da missão"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission estimates settings"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Mission exported."
 msgstr "Missão exportada."
@@ -7119,7 +7128,6 @@ msgid "Mission saved to library."
 msgstr "Missão salva na biblioteca."
 
 #: src/components/MissionChecklist.vue
-#: src/components/mission-planning/MissionEstimates.vue
 msgid "Mission settings"
 msgstr "Configurações da missão"
 
@@ -8054,6 +8062,11 @@ msgstr "Abrir biblioteca de capturas"
 #: src/components/VideoLibraryModal.vue
 msgid "Open snapshots folder"
 msgstr "Abrir pasta de capturas"
+
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Open the ${ 0 }"
+msgstr ""
 
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 msgid ""
@@ -12825,12 +12838,6 @@ msgstr ""
 "${ 1 } pontos e não afeta o desempenho nem a confiabilidade do veículo. "
 "Clique em \"Expandir armazenamento\" para alterar o"
 
-#: src/components/mission-planning/MissionEstimates.vue
-msgid "You can show the mission estimates again in the mission settings."
-msgstr ""
-"Você pode mostrar as estimativas da missão novamente nas configurações de "
-"missão."
-
 #: src/components/geofence/GeoFenceTooLargeDialog.vue
 #, javascript-format
 msgid "You can simplify the fence's geometry so it fits in ${ 0 } points."
@@ -13279,6 +13286,10 @@ msgstr "máx.:"
 msgid "min:"
 msgstr "mín.:"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "mission estimates panel"
+msgstr ""
+
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "no interfaces"
 msgstr "nenhuma interface"
@@ -13560,3 +13571,8 @@ msgstr ""
 
 #~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
 #~ msgstr "URI de um MAVLink2REST, ou sitl://ardusub para o simulador"
+
+#~ msgid "You can show the mission estimates again in the mission settings."
+#~ msgstr ""
+#~ "Você pode mostrar as estimativas da missão novamente nas configurações de "
+#~ "missão."
