@@ -37,14 +37,18 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   resolveTerrainOnUpload: false,
   terrainFollowToleranceM: 5,
   aimRoiAtGround: false,
+  radioFrequencyMhz: 2400,
+  visualObservers: [],
+  visualRangeM: 500,
+  cloudBaseM: 0,
 }
 
 export const useTerrainStore = defineStore('terrain', () => {
   const { openSnackbar } = useSnackbar()
   const vehicleStore = useMainVehicleStore()
 
-  // Shared with every computer flying the vehicle: the model and thresholds describe the operating area and
-  // the vehicle, nothing that belongs to one machine.
+  // Shared with every computer flying the vehicle: the model, thresholds and observers describe the
+  // operating area and the vehicle, nothing that belongs to one machine.
   const settings = useBlueOsStorage<TerrainSettings>('cockpit-terrain-settings-v1', DEFAULT_TERRAIN_SETTINGS)
 
   /** Terrain source chosen, the default for an id this version does not know, as synced from another Cockpit. */

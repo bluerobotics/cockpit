@@ -1,3 +1,5 @@
+import type { WaypointCoordinates } from '@/types/mission'
+
 /**
  * Elevation models Cockpit can read the ground from.
  */
@@ -22,6 +24,20 @@ export type BathymetrySourceId =
  * How a sample is read from the four model points surrounding it.
  */
 export type TerrainSampleMode = 'nearest' | 'bilinear' | 'highest'
+
+/**
+ * A person or antenna the mission is watched or flown from.
+ */
+export type TerrainObserver = {
+  /**
+   * Position as [latitude, longitude].
+   */
+  position: WaypointCoordinates
+  /**
+   * Eye or antenna height above the ground, in meters.
+   */
+  heightAboveGroundM: number
+}
 
 /**
  * Terrain database and terrain-aware planning settings.
@@ -79,4 +95,20 @@ export type TerrainSettings = {
    * Whether region-of-interest commands left at zero altitude are aimed at the ground at upload.
    */
   aimRoiAtGround: boolean
+  /**
+   * Radio link frequency, in megahertz, for the line of sight check.
+   */
+  radioFrequencyMhz: number
+  /**
+   * People watching the vehicle, for the visual line of sight surface.
+   */
+  visualObservers: TerrainObserver[]
+  /**
+   * Farthest an observer is expected to see the vehicle, in meters.
+   */
+  visualRangeM: number
+  /**
+   * Cloud base above the observers, in meters, above which the vehicle is out of sight; 0 for clear sky.
+   */
+  cloudBaseM: number
 }
