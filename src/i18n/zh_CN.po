@@ -60,6 +60,11 @@ msgid ""
 "Videos tab."
 msgstr "已成功处理 ${ 0 } 个 ZIP 文件！视频现在可在“视频”标签页中查看。"
 
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "${ 0 } along"
+msgstr ""
+
 #: src/components/recipes/ReadRecipeDialog.vue
 #, javascript-format
 msgid "${ 0 } already exist here and will be replaced."
@@ -3094,6 +3099,10 @@ msgstr "无法下载全部语音。请检查网络连接后重试。"
 msgid "Could not download the voice recordings. ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Could not download the water map. Try again in a minute."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Could not expand fence storage"
 msgstr "无法扩展围栏存储"
@@ -4213,6 +4222,14 @@ msgstr "已下载 ${ 0 }"
 #, javascript-format
 msgid "Downloaded ${ 0 } chunks in ${ 1 } archive(s)"
 msgstr "已在 ${ 1 } 个压缩包中下载 ${ 0 } 个数据块"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloaded the water map along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloading"
+msgstr ""
 
 #: src/composables/videoChunkManager.ts
 #, javascript-format
@@ -8587,6 +8604,10 @@ msgstr "发送消息："
 msgid "Outline color"
 msgstr "轮廓颜色"
 
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Over water"
+msgstr ""
+
 #: src/views/ConfigurationLogsView.vue
 msgid "Overlay Options"
 msgstr "叠加选项"
@@ -8934,6 +8955,10 @@ msgstr ""
 msgid ""
 "Possible shallow water from ${ 0 }: the map shows water where the terrain "
 "model reads land. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Possible shallow water, depth unknown"
 msgstr ""
 
 #: src/components/MissionChecklist.vue
@@ -9734,6 +9759,10 @@ msgstr "已从 ${ 1 } 恢复 ${ 0 } 个被忽略的摇杆映射。"
 #: src/components/CameraGimbalControlButtons.vue
 msgid "Retract gimbal"
 msgstr "收起云台"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Retry"
+msgstr ""
 
 #: src/components/widgets/IFrame.vue
 msgid "Retrying..."
@@ -11575,6 +11604,12 @@ msgid ""
 "The video recorded until then was kept and is available in the Video "
 "Library."
 msgstr "此前录制的视频已保留，可在视频库中查看。"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"The water map could not be downloaded for part of the mission, so water is "
+"not marked on the chart there."
+msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
