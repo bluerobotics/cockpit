@@ -56,7 +56,7 @@
 
         <div class="flex items-center gap-x-1">
           <button
-            v-for="tab in TABS"
+            v-for="tab in visibleTabs"
             :key="tab.id"
             type="button"
             class="px-2 py-[2px] rounded-md text-xs transition-colors"
@@ -158,6 +158,7 @@
             </div>
           </div>
           <TerrainQuickActionsPanel v-else-if="currentTab === 'actions'" />
+          <TerrainTidePanel v-else-if="currentTab === 'tide'" />
           <TerrainSightPanel v-else-if="currentTab === 'sight'" />
           <TerrainVehiclePanel v-else-if="currentTab === 'vehicle'" />
         </div>
@@ -273,6 +274,7 @@ import TerrainProfileChart from '@/components/terrain/TerrainProfileChart.vue'
 import TerrainQuickActionsPanel from '@/components/terrain/TerrainQuickActionsPanel.vue'
 import TerrainSafeAltitude from '@/components/terrain/TerrainSafeAltitude.vue'
 import TerrainSightPanel from '@/components/terrain/TerrainSightPanel.vue'
+import TerrainTidePanel from '@/components/terrain/TerrainTidePanel.vue'
 import TerrainVehiclePanel from '@/components/terrain/TerrainVehiclePanel.vue'
 import TerrainWarningTriangle from '@/components/terrain/TerrainWarningTriangle.vue'
 import { goToMenuPage } from '@/composables/menuRouting'
@@ -294,7 +296,7 @@ import { useTerrainStore } from '@/stores/terrain'
 import { SubMenuComponentName } from '@/types/general'
 import type { BathymetrySourceId } from '@/types/terrain'
 
-type TerrainTab = 'findings' | 'actions' | 'sight' | 'vehicle'
+type TerrainTab = 'findings' | 'actions' | 'tide' | 'sight' | 'vehicle'
 
 const emit = defineEmits<{
   (event: 'select-waypoint', waypointIndex: number): void
@@ -333,10 +335,11 @@ const TABS: {
    */
   label: string
 }[] = [
-  { id: 'findings', label: 'Findings' },
-  { id: 'actions', label: 'Quick actions' },
-  { id: 'sight', label: 'Link and sight' },
-  { id: 'vehicle', label: 'Vehicle' },
+  { id: 'findings', label: t`Findings` },
+  { id: 'actions', label: t`Quick actions` },
+  { id: 'tide', label: t`Tide` },
+  { id: 'sight', label: t`Link and sight` },
+  { id: 'vehicle', label: t`Vehicle` },
 ]
 
 const marine = computed(() => ['surface', 'underwater'].includes(dock.terrain.vehicleClass.value))
@@ -382,6 +385,8 @@ const onOpenMissionSettings = (): void => {
   logUserAction('Opened the mission settings from the terrain panel')
   goToMenuPage(SubMenuComponentName.SettingsMission)
 }
+
+const visibleTabs = computed(() => TABS.filter((tab) => tab.id !== 'tide' || dock.tide.used.value))
 
 const hoveredFindingKey = ref<string | null>(null)
 // Touch has no hover, so a tap pins the highlight until the next tap on the same card or stretch.
@@ -434,7 +439,7 @@ const coastlineM = computed(() =>
 
 // Loaded predictions set the water level for the time of day, so the range is only outlined without them.
 const tideOutlineM = computed(() => {
-  return marine.value ? terrainStore.settings.tideRangeM : 0
+  return marine.value && terrainStore.tidePredictions.length === 0 ? terrainStore.settings.tideRangeM : 0
 })
 
 // Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.

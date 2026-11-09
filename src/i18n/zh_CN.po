@@ -197,6 +197,11 @@ msgstr "该配置方案中有 ${ 0 } 项被排除，因此它可能无法按制�
 msgid "${ 0 } itself"
 msgstr ""
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "${ 0 } m under the keel"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
 msgid "${ 0 } m under the keel from ${ 1 }."
@@ -1752,6 +1757,16 @@ msgstr "方位角（°）"
 msgid "Before"
 msgstr "之前"
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }: ${ 1 }"
+msgstr ""
+
 #: src/components/poi/PoiManager.vue
 msgid "Bike"
 msgstr "自行车"
@@ -2175,6 +2190,14 @@ msgstr "改变高度"
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Change color by voltage"
 msgstr "按电压改变颜色"
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change in the mission settings"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change the draft and minimum under the keel in the mission settings"
+msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
 msgid "Changes are applied when you click Apply or press Cmd/Ctrl + Enter/S"
@@ -3192,6 +3215,11 @@ msgstr "无法加载“${ 0 }”地图：${ 1 }"
 msgid "Could not load the fence plan from this file."
 msgstr "无法从此文件加载围栏计划。"
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not look up the tide stations: ${ 0 }"
+msgstr ""
+
 #: src/composables/usePwaInstallation.ts
 msgid "Could not open app installation. Try installing from your browser menu."
 msgstr "无法打开应用安装。请尝试从浏览器菜单进行安装。"
@@ -3234,6 +3262,11 @@ msgstr ""
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Could not read the terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not read the tide: ${ 0 }"
 msgstr ""
 
 #: src/components/VoiceRecordingsLibrary.vue
@@ -4007,6 +4040,12 @@ msgstr "开发配置"
 msgid "Device Status"
 msgstr "设备状态"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Difference between high and low tide. While no tide predictions are loaded, "
+"the profile outlines this band around the water level."
+msgstr ""
+
 #: src/components/mission-planning/ScanDirectionDial.vue
 #: src/views/ConfigurationJoystickView.vue
 msgid "Direction"
@@ -4281,6 +4320,10 @@ msgid ""
 "Downloads four higher-quality neural voices: Amy and Lessac (female), Ryan "
 "and Joe (male)."
 msgstr "下载四个高质量神经语音：Amy 和 Lessac（女声），Ryan 和 Joe（男声）。"
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Draft and minimum under the keel"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "Draft mission loaded."
@@ -4782,6 +4825,10 @@ msgstr "扩展存储"
 msgid "Expand the planning panel"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Expected tide range"
+msgstr ""
+
 #: src/components/joysticks/JoystickCalibration.vue
 msgid "Exponential Calibration"
 msgstr "指数校准"
@@ -5176,6 +5223,10 @@ msgstr "正在完成视频处理..."
 #: src/components/BaseStationConfigPanel.vue
 msgid "Find a connected GNSS receiver and let it set the base station position"
 msgstr "查找已连接的 GNSS 接收器，并用它设置基站位置"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Findings"
+msgstr ""
 
 #: src/components/geofence/GeoFenceDrawingActionButtons.vue
 msgid "Finish polygon fence"
@@ -5700,6 +5751,12 @@ msgstr "热力图强度"
 msgid "Height above home"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Height of the water above the terrain model sea level, for lakes, rivers or "
+"the tide at mission time. Loaded tide predictions are added to it."
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Height over the ground"
 msgstr ""
@@ -5805,6 +5862,7 @@ msgid "Hide waypoint numbers when zoomed out"
 msgstr "缩小时隐藏航点编号"
 
 #: src/components/BaseStationConfigPanel.vue
+#: src/components/terrain/TerrainTideChart.vue
 msgid "High"
 msgstr "高"
 
@@ -6847,6 +6905,10 @@ msgstr "线条粗细"
 msgid "Lines angle (degrees)"
 msgstr "线角度 (度)"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Link and sight"
+msgstr ""
+
 #: src/views/ConfigurationActionsView.vue
 msgid "Linked Variables"
 msgstr "已链接变量"
@@ -7012,11 +7074,16 @@ msgstr ""
 msgid "Looking for new versions of the application..."
 msgstr "正在查找应用程序的新版本..."
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Looking for the tide stations near the mission..."
+msgstr ""
+
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Loop"
 msgstr "循环播放"
 
 #: src/components/BaseStationConfigPanel.vue
+#: src/components/terrain/TerrainTideChart.vue
 msgid "Low"
 msgstr "低"
 
@@ -7474,6 +7541,10 @@ msgstr "任务控制面板"
 msgid "Mission control panel added to this view"
 msgstr "任务控制面板已添加到此视图"
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Mission date"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Mission deleted from library."
 msgstr "任务已从库中删除。"
@@ -7554,6 +7625,11 @@ msgstr "任务已保存到库。"
 #: src/components/MissionChecklist.vue
 msgid "Mission settings"
 msgstr "任务设置"
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Mission start on ${ 0 }"
+msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Mission thumbnail"
@@ -7750,6 +7826,15 @@ msgstr "使用 Cmd/Ctrl + Option/Alt + ↑/↓ 在编辑器之间导航"
 #: src/components/poi/PoiManager.vue
 msgid "Navigation"
 msgstr "导航"
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Nearest to the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Nearest: ${ 0 }"
+msgstr ""
 
 #: src/components/recipes/RecipeDialog.vue
 #, javascript-format
@@ -8163,6 +8248,13 @@ msgstr "未选择要删除的调查区域。"
 #: src/views/MissionPlanningView.vue
 msgid "No survey selected."
 msgstr "未选择调查区域。"
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"No tide station within ${ 0 } km of the mission. The water level is the "
+"offset set in the terrain settings."
+msgstr ""
 
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "No time trigger"
@@ -8932,6 +9024,10 @@ msgstr "绘制上次录制"
 msgid "Plotter config"
 msgstr "绘图器配置"
 
+#: src/components/terrain/TerrainTideChart.vue
+msgid "Point at the chart to read a start time"
+msgstr ""
+
 #: src/components/CameraGimbalControlButtons.vue
 msgid "Point gimbal at home"
 msgstr "将云台指向起始位置"
@@ -9015,6 +9111,20 @@ msgstr "解锁前检查清单已禁用。您可以在任务设置中重新启用
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Precision"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }, ${ 1 } km from the mission. Wind and pressure can "
+"move the real water by tens of centimeters."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }. Wind and pressure can move the real water by tens "
+"of centimeters."
 msgstr ""
 
 #: src/components/CameraReplacementDialog.vue
@@ -9143,6 +9253,10 @@ msgid ""
 "Puts every waypoint, surveys included, at the same height above home, so "
 "the vehicle flies level. Ground\n"
 "that rises above home comes closer, so check the findings afterwards."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Quick actions"
 msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
@@ -9335,6 +9449,10 @@ msgid ""
 "standalone. Browsers cannot access serial devices outside of a secure "
 "context, so this feature is disabled here."
 msgstr "读取外部串口 GNSS 接收器仅在 Cockpit 独立版中可用。浏览器无法在安全上下文之外访问串口设备，因此此处已禁用该功能。"
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Reading the tide..."
+msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Reading..."
@@ -9813,6 +9931,7 @@ msgid "Retract gimbal"
 msgstr "收起云台"
 
 #: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainTidePanel.vue
 msgid "Retry"
 msgstr ""
 
@@ -10803,6 +10922,16 @@ msgstr "星标"
 msgid "Start"
 msgstr "开始"
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }: ${ 1 }"
+msgstr ""
+
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Start / resume mission"
@@ -11595,6 +11724,23 @@ msgstr ""
 msgid "The terrain under the mission is checked once the mission has waypoints."
 msgstr ""
 
+#: src/libs/terrain/water-level.ts
+#, javascript-format
+msgid "The tide service answered HTTP ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no predictions."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no station list."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no usable predictions."
+msgstr ""
+
 #: src/components/widgets/MissionControlPanel.vue
 #, javascript-format
 msgid ""
@@ -12008,6 +12154,23 @@ msgstr "这会将当前任务替换为最后上传到设备的任务。是否继
 
 #: src/libs/terrain/shallows-osm.ts
 msgid "Tidal flat"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Tide"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide data credit"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Tide over the day: ${ 0 }. ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide station"
 msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
@@ -12802,6 +12965,7 @@ msgstr "变量："
 #: src/components/configuration/CockpitSettingsManager.vue
 #: src/components/configuration/FlightModeNamesConfig.vue
 #: src/components/poi/PoiMapArrows.vue
+#: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainProfileChart.vue
 #: src/components/widgets/MiniMap.vue
 #: src/views/MissionPlanningView.vue
@@ -13320,6 +13484,14 @@ msgstr ""
 msgid "Water"
 msgstr "水域"
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Water level now"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Water level offset"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Water under the keel"
@@ -13761,6 +13933,11 @@ msgstr "管理员模式"
 msgid "after your existing view(s)"
 msgstr "在现有视图之后"
 
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "aground by ${ 0 } m"
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 msgid ""
 "allows Cockpit to expose advanced features, like setting the frequency of "
@@ -13876,6 +14053,10 @@ msgstr "当前设备"
 msgid "delete"
 msgstr "删除"
 
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "depth unknown"
+msgstr ""
+
 #: src/libs/sensors/gnss.ts
 msgid "disconnected"
 msgstr "已断开"
@@ -13909,6 +14090,11 @@ msgstr "来自 ${ 0 }"
 msgid ""
 "height above the observers where the vehicle disappears into clouds. 0 "
 "means a clear sky."
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "high tide of ${ 0 } at ${ 1 }"
 msgstr ""
 
 #: src/libs/terrain/mission-profile.ts
@@ -13948,6 +14134,11 @@ msgid ""
 "does"
 msgstr ""
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "low tide of ${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
 "marker to fine-tune the location and edit the altitude (relative to home) "
@@ -13969,6 +14160,10 @@ msgstr ""
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "no interfaces"
 msgstr "无接口"
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "no turning point"
+msgstr ""
 
 #: src/libs/monaco-manager.ts
 msgid "no value yet"
@@ -14171,6 +14366,10 @@ msgstr "未分配"
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "under ${ 0 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "unknown"
 msgstr ""
 
 #: src/components/InputElementConfig.vue
