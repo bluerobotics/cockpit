@@ -270,6 +270,19 @@ const fetchTileImage = async (sourceId: TerrainTileSourceId, tile: TerrainTile):
   }
 }
 
+/**
+ * Fetches a tile and keeps it in the persistent cache, without decoding it, for offline use.
+ * @param {TerrainTileSourceId} sourceId Source of the tile.
+ * @param {TerrainTile} tile Tile to keep.
+ * @returns {Promise<void>}
+ */
+export const prefetchTerrainTile = async (sourceId: TerrainTileSourceId, tile: TerrainTile): Promise<void> => {
+  const key = terrainSourceTileKey(sourceId, tile, config.customUrlTemplate)
+  if (await readStoredTerrainTile(key)) return
+  // Read without the unreachable backoff, so one slow tile does not fail the rest of the download.
+  await storeTerrainTile(key, await readTileImage(sourceId, tile))
+}
+
 const loadTile = (sourceId: TerrainTileSourceId, tile: TerrainTile): Promise<Float32Array> => {
   const key = terrainSourceTileKey(sourceId, tile, config.customUrlTemplate)
   const cached = tileCache.get(key)
