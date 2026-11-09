@@ -5198,7 +5198,7 @@ const vehicleMarker = useMapVehicleMarker(planningMap, {
   modelUrl: () => vehicleModelUrl(vehicleStore.vehicleType),
   isArmed: () => vehicleStore.isArmed,
   isAerial: () => isAerialVehicle(vehicleStore.vehicleType),
-  tooltipClassName: 'waypoint-tooltip',
+  tooltipClassName: 'vehicle-tooltip',
 })
 
 const homeMarker = shallowRef<L.Marker>()
