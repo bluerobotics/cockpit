@@ -149,6 +149,11 @@ msgstr[1] "${ 0 } ainda não informaram uma posição e ficaram fora do mapa."
 msgid "${ 0 } in ${ 1 }"
 msgstr "${ 0 } em ${ 1 }"
 
+#: src/components/InputField.vue
+#, javascript-format
+msgid "${ 0 } information"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 #, javascript-format
 msgid "${ 0 } item total"
@@ -11592,6 +11597,10 @@ msgstr "Tutorial concluído"
 #: src/views/ToolsDataLakeView.vue
 msgid "Type"
 msgstr "Tipo"
+
+#: src/components/RotaryEncoderDial.vue
+msgid "Type a value"
+msgstr ""
 
 #: src/components/MissionChecklist.vue
 msgid "Type an item and press Enter"
