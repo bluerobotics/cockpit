@@ -5392,6 +5392,7 @@ msgstr "已忽略的映射"
 msgid "Image URL"
 msgstr "图像 URL"
 
+#: src/components/MissionLibraryModal.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsImportModal.vue
 #: src/components/widgets/DoItYourself.vue
 msgid "Import"
@@ -5420,10 +5421,6 @@ msgstr "导入配置"
 #: src/views/ConfigurationJoystickView.vue
 msgid "Import default mapping for this vehicle"
 msgstr "导入此设备的默认映射"
-
-#: src/components/MissionLibraryModal.vue
-msgid "Import file"
-msgstr "导入文件"
 
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickImportModal.vue
 msgid "Import selected"
@@ -7352,6 +7349,10 @@ msgstr "此设备未使用"
 #: src/components/configuration/HttpRequestActionConfig.vue
 msgid "Note:"
 msgstr "注意："
+
+#: src/components/MissionLibraryModal.vue
+msgid "Nothing is planned on the map yet"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "Nothing to undo."
@@ -11893,6 +11894,10 @@ msgstr "窗口材质"
 msgid "With \"Run script in its own scope\" on, the script gets"
 msgstr "开启“在自身作用域中运行脚本”后，脚本会获得"
 
+#: src/components/MissionLibraryModal.vue
+msgid "Write the mission on the planner to a file"
+msgstr ""
+
 #: src/components/UpdateNotification.vue
 msgid "You are running the latest version of the application."
 msgstr "您正在运行最新版本的应用程序。"
@@ -12599,3 +12604,6 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "You can show the mission estimates again in the mission settings."
 #~ msgstr "您可以在任务设置中再次显示任务估算。"
+
+#~ msgid "Import file"
+#~ msgstr "导入文件"
