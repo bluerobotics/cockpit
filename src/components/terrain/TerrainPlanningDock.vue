@@ -29,6 +29,7 @@
             :bands="chartBands"
             :markers-m="dock.ghostDistanceM.value === null ? [] : [dock.ghostDistanceM.value]"
             :coastline-m="coastlineM"
+            :over-water="dock.water.overWater.value"
             :height-px="chartHeightPx"
             @hover="dock.hover.value = $event"
             @select-waypoint="onSelectWaypoint"
@@ -111,6 +112,21 @@
               <LoadingText v-if="dock.loadingCoastline.value">{{ t`Loading data` }}</LoadingText>
               <v-btn v-else variant="flat" size="x-small" class="bg-[#FFFFFF22]" @click="dock.loadMissionCoastline">
                 {{ t`Load coastline` }}
+              </v-btn>
+            </div>
+            <div
+              v-if="dock.water.failed.value"
+              class="flex items-center gap-x-2 text-xs rounded-md px-2.5 py-[2px] bg-[#FFFFFF11]"
+            >
+              <v-icon icon="mdi-waves" size="14" color="#81D4FA" />
+              <span class="grow">
+                {{
+                  t`The water map could not be downloaded for part of the mission, so water is not marked on the chart there.`
+                }}
+              </span>
+              <LoadingText v-if="dock.water.loading.value">{{ t`Downloading` }}</LoadingText>
+              <v-btn v-else variant="flat" size="x-small" class="bg-[#FFFFFF22]" @click="onRetryWater">
+                {{ t`Retry` }}
               </v-btn>
             </div>
             <p v-if="dock.findings.value.length === 0 && analysis" class="text-xs opacity-70">
@@ -516,6 +532,16 @@ const onStoreOffline = (): void => {
 const onCancelOffline = (): void => {
   logUserAction('Stopped storing terrain for offline use')
   terrainStore.cancelDownload()
+}
+
+const onRetryWater = async (): Promise<void> => {
+  logUserAction('Retried downloading the water map along the mission')
+  await dock.water.retry()
+  openSnackbar(
+    dock.water.failed.value
+      ? { variant: 'error', message: t`Could not download the water map. Try again in a minute.`, duration: 5000 }
+      : { variant: 'success', message: t`Downloaded the water map along the mission.`, duration: 3000 }
+  )
 }
 
 const onCardPointer = (event: PointerEvent, key: string | null): void => {

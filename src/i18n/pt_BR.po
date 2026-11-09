@@ -16,6 +16,11 @@ msgstr ""
 msgid "${ 0 } (Cockpit Standalone)"
 msgstr ""
 
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "${ 0 } along"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } camera targets aimed at the ground"
@@ -478,6 +483,10 @@ msgstr ""
 msgid "Could not compute the line of sight: ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Could not download the water map. Try again in a minute."
+msgstr ""
+
 #: src/composables/terrain/useSafeAltitude.ts
 #, javascript-format
 msgid "Could not keep a safe height: ${ 0 }"
@@ -551,6 +560,14 @@ msgstr "Desarmar o veículo e continuar"
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Distance between turns"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloaded the water map along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloading"
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -1117,6 +1134,10 @@ msgstr ""
 msgid "Open the mission settings"
 msgstr ""
 
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Over water"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid ""
 "Part of the mission is outside the loaded coastline map, so shallow water "
@@ -1170,6 +1191,10 @@ msgstr ""
 msgid ""
 "Possible shallow water from ${ 0 }: the map shows water where the terrain "
 "model reads land. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Possible shallow water, depth unknown"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1281,6 +1306,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainSafeAltitude.vue
 msgid "Restore"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Retry"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1624,6 +1653,12 @@ msgstr ""
 msgid "The vehicle waits ${ 0 } s at ${ 1 } waypoint."
 msgid_plural "The vehicle waits ${ 0 } s at ${ 1 } waypoints."
 msgstr[0] ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"The water map could not be downloaded for part of the mission, so water is "
+"not marked on the chart there."
+msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Tile address"

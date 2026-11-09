@@ -37,6 +37,10 @@ export interface ProfileChartGeometry {
    */
   vehicleLine: string
   /**
+   * Water over the stretches marked as over water, its seabed sloping down from each shore; empty where none are.
+   */
+  waterBodyArea: string
+  /**
    * Lowest height drawn, meters above sea level.
    */
   minM: number
@@ -119,6 +123,10 @@ export interface ProfileChartOptions {
    */
   shallows?: ProfileChartShallows[]
   /**
+   * Whether each station is over water, null where unknown.
+   */
+  overWater?: (boolean | null)[]
+  /**
    * Height range to draw, instead of the one the profile spans.
    */
   range?: [number, number]
@@ -136,6 +144,10 @@ const LABEL_ROW_SHARE = 0.15
 // A vessel's chart is about the water under it, so land is cut off this far above the highest tide.
 const MARINE_HEADROOM_M = 3
 const LAND_CHART_MAX_DEPTH_M = 5
+// Water is raised to this share of the chart height where its shores allow, so it shows on a chart spanning mountains.
+const WATER_SURFACE_SHARE = 0.06
+// Share of the chart width a shore takes to slope down to the deepest water drawn.
+const WATER_SHORE_SHARE = 0.02
 
 const heightRange = (values: number[], floorM?: number): [number, number] => {
   const known = values.filter(Number.isFinite)
@@ -224,6 +236,66 @@ const waterLines = (
   }
 }
 
+/**
+ * The water a chart draws over the stretches marked as over water.
+ */
+interface WaterBodies {
+  /**
+   * Highest the seabed is drawn at each station over water, sloping down from each shore.
+   */
+  seabedCaps: Map<TerrainProfileSample, number>
+  /**
+   * The water, between a flat surface and the seabed.
+   */
+  area: string
+}
+
+// The model is coarse along shores and often reads land over mapped water, so the seabed slopes down from each
+// shore and the model's own depth is only kept where it is deeper. A shore lies half way to the last station on
+// land; water running off either end of the chart has no shore there.
+const waterBodies = (
+  samples: TerrainProfileSample[],
+  overWater: (boolean | null)[],
+  waterLevelM: number,
+  groundM: (sample: TerrainProfileSample) => number,
+  x: (distanceM: number) => number,
+  y: (heightM: number) => number,
+  [minM, maxM]: [number, number]
+): WaterBodies => {
+  const lengthM = samples.at(-1)?.distanceM || 1
+  const last = samples.length - 1
+  const raisedSurfaceM = minM + (maxM - minM) * WATER_SURFACE_SHARE
+  // Every stretch shares one surface, as the same sea or lake, no higher than the lowest land any of them meets.
+  const shoresM = samples
+    .filter((_, index) => overWater[index] !== true && (overWater[index - 1] === true || overWater[index + 1] === true))
+    .map(groundM)
+    .filter(Number.isFinite)
+  const surfaceM = Math.max(waterLevelM, Math.min(raisedSurfaceM, ...shoresM))
+  const seabedCaps = new Map<TerrainProfileSample, number>()
+  const areas = samples.map((sample, start) => {
+    if (overWater[start] !== true || overWater[start - 1] === true) return ''
+    let end = start
+    while (overWater[end + 1] === true) end++
+    const fromM = start === 0 ? -Infinity : (samples[start - 1].distanceM + sample.distanceM) / 2
+    const toM = end === last ? Infinity : (samples[end].distanceM + samples[end + 1].distanceM) / 2
+    const [leftM, rightM] = [Math.max(fromM, 0), Math.min(toM, lengthM)]
+    const shoreM = Math.min(lengthM * WATER_SHORE_SHARE, (rightM - leftM) / 3)
+    const seabed = samples.slice(start, end + 1).map((station): [number, number] => {
+      const depthShare = Math.min(1, (station.distanceM - fromM) / shoreM, (toM - station.distanceM) / shoreM)
+      const capM = surfaceM - (surfaceM - minM) * depthShare
+      seabedCaps.set(station, capM)
+      const stationGroundM = groundM(station)
+      return [x(station.distanceM), y(Number.isFinite(stationGroundM) ? Math.min(stationGroundM, capM) : capM)]
+    })
+    const surface: [number, number][] = [
+      [x(leftM), y(surfaceM)],
+      [x(rightM), y(surfaceM)],
+    ]
+    return `${line([...surface, ...seabed.reverse()])}Z`
+  })
+  return { seabedCaps, area: areas.join('') }
+}
+
 let selfChecked = false
 
 const checkModelLinesOnce = (): void => {
@@ -237,6 +309,16 @@ const checkModelLinesOnce = (): void => {
   )
   const { minM } = profileChartGeometry(pit, { vehicleClass: 'air', uncertaintyM: 0, waterLevelM: 0, draftM: 0 })
   assert(minM === -LAND_CHART_MAX_DEPTH_M, 'A deep pit stretches an aircraft chart no lower than the shallow-water cap')
+  const { waterBodyArea, groundArea } = profileChartGeometry(pit, {
+    vehicleClass: 'air',
+    uncertaintyM: 0,
+    waterLevelM: 0,
+    draftM: 0,
+    overWater: [true, true, false, null, true, true, true, false],
+  })
+  assert(waterBodyArea.match(/M/g)?.length === 2, 'Each run of stations over water is one body of water')
+  assert(waterBodyArea.startsWith('M0.0,'), 'Water running off the chart starts at its edge')
+  assert(groundArea.includes('L714.3,160.0'), 'Land the model reads in the middle of mapped water is drawn under it')
 }
 
 let spacingChecked = false
@@ -311,12 +393,27 @@ export const profileChartGeometry = (
       ? ''
       : `${line(points)}L${points.at(-1)![0]},${PROFILE_CHART_HEIGHT}L${points[0][0]},${PROFILE_CHART_HEIGHT}Z`
 
-  const shownGroundM = (sample: TerrainProfileSample): number => drawn(sample).groundM
+  const water = waterBodies(
+    samples,
+    marine ? [] : options.overWater ?? [],
+    waterLevelM,
+    (sample) => drawn(sample).groundM,
+    x,
+    y,
+    [minM, maxM]
+  )
+  const seabedCap = (sample: TerrainProfileSample): number => water.seabedCaps.get(sample) ?? Infinity
+  const shownGroundM = (sample: TerrainProfileSample): number => Math.min(drawn(sample).groundM, seabedCap(sample))
   const known = samples.filter((sample) => sample.groundM !== null && sample.groundHighM !== null)
   const groundPoint = (sample: TerrainProfileSample): [number, number] => [x(sample.distanceM), y(shownGroundM(sample))]
-  const upper = known.map((sample): [number, number] => [x(sample.distanceM), y(sample.groundHighM! + uncertaintyM)])
+  // The map, not the model, says where the water is, so the model's error is not drawn over it.
+  const bandM = (sample: TerrainProfileSample): number => (water.seabedCaps.has(sample) ? 0 : uncertaintyM)
+  const upper = known.map((sample): [number, number] => [
+    x(sample.distanceM),
+    y(Math.min(sample.groundHighM!, seabedCap(sample)) + bandM(sample)),
+  ])
   const lower = known
-    .map((sample): [number, number] => [x(sample.distanceM), y(shownGroundM(sample) - uncertaintyM)])
+    .map((sample): [number, number] => [x(sample.distanceM), y(shownGroundM(sample) - bandM(sample))])
     .reverse()
   const surface = known.map((sample): [number, number] => [x(sample.distanceM), y(waterLevelM)])
   const seabed = known
@@ -340,6 +437,7 @@ export const profileChartGeometry = (
     waterArea: hasWater && known.length ? `${line([...surface, ...seabed])}Z` : '',
     ...waterLines(y, waterLevelM, tideM, marine),
     vehicleLine: line(vehicle),
+    waterBodyArea: water.area,
     minM,
     maxM,
   }
