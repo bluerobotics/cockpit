@@ -24,6 +24,7 @@ import type { GeoBbox } from '@/types/general'
 import type { WaypointCoordinates } from '@/types/mission'
 
 import { type UseMissionTerrainReturn, useMissionTerrain } from './useMissionTerrain'
+import { type UseSafeAltitudeReturn, useSafeAltitude } from './useSafeAltitude'
 
 /**
  * A finding as the dock lists it.
@@ -68,9 +69,13 @@ export interface TerrainDockState {
    */
   terrain: UseMissionTerrainReturn
   /**
-   * Whether the dock is open; the live check only runs while it is.
+   * Whether the dock is open; the live check only runs while it is, or while a safe height is kept.
    */
   open: Ref<boolean>
+  /**
+   * Raising the waypoints to a safe height over the terrain.
+   */
+  safeAltitude: UseSafeAltitudeReturn
   /**
    * Every finding, terrain, return and climb, most urgent first and then in mission order.
    */
@@ -144,7 +149,12 @@ export const provideTerrainDock = (): TerrainDockState => {
   const hazardStore = useHazardStore()
   const { map } = useMapContext()
   const open = ref(false)
-  const terrain = useMissionTerrain(open, true)
+  const keepSafe = ref(false)
+  const terrain = useMissionTerrain(
+    computed(() => open.value || keepSafe.value),
+    true
+  )
+  const safeAltitude = useSafeAltitude(terrain, keepSafe)
   const ghostDistanceM = ref<number | null>(null)
   const hover = ref<TerrainProfileSample | null>(null)
 
@@ -261,6 +271,7 @@ export const provideTerrainDock = (): TerrainDockState => {
   const state: TerrainDockState = {
     terrain,
     open,
+    safeAltitude,
     findings,
     ghostDistanceM,
     ghostSample,
