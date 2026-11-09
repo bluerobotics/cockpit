@@ -38,6 +38,10 @@ msgstr ""
 msgid "Be careful"
 msgstr "Cuidado"
 
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Collapse the planning panel"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Come back later, or proceed carefully with one of the following options:"
 msgstr ""
@@ -90,6 +94,10 @@ msgstr "Sair da tela cheia"
 msgid "Exit edit mode"
 msgstr "Sair do modo de edição"
 
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Expand the planning panel"
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Flight"
 msgstr "Voo"
@@ -98,11 +106,16 @@ msgstr "Voo"
 msgid "Fullscreen"
 msgstr ""
 
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "GeoFence"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Language"
 msgstr "Idioma"
 
 #: src/components/MainMenu.vue
+#: src/components/mission-planning/MissionPlanningSidebar.vue
 msgid "Mission"
 msgstr "Missão"
 
