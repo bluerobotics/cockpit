@@ -4,12 +4,14 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
+import { useMeasuredTerrainRecorder } from '@/composables/terrain/useMeasuredTerrainRecorder'
 import { BATHYMETRY_SOURCES } from '@/libs/terrain/bathymetry'
 import {
   configureTerrainService,
   effectiveTerrainSource,
   isTerrainSourceAvailable,
 } from '@/libs/terrain/elevation-service'
+import { measuredTerrainCsv } from '@/libs/terrain/measured-terrain'
 import { type VehicleTerrainParameters, TERRAIN_PERFORMANCE_PARAMETERS } from '@/libs/terrain/mission-terrain'
 import {
   type OfflineTerrainProgress,
@@ -39,6 +41,9 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   resolveTerrainOnUpload: false,
   terrainFollowToleranceM: 5,
   aimRoiAtGround: false,
+  measuredTerrainEnabled: true,
+  recordMeasuredTerrain: false,
+  useMeasuredTerrain: true,
   radioFrequencyMhz: 2400,
   visualObservers: [],
   visualRangeM: 500,
@@ -220,6 +225,13 @@ export const useTerrainStore = defineStore('terrain', () => {
    */
   const waterLevelNowM = (): number =>
     settings.value.waterLevelOffsetM + (waterLevelAt(tidePredictions.value, Date.now()) ?? 0)
+  const recorder = useMeasuredTerrainRecorder(settings, waterLevelNowM)
+
+  /**
+   * Measured terrain as CSV, for bathymetry and ground survey archives.
+   * @returns {string} CSV text.
+   */
+  const measuredCsv = (): string => measuredTerrainCsv(recorder.measured, settings.value.waterLevelOffsetM)
 
   return {
     settings,
@@ -234,6 +246,11 @@ export const useTerrainStore = defineStore('terrain', () => {
     downloadProgress,
     downloadArea,
     cancelDownload,
+    measured: recorder.measured,
+    measuredVersion: recorder.measuredVersion,
+    receivingRange: recorder.receivingRange,
+    clearMeasured: recorder.clearMeasured,
+    measuredCsv,
     vehicleParameters,
     tidePredictions,
     tideStation,
