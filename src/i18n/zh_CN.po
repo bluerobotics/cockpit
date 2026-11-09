@@ -36,6 +36,11 @@ msgid ""
 "should it go?"
 msgstr "“${ 0 }”将添加到您正在规划的任务中。它应放在哪里？"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } (Cockpit Standalone)"
+msgstr ""
+
 #: src/components/widgets/IFrame.vue
 #, javascript-format
 msgid "${ 0 } Please enter a valid URL."
@@ -136,6 +141,13 @@ msgstr "${ 0 }（单位：${ 1 }）"
 #: src/components/InputField.vue
 #, javascript-format
 msgid "${ 0 } information"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid ""
+"${ 0 } is available in Cockpit Standalone, so Cockpit Lite reads Tilezen "
+"instead."
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -240,6 +252,11 @@ msgid ""
 "${ 0 } selected item(s) need others that were left out, and may not work. "
 "Their tabs mark which ones."
 msgstr "所选 ${ 0 } 项依赖已被排除的其他项，可能无法工作。相关标签页会标出是哪些。"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } tiles, ${ 1 } MB"
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 #, javascript-format
@@ -1469,6 +1486,14 @@ msgstr "基本信息"
 msgid "Bathymetry"
 msgstr "水深图"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source information"
+msgstr ""
+
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Battery Indicator Config"
 msgstr "电池指示器配置"
@@ -2000,6 +2025,7 @@ msgstr "正在清理……"
 
 #: src/components/development/MAVLinkMessagesDumper.vue
 #: src/components/recipes/CreateRecipeDialog.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 #: src/views/MissionPlanningView.vue
 msgid "Clear"
 msgstr "清除"
@@ -2738,6 +2764,11 @@ msgstr "无法更改代理访问设置。${ 0 }"
 #: src/composables/appUpdater.ts
 msgid "Could not check for updates right now. Please try again in a moment."
 msgstr "当前无法检查更新。请稍后重试。"
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
@@ -5293,6 +5324,10 @@ msgstr "缩小时隐藏航点编号"
 msgid "High"
 msgstr "高"
 
+#: src/libs/hazards/sources.ts
+msgid "High ground"
+msgstr ""
+
 #: src/components/hazards/HazardAdvisoryPanel.vue
 msgid "High ground above (m)"
 msgstr ""
@@ -6046,6 +6081,14 @@ msgstr "降落"
 msgid "Land request failed: ${ 0 }"
 msgstr "降落请求失败：${ 0 }"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source information"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Language"
 msgstr "语言"
@@ -6496,6 +6539,10 @@ msgstr "最大设备位置更新速率"
 #: src/views/ConfigurationMissionView.vue
 msgid "Max. vehicle position update rate:"
 msgstr "最大设备位置更新速率："
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Max. zoom"
+msgstr ""
 
 #: src/components/widgets/Plotter.vue
 #, javascript-format
@@ -7463,6 +7510,10 @@ msgstr "非动态值。"
 msgid "None"
 msgstr "无"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "None yet"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "Normalize per series"
 msgstr "按系列归一化"
@@ -8375,6 +8426,10 @@ msgid ""
 "context, so this feature is disabled here."
 msgstr "读取外部串口 GNSS 接收器仅在 Cockpit 独立版中可用。浏览器无法在安全上下文之外访问串口设备，因此此处已禁用该功能。"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Reading..."
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid ""
 "Real-world signal also depends on terrain, weather, interference, and how "
@@ -8891,6 +8946,13 @@ msgstr "在独立作用域中运行脚本"
 #, javascript-format
 msgid "Safe: ${ 0 } to ${ 1 } ${ 2 }"
 msgstr "安全：${ 0 } 至 ${ 1 } ${ 2 }"
+
+#: src/libs/hazards/sources.ts
+msgid ""
+"Sampled from the terrain model chosen in the mission settings, roughly 30 m "
+"between samples, so it can miss masts and, on the bare-ground models, trees "
+"and buildings."
+msgstr ""
 
 #: src/libs/sensors/gnss.ts
 msgid "Satellites in view"
@@ -9878,6 +9940,10 @@ msgstr "已停止等待再次录制流 '${ 0 }'。"
 msgid "Stored Telemetry Data"
 msgstr "已存储的遥测数据"
 
+#: src/stores/terrain.ts
+msgid "Stored terrain cleared."
+msgstr ""
+
 #: src/components/VideoPlayerStatsForNerds.vue
 #: src/components/mini-widgets/MiniVideoRecorder.vue
 #: src/components/widgets/VideoPlayer.vue
@@ -10094,8 +10160,13 @@ msgid "Temperature"
 msgstr "温度"
 
 #: src/components/mini-widgets/EkfStateIndicator.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr "地形"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrarium-encoded PNG tiles, with {z}, {x} and {y} in the address."
+msgstr ""
 
 #: src/components/configuration/JavascriptActionConfig.vue
 msgid "Test Action"
@@ -10165,6 +10236,10 @@ msgid ""
 "available in the Videos tab."
 msgstr "ZIP 文件已成功处理。视频现在可在\"视频\"选项卡中找到。"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "The address needs {z}, {x} and {y}, and to start with http:// or https://."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
 "The autopilot cannot be rebooted while the vehicle is armed. Disarm it and "
@@ -10192,6 +10267,10 @@ msgid ""
 "The copy stored on the vehicle is kept, since no vehicle is connected to "
 "delete it from."
 msgstr "设备上保存的副本会被保留，因为没有已连接的设备可供删除。"
+
+#: src/stores/terrain.ts
+msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
+msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid ""
@@ -10728,6 +10807,14 @@ msgstr "瓦片 URL（例如 https://host/tiles/{z}/{x}/{y}.png）"
 msgid "Tile URL must contain the {z}, {x} and {y} placeholders."
 msgstr "瓦片 URL 必须包含 {z}、{x} 和 {y} 占位符。"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address information"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 #: src/libs/terrain/sources.ts
 msgid "Tilezen"
@@ -11017,6 +11104,7 @@ msgid "UTC time"
 msgstr "UTC 时间"
 
 #: src/components/CameraReplacementDialog.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 #: src/views/ConfigurationVideoView.vue
 msgid "Unavailable"
 msgstr "不可用"

@@ -40,6 +40,11 @@ msgstr ""
 "\"${ 0 }\" será adicionada à missão que você já está planejando. Onde ela "
 "deve ficar?"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } (Cockpit Standalone)"
+msgstr ""
+
 #: src/components/widgets/IFrame.vue
 #, javascript-format
 msgid "${ 0 } Please enter a valid URL."
@@ -152,6 +157,13 @@ msgstr "${ 0 } em ${ 1 }"
 #: src/components/InputField.vue
 #, javascript-format
 msgid "${ 0 } information"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid ""
+"${ 0 } is available in Cockpit Standalone, so Cockpit Lite reads Tilezen "
+"instead."
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -272,6 +284,11 @@ msgid ""
 msgstr ""
 "${ 0 } item(ns) selecionado(s) precisam de outros que ficaram de fora e "
 "podem não funcionar. As abas indicam quais."
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } tiles, ${ 1 } MB"
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 #, javascript-format
@@ -1573,6 +1590,14 @@ msgstr "Informações básicas"
 msgid "Bathymetry"
 msgstr "Batimetria"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source information"
+msgstr ""
+
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Battery Indicator Config"
 msgstr "Configuração do indicador de bateria"
@@ -2130,6 +2155,7 @@ msgstr "Limpando..."
 
 #: src/components/development/MAVLinkMessagesDumper.vue
 #: src/components/recipes/CreateRecipeDialog.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 #: src/views/MissionPlanningView.vue
 msgid "Clear"
 msgstr "Limpar"
@@ -2940,6 +2966,11 @@ msgstr "Não foi possível alterar as configurações de acesso de agentes. ${ 0
 #: src/composables/appUpdater.ts
 msgid "Could not check for updates right now. Please try again in a moment."
 msgstr "Não foi possível verificar atualizações agora. Tente novamente em instantes."
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
@@ -5653,6 +5684,10 @@ msgstr "Ocultar números dos waypoints ao afastar o zoom"
 msgid "High"
 msgstr "Alta"
 
+#: src/libs/hazards/sources.ts
+msgid "High ground"
+msgstr ""
+
 #: src/components/hazards/HazardAdvisoryPanel.vue
 msgid "High ground above (m)"
 msgstr ""
@@ -6462,6 +6497,14 @@ msgstr "Pousar"
 msgid "Land request failed: ${ 0 }"
 msgstr "Falha na solicitação de pouso: ${ 0 }"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source information"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Language"
 msgstr "Idioma"
@@ -6926,6 +6969,10 @@ msgstr "Taxa máx. de atualização da posição do veículo"
 #: src/views/ConfigurationMissionView.vue
 msgid "Max. vehicle position update rate:"
 msgstr "Taxa máx. de atualização da posição do veículo:"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Max. zoom"
+msgstr ""
 
 #: src/components/widgets/Plotter.vue
 #, javascript-format
@@ -7937,6 +7984,10 @@ msgstr "Valor não dinâmico."
 msgid "None"
 msgstr "Nenhum"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "None yet"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "Normalize per series"
 msgstr "Normalizar por série"
@@ -8930,6 +8981,10 @@ msgstr ""
 "Standalone. Navegadores não podem acessar dispositivos seriais fora de um "
 "contexto seguro, por isso este recurso está desativado aqui."
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Reading..."
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid ""
 "Real-world signal also depends on terrain, weather, interference, and how "
@@ -9466,6 +9521,13 @@ msgstr "Executar o script em seu próprio escopo"
 #, javascript-format
 msgid "Safe: ${ 0 } to ${ 1 } ${ 2 }"
 msgstr "Seguro: ${ 0 } a ${ 1 } ${ 2 }"
+
+#: src/libs/hazards/sources.ts
+msgid ""
+"Sampled from the terrain model chosen in the mission settings, roughly 30 m "
+"between samples, so it can miss masts and, on the bare-ground models, trees "
+"and buildings."
+msgstr ""
 
 #: src/libs/sensors/gnss.ts
 msgid "Satellites in view"
@@ -10502,6 +10564,10 @@ msgstr "Parou de aguardar para gravar o stream '${ 0 }' novamente."
 msgid "Stored Telemetry Data"
 msgstr "Dados de telemetria armazenados"
 
+#: src/stores/terrain.ts
+msgid "Stored terrain cleared."
+msgstr ""
+
 #: src/components/VideoPlayerStatsForNerds.vue
 #: src/components/mini-widgets/MiniVideoRecorder.vue
 #: src/components/widgets/VideoPlayer.vue
@@ -10728,8 +10794,13 @@ msgid "Temperature"
 msgstr "Temperatura"
 
 #: src/components/mini-widgets/EkfStateIndicator.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr "Terreno"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrarium-encoded PNG tiles, with {z}, {x} and {y} in the address."
+msgstr ""
 
 #: src/components/configuration/JavascriptActionConfig.vue
 msgid "Test Action"
@@ -10814,6 +10885,10 @@ msgstr ""
 "Os arquivos ZIP foram processados com sucesso. O vídeo já está disponível "
 "na aba Vídeos."
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "The address needs {z}, {x} and {y}, and to start with http:// or https://."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
 "The autopilot cannot be rebooted while the vehicle is armed. Disarm it and "
@@ -10849,6 +10924,10 @@ msgid ""
 msgstr ""
 "A cópia armazenada no veículo é mantida, pois nenhum veículo está conectado "
 "para excluí-la."
+
+#: src/stores/terrain.ts
+msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
+msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid ""
@@ -11526,6 +11605,14 @@ msgstr "URL dos tiles (ex.: https://host/tiles/{z}/{x}/{y}.png)"
 msgid "Tile URL must contain the {z}, {x} and {y} placeholders."
 msgstr "A URL dos tiles deve conter os marcadores {z}, {x} e {y}."
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address information"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 #: src/libs/terrain/sources.ts
 msgid "Tilezen"
@@ -11839,6 +11926,7 @@ msgid "UTC time"
 msgstr "Hora UTC"
 
 #: src/components/CameraReplacementDialog.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 #: src/views/ConfigurationVideoView.vue
 msgid "Unavailable"
 msgstr "Indisponível"
