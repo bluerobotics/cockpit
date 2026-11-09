@@ -7,11 +7,12 @@ import { useMissionTerrain } from '@/composables/terrain/useMissionTerrain'
 import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
 import type { MissionFenceBreachReports } from '@/libs/geo-fence'
 import { type PreparedTerrainUpload, prepareTerrainUpload, terrainUploadMessages } from '@/libs/terrain/mission-terrain'
+import { terrainCheckSample } from '@/libs/vehicle/mavlink/terrain-protocol'
 import { useHazardStore } from '@/stores/hazards'
 import { useMissionStore } from '@/stores/mission'
 import { useTerrainStore } from '@/stores/terrain'
 import type { HazardAdvisory } from '@/types/hazards'
-import type { Waypoint } from '@/types/mission'
+import { type Waypoint, AltitudeReferenceType } from '@/types/mission'
 
 // A mission skirting a long shoreline can raise a finding per run, which is a list nobody reads.
 const MAX_LISTED_ADVISORIES = 6
@@ -19,8 +20,17 @@ const MAX_LISTED_ADVISORIES = 6
 // with nothing happening. Past this the upload is offered without it, saying so.
 const HAZARD_CHECK_DEADLINE_MS = 10000
 
-const uploadWarningTitle = (breaches: boolean, hazards: boolean, unchecked: boolean, terrain: boolean): string => {
-  if (terrain && !breaches && !hazards && !unchecked) return 'Mission comes too close to the terrain'
+const uploadWarningTitle = (
+  breaches: boolean,
+  hazards: boolean,
+  unchecked: boolean,
+  terrain: boolean,
+  vehicleTerrain: boolean
+): string => {
+  if (!breaches && !hazards && !unchecked) {
+    if (terrain) return t`Mission comes too close to the terrain`
+    if (vehicleTerrain) return t`Mission needs terrain on the vehicle`
+  }
   if (breaches && hazards) return 'Mission breaches the geofence and touches hazard areas'
   if (breaches)
     return unchecked ? 'Mission breaches geofence, and hazards were not checked' : 'Mission breaches geofence'
@@ -166,6 +176,25 @@ export const useMissionPreflightChecks = ({
     return messages
   }
 
+  // Waypoints over the ground are flown from the vehicle's own terrain unless Cockpit answers its requests or the
+  // upload sends them above sea level. A vehicle that holds no terrain there, or never answers, may still follow
+  // the ground with a rangefinder, so this only joins the confirmation rather than stopping the upload.
+  const checkVehicleTerrain = async (waypoints: Waypoint[]): Promise<string[]> => {
+    const { serveTerrainToVehicle, resolveTerrainOnUpload } = terrainStore.settings
+    if (serveTerrainToVehicle || resolveTerrainOnUpload || missionTerrain.vehicleClass.value !== 'air') return []
+    const relative = waypoints.filter((w) => w.altitudeReferenceType === AltitudeReferenceType.RELATIVE_TO_TERRAIN)
+    const answers = await terrainStore.checkVehicleTerrain(terrainCheckSample(relative.map((w) => w.coordinates)))
+    const missing = answers.filter(({ available }) => !available).length
+    if (missing === 0) return []
+    return [
+      // eslint-disable-next-line max-len, vue/max-len
+      t`The vehicle has no terrain, or did not answer, under ${missing} of the ${answers.length} checked waypoints set "Relative to terrain", so it can only hold their height over the ground with a rangefinder.`,
+      t`Turn on "Hold terrain height on upload" to send their heights above sea level, which needs no terrain on the vehicle.`,
+      // eslint-disable-next-line max-len, vue/max-len
+      t`Or turn on "Answer the vehicle's terrain requests" in the Vehicle tab of the terrain panel, so the vehicle loads the terrain from Cockpit. It only asks with its terrain enabled (the TERRAIN_ENABLE parameter), and has to finish loading before the upload.`,
+    ]
+  }
+
   const confirmMissionUpload = async (): Promise<boolean> => {
     const waypoints = missionStore.currentPlanningWaypoints
     // The live check is debounced, so a waypoint moved a moment ago would still be judged by the
@@ -174,11 +203,13 @@ export const useMissionPreflightChecks = ({
     const { vehicle, draft } = fenceBreaches.reports.value
     const hasBreaches = vehicle?.hasBreaches === true || draft?.hasBreaches === true
     const home = missionStore.plannedHomePosition ?? missionStore.homeMarkerPosition
-    const [checked, terrain] = await Promise.all([
+    const [checked, groundTerrain, vehicleTerrain] = await Promise.all([
       withDeadline(hazardStore.checkMission(waypoints, home), HAZARD_CHECK_DEADLINE_MS),
       checkTerrain(),
+      checkVehicleTerrain(waypoints),
     ])
     const advisories = checked ?? []
+    const terrain = [...vehicleTerrain, ...groundTerrain]
     if (!hasBreaches && checked?.length === 0 && terrain.length === 0) return true
 
     const message = uploadWarningMessage({
@@ -191,7 +222,13 @@ export const useMissionPreflightChecks = ({
         breachOutcome.value ??
         'Uploading anyway may trigger the fence action the autopilot is configured with once the mission runs.',
     })
-    const title = uploadWarningTitle(hasBreaches, advisories.length > 0, checked === undefined, terrain.length > 0)
+    const title = uploadWarningTitle(
+      hasBreaches,
+      advisories.length > 0,
+      checked === undefined,
+      groundTerrain.length > 0,
+      vehicleTerrain.length > 0
+    )
 
     const confirmed = await confirmAction(
       title,
