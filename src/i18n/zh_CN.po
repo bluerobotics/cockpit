@@ -2175,6 +2175,11 @@ msgstr "关闭简单路径创建"
 msgid "Close survey creation"
 msgstr "关闭调查创建"
 
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Close the ${ 0 }"
+msgstr ""
+
 #: src/components/widgets/MiniMap.vue
 msgid "Close the MiniMap settings"
 msgstr "关闭 MiniMap 设置"
@@ -6651,6 +6656,10 @@ msgstr "任务下载成功！"
 msgid "Mission estimates"
 msgstr "任务估算"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission estimates settings"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Mission exported."
 msgstr "任务已导出。"
@@ -6701,7 +6710,6 @@ msgid "Mission saved to library."
 msgstr "任务已保存到库。"
 
 #: src/components/MissionChecklist.vue
-#: src/components/mission-planning/MissionEstimates.vue
 msgid "Mission settings"
 msgstr "任务设置"
 
@@ -7582,6 +7590,11 @@ msgstr "打开快照库"
 #: src/components/VideoLibraryModal.vue
 msgid "Open snapshots folder"
 msgstr "打开快照文件夹"
+
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Open the ${ 0 }"
+msgstr ""
 
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 msgid ""
@@ -11951,10 +11964,6 @@ msgstr ""
 "您可以将围栏数据保存到设备的 SD 卡来增加此空间。这会占用卡上最多 ${ 0 } KB，将容量提升到约 ${ 1 } "
 "个点，且不影响设备的性能或可靠性。点击“扩展存储”以更改该"
 
-#: src/components/mission-planning/MissionEstimates.vue
-msgid "You can show the mission estimates again in the mission settings."
-msgstr "您可以在任务设置中再次显示任务估算。"
-
 #: src/components/geofence/GeoFenceTooLargeDialog.vue
 #, javascript-format
 msgid "You can simplify the fence's geometry so it fits in ${ 0 } points."
@@ -12343,6 +12352,10 @@ msgstr "最大："
 msgid "min:"
 msgstr "最小："
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "mission estimates panel"
+msgstr ""
+
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "no interfaces"
 msgstr "无接口"
@@ -12637,3 +12650,6 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "whose"
 #~ msgstr "其中的"
+
+#~ msgid "You can show the mission estimates again in the mission settings."
+#~ msgstr "您可以在任务设置中再次显示任务估算。"
