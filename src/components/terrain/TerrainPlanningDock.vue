@@ -142,6 +142,7 @@
             </div>
           </div>
           <TerrainQuickActionsPanel v-else-if="currentTab === 'actions'" />
+          <TerrainSightPanel v-else-if="currentTab === 'sight'" />
           <TerrainVehiclePanel v-else-if="currentTab === 'vehicle'" />
         </div>
 
@@ -255,6 +256,7 @@ import LoadingText from '@/components/LoadingText.vue'
 import TerrainProfileChart from '@/components/terrain/TerrainProfileChart.vue'
 import TerrainQuickActionsPanel from '@/components/terrain/TerrainQuickActionsPanel.vue'
 import TerrainSafeAltitude from '@/components/terrain/TerrainSafeAltitude.vue'
+import TerrainSightPanel from '@/components/terrain/TerrainSightPanel.vue'
 import TerrainVehiclePanel from '@/components/terrain/TerrainVehiclePanel.vue'
 import TerrainWarningTriangle from '@/components/terrain/TerrainWarningTriangle.vue'
 import { goToMenuPage } from '@/composables/menuRouting'
@@ -270,12 +272,13 @@ import { terrainAttribution } from '@/libs/terrain/elevation-service'
 import type { TerrainFindingKind, TerrainProfileSample } from '@/libs/terrain/mission-profile'
 import { profileStretch } from '@/libs/terrain/mission-terrain'
 import type { ProfileChartBand, ProfileChartShallows } from '@/libs/terrain/profile-chart'
+import { type PathSightStretch, PATH_SIGHT_COLORS } from '@/libs/terrain/sight-analysis'
 import { useMissionStore } from '@/stores/mission'
 import { useTerrainStore } from '@/stores/terrain'
 import { SubMenuComponentName } from '@/types/general'
 import type { BathymetrySourceId } from '@/types/terrain'
 
-type TerrainTab = 'findings' | 'actions' | 'vehicle'
+type TerrainTab = 'findings' | 'actions' | 'sight' | 'vehicle'
 
 const emit = defineEmits<{
   (event: 'select-waypoint', waypointIndex: number): void
@@ -316,6 +319,7 @@ const TABS: {
 }[] = [
   { id: 'findings', label: 'Findings' },
   { id: 'actions', label: 'Quick actions' },
+  { id: 'sight', label: 'Link and sight' },
   { id: 'vehicle', label: 'Vehicle' },
 ]
 
@@ -381,14 +385,32 @@ const isHighlighted = (finding: TerrainDockFinding): boolean => {
   return distanceM !== undefined && distanceM >= finding.fromM && distanceM <= finding.toM
 }
 
-const chartBands = computed<ProfileChartBand[]>(() =>
-  dock.findings.value.map((finding) => ({
-    fromM: finding.fromM,
-    toM: finding.toM,
-    color: finding.color,
-    highlighted: isHighlighted(finding),
-  }))
-)
+const isSightHighlighted = (stretch: PathSightStretch): boolean => {
+  if (dock.sightLegendKind.value) return dock.sightLegendKind.value === stretch.kind
+  const finding = dock.findings.value.find(
+    ({ sightKind, fromM }) => sightKind === stretch.kind && fromM === stretch.fromM
+  )
+  if (finding) return isHighlighted(finding)
+  const distanceM = dock.hover.value?.distanceM
+  return distanceM !== undefined && distanceM >= stretch.fromM && distanceM <= stretch.toM
+}
+
+// Stretches in sight cover most missions, so they are only shaded while pointed at.
+const chartBands = computed<ProfileChartBand[]>(() => [
+  ...dock.pathSight.value.flatMap((stretch) => {
+    const highlighted = isSightHighlighted(stretch)
+    if (stretch.kind === 'in-sight' && !highlighted) return []
+    return [{ fromM: stretch.fromM, toM: stretch.toM, color: PATH_SIGHT_COLORS[stretch.kind], highlighted }]
+  }),
+  ...dock.findings.value
+    .filter(({ sightKind }) => !sightKind)
+    .map((finding) => ({
+      fromM: finding.fromM,
+      toM: finding.toM,
+      color: finding.color,
+      highlighted: isHighlighted(finding),
+    })),
+])
 
 const coastlineM = computed(() =>
   (analysis.value?.profile.findings ?? []).filter(({ kind }) => kind === 'reaches-coastline').map(({ fromM }) => fromM)
