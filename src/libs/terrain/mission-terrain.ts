@@ -1,4 +1,4 @@
-import { t } from 'ttag'
+import { msgid, ngettext, t } from 'ttag'
 
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { type Waypoint, type WaypointCoordinates, AltitudeReferenceType } from '@/types/mission'
@@ -16,9 +16,18 @@ import {
   legLabel,
   legLengthM,
   profileSpacingM,
+  surfaceHeight,
 } from './mission-profile'
 import { type ReturnBehavior, type ReturnPathFinding, returnPathFindings, returnPathPlan } from './return-path'
-import { type ClimbFinding, type ClimbPerformance, climbFindings } from './terrain-following'
+import {
+  type ClimbFinding,
+  type ClimbPerformance,
+  type GroundSampler,
+  aimRoiAtGround,
+  climbFindings,
+  isGroundlessRoiCommand,
+  resolveTerrainFollowing,
+} from './terrain-following'
 
 /**
  * Everything checked about a mission's terrain.
@@ -43,7 +52,7 @@ export interface MissionTerrainAnalysis {
 }
 
 /**
- * How serious a finding is, for its color.
+ * How serious a finding is, for its color and whether the upload prompt lists it.
  */
 export type TerrainFindingSeverity = 'danger' | 'warning' | 'info'
 
@@ -344,6 +353,120 @@ export const vehicleTerrainBehavior = (
     return planeBehavior(parameters, cruiseSpeedMs)
   }
   return { performance: null, behavior: null }
+}
+
+// A shoreline mission can raise a finding per run, which is a list nobody reads in a confirmation.
+const MAX_UPLOAD_MESSAGES = 5
+
+/**
+ * The findings worth stopping an upload for, as sentences.
+ * @param {MissionTerrainAnalysis} analysis The mission analysis.
+ * @param {TerrainProfileContext} context Thresholds quoted in the sentences.
+ * @returns {string[]} The sentences, empty when nothing needs the operator's attention.
+ */
+export const terrainUploadMessages = (analysis: MissionTerrainAnalysis, context: TerrainProfileContext): string[] => {
+  const { points, profile, returnFindings: returns, climbFindings: climbs } = analysis
+  const messages = [
+    ...profile.findings
+      .filter((finding) => terrainFindingSeverity(finding.kind) !== 'info')
+      .sort((a, b) => terrainFindingRank(a.kind) - terrainFindingRank(b.kind))
+      .map((finding) => terrainFindingMessage(finding, points, context)),
+    ...returns.map((finding) => returnFindingMessage(finding, points, context)),
+    ...climbs
+      .filter((finding) => finding.kind !== 'slows-to-climb')
+      .map((finding) => climbFindingMessage(finding, points)),
+  ]
+  const hidden = messages.length - MAX_UPLOAD_MESSAGES
+  if (hidden <= 0) return messages
+  const more = ngettext(
+    msgid`And ${hidden} more, listed in the terrain panel.`,
+    `And ${hidden} more, listed in the terrain panel.`,
+    hidden
+  )
+  return [...messages.slice(0, MAX_UPLOAD_MESSAGES), more]
+}
+
+/**
+ * What preparing a mission's terrain for upload changed.
+ */
+export interface PreparedTerrainUpload {
+  /**
+   * Waypoints to upload.
+   */
+  waypoints: Waypoint[]
+  /**
+   * Terrain-relative waypoints turned into sea-level ones.
+   */
+  resolvedWaypoints: number
+  /**
+   * Waypoints added to hold the height over the ground between them.
+   */
+  addedWaypoints: number
+  /**
+   * Terrain-relative waypoints left as they were, because the ground is unknown.
+   */
+  unresolvedWaypoints: number
+  /**
+   * Region-of-interest commands aimed at the ground.
+   */
+  aimedRois: number
+}
+
+/**
+ * Options for {@link prepareTerrainUpload}.
+ */
+export interface PrepareTerrainUploadOptions {
+  /**
+   * Turn terrain-relative waypoints into sea-level ones.
+   */
+  resolveTerrain: boolean
+  /**
+   * Aim region-of-interest commands left at zero altitude at the ground.
+   */
+  aimRois: boolean
+  /**
+   * How far above the wanted height a resolved path may pass, in meters.
+   */
+  toleranceM: number
+}
+
+/**
+ * Prepares a mission's terrain for upload. Changes the given waypoints' commands in place.
+ * @param {Waypoint[]} waypoints Plain copies of the mission waypoints, home excluded.
+ * @param {WaypointCoordinates | undefined} home Home position.
+ * @param {TerrainProfileContext} context Vehicle and water level.
+ * @param {PrepareTerrainUploadOptions} options What to prepare.
+ * @returns {Promise<PreparedTerrainUpload>} The waypoints to upload and what changed.
+ */
+export const prepareTerrainUpload = async (
+  waypoints: Waypoint[],
+  home: WaypointCoordinates | undefined,
+  context: TerrainProfileContext,
+  options: PrepareTerrainUploadOptions
+): Promise<PreparedTerrainUpload> => {
+  const prepared: PreparedTerrainUpload = {
+    waypoints,
+    resolvedWaypoints: 0,
+    addedWaypoints: 0,
+    unresolvedWaypoints: 0,
+    aimedRois: 0,
+  }
+  const sampleHighest: GroundSampler = (coordinates) => sampleTerrain(coordinates, { mode: 'highest' })
+  const sampleGround: GroundSampler = (coordinates) => sampleTerrain(coordinates, { mode: 'bilinear' })
+  if (options.resolveTerrain && home) {
+    const relative = waypoints.filter((w) => w.altitudeReferenceType === AltitudeReferenceType.RELATIVE_TO_TERRAIN)
+    const resolved = await resolveTerrainFollowing(waypoints, home, sampleHighest, context, options.toleranceM)
+    prepared.waypoints = resolved.waypoints
+    prepared.addedWaypoints = resolved.addedWaypoints
+    prepared.unresolvedWaypoints = resolved.unresolvedWaypoints
+    prepared.resolvedWaypoints = resolved.waypoints === waypoints ? 0 : relative.length - resolved.unresolvedWaypoints
+  }
+  if (options.aimRois && prepared.waypoints.some((waypoint) => waypoint.commands.some(isGroundlessRoiCommand))) {
+    const [homeGround] = home ? await sampleGround([home]) : [null]
+    const homeAmslM = homeGround === null ? null : surfaceHeight(homeGround, context.waterLevelM)
+    prepared.aimedRois = await aimRoiAtGround(prepared.waypoints, homeAmslM, sampleGround, context.waterLevelM)
+  }
+  return prepared
 }
 
 /**
