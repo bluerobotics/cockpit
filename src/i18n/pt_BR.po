@@ -9,6 +9,11 @@ msgstr ""
 msgid "\"${ 0 }\" could not be imported: ${ 1 }"
 msgstr "Não foi possível importar \"${ 0 }\": ${ 1 }"
 
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" deleted."
+msgstr ""
+
 #: src/composables/useExtensionWebSocketOffers.ts
 #, javascript-format
 msgid "\"${ 0 }\" ignored. You can still connect it from the Connections tab."
@@ -23,6 +28,23 @@ msgstr "\"${ 0 }\" não é um arquivo .zip, .mbtiles ou .pmtiles."
 #, javascript-format
 msgid "\"${ 0 }\" is not a GeoTIFF file."
 msgstr "\"${ 0 }\" não é um arquivo GeoTIFF."
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" is now drawn on the maps."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"\"${ 0 }\" kept with ${ 1 } measured cells, and copied to the vehicle when "
+"it is online."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" saved as ${ 1 }."
+msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
 #, javascript-format
@@ -59,6 +81,11 @@ msgstr ""
 msgid "${ 0 } (Cockpit Standalone)"
 msgstr ""
 
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "${ 0 } (measured terrain)"
+msgstr ""
+
 #: src/components/widgets/IFrame.vue
 #, javascript-format
 msgid "${ 0 } Please enter a valid URL."
@@ -91,6 +118,11 @@ msgstr ""
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "${ 0 } cells measured, ${ 1 } with enough readings to trust."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } cells over the mission"
 msgstr ""
 
 #: src/components/VideoLibraryModal.vue
@@ -203,6 +235,7 @@ msgid ""
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainLibrarySection.vue
 #, javascript-format
 msgid "${ 0 } item total"
 msgid_plural "${ 0 } items total"
@@ -230,6 +263,16 @@ msgstr ""
 msgid "${ 0 } itself"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } m above model"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } m below model"
+msgstr ""
+
 #: src/components/terrain/TerrainTidePanel.vue
 #, javascript-format
 msgid "${ 0 } m under the keel"
@@ -246,6 +289,31 @@ msgid "${ 0 } map overlay added."
 msgid_plural "${ 0 } map overlays added."
 msgstr[0] "${ 0 } sobreposição de mapa adicionada."
 msgstr[1] "${ 0 } sobreposições de mapa adicionadas."
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"${ 0 } measured cells from \"${ 1 }\" added to the measured terrain, ${ 2 } "
+"feature ignored."
+msgid_plural ""
+"${ 0 } measured cells from \"${ 1 }\" added to the measured terrain, ${ 2 } "
+"features ignored."
+msgstr[0] ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "${ 0 } measured cells from \"${ 1 }\" added to the measured terrain."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } measured cells over the mission on the planner"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "${ 0 } measured cells saved as ${ 1 }."
+msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
@@ -391,11 +459,26 @@ msgstr ""
 msgid "${ 0 } tiles, ${ 1 } MB"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } to ${ 1 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } to ${ 1 } m deep"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "${ 0 } to review"
 msgid_plural "${ 0 } to review"
 msgstr[0] ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } trusted cells"
+msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
@@ -1101,6 +1184,10 @@ msgstr "Apontar para o veículo"
 msgid "Aim regions of interest at the ground"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Aircraft"
+msgstr ""
+
 #: src/views/ConfigurationAlertsView.vue
 msgid "Alert levels:"
 msgstr "Níveis de alerta:"
@@ -1229,6 +1316,11 @@ msgstr "Já adicionado"
 #, javascript-format
 msgid "Also list ${ 0 } default speech voices"
 msgstr "Listar também as vozes de fala padrão (${ 0 })"
+
+#: src/components/MissionLibraryModal.vue
+#, javascript-format
+msgid "Also save the measured terrain of this mission (${ 0 } cells)"
+msgstr ""
 
 #: src/components/recipes/RecipeDialog.vue
 #, javascript-format
@@ -2127,6 +2219,10 @@ msgstr "LIMPAR CERCA ATUAL"
 msgid "CLEAR CURRENT MISSION"
 msgstr "LIMPAR MISSÃO ATUAL"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "CSV, every cell"
+msgstr ""
+
 #: src/components/joysticks/JoystickCalibration.vue
 msgid "Calibrate"
 msgstr "Calibrar"
@@ -2377,6 +2473,10 @@ msgstr "Centralizar em um ponto de interesse."
 #: src/views/ConfigurationUIView.vue
 msgid "Center-left tab"
 msgstr "Aba no centro à esquerda"
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Centered the map, but could not draw that dataset:"
+msgstr ""
 
 #: src/components/mini-widgets/ChangeAltitudeCommander.vue
 msgid "Change Alt"
@@ -3465,6 +3565,10 @@ msgstr "Não foi possível conectar ao dispositivo: ${ 0 }"
 msgid "Could not copy the command. Select it and copy it by hand."
 msgstr "Não foi possível copiar o comando. Selecione-o e copie manualmente."
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not delete that dataset:"
+msgstr ""
+
 #: src/components/VoiceRecordingsLibrary.vue
 #, javascript-format
 msgid "Could not delete the voice recordings. ${ 0 }"
@@ -3534,6 +3638,10 @@ msgstr ""
 msgid "Could not keep a safe height: ${ 0 }"
 msgstr ""
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not keep the measured terrain:"
+msgstr ""
+
 #: src/components/VoiceRecordingsLibrary.vue
 #, javascript-format
 msgid "Could not list the voice recordings. ${ 0 }"
@@ -3596,6 +3704,10 @@ msgstr "Não foi possível ler ${ 0 }: ${ 1 }"
 msgid "Could not read OpenStreetMap: ${ 0 }"
 msgstr ""
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not read that file:"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid ""
@@ -3632,6 +3744,14 @@ msgstr "Não foi possível gravar '${ 0 }' novamente: ${ 1 }"
 msgid "Could not remove the downloaded voices."
 msgstr "Não foi possível remover as vozes baixadas."
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not save that dataset:"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not save the measured terrain:"
+msgstr ""
+
 #: src/stores/mission.ts
 msgid "Could not save the traveled distances. They may be lost when Cockpit closes."
 msgstr ""
@@ -3656,6 +3776,10 @@ msgstr ""
 #, javascript-format
 msgid "Could not set the vehicle position: ${ 0 }"
 msgstr "Não foi possível definir a posição do veículo: ${ 0 }"
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not show that dataset on the map:"
+msgstr ""
 
 #: src/composables/map/useExternalMapOverlays.ts
 #, javascript-format
@@ -3718,6 +3842,10 @@ msgstr[1] ""
 "Não foi possível enviar os mapas ${ 0 } para o veículo. O Cockpit vai "
 "tentar novamente na próxima conexão e, enquanto isso, eles ficam "
 "disponíveis apenas neste computador."
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not use that dataset as measured terrain:"
+msgstr ""
 
 #: src/components/UserNameInputDialog.vue
 msgid ""
@@ -4154,6 +4282,7 @@ msgstr "Define o centro e o nível de zoom iniciais do mapa."
 #: src/components/poi/PoiActionPopup.vue
 #: src/components/poi/PoiManager.vue
 #: src/components/sources/GnssDeviceDialog.vue
+#: src/composables/terrain/useTerrainLibrary.ts
 #: src/composables/videoChunkManager.ts
 #: src/views/ConfigurationLogsView.vue
 #: src/views/ToolsDataLakeView.vue
@@ -4166,6 +4295,7 @@ msgid "Delete \"${ 0 }\" from your library? This cannot be undone."
 msgstr "Excluir \"${ 0 }\" da sua biblioteca? Isso não pode ser desfeito."
 
 #: src/components/poi/PoiActionPopup.vue
+#: src/composables/terrain/useTerrainLibrary.ts
 #, javascript-format
 msgid "Delete \"${ 0 }\"?"
 msgstr "Excluir \"${ 0 }\"?"
@@ -4244,6 +4374,10 @@ msgstr "Excluir comando"
 #: src/components/mini-widgets/VeryGenericIndicator.vue
 msgid "Delete custom icon"
 msgstr "Excluir ícone personalizado"
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Delete dataset"
+msgstr ""
 
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Delete device"
@@ -5288,6 +5422,8 @@ msgid "Exponential:"
 msgstr "Exponencial:"
 
 #: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
 #: src/components/widgets/DoItYourself.vue
 msgid "Export"
 msgstr "Exportar"
@@ -5296,6 +5432,10 @@ msgstr "Exportar"
 msgid "Export `.plan` (mission + fence)"
 msgstr "Exportar `.plan` (missão + cerca virtual)"
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Export as GeoJSON"
+msgstr ""
+
 #: src/components/widgets/DoItYourself.vue
 msgid "Export configuration"
 msgstr "Exportar configuração"
@@ -5303,6 +5443,10 @@ msgstr "Exportar configuração"
 #: src/components/EditMenu.vue
 msgid "Export views"
 msgstr "Exportar visualizações"
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Exporting"
+msgstr ""
 
 #: src/components/TransformingFunctionDialog.vue
 msgid "Expression"
@@ -5981,6 +6125,10 @@ msgstr "Conexões WebSocket genéricas"
 msgid "GeoFence"
 msgstr "Cerca virtual"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "GeoJSON, this mission's area"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEnforcementControl.vue
 msgid "Geofence and hazard layers"
 msgstr "Cerca virtual e camadas de perigo"
@@ -6145,6 +6293,7 @@ msgstr ""
 msgid "Grayscale / RGB"
 msgstr "Escala de cinza / RGB"
 
+#: src/components/terrain/TerrainLibrarySection.vue
 #: src/components/terrain/TerrainProfileChart.vue
 msgid "Ground"
 msgstr ""
@@ -6350,6 +6499,10 @@ msgstr "Ocultar detalhes"
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Hide fence actions"
 msgstr "Ocultar ações da cerca"
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Hide from the map"
+msgstr ""
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid "Hide ignored actions"
@@ -6739,6 +6892,8 @@ msgid "Image URL"
 msgstr "URL da imagem"
 
 #: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsImportModal.vue
 #: src/components/widgets/DoItYourself.vue
 msgid "Import"
@@ -6809,6 +6964,10 @@ msgid ""
 msgstr ""
 "Importado em outro computador. Não pode ser exibido aqui até que aquele "
 "computador o envie ao veículo."
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Importing"
+msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
 msgid "Importing…"
@@ -7987,6 +8146,7 @@ msgid ""
 "cells."
 msgstr ""
 
+#: src/components/MissionLibraryModal.vue
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Measured terrain"
 msgstr ""
@@ -7997,6 +8157,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Measured terrain information"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Measured terrain is kept for this mission"
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -8847,6 +9011,18 @@ msgstr ""
 msgid "No matching variables"
 msgstr "Nenhuma variável correspondente"
 
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "No measurement falls within ${ 0 } m of the mission on the planner"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"No measurement the vehicle recorded falls within ${ 0 } m of this mission. "
+"Record along its path, or load a dataset from a file."
+msgstr ""
+
 #: src/components/development/MAVLinkInspector.vue
 msgid "No messages found"
 msgstr "Nenhuma mensagem encontrada"
@@ -8969,6 +9145,10 @@ msgstr "Nenhum levantamento selecionado para excluir."
 #: src/views/MissionPlanningView.vue
 msgid "No survey selected."
 msgstr "Nenhum levantamento selecionado."
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "No terrain saved"
+msgstr ""
 
 #: src/components/terrain/TerrainTidePanel.vue
 #, javascript-format
@@ -9115,6 +9295,11 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Nothing is planned on the map yet"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Nothing measured within ${ 0 } m of the mission"
 msgstr ""
 
 #: src/views/MissionPlanningView.vue
@@ -10369,6 +10554,12 @@ msgstr "Gravar"
 msgid "Record measured terrain"
 msgstr ""
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid ""
+"Record the ground or bottom under the vehicle, then keep the measurements "
+"of a mission here, or import a GeoJSON file measured elsewhere."
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Record the ground or seabed under the vehicle"
 msgstr ""
@@ -10970,6 +11161,10 @@ msgstr "Salvar missão atual"
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Save fence to file"
 msgstr "Salvar cerca virtual em arquivo"
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Save measured terrain"
+msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 #: src/components/mission-planning/ContextMenu.vue
@@ -11621,9 +11816,14 @@ msgstr "Mostrar no mapa"
 msgid "Show on startup"
 msgstr "Mostrar ao iniciar"
 
+#: src/components/terrain/TerrainLibrarySection.vue
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Show on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Show on the map and center it here"
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -11685,6 +11885,11 @@ msgstr "Mostrar valor de guinada"
 #: src/components/MavlinkDumpViewer.vue
 msgid "Show:"
 msgstr "Mostrar:"
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "Showing \"${ 0 }\" on the map."
+msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid ""
@@ -12162,6 +12367,10 @@ msgstr ""
 "Sondas submersas afetam o arrasto e, consequentemente, as estimativas de "
 "consumo de energia."
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Submersible"
+msgstr ""
+
 #: src/components/Tutorial.vue
 msgid ""
 "Subtitle overlays of telemetry data can be recorded with videos. This panel "
@@ -12273,6 +12482,7 @@ msgstr "Frequência da telemetria - 1 a 100 Hz (padrão 1 Hz)"
 msgid "Temperature"
 msgstr "Temperatura"
 
+#: src/components/MissionLibraryModal.vue
 #: src/components/mini-widgets/EkfStateIndicator.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
@@ -12508,6 +12718,12 @@ msgstr ""
 
 #: src/stores/terrain.ts
 msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid ""
+"The dataset is removed from this computer and from the vehicle. "
+"Measurements already added to the measured terrain stay."
 msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
@@ -13998,6 +14214,10 @@ msgstr "Usar intervalo -180/+180"
 msgid "Use a serial/USB device"
 msgstr "Usar um dispositivo serial/USB"
 
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Use as measured terrain"
+msgstr ""
+
 #: src/components/DataSourceSelect.vue
 msgid "Use custom data lake variable"
 msgstr "Usar variável personalizada do data lake"
@@ -14436,6 +14656,10 @@ msgstr "Indicador muito genérico"
 #: src/components/EditMenu.vue
 msgid "Very generic indicator"
 msgstr "Indicador muito genérico"
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Vessel"
+msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Vessel draft"
@@ -15301,6 +15525,12 @@ msgstr ""
 msgid "adds features to it,"
 msgstr "adiciona feições a ela,"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"adds the measurements from a GeoJSON file to the measured terrain and keeps "
+"it in the mission library;"
+msgstr ""
+
 #: src/components/UserNameInputDialog.vue
 msgid "admin mode"
 msgstr "modo de administrador"
@@ -15565,6 +15795,18 @@ msgstr "entrada:"
 msgid "is true. For a GeoTIFF, send"
 msgstr "seja true. Para um GeoTIFF, envie"
 
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "it holds no measured points."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "it is not a GeoJSON file."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "its file is not on this computer yet. Connect to the vehicle and try again."
+msgstr ""
+
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "local network"
 msgstr "rede local"
@@ -15669,6 +15911,10 @@ msgstr "pontos"
 msgid "receiving readings"
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "removes every measurement from this computer."
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 msgid "removes it. Overlays are saved on this computer unless"
 msgstr "a remove. As sobreposições são salvas neste computador, a menos que"
@@ -15693,6 +15939,12 @@ msgstr "executar código no Cockpit"
 #: src/components/InputElementConfig.vue
 msgid "save"
 msgstr "salvar"
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"saves the cells over this mission as GeoJSON, which opens in mapping "
+"software and can be loaded back here, or every cell as a spreadsheet;"
+msgstr ""
 
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "second"
