@@ -240,7 +240,12 @@ const osmRecord = ({ type, id }: OverpassElement): HazardSourceRecord | undefine
 const elementLabel = (element: OverpassElement, fallback: string): string =>
   element.tags?.name?.trim() || element.tags?.['seamark:name']?.trim() || fallback
 
-const coastlineAreas = (elements: OverpassElement[]): HazardArea[] =>
+/**
+ * Chains coastline ways into the runs and rings they form.
+ * @param {OverpassElement[]} elements Coastline ways, with their geometry.
+ * @returns {HazardArea[]} The runs, in their OSM direction, closed ones as polygons.
+ */
+export const coastlineAreas = (elements: OverpassElement[]): HazardArea[] =>
   chainSegments(elements.map(geometryOf)).map((coordinates) =>
     // Keyed on the first vertex rather than a way id, which chaining discards: it keeps the id
     // stable across re-fetches for as long as the underlying geometry is unchanged.
