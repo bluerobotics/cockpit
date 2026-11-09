@@ -116,6 +116,10 @@ msgstr "Sair do modo de edição"
 msgid "Expand the planning panel"
 msgstr ""
 
+#: src/components/MissionLibraryModal.vue
+msgid "Export"
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Flight"
 msgstr "Voo"
@@ -126,6 +130,10 @@ msgstr ""
 
 #: src/components/mission-planning/MissionPlanningSidebar.vue
 msgid "GeoFence"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Import"
 msgstr ""
 
 #: src/views/ConfigurationUIView.vue
@@ -162,8 +170,16 @@ msgstr ""
 msgid "Mission estimates settings"
 msgstr ""
 
+#: src/components/MissionLibraryModal.vue
+msgid "Mission exported."
+msgstr ""
+
 #: src/components/mission-planning/ContextMenu.vue
 msgid "Move mission home here"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Nothing is planned on the map yet"
 msgstr ""
 
 #: src/components/DrawerPanel.vue
@@ -209,6 +225,10 @@ msgstr ""
 
 #: src/components/RotaryEncoderDial.vue
 msgid "Type a value"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Write the mission on the planner to a file"
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue

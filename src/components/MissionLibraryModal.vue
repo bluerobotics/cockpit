@@ -130,8 +130,20 @@
                   Save current mission
                 </v-btn>
                 <v-btn variant="text" size="small" prepend-icon="mdi-upload" @click="triggerImportFile">
-                  Import file
+                  {{ t`Import` }}
                 </v-btn>
+                <span>
+                  <v-tooltip activator="parent" location="top" open-delay="500">{{ exportCurrentHint }}</v-tooltip>
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    prepend-icon="mdi-export"
+                    :disabled="!canSaveCurrent"
+                    @click="onExportCurrentMission"
+                  >
+                    {{ t`Export` }}
+                  </v-btn>
+                </span>
                 <input
                   ref="importInput"
                   type="file"
@@ -319,6 +331,7 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -502,17 +515,41 @@ const onDeleteClick = (mission: SavedMission): void => {
   })
 }
 
+const writeMissionFile = (mission: Omit<SavedMission, 'id'>): void => {
+  const blob = new Blob([JSON.stringify(mission, null, 2)], { type: 'application/json' })
+  const sanitizedName = mission.name.replace(/[\\/:*?"<>|]/g, '_').trim() || 'mission'
+  const date = format(new Date(), 'yyyy-MM-dd_HH-mm-ss')
+  saveAs(blob, `${sanitizedName}_${date}.cmp`)
+  openSnackbar({ variant: 'success', message: t`Mission exported.`, duration: 2000 })
+}
+
 const onExportClick = (mission: SavedMission): void => {
   // Strip the runtime-only `id` from the exported file; it's regenerated on import, and an `id`
   // collision across machines would silently overwrite an unrelated local entry.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...exportable } = mission
-  const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: 'application/json' })
-  const sanitizedName = mission.name.replace(/[\\/:*?"<>|]/g, '_').trim() || 'mission'
-  const date = format(new Date(), 'yyyy-MM-dd_HH-mm-ss')
-  saveAs(blob, `${sanitizedName}_${date}.cmp`)
   logUserAction(`Exported mission "${mission.name}" from the library`)
-  openSnackbar({ variant: 'success', message: 'Mission exported.', duration: 2000 })
+  writeMissionFile(exportable)
+}
+
+const exportCurrentHint = computed(() =>
+  canSaveCurrent.value ? t`Write the mission on the planner to a file` : t`Nothing is planned on the map yet`
+)
+
+// Dated here rather than left out, so the file carries the same fields a saved mission's export does.
+const onExportCurrentMission = (): void => {
+  if (!props.currentMissionSnapshot) return
+  const now = Date.now()
+  logUserAction('Exported the mission on the planner to a file')
+  writeMissionFile({
+    ...props.currentMissionSnapshot,
+    name: missionStore.missionName || 'Mission',
+    description: '',
+    vehicleType: props.effectiveVehicleType,
+    createdAt: now,
+    updatedAt: now,
+    estimates: props.currentMissionEstimates ? { ...props.currentMissionEstimates } : undefined,
+  })
 }
 
 const triggerImportFile = (): void => {
