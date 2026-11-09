@@ -1,12 +1,17 @@
-import { refThrottled } from '@vueuse/core'
+import { refThrottled, useThrottleFn } from '@vueuse/core'
 import { t } from 'ttag'
 import { type InjectionKey, type Ref, computed, inject, provide, ref, shallowRef, watch } from 'vue'
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useMapContext } from '@/composables/map/useMapContext'
-import { type TerrainMapStretch, useTerrainMapOverlay } from '@/composables/map/useTerrainMapOverlay'
+import {
+  type TerrainMapDot,
+  type TerrainMapStretch,
+  useTerrainMapOverlay,
+} from '@/composables/map/useTerrainMapOverlay'
 import { bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG, paddedBbox } from '@/libs/hazards/hazard-areas'
 import type { VisibilityGrid } from '@/libs/terrain/line-of-sight'
+import { measuredCellCenter, measuredCellLabel, trustedCells } from '@/libs/terrain/measured-terrain'
 import type { TerrainFindingKind, TerrainProfileSample } from '@/libs/terrain/mission-profile'
 import { followPathCorners, legLabel } from '@/libs/terrain/mission-profile'
 import {
@@ -146,6 +151,14 @@ export interface TerrainDockState {
    */
   ghostSample: Ref<TerrainProfileSample | undefined>
   /**
+   * Whether measured terrain cells are drawn on the map.
+   */
+  showMeasured: Ref<boolean>
+  /**
+   * Whether the profile outlines the model's ground along the whole mission, to compare it with the measurements.
+   */
+  compareModel: Ref<boolean>
+  /**
    * Profile station the chart is hovering.
    */
   hover: Ref<TerrainProfileSample | null>
@@ -221,6 +234,13 @@ const PATH_SIGHT_TEXT: Record<PathSightKind, string> = {
   'must-climb': t`Too low here for any observer to see the vehicle.`,
   'never-seen': t`No observer can see the vehicle here, at any height.`,
 }
+const MAX_MEASURED_DOTS = 5000
+
+// Deep blue at the lowest measured point to pale yellow at the highest, the usual bathymetry ramp.
+const rampColor = (fraction: number): string => {
+  const clamped = Math.max(0, Math.min(1, fraction))
+  return `rgb(${Math.round(20 + 235 * clamped)}, ${Math.round(60 + 175 * clamped)}, ${Math.round(160 - 40 * clamped)})`
+}
 const COASTLINE_MARGIN_M = 500
 export const DEFAULT_EYE_HEIGHT_M = 1.7
 
@@ -255,6 +275,8 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
   const sightLegendKind = ref<PathSightKind | null>(null)
   const visibility = shallowRef<VisibilityGrid | null>(null)
   const ghostDistanceM = ref<number | null>(null)
+  const showMeasured = ref(false)
+  const compareModel = ref(false)
   const hover = ref<TerrainProfileSample | null>(null)
 
   // Link and sight results describe the mission they were computed for, so an edit retires them.
@@ -392,6 +414,40 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     return { bounds: grid.bbox, url: canvas.toDataURL('image/png') }
   })
 
+  const measuredDots = shallowRef<TerrainMapDot[]>([])
+  const refreshMeasuredDots = useThrottleFn(
+    () => {
+      if (!open.value || !showMeasured.value || !terrainStore.settings.measuredTerrainEnabled) {
+        measuredDots.value = []
+        return
+      }
+      const cells = trustedCells(terrainStore.measured).slice(-MAX_MEASURED_DOTS)
+      const heights = cells.map(([, cell]) => cell.sum / cell.count)
+      const low = Math.min(...heights)
+      const span = Math.max(0.5, Math.max(...heights) - low)
+      const { waterLevelOffsetM } = terrainStore.settings
+      measuredDots.value = cells.map(([key, cell], index) => ({
+        coordinates: measuredCellCenter(key),
+        color: rampColor((heights[index] - low) / span),
+        label: measuredCellLabel(cell, terrain.vehicleClass.value, waterLevelOffsetM),
+      }))
+    },
+    2000,
+    true
+  )
+  watch(
+    [
+      open,
+      showMeasured,
+      terrain.vehicleClass,
+      () => terrainStore.settings.measuredTerrainEnabled,
+      () => terrainStore.settings.waterLevelOffsetM,
+      () => terrainStore.measuredVersion,
+    ],
+    () => void refreshMeasuredDots(),
+    { immediate: true }
+  )
+
   const water = useMissionWater(
     computed(() => terrain.analysis.value?.profile.samples ?? []),
     computed(() => open.value && ['air', 'ground'].includes(terrain.vehicleClass.value)),
@@ -407,6 +463,7 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     image,
     observers: computed(() => (open.value ? terrainStore.settings.visualObservers : [])),
     ghost: computed(() => (open.value ? ghostSample.value?.coordinates ?? null : null)),
+    measured: measuredDots,
   })
 
   // Arrow-key steps on one waypoint in quick succession undo together, so a few presses keep the terrain history.
@@ -466,6 +523,8 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     sightObservers,
     ghostDistanceM,
     ghostSample,
+    showMeasured,
+    compareModel,
     hover,
     pickPoint: overlay.pickPoint,
     focus: overlay.focus,

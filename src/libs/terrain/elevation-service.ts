@@ -71,11 +71,20 @@ export interface TerrainSampleOptions {
    */
   sourceId?: TerrainSourceId
   /**
+   * Skips recorded measurements and returns the model alone.
+   */
+  modelOnly?: boolean
+  /**
    * Returns null for open water no bathymetry knows the depth of, instead of a seabed at sea level, for checks
    * against the seabed.
    */
   seabedOnly?: boolean
 }
+
+/**
+ * Replaces the model's height where something better is known, such as a recorded measurement.
+ */
+export type TerrainOverride = (coordinates: WaypointCoordinates) => number | null
 
 // A decoded tile is 256 KB, so the cache is bounded; oldest out first, which suits a mission that
 // walks across the map rather than jumping back to where it started.
@@ -107,6 +116,7 @@ let config: TerrainServiceConfig = {
   customUrlTemplate: '',
   customMaxZoom: 15,
 }
+let override: TerrainOverride | undefined
 
 const tileCache = new Map<string, Float32Array>()
 const inFlight = new Map<string, Promise<Float32Array>>()
@@ -179,6 +189,15 @@ export const configureTerrainService = (next: TerrainServiceConfig): void => {
 export const reloadTerrainTiles = (): void => {
   tileCache.clear()
   unreachableUntilMs.clear()
+}
+
+/**
+ * Installs, or with `undefined` removes, the function that replaces model heights where better
+ * values are known.
+ * @param {TerrainOverride | undefined} next Override to apply to every sample that does not opt out.
+ */
+export const setTerrainOverride = (next: TerrainOverride | undefined): void => {
+  override = next
 }
 
 /**
@@ -463,5 +482,13 @@ export const sampleTerrain = async (
 ): Promise<(number | null)[]> => {
   if (coordinates.length === 0) return []
   const sourceId = effectiveTerrainSource(options.sourceId ?? config.sourceId)
-  return sampleModel(sourceId, coordinates, options.zoom, options.mode ?? 'nearest', options.seabedOnly ?? false)
+  const heights = await sampleModel(
+    sourceId,
+    coordinates,
+    options.zoom,
+    options.mode ?? 'nearest',
+    options.seabedOnly ?? false
+  )
+  if (!override || options.modelOnly) return heights
+  return heights.map((height, index) => override?.(coordinates[index]) ?? height)
 }
