@@ -204,6 +204,7 @@ ArduCopter support has been physically tested, but the primary development team 
 - **Custom map tile providers** via XYZ URLs or imported ZIP/MBTiles/PMTiles archives
 - **Hazard advisories** warning when a mission or the vehicle meets a coastline, rocks and wrecks, restricted areas, airspace, high ground or shallow water
 - **Air and vessel traffic** on the map, from the vehicle's ADS-B/AIS receivers or from public feeds
+- **Measured terrain as GeoJSON**, exported and imported per mission and kept with the missions on the vehicle
 
 ### 📊 **Data Management**
 - **[Data Lake](https://blueos.cloud/cockpit/docs/latest/usage/advanced/#data-lake)** for centralized variable storage and retrieval

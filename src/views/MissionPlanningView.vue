@@ -1023,6 +1023,7 @@ import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
 import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 import {
   applyFollowZoomMode,
+  applyMapCenterRequest,
   createGridOverlay,
   fitMapToWaypoints,
   mapPointerPositionFromClient,
@@ -5464,7 +5465,7 @@ watch(
   () => missionStore.mapCenterOnRequest,
   (request) => {
     if (!request || !planningMap.value) return
-    planningMap.value.setView(request.coordinates as LatLngTuple, planningMap.value.getZoom(), { animate: true })
+    applyMapCenterRequest(planningMap.value, request)
   }
 )
 </script>
