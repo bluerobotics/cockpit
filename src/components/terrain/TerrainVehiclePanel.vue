@@ -203,8 +203,16 @@
                 the whole profile.`
             }}
             <br />
-            <strong>Export</strong> saves every cell as a spreadsheet; <strong>Clear</strong> removes every measurement
-            from this computer.
+            <strong>{{ t`Export` }}</strong>
+            {{
+              t`saves the cells over this mission as GeoJSON, which opens in mapping software and can be loaded back here, or every cell as a spreadsheet;`
+            }}
+            <strong>{{ t`Import` }}</strong>
+            {{
+              t`adds the measurements from a GeoJSON file to the measured terrain and keeps it in the mission library;`
+            }}
+            <strong>{{ t`Clear` }}</strong>
+            {{ t`removes every measurement from this computer.` }}
           </InfoTooltip>
         </span>
         <v-switch
@@ -293,15 +301,47 @@
           >
             {{ dock.compareModel.value ? t`Hide the comparison` : t`Compare with the model` }}
           </v-btn>
+          <LoadingText v-if="terrainLibrary.busy.value && !importing" class="grow justify-center">
+            {{ t`Exporting` }}
+          </LoadingText>
+          <v-menu v-else theme="dark" location="top" @update:model-value="onExportMenu">
+            <template #activator="{ props: activator }">
+              <v-btn
+                v-bind="activator"
+                variant="flat"
+                size="x-small"
+                class="grow bg-[#FFFFFF22] disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50 rounded-md"
+                :disabled="measuredCounts.trusted === 0 || terrainLibrary.busy.value"
+                prepend-icon="mdi-download"
+              >
+                {{ t`Export` }}
+              </v-btn>
+            </template>
+            <v-list density="compact" :style="interfaceStore.globalGlassMenuStyles">
+              <v-list-item
+                :disabled="terrainLibrary.missionCellCount.value === 0"
+                :title="t`GeoJSON, this mission's area`"
+                :subtitle="missionAreaSubtitle"
+                @click="terrainLibrary.exportMissionTerrain()"
+              />
+              <v-list-item
+                :title="t`CSV, every cell`"
+                :subtitle="t`${measuredCounts.trusted} trusted cells`"
+                @click="onExport"
+              />
+            </v-list>
+          </v-menu>
+          <LoadingText v-if="importing" class="grow justify-center">{{ t`Importing` }}</LoadingText>
           <v-btn
+            v-else
             variant="flat"
             size="x-small"
             class="grow bg-[#FFFFFF22] disabled:!bg-[#FFFFFF22] disabled:!text-white/55 disabled:!opacity-50 rounded-md"
-            :disabled="measuredCounts.trusted === 0"
-            prepend-icon="mdi-download"
-            @click="onExport"
+            :disabled="terrainLibrary.busy.value"
+            prepend-icon="mdi-upload"
+            @click="importInput?.click()"
           >
-            Export CSV
+            {{ t`Import` }}
           </v-btn>
           <v-btn
             variant="flat"
@@ -313,6 +353,13 @@
           >
             {{ t`Clear` }}
           </v-btn>
+          <input
+            ref="importInput"
+            type="file"
+            accept=".geojson,.json,application/geo+json"
+            class="hidden"
+            @change="onImportFile"
+          />
         </div>
       </template>
     </section>
@@ -374,11 +421,14 @@ import NumberInputField from '@/components/NumberInputField.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
 import { useTerrainDock } from '@/composables/terrain/useTerrainDock'
+import { useTerrainLibrary } from '@/composables/terrain/useTerrainLibrary'
 import { sampleTerrain } from '@/libs/terrain/elevation-service'
 import { measuredCellCenter, medianOffsetM, trustedCells } from '@/libs/terrain/measured-terrain'
+import { MISSION_AREA_MARGIN_M } from '@/libs/terrain/measured-terrain-geojson'
 import { followTerrainWaypoints, relinkSurveys } from '@/libs/terrain/quick-actions'
 import { toPlain } from '@/libs/utils'
 import { MAX_CHECKED_WAYPOINTS, terrainCheckSample } from '@/libs/vehicle/mavlink/terrain-protocol'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
 import { useTerrainStore } from '@/stores/terrain'
@@ -393,11 +443,15 @@ const FALLBACK_SPEED_MS = 5
 const terrainStore = useTerrainStore()
 const vehicleStore = useMainVehicleStore()
 const missionStore = useMissionStore()
+const interfaceStore = useAppInterfaceStore()
 const dock = useTerrainDock()
+const terrainLibrary = useTerrainLibrary()
 const { confirmAction } = useInteractionDialog()
+const importInput = ref<HTMLInputElement | null>(null)
 const checkingVehicle = ref(false)
 const vehicleCheck = ref<string | null>(null)
 const comparing = ref(false)
+const importing = ref(false)
 const biasSummary = ref<string | null>(null)
 const playing = ref(false)
 
@@ -581,6 +635,29 @@ const onExport = (): void => {
   saveAs(new Blob([terrainStore.measuredCsv()], { type: 'text/csv' }), fileName)
   logUserAction('Exported the measured terrain as CSV')
   openSnackbar({ variant: 'success', message: t`Measured terrain saved as ${fileName}.`, duration: 4000 })
+}
+
+const missionAreaSubtitle = computed(() =>
+  terrainLibrary.missionCellCount.value === 0
+    ? t`Nothing measured within ${MISSION_AREA_MARGIN_M} m of the mission`
+    : t`${terrainLibrary.missionCellCount.value} cells over the mission`
+)
+
+const onExportMenu = (open: boolean): void => {
+  if (!open) return
+  logUserAction('Opened the measured terrain export menu')
+  terrainLibrary.refreshMissionCells()
+}
+
+const onImportFile = (event: Event): void => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  importing.value = true
+  terrainLibrary.importFile(file).finally(() => {
+    input.value = ''
+    importing.value = false
+  })
 }
 
 const onClear = async (): Promise<void> => {

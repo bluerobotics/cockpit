@@ -1,4 +1,51 @@
+import type { VehicleFileMeta } from '@/composables/useVehicleFileStorage'
+import type { TerrainVehicleClass } from '@/libs/terrain/mission-profile'
+import type { GeoBbox } from '@/types/general'
 import type { WaypointCoordinates } from '@/types/mission'
+
+/**
+ * A measured terrain dataset kept in the mission library, as the library lists it without reading the file.
+ * The file itself holds the measurements; the id is the key it is stored under, so it is not repeated here.
+ */
+export interface TerrainDatasetMeta extends VehicleFileMeta {
+  /**
+   * What the operator called the dataset.
+   */
+  name: string
+  /**
+   * Mission the measurements were taken over, when they came from one.
+   */
+  missionName?: string
+  /**
+   * Id of that mission in the library, so its card can show the measurements are there.
+   */
+  missionId?: string
+  /**
+   * How many measured cells the file holds.
+   */
+  pointCount: number
+  /**
+   * Area the measurements cover.
+   */
+  bounds: GeoBbox
+  /**
+   * Lowest measured height, meters above sea level.
+   */
+  minHeightM: number
+  /**
+   * Highest measured height, meters above sea level.
+   */
+  maxHeightM: number
+  /**
+   * How the vehicle met the terrain, which is what decides whether the dataset reads as depths or heights.
+   */
+  vehicleClass: TerrainVehicleClass
+  /**
+   * Median difference from the internet model, positive where the real ground is higher, null with nothing
+   * to compare against.
+   */
+  modelOffsetM: number | null
+}
 
 /**
  * Elevation models Cockpit can read the ground from.
