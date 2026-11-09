@@ -66,6 +66,11 @@ msgstr ""
 "${ 0 } arquivos ZIP processados com sucesso! O vídeo já está disponível na "
 "aba Vídeos."
 
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "${ 0 } along"
+msgstr ""
+
 #: src/components/recipes/ReadRecipeDialog.vue
 #, javascript-format
 msgid "${ 0 } already exist here and will be replaced."
@@ -3325,6 +3330,10 @@ msgstr ""
 msgid "Could not download the voice recordings. ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Could not download the water map. Try again in a minute."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Could not expand fence storage"
 msgstr "Não foi possível expandir o armazenamento da cerca virtual"
@@ -4493,6 +4502,14 @@ msgstr "${ 0 } baixado"
 #, javascript-format
 msgid "Downloaded ${ 0 } chunks in ${ 1 } archive(s)"
 msgstr "${ 0 } fragmentos baixados em ${ 1 } arquivo(s)"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloaded the water map along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloading"
+msgstr ""
 
 #: src/composables/videoChunkManager.ts
 #, javascript-format
@@ -9131,6 +9148,10 @@ msgstr "Mensagens enviadas:"
 msgid "Outline color"
 msgstr "Cor do contorno"
 
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Over water"
+msgstr ""
+
 #: src/views/ConfigurationLogsView.vue
 msgid "Overlay Options"
 msgstr "Opções de sobreposição"
@@ -9494,6 +9515,10 @@ msgstr ""
 msgid ""
 "Possible shallow water from ${ 0 }: the map shows water where the terrain "
 "model reads land. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Possible shallow water, depth unknown"
 msgstr ""
 
 #: src/components/MissionChecklist.vue
@@ -10336,6 +10361,10 @@ msgstr "${ 0 } mapeamentos de joystick ignorados restaurados de ${ 1 }."
 #: src/components/CameraGimbalControlButtons.vue
 msgid "Retract gimbal"
 msgstr "Recolher gimbal"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Retry"
+msgstr ""
 
 #: src/components/widgets/IFrame.vue
 msgid "Retrying..."
@@ -12328,6 +12357,12 @@ msgid ""
 msgstr ""
 "O vídeo gravado até então foi mantido e está disponível na Biblioteca de "
 "vídeos."
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"The water map could not be downloaded for part of the mission, so water is "
+"not marked on the chart there."
+msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
