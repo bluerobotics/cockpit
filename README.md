@@ -111,6 +111,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **ArduSub Simulator (`sitl://ardusub`)** | Only on the GitHub Pages version, in browsers with cross-origin isolation support (Chrome, Edge, Firefox). Embedded pages, like iframe widgets, may not load while it runs | ❌ Not available |
 | **External Serial GNSS** | ❌ Not available (browsers can't access serial devices outside a secure context) | ✅ Read one or more USB/serial NMEA GNSS receivers into the data-lake |
 | **Mobile Coverage Heatmap** | Limited to OpenStreetMap tower data | ✅ Also supports OpenCellID, with a personal API key |
+| **Terrain Database** | Tilezen or custom tiles, with regional bathymetry under water | ✅ Also the Copernicus surface model (trees and buildings) |
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
 | **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |

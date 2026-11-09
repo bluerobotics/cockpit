@@ -10,6 +10,20 @@ const terrainTilesDB = localforage.createInstance({
 // ponytail: the cache only grows until the user clears it; an LRU sweep by stored date is the upgrade.
 
 /**
+ * How much the persistent terrain cache holds.
+ */
+export interface TerrainCacheSummary {
+  /**
+   * Number of stored tiles.
+   */
+  tiles: number
+  /**
+   * Total size of the stored tiles, in bytes.
+   */
+  bytes: number
+}
+
+/**
  * Reads one stored tile image.
  * @param {string} key Tile key, as built by `terrainSourceTileKey`.
  * @returns {Promise<Blob | null>} The image, or null when it was never stored or cannot be read.
@@ -47,4 +61,25 @@ export const removeStoredTerrainTile = async (key: string): Promise<void> => {
   } catch (error) {
     console.warn(`Could not remove the elevation tile ${key}:`, error)
   }
+}
+
+/**
+ * Counts the stored tiles and their size.
+ * @returns {Promise<TerrainCacheSummary>} The cache summary.
+ */
+export const summarizeTerrainCache = async (): Promise<TerrainCacheSummary> => {
+  const summary: TerrainCacheSummary = { tiles: 0, bytes: 0 }
+  await terrainTilesDB.iterate<Blob, void>((value) => {
+    summary.tiles += 1
+    summary.bytes += value?.size ?? 0
+  })
+  return summary
+}
+
+/**
+ * Removes every stored tile.
+ * @returns {Promise<void>}
+ */
+export const clearTerrainCache = async (): Promise<void> => {
+  await terrainTilesDB.clear()
 }
