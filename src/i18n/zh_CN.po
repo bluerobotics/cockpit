@@ -36,6 +36,13 @@ msgid ""
 "should it go?"
 msgstr "“${ 0 }”将添加到您正在规划的任务中。它应放在哪里？"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"\"Add observer\", then click the map where a person stands. Eyes is their "
+"eye height above the ground. The base station, when placed, is always an "
+"observer."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } (Cockpit Standalone)"
@@ -131,6 +138,11 @@ msgstr "${ 0 } 失败：${ 1 }"
 #, javascript-format
 msgid "${ 0 } floating container"
 msgstr "${ 0 } 悬浮容器"
+
+#: src/composables/terrain/useTerrainDock.ts
+#, javascript-format
+msgid "${ 0 } from ${ 1 }."
+msgstr ""
 
 #: src/composables/secondaryVehicles.ts
 #, javascript-format
@@ -421,6 +433,13 @@ msgstr "${ 0 } — 设备未确认上一次请求，因此它可能未执行"
 msgid "${ 0 }% grade from ${ 1 }."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"${ 0 }% of the mission has a clear link. Worst from ${ 1 }, at ${ 2 }% of "
+"the space the signal needs."
+msgstr ""
+
 #: src/composables/menuRouting.ts
 #, javascript-format
 msgid "'${ 0 }' is only available with pirate mode on."
@@ -483,6 +502,10 @@ msgstr "。再次发送相同的 id 会替换该叠加图层，"
 #: src/views/ConfigurationGeneralView.vue
 msgid ". Update with"
 msgstr "。可使用以下内容更新"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "0 means a clear sky."
+msgstr ""
 
 #: src/components/ArchitectureWarning.vue
 msgid "2x the memory usage"
@@ -830,6 +853,10 @@ msgstr "添加新容器"
 #: src/views/ConfigurationMAVLinkView.vue
 msgid "Add new message"
 msgstr "添加新消息"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Add observer"
+msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
 #: src/components/widgets/Map.vue
@@ -1207,6 +1234,10 @@ msgid ""
 "Amy reverts to the built-in voice, and the others are removed until "
 "downloaded again."
 msgstr "Amy 将恢复为内置语音，其他语音会被移除，直到再次下载。"
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "An observer sees the vehicle here."
+msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid ""
@@ -1627,6 +1658,7 @@ msgstr "基础颜色"
 #: src/components/BaseStationConfigPanel.vue
 #: src/components/BaseStationContextPopup.vue
 #: src/components/poi/PoiMapArrows.vue
+#: src/components/terrain/TerrainSightPanel.vue
 #: src/components/widgets/CompassHUD.vue
 msgid "Base station"
 msgstr "基站"
@@ -2151,6 +2183,10 @@ msgstr ""
 msgid "Check for updates"
 msgstr "检查更新"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Check link"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Check the terrain before upload"
 msgstr ""
@@ -2164,6 +2200,10 @@ msgstr "检查中"
 msgid "Checking for Updates"
 msgstr "检查更新"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Checking the link"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Checking the terrain..."
 msgstr ""
@@ -2173,6 +2213,15 @@ msgid ""
 "Checks an aircraft mission against the terrain before each upload, and asks "
 "to confirm when anything is found. Boat and submarine findings stay in the "
 "terrain panel."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"Checks the straight line from the base antenna (${ 0 } m up)\n"
+"to the vehicle at ${ 1 } MHz, with the earth's curve and the space the\n"
+"signal needs around that line. Buildings and trees are only seen by the "
+"surface model."
 msgstr ""
 
 #: src/components/recipes/ReadRecipeDialog.vue
@@ -2234,6 +2283,7 @@ msgstr "正在清理……"
 #: src/components/recipes/CreateRecipeDialog.vue
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
+#: src/components/terrain/TerrainSightPanel.vue
 #: src/views/MissionPlanningView.vue
 msgid "Clear"
 msgstr "清除"
@@ -2361,6 +2411,10 @@ msgstr "点击输入框选择数据湖变量，并用以下方式包裹变量"
 msgid "Click the field to pick a data-lake variable, or wrap variables in"
 msgstr "点击输入框选择数据湖变量，或以以下方式包裹变量"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Click the map"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Click the map to add vertices."
 msgstr "点击地图以添加顶点。"
@@ -2368,6 +2422,10 @@ msgstr "点击地图以添加顶点。"
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Click the map to set the circle center, then click again to set the radius."
 msgstr "点击地图设置圆心，然后再次点击设置半径。"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Click the map where the observer stands. Escape cancels."
+msgstr ""
 
 #: src/components/MapCenterControl.vue
 msgid "Click to center the map on the current mission."
@@ -2485,6 +2543,14 @@ msgstr "已关闭"
 #: src/libs/menu-pages.ts
 msgid "Cloud"
 msgstr "云"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Cloud base above the observers"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Cloud base:"
+msgstr ""
 
 #: src/views/ConfigurationCloudView.vue
 msgid "Cloud configuration"
@@ -3008,9 +3074,19 @@ msgstr "无法更改代理访问设置。${ 0 }"
 msgid "Could not check for updates right now. Please try again in a moment."
 msgstr "当前无法检查更新。请稍后重试。"
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Could not check the radio link: ${ 0 }"
+msgstr ""
+
 #: src/stores/terrain.ts
 #, javascript-format
 msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Could not compute the line of sight: ${ 0 }"
 msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
@@ -4752,6 +4828,15 @@ msgstr "正在解压 ${ 0 } 个 ZIP 文件..."
 msgid "Extracting ZIP file..."
 msgstr "正在解压 ZIP 文件..."
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Eyes"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Eyes ${ 0 } m, moves with the base station"
+msgstr ""
+
 #: src/components/UserNameInputDialog.vue
 #, javascript-format
 msgid "Failed deleting '${ 0 }'"
@@ -6093,6 +6178,10 @@ msgstr ""
 "中，叠加层存储在容量有限的浏览器存储中，且浏览器可能会清除这些数据，因此非常大的测绘区域可能无法保存或不会持久保留。对于大型数据集或可靠的存储，请使用 "
 "Cockpit standalone。"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "In sight"
+msgstr ""
+
 #: src/components/development/MAVLinkMessagesDumper.vue
 msgid "In-memory buffer"
 msgstr "内存缓冲区"
@@ -7018,6 +7107,10 @@ msgstr "地图"
 msgid "Map Marker"
 msgstr "地图标记"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Map colors:"
+msgstr ""
+
 #: src/views/ConfigurationJoystickView.vue
 msgid "Map function to button"
 msgstr "映射功能到按钮"
@@ -7572,6 +7665,10 @@ msgstr "必须至少为 ${ 0 } 秒。"
 msgid "Must be greater than 0"
 msgstr "必须大于 0"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Must climb to be seen"
+msgstr ""
+
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Muted"
 msgstr "静音"
@@ -7637,6 +7734,10 @@ msgstr "需要 ${ 0 }"
 #: src/views/ConfigurationUIView.vue
 msgid "Needs Cockpit Standalone or a Chromium-based browser such as Chrome or Edge."
 msgstr "需要 Cockpit Standalone 或基于 Chromium 的浏览器，例如 Chrome 或 Edge。"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Never seen"
+msgstr ""
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid "New Actions"
@@ -7944,6 +8045,14 @@ msgstr "扩展未提供新的连接。"
 msgid "No new suggestions — all joystick mapping suggestions have been reviewed."
 msgstr "没有新的建议，所有摇杆映射建议均已审核。"
 
+#: src/composables/terrain/useTerrainDock.ts
+msgid "No observer can see the vehicle"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "No observer can see the vehicle here, at any height."
+msgstr ""
+
 #: src/views/ToolsLogsView.vue
 msgid "No old sessions to delete"
 msgstr "没有可删除的旧会话"
@@ -8173,6 +8282,20 @@ msgstr "确定"
 #: src/composables/baseStation/useBaseStationOverlay.ts
 msgid "OSM towers"
 msgstr "OSM 通信塔"
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Observer ${ 0 }"
+msgstr ""
+
+#: src/composables/map/useTerrainMapOverlay.ts
+#, javascript-format
+msgid "Observer ${ 0 }, eyes ${ 1 } m above the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Observers:"
+msgstr ""
 
 #: src/components/geofence/GeoFenceParametersPanel.vue
 msgid "Off"
@@ -8687,6 +8810,10 @@ msgstr "将任务放置到地图"
 msgid "Place point of interest"
 msgstr "放置兴趣点"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Place the base station on the map to check the radio link."
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 msgid "Place these vehicles on the map"
 msgstr "将这些设备放置在地图上"
@@ -8995,6 +9122,18 @@ msgstr "无线电"
 #: src/components/BaseStationConfigPanel.vue
 msgid "Radio and tether links"
 msgstr "无线电与系绳链路"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio frequency"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio link check information"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio link from the base station"
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "Radio model"
@@ -9385,6 +9524,11 @@ msgstr "将其从忽略列表中移除，这样它再次可用时会被自动映
 #: src/components/map/CustomTileProvidersManager.vue
 msgid "Remove map provider?"
 msgstr "移除地图提供商？"
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Remove observer ${ 0 }"
+msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Remove overlay"
@@ -10433,6 +10577,10 @@ msgstr "设备已解锁时打开菜单显示警告"
 msgid "Show warning when picking a fence action that leaves a boat drifting"
 msgstr "选择会让船只漂流不止的围栏操作时显示警告"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Show where the vehicle stays in sight"
+msgstr ""
+
 #: src/components/widgets/CompassHUD.vue
 msgid "Show yaw value"
 msgstr "显示偏航值"
@@ -10440,6 +10588,12 @@ msgstr "显示偏航值"
 #: src/components/MavlinkDumpViewer.vue
 msgid "Show:"
 msgstr "显示："
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"Shows where people on the ground can still see the vehicle, with the "
+"terrain in the way."
+msgstr ""
 
 #: src/views/ConfigurationCloudView.vue
 msgid "Sign in"
@@ -11234,6 +11388,10 @@ msgid ""
 "changes to the variable value will automatically trigger the linked action."
 msgstr "链接按钮可用于将操作链接到 Data Lake 变量，以便变量值的变化会自动触发链接的操作。"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The map shows where the vehicle can be seen."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "The mission in it is kept and restored if you export it again."
 msgstr "其中的任务会被保留，并在您再次导出时恢复。"
@@ -11268,6 +11426,10 @@ msgstr "主 MAV_CMD_NAV_WAYPOINT 命令无法更改。"
 msgid "The processed video will appear in the \"Videos\" tab"
 msgstr "处理后的视频将出现在\"视频\"标签页中"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The radio link stays clear of the terrain along the mission."
+msgstr ""
+
 #: src/components/joysticks/AxisRangeWarningDialog.vue
 msgid "The range you typed for"
 msgstr "您为"
@@ -11286,6 +11448,16 @@ msgstr "配方应整体阅读。遗漏其中的项目可能导致其余部分无
 
 #: src/libs/audio-recording.ts
 msgid "The recording has no audio data."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"The result tells how much of the mission keeps a clear link and where the "
+"terrain comes closest. Stretches\n"
+"where the terrain takes more than ${ 0 }% of that space are listed in "
+"Findings. The antenna\n"
+"height and the vehicle mast come from the base station settings."
 msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
@@ -11317,10 +11489,27 @@ msgstr "所选流不可用。请检查其信号源或选择其他流。"
 msgid "The stream"
 msgstr "流"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The terrain between the base and the vehicle is unknown."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The terrain blocks the radio link"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
 "The terrain check did not finish, so the mission was not checked against "
 "the terrain."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The terrain crowds the radio link"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "The terrain gets in the way of the radio link in ${ 0 } places."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -11368,6 +11557,10 @@ msgid ""
 "power curves."
 msgstr "此面板中的数值是根据任务几何、设备配置和制造商提供的标称功率曲线得出的分析性估算。"
 
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The vehicle flies too low for any observer to see it"
+msgstr ""
+
 #: src/components/widgets/Map.vue
 msgid "The vehicle has not reported this home position"
 msgstr "设备未上报此原点位置"
@@ -11384,6 +11577,11 @@ msgid ""
 "and tools that can cause unsafe situations."
 msgstr "设备当前已解锁，主菜单包含可能导致不安全情况的配置和工具。"
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "The vehicle leaves every observer's sight in ${ 0 } places."
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
 msgid "The vehicle no longer waits at ${ 0 } waypoint."
@@ -11396,6 +11594,10 @@ msgid ""
 "The vehicle refused this fence for lack of space. It has ${ 0 } points, and "
 "the vehicle did not report how many it can hold."
 msgstr "设备因空间不足而拒绝了此围栏。它有 ${ 0 } 个点，而设备未上报其可容纳的点数。"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The vehicle stays in sight along the whole mission."
+msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
@@ -11874,6 +12076,10 @@ msgstr "要解决此问题，请打开视频设置并清除已选择的 IP。然
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Toggle Interval (ms)"
 msgstr "切换间隔（毫秒）"
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Too low here for any observer to see the vehicle."
+msgstr ""
 
 #: src/components/WidgetBar.vue
 msgid "Too many widgets in this bar — some are being cropped or hidden."
@@ -12909,6 +13115,22 @@ msgstr "可见"
 msgid "Visual"
 msgstr "可视化"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual line of sight"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual line of sight information"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual range"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual range:"
+msgstr ""
+
 #: src/components/Tutorial.vue
 msgid ""
 "Voice alerts can announce notifications and issues during operation, "
@@ -13218,6 +13440,10 @@ msgstr ""
 msgid ""
 "Without a coastline map, the terrain data cannot tell whether this region "
 "is navigable. Load the coastline, or check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Working out the sight lines"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -13590,6 +13816,10 @@ msgstr "会清空它，而"
 msgid "failed to connect"
 msgstr "连接失败"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "farthest distance an observer can still make out the vehicle."
+msgstr ""
+
 #: src/components/BaseStationGnssSetupDialog.vue
 msgid "for GNSS data..."
 msgstr "以获取 GNSS 数据……"
@@ -13598,6 +13828,12 @@ msgstr "以获取 GNSS 数据……"
 #, javascript-format
 msgid "from ${ 0 }"
 msgstr "来自 ${ 0 }"
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"height above the observers where the vehicle disappears into clouds. 0 "
+"means a clear sky."
+msgstr ""
 
 #: src/libs/terrain/mission-profile.ts
 #, javascript-format
@@ -13764,6 +14000,19 @@ msgstr ""
 msgid "the mission changed while it was being checked, try again"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"the mission line is green where an observer sees the vehicle at its planned "
+"height, orange where it flies\n"
+"too low to be seen and red where no observer can see it at any height. "
+"Around it, the map is clear where the\n"
+"vehicle is seen even on the surface, warming to orange as it must climb to "
+"be seen and red where nobody sees\n"
+"it. Pointing at a color marks those stretches on the chart. For aircraft, "
+"stretches out of everyone's sight\n"
+"are listed in Findings."
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "the most detailed bathymetry published for each point"
 msgstr ""
@@ -13774,6 +14023,10 @@ msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid "the terrain did not load in time"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "the terrain under the base station or an observer could not be read"
 msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue

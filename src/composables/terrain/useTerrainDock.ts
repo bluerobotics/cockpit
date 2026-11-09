@@ -1,11 +1,14 @@
 import { refThrottled } from '@vueuse/core'
-import { type InjectionKey, type Ref, computed, inject, provide, ref, watch } from 'vue'
+import { t } from 'ttag'
+import { type InjectionKey, type Ref, computed, inject, provide, ref, shallowRef, watch } from 'vue'
 
+import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useMapContext } from '@/composables/map/useMapContext'
 import { type TerrainMapStretch, useTerrainMapOverlay } from '@/composables/map/useTerrainMapOverlay'
 import { bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG, paddedBbox } from '@/libs/hazards/hazard-areas'
+import type { VisibilityGrid } from '@/libs/terrain/line-of-sight'
 import type { TerrainFindingKind, TerrainProfileSample } from '@/libs/terrain/mission-profile'
-import { followPathCorners } from '@/libs/terrain/mission-profile'
+import { followPathCorners, legLabel } from '@/libs/terrain/mission-profile'
 import {
   climbFindingMessage,
   OTHER_FINDING_RANK,
@@ -17,11 +20,21 @@ import {
   terrainFindingSeverity,
 } from '@/libs/terrain/mission-terrain'
 import { sampleAtFraction } from '@/libs/terrain/profile-chart'
+import {
+  type LinkStation,
+  type PathSightKind,
+  type PathSightStretch,
+  type SightFinding,
+  PATH_SIGHT_COLORS,
+  visibilityImagePixels,
+} from '@/libs/terrain/sight-analysis'
 import type { TerrainTileBounds } from '@/libs/terrain/tiles'
 import { useHazardStore } from '@/stores/hazards'
 import { useMissionStore } from '@/stores/mission'
+import { useTerrainStore } from '@/stores/terrain'
 import type { GeoBbox } from '@/types/general'
 import type { CockpitMission, WaypointCoordinates } from '@/types/mission'
+import type { TerrainObserver } from '@/types/terrain'
 
 import { type UseMissionTerrainReturn, useMissionTerrain } from './useMissionTerrain'
 import { type UseSafeAltitudeReturn, useSafeAltitude } from './useSafeAltitude'
@@ -55,6 +68,14 @@ export interface TerrainDockFinding {
    */
   toM: number
   /**
+   * Dashed on the map, for link and sight findings.
+   */
+  dashed: boolean
+  /**
+   * How observers see the vehicle along it, for sight findings, which the chart and the map draw from `pathSight`.
+   */
+  sightKind?: PathSightKind
+  /**
    * How urgent it is, 0 the most; the list reads in this order.
    */
   rank: number
@@ -87,9 +108,33 @@ export interface TerrainDockState {
    */
   safeAltitude: UseSafeAltitudeReturn
   /**
-   * Every finding, terrain, return and climb, most urgent first and then in mission order.
+   * Every finding, terrain, return, climb, link and sight, most urgent first and then in mission order.
    */
   findings: Ref<TerrainDockFinding[]>
+  /**
+   * Radio link along the mission, empty until checked.
+   */
+  linkStations: Ref<LinkStation[]>
+  /**
+   * Link findings from the last radio check.
+   */
+  linkFindings: Ref<SightFinding[]>
+  /**
+   * How observers see the vehicle along the mission, from the last visibility surface.
+   */
+  pathSight: Ref<PathSightStretch[]>
+  /**
+   * Sight legend entry pointed at or tapped, null for none.
+   */
+  sightLegendKind: Ref<PathSightKind | null>
+  /**
+   * The last visibility surface, cleared when the observers, the visual range or the cloud base change.
+   */
+  visibility: Ref<VisibilityGrid | null>
+  /**
+   * Observers the visibility surface is computed for: those placed on the map, then the base station when placed.
+   */
+  sightObservers: Ref<TerrainObserver[]>
   /**
    * Distance of the ghost run's vehicle along the mission, null when not running.
    */
@@ -102,6 +147,10 @@ export interface TerrainDockState {
    * Profile station the chart is hovering.
    */
   hover: Ref<TerrainProfileSample | null>
+  /**
+   * Waits for a click on the map.
+   */
+  pickPoint: () => Promise<WaypointCoordinates | null>
   /**
    * Fits the map to some positions.
    */
@@ -145,7 +194,25 @@ const TERRAIN_FINDING_ICONS: Partial<Record<TerrainFindingKind, string>> = {
   'collision': TERRAIN_WARNING_ICON,
   'reaches-coastline': 'mdi-map-marker-alert-outline',
 }
+const SIGHT_COLORS: Record<SightFinding['kind'], string> = {
+  'link-blocked': '#E040FB',
+  'link-degraded': '#B388FF',
+  'must-climb': PATH_SIGHT_COLORS['must-climb'],
+  'never-seen': PATH_SIGHT_COLORS['never-seen'],
+}
+const SIGHT_TEXT: Record<SightFinding['kind'], string> = {
+  'link-blocked': t`The terrain blocks the radio link`,
+  'link-degraded': t`The terrain crowds the radio link`,
+  'must-climb': t`The vehicle flies too low for any observer to see it`,
+  'never-seen': t`No observer can see the vehicle`,
+}
+const PATH_SIGHT_TEXT: Record<PathSightKind, string> = {
+  'in-sight': t`An observer sees the vehicle here.`,
+  'must-climb': t`Too low here for any observer to see the vehicle.`,
+  'never-seen': t`No observer can see the vehicle here, at any height.`,
+}
 const COASTLINE_MARGIN_M = 500
+export const DEFAULT_EYE_HEIGHT_M = 1.7
 
 const bboxUnion = (a: GeoBbox, b: GeoBbox): GeoBbox => ({
   south: Math.min(a.south, b.south),
@@ -160,8 +227,10 @@ const bboxUnion = (a: GeoBbox, b: GeoBbox): GeoBbox => ({
  * @returns {TerrainDockState} The state.
  */
 export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockState => {
+  const terrainStore = useTerrainStore()
   const missionStore = useMissionStore()
   const hazardStore = useHazardStore()
+  const baseStation = useBaseStation()
   const { map } = useMapContext()
   const open = ref(false)
   const keepSafe = ref(false)
@@ -170,14 +239,50 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     true
   )
   const safeAltitude = useSafeAltitude(terrain, keepSafe)
+  const linkStations = shallowRef<LinkStation[]>([])
+  const linkFindings = shallowRef<SightFinding[]>([])
+  const pathSight = shallowRef<PathSightStretch[]>([])
+  const sightLegendKind = ref<PathSightKind | null>(null)
+  const visibility = shallowRef<VisibilityGrid | null>(null)
   const ghostDistanceM = ref<number | null>(null)
   const hover = ref<TerrainProfileSample | null>(null)
+
+  // Link and sight results describe the mission they were computed for, so an edit retires them.
+  watch(
+    () => terrain.analysis.value,
+    () => {
+      linkStations.value = []
+      linkFindings.value = []
+      pathSight.value = []
+      sightLegendKind.value = null
+    }
+  )
+
+  const sightObservers = computed<TerrainObserver[]>(() => {
+    const base = baseStation.activePosition
+    const placed = terrainStore.settings.visualObservers
+    return base ? [...placed, { position: base, heightAboveGroundM: DEFAULT_EYE_HEIGHT_M }] : placed
+  })
+  watch(
+    [sightObservers, () => terrainStore.settings.visualRangeM, () => terrainStore.settings.cloudBaseM],
+    () => {
+      visibility.value = null
+      pathSight.value = []
+      sightLegendKind.value = null
+    },
+    { deep: true }
+  )
 
   const findings = computed<TerrainDockFinding[]>(() => {
     const analysis = terrain.analysis.value
     if (!analysis) return []
     const context = terrain.context()
     const { points, profile, returnFindings, climbFindings } = analysis
+    // Only an aircraft's height decides whether it is seen, so only its out-of-sight stretches are findings.
+    const sightFindings =
+      terrain.vehicleClass.value === 'air'
+        ? pathSight.value.flatMap(({ kind, ...stretch }) => (kind === 'in-sight' ? [] : [{ kind, ...stretch }]))
+        : []
     return [
       ...profile.findings.map((finding, index) => ({
         key: `terrain-${index}`,
@@ -186,6 +291,7 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
         icon: TERRAIN_FINDING_ICONS[finding.kind] ?? 'mdi-image-filter-hdr',
         fromM: finding.fromM,
         toM: finding.toM,
+        dashed: false,
         rank: terrainFindingRank(finding.kind),
       })),
       ...returnFindings.map((finding, index) => ({
@@ -195,6 +301,7 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
         icon: 'mdi-home-import-outline',
         fromM: finding.fromM,
         toM: finding.toM,
+        dashed: false,
         rank: RETURN_FINDING_RANK,
       })),
       ...climbFindings.map((finding, index) => ({
@@ -204,8 +311,24 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
         icon: 'mdi-chart-line-variant',
         fromM: finding.fromM,
         toM: finding.toM,
+        dashed: false,
         rank: OTHER_FINDING_RANK,
       })),
+      ...[...linkFindings.value, ...sightFindings].map(({ kind, legIndex, fromM, toM }, index) => {
+        const sightKind = kind === 'must-climb' || kind === 'never-seen' ? kind : undefined
+        const leg = legLabel(points, legIndex)
+        return {
+          key: `sight-${index}`,
+          message: t`${SIGHT_TEXT[kind]} from ${leg}.`,
+          color: SIGHT_COLORS[kind],
+          icon: sightKind ? 'mdi-eye-off-outline' : 'mdi-access-point-network-off',
+          fromM,
+          toM,
+          dashed: true,
+          sightKind,
+          rank: OTHER_FINDING_RANK,
+        }
+      }),
     ].sort((a, b) => a.rank - b.rank || a.fromM - b.fromM)
   })
 
@@ -217,12 +340,26 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
       checked,
       terrain.points().map(({ coordinates }) => coordinates)
     )
-    // Drawn least urgent first, so where two findings share a stretch the more urgent line is on top.
-    return [...findings.value].reverse().map(({ fromM, toM, color, message }) => ({
+    const sight = pathSight.value.map(({ kind, fromM, toM }) => ({
       path: profileStretch(samples, fromM, toM),
-      color,
-      message,
+      color: PATH_SIGHT_COLORS[kind],
+      message: PATH_SIGHT_TEXT[kind],
+      dashed: true,
+      highlighted: sightLegendKind.value === kind,
     }))
+    // Drawn least urgent first, so where two findings share a stretch the more urgent line is on top.
+    return [
+      ...sight,
+      ...[...findings.value]
+        .reverse()
+        .filter(({ sightKind }) => !sightKind)
+        .map(({ fromM, toM, color, message, dashed }) => ({
+          path: profileStretch(samples, fromM, toM),
+          color,
+          message,
+          dashed,
+        })),
+    ]
   })
 
   const ghostSample = computed(() => {
@@ -232,10 +369,25 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     return sampleAtFraction(samples, distance / (samples.at(-1)?.distanceM || 1))
   })
 
+  const image = computed(() => {
+    const grid = visibility.value
+    if (!open.value || !grid) return null
+    const canvas = document.createElement('canvas')
+    canvas.width = grid.columns
+    canvas.height = grid.rows
+    const { minimumClearanceM, visualRangeM } = terrainStore.settings
+    const observers = sightObservers.value.map(({ position }) => position)
+    const pixels = visibilityImagePixels(grid, Math.max(30, minimumClearanceM * 6), observers, visualRangeM)
+    canvas.getContext('2d')?.putImageData(new ImageData(pixels, grid.columns, grid.rows), 0, 0)
+    return { bounds: grid.bbox, url: canvas.toDataURL('image/png') }
+  })
+
   const overlay = useTerrainMapOverlay(map, {
     // Each change redraws every finding line, which a waypoint drag would otherwise do at pointer rate.
     stretches: refThrottled(stretches, 100),
     hover: computed(() => (open.value ? hover.value?.coordinates ?? null : null)),
+    image,
+    observers: computed(() => (open.value ? terrainStore.settings.visualObservers : [])),
     ghost: computed(() => (open.value ? ghostSample.value?.coordinates ?? null : null)),
   })
 
@@ -288,9 +440,16 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     open,
     safeAltitude,
     findings,
+    linkStations,
+    linkFindings,
+    pathSight,
+    sightLegendKind,
+    visibility,
+    sightObservers,
     ghostDistanceM,
     ghostSample,
     hover,
+    pickPoint: overlay.pickPoint,
     focus: overlay.focus,
     visibleBounds: overlay.visibleBounds,
     replaceMission,
