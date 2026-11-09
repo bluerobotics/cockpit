@@ -73,6 +73,14 @@
             fill="none"
             vector-effect="non-scaling-stroke"
           />
+          <path
+            :d="geometry.uploadLine"
+            stroke="#FFFFFF"
+            stroke-width="1.5"
+            stroke-dasharray="5 3"
+            fill="none"
+            vector-effect="non-scaling-stroke"
+          />
           <line
             v-for="x in markerXs"
             :key="x"
@@ -97,6 +105,12 @@
             vector-effect="non-scaling-stroke"
           />
         </svg>
+        <span
+          v-for="dot in uploadDots"
+          :key="dot.key"
+          class="absolute w-[7px] h-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-[#0B1A24] pointer-events-none"
+          :style="{ left: `${dot.percent}%`, top: `${dot.topPercent}%` }"
+        />
         <button
           v-for="marker in labelMarkers"
           :key="marker.waypointIndex"
@@ -160,12 +174,12 @@
           <TerrainShallowsMarker :bbox="marker.bbox" :description="marker.description" />
         </div>
         <div
-          v-for="marker in collisionMarkers"
+          v-for="marker in warningMarkers"
           :key="marker.key"
           class="absolute bottom-4 -translate-x-1/2"
           :style="{ left: `${marker.percent}%` }"
         >
-          <v-tooltip location="top" max-width="320" open-on-click @update:model-value="onToggleCollision">
+          <v-tooltip location="top" max-width="320" open-on-click @update:model-value="onToggleWarning">
             <template #activator="{ props: tooltipProps }">
               <v-btn
                 v-bind="tooltipProps"
@@ -173,14 +187,16 @@
                 variant="text"
                 size="x-small"
                 class="!w-[22px] !h-[22px]"
-                aria-label="Goes into the terrain"
+                :aria-label="marker.sections.map(({ title }) => title).join(', ')"
               >
                 <TerrainWarningTriangle :size="18" />
               </v-btn>
             </template>
             <div class="flex flex-col gap-y-1 text-xs">
-              <p class="font-semibold">Goes into the terrain</p>
-              <p v-for="message in marker.messages" :key="message">{{ message }}</p>
+              <template v-for="section in marker.sections" :key="section.title">
+                <p class="font-semibold">{{ section.title }}</p>
+                <p v-for="message in section.messages" :key="message">{{ message }}</p>
+              </template>
             </div>
           </v-tooltip>
         </div>
@@ -216,6 +232,19 @@
       >
         {{ tideLabel.text }}
       </span>
+      <span
+        v-if="uploadPath.length > 0"
+        class="absolute right-1 bottom-1 flex items-center gap-x-1.5 px-1.5 rounded-sm text-[10px] leading-4 bg-[#FFFFFF11] whitespace-nowrap"
+      >
+        <span class="flex items-center" aria-hidden="true">
+          <span class="w-[7px] h-[7px] rounded-full border border-white bg-[#0B1A24]" />
+          <svg width="19" height="4" viewBox="0 0 19 4">
+            <line x1="0" y1="2" x2="19" y2="2" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="5 3" />
+          </svg>
+          <span class="w-[7px] h-[7px] rounded-full border border-white bg-[#0B1A24]" />
+        </span>
+        {{ t`Path sent on upload, with the waypoints it adds` }}
+      </span>
     </div>
   </div>
 </template>
@@ -229,10 +258,12 @@ import TerrainShallowsMarker from '@/components/terrain/TerrainShallowsMarker.vu
 import TerrainWarningTriangle from '@/components/terrain/TerrainWarningTriangle.vue'
 import { paddedBbox } from '@/libs/hazards/hazard-areas'
 import type { ProfilePoint, TerrainProfileSample, TerrainVehicleClass } from '@/libs/terrain/mission-profile'
+import type { UploadPathPoint } from '@/libs/terrain/mission-terrain'
 import {
   type ProfileChartBand,
   type ProfileChartOptions,
   type ProfileChartShallows,
+  type ProfileChartWarning,
   PROFILE_CHART_HEIGHT,
   PROFILE_CHART_WIDTH,
   profileChartGeometry,
@@ -275,9 +306,9 @@ const props = defineProps<{
    */
   shallows: ProfileChartShallows[]
   /**
-   * Stretches where the vehicle goes into the terrain, each with the finding's sentence.
+   * Stretches to mark with a warning triangle, such as where the vehicle goes into the terrain.
    */
-  collisions: Omit<ProfileChartShallows, 'raised'>[]
+  warnings: ProfileChartWarning[]
   /**
    * Stretches to shade.
    */
@@ -306,6 +337,10 @@ const props = defineProps<{
    * Height the chart is drawn at, in pixels.
    */
   heightPx: number
+  /**
+   * The path an upload sends, drawn over the planned one when it differs; empty for none.
+   */
+  uploadPath: UploadPathPoint[]
 }>()
 
 const emit = defineEmits<{
@@ -377,6 +412,7 @@ const chartOptions = computed<ProfileChartOptions>(() => ({
   shallows: props.shallows,
   modelGroundM: props.modelGroundM,
   overWater: stationsOverWater.value,
+  uploadPath: props.uploadPath,
 }))
 
 const baseGeometry = computed(() => profileChartGeometry(props.samples, chartOptions.value))
@@ -501,6 +537,16 @@ const topPercent = (heightM: number): number => {
   return Math.min(100, Math.max(0, ((maxM - heightM) / (maxM - minM)) * 100))
 }
 
+const uploadDots = computed(() =>
+  props.uploadPath
+    .filter(({ added }) => added)
+    .map(({ distanceM, amslM }) => ({
+      key: `${distanceM}-${amslM}`,
+      percent: (distanceM / lengthM.value) * 100,
+      topPercent: topPercent(amslM),
+    }))
+)
+
 const heightHandles = computed(() =>
   waypointMarkers.value.flatMap(({ waypointIndex, pointIndex, percent, heightM }) => {
     if (heightM === null) return []
@@ -563,9 +609,23 @@ const shallowsMarkers = computed(() => {
 })
 
 /**
- * A warning triangle on the chart for one or more collisions.
+ * Warnings of one kind read from a triangle.
  */
-interface CollisionMarker {
+interface WarningSection {
+  /**
+   * Heading of the kind.
+   */
+  title: string
+  /**
+   * Descriptions under it.
+   */
+  messages: string[]
+}
+
+/**
+ * A warning triangle on the chart for one or more warnings.
+ */
+interface WarningMarker {
   /**
    * Stable key for the list.
    */
@@ -575,25 +635,32 @@ interface CollisionMarker {
    */
   percent: number
   /**
-   * Collision descriptions read from the triangle.
+   * Warnings read from the triangle, grouped by heading.
    */
-  messages: string[]
+  sections: WarningSection[]
 }
 
-// Collisions too close to share the width are read from one marker.
-const collisionMarkers = computed(() => {
-  const markers: CollisionMarker[] = []
-  props.collisions.forEach(({ fromM, toM, description }) => {
-    const percent = markerPercent(fromM, toM)
+// Warnings too close to share the width are read from one marker.
+const warningMarkers = computed(() => {
+  const markers: WarningMarker[] = []
+  const ordered = props.warnings
+    .map((warning) => ({ ...warning, percent: markerPercent(warning.fromM, warning.toM) }))
+    .sort((a, b) => a.percent - b.percent)
+  ordered.forEach(({ fromM, toM, percent, title, description }) => {
     const last = markers.at(-1)
-    if (last && percent - last.percent < SHALLOWS_LABEL_GAP_PERCENT / widthScale.value) last.messages.push(description)
-    else markers.push({ key: `${fromM}-${toM}`, percent, messages: [description] })
+    if (!last || percent - last.percent >= SHALLOWS_LABEL_GAP_PERCENT / widthScale.value) {
+      markers.push({ key: `${fromM}-${toM}`, percent, sections: [{ title, messages: [description] }] })
+      return
+    }
+    const section = last.sections.find((entry) => entry.title === title)
+    if (section) section.messages.push(description)
+    else last.sections.push({ title, messages: [description] })
   })
   return markers
 })
 
-const onToggleCollision = (open: boolean): void => {
-  if (open) logUserAction('Opened the terrain collision details on the terrain profile')
+const onToggleWarning = (open: boolean): void => {
+  if (open) logUserAction('Opened the terrain warning details on the terrain profile')
 }
 
 const hoveredOnShoal = computed(() => {

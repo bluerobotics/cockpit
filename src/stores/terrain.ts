@@ -5,6 +5,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { useMeasuredTerrainRecorder } from '@/composables/terrain/useMeasuredTerrainRecorder'
+import { useTerrainVehicleLink } from '@/composables/terrain/useTerrainVehicleLink'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { BATHYMETRY_SOURCES } from '@/libs/terrain/bathymetry'
 import {
@@ -43,6 +44,7 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   resolveTerrainOnUpload: false,
   terrainFollowToleranceM: 5,
   aimRoiAtGround: false,
+  serveTerrainToVehicle: true,
   measuredTerrainEnabled: true,
   recordMeasuredTerrain: false,
   useMeasuredTerrain: true,
@@ -233,6 +235,11 @@ export const useTerrainStore = defineStore('terrain', () => {
    */
   const waterLevelNowM = (): number =>
     settings.value.waterLevelOffsetM + (waterLevelAt(tidePredictions.value, Date.now()) ?? 0)
+  const vehicleLink = useTerrainVehicleLink(settings)
+  // Serving is passive: the vehicle holds Cockpit's terrain only once it has asked for some and received it.
+  const servesVehicleTerrain = computed(
+    () => settings.value.serveTerrainToVehicle && vehicleLink.servedBlocks.value > 0
+  )
   const recorder = useMeasuredTerrainRecorder(settings, waterLevelNowM)
 
   /**
@@ -255,6 +262,11 @@ export const useTerrainStore = defineStore('terrain', () => {
     downloadProgress,
     downloadArea,
     cancelDownload,
+    servesVehicleTerrain,
+    servedBlocks: vehicleLink.servedBlocks,
+    lastRequestAtMs: vehicleLink.lastRequestAtMs,
+    lastReport: vehicleLink.lastReport,
+    checkVehicleTerrain: vehicleLink.checkVehicleTerrain,
     measured: recorder.measured,
     measuredVersion: recorder.measuredVersion,
     receivingRange: recorder.receivingRange,

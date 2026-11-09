@@ -160,6 +160,26 @@ export const levelWaypoints = (waypoints: Waypoint[], altitudeM: number): Waypoi
   }))
 
 /**
+ * Measures every waypoint set relative to home from the ground under it instead, at one height. Waypoints set
+ * above sea level were placed there on purpose, so they keep their height.
+ * @param {Waypoint[]} waypoints Mission waypoints.
+ * @param {number} heightM Height over the ground.
+ * @returns {QuickActionResult} The waypoints, with how many now follow the terrain.
+ */
+export const followTerrainWaypoints = (waypoints: Waypoint[], heightM: number): QuickActionResult => {
+  const fromHome = (waypoint: Waypoint): boolean =>
+    waypoint.altitudeReferenceType === AltitudeReferenceType.RELATIVE_TO_HOME
+  return {
+    waypoints: waypoints.map((waypoint) =>
+      fromHome(waypoint)
+        ? { ...waypoint, altitude: heightM, altitudeReferenceType: AltitudeReferenceType.RELATIVE_TO_TERRAIN }
+        : waypoint
+    ),
+    changed: waypoints.filter(fromHome).length,
+  }
+}
+
+/**
  * Moves every waypoint up or down, each in its own altitude reference.
  * @param {Waypoint[]} waypoints Mission waypoints.
  * @param {number} changeM Meters up, negative for down.

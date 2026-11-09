@@ -11,6 +11,7 @@ import {
   type TerrainFindingKind,
   type TerrainProfile,
   type TerrainProfileContext,
+  type TerrainProfileSample,
   buildTerrainProfile,
   densifyPath,
   legLabel,
@@ -18,6 +19,7 @@ import {
   profileSpacingM,
   surfaceHeight,
 } from './mission-profile'
+import { sampleAtFraction } from './profile-chart'
 import { type ReturnBehavior, type ReturnPathFinding, returnPathFindings, returnPathPlan } from './return-path'
 import {
   type ClimbFinding,
@@ -488,4 +490,148 @@ export const profileStretch = (samples: PathStation[], fromM: number, toM: numbe
     Math.abs(sample.distanceM - fromM) < Math.abs(best.distanceM - fromM) ? sample : best
   )
   return [nearest.coordinates]
+}
+
+/**
+ * A run of consecutive legs flown at a height over the ground.
+ */
+export interface TerrainRelativeStretch {
+  /**
+   * Start, meters from the start of the path.
+   */
+  fromM: number
+  /**
+   * End, meters from the start of the path.
+   */
+  toM: number
+  /**
+   * The legs it covers, as the operator reads them, such as "home to waypoint 3".
+   */
+  label: string
+}
+
+/**
+ * Where the path holds a height over the ground, which the vehicle can only do with terrain data of its own. A leg
+ * is flown in its destination's frame, so it counts when the waypoint it reaches is terrain-relative.
+ * @param {ProfilePoint[]} points Path points, home first.
+ * @param {PathStation[]} samples Profile stations, in order.
+ * @returns {TerrainRelativeStretch[]} One stretch per run of terrain-relative legs, in path order.
+ */
+export const terrainRelativeStretches = (points: ProfilePoint[], samples: PathStation[]): TerrainRelativeStretch[] => {
+  checkTerrainRelativeStretchesOnce()
+  const relative = (station: PathStation | undefined): boolean =>
+    station !== undefined &&
+    points[station.legIndex + 1]?.altitudeReferenceType === AltitudeReferenceType.RELATIVE_TO_TERRAIN
+  const stretches: TerrainRelativeStretch[] = []
+  let first: PathStation | undefined
+  for (const [index, sample] of samples.entries()) {
+    if (!relative(sample)) continue
+    first ??= sample
+    if (relative(samples[index + 1])) continue
+    const label = legLabel([points[first.legIndex], points[sample.legIndex + 1]], 0)
+    stretches.push({ fromM: first.distanceM, toM: sample.distanceM, label })
+    first = undefined
+  }
+  return stretches
+}
+
+/**
+ * A point of the path an upload sends, laid along the profile.
+ */
+export interface UploadPathPoint {
+  /**
+   * Position as [latitude, longitude].
+   */
+  coordinates: WaypointCoordinates
+  /**
+   * Distance from the start of the path, in meters.
+   */
+  distanceM: number
+  /**
+   * Height above sea level, in meters.
+   */
+  amslM: number
+  /**
+   * Whether the upload adds it, rather than it being a planned waypoint.
+   */
+  added: boolean
+}
+
+/**
+ * The path an upload sends, from home through each uploaded waypoint at its distance along the profile and its
+ * height. Heights the upload leaves in another frame are read from the planned path, which passes through them.
+ * @param {Waypoint[]} uploaded Waypoints the upload sends.
+ * @param {Waypoint[]} planned The planned waypoints, to tell the added ones apart.
+ * @param {WaypointCoordinates} home Home position.
+ * @param {TerrainProfileSample[]} samples Profile stations of the planned mission.
+ * @returns {UploadPathPoint[]} Home first, then the uploaded waypoints whose height is known.
+ */
+export const uploadPathPoints = (
+  uploaded: Waypoint[],
+  planned: Waypoint[],
+  home: WaypointCoordinates,
+  samples: TerrainProfileSample[]
+): UploadPathPoint[] => {
+  const plannedIds = new Set(planned.map(({ id }) => id))
+  const lengthM = samples.at(-1)?.distanceM || 1
+  const start = samples[0]?.pathAmslM
+  const points: UploadPathPoint[] =
+    start === null || start === undefined ? [] : [{ coordinates: home, distanceM: 0, amslM: start, added: false }]
+  let distanceM = 0
+  let previous = home
+  for (const waypoint of uploaded) {
+    distanceM += legLengthM(previous, waypoint.coordinates)
+    previous = waypoint.coordinates
+    const amslM =
+      waypoint.altitudeReferenceType === AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL
+        ? waypoint.altitude
+        : sampleAtFraction(samples, distanceM / lengthM)?.pathAmslM
+    if (amslM === null || amslM === undefined) continue
+    points.push({ coordinates: waypoint.coordinates, distanceM, amslM, added: !plannedIds.has(waypoint.id) })
+  }
+  return points
+}
+
+let stretchesChecked = false
+
+const checkTerrainRelativeStretchesOnce = (): void => {
+  // @ts-ignore: import.meta.env does not exist in the types
+  if (stretchesChecked || !import.meta.env.DEV || typeof assert !== 'function') return
+  stretchesChecked = true
+  const point = (waypointIndex: number | null, terrain: boolean): ProfilePoint => ({
+    coordinates: [0, 0],
+    altitude: 30,
+    altitudeReferenceType: terrain ? AltitudeReferenceType.RELATIVE_TO_TERRAIN : AltitudeReferenceType.RELATIVE_TO_HOME,
+    waypointIndex,
+  })
+  const points = [point(null, false), point(0, true), point(1, true), point(2, false), point(3, true)]
+  const samples = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5].map((at) => ({
+    coordinates: [0, 0] as WaypointCoordinates,
+    distanceM: at * 100,
+    legIndex: Math.min(3, Math.floor(at)),
+    legFraction: at % 1,
+  }))
+  const stretches = terrainRelativeStretches(points, samples)
+  assert(stretches.length === 2, 'A home-relative leg splits the terrain-relative runs')
+  const spans = (index: number, from: number, to: number): boolean =>
+    stretches[index].label === legLabel([points[from], points[to]], 0)
+  assert(spans(0, 0, 2) && stretches[0].toM === 150, 'A run spans its consecutive legs')
+  assert(spans(1, 3, 4) && stretches[1].fromM === 300, 'A leg counts by its destination')
+  const leg = { altitude: 30, altitudeReferenceType: AltitudeReferenceType.RELATIVE_TO_HOME, commands: [] }
+  const planned = [{ ...leg, id: 'a', coordinates: [0, 0.002] as WaypointCoordinates }]
+  const added = { ...leg, id: 'b', coordinates: [0, 0.001] as WaypointCoordinates, altitude: 140 }
+  const flat = [0, 0.5, 1].map((fraction) => ({
+    ...samples[0],
+    distanceM: legLengthM([0, 0], [0, 0.002]) * fraction,
+    pathAmslM: 100,
+  }))
+  const path = uploadPathPoints(
+    [{ ...added, altitudeReferenceType: AltitudeReferenceType.ABSOLUTE_RELATIVE_TO_MSL }, planned[0]],
+    planned,
+    [0, 0],
+    flat as TerrainProfileSample[]
+  )
+  assert(path.length === 3 && path[1].added && !path[2].added, 'Added waypoints are told from planned ones')
+  assert(path[1].amslM === 140 && path[2].amslM === 100, 'A sea-level height is taken as sent, others from the path')
+  assert(Math.abs(path[2].distanceM - flat[2].distanceM) < 0.5, 'Waypoints are laid at their distance along the path')
 }
