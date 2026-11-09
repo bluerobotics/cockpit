@@ -336,6 +336,10 @@ msgstr ""
 msgid "Cap the height above the ground at"
 msgstr ""
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Charted feature"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Check failed"
 msgstr ""
@@ -495,6 +499,11 @@ msgstr ""
 #: src/composables/terrain/useSafeAltitude.ts
 #, javascript-format
 msgid "Could not raise the waypoints: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useShallowsNotes.ts
+#, javascript-format
+msgid "Could not read OpenStreetMap: ${ 0 }"
 msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
@@ -959,6 +968,10 @@ msgid ""
 "more."
 msgstr ""
 
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "Looking for charted shoals in OpenStreetMap..."
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid ""
 "Lowers the waypoints that sit higher over the ground than this, such as the "
@@ -1118,6 +1131,10 @@ msgstr ""
 msgid "Observers:"
 msgstr ""
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Obstruction"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "Only the depths the terrain source holds itself, such as those of your "
@@ -1132,6 +1149,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Open the mission settings"
+msgstr ""
+
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "OpenStreetMap charts no shoal, reef, rock or wreck here."
 msgstr ""
 
 #: src/components/terrain/TerrainProfileChart.vue
@@ -1289,6 +1310,10 @@ msgstr ""
 msgid "Recalculating heights..."
 msgstr ""
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Reef"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "Regions of interest left at zero altitude are sent at the ground height "
@@ -1321,6 +1346,10 @@ msgstr ""
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Rises above the water surface from ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Rock"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1378,6 +1407,10 @@ msgstr ""
 msgid ""
 "Ship multibeam surveys from around the world, about 100 m per sample where "
 "surveyed, over GEBCO everywhere else."
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Shoal"
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
@@ -1660,6 +1693,10 @@ msgid ""
 "not marked on the chart there."
 msgstr ""
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Tidal flat"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Tile address"
 msgstr ""
@@ -1811,6 +1848,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "Working out the sight lines"
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Wreck"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
