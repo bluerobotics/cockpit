@@ -141,7 +141,6 @@
                 "
                 :tooltip="simplifiedMainMenu ? menuitem.title : undefined"
                 :padding-class="simplifiedMainMenu ? 'py-0.5' : undefined"
-                button-class="-ml-[2px]"
                 :icon="menuitem.icon"
                 :selected="activeMenuPage === menuitem.componentName"
                 variant="uncontained"
