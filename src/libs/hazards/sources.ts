@@ -13,9 +13,10 @@ export interface HazardSourceMeta {
    */
   caveat: string
   /**
-   * Attribution the dataset's license requires Cockpit to display.
+   * Attribution the dataset's license requires Cockpit to display, absent for the grid sources, which credit the
+   * terrain model they are read from.
    */
-  attribution: string
+  attribution?: string
   /**
    * Color used for this source's areas on the map and its chip in the advisory list.
    */
@@ -25,10 +26,6 @@ export interface HazardSourceMeta {
    */
   icon: string
 }
-
-const TERRAIN_TILES_ATTRIBUTION =
-  'Elevation: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">Terrain Tiles</a>, ' +
-  'USGS 3DEP, SRTM, GMTED2010, ETOPO1, EU-DEM and the other sources listed there'
 
 export const HAZARD_SOURCES: Record<HazardSourceId, HazardSourceMeta> = {
   'coastline': {
@@ -66,7 +63,6 @@ export const HAZARD_SOURCES: Record<HazardSourceId, HazardSourceMeta> = {
   'terrain': {
     label: 'High ground',
     caveat: 'Sampled from a global elevation model with roughly 30 m spacing, so it misses masts, trees and buildings.',
-    attribution: TERRAIN_TILES_ATTRIBUTION,
     color: '#F97316',
     icon: 'mdi-terrain',
   },
@@ -75,7 +71,6 @@ export const HAZARD_SOURCES: Record<HazardSourceId, HazardSourceMeta> = {
     caveat:
       'Read from the same global elevation model, whose seabed is coarse (often hundreds of meters between ' +
       'soundings) and ignores tides. Use it to spot banks and shoals, never to judge depth under the hull.',
-    attribution: TERRAIN_TILES_ATTRIBUTION,
     color: '#3B82F6',
     icon: 'mdi-waves-arrow-up',
   },

@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('ais-stream-reports', (_event, reports) => callback(reports)),
   onAisStreamError: (callback: (message: string) => void) =>
     ipcRenderer.on('ais-stream-error', (_event, message) => callback(message)),
+  getCopernicusTerrainTile: (z: number, x: number, y: number) =>
+    ipcRenderer.invoke('get-copernicus-terrain-tile', z, x, y),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>
     ipcRenderer.on('update-available', (_event, info) => callback(info)),
