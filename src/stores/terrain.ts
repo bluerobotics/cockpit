@@ -6,6 +6,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { useSnackbar } from '@/composables/snackbar'
 import { useMeasuredTerrainRecorder } from '@/composables/terrain/useMeasuredTerrainRecorder'
 import { useTerrainVehicleLink } from '@/composables/terrain/useTerrainVehicleLink'
+import { createVehicleFileStorage } from '@/composables/useVehicleFileStorage'
 import { BATHYMETRY_SOURCES } from '@/libs/terrain/bathymetry'
 import {
   configureTerrainService,
@@ -25,7 +26,7 @@ import { type TerrainCacheSummary, clearTerrainCache, summarizeTerrainCache } fr
 import type { TerrainTileBounds } from '@/libs/terrain/tiles'
 import { type TideStation, type WaterLevelPoint, fetchTidePredictions, waterLevelAt } from '@/libs/terrain/water-level'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import type { BathymetrySourceId, TerrainSettings, TerrainSourceId } from '@/types/terrain'
+import type { BathymetrySourceId, TerrainDatasetMeta, TerrainSettings, TerrainSourceId } from '@/types/terrain'
 
 export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   sourceId: 'copernicus',
@@ -236,6 +237,16 @@ export const useTerrainStore = defineStore('terrain', () => {
    */
   const measuredCsv = (): string => measuredTerrainCsv(recorder.measured, settings.value.waterLevelOffsetM)
 
+  // A survey of a site is worth keeping with the mission that flew it, so the datasets live on the vehicle the
+  // way hazard loads and mission thumbnails do: metadata in settings, the GeoJSON itself as a file.
+  const terrainLibrary = createVehicleFileStorage<TerrainDatasetMeta>({
+    settingsKey: 'cockpit-terrain-library-v1',
+    indexedDbStoreName: 'cockpit-terrain-library',
+    vehicleSubfolder: 'terrain-library',
+    mimeType: 'application/geo+json',
+    fileExtension: 'geojson',
+  })
+
   return {
     settings,
     sourceId,
@@ -257,7 +268,12 @@ export const useTerrainStore = defineStore('terrain', () => {
     measuredVersion: recorder.measuredVersion,
     receivingRange: recorder.receivingRange,
     clearMeasured: recorder.clearMeasured,
+    importMeasured: recorder.importMeasured,
     measuredCsv,
+    terrainDatasets: terrainLibrary.entries,
+    terrainDatasetUrl: terrainLibrary.urlFor,
+    addTerrainDataset: terrainLibrary.add,
+    removeTerrainDataset: terrainLibrary.remove,
     vehicleParameters,
     tidePredictions,
     tideStation,

@@ -313,6 +313,7 @@ import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
   applyFollowZoomMode,
+  applyMapCenterRequest,
   createGridOverlay,
   fitMapToWaypoints,
   metersPerPixel,
@@ -1005,7 +1006,7 @@ watch(
   () => missionStore.mapCenterOnRequest,
   (request) => {
     if (!request || !map.value || !isFlightVisible.value) return
-    map.value.setView(request.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
+    applyMapCenterRequest(map.value, request)
   }
 )
 

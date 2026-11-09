@@ -136,6 +136,26 @@ export const addMeasurement = (
 }
 
 /**
+ * Adds another set of cells to the measured ones, so an imported dataset counts as measurements of its own.
+ * @param {MeasuredTerrain} target Cells to add to, changed in place.
+ * @param {MeasuredTerrain} incoming Cells to add.
+ */
+export const mergeMeasuredTerrain = (target: MeasuredTerrain, incoming: MeasuredTerrain): void => {
+  // ponytail: importing the same dataset twice weighs it twice; track imported dataset ids to drop repeats.
+  incoming.forEach((cell, key) => {
+    const existing = target.get(key)
+    if (!existing) {
+      target.set(key, { ...cell })
+      return
+    }
+    existing.sum += cell.sum
+    existing.sumSquares += cell.sumSquares
+    existing.count += cell.count
+    existing.lastMs = Math.max(existing.lastMs, cell.lastMs)
+  })
+}
+
+/**
  * Mean measured height of a cell, once it holds enough measurements to trust.
  * @param {MeasuredTerrain} terrain Measured cells.
  * @param {WaypointCoordinates} coordinates Position to read.
