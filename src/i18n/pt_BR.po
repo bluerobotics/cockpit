@@ -35,13 +35,51 @@ msgstr "Aplicado quando o Cockpit recarregar"
 msgid "Armed menu warning disabled. You can re-enable it in the alerts settings."
 msgstr ""
 
+#: src/libs/terrain/bathymetry.ts
+msgid "AusBathyTopo"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "AusBathyTopo (Australia)"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "Auto"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "Automatic, by area"
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Back"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Bare ground, about 30 m per sample in most of the world, with coarse ocean "
+"depths of its own."
 msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
 msgid "Be careful"
 msgstr "Cuidado"
+
+#: src/libs/terrain/bathymetry.ts
+msgid "CHS NONNA"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "CHS NONNA (Canada)"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"Canadian Hydrographic Service surveys of Canadian waters, 10 m per sample "
+"where surveyed and 100 m elsewhere. Depths are below chart datum, so they "
+"read shallower than at mean sea level."
+msgstr ""
 
 #: src/components/DrawerPanel.vue
 #, javascript-format
@@ -68,9 +106,33 @@ msgstr ""
 msgid "Continue anyway"
 msgstr "Continuar mesmo assim"
 
+#: src/libs/terrain/sources.ts
+msgid "Copernicus"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Copernicus surface model"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Custom Terrarium tiles"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Custom tiles"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Disarm vehicle and continue"
 msgstr "Desarmar o veículo e continuar"
+
+#: src/libs/terrain/bathymetry.ts
+msgid "EMODnet"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "EMODnet Bathymetry (Europe)"
+msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "ETA"
@@ -128,8 +190,42 @@ msgstr "Voo"
 msgid "Fullscreen"
 msgstr ""
 
+#: src/libs/terrain/bathymetry.ts
+msgid "GEBCO"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GEBCO 2024"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GMRT"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GMRT multibeam synthesis"
+msgstr ""
+
 #: src/components/mission-planning/MissionPlanningSidebar.vue
 msgid "GeoFence"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Geoscience Australia's model of the waters around Australia and its "
+"territories, 250 m per sample."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Global ocean depths from grids 1 to 2 km apart at sea, so coastal waters "
+"often read as land or sea level."
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Ground with trees and buildings, 30 m per sample worldwide; the sea reads "
+"as 0 m."
 msgstr ""
 
 #: src/components/hazards/HazardAdvisoryPanel.vue
@@ -186,8 +282,33 @@ msgstr ""
 msgid "Move mission home here"
 msgstr ""
 
+#: src/libs/terrain/bathymetry.ts
+msgid "NOAA"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"NOAA coastal elevation models of the United States and its territories, "
+"down to a few meters per sample, with the 450 m ETOPO 2022 grid elsewhere."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "NOAA coastal models (United States)"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "None"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Nothing is planned on the map yet"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Only the depths the terrain source holds itself, such as those of your "
+"custom tiles. The Copernicus model holds none, so the depth under water is "
+"unknown."
 msgstr ""
 
 #: src/components/DrawerPanel.vue
@@ -207,14 +328,51 @@ msgstr ""
 msgid "Settings"
 msgstr "Configurações"
 
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Ship multibeam surveys from around the world, about 100 m per sample where "
+"surveyed, over GEBCO everywhere else."
+msgstr ""
+
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "Show comms coverage on path"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"The European seas model, about 115 m per sample, including the UK "
+"Hydrographic Office surveys. Depths are below the lowest astronomical tide, "
+"so they read shallower than at mean sea level."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"The global ocean model, about 450 m per sample. Coastal waters are often "
+"interpolated."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"The most detailed source for each area: CHS NONNA in Canada, NOAA in the "
+"United States, EMODnet in Europe and AusBathyTopo around Australia, then "
+"GMRT, GEBCO and Tilezen anywhere else."
 msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
 msgid ""
 "The vehicle is currently armed, and the main-menu contains configurations "
 "and tools that can cause unsafe situations."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#: src/libs/terrain/sources.ts
+msgid "Tilezen"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Tilezen terrain"
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
@@ -237,6 +395,12 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Write the mission on the planner to a file"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Your own Terrarium-encoded elevation tiles, such as a survey of the "
+"operating area."
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
