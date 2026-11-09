@@ -2,7 +2,7 @@ import * as turf from '@turf/turf'
 import type { BBox, Feature, MultiPolygon, Polygon, Position } from 'geojson'
 
 import { bboxContains, polygonRings } from '@/libs/hazards/hazard-areas'
-import { TERRAIN_TILE_SIZE, TERRAIN_TILE_ZOOM } from '@/libs/hazards/terrain-rgb'
+import { TERRAIN_TILE_SIZE, TERRAIN_TILE_ZOOM, terrainZoomForSpacing } from '@/libs/terrain/tiles'
 import type { GeoBbox } from '@/types/general'
 import type { HazardArea, HazardGridSourceId, TerrainGrid } from '@/types/hazards'
 import type { WaypointCoordinates } from '@/types/mission'
@@ -57,7 +57,7 @@ const gridPosition = (bbox: GeoBbox, columns: number, rows: number, index: numbe
 export const terrainGridLayout = (bbox: GeoBbox): TerrainGridLayout => {
   const span = Math.max(bbox.north - bbox.south, bbox.east - bbox.west)
   const spacing = Math.max(pixelDegreesAt(TERRAIN_TILE_ZOOM), span / (MAX_SAMPLES_PER_SIDE - 1))
-  const zoom = Math.min(TERRAIN_TILE_ZOOM, Math.ceil(Math.log2(360 / (TERRAIN_TILE_SIZE * spacing))))
+  const zoom = terrainZoomForSpacing(spacing)
   const columns = Math.max(2, Math.round((bbox.east - bbox.west) / spacing) + 1)
   const rows = Math.max(2, Math.round((bbox.north - bbox.south) / spacing) + 1)
   const positions = Array.from({ length: columns * rows }, (_, index) => gridPosition(bbox, columns, rows, index))

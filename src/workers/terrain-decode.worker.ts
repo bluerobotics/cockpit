@@ -1,4 +1,17 @@
-import { decodeTerrariumPixels, TERRAIN_TILE_SIZE } from '@/libs/hazards/terrain-rgb'
+import { fromArrayBuffer } from 'geotiff'
+
+import { bathymetryTileElevations } from '@/libs/terrain/bathymetry'
+import {
+  type TerrainTile,
+  decodeTerrariumPixels,
+  despeckleTerrainElevations,
+  TERRAIN_TILE_SIZE,
+} from '@/libs/terrain/tiles'
+
+/**
+ * How a tile's bytes encode its heights.
+ */
+export type TerrainTileFormat = 'terrarium' | 'geotiff'
 
 /**
  * Request to decode one elevation tile.
@@ -9,9 +22,17 @@ export interface TerrainDecodeRequest {
    */
   id: string
   /**
-   * URL of the Terrarium PNG tile to fetch.
+   * Bytes of the tile: a Terrarium PNG, or a GeoTIFF of heights from a bathymetry service.
    */
-  url: string
+  image: ArrayBuffer
+  /**
+   * How the bytes encode the heights.
+   */
+  format: TerrainTileFormat
+  /**
+   * Tile the bytes cover.
+   */
+  tile: TerrainTile
 }
 
 /**
@@ -49,26 +70,44 @@ interface TerrainWorkerScope {
 
 const scope = self as unknown as TerrainWorkerScope
 
-// A stalled tile request otherwise never answers, and the caller that awaits it never finishes.
-const TILE_FETCH_TIMEOUT_MS = 20000
+const decodeTerrarium = async (png: ArrayBuffer, zoom: number): Promise<Float32Array> => {
+  // The pixels are data, so any color management would shift the heights they encode.
+  const bitmap = await createImageBitmap(new Blob([png], { type: 'image/png' }), {
+    colorSpaceConversion: 'none',
+    premultiplyAlpha: 'none',
+  })
+  const canvas = new OffscreenCanvas(TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE)
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  if (!context) throw new Error('No 2D canvas available to decode the tile with.')
 
-// Reading a tile's pixels back out of a canvas blocks whoever runs it, which is why the whole
-// fetch-and-decode round happens here rather than on the interface thread.
+  context.drawImage(bitmap, 0, 0)
+  bitmap.close()
+
+  const pixels = context.getImageData(0, 0, TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE).data
+  return despeckleTerrainElevations(decodeTerrariumPixels(pixels), zoom)
+}
+
+const decodeGeotiff = async (bytes: ArrayBuffer, tile: TerrainTile): Promise<Float32Array> => {
+  const image = await (await fromArrayBuffer(bytes)).getImage()
+  const [values] = (await image.readRasters({ samples: [0] })) as unknown as ArrayLike<number>[]
+  return bathymetryTileElevations(
+    {
+      values,
+      width: image.getWidth(),
+      height: image.getHeight(),
+      bbox: image.getBoundingBox(),
+      geographic: image.getGeoKeys()?.GTModelTypeGeoKey === 2,
+    },
+    tile
+  )
+}
+
+// Reading a tile's pixels back out of a canvas blocks whoever runs it, which is why the decode
+// happens here rather than on the interface thread.
 scope.onmessage = async (event: MessageEvent<TerrainDecodeRequest>): Promise<void> => {
-  const { id, url } = event.data
+  const { id, image, format, tile } = event.data
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(TILE_FETCH_TIMEOUT_MS) })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-    const bitmap = await createImageBitmap(await response.blob())
-    const canvas = new OffscreenCanvas(TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE)
-    const context = canvas.getContext('2d', { willReadFrequently: true })
-    if (!context) throw new Error('No 2D canvas available to decode the tile with.')
-
-    context.drawImage(bitmap, 0, 0)
-    bitmap.close()
-
-    const elevations = decodeTerrariumPixels(context.getImageData(0, 0, TERRAIN_TILE_SIZE, TERRAIN_TILE_SIZE).data)
+    const elevations = format === 'geotiff' ? await decodeGeotiff(image, tile) : await decodeTerrarium(image, tile.z)
     const answer: TerrainDecodeResponse = { id, elevations }
     scope.postMessage(answer, [elevations.buffer as ArrayBuffer])
   } catch (error) {
