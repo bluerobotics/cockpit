@@ -20,6 +20,7 @@ msgid "${ 0 } floating container"
 msgstr "Contêiner flutuante ${ 0 }"
 
 #: src/components/InputField.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } information"
@@ -35,6 +36,11 @@ msgstr ""
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "${ 0 } itself"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } m under the keel from ${ 1 }."
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -65,6 +71,12 @@ msgid "${ 0 } stretch still too close; see the findings."
 msgid_plural "${ 0 } stretches still too close; see the findings."
 msgstr[0] ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } surfacing added, every ${ 1 } min."
+msgid_plural "${ 0 } surfacings added, every ${ 1 } min."
+msgstr[0] ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } terrain-following waypoints set above sea level"
@@ -88,6 +100,12 @@ msgid "${ 0 } to review"
 msgid_plural "${ 0 } to review"
 msgstr[0] ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } turn added between ${ 1 } and ${ 2 } m."
+msgid_plural "${ 0 } turns added between ${ 1 } and ${ 2 } m."
+msgstr[0] ""
+
 #: src/stores/widgetManager.ts
 #, javascript-format
 msgid "${ 0 } view"
@@ -99,9 +117,26 @@ msgid "${ 0 } waypoint"
 msgid_plural "${ 0 } waypoints"
 msgstr[0] ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } waypoint lowered to ${ 1 } m over the ground."
+msgid_plural "${ 0 } waypoints lowered to ${ 1 } m over the ground."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } waypoint moved inside the safe depths."
+msgid_plural "${ 0 } waypoints moved inside the safe depths."
+msgstr[0] ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } waypoints added to hold the height over the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 }% grade from ${ 1 }."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -122,6 +157,10 @@ msgstr ""
 msgid "About"
 msgstr "Sobre"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Above the seabed by at least"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Add at least one waypoint to see the terrain under the mission."
 msgstr ""
@@ -130,12 +169,33 @@ msgstr ""
 msgid "Add mission home"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Add waypoints to the mission to reshape it from here."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Adds waypoints along each leg that go alternately deep and shallow, a "
+"saw-tooth that samples the water from\n"
+"near the surface to near the seabed. Deep turns stop the minimum clearance "
+"of the terrain settings above the\n"
+"seabed. Survey lines are left as they are."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Aim regions of interest at the ground"
 msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
 msgid "Alerts settings"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Always keep a safe height"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Always keep a safe height information"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -147,6 +207,14 @@ msgstr[0] ""
 #: src/views/ConfigurationUIView.vue
 msgid "Applies after Cockpit reloads"
 msgstr "Aplicado quando o Cockpit recarregar"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Apply"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Applying"
+msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
 msgid "Armed menu warning disabled. You can re-enable it in the alerts settings."
@@ -224,6 +292,10 @@ msgstr ""
 msgid "Cancelled: ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Cap the height above the ground at"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Check failed"
 msgstr ""
@@ -276,6 +348,10 @@ msgid ""
 "m error."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Climb over home to"
+msgstr ""
+
 #: src/components/DrawerPanel.vue
 #, javascript-format
 msgid "Close the ${ 0 }"
@@ -287,6 +363,10 @@ msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
 msgid "Come back later, or proceed carefully with one of the following options:"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Come up for a position fix every"
 msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
@@ -307,6 +387,11 @@ msgstr ""
 
 #: src/libs/terrain/sources.ts
 msgid "Copernicus surface model"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Could not apply \"${ 0 }\": ${ 1 }"
 msgstr ""
 
 #: src/stores/terrain.ts
@@ -355,12 +440,24 @@ msgstr ""
 msgid "Crosses land from ${ 0 }."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Cruise at a depth of"
+msgstr ""
+
 #: src/libs/terrain/sources.ts
 msgid "Custom Terrarium tiles"
 msgstr ""
 
 #: src/libs/terrain/sources.ts
 msgid "Custom tiles"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Deepest"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Depth"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -372,6 +469,10 @@ msgstr ""
 #: src/components/ArmSafetyDialog.vue
 msgid "Disarm vehicle and continue"
 msgstr "Desarmar o veículo e continuar"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Distance between turns"
+msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
 msgid "EMODnet"
@@ -417,6 +518,26 @@ msgstr ""
 msgid "Every waypoint already keeps a safe height."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint moved down ${ 0 } m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint moved up ${ 0 } m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint set to ${ 0 } m above home."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint set to ${ 0 } m deep."
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Exit"
 msgstr ""
@@ -440,6 +561,10 @@ msgstr ""
 #: src/components/MainMenu.vue
 msgid "Flight"
 msgstr "Voo"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Follow the terrain contour over"
+msgstr ""
 
 #: src/components/MainMenu.vue
 msgid "Fullscreen"
@@ -483,6 +608,10 @@ msgstr ""
 msgid "Ghost run position along the mission"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Glide over the seabed at"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "Global ocean depths from grids 1 to 2 km apart at sea, so coastal waters "
@@ -494,6 +623,10 @@ msgstr ""
 msgid "Goes ${ 0 } into the terrain from ${ 1 }."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Grade"
+msgstr ""
+
 #: src/components/terrain/TerrainProfileChart.vue
 msgid "Ground"
 msgstr ""
@@ -502,6 +635,18 @@ msgstr ""
 msgid ""
 "Ground with trees and buildings, 30 m per sample worldwide; the sea reads "
 "as 0 m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height above home"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height over the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height over the seabed"
 msgstr ""
 
 #: src/components/terrain/TerrainProfileChart.vue
@@ -521,6 +666,10 @@ msgstr ""
 msgid "High ground setting"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Highest over the ground"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Hold terrain height on upload"
 msgstr ""
@@ -529,10 +678,59 @@ msgstr ""
 msgid "Hold terrain height on upload:"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Holding ${ 0 } m over the ground, with ${ 1 } waypoint added."
+msgid_plural "Holding ${ 0 } m over the ground, with ${ 1 } waypoints added."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Holding ${ 0 } m over the seabed, with ${ 1 } waypoint added."
+msgid_plural "Holding ${ 0 } m over the seabed, with ${ 1 } waypoints added."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Holds one height over the ground for the whole mission. Every waypoint is "
+"set to that height over the\n"
+"ground under it, and waypoints are added in between wherever the ground "
+"rises or falls enough for a straight line\n"
+"to drift from it. Heights end up fixed above sea level, so the vehicle "
+"needs no terrain data of its own."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Holds one height over the seabed for the whole mission, never coming above "
+"the surface. Waypoints are added\n"
+"wherever the seabed rises or falls enough for a straight line to drift from "
+"it, so the vehicle needs no\n"
+"altimeter reading to follow it."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Horizontal distance between a deep turn and the next shallow one."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "How deep the hull reaches below the waterline. Water under the keel is "
 "counted from there, and sonar depths are taken from that depth."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"How far above that height the line between two waypoints may pass. A "
+"smaller value adds more waypoints,\n"
+"so the vehicle follows the ground more closely."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"How far above that height the line between two waypoints may pass. A "
+"smaller value adds more waypoints,\n"
+"so the vehicle follows the seabed more closely."
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -544,6 +742,10 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Import"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Keep inside safe depths"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -615,6 +817,25 @@ msgstr ""
 msgid "Length"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Level flight at"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lists the stretches where the ground along the path rises or falls more "
+"steeply than this grade."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lists the stretches with less water under the keel than this, after the "
+"vessel's draft. The possible shallow\n"
+"water warnings in Findings do not follow this value: they flag water under "
+"the minimum in the terrain settings.\n"
+"Both read the same terrain profile, so a stretch can show up in both."
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Load coastline"
 msgstr ""
@@ -623,10 +844,31 @@ msgstr ""
 msgid "Loading data"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Long enough for the GPS to get a fix; a cold start can take a minute or "
+"more."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lowers the waypoints that sit higher over the ground than this, such as the "
+"120 m many countries allow.\n"
+"Between waypoints, the path can still pass higher over valleys; those "
+"stretches are listed below."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "Lowest height aircraft keep over the ground or the water, and submarines "
 "over the seabed. Passing lower is listed in Findings."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Makes the vehicle wait at each waypoint before going on, for a sample, a "
+"photo or a look around. Survey\n"
+"lines are left as they are. Set 0 to stop pausing."
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
@@ -675,6 +917,20 @@ msgstr ""
 msgid "Move mission home here"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Moves every waypoint up or down by the same amount, keeping the shape of "
+"the mission and the altitude\n"
+"reference of each waypoint."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Moves the waypoints that go deeper than the limit, or closer to the seabed "
+"than the clearance, back inside\n"
+"both. Where the seabed is too shallow for both, the clearance wins."
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid "NOAA"
 msgstr ""
@@ -687,6 +943,10 @@ msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
 msgid "NOAA coastal models (United States)"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "No deeper than"
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -705,6 +965,10 @@ msgstr ""
 msgid ""
 "Nothing along the mission comes closer to the terrain than the minimums in "
 "the terrain settings."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Nothing in the mission needed to change."
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -738,12 +1002,28 @@ msgstr ""
 msgid "Passes ${ 0 } over the terrain from ${ 1 }, under the ${ 2 } m minimum."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Pause at every waypoint for"
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Pause the ghost run"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Place home on the map before reshaping the mission."
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Play the ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Point out slopes steeper than"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Point out water shallower than"
 msgstr ""
 
 #: src/components/terrain/TerrainShallowsMarker.vue
@@ -762,6 +1042,10 @@ msgid ""
 "model reads land. Check a nautical chart."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Precision"
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid ""
@@ -769,6 +1053,24 @@ msgid ""
 "drag the slider. A marker follows on the profile and on the map, with\n"
 "the time into the mission, the distance along it and the clearance under "
 "the vehicle at that point. Nothing is sent to the vehicle."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Profile the water column between"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Puts every waypoint, surveys included, at the same depth below the surface "
+"at home. Where the seabed rises\n"
+"above that depth, check the findings afterwards."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Puts every waypoint, surveys included, at the same height above home, so "
+"the vehicle flies level. Ground\n"
+"that rises above home comes closer, so check the findings afterwards."
 msgstr ""
 
 #: src/components/terrain/TerrainSafeAltitude.vue
@@ -834,9 +1136,19 @@ msgstr "Recarregar agora"
 msgid "Restore"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Reverses the order of the waypoints, so the vehicle runs the same path from "
+"its far end."
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Rises above the water surface from ${ 0 }."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Run the mission backwards"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -878,6 +1190,14 @@ msgstr ""
 msgid "Settings"
 msgstr "Configurações"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Shallowest"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Shift every height by"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "Ship multibeam surveys from around the world, about 100 m per sample where "
@@ -889,7 +1209,16 @@ msgid "Show comms coverage on path"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Show on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Starts the mission with a waypoint straight above home, so the vehicle "
+"climbs before heading out over\n"
+"rising ground or obstacles. Applying it again changes the height of that "
+"same waypoint."
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -1029,6 +1358,15 @@ msgid ""
 "interpolated."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "The mission now runs backwards."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The mission starts with a climb to ${ 0 } m over home."
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 #. eslint-disable-next-line max-len, vue/max-len
 msgid ""
@@ -1048,6 +1386,14 @@ msgstr ""
 msgid "The terrain is unknown along part of the path from ${ 0 }."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The terrain under ${ 0 } waypoint could not be read, so it kept its height."
+msgid_plural ""
+"The terrain under ${ 0 } waypoints could not be read, so they kept their "
+"height."
+msgstr[0] ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "The terrain under the mission is checked once the mission has a home."
 msgstr ""
@@ -1061,6 +1407,18 @@ msgid ""
 "The vehicle is currently armed, and the main-menu contains configurations "
 "and tools that can cause unsafe situations."
 msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The vehicle no longer waits at ${ 0 } waypoint."
+msgid_plural "The vehicle no longer waits at ${ 0 } waypoints."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The vehicle waits ${ 0 } s at ${ 1 } waypoint."
+msgid_plural "The vehicle waits ${ 0 } s at ${ 1 } waypoints."
+msgstr[0] ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Tile address"
@@ -1077,6 +1435,14 @@ msgstr ""
 
 #: src/libs/terrain/sources.ts
 msgid "Tilezen terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Time at the surface"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Time between surfacings"
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
@@ -1105,6 +1471,24 @@ msgstr ""
 msgid "Under keel"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Underwater the vehicle has no GPS, so the position it navigates by slowly "
+"drifts. This adds stops at the\n"
+"surface along the path, where it can take a new fix. The distance between "
+"them comes from the time and the\n"
+"mission's cruise speed."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Up to ${ 0 } m over the ground from ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Up, negative for down"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "Uploading with ${ 0 }."
@@ -1118,6 +1502,15 @@ msgstr ""
 msgid "Vessel draft"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Wait"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Waiting for the terrain check of the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Water under the keel"
 msgstr ""
@@ -1129,6 +1522,18 @@ msgstr ""
 
 #: src/composables/terrain/useSafeAltitude.ts
 msgid "Waypoint altitudes restored."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"While on, every change to the mission (moving, adding or removing "
+"waypoints, reshaping or rotating a survey)\n"
+"re-checks it against the terrain. Each waypoint goes back to the height you "
+"planned it at and is raised only as\n"
+"far as needed for the path and the returns home to keep the safety margin "
+"plus the terrain model error, so\n"
+"waypoints the terrain no longer needs high come back down. Lasts until you "
+"leave mission planning."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
