@@ -35,6 +35,10 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   vesselDraftM: 0.3,
   waterLevelOffsetM: 0,
   tideRangeM: 2,
+  checkTerrainOnUpload: true,
+  resolveTerrainOnUpload: false,
+  terrainFollowToleranceM: 5,
+  aimRoiAtGround: false,
 }
 
 export const useTerrainStore = defineStore('terrain', () => {
