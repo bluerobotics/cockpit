@@ -48,6 +48,24 @@ export interface TerrainMapImage {
 }
 
 /**
+ * A measured terrain cell drawn as a dot.
+ */
+export interface TerrainMapDot {
+  /**
+   * Cell center.
+   */
+  coordinates: WaypointCoordinates
+  /**
+   * Dot color.
+   */
+  color: string
+  /**
+   * Tooltip text.
+   */
+  label: string
+}
+
+/**
  * What the terrain overlay draws.
  */
 export interface UseTerrainMapOverlayOptions {
@@ -71,6 +89,10 @@ export interface UseTerrainMapOverlayOptions {
    * Vehicle position of the ghost run, null when not running.
    */
   ghost: Ref<WaypointCoordinates | null>
+  /**
+   * Measured terrain cells to show.
+   */
+  measured: Ref<TerrainMapDot[]>
 }
 
 /**
@@ -103,10 +125,13 @@ const ABOVE_PATH_TOOLTIP: L.TooltipOptions = { direction: 'top', offset: [0, -18
  */
 export const useTerrainMapOverlay = (
   map: Ref<LeafletMap | undefined>,
-  { stretches, hover, image, observers, ghost }: UseTerrainMapOverlayOptions
+  { stretches, hover, image, observers, ghost, measured }: UseTerrainMapOverlayOptions
 ): UseTerrainMapOverlayReturn => {
   const stretchLayer = L.layerGroup()
   const markerLayer = L.layerGroup()
+  const measuredLayer = L.layerGroup()
+  // The measured dots are only 3 px across, so hovering counts a few pixels around each one.
+  const renderer = L.canvas({ padding: 0.2, tolerance: 4 })
   let imageLayer: L.ImageOverlay | undefined
   let hoverMarker: L.CircleMarker | undefined
   let ghostMarker: L.CircleMarker | undefined
@@ -129,7 +154,7 @@ export const useTerrainMapOverlay = (
       }
       current?.on('move viewreset zoomend', followMapPane)
       followMapPane()
-      ;[stretchLayer, markerLayer].forEach((layer) => {
+      ;[stretchLayer, markerLayer, measuredLayer].forEach((layer) => {
         if (previous) layer.remove()
         if (current) layer.addTo(current)
       })
@@ -232,6 +257,21 @@ export const useTerrainMapOverlay = (
     { deep: true, immediate: true }
   )
 
+  watch(measured, (current) => {
+    measuredLayer.clearLayers()
+    current.forEach(({ coordinates, color, label }) => {
+      measuredLayer.addLayer(
+        L.circleMarker(coordinates, {
+          renderer,
+          radius: 3,
+          stroke: false,
+          fillColor: color,
+          fillOpacity: 0.9,
+        }).bindTooltip(label, ABOVE_PATH_TOOLTIP)
+      )
+    })
+  })
+
   const pickPoint = (): Promise<WaypointCoordinates | null> => {
     cancelPick?.()
     const instance = map.value
@@ -280,7 +320,7 @@ export const useTerrainMapOverlay = (
   onBeforeUnmount(() => {
     cancelPick?.()
     map.value?.off('move viewreset zoomend', followMapPane)
-    ;[stretchLayer, markerLayer].forEach((layer) => layer.remove())
+    ;[stretchLayer, markerLayer, measuredLayer].forEach((layer) => layer.remove())
     imageLayer?.remove()
     hoverMarker?.remove()
     ghostMarker?.remove()

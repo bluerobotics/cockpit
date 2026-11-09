@@ -49,6 +49,10 @@ export interface MissionTerrainAnalysis {
    * Stretches that need more climb or descent than the vehicle has.
    */
   climbFindings: ClimbFinding[]
+  /**
+   * Model ground at each profile station, without recorded measurements, to draw against them.
+   */
+  modelGroundM: (number | null)[]
 }
 
 /**
@@ -145,10 +149,11 @@ export const analyzeMissionTerrain = async (
   const stations = densifyPath(corners, profileSpacingM(lengthM))
   const coordinates = stations.map((station) => station.coordinates)
   const seabedOnly = context.vehicleClass === 'surface' || context.vehicleClass === 'underwater'
-  const [groundM, groundHighM, groundAtPointsM] = await Promise.all([
+  const [groundM, groundHighM, groundAtPointsM, modelGroundM] = await Promise.all([
     sampleTerrain(coordinates, { mode: 'bilinear', seabedOnly }),
     sampleTerrain(coordinates, { mode: 'highest', seabedOnly }),
     sampleTerrain(corners, { mode: 'bilinear', seabedOnly }),
+    sampleTerrain(coordinates, { mode: 'bilinear', modelOnly: true, seabedOnly }),
   ])
   const profile = buildTerrainProfile(points, stations, groundM, groundHighM, groundAtPointsM, context)
 
@@ -168,7 +173,7 @@ export const analyzeMissionTerrain = async (
     returns = returnPathFindings(plan, returnGround, homeAmslM, behavior, context)
   }
   const climbs = performance && context.vehicleClass === 'air' ? climbFindings(profile.samples, performance) : []
-  return { points, profile, returnFindings: returns, climbFindings: climbs }
+  return { points, profile, returnFindings: returns, climbFindings: climbs, modelGroundM }
 }
 
 /**
