@@ -10,7 +10,8 @@
     <div class="relative h-full">
       <div
         v-if="!firstCheck && !dock.terrain.awaitingHome.value && !noMission"
-        class="flex flex-col h-full gap-y-2 pl-3 pr-3 pt-2.5 pb-2 select-none"
+        class="flex flex-col h-full gap-y-2 pl-3 pr-3 pt-2.5 pb-2 select-none transition-[filter] duration-200"
+        :class="{ 'blur-[3px]': dock.safeAltitude.recalculating.value }"
       >
         <div v-if="analysis && analysis.profile.samples.length > 1" class="relative">
           <TerrainProfileChart
@@ -96,6 +97,7 @@
             class="flex flex-col gap-y-[2px]"
             :class="{ 'grow justify-center': dock.findings.value.length === 0 }"
           >
+            <TerrainSafeAltitude />
             <div
               v-if="dock.coastlineMissing.value"
               class="flex items-center gap-x-2 text-xs rounded-md px-2.5 py-[2px] bg-[#FFFFFF11]"
@@ -250,6 +252,7 @@ import propellerLogo from '@/assets/blue-robotics-logo-white.svg'
 import DrawerPanel from '@/components/DrawerPanel.vue'
 import LoadingText from '@/components/LoadingText.vue'
 import TerrainProfileChart from '@/components/terrain/TerrainProfileChart.vue'
+import TerrainSafeAltitude from '@/components/terrain/TerrainSafeAltitude.vue'
 import TerrainVehiclePanel from '@/components/terrain/TerrainVehiclePanel.vue'
 import TerrainWarningTriangle from '@/components/terrain/TerrainWarningTriangle.vue'
 import { goToMenuPage } from '@/composables/menuRouting'
@@ -285,9 +288,13 @@ const firstCheck = computed(
   () => !analysis.value && !dock.terrain.analysisError.value && dock.terrain.points().length > 1
 )
 
-const loadingText = computed(() => (firstCheck.value ? 'Checking the terrain...' : ''))
+const loadingText = computed(() => {
+  if (firstCheck.value) return t`Checking the terrain...`
+  return dock.safeAltitude.recalculating.value ? t`Recalculating heights...` : ''
+})
 
-const rechecking = computed(() => dock.terrain.analyzing.value)
+// Recalculating heights already covers the whole panel, so only a plain re-check covers the chart alone.
+const rechecking = computed(() => dock.terrain.analyzing.value && !dock.safeAltitude.recalculating.value)
 
 const TABS: {
   /**
