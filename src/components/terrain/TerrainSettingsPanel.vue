@@ -2,12 +2,24 @@
   <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
     <template #title>{{ t`Terrain` }}</template>
     <template #info>
-      <strong>Land source:</strong> Elevation model used for every terrain check and the profile. The Copernicus surface
-      model includes trees and buildings and needs Cockpit Standalone; Cockpit Lite uses Tilezen instead.
+      <strong>{{ t`Land source:` }}</strong>
+      {{ t`Elevation model used for every terrain check, the profile and the upload.` }}
+      {{
+        t`The Copernicus surface model includes trees and buildings and needs Cockpit Standalone; Cockpit Lite uses Tilezen instead.`
+      }}
       <br />
-      <strong>Bathymetry source:</strong> Depth model read wherever the land source reads sea level or below. Automatic
-      picks the most detailed one published for each point. <br />
-      <strong>Minimums:</strong> Clearances the mission is checked against.
+      <strong>{{ t`Bathymetry source:` }}</strong>
+      {{
+        t`Depth model read wherever the land source reads sea level or below. Automatic picks the most detailed one published for each point.`
+      }}
+      <br />
+      <strong>{{ t`Minimums:` }}</strong>
+      {{ t`Clearances the mission is checked against, before upload when that check is on.` }}
+      <br />
+      <strong>{{ t`Hold terrain height on upload:` }}</strong>
+      {{
+        t`Sends waypoints set above the terrain as heights above sea level, so vehicles without terrain data still follow the ground.`
+      }}
     </template>
     <template #content>
       <div class="flex flex-col gap-y-3 px-4 pb-4 pt-2 text-sm">
@@ -115,6 +127,39 @@
             @update:model-value="onSetNumber(field.key, $event)"
           />
         </div>
+
+        <v-divider class="opacity-5" />
+
+        <div class="grid gap-x-6 items-center" :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'">
+          <v-switch
+            v-for="toggle in UPLOAD_TOGGLES"
+            :key="toggle.key"
+            :model-value="terrainStore.settings[toggle.key]"
+            color="white"
+            base-color="#FFFFFF33"
+            hide-details
+            class="-my-1"
+            @update:model-value="onToggle(toggle.key, $event === true, toggle.logLabel)"
+          >
+            <template #label>
+              <span class="mr-0.5">{{ toggle.label }}</span>
+              <InfoTooltip :label="t`${toggle.label} information`">{{ toggle.info }}</InfoTooltip>
+            </template>
+          </v-switch>
+          <NumberInputField
+            v-if="terrainStore.settings.resolveTerrainOnUpload"
+            v-model="terrainStore.settings.terrainFollowToleranceM"
+            :label="t`Terrain following tolerance`"
+            :info="
+              t`How much higher than the height asked above the terrain the path between waypoints may pass, never lower. A smaller tolerance adds more waypoints at upload.`
+            "
+            unit="m"
+            :min="1"
+            :max="100"
+            :step="1"
+            @update:model-value="onSetNumber('terrainFollowToleranceM', $event)"
+          />
+        </div>
       </div>
     </template>
   </ExpansiblePanel>
@@ -168,6 +213,27 @@ type MinimumField = {
   step: number
 }
 
+type UploadToggleKey = 'checkTerrainOnUpload' | 'resolveTerrainOnUpload' | 'aimRoiAtGround'
+
+type UploadToggle = {
+  /**
+   * Setting the switch edits.
+   */
+  key: UploadToggleKey
+  /**
+   * Switch label.
+   */
+  label: string
+  /**
+   * Explanation shown from the information icon.
+   */
+  info: string
+  /**
+   * What the switch does, as written in the interaction log.
+   */
+  logLabel: string
+}
+
 const MINIMUM_FIELDS: MinimumField[] = [
   {
     key: 'minimumClearanceM',
@@ -213,6 +279,27 @@ const MINIMUM_FIELDS: MinimumField[] = [
     min: 0,
     max: 20,
     step: 0.1,
+  },
+]
+
+const UPLOAD_TOGGLES: UploadToggle[] = [
+  {
+    key: 'checkTerrainOnUpload',
+    label: t`Check the terrain before upload`,
+    info: t`Checks the mission against the terrain before each upload, and asks to confirm when anything is found.`,
+    logLabel: 'checking the terrain before upload',
+  },
+  {
+    key: 'aimRoiAtGround',
+    label: t`Aim regions of interest at the ground`,
+    info: t`Regions of interest left at zero altitude are sent at the ground height under them, so the camera points at the ground there.`,
+    logLabel: 'aiming regions of interest at the ground',
+  },
+  {
+    key: 'resolveTerrainOnUpload',
+    label: t`Hold terrain height on upload`,
+    info: t`Sends waypoints set above the terrain as heights above sea level, adding waypoints where the ground changes, so vehicles without terrain data still follow it.`,
+    logLabel: 'holding terrain height on upload',
   },
 ]
 
@@ -268,6 +355,11 @@ const onCustomUrlChange = (event: Event): void => {
   customUrlError.value = []
   terrainStore.settings.customUrlTemplate = template
   logUserAction('Changed the custom terrain tile address')
+}
+
+const onToggle = (key: UploadToggleKey, enabled: boolean, label: string): void => {
+  terrainStore.settings[key] = enabled
+  logUserAction(`${enabled ? 'Turned on' : 'Turned off'} ${label}`)
 }
 
 const onClearCache = async (): Promise<void> => {
