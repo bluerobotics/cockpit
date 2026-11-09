@@ -10,8 +10,17 @@ import {
   effectiveTerrainSource,
   isTerrainSourceAvailable,
 } from '@/libs/terrain/elevation-service'
+import { type VehicleTerrainParameters, TERRAIN_PERFORMANCE_PARAMETERS } from '@/libs/terrain/mission-terrain'
+import {
+  type OfflineTerrainProgress,
+  downloadOfflineTerrain,
+  MAX_OFFLINE_TERRAIN_TILES,
+  offlineTerrainPlan,
+} from '@/libs/terrain/offline'
 import { isValidTileUrlTemplate, TERRAIN_SOURCES } from '@/libs/terrain/sources'
 import { type TerrainCacheSummary, clearTerrainCache, summarizeTerrainCache } from '@/libs/terrain/tile-store'
+import type { TerrainTileBounds } from '@/libs/terrain/tiles'
+import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { BathymetrySourceId, TerrainSettings, TerrainSourceId } from '@/types/terrain'
 
 export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
@@ -19,10 +28,16 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   bathymetrySourceId: 'auto',
   customUrlTemplate: '',
   customMaxZoom: 15,
+  minimumClearanceM: 10,
+  minimumUnderKeelM: 0.5,
+  vesselDraftM: 0.3,
+  waterLevelOffsetM: 0,
+  tideRangeM: 2,
 }
 
 export const useTerrainStore = defineStore('terrain', () => {
   const { openSnackbar } = useSnackbar()
+  const vehicleStore = useMainVehicleStore()
 
   // Shared with every computer flying the vehicle: the model and thresholds describe the operating area and
   // the vehicle, nothing that belongs to one machine.
@@ -74,6 +89,8 @@ export const useTerrainStore = defineStore('terrain', () => {
 
   /** Terrain kept on this computer, null while it is read and undefined when it could not be. */
   const cacheSummary = ref<TerrainCacheSummary | null | undefined>(null)
+  const downloadProgress = ref<OfflineTerrainProgress | null>(null)
+  let downloadController: AbortController | null = null
 
   const refreshCacheSummary = async (): Promise<void> => {
     try {
@@ -94,6 +111,73 @@ export const useTerrainStore = defineStore('terrain', () => {
     await refreshCacheSummary()
   }
 
+  /**
+   * Keeps the terrain over an area on this computer, so every terrain check works there offline.
+   * @param {TerrainTileBounds} bounds Area to keep.
+   * @returns {Promise<void>}
+   */
+  const downloadArea = async (bounds: TerrainTileBounds): Promise<void> => {
+    if (downloadController) return
+    const plan = offlineTerrainPlan(bounds, effectiveSourceId.value, bathymetrySourceId.value)
+    if (plan.length > MAX_OFFLINE_TERRAIN_TILES) {
+      const message = t`That area needs ${plan.length} terrain tiles; zoom in to under ${MAX_OFFLINE_TERRAIN_TILES}.`
+      openSnackbar({ variant: 'warning', message, duration: 6000 })
+      return
+    }
+    downloadController = new AbortController()
+    downloadProgress.value = { done: 0, failed: 0, total: plan.length }
+    try {
+      const result = await downloadOfflineTerrain(plan, downloadController.signal, (progress) => {
+        downloadProgress.value = progress
+      })
+      const cancelled = downloadController.signal.aborted
+      const stored =
+        result.failed > 0
+          ? t`${result.done} of ${result.total} terrain tiles stored for offline use, ${result.failed} could not be downloaded.`
+          : t`${result.done} of ${result.total} terrain tiles stored for offline use.`
+      const variant = result.failed > 0 || cancelled ? 'warning' : 'success'
+      openSnackbar({ variant, message: cancelled ? t`Cancelled: ${stored}` : stored, duration: 5000 })
+    } catch (error) {
+      openSnackbar({
+        variant: 'error',
+        message: t`Could not store the terrain for offline use: ${error}`,
+        duration: 5000,
+      })
+    } finally {
+      downloadController = null
+      downloadProgress.value = null
+      void refreshCacheSummary()
+    }
+  }
+
+  const cancelDownload = (): void => downloadController?.abort()
+
+  /** Climb and return parameters of the connected vehicle, read once per connection. */
+  const vehicleParameters = ref<VehicleTerrainParameters>({})
+  watch(
+    () => (vehicleStore.isVehicleOnline ? vehicleStore.mainVehicle : undefined),
+    async (vehicle) => {
+      vehicleParameters.value = {}
+      if (!vehicle) return
+      const values = await Promise.all(
+        TERRAIN_PERFORMANCE_PARAMETERS.map((name) => vehicle.requestParameterValue(name))
+      )
+      if (vehicleStore.mainVehicle !== vehicle) return
+      const read: VehicleTerrainParameters = {}
+      TERRAIN_PERFORMANCE_PARAMETERS.forEach((name, index) => {
+        if (values[index] !== undefined) read[name] = values[index]
+      })
+      vehicleParameters.value = read
+    },
+    { immediate: true }
+  )
+
+  /**
+   * Water surface height now, as configured.
+   * @returns {number} Meters above the terrain model's sea level.
+   */
+  const waterLevelNowM = (): number => settings.value.waterLevelOffsetM
+
   return {
     settings,
     sourceId,
@@ -104,5 +188,10 @@ export const useTerrainStore = defineStore('terrain', () => {
     cacheSummary,
     refreshCacheSummary,
     clearCache,
+    downloadProgress,
+    downloadArea,
+    cancelDownload,
+    vehicleParameters,
+    waterLevelNowM,
   }
 })
