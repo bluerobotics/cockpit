@@ -1199,7 +1199,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   logUserAction('Uploaded mission to vehicle')
   uploadingMission.value = true
   missionUploadProgress.value = 0
-  const missionItemsToUpload = toPlain(missionStore.currentPlanningWaypoints)
+  const missionItemsToUpload = await prepareMissionUpload(toPlain(missionStore.currentPlanningWaypoints))
 
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionUploadProgress.value = loadingPerc
@@ -5348,7 +5348,7 @@ const {
 })
 
 // Gates the upload on the geofence breach and hazard advisory checks
-const { confirmMissionUpload } = useMissionPreflightChecks({
+const { confirmMissionUpload, prepareMissionUpload } = useMissionPreflightChecks({
   fenceBreaches: { reports: fenceBreachReports, recheck: recheckFenceBreaches, focusBreaches },
 })
 
