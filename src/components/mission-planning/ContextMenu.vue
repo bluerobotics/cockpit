@@ -306,6 +306,20 @@
           <span class="text-white text-sm ml-4">{{ pathCreationButtonText }}</span>
         </v-list-item>
         <v-divider />
+        <div v-if="canSetHome" class="flex flex-col" :class="{ 'order-first': !homeSet }">
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
+            <v-icon
+              variant="text"
+              icon="mdi-home-map-marker"
+              rounded="full"
+              size="x-small"
+              color="white"
+              class="text-[16px]"
+            ></v-icon>
+            <span class="text-white text-sm ml-4">{{ homeSet ? t`Move mission home here` : t`Set mission home` }}</span>
+          </v-list-item>
+          <v-divider />
+        </div>
         <v-menu open-on-hover location="end" :close-on-content-click="false" :open-delay="50" :close-delay="120">
           <template #activator="{ props: libraryActivator }">
             <v-list-item v-bind="libraryActivator" class="flex items-center gap-x-2 pb-2 cursor-pointer">
@@ -383,18 +397,6 @@
           <span class="text-white text-sm ml-4">
             {{ hasAnyMapOverlay ? t`Manage overlays` : t`Add overlay (GeoTIFF)` }}
           </span>
-        </v-list-item>
-        <v-divider v-if="canSetHome" />
-        <v-list-item v-if="canSetHome" class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
-          <v-icon
-            variant="text"
-            icon="mdi-home-map-marker"
-            rounded="full"
-            size="x-small"
-            color="white"
-            class="text-[16px]"
-          ></v-icon>
-          <span class="text-white text-sm ml-4">{{ t`Set mission home` }}</span>
         </v-list-item>
         <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handlePlaceBaseStation">
@@ -660,6 +662,7 @@ const menuType = computed(() => props.menuType)
 const selectedWaypoint = computed<Waypoint | undefined>(() => props.selectedWaypoint)
 const visible = computed(() => props.visible)
 const canSetHome = computed(() => !props.isCreatingSurvey && !props.isCreatingSimplePath)
+const homeSet = computed(() => missionStore.plannedHomePosition !== undefined)
 const angle = computed(() => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.surveyLinesAngle)
 const crosshatchEnabled = computed(
   () => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.crosshatch ?? false

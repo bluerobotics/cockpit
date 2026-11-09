@@ -7211,6 +7211,10 @@ msgstr "Montanha"
 msgid "Move home"
 msgstr "Mover Home"
 
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Move mission home here"
+msgstr ""
+
 #: src/views/MissionPlanningView.vue
 msgid "Move the vehicle home?"
 msgstr "Mover o Home do veículo?"

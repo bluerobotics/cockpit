@@ -6765,6 +6765,10 @@ msgstr "山脉"
 msgid "Move home"
 msgstr "移动起始位置"
 
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Move mission home here"
+msgstr ""
+
 #: src/views/MissionPlanningView.vue
 msgid "Move the vehicle home?"
 msgstr "将设备移至起始位置？"
