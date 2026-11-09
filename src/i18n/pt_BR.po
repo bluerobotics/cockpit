@@ -470,6 +470,20 @@ msgstr ""
 msgid "A recording stopped unexpectedly. ${ 0 }"
 msgstr "Uma gravação parou inesperadamente. ${ 0 }"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass ${ 1 } into the terrain on the "
+"straight line home."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass only ${ 1 } over the terrain "
+"on the straight line home."
+msgstr ""
+
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 msgid "A short verification code will be displayed."
 msgstr "Um código de verificação curto será exibido."
@@ -2192,6 +2206,13 @@ msgstr "Distância de segurança"
 msgid "Clearance (m)"
 msgstr "Distância de segurança (m)"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Clears the terrain by ${ 0 } from ${ 1 }, within the terrain model's ${ 2 } "
+"m error."
+msgstr ""
+
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 #: src/components/geofence/GeoFenceEditor.vue
 #: src/components/vehicle-defaults/VehicleDefaultsAutoWizardIntroPanel.vue
@@ -3275,6 +3296,11 @@ msgstr "Criando o ZIP sem um arquivo de legenda de telemetria. ${ 0 }"
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Critical threshold (V)"
 msgstr "Limite crítico (V)"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Crosses land from ${ 0 }."
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -5441,6 +5467,11 @@ msgstr "Comando GoTo cancelado. O veículo vai se manter na posição atual."
 msgid "GoTo request failed"
 msgstr "Falha na solicitação de GoTo"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Goes ${ 0 } into the terrain from ${ 1 }."
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "Got it"
 msgstr "Entendi"
@@ -6447,6 +6478,11 @@ msgstr "Continuar revisando"
 #, javascript-format
 msgid "Keep the vehicle this far from \"${ 0 }\"."
 msgstr "Mantenha o veículo a esta distância de \"${ 0 }\"."
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Keeps ${ 0 } under the keel from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
 
 #: src/views/ConfigurationUIView.vue
 msgid ""
@@ -8456,6 +8492,11 @@ msgstr "Estacionamento"
 msgid "Pass ${ 0 }/${ 1 } at ${ 2 }ms"
 msgstr "Passagem ${ 0 }/${ 1 } em ${ 2 }ms"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Passes ${ 0 } over the terrain from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
+
 #: src/components/VoiceRecordingsLibrary.vue
 msgid "Pause"
 msgstr ""
@@ -8680,6 +8721,18 @@ msgstr "Posição (vert.)"
 #: src/views/ConfigurationSourcesView.vue
 msgid "Positioning"
 msgstr "Posicionamento"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Possible shallow water from ${ 0 }. Check a nautical chart."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Possible shallow water from ${ 0 }: the map shows water where the terrain "
+"model reads land. Check a nautical chart."
+msgstr ""
 
 #: src/components/MissionChecklist.vue
 msgid "Pre-arm checklist disabled. You can re-enable it in the mission settings."
@@ -8911,6 +8964,11 @@ msgstr "Voar novamente a 90° (quadriculado)"
 #: src/components/widgets/CompassHUD.vue
 msgid "Reached"
 msgstr "Alcançado"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Reaches the coastline from ${ 0 }, onto land."
+msgstr ""
 
 #: src/components/recipes/ReadRecipeDialog.vue
 #, javascript-format
@@ -9445,6 +9503,11 @@ msgstr "Reverter alterações"
 msgid "Review"
 msgstr "Revisar"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Rises above the water surface from ${ 0 }."
+msgstr ""
+
 #: src/components/widgets/Attitude.vue
 #: src/components/widgets/VirtualHorizon.vue
 msgid "Roll source"
@@ -9490,6 +9553,11 @@ msgstr "Executar a cada"
 #: src/components/widgets/DoItYourself.vue
 msgid "Run script in its own scope"
 msgstr "Executar o script em seu próprio escopo"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Runs aground from ${ 0 }, with the bottom ${ 1 } above the keel."
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -10793,6 +10861,25 @@ msgstr "Esse é o endereço do veículo principal, que já está conectado."
 msgid "That vehicle has already been added."
 msgstr "Esse veículo já foi adicionado."
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% climb from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% descent from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The ${ 0 }% grade from ${ 1 } slows the vehicle to ${ 2 } m/s."
+msgstr ""
+
 #: src/components/Tutorial.vue
 msgid ""
 "The 'General' page allows switching the active user, the vehicle connection "
@@ -10902,6 +10989,11 @@ msgstr ""
 "cada zona morta a saída é fixada em 0, e a curva de saída (linear ou "
 "exponencial) começa nas bordas da região. Isto é útil se um joystick com "
 "mola não retorna de forma consistente ao centro exato de cada eixo."
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The depth is unknown along part of the path from ${ 0 }."
+msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
@@ -11042,6 +11134,11 @@ msgstr ""
 #: src/views/ConfigurationVideoView.vue
 msgid "The stream"
 msgstr "O stream"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The terrain is unknown along part of the path from ${ 0 }."
+msgstr ""
 
 #: src/components/widgets/MissionControlPanel.vue
 #, javascript-format
@@ -13051,6 +13148,13 @@ msgstr "Material da janela"
 msgid "With \"Run script in its own scope\" on, the script gets"
 msgstr "Com \"Executar o script em seu próprio escopo\" ativado, o script recebe"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Without a coastline map, the terrain data cannot tell whether the path from "
+"${ 0 } is navigable. Load the coastline or check a nautical chart."
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Write the mission on the planner to a file"
 msgstr ""
@@ -13500,6 +13604,11 @@ msgstr ""
 msgid "from ${ 0 }"
 msgstr "de ${ 0 }"
 
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "home to waypoint ${ 0 }"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoWizardIntroPanel.vue
 msgid "if you are happy with your current views group and joystick mapping."
 msgstr ""
@@ -13722,6 +13831,11 @@ msgstr "para escrever um modelo — ex.:"
 msgid "unassigned"
 msgstr "não atribuído"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "under ${ 0 } m"
+msgstr ""
+
 #: src/components/InputElementConfig.vue
 msgid "update"
 msgstr "atualizar"
@@ -13733,6 +13847,11 @@ msgstr "valor"
 #: src/components/mission-planning/CruiseSpeedControl.vue
 msgid "vehicle default"
 msgstr "padrão do veículo"
+
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "waypoint ${ 0 } to ${ 1 }"
+msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
 msgid "whose"
