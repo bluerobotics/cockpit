@@ -37,6 +37,7 @@ import type { CockpitMission, WaypointCoordinates } from '@/types/mission'
 import type { TerrainObserver } from '@/types/terrain'
 
 import { type UseMissionTerrainReturn, useMissionTerrain } from './useMissionTerrain'
+import { type UseMissionWaterReturn, useMissionWater } from './useMissionWater'
 import { type UseSafeAltitudeReturn, useSafeAltitude } from './useSafeAltitude'
 
 /**
@@ -179,6 +180,10 @@ export interface TerrainDockState {
    * Loads the coastline map over the mission, keeping the area already loaded when it fits in one load.
    */
   loadMissionCoastline: () => void
+  /**
+   * Where an aircraft's or ground vehicle's mission runs over water, which its heights alone do not show.
+   */
+  water: UseMissionWaterReturn
 }
 
 const terrainDockKey: InjectionKey<TerrainDockState> = Symbol('terrain-dock')
@@ -382,6 +387,12 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     return { bounds: grid.bbox, url: canvas.toDataURL('image/png') }
   })
 
+  const water = useMissionWater(
+    computed(() => terrain.analysis.value?.profile.samples ?? []),
+    computed(() => open.value && ['air', 'ground'].includes(terrain.vehicleClass.value)),
+    () => terrainStore.waterLevelNowM()
+  )
+
   const overlay = useTerrainMapOverlay(map, {
     // Each change redraws every finding line, which a waypoint drag would otherwise do at pointer rate.
     stretches: refThrottled(stretches, 100),
@@ -457,6 +468,7 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     coastlineMissing,
     loadingCoastline,
     loadMissionCoastline,
+    water,
   }
   provide(terrainDockKey, state)
   return state
