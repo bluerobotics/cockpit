@@ -2001,21 +2001,6 @@ const centerOnMission = (): void => {
   display: none !important;
 }
 
-:deep(.vehicle-tooltip) {
-  background-color: var(--glass-background) !important;
-  backdrop-filter: var(--glass-filter);
-  border: var(--glass-border) !important;
-  box-shadow: var(--glass-box-shadow);
-  color: var(--glass-color);
-  padding: 0.75rem;
-  border-radius: 8px;
-  z-index: 100;
-}
-
-:deep(.vehicle-tooltip::before) {
-  border-right-color: var(--glass-background) !important;
-}
-
 :deep(.history-polyline-tooltip) {
   background-color: var(--glass-background) !important;
   backdrop-filter: var(--glass-filter);
