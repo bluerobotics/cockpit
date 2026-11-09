@@ -4,6 +4,13 @@ msgstr ""
 "Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"\"Add observer\", then click the map where a person stands. Eyes is their "
+"eye height above the ground. The base station, when placed, is always an "
+"observer."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } (Cockpit Standalone)"
@@ -18,6 +25,11 @@ msgstr ""
 #, javascript-format
 msgid "${ 0 } floating container"
 msgstr "Contêiner flutuante ${ 0 }"
+
+#: src/composables/terrain/useTerrainDock.ts
+#, javascript-format
+msgid "${ 0 } from ${ 1 }."
+msgstr ""
 
 #: src/components/InputField.vue
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -139,6 +151,17 @@ msgstr ""
 msgid "${ 0 }% grade from ${ 1 }."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"${ 0 }% of the mission has a clear link. Worst from ${ 1 }, at ${ 2 }% of "
+"the space the signal needs."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "0 means a clear sky."
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid ""
@@ -169,6 +192,10 @@ msgstr ""
 msgid "Add mission home"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Add observer"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Add waypoints to the mission to reshape it from here."
 msgstr ""
@@ -196,6 +223,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Always keep a safe height information"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "An observer sees the vehicle here."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -251,6 +282,10 @@ msgid ""
 "depths of its own."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Base station"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Bathymetry source"
 msgstr ""
@@ -300,12 +335,20 @@ msgstr ""
 msgid "Check failed"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Check link"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Check the terrain before upload"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Checking"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Checking the link"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -318,8 +361,18 @@ msgid ""
 "confirm when anything is found."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"Checks the straight line from the base antenna (${ 0 } m up)\n"
+"to the vehicle at ${ 1 } MHz, with the earth's curve and the space the\n"
+"signal needs around that line. Buildings and trees are only seen by the "
+"surface model."
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
+#: src/components/terrain/TerrainSightPanel.vue
 msgid "Clear"
 msgstr ""
 
@@ -348,6 +401,14 @@ msgid ""
 "m error."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Click the map"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Click the map where the observer stands. Escape cancels."
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Climb over home to"
 msgstr ""
@@ -355,6 +416,14 @@ msgstr ""
 #: src/components/DrawerPanel.vue
 #, javascript-format
 msgid "Close the ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Cloud base above the observers"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Cloud base:"
 msgstr ""
 
 #: src/components/mission-planning/MissionPlanningSidebar.vue
@@ -394,9 +463,19 @@ msgstr ""
 msgid "Could not apply \"${ 0 }\": ${ 1 }"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Could not check the radio link: ${ 0 }"
+msgstr ""
+
 #: src/stores/terrain.ts
 #, javascript-format
 msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Could not compute the line of sight: ${ 0 }"
 msgstr ""
 
 #: src/composables/terrain/useSafeAltitude.ts
@@ -556,6 +635,15 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Export"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Eyes"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Eyes ${ 0 } m, moves with the base station"
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -744,6 +832,10 @@ msgstr ""
 msgid "Import"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "In sight"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Keep inside safe depths"
 msgstr ""
@@ -871,6 +963,10 @@ msgid ""
 "lines are left as they are. Set 0 to stop pausing."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Map colors:"
+msgstr ""
+
 #: src/components/mission-planning/MissionEstimates.vue
 #, javascript-format
 msgid "Max distance from ${ 0 }"
@@ -931,6 +1027,10 @@ msgid ""
 "both. Where the seabed is too shallow for both, the clearance wins."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Must climb to be seen"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid "NOAA"
 msgstr ""
@@ -945,8 +1045,20 @@ msgstr ""
 msgid "NOAA coastal models (United States)"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Never seen"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "No deeper than"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "No observer can see the vehicle"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "No observer can see the vehicle here, at any height."
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -973,6 +1085,20 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Nothing is planned on the map yet"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Observer ${ 0 }"
+msgstr ""
+
+#: src/composables/map/useTerrainMapOverlay.ts
+#, javascript-format
+msgid "Observer ${ 0 }, eyes ${ 1 } m above the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Observers:"
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -1012,6 +1138,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Place home on the map before reshaping the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Place the base station on the map to check the radio link."
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -1073,6 +1203,18 @@ msgid ""
 "that rises above home comes closer, so check the findings afterwards."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio frequency"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio link check information"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio link from the base station"
+msgstr ""
+
 #: src/components/terrain/TerrainSafeAltitude.vue
 #. eslint-disable-next-line vue/max-len
 #, javascript-format
@@ -1131,6 +1273,11 @@ msgstr ""
 #: src/views/ConfigurationUIView.vue
 msgid "Reload now"
 msgstr "Recarregar agora"
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Remove observer ${ 0 }"
+msgstr ""
 
 #: src/components/terrain/TerrainSafeAltitude.vue
 msgid "Restore"
@@ -1211,6 +1358,16 @@ msgstr ""
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Show on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Show where the vehicle stays in sight"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"Shows where people on the ground can still see the vehicle, with the "
+"terrain in the way."
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1358,6 +1515,10 @@ msgid ""
 "interpolated."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The map shows where the vehicle can be seen."
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "The mission now runs backwards."
 msgstr ""
@@ -1375,10 +1536,41 @@ msgid ""
 "GMRT, GEBCO and Tilezen anywhere else."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The radio link stays clear of the terrain along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"The result tells how much of the mission keeps a clear link and where the "
+"terrain comes closest. Stretches\n"
+"where the terrain takes more than ${ 0 }% of that space are listed in "
+"Findings. The antenna\n"
+"height and the vehicle mast come from the base station settings."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The terrain between the base and the vehicle is unknown."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The terrain blocks the radio link"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
 "The terrain check did not finish, so the mission was not checked against "
 "the terrain."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The terrain crowds the radio link"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "The terrain gets in the way of the radio link in ${ 0 } places."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -1402,10 +1594,19 @@ msgstr ""
 msgid "The terrain under the mission is checked once the mission has waypoints."
 msgstr ""
 
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The vehicle flies too low for any observer to see it"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid ""
 "The vehicle is currently armed, and the main-menu contains configurations "
 "and tools that can cause unsafe situations."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "The vehicle leaves every observer's sight in ${ 0 } places."
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1413,6 +1614,10 @@ msgstr ""
 msgid "The vehicle no longer waits at ${ 0 } waypoint."
 msgid_plural "The vehicle no longer waits at ${ 0 } waypoints."
 msgstr[0] ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The vehicle stays in sight along the whole mission."
+msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
@@ -1449,6 +1654,10 @@ msgstr ""
 msgid ""
 "Tint the mission path by expected radio or mobile-data coverage at each "
 "segment."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Too low here for any observer to see the vehicle."
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -1502,6 +1711,22 @@ msgstr ""
 msgid "Vessel draft"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual line of sight"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual line of sight information"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual range"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual range:"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Wait"
 msgstr ""
@@ -1549,6 +1774,10 @@ msgid ""
 "is navigable. Load the coastline, or check a nautical chart."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Working out the sight lines"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Write the mission on the planner to a file"
 msgstr ""
@@ -1557,6 +1786,16 @@ msgstr ""
 msgid ""
 "Your own Terrarium-encoded elevation tiles, such as a survey of the "
 "operating area."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "farthest distance an observer can still make out the vehicle."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"height above the observers where the vehicle disappears into clouds. 0 "
+"means a clear sky."
 msgstr ""
 
 #: src/libs/terrain/mission-profile.ts
@@ -1576,6 +1815,19 @@ msgstr ""
 msgid "the mission changed while it was being checked, try again"
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"the mission line is green where an observer sees the vehicle at its planned "
+"height, orange where it flies\n"
+"too low to be seen and red where no observer can see it at any height. "
+"Around it, the map is clear where the\n"
+"vehicle is seen even on the surface, warming to orange as it must climb to "
+"be seen and red where nobody sees\n"
+"it. Pointing at a color marks those stretches on the chart. For aircraft, "
+"stretches out of everyone's sight\n"
+"are listed in Findings."
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "the most detailed bathymetry published for each point"
 msgstr ""
@@ -1586,6 +1838,10 @@ msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid "the terrain did not load in time"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "the terrain under the base station or an observer could not be read"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
