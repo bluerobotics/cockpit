@@ -1,4 +1,5 @@
 import type { TerrainProfileSample, TerrainVehicleClass } from './mission-profile'
+import type { UploadPathPoint } from './mission-terrain'
 
 /**
  * Drawing coordinates of a terrain profile chart, in a viewBox of {@link PROFILE_CHART_WIDTH} by {@link PROFILE_CHART_HEIGHT}.
@@ -36,6 +37,10 @@ export interface ProfileChartGeometry {
    * The vehicle's planned path, or its keel for vessels.
    */
   vehicleLine: string
+  /**
+   * The path an upload sends, empty when none is given.
+   */
+  uploadLine: string
   /**
    * The model's ground along the whole path, empty without model heights.
    */
@@ -103,6 +108,16 @@ export interface ProfileChartShallows {
 }
 
 /**
+ * A stretch the chart marks with a warning triangle.
+ */
+export interface ProfileChartWarning extends Omit<ProfileChartShallows, 'raised'> {
+  /**
+   * Heading read from the triangle.
+   */
+  title: string
+}
+
+/**
  * What the chart is drawn for, besides the profile stations.
  */
 export interface ProfileChartOptions {
@@ -142,6 +157,10 @@ export interface ProfileChartOptions {
    * Height range to draw, instead of the one the profile spans.
    */
   range?: [number, number]
+  /**
+   * The path an upload sends, when it differs from the planned one.
+   */
+  uploadPath?: Pick<UploadPathPoint, 'distanceM' | 'amslM'>[]
 }
 
 export const PROFILE_CHART_WIDTH = 1000
@@ -219,6 +238,7 @@ const chartRange = (
     }),
     ...modelM.map(low),
     ...water,
+    ...(options.uploadPath ?? []).map(({ amslM }) => amslM),
   ]
   if (marine) return heightRange(values)
   // Aircraft and ground vehicles never go deep, so a deep model pit, often missing data, does not squash their chart.
@@ -483,6 +503,9 @@ export const profileChartGeometry = (
     waterArea: hasWater && known.length ? `${line([...surface, ...seabed])}Z` : '',
     ...waterLines(y, waterLevelM, tideM, marine),
     vehicleLine: line(vehicle),
+    uploadLine: line(
+      (options.uploadPath ?? []).map(({ distanceM, amslM }): [number, number] => [x(distanceM), y(amslM)])
+    ),
     modelLine: modelPath(hasModel),
     replacedModelLine: modelPath(nearReplaced),
     waterBodyArea: water.area,

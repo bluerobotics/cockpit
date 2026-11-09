@@ -9,6 +9,7 @@ import {
   type TerrainMapStretch,
   useTerrainMapOverlay,
 } from '@/composables/map/useTerrainMapOverlay'
+import { openSnackbar } from '@/composables/snackbar'
 import { bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG, paddedBbox } from '@/libs/hazards/hazard-areas'
 import type { VisibilityGrid } from '@/libs/terrain/line-of-sight'
 import { measuredCellCenter, measuredCellLabel, trustedCells } from '@/libs/terrain/measured-terrain'
@@ -23,6 +24,7 @@ import {
   terrainFindingMessage,
   terrainFindingRank,
   terrainFindingSeverity,
+  terrainRelativeStretches,
 } from '@/libs/terrain/mission-terrain'
 import { sampleAtFraction } from '@/libs/terrain/profile-chart'
 import {
@@ -45,6 +47,7 @@ import { type UseMissionTerrainReturn, useMissionTerrain } from './useMissionTer
 import { type UseMissionTideReturn, useMissionTide } from './useMissionTide'
 import { type UseMissionWaterReturn, useMissionWater } from './useMissionWater'
 import { type UseSafeAltitudeReturn, useSafeAltitude } from './useSafeAltitude'
+import { type TerrainUploadPreview, useTerrainUploadPreview } from './useTerrainUploadPreview'
 
 /**
  * A finding as the dock lists it.
@@ -86,6 +89,32 @@ export interface TerrainDockFinding {
    * How urgent it is, 0 the most; the list reads in this order.
    */
   rank: number
+  /**
+   * Heading of the warning triangle the chart marks it with, unmarked when absent.
+   */
+  warningTitle?: string
+  /**
+   * Buttons that settle it from its card.
+   */
+  actions?: TerrainDockFindingAction[]
+}
+
+/**
+ * A button on a finding's card.
+ */
+export interface TerrainDockFindingAction {
+  /**
+   * Button text.
+   */
+  label: string
+  /**
+   * What the button does, shown on hover.
+   */
+  help: string
+  /**
+   * Runs it.
+   */
+  run: () => void
 }
 
 /**
@@ -202,6 +231,10 @@ export interface TerrainDockState {
    * The tide station nearest the mission, or the one the settings name, and the mission day its tide is read for.
    */
   tide: UseMissionTideReturn
+  /**
+   * What an upload holding the height over the ground would send, while that upload option is on for an aircraft.
+   */
+  uploadPreview: Ref<TerrainUploadPreview | null>
 }
 
 const terrainDockKey: InjectionKey<TerrainDockState> = Symbol('terrain-dock')
@@ -209,13 +242,16 @@ const terrainDockKey: InjectionKey<TerrainDockState> = Symbol('terrain-dock')
 const SEVERITY_COLORS = { danger: '#FF5252', warning: '#FF8800', info: '#FFD54F' } as const
 
 /**
- * Icon of the findings where the vehicle hits the terrain, drawn as the triangle the chart marks shallows with.
+ * Icon of the findings the chart marks with a warning triangle, drawn as that triangle.
  */
 export const TERRAIN_WARNING_ICON = 'terrain-warning-triangle'
 
 const TERRAIN_FINDING_ICONS: Partial<Record<TerrainFindingKind, string>> = {
   'collision': TERRAIN_WARNING_ICON,
   'reaches-coastline': 'mdi-map-marker-alert-outline',
+}
+const TERRAIN_WARNING_TITLES: Partial<Record<TerrainFindingKind, string>> = {
+  collision: t`Goes into the terrain`,
 }
 const SIGHT_COLORS: Record<SightFinding['kind'], string> = {
   'link-blocked': '#E040FB',
@@ -305,6 +341,66 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     { deep: true }
   )
 
+  const answerTerrainRequests = (): void => {
+    terrainStore.settings.serveTerrainToVehicle = true
+    logUserAction('Turned on answering the vehicle terrain requests from the terrain findings')
+    openSnackbar({
+      variant: 'success',
+      message: t`Cockpit now answers the vehicle's terrain requests.`,
+      duration: 3000,
+    })
+  }
+
+  const holdTerrainHeight = (): void => {
+    terrainStore.settings.resolveTerrainOnUpload = true
+    logUserAction('Turned on holding terrain height on upload from the terrain findings')
+    const message = t`Terrain height is now held on upload. The chart and the map show the waypoints it adds.`
+    openSnackbar({ variant: 'success', message, duration: 3000 })
+  }
+
+  const uploadPreview = useTerrainUploadPreview(
+    terrain,
+    computed(() => open.value && terrainStore.settings.resolveTerrainOnUpload && terrain.vehicleClass.value === 'air')
+  )
+
+  const vehicleTerrainActions = computed<TerrainDockFindingAction[]>(() => [
+    {
+      label: t`Answer terrain requests`,
+      help:
+        // eslint-disable-next-line max-len, vue/max-len
+        t`Sends the vehicle ground heights from Cockpit's terrain model whenever it asks, and the vehicle follows the terrain itself, along the line the chart draws. It only asks with terrain enabled (its TERRAIN_ENABLE parameter), and keeps what it gets for flying without Cockpit.`,
+      run: answerTerrainRequests,
+    },
+    {
+      label: t`Hold terrain height`,
+      help:
+        // eslint-disable-next-line max-len, vue/max-len
+        t`Still follows the terrain, with no terrain data needed on the vehicle: the upload adds waypoints wherever the ground rises or falls, so the straight lines between them pass at most ${terrainStore.settings.terrainFollowToleranceM} m above the height over the ground, and sends every height above sea level. The planned mission keeps its heights over the ground; the chart and the map preview the waypoints the upload adds.`,
+      run: holdTerrainHeight,
+    },
+  ])
+
+  // Either switch gives the vehicle what the chart assumes it holds, so the finding only stands while both are off.
+  const vehicleTerrainFindings = computed<TerrainDockFinding[]>(() => {
+    const analysis = terrain.analysis.value
+    const { serveTerrainToVehicle, resolveTerrainOnUpload } = terrainStore.settings
+    if (!analysis || terrain.vehicleClass.value !== 'air' || serveTerrainToVehicle || resolveTerrainOnUpload) return []
+    return terrainRelativeStretches(analysis.points, analysis.profile.samples).map(({ fromM, toM, label }, index) => ({
+      key: `vehicle-terrain-${index}`,
+      message:
+        // eslint-disable-next-line max-len, vue/max-len
+        t`From ${label} the waypoints are set "Relative to terrain", so the vehicle needs terrain data of its own to hold their height over the ground. Turn on "Answer the vehicle's terrain requests" or "Hold terrain height on upload" in the Vehicle tab.`,
+      color: SEVERITY_COLORS.warning,
+      icon: TERRAIN_WARNING_ICON,
+      fromM,
+      toM,
+      dashed: false,
+      rank: OTHER_FINDING_RANK,
+      warningTitle: t`Needs terrain on the vehicle`,
+      actions: vehicleTerrainActions.value,
+    }))
+  })
+
   const findings = computed<TerrainDockFinding[]>(() => {
     const analysis = terrain.analysis.value
     if (!analysis) return []
@@ -325,7 +421,9 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
         toM: finding.toM,
         dashed: false,
         rank: terrainFindingRank(finding.kind),
+        warningTitle: TERRAIN_WARNING_TITLES[finding.kind],
       })),
+      ...vehicleTerrainFindings.value,
       ...returnFindings.map((finding, index) => ({
         key: `return-${index}`,
         message: returnFindingMessage(finding, points, context),
@@ -464,6 +562,12 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     observers: computed(() => (open.value ? terrainStore.settings.visualObservers : [])),
     ghost: computed(() => (open.value ? ghostSample.value?.coordinates ?? null : null)),
     measured: measuredDots,
+    uploadWaypoints: computed<TerrainMapDot[]>(() =>
+      (uploadPreview.value?.path ?? []).flatMap(({ coordinates, amslM, added }) => {
+        const heightM = Math.round(amslM)
+        return added ? [{ coordinates, color: '#FFFFFF', label: t`Added on upload, ${heightM} m above sea level` }] : []
+      })
+    ),
   })
 
   // Arrow-key steps on one waypoint in quick succession undo together, so a few presses keep the terrain history.
@@ -536,6 +640,7 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     loadMissionCoastline,
     water,
     tide,
+    uploadPreview,
   }
   provide(terrainDockKey, state)
   return state

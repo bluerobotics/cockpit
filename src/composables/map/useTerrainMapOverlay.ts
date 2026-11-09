@@ -48,7 +48,7 @@ export interface TerrainMapImage {
 }
 
 /**
- * A measured terrain cell drawn as a dot.
+ * A point drawn as a dot, such as a measured terrain cell.
  */
 export interface TerrainMapDot {
   /**
@@ -93,6 +93,10 @@ export interface UseTerrainMapOverlayOptions {
    * Measured terrain cells to show.
    */
   measured: Ref<TerrainMapDot[]>
+  /**
+   * Waypoints an upload adds to the mission.
+   */
+  uploadWaypoints: Ref<TerrainMapDot[]>
 }
 
 /**
@@ -125,11 +129,12 @@ const ABOVE_PATH_TOOLTIP: L.TooltipOptions = { direction: 'top', offset: [0, -18
  */
 export const useTerrainMapOverlay = (
   map: Ref<LeafletMap | undefined>,
-  { stretches, hover, image, observers, ghost, measured }: UseTerrainMapOverlayOptions
+  { stretches, hover, image, observers, ghost, measured, uploadWaypoints }: UseTerrainMapOverlayOptions
 ): UseTerrainMapOverlayReturn => {
   const stretchLayer = L.layerGroup()
   const markerLayer = L.layerGroup()
   const measuredLayer = L.layerGroup()
+  const uploadLayer = L.layerGroup()
   // The measured dots are only 3 px across, so hovering counts a few pixels around each one.
   const renderer = L.canvas({ padding: 0.2, tolerance: 4 })
   let imageLayer: L.ImageOverlay | undefined
@@ -154,7 +159,7 @@ export const useTerrainMapOverlay = (
       }
       current?.on('move viewreset zoomend', followMapPane)
       followMapPane()
-      ;[stretchLayer, markerLayer, measuredLayer].forEach((layer) => {
+      ;[stretchLayer, markerLayer, measuredLayer, uploadLayer].forEach((layer) => {
         if (previous) layer.remove()
         if (current) layer.addTo(current)
       })
@@ -272,6 +277,22 @@ export const useTerrainMapOverlay = (
     })
   })
 
+  watch(uploadWaypoints, (current) => {
+    uploadLayer.clearLayers()
+    current.forEach(({ coordinates, color, label }) => {
+      uploadLayer.addLayer(
+        L.circleMarker(coordinates, {
+          radius: 4,
+          color,
+          weight: 2,
+          fillColor: '#0B1A24',
+          fillOpacity: 1,
+          attribution: terrainAttribution(),
+        }).bindTooltip(label, ABOVE_PATH_TOOLTIP)
+      )
+    })
+  })
+
   const pickPoint = (): Promise<WaypointCoordinates | null> => {
     cancelPick?.()
     const instance = map.value
@@ -320,7 +341,7 @@ export const useTerrainMapOverlay = (
   onBeforeUnmount(() => {
     cancelPick?.()
     map.value?.off('move viewreset zoomend', followMapPane)
-    ;[stretchLayer, markerLayer, measuredLayer].forEach((layer) => layer.remove())
+    ;[stretchLayer, markerLayer, measuredLayer, uploadLayer].forEach((layer) => layer.remove())
     imageLayer?.remove()
     hoverMarker?.remove()
     ghostMarker?.remove()
