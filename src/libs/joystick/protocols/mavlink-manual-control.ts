@@ -467,12 +467,13 @@ export class MavlinkManualControlManager {
         .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
 
       const activeMavlinkManualControlActions = this.activeButtonsActions.filter((a) => a.protocol === JoystickProtocol.MAVLinkManualControl).map((action) => action.id)
-      const regularVehicleButtonsToActivate = currentRegularButtonParameters
-        .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
-        .map((entry) => manualControlButtonFromParameterName(entry.button))
-      const shiftVehicleButtonsToActivate = currentShiftButtonParameters
-        .filter((entry) => activeMavlinkManualControlActions.includes(entry.actionId as MAVLinkButtonFunction))
-        .map((entry) => manualControlButtonFromParameterName(entry.button))
+      // The autopilot runs a function once per pressed slot, so press only the first slot mapped to each function
+      const regularVehicleButtonsToActivate = activeMavlinkManualControlActions
+        .map((actionId) => currentRegularButtonParameters.find((entry) => entry.actionId === actionId))
+        .map((entry) => entry && manualControlButtonFromParameterName(entry.button))
+      const shiftVehicleButtonsToActivate = activeMavlinkManualControlActions
+        .map((actionId) => currentShiftButtonParameters.find((entry) => entry.actionId === actionId))
+        .map((entry) => entry && manualControlButtonFromParameterName(entry.button))
 
       const useShift = this.activeButtonsActions.map((a) => a.id).includes(modifierKeyActions.shift.id)
       const shiftButton = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
