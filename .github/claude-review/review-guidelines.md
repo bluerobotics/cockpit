@@ -163,11 +163,11 @@ This is the top of the comment body and the only part you can assume gets read o
 is open. Write it for a maintainer who has thirty seconds, not for the agent that will implement the
 fixes. It has four parts, in this order:
 
-**The verdict and the counts.** The verdict is exactly one of `READY TO MERGE`, `MINOR SUGGESTIONS`,
+**The verdict and the counts.** The verdict is exactly one of `BOT IS HAPPY`, `MINOR SUGGESTIONS`,
 `IMPORTANT FIXES REQUIRED`, `DO NOT MERGE`. It follows mechanically from the open findings and is
 never a separate judgement: any open `critical` is `DO NOT MERGE`, otherwise any open `major` is
 `IMPORTANT FIXES REQUIRED`, otherwise any open finding at all is `MINOR SUGGESTIONS`, otherwise
-`READY TO MERGE`. A finding disputed by the author is still open for this purpose; `addressed`,
+`BOT IS HAPPY`. A finding disputed by the author is still open for this purpose; `addressed`,
 `obsolete` and `resolved` are the closed ones. Settling a dispute is the human's call, not yours, and
 a reaction on its decision comment, or a `/resolve`, is how they make it. Write it once and only on
 the outer `<summary>` line, in the form the table below gives, ahead of the round number: that line
@@ -184,7 +184,7 @@ two lines: the contract below shows where they sit, not how to word them.
 | `DO NOT MERGE` | `⛔ <strong>DO NOT MERGE</strong>` |
 | `IMPORTANT FIXES REQUIRED` | `⚠️ <strong>IMPORTANT FIXES REQUIRED</strong>` |
 | `MINOR SUGGESTIONS` | `📝 <strong>MINOR SUGGESTIONS</strong>` |
-| `READY TO MERGE` | `✅ <strong>READY TO MERGE</strong>` |
+| `BOT IS HAPPY` | `🤖 <strong>BOT IS HAPPY</strong>` |
 
 That column is HTML tags because `<summary>` is an HTML block and no markdown inside it is processed:
 `**bold**` there publishes as those literal characters. The emoji is a literal character rather than a
@@ -405,7 +405,7 @@ the one carried in from the previous round, unchanged — a short-circuit judges
 not restate a status, and `[]` is correct only when there is no previous review to carry. Publishing
 `[]` over an existing ledger would silently drop every finding the PR has, which is the loss the
 last-block extractor exists to prevent. The verdict on both paths is the one the carried ledger
-produces by the usual rule, or `READY TO MERGE` when there is nothing carried:
+produces by the usual rule, or `BOT IS HAPPY` when there is nothing carried:
 
 - If `pr.diff` is empty or missing, say so and stop.
 - If `HEAD_SHA` equals `PREV_SHA`, every resolution in `resolutions.json` is already `resolved` in the carried ledger, and every `accept` and `reject` in `decisions.json` is already reflected there, there are no new commits since the last review: say so and stop. A settlement arrives precisely when nothing has been pushed, so a resolution or a vote you have not applied yet never takes this exit — that is the one case where an unchanged head still has work to do. Only a decided vote counts for that: a `tie`, a `pending`, or a verdict whose `gated` is `false` changes nothing in the ledger, so it can never become "already reflected" and never buys a run of its own — deliberately, since a vote that decides nothing would otherwise buy a full review every time it moved. Report the split on the next review that runs for a reason of its own. Both files are full histories, not deltas, so "it is not empty" is the wrong test: after the first `/resolve` or the first dispute on a PR neither is empty again, and reading them that way would buy a full review every time someone asks for a cheap re-check.
