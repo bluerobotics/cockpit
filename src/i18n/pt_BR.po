@@ -5805,6 +5805,7 @@ msgstr "Mapeamentos ignorados"
 msgid "Image URL"
 msgstr "URL da imagem"
 
+#: src/components/MissionLibraryModal.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsImportModal.vue
 #: src/components/widgets/DoItYourself.vue
 msgid "Import"
@@ -5833,10 +5834,6 @@ msgstr "Importar configuração"
 #: src/views/ConfigurationJoystickView.vue
 msgid "Import default mapping for this vehicle"
 msgstr "Importar mapeamento padrão para este veículo"
-
-#: src/components/MissionLibraryModal.vue
-msgid "Import file"
-msgstr "Importar arquivo"
 
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickImportModal.vue
 msgid "Import selected"
@@ -7852,6 +7849,10 @@ msgstr "Não usado por este veículo"
 #: src/components/configuration/HttpRequestActionConfig.vue
 msgid "Note:"
 msgstr "Observação:"
+
+#: src/components/MissionLibraryModal.vue
+msgid "Nothing is planned on the map yet"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "Nothing to undo."
@@ -12849,6 +12850,10 @@ msgstr "Porcentagem da escala de largura"
 msgid "Window material"
 msgstr "Material da janela"
 
+#: src/components/MissionLibraryModal.vue
+msgid "Write the mission on the planner to a file"
+msgstr ""
+
 #: src/components/UpdateNotification.vue
 msgid "You are running the latest version of the application."
 msgstr "Você está usando a versão mais recente do aplicativo."
@@ -13630,3 +13635,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Você pode mostrar as estimativas da missão novamente nas configurações de "
 #~ "missão."
+
+#~ msgid "Import file"
+#~ msgstr "Importar arquivo"
