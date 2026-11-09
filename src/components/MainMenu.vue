@@ -146,12 +146,14 @@
                 variant="uncontained"
                 :height="buttonSize * 0.45"
                 :icon-size="buttonSize * 0.5"
-                :style="
+                icon-class="translate-y-[var(--icon-nudge-y)]"
+                :style="[
+                  { '--icon-nudge-y': `${menuitem.iconNudgeY ?? 0}px` },
                   interfaceStore.highlightedComponent === menuitem.title && {
                     animation: 'highlightBackground 0.5s alternate 50',
                     borderRadius: '4px',
-                  }
-                "
+                  },
+                ]"
                 @click="toggleMenuPage(menuitem.componentName)"
                 ><template #content>
                   <div v-if="activeMenuPage === menuitem.componentName" class="arrow-left"></div>
