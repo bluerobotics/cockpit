@@ -51,6 +51,11 @@ msgstr ""
 msgid "${ 0 } (measured terrain)"
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+#, javascript-format
+msgid "${ 0 } Pick another one or \"${ 1 }\" in the survey sensor settings."
+msgstr ""
+
 #: src/components/terrain/TerrainProfileChart.vue
 #, javascript-format
 msgid "${ 0 } along"
@@ -290,8 +295,17 @@ msgid ""
 "the space the signal needs."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+#, javascript-format
+msgid "${ 0 }: no mount."
+msgstr ""
+
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "0 means a clear sky."
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "4K Cam Low-Light ROV Camera"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -492,6 +506,10 @@ msgstr ""
 msgid "Be careful"
 msgstr "Cuidado"
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Beam across the track"
+msgstr ""
+
 #: src/components/terrain/TerrainTideChart.vue
 #, javascript-format
 msgid "Best start ${ 0 }, tide ${ 1 }: ${ 2 }"
@@ -534,6 +552,28 @@ msgstr ""
 msgid "CSV, every cell"
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Camera Tilt System at its 63° down limit"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Camera Tilt System, tilted straight down"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Camera focal length"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Camera sensor width"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"Camera used to judge photo survey resolution and overlap, and that marine "
+"surveys can be re-spaced for."
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 #. eslint-disable-next-line max-len, vue/max-len
 msgid ""
@@ -553,6 +593,26 @@ msgstr ""
 
 #: src/composables/terrain/useTerrainLibrary.ts
 msgid "Centered the map, but could not draw that dataset:"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 FS"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 SS, pair"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 SS, port only"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Omniscan 450 SS, starboard only"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Cerulean Surveyor 240-16 multibeam"
 msgstr ""
 
 #: src/components/terrain/TerrainTidePanel.vue
@@ -867,8 +927,22 @@ msgstr ""
 msgid "Custom Terrarium tiles"
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+#: src/libs/terrain/survey-sensors.ts
+msgid "Custom camera"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+#: src/libs/terrain/survey-sensors.ts
+msgid "Custom echo sounder"
+msgstr ""
+
 #: src/libs/terrain/sources.ts
 msgid "Custom tiles"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "DWE exploreHD camera"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -912,6 +986,10 @@ msgstr "Desarmar o veículo e continuar"
 msgid "Distance between turns"
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Down"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Downloaded the water map along the mission."
 msgstr ""
@@ -934,6 +1012,22 @@ msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "ETA"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Echo sounder"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Echo sounder mounting information"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Echo sounders"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Echo sounders:"
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -1051,6 +1145,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Follow the terrain contour over"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Forward"
 msgstr ""
 
 #: src/composables/terrain/useTerrainDock.ts
@@ -1278,12 +1376,40 @@ msgid ""
 "so the vehicle follows the seabed more closely."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "How far the camera sees through the water, for boat and submarine surveys."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid ""
 "How much higher than the height asked above the terrain the path between "
 "waypoints may pass, never lower. A smaller tolerance adds more waypoints at "
 "upload."
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Hull mounting holes on the starboard keel, looking down"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Image width"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Imaging sensor"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Imaging sensor mounting information"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Imaging sensors"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Imaging sensors:"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -1300,6 +1426,24 @@ msgstr ""
 msgid "In sight"
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Included adjustable bracket, looking down"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Included bracket under the frame, looking down"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "It is made for the BlueBoat and the BlueROV2."
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid ""
+"It takes about half a minute per turn, so it maps from a hover rather than "
+"along survey lines."
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid ""
 "It works with \"Answer the vehicle's terrain requests\": that still covers "
@@ -1311,6 +1455,12 @@ msgstr ""
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "Its terrain reads ${ 0 } m against Cockpit's."
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid ""
+"Its thin beam builds an image as the ROV turns, so it covers no strip along "
+"a survey line."
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1435,8 +1585,16 @@ msgstr ""
 msgid "Looking for the tide stations near the mission..."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Looks"
+msgstr ""
+
 #: src/components/terrain/TerrainTideChart.vue
 msgid "Low"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Low-Light HD USB Camera"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -1462,6 +1620,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "Map colors:"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "MarineSitu C3 stereo camera"
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
@@ -1681,6 +1843,7 @@ msgid ""
 "as planned."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
 #: src/libs/terrain/bathymetry.ts
 msgid "None"
 msgstr ""
@@ -1728,6 +1891,20 @@ msgstr ""
 
 #: src/libs/terrain/shallows-osm.ts
 msgid "Obstruction"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Offset to starboard"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Omniscan 450 FS bracket, looking forward and tilted 20° down"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid ""
+"Omniscan 450 SS Integration Kit, on the outside of the hull and tilted 20° "
+"down"
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -1788,6 +1965,26 @@ msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Pause the ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Photo side overlap"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Ping Integration Kit, inside the starboard hull, looking down"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Ping2 echosounder"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Ping360 scanning sonar"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Pivoting bracket on the bottom panel, looking down"
 msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
@@ -2021,6 +2218,10 @@ msgstr ""
 msgid "Rock"
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Roof Rack with the included bracket, looking forward and tilted 5° down"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Run the mission backwards"
 msgstr ""
@@ -2067,6 +2268,10 @@ msgstr ""
 msgid ""
 "Sends waypoints set above the terrain as heights above sea level, so "
 "vehicles without terrain data still follow the ground."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Sensor range"
 msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
@@ -2136,6 +2341,24 @@ msgid ""
 "terrain in the way."
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+msgid "Side of the frame, scanning around the ROV"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"Sonar that marine surveys can be re-spaced for, fitted with the bracket "
+"sold for the BlueBoat or the BlueROV2."
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Sonoptix ECHO, 400 kHz"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Sonoptix ECHO, 700 kHz"
+msgstr ""
+
 #: src/components/terrain/TerrainTideChart.vue
 #, javascript-format
 msgid "Start ${ 0 }, tide ${ 1 }: ${ 2 }"
@@ -2189,6 +2412,24 @@ msgstr ""
 
 #: src/components/terrain/TerrainLibrarySection.vue
 msgid "Submersible"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"Survey lines are spaced for the echo sounder described below, on any "
+"vehicle."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Survey sensors"
+msgstr ""
+
+#: src/libs/terrain/survey-sensors.ts
+msgid "Surveyor Integration Kit, on the starboard hull, looking down"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Swath overlap"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -2310,6 +2551,12 @@ msgstr ""
 msgid "The bottom may come close to the surface here. Check a nautical chart."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"The camera described below, on any vehicle. Underwater, it is taken to look "
+"through a flat port."
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
 msgid ""
@@ -2381,6 +2628,12 @@ msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "The radio link stays clear of the terrain along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid ""
+"The range set on the sonar, capped at the sonar's maximum. Picking a sonar "
+"sets it to its rated range."
 msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
@@ -2536,6 +2789,11 @@ msgid ""
 "not marked on the chart there."
 msgstr ""
 
+#: src/libs/terrain/survey-sensors.ts
+#, javascript-format
+msgid "There is no ${ 0 } mount for it."
+msgstr ""
+
 #: src/libs/terrain/shallows-osm.ts
 msgid "Tidal flat"
 msgstr ""
@@ -2574,6 +2832,10 @@ msgstr ""
 msgid "Tilezen terrain"
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Tilt below the horizon"
+msgstr ""
+
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Time at the surface"
 msgstr ""
@@ -2586,6 +2848,18 @@ msgstr ""
 msgid ""
 "Tint the mission path by expected radio or mobile-data coverage at each "
 "segment."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "To both sides"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "To port"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "To starboard"
 msgstr ""
 
 #: src/composables/terrain/useTerrainDock.ts
@@ -2658,6 +2932,10 @@ msgstr ""
 msgid "Vehicle waypoint check information"
 msgstr ""
 
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Vertical beam"
+msgstr ""
+
 #: src/components/terrain/TerrainLibrarySection.vue
 msgid "Vessel"
 msgstr ""
@@ -2701,6 +2979,10 @@ msgstr ""
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Water under the keel"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveySensorsPanel.vue
+msgid "Water visibility"
 msgstr ""
 
 #: src/components/terrain/TerrainProfileChart.vue

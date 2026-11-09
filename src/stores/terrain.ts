@@ -22,6 +22,7 @@ import {
   offlineTerrainPlan,
 } from '@/libs/terrain/offline'
 import { isValidTileUrlTemplate, TERRAIN_SOURCES } from '@/libs/terrain/sources'
+import { NO_SURVEY_SENSOR } from '@/libs/terrain/survey-sensors'
 import { type TerrainCacheSummary, clearTerrainCache, summarizeTerrainCache } from '@/libs/terrain/tile-store'
 import type { TerrainTileBounds } from '@/libs/terrain/tiles'
 import { type TideStation, type WaterLevelPoint, fetchTidePredictions, waterLevelAt } from '@/libs/terrain/water-level'
@@ -47,6 +48,20 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   measuredTerrainEnabled: true,
   recordMeasuredTerrain: false,
   useMeasuredTerrain: true,
+  camera: {
+    id: NO_SURVEY_SENSOR,
+    sensorWidthMm: 13.2,
+    focalLengthMm: 8.8,
+    imageWidthPx: 5472,
+    targetSideOverlapPercent: 70,
+    visibilityM: 10,
+  },
+  surveySensor: {
+    id: NO_SURVEY_SENSOR,
+    custom: { facing: 'down', acrossDeg: 30, verticalDeg: 20, tiltDeg: 20, offsetM: 0 },
+    rangeM: 50,
+    overlapPercent: 20,
+  },
   radioFrequencyMhz: 2400,
   visualObservers: [],
   visualRangeM: 500,
@@ -60,6 +75,16 @@ export const useTerrainStore = defineStore('terrain', () => {
   // Shared with every computer flying the vehicle: the model, thresholds and observers describe the
   // operating area and the vehicle, nothing that belongs to one machine.
   const settings = useBlueOsStorage<TerrainSettings>('cockpit-terrain-settings-v1', DEFAULT_TERRAIN_SETTINGS)
+
+  // Settings saved, or synced from a Cockpit, before a field existed lack it, and the panels read every field.
+  watch(
+    settings,
+    (value) => {
+      if (Object.keys(DEFAULT_TERRAIN_SETTINGS).every((key) => key in value)) return
+      settings.value = { ...DEFAULT_TERRAIN_SETTINGS, ...value }
+    },
+    { immediate: true }
+  )
 
   /** Terrain source chosen, the default for an id this version does not know, as synced from another Cockpit. */
   const sourceId = computed<TerrainSourceId>(() =>
