@@ -101,6 +101,18 @@ export type TerrainSettings = {
    */
   aimRoiAtGround: boolean
   /**
+   * Whether measured terrain is in use at all; off, nothing is recorded or used, and what was recorded is kept.
+   */
+  measuredTerrainEnabled: boolean
+  /**
+   * Whether rangefinder and sonar readings are recorded as measured terrain.
+   */
+  recordMeasuredTerrain: boolean
+  /**
+   * Whether recorded measurements replace the model where they exist.
+   */
+  useMeasuredTerrain: boolean
+  /**
    * Radio link frequency, in megahertz, for the line of sight check.
    */
   radioFrequencyMhz: number

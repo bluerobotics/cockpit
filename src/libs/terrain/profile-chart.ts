@@ -37,6 +37,14 @@ export interface ProfileChartGeometry {
    */
   vehicleLine: string
   /**
+   * The model's ground along the whole path, empty without model heights.
+   */
+  modelLine: string
+  /**
+   * The model's ground only where measurements replace it, empty where none do.
+   */
+  replacedModelLine: string
+  /**
    * Water over the stretches marked as over water, its seabed sloping down from each shore; empty where none are.
    */
   waterBodyArea: string
@@ -123,6 +131,10 @@ export interface ProfileChartOptions {
    */
   shallows?: ProfileChartShallows[]
   /**
+   * Model ground at each station, without recorded measurements.
+   */
+  modelGroundM?: (number | null)[]
+  /**
    * Whether each station is over water, null where unknown.
    */
   overWater?: (boolean | null)[]
@@ -186,7 +198,8 @@ const chartRange = (
   options: ProfileChartOptions,
   drawn: (sample: TerrainProfileSample) => DrawnHeights,
   tideM: number,
-  hasWater: boolean
+  hasWater: boolean,
+  modelM: number[]
 ): [number, number] => {
   const { vehicleClass, uncertaintyM, waterLevelM } = options
   const air = vehicleClass === 'air'
@@ -204,6 +217,7 @@ const chartRange = (
       const { groundM, highM, vehicleM } = drawn(sample)
       return [low(groundM), high(highM), vehicleM]
     }),
+    ...modelM.map(low),
     ...water,
   ]
   if (marine) return heightRange(values)
@@ -302,8 +316,21 @@ const checkModelLinesOnce = (): void => {
   // @ts-ignore: import.meta.env does not exist in the types
   if (selfChecked || !import.meta.env.DEV || typeof assert !== 'function') return
   selfChecked = true
-  const pit = Array.from(
-    { length: 8 },
+  const groundM = [-5, -5, -6, -5, -5, -5, -5, -7]
+  const samples = groundM.map(
+    (ground, index) => ({ distanceM: index * 10, groundM: ground, groundHighM: ground } as TerrainProfileSample)
+  )
+  const { modelLine, replacedModelLine } = profileChartGeometry(samples, {
+    vehicleClass: 'surface',
+    uncertaintyM: 0,
+    waterLevelM: 0,
+    draftM: 0,
+    modelGroundM: [-5, -5, -5, -5, -5, null, -5, -5],
+  })
+  assert(modelLine.match(/M/g)?.length === 2, 'The model line breaks where the model has no height')
+  assert(replacedModelLine.match(/M/g)?.length === 2, 'Each replaced stretch is its own run of the model line')
+  assert(replacedModelLine.match(/[ML]/g)?.length === 5, 'A replaced station draws to its neighbors')
+  const pit = groundM.map(
     (_, index) =>
       ({ distanceM: index * 10, groundM: 800, groundHighM: index === 4 ? -2000 : 800 } as TerrainProfileSample)
   )
@@ -382,7 +409,9 @@ export const profileChartGeometry = (
     }
   }
   const hasWater = samples.some((sample) => sample.groundM !== null && sample.groundM < waterLevelM)
-  const [minM, maxM] = options.range ?? chartRange(samples, options, drawn, tideM, hasWater)
+  const { modelGroundM = [] } = options
+  const modelM = samples.map((sample, index) => capped(modelGroundM[index] ?? null, sample.distanceM))
+  const [minM, maxM] = options.range ?? chartRange(samples, options, drawn, tideM, hasWater, modelM)
 
   const lengthM = samples.at(-1)?.distanceM || 1
   const x = (distanceM: number): number => (distanceM / lengthM) * PROFILE_CHART_WIDTH
@@ -430,6 +459,23 @@ export const profileChartGeometry = (
     .map((sample) => [sample.distanceM, drawn(sample).vehicleM] as const)
     .filter(([, heightM]) => Number.isFinite(heightM))
     .map(([distanceM, heightM]): [number, number] => [x(distanceM), y(heightM)])
+  const modelPath = (shown: (index: number) => boolean): string =>
+    samples
+      .map((sample, index) => {
+        if (!shown(index)) return ''
+        const command = index > 0 && shown(index - 1) ? 'L' : 'M'
+        return `${command}${x(sample.distanceM).toFixed(1)},${y(modelM[index]).toFixed(1)}`
+      })
+      .join('')
+  const hasModel = (index: number): boolean => Number.isFinite(modelM[index])
+  const replaced = (index: number): boolean => {
+    const groundM = samples[index]?.groundM
+    const modelGround = modelGroundM[index]
+    return groundM != null && modelGround != null && Math.abs(groundM - modelGround) > 0.01
+  }
+  // A measured cell can span a single station, so each replaced one draws to its neighbors to stay visible.
+  const nearReplaced = (index: number): boolean =>
+    hasModel(index) && (replaced(index - 1) || replaced(index) || replaced(index + 1))
   return {
     groundArea: bottom(known.map(groundPoint)),
     raisedSeabedArea: shoals.join(''),
@@ -437,6 +483,8 @@ export const profileChartGeometry = (
     waterArea: hasWater && known.length ? `${line([...surface, ...seabed])}Z` : '',
     ...waterLines(y, waterLevelM, tideM, marine),
     vehicleLine: line(vehicle),
+    modelLine: modelPath(hasModel),
+    replacedModelLine: modelPath(nearReplaced),
     waterBodyArea: water.area,
     minM,
     maxM,

@@ -35,6 +35,23 @@
           <path :d="geometry.raisedSeabedArea" fill="#D7B98E" fill-opacity="0.9" />
           <path :d="geometry.waterBodyArea" fill="#29B6F6" fill-opacity="0.75" />
           <path
+            v-if="compareModel"
+            :d="geometry.modelLine"
+            stroke="#000000"
+            stroke-width="2"
+            fill="none"
+            vector-effect="non-scaling-stroke"
+          />
+          <path
+            v-else
+            :d="geometry.replacedModelLine"
+            stroke="#C19A6B"
+            stroke-width="1"
+            stroke-dasharray="4 3"
+            fill="none"
+            vector-effect="non-scaling-stroke"
+          />
+          <path
             :d="geometry.tideLines"
             stroke="#81D4FA"
             stroke-width="1"
@@ -274,6 +291,14 @@ const props = defineProps<{
    */
   coastlineM: number[]
   /**
+   * Model ground at each station, without recorded measurements.
+   */
+  modelGroundM: (number | null)[]
+  /**
+   * Whether the model's ground is outlined along the whole path, rather than only where measurements replace it.
+   */
+  compareModel: boolean
+  /**
    * Whether each station is over water, null where unknown; empty for none marked.
    */
   overWater: (boolean | null)[]
@@ -350,6 +375,7 @@ const chartOptions = computed<ProfileChartOptions>(() => ({
   draftM: props.draftM,
   tideRangeM: props.tideRangeM,
   shallows: props.shallows,
+  modelGroundM: props.modelGroundM,
   overWater: stationsOverWater.value,
 }))
 

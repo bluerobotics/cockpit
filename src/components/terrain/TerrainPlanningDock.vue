@@ -29,6 +29,8 @@
             :bands="chartBands"
             :markers-m="dock.ghostDistanceM.value === null ? [] : [dock.ghostDistanceM.value]"
             :coastline-m="coastlineM"
+            :model-ground-m="analysis.modelGroundM"
+            :compare-model="comparingModel"
             :over-water="dock.water.overWater.value"
             :height-px="chartHeightPx"
             @hover="dock.hover.value = $event"
@@ -72,6 +74,21 @@
                 tabindex="0"
                 class="ml-auto min-w-0 flex items-center gap-x-1.5 px-2 py-[2px] rounded-md text-[11px] bg-[#3B78A866] border border-[#3B78A8]"
               >
+                <template v-if="measuredInUse">
+                  <span class="w-3 h-2 shrink-0 rounded-[1px] bg-[#8D6E63]" />
+                  <span class="shrink-0">{{ t`Measured` }}</span>
+                </template>
+                <svg v-if="measuredInUse || comparingModel" width="16" height="4" class="shrink-0" aria-hidden="true">
+                  <line
+                    x1="0"
+                    y1="2"
+                    x2="16"
+                    y2="2"
+                    :stroke="comparingModel ? '#000000' : '#C19A6B'"
+                    :stroke-width="comparingModel ? 2 : 1"
+                    :stroke-dasharray="comparingModel ? undefined : '4 3'"
+                  />
+                </svg>
                 <span class="min-w-0 truncate">{{ sourceTagText }}</span>
               </span>
             </template>
@@ -287,6 +304,7 @@ import {
 } from '@/composables/terrain/useTerrainDock'
 import { automaticBathymetrySource, BATHYMETRY_SOURCES } from '@/libs/terrain/bathymetry'
 import { terrainAttribution } from '@/libs/terrain/elevation-service'
+import { hasTrustedCells } from '@/libs/terrain/measured-terrain'
 import type { TerrainFindingKind, TerrainProfileSample } from '@/libs/terrain/mission-profile'
 import { profileStretch } from '@/libs/terrain/mission-terrain'
 import type { ProfileChartBand, ProfileChartShallows } from '@/libs/terrain/profile-chart'
@@ -344,6 +362,14 @@ const TABS: {
 
 const marine = computed(() => ['surface', 'underwater'].includes(dock.terrain.vehicleClass.value))
 
+const measuredInUse = computed(() => {
+  void terrainStore.measuredVersion
+  const { measuredTerrainEnabled, useMeasuredTerrain } = terrainStore.settings
+  return measuredTerrainEnabled && useMeasuredTerrain && hasTrustedCells(terrainStore.measured)
+})
+
+const comparingModel = computed(() => dock.compareModel.value && terrainStore.settings.measuredTerrainEnabled)
+
 const sourceTagHelp = computed(() => {
   const { bathymetrySourceId } = terrainStore
   const land = terrainStore.effectiveSource.label
@@ -352,9 +378,15 @@ const sourceTagHelp = computed(() => {
     none: t`${land} itself`,
   }
   const depths = depthsByChoice[bathymetrySourceId] ?? BATHYMETRY_SOURCES[bathymetrySourceId].label
-  const model = `Heights on the chart come from ${land}, and depths from ${depths}.`
-  const water = marine.value ? '' : ' The blue strip along the bottom marks water, from OpenStreetMap.'
-  return `${model}${water} The sources are picked in Settings > Mission > Terrain.`
+  const model = t`Heights on the chart come from ${land}, and depths from ${depths}.`
+  const water = marine.value ? '' : ` ${t`The blue strip along the bottom marks water, from OpenStreetMap.`}`
+  const line = comparingModel.value ? t`solid black line` : t`dashed line`
+  if (!measuredInUse.value) {
+    const outline = comparingModel.value ? ` ${t`The ${line} outlines the model.`}` : ''
+    return t`${model}${outline}${water} The sources are picked in Settings > Mission > Terrain.`
+  }
+  const measured = t`Where the vehicle measured the ground or seabed with enough readings, those measurements are used instead`
+  return t`${model} ${measured}: the brown fill is the measured ground and the ${line} is where the model puts it.${water}`
 })
 
 const sourceTagText = computed(() => {
