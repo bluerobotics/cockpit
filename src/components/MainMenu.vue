@@ -328,7 +328,7 @@ const buttonSize = 54
 const mainMenuIconSize = buttonSize * 0.9
 const menuLabelSize = 'text-[10px]'
 
-const simplifiedMenuLabelClass = 'text-[9px] !leading-[10px] !px-0 whitespace-nowrap'
+const simplifiedMenuLabelClass = 'text-[9px] !leading-[10px] !px-1'
 
 const mainMenuButtonProps = computed(() => ({
   labelClass: simplifiedMainMenu.value ? [simplifiedMenuLabelClass, '!mt-2 mb-1.5'] : [menuLabelSize, 'mt-6 !px-2'],
