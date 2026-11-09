@@ -280,6 +280,12 @@ msgid ""
 "Their tabs mark which ones."
 msgstr "所选 ${ 0 } 项依赖已被排除的其他项，可能无法工作。相关标签页会标出是哪些。"
 
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "${ 0 } stretch still too close; see the findings."
+msgid_plural "${ 0 } stretches still too close; see the findings."
+msgstr[0] ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } terrain-following waypoints set above sea level"
@@ -323,6 +329,12 @@ msgstr "${ 0 } 视图"
 msgid "${ 0 } was already there."
 msgid_plural "${ 0 } were already there."
 msgstr[0] "${ 0 } 个已存在。"
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "${ 0 } waypoint"
+msgid_plural "${ 0 } waypoints"
+msgstr[0] ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -2958,6 +2970,11 @@ msgstr ""
 msgid "Could not generate telemetry overlay for the processed video: ${ 0 }"
 msgstr "无法为处理后的视频生成遥测叠加层：${ 0 }"
 
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Could not keep a safe height: ${ 0 }"
+msgstr ""
+
 #: src/components/VoiceRecordingsLibrary.vue
 #, javascript-format
 msgid "Could not list the voice recordings. ${ 0 }"
@@ -2992,6 +3009,11 @@ msgid ""
 "Could not open the saved vehicle path history. The previous path is not "
 "shown, and this one will not be saved."
 msgstr "无法打开已保存的设备路径历史。先前的路径不会显示，本次路径也不会被保存。"
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Could not raise the waypoints: ${ 0 }"
+msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/recipes/ReadRecipeDialog.vue
@@ -4473,6 +4495,10 @@ msgstr "读取小部件文件时出错。"
 #: src/components/BaseStationGnssSetupDialog.vue
 msgid "Every common speed is tried, so this can take up to 15 seconds."
 msgstr "会依次尝试所有常用波特率，因此最长可能需要 15 秒。"
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "Every waypoint already keeps a safe height."
+msgstr ""
 
 #: src/components/ConsoleViewer.vue
 msgid "Excluding lines that match the filter"
@@ -6279,6 +6305,13 @@ msgstr ""
 msgid "Keep the vehicle this far from \"${ 0 }\"."
 msgstr "使设备与 \"${ 0 }\" 保持此距离。"
 
+#: src/components/terrain/TerrainSafeAltitude.vue
+#, javascript-format
+msgid ""
+"Keeping each waypoint at its planned height, raised where needed to stay ${ "
+"0 } m over the terrain. ${ 1 }"
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Keeps ${ 0 } under the keel from ${ 1 }, under the ${ 2 } m minimum."
@@ -6290,6 +6323,21 @@ msgid ""
 "bright scenery, such as the surface seen from below, sand, or a light map, "
 "so their text stays readable."
 msgstr "在深色景物上方保持窗口和菜单透明，在明亮景物（如从水下看到的水面、沙滩或浅色地图）上方将其调暗，使文字保持清晰可读。"
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: lowered ${ 0 }."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: raised ${ 0 } and lowered ${ 1 }."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: raised ${ 0 }."
+msgstr ""
 
 #: src/components/custom-widget-elements/Label.vue
 msgid "Label"
@@ -8629,6 +8677,33 @@ msgstr "无线电与系绳链路"
 msgid "Radio model"
 msgstr "无线电型号"
 
+#: src/components/terrain/TerrainSafeAltitude.vue
+#, javascript-format
+msgid ""
+"Raise the waypoints so the whole mission keeps ${ 0 } m over the terrain: "
+"your ${ 1 } m safety margin plus the terrain model's ${ 2 } m error."
+msgstr ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Raise to a safe height"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Raised ${ 0 } waypoint by up to ${ 1 } m."
+msgid_plural "Raised ${ 0 } waypoints by up to ${ 1 } m."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Raising the waypoints"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid ""
+"Raising the waypoints cannot clear what is left, which is all in the climb "
+"out of home."
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 #, javascript-format
 msgid "Range (${ 0 })"
@@ -8778,6 +8853,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Rebuilt the terrain model."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Recalculating heights..."
 msgstr ""
 
 #: src/components/development/MAVLinkInspectorItem.vue
@@ -9185,6 +9264,7 @@ msgid "Restaurant"
 msgstr "餐厅"
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
+#: src/components/terrain/TerrainSafeAltitude.vue
 #: src/composables/useMissionOperations.ts
 msgid "Restore"
 msgstr "恢复"
@@ -12528,6 +12608,10 @@ msgstr ""
 msgid "Waypoint Commands"
 msgstr "航点指令"
 
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "Waypoint altitudes restored."
+msgstr ""
+
 #: src/components/mission-planning/WaypointConfigPanel.vue
 msgid "Waypoint parameters"
 msgstr "航点参数"
@@ -13247,8 +13331,16 @@ msgstr "以以下内容开头："
 msgid "terrain panel"
 msgstr ""
 
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "the mission changed while it was being checked, try again"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "the most detailed bathymetry published for each point"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "the terrain check is still running"
 msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
