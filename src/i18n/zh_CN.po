@@ -58,6 +58,11 @@ msgstr "已成功处理 ${ 0 } 个 ZIP 文件！视频现在可在“视频”�
 msgid "${ 0 } already exist here and will be replaced."
 msgstr "此处已存在 ${ 0 } 个，将被替换。"
 
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } camera targets aimed at the ground"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 #, javascript-format
 msgid "${ 0 } chunks • ~${ 1 }s duration"
@@ -139,6 +144,7 @@ msgid "${ 0 } in ${ 1 }"
 msgstr "${ 0 }（单位：${ 1 }）"
 
 #: src/components/InputField.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } information"
 msgstr ""
@@ -280,6 +286,18 @@ msgid ""
 "Their tabs mark which ones."
 msgstr "所选 ${ 0 } 项依赖已被排除的其他项，可能无法工作。相关标签页会标出是哪些。"
 
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } terrain-following waypoints set above sea level"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid ""
+"${ 0 } terrain-following waypoints were sent as planned, as the terrain "
+"under them is unknown."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } tiles, ${ 1 } MB"
@@ -317,6 +335,11 @@ msgstr[0] "${ 0 } 个已存在。"
 msgid "${ 0 } waypoint breaches the geofence"
 msgid_plural "${ 0 } waypoints breach the geofence"
 msgstr[0] "${ 0 } 个航点超出地理围栏"
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } waypoints added to hold the height over the ground"
+msgstr ""
 
 #: src/components/CameraReplacementDialog.vue
 #, javascript-format
@@ -895,6 +918,10 @@ msgstr "指向任务"
 msgid "Aim at vehicle"
 msgstr "指向设备"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Aim regions of interest at the ground"
+msgstr ""
+
 #: src/views/ConfigurationAlertsView.vue
 msgid "Alert levels:"
 msgstr "警报级别："
@@ -1123,6 +1150,12 @@ msgstr "锚"
 #, javascript-format
 msgid "And ${ 0 } more, listed in the hazard advisories panel."
 msgstr "还有 ${ 0 } 条，列在危险提示面板中。"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "And ${ 0 } more, listed in the terrain panel."
+msgid_plural "And ${ 0 } more, listed in the terrain panel."
+msgstr[0] ""
 
 #: src/components/mission-planning/HomePositionSettingHelp.vue
 msgid "Animated help"
@@ -1552,6 +1585,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Bathymetry source information"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source:"
 msgstr ""
 
 #: src/components/mini-widgets/BatteryIndicator.vue
@@ -2033,6 +2070,10 @@ msgstr ""
 msgid "Check for updates"
 msgstr "检查更新"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Check the terrain before upload"
+msgstr ""
+
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Checking"
@@ -2044,6 +2085,13 @@ msgstr "检查更新"
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Checking the terrain..."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Checks an aircraft mission against the terrain before each upload, and asks "
+"to confirm when anything is found. Boat and submarine findings stay in the "
+"terrain panel."
 msgstr ""
 
 #: src/components/recipes/ReadRecipeDialog.vue
@@ -2174,6 +2222,12 @@ msgstr "安全距离 (m)"
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Clearance above the terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Clearances the mission is checked against, before upload when that check is "
+"on."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -2972,6 +3026,13 @@ msgstr "无法打开已保存的设备路径历史。先前的路径不会显示
 msgid "Could not read ${ 0 }: ${ 1 }"
 msgstr "无法读取 ${ 0 }：${ 1 }"
 
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid ""
+"Could not read the terrain to prepare the upload, so the mission is sent as "
+"planned: ${ 0 }"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Could not read the terrain: ${ 0 }"
@@ -3680,6 +3741,12 @@ msgstr "深度 HUD 配置"
 msgid "Depth Indicator Config"
 msgstr "深度指示器配置"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Depth model read wherever the land source reads sea level or below. "
+"Automatic picks the most detailed one published for each point."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 #: src/components/InputElementConfig.vue
 #: src/components/TransformingFunctionDialog.vue
@@ -4230,6 +4297,10 @@ msgstr "编辑航点"
 #: src/components/widgets/DoItYourself.vue
 msgid "Editor instructions"
 msgstr "编辑器说明"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Elevation model used for every terrain check, the profile and the upload."
+msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
 #: src/views/MissionPlanningView.vue
@@ -5518,6 +5589,14 @@ msgid ""
 "minimized)"
 msgstr "窗口隐藏时保持最后的摇杆输入（标签页切换或窗口最小化时）"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Hold terrain height on upload"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Hold terrain height on upload:"
+msgstr ""
+
 #: src/components/mission-planning/WaypointConfigPanel.vue
 #: src/components/poi/PoiManager.vue
 #: src/components/poi/PoiMapArrows.vue
@@ -5557,6 +5636,13 @@ msgid ""
 "names ArduPilot itself uses, and a mode with no name of its own is shown "
 "exactly as the vehicle reports it."
 msgstr "每个设备模式在 Cockpit 各处的显示名称。默认值即 ArduPilot 自身使用的名称，没有自定义名称的模式将完全按照设备上报的内容显示。"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"How much higher than the height asked above the terrain the path between "
+"waypoints may pass, never lower. A smaller tolerance adds more waypoints at "
+"upload."
+msgstr ""
 
 #: src/views/ToolsLogsView.vue
 msgid "How often selected variables are recorded."
@@ -6253,6 +6339,10 @@ msgstr ""
 msgid "Land source information"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source:"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Land: ${ 0 } - Bathymetry: ${ 1 }"
@@ -6890,6 +6980,10 @@ msgstr "最小超时为 ${ 0 } 秒。"
 msgid "Minimums and water"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Minimums:"
+msgstr ""
+
 #: src/components/MainMenu.vue
 #: src/components/mission-planning/MissionPlanningSidebar.vue
 #: src/components/widgets/MiniMap.vue
@@ -6955,6 +7049,10 @@ msgid ""
 "Mission checklist will not be shown again. You can enable them back in the "
 "settings."
 msgstr "任务检查清单将不再显示。您可以在设置中重新启用。"
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid "Mission comes too close to the terrain"
+msgstr ""
 
 #: src/components/mini-widgets/MissionIdentifier.vue
 #: src/views/ConfigurationMissionView.vue
@@ -8805,6 +8903,12 @@ msgstr "刷新会话"
 msgid "Regenerate noise pattern"
 msgstr "重新生成噪声模式"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Regions of interest left at zero altitude are sent at the ground height "
+"under them, so the camera points at the ground there."
+msgstr ""
+
 #: src/components/configuration/JavascriptActionConfig.vue
 msgid "Register listeners and timers through"
 msgstr "通过以下方式注册监听器和定时器"
@@ -9591,6 +9695,19 @@ msgstr "无检测发送"
 #: src/stores/mainVehicle.ts
 msgid "Sending the new position to the vehicle..."
 msgstr "正在将新位置发送到设备..."
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Sends waypoints set above the terrain as heights above sea level, adding "
+"waypoints where the ground changes, so vehicles without terrain data still "
+"follow it."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Sends waypoints set above the terrain as heights above sea level, so "
+"vehicles without terrain data still follow the ground."
+msgstr ""
 
 #: src/views/ConfigurationUIView.vue
 msgid "Sensitivity"
@@ -10469,6 +10586,10 @@ msgid "Terrain and mission profile"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrain following tolerance"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "Terrain kept for offline use is removed too, and has to be downloaded again "
 "before flying without a connection."
@@ -10571,6 +10692,12 @@ msgid ""
 "cm above the deck for clearer line of sight, which can increase "
 "communication range by up to 1.75× compared with the default deck mount."
 msgstr "BlueBoat 天线及配件桅杆可将设备天线抬升到甲板上方约 50 cm，视线更清晰，与默认的甲板安装方式相比，通信距离最多可提升 1.75 倍。"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"The Copernicus surface model includes trees and buildings and needs Cockpit "
+"Standalone; Cockpit Lite uses Tilezen instead."
+msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
 msgid ""
@@ -10777,6 +10904,12 @@ msgstr "所选流不可用。请检查其信号源或选择其他流。"
 #: src/views/ConfigurationVideoView.vue
 msgid "The stream"
 msgstr "流"
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid ""
+"The terrain check did not finish, so the mission was not checked against "
+"the terrain."
+msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
@@ -11703,6 +11836,11 @@ msgstr "仍然上传后，任务运行时可能会触发自动驾驶仪已配置
 #: src/views/MissionPlanningView.vue
 msgid "Uploading mission to vehicle..."
 msgstr "正在上传任务到设备..."
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "Uploading with ${ 0 }."
+msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
@@ -13141,6 +13279,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "the most detailed bathymetry published for each point"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid "the terrain did not load in time"
 msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue

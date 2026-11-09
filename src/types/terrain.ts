@@ -63,4 +63,20 @@ export type TerrainSettings = {
    * Expected difference between high and low tide, in meters, outlined on the profile.
    */
   tideRangeM: number
+  /**
+   * Whether the mission is checked against the terrain before upload, asking to confirm when anything is found.
+   */
+  checkTerrainOnUpload: boolean
+  /**
+   * Whether terrain-following waypoints are converted to sea-level altitudes at upload.
+   */
+  resolveTerrainOnUpload: boolean
+  /**
+   * How far a resolved terrain-following path may stray from the requested height, in meters.
+   */
+  terrainFollowToleranceM: number
+  /**
+   * Whether region-of-interest commands left at zero altitude are aimed at the ground at upload.
+   */
+  aimRoiAtGround: boolean
 }

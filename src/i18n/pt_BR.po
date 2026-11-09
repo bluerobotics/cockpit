@@ -64,6 +64,11 @@ msgstr ""
 msgid "${ 0 } already exist here and will be replaced."
 msgstr "${ 0 } já existem aqui e serão substituídos."
 
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } camera targets aimed at the ground"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 #, javascript-format
 msgid "${ 0 } chunks • ~${ 1 }s duration"
@@ -155,6 +160,7 @@ msgid "${ 0 } in ${ 1 }"
 msgstr "${ 0 } em ${ 1 }"
 
 #: src/components/InputField.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } information"
 msgstr ""
@@ -312,6 +318,18 @@ msgstr ""
 "${ 0 } item(ns) selecionado(s) precisam de outros que ficaram de fora e "
 "podem não funcionar. As abas indicam quais."
 
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } terrain-following waypoints set above sea level"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid ""
+"${ 0 } terrain-following waypoints were sent as planned, as the terrain "
+"under them is unknown."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } tiles, ${ 1 } MB"
@@ -351,6 +369,11 @@ msgid "${ 0 } waypoint breaches the geofence"
 msgid_plural "${ 0 } waypoints breach the geofence"
 msgstr[0] "${ 0 } waypoint viola a cerca virtual"
 msgstr[1] "${ 0 } waypoints violam a cerca virtual"
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } waypoints added to hold the height over the ground"
+msgstr ""
 
 #: src/components/CameraReplacementDialog.vue
 #, javascript-format
@@ -959,6 +982,10 @@ msgstr "Apontar para a missão"
 msgid "Aim at vehicle"
 msgstr "Apontar para o veículo"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Aim regions of interest at the ground"
+msgstr ""
+
 #: src/views/ConfigurationAlertsView.vue
 msgid "Alert levels:"
 msgstr "Níveis de alerta:"
@@ -1205,6 +1232,12 @@ msgstr "Âncora"
 #, javascript-format
 msgid "And ${ 0 } more, listed in the hazard advisories panel."
 msgstr "E mais ${ 0 }, listados no painel de avisos de perigo."
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "And ${ 0 } more, listed in the terrain panel."
+msgid_plural "And ${ 0 } more, listed in the terrain panel."
+msgstr[0] ""
 
 #: src/components/mission-planning/HomePositionSettingHelp.vue
 msgid "Animated help"
@@ -1656,6 +1689,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Bathymetry source information"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source:"
 msgstr ""
 
 #: src/components/mini-widgets/BatteryIndicator.vue
@@ -2158,6 +2195,10 @@ msgstr ""
 msgid "Check for updates"
 msgstr "Verificar atualizações"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Check the terrain before upload"
+msgstr ""
+
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Checking"
@@ -2169,6 +2210,13 @@ msgstr "Verificando atualizações"
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Checking the terrain..."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Checks an aircraft mission against the terrain before each upload, and asks "
+"to confirm when anything is found. Boat and submarine findings stay in the "
+"terrain panel."
 msgstr ""
 
 #: src/components/recipes/ReadRecipeDialog.vue
@@ -2304,6 +2352,12 @@ msgstr "Distância de segurança (m)"
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Clearance above the terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Clearances the mission is checked against, before upload when that check is "
+"on."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -3188,6 +3242,13 @@ msgstr ""
 msgid "Could not read ${ 0 }: ${ 1 }"
 msgstr "Não foi possível ler ${ 0 }: ${ 1 }"
 
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid ""
+"Could not read the terrain to prepare the upload, so the mission is sent as "
+"planned: ${ 0 }"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Could not read the terrain: ${ 0 }"
@@ -3927,6 +3988,12 @@ msgstr "Configuração do HUD de profundidade"
 msgid "Depth Indicator Config"
 msgstr "Configuração do indicador de profundidade"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Depth model read wherever the land source reads sea level or below. "
+"Automatic picks the most detailed one published for each point."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 #: src/components/InputElementConfig.vue
 #: src/components/TransformingFunctionDialog.vue
@@ -4516,6 +4583,10 @@ msgstr "Editar waypoint"
 #: src/components/widgets/DoItYourself.vue
 msgid "Editor instructions"
 msgstr "Instruções do editor"
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Elevation model used for every terrain check, the profile and the upload."
+msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
 #: src/views/MissionPlanningView.vue
@@ -5882,6 +5953,14 @@ msgstr ""
 "Manter a última entrada do joystick quando a janela estiver oculta (aba "
 "trocada ou janela minimizada)"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Hold terrain height on upload"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Hold terrain height on upload:"
+msgstr ""
+
 #: src/components/mission-planning/WaypointConfigPanel.vue
 #: src/components/poi/PoiManager.vue
 #: src/components/poi/PoiMapArrows.vue
@@ -5924,6 +6003,13 @@ msgstr ""
 "Como cada modo do veículo é nomeado em todo o Cockpit. Os padrões são os "
 "nomes que o próprio ArduPilot usa, e um modo sem nome próprio é exibido "
 "exatamente como o veículo o informa."
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"How much higher than the height asked above the terrain the path between "
+"waypoints may pass, never lower. A smaller tolerance adds more waypoints at "
+"upload."
+msgstr ""
 
 #: src/views/ToolsLogsView.vue
 msgid "How often selected variables are recorded."
@@ -6669,6 +6755,10 @@ msgstr ""
 msgid "Land source information"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source:"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "Land: ${ 0 } - Bathymetry: ${ 1 }"
@@ -7330,6 +7420,10 @@ msgstr "O tempo limite mínimo é ${ 0 } s."
 msgid "Minimums and water"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Minimums:"
+msgstr ""
+
 #: src/components/MainMenu.vue
 #: src/components/mission-planning/MissionPlanningSidebar.vue
 #: src/components/widgets/MiniMap.vue
@@ -7397,6 +7491,10 @@ msgid ""
 msgstr ""
 "A checklist da missão não será mostrada novamente. Você pode reativá-la nas "
 "configurações."
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid "Mission comes too close to the terrain"
+msgstr ""
 
 #: src/components/mini-widgets/MissionIdentifier.vue
 #: src/views/ConfigurationMissionView.vue
@@ -9369,6 +9467,12 @@ msgstr "Atualizar sessões"
 msgid "Regenerate noise pattern"
 msgstr "Gerar novo padrão de ruído"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Regions of interest left at zero altitude are sent at the ground height "
+"under them, so the camera points at the ground there."
+msgstr ""
+
 #: src/components/configuration/JavascriptActionConfig.vue
 msgid "Register listeners and timers through"
 msgstr "Registre listeners e timers por meio de"
@@ -10192,6 +10296,19 @@ msgstr "Enviar sem detecção"
 #: src/stores/mainVehicle.ts
 msgid "Sending the new position to the vehicle..."
 msgstr "Enviando a nova posição ao veículo..."
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Sends waypoints set above the terrain as heights above sea level, adding "
+"waypoints where the ground changes, so vehicles without terrain data still "
+"follow it."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Sends waypoints set above the terrain as heights above sea level, so "
+"vehicles without terrain data still follow the ground."
+msgstr ""
 
 #: src/views/ConfigurationUIView.vue
 msgid "Sensitivity"
@@ -11103,6 +11220,10 @@ msgid "Terrain and mission profile"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrain following tolerance"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "Terrain kept for offline use is removed too, and has to be downloaded again "
 "before flying without a connection."
@@ -11218,6 +11339,12 @@ msgstr ""
 "cerca de 50 cm acima do convés para uma linha de visada mais limpa, o que "
 "pode aumentar o alcance da comunicação em até 1,75× em relação à montagem "
 "padrão no convés."
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"The Copernicus surface model includes trees and buildings and needs Cockpit "
+"Standalone; Cockpit Lite uses Tilezen instead."
+msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
 msgid ""
@@ -11462,6 +11589,12 @@ msgstr ""
 #: src/views/ConfigurationVideoView.vue
 msgid "The stream"
 msgstr "O stream"
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid ""
+"The terrain check did not finish, so the mission was not checked against "
+"the terrain."
+msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
@@ -12535,6 +12668,11 @@ msgstr ""
 #: src/views/MissionPlanningView.vue
 msgid "Uploading mission to vehicle..."
 msgstr "Enviando missão ao veículo..."
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "Uploading with ${ 0 }."
+msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
@@ -14098,6 +14236,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "the most detailed bathymetry published for each point"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid "the terrain did not load in time"
 msgstr ""
 
 #: src/views/ConfigurationAlertsView.vue
