@@ -4,6 +4,11 @@ msgstr ""
 "Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } (Cockpit Standalone)"
+msgstr ""
+
 #: src/components/widgets/MiniWidgetsBar.vue
 #, javascript-format
 msgid "${ 0 } floating container"
@@ -12,6 +17,18 @@ msgstr "Contêiner flutuante ${ 0 }"
 #: src/components/InputField.vue
 #, javascript-format
 msgid "${ 0 } information"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid ""
+"${ 0 } is available in Cockpit Standalone, so Cockpit Lite reads Tilezen "
+"instead."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } tiles, ${ 1 } MB"
 msgstr ""
 
 #: src/stores/widgetManager.ts
@@ -61,6 +78,14 @@ msgid ""
 "depths of its own."
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source information"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Be careful"
 msgstr "Cuidado"
@@ -79,6 +104,10 @@ msgid ""
 "Canadian Hydrographic Service surveys of Canadian waters, 10 m per sample "
 "where surveyed and 100 m elsewhere. Depths are below chart datum, so they "
 "read shallower than at mean sea level."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Clear"
 msgstr ""
 
 #: src/components/DrawerPanel.vue
@@ -112,6 +141,11 @@ msgstr ""
 
 #: src/libs/terrain/sources.ts
 msgid "Copernicus surface model"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Could not clear the stored terrain: ${ 0 }"
 msgstr ""
 
 #: src/libs/terrain/sources.ts
@@ -228,6 +262,10 @@ msgid ""
 "as 0 m."
 msgstr ""
 
+#: src/libs/hazards/sources.ts
+msgid "High ground"
+msgstr ""
+
 #: src/components/hazards/HazardAdvisoryPanel.vue
 msgid "High ground above (m)"
 msgstr ""
@@ -238,6 +276,14 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Import"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source information"
 msgstr ""
 
 #: src/views/ConfigurationUIView.vue
@@ -251,6 +297,10 @@ msgstr ""
 #: src/components/mission-planning/MissionEstimates.vue
 #, javascript-format
 msgid "Max distance from ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Max. zoom"
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -300,6 +350,10 @@ msgstr ""
 msgid "None"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "None yet"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Nothing is planned on the map yet"
 msgstr ""
@@ -316,9 +370,21 @@ msgstr ""
 msgid "Open the ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Reading..."
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Reload now"
 msgstr "Recarregar agora"
+
+#: src/libs/hazards/sources.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"Sampled from the terrain model chosen in the mission settings, roughly 30 m "
+"between samples, so it can miss masts and, on the bare-ground models, trees "
+"and buildings."
+msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
 msgid "Set mission home"
@@ -338,12 +404,32 @@ msgstr ""
 msgid "Show comms coverage on path"
 msgstr ""
 
+#: src/stores/terrain.ts
+msgid "Stored terrain cleared."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrarium-encoded PNG tiles, with {z}, {x} and {y} in the address."
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 #. eslint-disable-next-line max-len, vue/max-len
 msgid ""
 "The European seas model, about 115 m per sample, including the UK "
 "Hydrographic Office surveys. Depths are below the lowest astronomical tide, "
 "so they read shallower than at mean sea level."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "The address needs {z}, {x} and {y}, and to start with http:// or https://."
+msgstr ""
+
+#: src/stores/terrain.ts
+msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -364,6 +450,14 @@ msgstr ""
 msgid ""
 "The vehicle is currently armed, and the main-menu contains configurations "
 "and tools that can cause unsafe situations."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address information"
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -391,6 +485,10 @@ msgstr ""
 
 #: src/components/RotaryEncoderDial.vue
 msgid "Type a value"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Unavailable"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
