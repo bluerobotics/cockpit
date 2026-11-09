@@ -52,6 +52,7 @@
                 variant="plain"
                 hide-details
                 class="spaced-number right-aligned-input w-[60px] text-right -mr-3"
+                @update:focused="onAltitudeFocused"
               ></v-text-field>
               <p class="w-[20px] text-center">{{ altitudeUnit }}</p>
             </div>
@@ -70,6 +71,7 @@
               density="compact"
               theme="dark"
               variant="plain"
+              @update:model-value="onAltitudeReferenceChange"
             ></v-select>
           </div>
         </div>
@@ -223,6 +225,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'removeWaypoint', waypoint: Waypoint): void
   (event: 'shouldUpdateWaypoints'): void
+  (event: 'altitudeSet', altitude: number, referenceType: AltitudeReferenceType): void
 }>()
 
 const selectedWaypoint = ref(props.selectedWaypoint)
@@ -256,6 +259,21 @@ watch(editableAltitudeRefType, (newType) => {
     waypointOnMissionStore.value.altitudeReferenceType = newType
   }
 })
+
+// Reported on blur rather than per keystroke, so half-typed heights never reach the next placement.
+const onAltitudeFocused = (focused: boolean): void => {
+  const waypoint = waypointOnMissionStore.value
+  if (focused || !waypoint) return
+  logUserAction(`Set waypoint altitude to ${waypoint.altitude} m`)
+  emit('altitudeSet', waypoint.altitude, waypoint.altitudeReferenceType)
+}
+
+const onAltitudeReferenceChange = (referenceType: AltitudeReferenceType): void => {
+  const waypoint = waypointOnMissionStore.value
+  if (!waypoint) return
+  logUserAction(`Set the waypoint altitude reference to "${referenceType}"`)
+  emit('altitudeSet', waypoint.altitude, referenceType)
+}
 
 const handleRemoveWaypoint = (waypoint: Waypoint): void => {
   emit('removeWaypoint', waypoint)

@@ -14152,6 +14152,11 @@ msgstr ""
 msgid "Waypoint parameters"
 msgstr "航点参数"
 
+#: src/composables/mission-planning/useNextWaypointAltitude.ts
+#, javascript-format
+msgid "Waypoint raised to ${ 0 } m, to keep it clear of the terrain."
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Waypoints"
 msgstr "航点"
