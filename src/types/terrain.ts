@@ -132,6 +132,10 @@ export type TerrainSettings = {
    */
   tideRangeM: number
   /**
+   * Whether new aircraft waypoints placed by hand are raised to the clearance over the terrain under them.
+   */
+  raisePlacedWaypoints: boolean
+  /**
    * Whether the mission is checked against the terrain before upload, asking to confirm when anything is found.
    */
   checkTerrainOnUpload: boolean
