@@ -1244,7 +1244,16 @@ msgstr "署名（可选）"
 msgid "Audio"
 msgstr ""
 
+#: src/libs/terrain/bathymetry.ts
+msgid "AusBathyTopo"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "AusBathyTopo (Australia)"
+msgstr ""
+
 #: src/components/widgets/IFrame.vue
+#: src/libs/terrain/bathymetry.ts
 msgid "Auto"
 msgstr "自动"
 
@@ -1291,6 +1300,10 @@ msgstr "自动对焦"
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "Automatic Triggers"
 msgstr "自动触发器"
+
+#: src/libs/terrain/bathymetry.ts
+msgid "Automatic, by area"
+msgstr ""
 
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Autoplay"
@@ -1387,6 +1400,12 @@ msgstr "背景不透明度："
 #: src/components/VideoLibraryModal.vue
 msgid "Backup raw data"
 msgstr "备份原始数据"
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Bare ground, about 30 m per sample in most of the world, with coarse ocean "
+"depths of its own."
+msgstr ""
 
 #: src/views/ConfigurationMissionView.vue
 msgid "Base color"
@@ -1626,6 +1645,14 @@ msgstr "按键按下和摇杆移动会被高亮显示，并可分配给设备功
 msgid "Buttons"
 msgstr "按钮"
 
+#: src/libs/terrain/bathymetry.ts
+msgid "CHS NONNA"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "CHS NONNA (Canada)"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "CLEAR CURRENT FENCE"
 msgstr "清除当前围栏"
@@ -1680,6 +1707,13 @@ msgid ""
 msgstr ""
 "摄像头变焦和聚焦速度现在在设备上设置。Cockpit "
 "不再保存这些设置，因此变焦和聚焦不再使用它们。如果您自建的内容仍引用它们，请在“工具”→“数据湖”中编辑。"
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Canadian Hydrographic Service surveys of Canadian waters, 10 m per sample "
+"where surveyed and 100 m elsewhere. Depths are below chart datum, so they "
+"read shallower than at mean sea level."
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 #: src/components/BaseStationGnssSetupDialog.vue
@@ -2613,6 +2647,14 @@ msgstr "坐标已复制：${ 0 }"
 msgid "Coordinates unknown"
 msgstr "坐标未知"
 
+#: src/libs/terrain/sources.ts
+msgid "Copernicus"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Copernicus surface model"
+msgstr ""
+
 #: src/views/ToolsDataLakeView.vue
 msgid "Copy ID"
 msgstr "复制 ID"
@@ -3042,6 +3084,10 @@ msgstr "自定义"
 msgid "Custom Messages"
 msgstr "自定义消息"
 
+#: src/libs/terrain/sources.ts
+msgid "Custom Terrarium tiles"
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 msgid "Custom WebRTC Configuration"
 msgstr "自定义 WebRTC 配置"
@@ -3081,6 +3127,10 @@ msgstr "自定义地图提供商"
 #: src/composables/baseStation/useBaseStationOverlay.ts
 msgid "Custom overlays cannot be fetched from the map target tool."
 msgstr "无法从地图目标工具获取自定义叠加层。"
+
+#: src/libs/terrain/sources.ts
+msgid "Custom tiles"
+msgstr ""
 
 #: src/components/mission-planning/ContextMenu.vue
 msgid "Custom..."
@@ -3890,6 +3940,14 @@ msgid ""
 "EKF vertical velocity estimate quality - indicates confidence in vertical "
 "speed measurements"
 msgstr "EKF 垂直速度估计质量：表示对垂直速度测量的可信度"
+
+#: src/libs/terrain/bathymetry.ts
+msgid "EMODnet"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "EMODnet Bathymetry (Europe)"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "END SIMPLE PATH"
@@ -4792,9 +4850,25 @@ msgstr "功能"
 msgid "Functions mapping imported successfully."
 msgstr "功能映射导入成功。"
 
+#: src/libs/terrain/bathymetry.ts
+msgid "GEBCO"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GEBCO 2024"
+msgstr ""
+
 #: src/views/MissionPlanningView.vue
 msgid "GENERATE WAYPOINTS"
 msgstr "生成航点"
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GMRT"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GMRT multibeam synthesis"
+msgstr ""
 
 #: src/views/ToolsDataLakeView.vue
 msgid "GNSS receiver"
@@ -4925,6 +4999,12 @@ msgstr "地理围栏已上传到设备。强制已开启，设备已在遵守新
 msgid "Geofence uploaded to vehicle. Enforcement was left unchanged."
 msgstr "地理围栏已上传到设备。强制状态保持不变。"
 
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Geoscience Australia's model of the waters around Australia and its "
+"territories, 250 m per sample."
+msgstr ""
+
 #: src/components/CameraGimbalControlButtons.vue
 #, javascript-format
 msgid "Gimbal ${ 0 } was not detected"
@@ -4937,6 +5017,12 @@ msgstr "云台/相机 ID"
 #: src/views/ConfigurationUIView.vue
 msgid "Glass color"
 msgstr "玻璃颜色"
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Global ocean depths from grids 1 to 2 km apart at sea, so coastal waters "
+"often read as land or sea level."
+msgstr ""
 
 #: src/components/GlobalOriginDialog.vue
 #, javascript-format
@@ -4995,6 +5081,12 @@ msgstr "灰度 / RGB"
 #: src/libs/mission/library.ts
 msgid "Ground Rover"
 msgstr "地面漫游车"
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Ground with trees and buildings, 30 m per sample worldwide; the sea reads "
+"as 0 m."
+msgstr ""
 
 #: src/views/ConfigurationActionsView.vue
 msgid "HTTP Request Action"
@@ -6822,6 +6914,20 @@ msgstr "必须大于 0"
 msgid "Muted"
 msgstr "静音"
 
+#: src/libs/terrain/bathymetry.ts
+msgid "NOAA"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"NOAA coastal elevation models of the United States and its territories, "
+"down to a few meters per sample, with the 450 m ETOPO 2022 grid elsewhere."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "NOAA coastal models (United States)"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/InputElementConfig.vue
@@ -7327,6 +7433,7 @@ msgstr "非动态值。"
 #: src/components/VoiceRecordingsLibrary.vue
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
+#: src/libs/terrain/bathymetry.ts
 msgid "None"
 msgstr "无"
 
@@ -7506,6 +7613,13 @@ msgstr "只允许小写字母、数字和连字符"
 #, javascript-format
 msgid "Only read recipes you trust. The chosen items ${ 0 }."
 msgstr "只读取您信任的配方。所选项目 ${ 0 }。"
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Only the depths the terrain source holds itself, such as those of your "
+"custom tiles. The Copernicus model holds none, so the depth under water is "
+"unknown."
+msgstr ""
 
 #: src/components/mini-widgets/ViewSelector.vue
 msgid ""
@@ -9236,6 +9350,12 @@ msgstr "共享详细硬件规格"
 msgid "Shared Data"
 msgstr "共享数据"
 
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Ship multibeam surveys from around the world, about 100 m per sample where "
+"surveyed, over GEBCO everywhere else."
+msgstr ""
+
 #: src/components/poi/PoiManager.vue
 msgid "Shopping"
 msgstr "购物"
@@ -9991,6 +10111,13 @@ msgid ""
 "communication range by up to 1.75× compared with the default deck mount."
 msgstr "BlueBoat 天线及配件桅杆可将设备天线抬升到甲板上方约 50 cm，视线更清晰，与默认的甲板安装方式相比，通信距离最多可提升 1.75 倍。"
 
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"The European seas model, about 115 m per sample, including the UK "
+"Hydrographic Office surveys. Depths are below the lowest astronomical tide, "
+"so they read shallower than at mean sea level."
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid ""
 "The ZIP file(s) have been successfully processed. The video is now "
@@ -10057,6 +10184,12 @@ msgid ""
 "checked against it."
 msgstr "设备上存储的围栏不受影响，任务仍会按其进行检查。"
 
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"The global ocean model, about 450 m per sample. Coastal waters are often "
+"interpolated."
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
 "The hazard check could not finish, so this mission has not been checked "
@@ -10082,6 +10215,13 @@ msgstr "链接按钮可用于将操作链接到 Data Lake 变量，以便变量�
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "The mission in it is kept and restored if you export it again."
 msgstr "其中的任务会被保留，并在您再次导出时恢复。"
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"The most detailed source for each area: CHS NONNA in Canada, NOAA in the "
+"United States, EMODnet in Europe and AusBathyTopo around Australia, then "
+"GMRT, GEBCO and Tilezen anywhere else."
+msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
@@ -10539,6 +10679,15 @@ msgstr "瓦片 URL（例如 https://host/tiles/{z}/{x}/{y}.png）"
 #: src/components/map/CustomTileProvidersManager.vue
 msgid "Tile URL must contain the {z}, {x} and {y} placeholders."
 msgstr "瓦片 URL 必须包含 {z}、{x} 和 {y} 占位符。"
+
+#: src/libs/terrain/bathymetry.ts
+#: src/libs/terrain/sources.ts
+msgid "Tilezen"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Tilezen terrain"
+msgstr ""
 
 #: src/components/widgets/Plotter.vue
 msgid "Time Axis"
@@ -12049,6 +12198,12 @@ msgid ""
 "Your last video recording is still being saved. Wait for it to finish "
 "before closing Cockpit, or the record will be lost."
 msgstr "您上一次视频录制仍在保存中。请等待其完成后再关闭 Cockpit，否则录像将会丢失。"
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Your own Terrarium-encoded elevation tiles, such as a survey of the "
+"operating area."
+msgstr ""
 
 #: src/components/mini-widgets/VeryGenericIndicator.vue
 msgid "Your uploaded icons"
