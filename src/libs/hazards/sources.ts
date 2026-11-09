@@ -64,7 +64,7 @@ export const HAZARD_SOURCES: Record<HazardSourceId, HazardSourceMeta> = {
     icon: 'mdi-airplane-alert',
   },
   'terrain': {
-    label: 'Terrain clearance',
+    label: 'High ground',
     caveat: 'Sampled from a global elevation model with roughly 30 m spacing, so it misses masts, trees and buildings.',
     attribution: TERRAIN_TILES_ATTRIBUTION,
     color: '#F97316',
