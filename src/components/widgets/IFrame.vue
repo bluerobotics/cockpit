@@ -693,11 +693,14 @@ const apiEventCallback = (event: MessageEvent): void => {
     return
   }
   const { variable } = event.data
-  if (apiListenerIds.has(variable)) return
-  const listenerId = listenDataLakeVariable(variable, (value) => {
+  const postVariable = (value: string | number | boolean): void => {
     iframe.value?.contentWindow?.postMessage({ type: 'cockpit:datalakeVariable', variable, value }, '*')
-  })
-  apiListenerIds.set(variable, listenerId)
+  }
+  // Listeners only fire on change, so a variable that is set once (like the display units) would never reach the page.
+  const currentValue = getDataLakeVariableData(variable)
+  if (event.source === iframe.value?.contentWindow && currentValue !== undefined) postVariable(currentValue)
+  if (apiListenerIds.has(variable)) return
+  apiListenerIds.set(variable, listenDataLakeVariable(variable, postVariable))
 }
 
 // Re-run the URL check whenever the composed iframe URL changes (user-edited source, vehicle
