@@ -13,7 +13,7 @@ export const COCKPIT_WIDGET_API_VERSION = '0.0.0'
  * This function sets up a message listener that receives updates from the parent window
  * and forwards them to the callback function, respecting the specified rate limit.
  * @param {string} variableId - The name of the datalake variable to listen to
- * @param {Function} callback - The function to call when the variable is updated
+ * @param {Function} callback - Called with the variable's current value right away, if it has one, and again on every change
  * @param {number} maxRateHz - The maximum rate (in Hz) at which updates should be received. Default is 10 Hz
  * @example
  * ```typescript
