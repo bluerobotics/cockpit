@@ -144,6 +144,7 @@ msgid "${ 0 } in ${ 1 }"
 msgstr "${ 0 }（单位：${ 1 }）"
 
 #: src/components/InputField.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } information"
@@ -177,6 +178,11 @@ msgstr "该配置方案中有 ${ 0 } 项被排除，因此它可能无法按制�
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid "${ 0 } itself"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } m under the keel from ${ 1 }."
 msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
@@ -286,6 +292,12 @@ msgid "${ 0 } stretch still too close; see the findings."
 msgid_plural "${ 0 } stretches still too close; see the findings."
 msgstr[0] ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } surfacing added, every ${ 1 } min."
+msgid_plural "${ 0 } surfacings added, every ${ 1 } min."
+msgstr[0] ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } terrain-following waypoints set above sea level"
@@ -307,6 +319,12 @@ msgstr ""
 #, javascript-format
 msgid "${ 0 } to review"
 msgid_plural "${ 0 } to review"
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } turn added between ${ 1 } and ${ 2 } m."
+msgid_plural "${ 0 } turns added between ${ 1 } and ${ 2 } m."
 msgstr[0] ""
 
 #: src/components/VideoLibraryModal.vue
@@ -341,6 +359,18 @@ msgstr[0] ""
 msgid "${ 0 } waypoint breaches the geofence"
 msgid_plural "${ 0 } waypoints breach the geofence"
 msgstr[0] "${ 0 } 个航点超出地理围栏"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } waypoint lowered to ${ 1 } m over the ground."
+msgid_plural "${ 0 } waypoints lowered to ${ 1 } m over the ground."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } waypoint moved inside the safe depths."
+msgid_plural "${ 0 } waypoints moved inside the safe depths."
+msgstr[0] ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
@@ -379,6 +409,11 @@ msgid ""
 "${ 0 } — the vehicle did not confirm the last request, so it may not have "
 "run"
 msgstr "${ 0 } — 设备未确认上一次请求，因此它可能未执行"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 }% grade from ${ 1 }."
+msgstr ""
 
 #: src/composables/menuRouting.ts
 #, javascript-format
@@ -559,6 +594,10 @@ msgstr "关于覆盖范围估算"
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "About the estimates"
 msgstr "关于估算"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Above the seabed by at least"
+msgstr ""
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid "Accept All"
@@ -824,6 +863,10 @@ msgstr "添加航点"
 msgid "Add waypoint here"
 msgstr "在此添加航点"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Add waypoints to the mission to reshape it from here."
+msgstr ""
+
 #: src/views/ToolsMapView.vue
 msgid ""
 "Add your own map tile sources via an XYZ URL (remote or hosted on your "
@@ -875,6 +918,15 @@ msgid ""
 "storage, and display size information. Helps us know which hardware we "
 "should target and test for."
 msgstr "添加设备制造商/型号、CPU 和 GPU 详情、内存和存储总量以及显示尺寸信息，帮助我们了解需要适配和测试的硬件。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Adds waypoints along each leg that go alternately deep and shallow, a "
+"saw-tooth that samples the water from\n"
+"near the surface to near the seabed. Deep turns stop the minimum clearance "
+"of the terrain settings above the\n"
+"seabed. Survey lines are left as they are."
+msgstr ""
 
 #: src/components/widgets/Plotter.vue
 msgid ""
@@ -1103,6 +1155,14 @@ msgid ""
 "properly configured for the specific mission and environmental conditions."
 msgstr "请始终确保您的设备具有足够的电池容量，并针对具体任务和环境条件进行了正确配置。"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Always keep a safe height"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Always keep a safe height information"
+msgstr ""
+
 #: src/components/DataPrivacyModal.vue
 msgid "Always shared"
 msgstr "始终共享"
@@ -1235,6 +1295,7 @@ msgstr "Cockpit 重新加载后生效"
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 #: src/components/MavlinkDumpViewer.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/widgets/DoItYourself.vue
 #: src/views/ConfigurationGeneralView.vue
 msgid "Apply"
@@ -1247,6 +1308,10 @@ msgstr "全部应用"
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid "Apply Joystick Mapping Suggestion"
 msgstr "应用摇杆映射建议"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Applying"
+msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
 msgid ""
@@ -1993,6 +2058,10 @@ msgstr "无法开始录制。"
 msgid "Cannot start voice recording"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Cap the height above the ground at"
+msgstr ""
+
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid "Capture Cockpit work area (standalone-only feature)"
 msgstr "捕获 Cockpit 工作区（仅独立版功能）"
@@ -2292,6 +2361,10 @@ msgstr "点击选择..."
 #: src/components/BaseStationConfigPanel.vue
 msgid "Click to pick a point on the map, or drag onto it"
 msgstr "点击在地图上选取一个点，或将内容拖放到地图上"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Climb over home to"
+msgstr ""
 
 #: src/components/widgets/CollapsibleContainer.vue
 msgid "Clone to another view"
@@ -2596,6 +2669,10 @@ msgstr "列："
 msgid "Come back later, or proceed carefully with one of the following options:"
 msgstr "请稍后再来，或谨慎选择以下选项之一继续："
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Come up for a position fix every"
+msgstr ""
+
 #: src/components/mission-planning/CommandInputForm.vue
 msgid "Command"
 msgstr "命令"
@@ -2882,6 +2959,11 @@ msgstr ""
 #, javascript-format
 msgid "Could not add the vehicle: ${ 0 }."
 msgstr "无法添加设备：${ 0 }。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Could not apply \"${ 0 }\": ${ 1 }"
+msgstr ""
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 #, javascript-format
@@ -3245,6 +3327,10 @@ msgstr "交叉扫描线间距 (${ 0 })"
 msgid "Crosshatch scan spacing (${ 0 })"
 msgstr "交叉扫描间距 (${ 0 })"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Cruise at a depth of"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 #: src/components/mission-planning/CruiseSpeedControl.vue
 #: src/views/MissionPlanningView.vue
@@ -3480,6 +3566,10 @@ msgstr "小数位数"
 #, javascript-format
 msgid "Decrease deadband for ${ 0 }"
 msgstr "减小 ${ 0 } 的死区"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Deepest"
+msgstr ""
 
 #: src/components/joysticks/AxisRangeWarningDialog.vue
 msgid "Default"
@@ -3724,6 +3814,7 @@ msgid "Deleted all temporary chunks (${ 0 } freed)"
 msgstr "已删除全部临时数据块（已释放 ${ 0 }）"
 
 #: src/components/mini-widgets/DepthIndicator.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/views/ConfigurationUIView.vue
 msgid "Depth"
 msgstr "深度"
@@ -3890,6 +3981,10 @@ msgstr "距离"
 #, javascript-format
 msgid "Distance between lines (${ 0 })"
 msgstr "线间距 (${ 0 })"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Distance between turns"
+msgstr ""
 
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Distance traveled during the current mission, since waypoint 1"
@@ -4500,6 +4595,26 @@ msgstr "会依次尝试所有常用波特率，因此最长可能需要 15 秒�
 msgid "Every waypoint already keeps a safe height."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint moved down ${ 0 } m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint moved up ${ 0 } m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint set to ${ 0 } m above home."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint set to ${ 0 } m deep."
+msgstr ""
+
 #: src/components/ConsoleViewer.vue
 msgid "Excluding lines that match the filter"
 msgstr "排除匹配过滤器的行"
@@ -5009,6 +5124,10 @@ msgstr "水平翻转"
 msgid "Flip vertically"
 msgstr "垂直翻转"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Follow the terrain contour over"
+msgstr ""
+
 #: src/views/ConfigurationLogsView.vue
 #: src/views/ConfigurationUIView.vue
 msgid "Font color"
@@ -5273,6 +5392,10 @@ msgstr "云台/相机 ID"
 msgid "Glass color"
 msgstr "玻璃颜色"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Glide over the seabed at"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "Global ocean depths from grids 1 to 2 km apart at sea, so coastal waters "
@@ -5333,6 +5456,10 @@ msgstr ""
 #: src/components/BaseStationConfigPanel.vue
 msgid "Got it"
 msgstr "知道了"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Grade"
+msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Grayscale / RGB"
@@ -5430,6 +5557,18 @@ msgstr ""
 #: src/components/BaseStationConfigPanel.vue
 msgid "Heatmap intensity"
 msgstr "热力图强度"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height above home"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height over the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height over the seabed"
+msgstr ""
 
 #: src/components/mission-planning/MissionPlacementToolbar.vue
 msgid "Height scale (%) — drag corners to resize, hold Shift for uniform"
@@ -5574,6 +5713,10 @@ msgstr "高质量语音已下载。"
 msgid "Higher-quality voices removed."
 msgstr "高质量语音已移除。"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Highest over the ground"
+msgstr ""
+
 #: src/components/widgets/CompassHUD.vue
 msgid "Highlighted marker only"
 msgstr "仅高亮标记"
@@ -5596,6 +5739,37 @@ msgstr ""
 msgid "Hold terrain height on upload:"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Holding ${ 0 } m over the ground, with ${ 1 } waypoint added."
+msgid_plural "Holding ${ 0 } m over the ground, with ${ 1 } waypoints added."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Holding ${ 0 } m over the seabed, with ${ 1 } waypoint added."
+msgid_plural "Holding ${ 0 } m over the seabed, with ${ 1 } waypoints added."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Holds one height over the ground for the whole mission. Every waypoint is "
+"set to that height over the\n"
+"ground under it, and waypoints are added in between wherever the ground "
+"rises or falls enough for a straight line\n"
+"to drift from it. Heights end up fixed above sea level, so the vehicle "
+"needs no terrain data of its own."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Holds one height over the seabed for the whole mission, never coming above "
+"the surface. Waypoints are added\n"
+"wherever the seabed rises or falls enough for a straight line to drift from "
+"it, so the vehicle needs no\n"
+"altimeter reading to follow it."
+msgstr ""
+
 #: src/components/mission-planning/WaypointConfigPanel.vue
 #: src/components/poi/PoiManager.vue
 #: src/components/poi/PoiMapArrows.vue
@@ -5614,6 +5788,10 @@ msgstr "起点箭头"
 #: src/components/widgets/Map.vue
 msgid "Home position set on the vehicle."
 msgstr "已在设备上设置原点。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Horizontal distance between a deep turn and the next shallow one."
+msgstr ""
 
 #: src/components/poi/PoiManager.vue
 msgid "Hospital"
@@ -5635,6 +5813,20 @@ msgid ""
 "names ArduPilot itself uses, and a mode with no name of its own is shown "
 "exactly as the vehicle reports it."
 msgstr "每个设备模式在 Cockpit 各处的显示名称。默认值即 ArduPilot 自身使用的名称，没有自定义名称的模式将完全按照设备上报的内容显示。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"How far above that height the line between two waypoints may pass. A "
+"smaller value adds more waypoints,\n"
+"so the vehicle follows the ground more closely."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"How far above that height the line between two waypoints may pass. A "
+"smaller value adds more waypoints,\n"
+"so the vehicle follows the seabed more closely."
+msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
@@ -6272,6 +6464,10 @@ msgstr "保持忽略"
 msgid "Keep current home"
 msgstr "保留当前原点"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Keep inside safe depths"
+msgstr ""
+
 #: src/views/ConfigurationVideoView.vue
 msgid "Keep it ignored:"
 msgstr "保持忽略："
@@ -6471,6 +6667,10 @@ msgstr ""
 msgid "Level"
 msgstr "级别"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Level flight at"
+msgstr ""
+
 #: src/components/About.vue
 msgid "Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom"
 msgstr "依据 AGPL-3.0-only 或 LicenseRef-Cockpit-Custom 许可"
@@ -6513,6 +6713,21 @@ msgstr "已链接变量"
 #, javascript-format
 msgid "Listening on 127.0.0.1:${ 0 }"
 msgstr "正在监听 127.0.0.1:${ 0 }"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lists the stretches where the ground along the path rises or falls more "
+"steeply than this grade."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lists the stretches with less water under the keel than this, after the "
+"vessel's draft. The possible shallow\n"
+"water warnings in Findings do not follow this value: they flag water under "
+"the minimum in the terrain settings.\n"
+"Both read the same terrain profile, so a stretch can show up in both."
+msgstr ""
 
 #: src/views/ToolsMapView.vue
 msgid "Live"
@@ -6601,6 +6816,12 @@ msgstr "日志频率应保持在 0.1 Hz 到 1000 Hz 之间。"
 msgid "Logging interval"
 msgstr "记录间隔"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Long enough for the GPS to get a fix; a cold start can take a minute or "
+"more."
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Long press to select multiple videos."
 msgstr "长按以选择多个视频。"
@@ -6656,6 +6877,14 @@ msgstr "低"
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Low threshold (V)"
 msgstr "低阈值（V）"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lowers the waypoints that sit higher over the ground than this, such as the "
+"120 m many countries allow.\n"
+"Between waypoints, the path can still pass higher over valleys; those "
+"stretches are listed below."
+msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
@@ -6718,6 +6947,13 @@ msgstr "在您要用于此输入的轴上完成一次全行程移动。"
 #: src/views/ConfigurationMissionView.vue
 msgid "Make vehicle history line persistent"
 msgstr "保持设备历史轨迹"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Makes the vehicle wait at each waypoint before going on, for a sample, a "
+"photo or a look around. Survey\n"
+"lines are left as they are. Set 0 to stop pausing."
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "Manage Cockpit settings"
@@ -7250,6 +7486,20 @@ msgstr ""
 msgid "Move the vehicle home?"
 msgstr "将设备移至起始位置？"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Moves every waypoint up or down by the same amount, keeping the shape of "
+"the mission and the altitude\n"
+"reference of each waypoint."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Moves the waypoints that go deeper than the limit, or closer to the seabed "
+"than the clearance, back inside\n"
+"both. Where the seabed is too shallow for both, the clearance wins."
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Multi"
 msgstr "多选"
@@ -7536,6 +7786,10 @@ msgstr "尚未收到数据。"
 #: src/views/ToolsLogsView.vue
 msgid "No data sessions found. Select variables to record in the Data Lake table."
 msgstr "未找到数据会话。请在数据湖表中选择要记录的变量。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "No deeper than"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #, javascript-format
@@ -7862,6 +8116,10 @@ msgstr "注意："
 msgid ""
 "Nothing along the mission comes closer to the terrain than the minimums in "
 "the terrain settings."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Nothing in the mission needed to change."
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -8302,6 +8560,10 @@ msgstr ""
 msgid "Pause"
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Pause at every waypoint for"
+msgstr ""
+
 #: src/components/mini-widgets/MiniMissionControlPanel.vue
 #: src/components/widgets/MissionControlPanel.vue
 msgid "Pause mission"
@@ -8381,6 +8643,10 @@ msgstr ""
 #: src/components/widgets/Map.vue
 msgid "Place Point of Interest"
 msgstr "放置兴趣点"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Place home on the map before reshaping the mission."
+msgstr ""
 
 #: src/components/mission-planning/MissionPlacementToolbar.vue
 msgid "Place mission here"
@@ -8486,6 +8752,14 @@ msgstr "兴趣点箭头"
 msgid "Point of interest"
 msgstr "兴趣点"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Point out slopes steeper than"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Point out water shallower than"
+msgstr ""
+
 #: src/views/ToolsMapView.vue
 msgid "Points of Interest"
 msgstr "兴趣点"
@@ -8538,6 +8812,10 @@ msgstr ""
 #: src/components/MissionChecklist.vue
 msgid "Pre-arm checklist disabled. You can re-enable it in the mission settings."
 msgstr "解锁前检查清单已禁用。您可以在任务设置中重新启用。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Precision"
+msgstr ""
 
 #: src/components/CameraReplacementDialog.vue
 msgid "Preferred"
@@ -8645,9 +8923,27 @@ msgstr "正在处理分片 ${ 0 }/${ 1 }"
 msgid "Processing complete!"
 msgstr "处理完成！"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Profile the water column between"
+msgstr ""
+
 #: src/components/map/CustomTileProvidersManager.vue
 msgid "Provider name is required."
 msgstr "提供方名称为必填项。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Puts every waypoint, surveys included, at the same depth below the surface "
+"at home. Where the seabed rises\n"
+"above that depth, check the findings afterwards."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Puts every waypoint, surveys included, at the same height above home, so "
+"the vehicle flies level. Ground\n"
+"that rises above home comes closer, so check the findings afterwards."
+msgstr ""
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid "RESET"
@@ -9308,6 +9604,12 @@ msgstr "return 是可选的，但应包含在复杂表达式中"
 msgid "Return to home"
 msgstr "返航"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Reverses the order of the waypoints, so the vehicle runs the same path from "
+"its far end."
+msgstr ""
+
 #: src/components/joysticks/AxisDraftActions.vue
 msgid "Revert changes"
 msgstr "撤销更改"
@@ -9367,6 +9669,10 @@ msgstr "运行间隔"
 #: src/components/widgets/DoItYourself.vue
 msgid "Run script in its own scope"
 msgstr "在独立作用域中运行脚本"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Run the mission backwards"
+msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
@@ -9878,6 +10184,10 @@ msgstr "阴影颜色"
 msgid "Shadow size"
 msgstr "阴影大小"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Shallowest"
+msgstr ""
+
 #: src/components/DataPrivacyModal.vue
 msgid "Share detailed hardware specifications"
 msgstr "共享详细硬件规格"
@@ -9886,6 +10196,10 @@ msgstr "共享详细硬件规格"
 #: src/views/ConfigurationGeneralView.vue
 msgid "Shared Data"
 msgstr "共享数据"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Shift every height by"
+msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
 msgid ""
@@ -10029,6 +10343,7 @@ msgid "Show on startup"
 msgstr "启动时显示"
 
 #: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Show on the map"
 msgstr ""
 
@@ -10294,6 +10609,14 @@ msgstr "正在开始处理 ${ 0 } 个 ZIP 文件..."
 #: src/libs/live-video-processor.ts
 msgid "Starting video processing..."
 msgstr "正在启动视频处理..."
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Starts the mission with a waypoint straight above home, so the vehicle "
+"climbs before heading out over\n"
+"rising ground or obstacles. Applying it again changes the height of that "
+"same waypoint."
+msgstr ""
 
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "Startup delay cannot be negative"
@@ -10873,6 +11196,15 @@ msgstr "链接按钮可用于将操作链接到 Data Lake 变量，以便变量�
 msgid "The mission in it is kept and restored if you export it again."
 msgstr "其中的任务会被保留，并在您再次导出时恢复。"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "The mission now runs backwards."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The mission starts with a climb to ${ 0 } m over home."
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "The most detailed source for each area: CHS NONNA in Canada, NOAA in the "
@@ -10947,6 +11279,14 @@ msgstr ""
 msgid "The terrain is unknown along part of the path from ${ 0 }."
 msgstr ""
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The terrain under ${ 0 } waypoint could not be read, so it kept its height."
+msgid_plural ""
+"The terrain under ${ 0 } waypoints could not be read, so they kept their "
+"height."
+msgstr[0] ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "The terrain under the mission is checked once the mission has a home."
 msgstr ""
@@ -10995,12 +11335,24 @@ msgid ""
 "and tools that can cause unsafe situations."
 msgstr "设备当前已解锁，主菜单包含可能导致不安全情况的配置和工具。"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The vehicle no longer waits at ${ 0 } waypoint."
+msgid_plural "The vehicle no longer waits at ${ 0 } waypoints."
+msgstr[0] ""
+
 #: src/components/geofence/GeoFenceTooLargeDialog.vue
 #, javascript-format
 msgid ""
 "The vehicle refused this fence for lack of space. It has ${ 0 } points, and "
 "the vehicle did not report how many it can hold."
 msgstr "设备因空间不足而拒绝了此围栏。它有 ${ 0 } 个点，而设备未上报其可容纳的点数。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The vehicle waits ${ 0 } s at ${ 1 } waypoint."
+msgid_plural "The vehicle waits ${ 0 } s at ${ 1 } waypoints."
+msgstr[0] ""
 
 #: src/views/ConfigurationVideoView.vue
 msgid ""
@@ -11377,6 +11729,14 @@ msgstr ""
 msgid "Time Axis"
 msgstr "时间轴"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Time at the surface"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Time between surfacings"
+msgstr ""
+
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "Time-based:"
 msgstr "基于时间："
@@ -11674,6 +12034,15 @@ msgstr ""
 msgid "Underline"
 msgstr "下划线"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Underwater the vehicle has no GPS, so the position it navigates by slowly "
+"drifts. This adds stops at the\n"
+"surface along the path, where it can take a new fix. The distance between "
+"them comes from the time and the\n"
+"mission's cruise speed."
+msgstr ""
+
 #: src/views/MissionPlanningView.vue
 msgid "Undo (Ctrl+Z / Cmd+Z)"
 msgstr "撤销 (Ctrl+Z / Cmd+Z)"
@@ -11787,6 +12156,15 @@ msgstr "异常的轴范围"
 #: src/components/widgets/IFrame.vue
 msgid "Up"
 msgstr "上"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Up to ${ 0 } m over the ground from ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Up, negative for down"
+msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
 #: src/components/mission-planning/CommandInputForm.vue
@@ -12525,6 +12903,10 @@ msgstr "语音系统未正常工作。请检查警报设置中的警报语音。
 msgid "Voice system not working: no speech voice found."
 msgstr "语音系统未正常工作：未找到语音。"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Wait"
+msgstr ""
+
 #: src/components/mini-widgets/EkfStateIndicator.vue
 msgid "Waiting for EKF data..."
 msgstr "等待 EKF 数据..."
@@ -12532,6 +12914,10 @@ msgstr "等待 EKF 数据..."
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 msgid "Waiting for authorization..."
 msgstr "正在等待授权……"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Waiting for the terrain check of the mission."
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "Waiting for these vehicles to report their positions"
@@ -12591,6 +12977,7 @@ msgstr ""
 msgid "Water"
 msgstr "水域"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Water under the keel"
 msgstr ""
@@ -12710,6 +13097,18 @@ msgid ""
 "While it restarts the vehicle does not respond: its motors stop, it holds "
 "no position or heading, and any running mission is interrupted."
 msgstr "重启期间设备不会响应：电机停止，无法保持位置或航向，正在运行的任务也会被中断。"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"While on, every change to the mission (moving, adding or removing "
+"waypoints, reshaping or rotating a survey)\n"
+"re-checks it against the terrain. Each waypoint goes back to the height you "
+"planned it at and is raised only as\n"
+"far as needed for the path and the returns home to keep the safety margin "
+"plus the terrain model error, so\n"
+"waypoints the terrain no longer needs high come back down. Lasts until you "
+"leave mission planning."
+msgstr ""
 
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "Wi-Fi"
