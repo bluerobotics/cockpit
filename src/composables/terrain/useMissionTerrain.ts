@@ -146,7 +146,7 @@ export const useMissionTerrain = (live?: Ref<boolean>, needsMissionHome = false)
           ({ coordinates, altitude, altitudeReferenceType }) => `${coordinates},${altitude},${altitudeReferenceType}`
         )
         .join('|')
-      const { settings, effectiveSourceId, bathymetrySourceId, vehicleParameters } = terrainStore
+      const { settings, effectiveSourceId, bathymetrySourceId, vehicleParameters, tidePredictions } = terrainStore
       const source = `${effectiveSourceId}:${bathymetrySourceId}`
       const thresholds = [
         settings.minimumClearanceM,
@@ -158,7 +158,7 @@ export const useMissionTerrain = (live?: Ref<boolean>, needsMissionHome = false)
       const homeSet = missionStore.plannedHomePosition !== undefined
       const coastlineVertices = hazardStore.coastlineWater.reduce((count, area) => count + area.coordinates.length, 0)
       const coastline = `${coastlineVertices}:${Object.values(hazardStore.results.coastline?.bbox ?? {})}`
-      return `${waypoints}|${home.value}|${homeSet}|${source}|${thresholds}|${vehicle}|${coastline}`
+      return `${waypoints}|${home.value}|${homeSet}|${source}|${thresholds}|${vehicle}|${tidePredictions.length}|${coastline}`
     })
     watchDebounced(signature, (current) => current && void runLive(), { debounce: LIVE_DEBOUNCE_MS, immediate: true })
   }

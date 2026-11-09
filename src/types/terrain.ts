@@ -76,7 +76,12 @@ export type TerrainSettings = {
    */
   waterLevelOffsetM: number
   /**
-   * Expected difference between high and low tide, in meters, outlined on the profile.
+   * Tide station the predictions are read from, as the tide service's `source/id`, or empty for the one nearest the
+   * mission.
+   */
+  tideStationId: string
+  /**
+   * Expected difference between high and low tide, in meters, outlined on the profile while no tide predictions are loaded.
    */
   tideRangeM: number
   /**
