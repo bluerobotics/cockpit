@@ -21,6 +21,13 @@ export interface MenuPage {
    */
   icon: string
   /**
+   * Pixels to move the icon down (negative moves it up), so glyphs drawn taller or shorter than the others keep the
+   * same visual gap above the label. Glyphs with a flat bottom edge get 1px more, since a flat edge reads closer.
+   * ponytail: measured by hand from each glyph's drawn bottom, for `@mdi/font` 7.4 at the 27px menu icon size; re-measure
+   * when the icon, that size or the font changes, or derive it from the glyph at runtime if that becomes frequent.
+   */
+  iconNudgeY?: number
+  /**
    * Whether the page is only listed while pirate mode is on.
    */
   pirateModeOnly?: boolean
@@ -48,24 +55,28 @@ export const menuPages: Record<SubMenuComponentName, MenuPage> = {
     slug: 'general',
     title: 'General',
     icon: 'mdi-view-dashboard-variant',
+    iconNudgeY: 1,
   },
   [SubMenuComponentName.SettingsInterface]: {
     subMenu: SubMenuName.settings,
     slug: 'interface',
     title: 'Interface',
     icon: 'mdi-monitor-cellphone',
+    iconNudgeY: -2,
   },
   [SubMenuComponentName.SettingsJoystick]: {
     subMenu: SubMenuName.settings,
     slug: 'joystick',
     title: 'Joystick',
     icon: 'mdi-controller',
+    iconNudgeY: 1,
   },
   [SubMenuComponentName.SettingsVideo]: {
     subMenu: SubMenuName.settings,
     slug: 'video',
     title: 'Video',
     icon: 'mdi-video',
+    iconNudgeY: 3,
   },
   [SubMenuComponentName.SettingsTelemetry]: {
     subMenu: SubMenuName.settings,
@@ -78,30 +89,35 @@ export const menuPages: Record<SubMenuComponentName, MenuPage> = {
     slug: 'alerts',
     title: 'Alerts',
     icon: 'mdi-alert-rhombus-outline',
+    iconNudgeY: -2,
   },
   [SubMenuComponentName.SettingsDev]: {
     subMenu: SubMenuName.settings,
     slug: 'dev',
     title: 'Dev',
     icon: 'mdi-dev-to',
+    iconNudgeY: 2,
   },
   [SubMenuComponentName.SettingsMission]: {
     subMenu: SubMenuName.settings,
     slug: 'mission',
     title: 'Mission',
     icon: 'mdi-map-marker-path',
+    iconNudgeY: -1,
   },
   [SubMenuComponentName.SettingsActions]: {
     subMenu: SubMenuName.settings,
     slug: 'actions',
     title: 'Actions',
     icon: 'mdi-run-fast',
+    iconNudgeY: -3,
   },
   [SubMenuComponentName.SettingsDiyWidgets]: {
     subMenu: SubMenuName.settings,
     slug: 'diy-widgets',
     title: 'DIY widgets',
     icon: 'mdi-puzzle-outline',
+    iconNudgeY: -2,
   },
   [SubMenuComponentName.SettingsSources]: {
     subMenu: SubMenuName.settings,
@@ -134,24 +150,28 @@ export const menuPages: Record<SubMenuComponentName, MenuPage> = {
     slug: 'data-lake',
     title: 'Data-lake',
     icon: 'mdi-database-outline',
+    iconNudgeY: -1,
   },
   [SubMenuComponentName.ToolsLogs]: {
     subMenu: SubMenuName.tools,
     slug: 'logs',
     title: 'Data Logs',
     icon: 'mdi-file-chart-outline',
+    iconNudgeY: -2,
   },
   [SubMenuComponentName.ToolsMap]: {
     subMenu: SubMenuName.tools,
     slug: 'map',
     title: 'Map',
     icon: 'mdi-map-marker-radius',
+    iconNudgeY: -3,
   },
   [SubMenuComponentName.ToolsRecipes]: {
     subMenu: SubMenuName.tools,
     slug: 'recipes',
     title: 'Recipes',
     icon: 'mdi-list-box-outline',
+    iconNudgeY: -1,
   },
 }
 
