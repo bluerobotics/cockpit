@@ -2154,6 +2154,10 @@ msgstr "按电压改变颜色"
 msgid "Changes are applied when you click Apply or press Cmd/Ctrl + Enter/S"
 msgstr "当您点击应用或按 Cmd/Ctrl + Enter/S 时，更改将被应用"
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Charted feature"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Check failed"
 msgstr ""
@@ -3187,6 +3191,11 @@ msgstr ""
 #, javascript-format
 msgid "Could not read ${ 0 }: ${ 1 }"
 msgstr "无法读取 ${ 0 }：${ 1 }"
+
+#: src/composables/terrain/useShallowsNotes.ts
+#, javascript-format
+msgid "Could not read OpenStreetMap: ${ 0 }"
+msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
@@ -6968,6 +6977,10 @@ msgstr "经度必须在 -180 和 180 之间"
 msgid "Longitude:"
 msgstr "经度："
 
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "Looking for charted shoals in OpenStreetMap..."
+msgstr ""
+
 #: src/components/UpdateNotification.vue
 msgid "Looking for new versions of the application..."
 msgstr "正在查找应用程序的新版本..."
@@ -8287,6 +8300,10 @@ msgstr ""
 msgid "Observers:"
 msgstr ""
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Obstruction"
+msgstr ""
+
 #: src/components/geofence/GeoFenceParametersPanel.vue
 msgid "Off"
 msgstr "关"
@@ -8555,6 +8572,10 @@ msgstr "OpenCellID 需要个人 API 密钥。请在基站配置中添加一个�
 #: src/composables/baseStation/useBaseStationOverlay.ts
 msgid "OpenCellID sites"
 msgstr "OpenCellID 站点"
+
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "OpenStreetMap charts no shoal, reef, rock or wreck here."
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "Operator"
@@ -9399,6 +9420,10 @@ msgstr "重做 (Ctrl+Y / Cmd+Y)"
 msgid "Reduced overall performance"
 msgstr "整体性能下降"
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Reef"
+msgstr ""
+
 #: src/components/BaseStationGnssSetupDialog.vue
 msgid "Refresh"
 msgstr "刷新"
@@ -9795,6 +9820,10 @@ msgstr "查看"
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Rises above the water surface from ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Rock"
 msgstr ""
 
 #: src/components/widgets/Attitude.vue
@@ -10378,6 +10407,10 @@ msgstr ""
 msgid ""
 "Ship multibeam surveys from around the world, about 100 m per sample where "
 "surveyed, over GEBCO everywhere else."
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Shoal"
 msgstr ""
 
 #: src/components/poi/PoiManager.vue
@@ -11924,6 +11957,10 @@ msgid ""
 "vehicle. Continue?"
 msgstr "这会将当前任务替换为最后上传到设备的任务。是否继续？"
 
+#: src/libs/terrain/shallows-osm.ts
+msgid "Tidal flat"
+msgstr ""
+
 #: src/components/map/CustomTileProvidersManager.vue
 msgid ""
 "Tile Map Service (TMS) flips the Y axis so row 0 is at the bottom. Enable "
@@ -13434,6 +13471,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "Working out the sight lines"
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Wreck"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
