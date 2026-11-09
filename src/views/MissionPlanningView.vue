@@ -745,7 +745,6 @@
       </template>
     </v-tooltip>
     <MapCenterControl
-      v-model:open="speedDialOpen"
       :target-follower="targetFollower"
       :follower-target="followerTarget"
       :home="home"
@@ -904,7 +903,9 @@
       </span>
     </p>
   </div>
-  <MissionEstimatesPanel v-if="!speedDialOpen" v-model="missionStore.showMissionEstimates" />
+  <div class="absolute right-[10px] bottom-[192px] flex flex-col items-end gap-y-[19px] pointer-events-none">
+    <MissionEstimatesPanel :model-value="missionStore.showMissionEstimates" />
+  </div>
   <MissionLibraryModal
     v-if="interfaceStore.isMissionLibraryVisible"
     :current-mission-snapshot="currentMissionSnapshot"
@@ -1647,7 +1648,6 @@ const cruiseSpeedStatus = computed<'invalid' | 'unchanged' | 'valid'>(() => {
 })
 const isSettingHomeWaypoint = ref(false)
 const downloadMenuOpen = ref(false)
-const speedDialOpen = ref(false)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined

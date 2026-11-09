@@ -43,6 +43,11 @@ msgstr ""
 msgid "Be careful"
 msgstr "Cuidado"
 
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Close the ${ 0 }"
+msgstr ""
+
 #: src/components/mission-planning/MissionPlanningSidebar.vue
 msgid "Collapse the planning panel"
 msgstr ""
@@ -67,6 +72,10 @@ msgstr "Continuar mesmo assim"
 msgid "Disarm vehicle and continue"
 msgstr "Desarmar o veículo e continuar"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "ETA"
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Edit"
 msgstr "Editar"
@@ -77,6 +86,10 @@ msgstr "Editar interface"
 
 #: src/components/MainMenu.vue
 msgid "Edit Mode"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Energy"
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -119,6 +132,15 @@ msgstr ""
 msgid "Language"
 msgstr "Idioma"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Length"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+#, javascript-format
+msgid "Max distance from ${ 0 }"
+msgstr ""
+
 #: src/components/MainMenu.vue
 #: src/components/mission-planning/MissionPlanningSidebar.vue
 msgid "Mission"
@@ -128,8 +150,25 @@ msgstr "Missão"
 msgid "Mission Planning"
 msgstr "Planejamento de missão"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission area (≈)"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission estimates"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission estimates settings"
+msgstr ""
+
 #: src/components/mission-planning/ContextMenu.vue
 msgid "Move mission home here"
+msgstr ""
+
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Open the ${ 0 }"
 msgstr ""
 
 #: src/views/ConfigurationUIView.vue
@@ -144,16 +183,34 @@ msgstr ""
 msgid "Settings"
 msgstr "Configurações"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Show comms coverage on path"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid ""
 "The vehicle is currently armed, and the main-menu contains configurations "
 "and tools that can cause unsafe situations."
 msgstr ""
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid ""
+"Tint the mission path by expected radio or mobile-data coverage at each "
+"segment."
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Tools"
 msgstr "Ferramentas"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Total survey coverage"
+msgstr ""
+
 #: src/components/RotaryEncoderDial.vue
 msgid "Type a value"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "mission estimates panel"
 msgstr ""
