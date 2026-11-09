@@ -101,6 +101,10 @@ export type TerrainSettings = {
    */
   aimRoiAtGround: boolean
   /**
+   * Whether Cockpit answers the vehicle's terrain data requests.
+   */
+  serveTerrainToVehicle: boolean
+  /**
    * Whether measured terrain is in use at all; off, nothing is recorded or used, and what was recorded is kept.
    */
   measuredTerrainEnabled: boolean

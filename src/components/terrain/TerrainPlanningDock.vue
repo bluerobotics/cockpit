@@ -25,7 +25,8 @@
             :draft-m="terrainStore.settings.vesselDraftM"
             :tide-range-m="tideOutlineM"
             :shallows="chartShallows"
-            :collisions="chartCollisions"
+            :warnings="chartWarnings"
+            :upload-path="dock.uploadPreview.value?.path ?? []"
             :bands="chartBands"
             :markers-m="dock.ghostDistanceM.value === null ? [] : [dock.ghostDistanceM.value]"
             :coastline-m="coastlineM"
@@ -161,6 +162,17 @@
               <TerrainWarningTriangle v-if="finding.icon === TERRAIN_WARNING_ICON" :size="14" />
               <v-icon v-else :icon="finding.icon" size="14" :style="{ color: finding.color }" />
               <span class="grow">{{ finding.message }}</span>
+              <v-btn
+                v-for="action in finding.actions"
+                :key="action.label"
+                variant="flat"
+                size="x-small"
+                class="bg-[#FFFFFF22]"
+                @click="action.run()"
+              >
+                {{ action.label }}
+                <v-tooltip activator="parent" location="top" max-width="280" :text="action.help" />
+              </v-btn>
               <v-btn
                 icon
                 variant="text"
@@ -307,7 +319,7 @@ import { terrainAttribution } from '@/libs/terrain/elevation-service'
 import { hasTrustedCells } from '@/libs/terrain/measured-terrain'
 import type { TerrainFindingKind, TerrainProfileSample } from '@/libs/terrain/mission-profile'
 import { profileStretch } from '@/libs/terrain/mission-terrain'
-import type { ProfileChartBand, ProfileChartShallows } from '@/libs/terrain/profile-chart'
+import type { ProfileChartBand, ProfileChartShallows, ProfileChartWarning } from '@/libs/terrain/profile-chart'
 import { type PathSightStretch, PATH_SIGHT_COLORS } from '@/libs/terrain/sight-analysis'
 import { useMissionStore } from '@/stores/mission'
 import { useTerrainStore } from '@/stores/terrain'
@@ -503,10 +515,10 @@ const chartShallows = computed<ProfileChartShallows[]>(() => {
   })
 })
 
-const chartCollisions = computed(() =>
-  dock.findings.value
-    .filter(({ icon }) => icon === TERRAIN_WARNING_ICON)
-    .map(({ fromM, toM, message }) => ({ fromM, toM, description: message }))
+const chartWarnings = computed<ProfileChartWarning[]>(() =>
+  dock.findings.value.flatMap(({ fromM, toM, message, warningTitle }) =>
+    warningTitle ? [{ fromM, toM, title: warningTitle, description: message }] : []
+  )
 )
 
 const status = computed(() => {
