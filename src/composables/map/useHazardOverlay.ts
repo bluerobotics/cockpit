@@ -11,9 +11,10 @@ import {
   HAZARD_SOURCE_IDS,
   HAZARD_SOURCES,
 } from '@/libs/hazards/sources'
+import { terrainAttribution } from '@/libs/terrain/elevation-service'
 import { escapeHtml } from '@/libs/utils'
 import { useHazardStore } from '@/stores/hazards'
-import type { HazardArea, HazardSourceId } from '@/types/hazards'
+import type { HazardArea, HazardGridSourceId, HazardSourceId } from '@/types/hazards'
 import type { WaypointCoordinates } from '@/types/mission'
 
 const HAZARD_PANE = 'hazardAdvisoryPane'
@@ -180,7 +181,9 @@ export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {})
       weight: 2,
       opacity: 0.9,
       dashArray: '6 4',
-      attribution: meta.attribution,
+      attribution: HAZARD_GRID_SOURCE_IDS.includes(area.sourceId as HazardGridSourceId)
+        ? terrainAttribution()
+        : meta.attribution,
     }
     if (area.kind === 'polygon') {
       if (area.coordinates.length < 3) return undefined
