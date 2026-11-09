@@ -41,6 +41,7 @@ export const DEFAULT_TERRAIN_SETTINGS: TerrainSettings = {
   waterLevelOffsetM: 0,
   tideStationId: '',
   tideRangeM: 2,
+  raisePlacedWaypoints: false,
   checkTerrainOnUpload: true,
   resolveTerrainOnUpload: false,
   terrainFollowToleranceM: 5,

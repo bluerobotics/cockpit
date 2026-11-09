@@ -213,7 +213,7 @@ type MinimumField = {
   step: number
 }
 
-type UploadToggleKey = 'checkTerrainOnUpload' | 'resolveTerrainOnUpload' | 'aimRoiAtGround'
+type UploadToggleKey = 'raisePlacedWaypoints' | 'checkTerrainOnUpload' | 'resolveTerrainOnUpload' | 'aimRoiAtGround'
 
 type UploadToggle = {
   /**
@@ -283,6 +283,12 @@ const MINIMUM_FIELDS: MinimumField[] = [
 ]
 
 const UPLOAD_TOGGLES: UploadToggle[] = [
+  {
+    key: 'raisePlacedWaypoints',
+    label: t`Raise new waypoints clear of the terrain`,
+    info: t`An aircraft waypoint placed on the map below the minimum clearance over the terrain is raised to it.`,
+    logLabel: 'raising new waypoints clear of the terrain',
+  },
   {
     key: 'checkTerrainOnUpload',
     label: t`Check the terrain before upload`,

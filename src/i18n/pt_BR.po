@@ -1449,6 +1449,12 @@ msgstr ""
 "Amy volta para a voz embutida, e as outras são removidas até serem baixadas "
 "novamente."
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"An aircraft waypoint placed on the map below the minimum clearance over the "
+"terrain is raised to it."
+msgstr ""
+
 #: src/composables/terrain/useTerrainDock.ts
 msgid "An observer sees the vehicle here."
 msgstr ""
@@ -10338,6 +10344,10 @@ msgstr ""
 msgid "Radio model"
 msgstr "Modelo do rádio"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Raise new waypoints clear of the terrain"
+msgstr ""
+
 #: src/components/terrain/TerrainSafeAltitude.vue
 #, javascript-format
 msgid ""
@@ -15074,6 +15084,11 @@ msgstr ""
 #: src/components/mission-planning/WaypointConfigPanel.vue
 msgid "Waypoint parameters"
 msgstr "Parâmetros do waypoint"
+
+#: src/composables/mission-planning/useNextWaypointAltitude.ts
+#, javascript-format
+msgid "Waypoint raised to ${ 0 } m, to keep it clear of the terrain."
+msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Waypoints"
