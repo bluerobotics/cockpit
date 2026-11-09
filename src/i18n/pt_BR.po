@@ -59,6 +59,12 @@ msgstr ""
 msgid "${ 0 } of ${ 1 } terrain tiles stored for offline use."
 msgstr ""
 
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "${ 0 } stretch still too close; see the findings."
+msgid_plural "${ 0 } stretches still too close; see the findings."
+msgstr[0] ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } terrain-following waypoints set above sea level"
@@ -86,6 +92,12 @@ msgstr[0] ""
 #, javascript-format
 msgid "${ 0 } view"
 msgstr "Visualização ${ 0 }"
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "${ 0 } waypoint"
+msgid_plural "${ 0 } waypoints"
+msgstr[0] ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
@@ -302,6 +314,16 @@ msgstr ""
 msgid "Could not clear the stored terrain: ${ 0 }"
 msgstr ""
 
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Could not keep a safe height: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Could not raise the waypoints: ${ 0 }"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid ""
@@ -389,6 +411,10 @@ msgstr "Entrar em tela cheia"
 
 #: src/components/mini-widgets/EnterEditMode.vue
 msgid "Enter edit mode"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "Every waypoint already keeps a safe height."
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -531,9 +557,31 @@ msgid ""
 "waypoints can still be moved with no internet connection."
 msgstr ""
 
+#: src/components/terrain/TerrainSafeAltitude.vue
+#, javascript-format
+msgid ""
+"Keeping each waypoint at its planned height, raised where needed to stay ${ "
+"0 } m over the terrain. ${ 1 }"
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Keeps ${ 0 } under the keel from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: lowered ${ 0 }."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: raised ${ 0 } and lowered ${ 1 }."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: raised ${ 0 }."
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -723,6 +771,34 @@ msgid ""
 "the vehicle at that point. Nothing is sent to the vehicle."
 msgstr ""
 
+#: src/components/terrain/TerrainSafeAltitude.vue
+#. eslint-disable-next-line vue/max-len
+#, javascript-format
+msgid ""
+"Raise the waypoints so the whole mission keeps ${ 0 } m over the terrain: "
+"your ${ 1 } m safety margin plus the terrain model's ${ 2 } m error."
+msgstr ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Raise to a safe height"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Raised ${ 0 } waypoint by up to ${ 1 } m."
+msgid_plural "Raised ${ 0 } waypoints by up to ${ 1 } m."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Raising the waypoints"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid ""
+"Raising the waypoints cannot clear what is left, which is all in the climb "
+"out of home."
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Reaches the coastline from ${ 0 }, onto land."
@@ -740,6 +816,10 @@ msgstr ""
 msgid "Rebuilt the terrain model."
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Recalculating heights..."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "Regions of interest left at zero altitude are sent at the ground height "
@@ -749,6 +829,10 @@ msgstr ""
 #: src/views/ConfigurationUIView.vue
 msgid "Reload now"
 msgstr "Recarregar agora"
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Restore"
+msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
@@ -1043,6 +1127,10 @@ msgstr ""
 msgid "Waypoint ${ 0 } height, drag up or down or use the arrow keys"
 msgstr ""
 
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "Waypoint altitudes restored."
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid ""
@@ -1079,8 +1167,16 @@ msgstr ""
 msgid "terrain panel"
 msgstr ""
 
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "the mission changed while it was being checked, try again"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "the most detailed bathymetry published for each point"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "the terrain check is still running"
 msgstr ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
