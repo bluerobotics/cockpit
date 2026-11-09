@@ -11,6 +11,7 @@ import {
   groundFromRange,
   loadMeasuredTerrain,
   measuredHeightAt,
+  mergeMeasuredTerrain,
   saveMeasuredTerrain,
 } from '@/libs/terrain/measured-terrain'
 import { terrainVehicleClass } from '@/libs/terrain/mission-profile'
@@ -37,6 +38,10 @@ export interface UseMeasuredTerrainRecorderReturn {
    * Forgets every measurement, here and in storage.
    */
   clearMeasured: () => Promise<void>
+  /**
+   * Adds cells read from a dataset to the measured ones, and keeps them.
+   */
+  importMeasured: (cells: MeasuredTerrain) => Promise<void>
 }
 
 // Five a second is plenty at mission speeds and keeps a long survey to a few hundred thousand readings.
@@ -83,7 +88,7 @@ export const useMeasuredTerrainRecorder = (
   let changedSinceSave = false
   let loaded = false
 
-  void loadMeasuredTerrain().then((stored) => {
+  const initialLoad = loadMeasuredTerrain().then((stored) => {
     // Unreadable storage is left alone rather than saved over with this session's readings alone.
     if (!stored) return
     // Readings taken before storage answered are kept on top of what was stored, not replaced by it.
@@ -172,5 +177,15 @@ export const useMeasuredTerrainRecorder = (
     await saveMeasuredTerrain(measured)
   }
 
-  return { measured, measuredVersion, receivingRange, clearMeasured }
+  const importMeasured = async (cells: MeasuredTerrain): Promise<void> => {
+    // Saving before storage has answered would drop whatever is kept there, so the import waits for that read.
+    await initialLoad
+    mergeMeasuredTerrain(measured, cells)
+    changedSinceSave = false
+    lastSavedMs = Date.now()
+    measuredVersion.value += 1
+    await saveMeasuredTerrain(measured)
+  }
+
+  return { measured, measuredVersion, receivingRange, clearMeasured, importMeasured }
 }

@@ -32,6 +32,7 @@ import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { toPlain } from '@/libs/utils'
 import { loadVehicleOdometers, saveVehicleOdometers } from '@/libs/vehicle/odometer-storage'
+import type { GeoBbox } from '@/types/general'
 import {
   AltitudeReferenceType,
   CockpitMission,
@@ -199,6 +200,8 @@ export const useMissionStore = defineStore('mission', () => {
   const mapCenterOnRequest = ref<{
     /** Coordinates the map should center on */
     coordinates: WaypointCoordinates
+    /** Area to frame around those coordinates, when the request is for a whole extent rather than a point */
+    bounds?: GeoBbox
     /** Incremented on each request so repeated centerings on the same coordinates still trigger */
     revision: number
   } | null>(null)
@@ -1039,8 +1042,8 @@ export const useMissionStore = defineStore('mission', () => {
     mapClearRequestRevision.value += 1
   }
 
-  const requestMapCenterOn = (coordinates: WaypointCoordinates): void => {
-    mapCenterOnRequest.value = { coordinates, revision: (mapCenterOnRequest.value?.revision ?? 0) + 1 }
+  const requestMapCenterOn = (coordinates: WaypointCoordinates, bounds?: GeoBbox): void => {
+    mapCenterOnRequest.value = { coordinates, bounds, revision: (mapCenterOnRequest.value?.revision ?? 0) + 1 }
   }
 
   const requestMapMissionDownload = (): void => {

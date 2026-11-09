@@ -13,6 +13,7 @@ import { openSnackbar } from '@/composables/snackbar'
 import { bboxMaxSpanDegrees, MAX_HAZARD_BBOX_DEG, paddedBbox } from '@/libs/hazards/hazard-areas'
 import type { VisibilityGrid } from '@/libs/terrain/line-of-sight'
 import { measuredCellCenter, measuredCellLabel, trustedCells } from '@/libs/terrain/measured-terrain'
+import { rampColor } from '@/libs/terrain/measured-terrain-geojson'
 import type { TerrainFindingKind, TerrainProfileSample } from '@/libs/terrain/mission-profile'
 import { followPathCorners, legLabel } from '@/libs/terrain/mission-profile'
 import {
@@ -271,12 +272,6 @@ const PATH_SIGHT_TEXT: Record<PathSightKind, string> = {
   'never-seen': t`No observer can see the vehicle here, at any height.`,
 }
 const MAX_MEASURED_DOTS = 5000
-
-// Deep blue at the lowest measured point to pale yellow at the highest, the usual bathymetry ramp.
-const rampColor = (fraction: number): string => {
-  const clamped = Math.max(0, Math.min(1, fraction))
-  return `rgb(${Math.round(20 + 235 * clamped)}, ${Math.round(60 + 175 * clamped)}, ${Math.round(160 - 40 * clamped)})`
-}
 const COASTLINE_MARGIN_M = 500
 export const DEFAULT_EYE_HEIGHT_M = 1.7
 
