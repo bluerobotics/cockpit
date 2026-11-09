@@ -420,6 +420,20 @@ msgstr "配置方案将您的数据湖变量、操作、WebSocket 连接和 DIY 
 msgid "A recording stopped unexpectedly. ${ 0 }"
 msgstr "录制意外停止。${ 0 }"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass ${ 1 } into the terrain on the "
+"straight line home."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass only ${ 1 } over the terrain "
+"on the straight line home."
+msgstr ""
+
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 msgid "A short verification code will be displayed."
 msgstr "将显示一个短验证码。"
@@ -2062,6 +2076,13 @@ msgstr "间距"
 msgid "Clearance (m)"
 msgstr "安全距离 (m)"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Clears the terrain by ${ 0 } from ${ 1 }, within the terrain model's ${ 2 } "
+"m error."
+msgstr ""
+
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 #: src/components/geofence/GeoFenceEditor.vue
 #: src/components/vehicle-defaults/VehicleDefaultsAutoWizardIntroPanel.vue
@@ -3036,6 +3057,11 @@ msgstr "正在创建不含遥测字幕文件的 ZIP 压缩包。${ 0 }"
 #: src/components/mini-widgets/BatteryIndicator.vue
 msgid "Critical threshold (V)"
 msgstr "临界阈值 (V)"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Crosses land from ${ 0 }."
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -5101,6 +5127,11 @@ msgstr "前往命令已取消。设备将在当前位置保持。"
 msgid "GoTo request failed"
 msgstr "前往请求失败"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Goes ${ 0 } into the terrain from ${ 1 }."
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "Got it"
 msgstr "知道了"
@@ -6034,6 +6065,11 @@ msgstr "继续审核"
 #, javascript-format
 msgid "Keep the vehicle this far from \"${ 0 }\"."
 msgstr "使设备与 \"${ 0 }\" 保持此距离。"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Keeps ${ 0 } under the keel from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
 
 #: src/views/ConfigurationUIView.vue
 msgid ""
@@ -7935,6 +7971,11 @@ msgstr "停车场"
 msgid "Pass ${ 0 }/${ 1 } at ${ 2 }ms"
 msgstr "在 ${ 2 }ms 内通过 ${ 0 }/${ 1 }"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Passes ${ 0 } over the terrain from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
+
 #: src/components/VoiceRecordingsLibrary.vue
 msgid "Pause"
 msgstr ""
@@ -8147,6 +8188,18 @@ msgstr "位置（垂直）"
 #: src/views/ConfigurationSourcesView.vue
 msgid "Positioning"
 msgstr "定位"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Possible shallow water from ${ 0 }. Check a nautical chart."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Possible shallow water from ${ 0 }: the map shows water where the terrain "
+"model reads land. Check a nautical chart."
+msgstr ""
 
 #: src/components/MissionChecklist.vue
 msgid "Pre-arm checklist disabled. You can re-enable it in the mission settings."
@@ -8362,6 +8415,11 @@ msgstr "90° 重复飞行（交叉影线）"
 #: src/components/widgets/CompassHUD.vue
 msgid "Reached"
 msgstr "已到达"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Reaches the coastline from ${ 0 }, onto land."
+msgstr ""
 
 #: src/components/recipes/ReadRecipeDialog.vue
 #, javascript-format
@@ -8870,6 +8928,11 @@ msgstr "撤销更改"
 msgid "Review"
 msgstr "查看"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Rises above the water surface from ${ 0 }."
+msgstr ""
+
 #: src/components/widgets/Attitude.vue
 #: src/components/widgets/VirtualHorizon.vue
 msgid "Roll source"
@@ -8915,6 +8978,11 @@ msgstr "运行间隔"
 #: src/components/widgets/DoItYourself.vue
 msgid "Run script in its own scope"
 msgstr "在独立作用域中运行脚本"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Runs aground from ${ 0 }, with the bottom ${ 1 } above the keel."
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -10157,6 +10225,25 @@ msgstr "这是主设备的地址，该设备已连接。"
 msgid "That vehicle has already been added."
 msgstr "该设备已经添加过了。"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% climb from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% descent from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The ${ 0 }% grade from ${ 1 } slows the vehicle to ${ 2 } m/s."
+msgstr ""
+
 #: src/components/Tutorial.vue
 msgid ""
 "The 'General' page allows switching the active user, the vehicle connection "
@@ -10242,6 +10329,11 @@ msgid ""
 msgstr ""
 "死区区域是每个图表中心的红色区域，指定要忽略的摇杆轴范围。在每个死区内，输出被限制为 "
 "0，输出曲线（线性或指数）从区域边缘开始。如果弹簧加载的摇杆不能一致地返回到每个轴的精确中心，这很有用。"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The depth is unknown along part of the path from ${ 0 }."
+msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
@@ -10357,6 +10449,11 @@ msgstr "所选流不可用。请检查其信号源或选择其他流。"
 #: src/views/ConfigurationVideoView.vue
 msgid "The stream"
 msgstr "流"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The terrain is unknown along part of the path from ${ 0 }."
+msgstr ""
 
 #: src/components/widgets/MissionControlPanel.vue
 #, javascript-format
@@ -12139,6 +12236,13 @@ msgstr "窗口材质"
 msgid "With \"Run script in its own scope\" on, the script gets"
 msgstr "开启“在自身作用域中运行脚本”后，脚本会获得"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Without a coastline map, the terrain data cannot tell whether the path from "
+"${ 0 } is navigable. Load the coastline or check a nautical chart."
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Write the mission on the planner to a file"
 msgstr ""
@@ -12541,6 +12645,11 @@ msgstr "处理其他事项。此时顶层函数不再是全局的，因此请从
 msgid "from ${ 0 }"
 msgstr "来自 ${ 0 }"
 
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "home to waypoint ${ 0 }"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoWizardIntroPanel.vue
 msgid "if you are happy with your current views group and joystick mapping."
 msgstr "如果您对当前的视图组和摇杆映射满意。"
@@ -12752,6 +12861,11 @@ msgstr "以编写模板——例如"
 msgid "unassigned"
 msgstr "未分配"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "under ${ 0 } m"
+msgstr ""
+
 #: src/components/InputElementConfig.vue
 msgid "update"
 msgstr "更新"
@@ -12763,6 +12877,11 @@ msgstr "值"
 #: src/components/mission-planning/CruiseSpeedControl.vue
 msgid "vehicle default"
 msgstr "设备默认值"
+
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "waypoint ${ 0 } to ${ 1 }"
+msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
 msgid "whose"
