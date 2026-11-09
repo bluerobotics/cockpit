@@ -82,7 +82,7 @@ export type HazardAdvisoryKind =
   | 'inside'
   | 'crossing'
   | 'proximity'
-  | 'terrain-clearance'
+  | 'high-ground'
   | 'shallow-water'
   | 'outside-coverage'
 
@@ -203,7 +203,7 @@ export interface HazardAdvisorySettings {
   /**
    * Ground higher than this elevation above sea level, in meters, is marked and flagged under waypoints.
    */
-  terrainClearanceMeters: number
+  highGroundAboveMeters: number
   /**
    * Water this deep or less, in meters below sea level, is marked and flagged under waypoints.
    */

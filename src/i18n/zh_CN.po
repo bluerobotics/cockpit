@@ -5175,6 +5175,14 @@ msgstr "缩小时隐藏航点编号"
 msgid "High"
 msgstr "高"
 
+#: src/components/hazards/HazardAdvisoryPanel.vue
+msgid "High ground above (m)"
+msgstr ""
+
+#: src/components/hazards/HazardAdvisoryPanel.vue
+msgid "High ground setting"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid ""
 "Higher antennas see farther over the horizon. For line-of-sight links, "
