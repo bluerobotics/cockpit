@@ -36,6 +36,20 @@ msgstr ""
 msgid "${ 0 } view"
 msgstr "Visualização ${ 0 }"
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass ${ 1 } into the terrain on the "
+"straight line home."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass only ${ 1 } over the terrain "
+"on the straight line home."
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "About"
 msgstr "Sobre"
@@ -110,6 +124,13 @@ msgstr ""
 msgid "Clear"
 msgstr ""
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Clears the terrain by ${ 0 } from ${ 1 }, within the terrain model's ${ 2 } "
+"m error."
+msgstr ""
+
 #: src/components/DrawerPanel.vue
 #, javascript-format
 msgid "Close the ${ 0 }"
@@ -146,6 +167,11 @@ msgstr ""
 #: src/stores/terrain.ts
 #, javascript-format
 msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Crosses land from ${ 0 }."
 msgstr ""
 
 #: src/libs/terrain/sources.ts
@@ -256,6 +282,11 @@ msgid ""
 "often read as land or sea level."
 msgstr ""
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Goes ${ 0 } into the terrain from ${ 1 }."
+msgstr ""
+
 #: src/libs/terrain/sources.ts
 msgid ""
 "Ground with trees and buildings, 30 m per sample worldwide; the sea reads "
@@ -276,6 +307,11 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Import"
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Keeps ${ 0 } under the keel from ${ 1 }, under the ${ 2 } m minimum."
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -370,6 +406,28 @@ msgstr ""
 msgid "Open the ${ 0 }"
 msgstr ""
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Passes ${ 0 } over the terrain from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Possible shallow water from ${ 0 }. Check a nautical chart."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Possible shallow water from ${ 0 }: the map shows water where the terrain "
+"model reads land. Check a nautical chart."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Reaches the coastline from ${ 0 }, onto land."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Reading..."
 msgstr ""
@@ -377,6 +435,16 @@ msgstr ""
 #: src/views/ConfigurationUIView.vue
 msgid "Reload now"
 msgstr "Recarregar agora"
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Rises above the water surface from ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Runs aground from ${ 0 }, with the bottom ${ 1 } above the keel."
+msgstr ""
 
 #: src/libs/hazards/sources.ts
 #. eslint-disable-next-line max-len, vue/max-len
@@ -416,6 +484,25 @@ msgstr ""
 msgid "Terrarium-encoded PNG tiles, with {z}, {x} and {y} in the address."
 msgstr ""
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% climb from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% descent from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The ${ 0 }% grade from ${ 1 } slows the vehicle to ${ 2 } m/s."
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 #. eslint-disable-next-line max-len, vue/max-len
 msgid ""
@@ -432,6 +519,11 @@ msgstr ""
 msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
 msgstr ""
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The depth is unknown along part of the path from ${ 0 }."
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "The global ocean model, about 450 m per sample. Coastal waters are often "
@@ -444,6 +536,11 @@ msgid ""
 "The most detailed source for each area: CHS NONNA in Canada, NOAA in the "
 "United States, EMODnet in Europe and AusBathyTopo around Australia, then "
 "GMRT, GEBCO and Tilezen anywhere else."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The terrain is unknown along part of the path from ${ 0 }."
 msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
@@ -491,6 +588,13 @@ msgstr ""
 msgid "Unavailable"
 msgstr ""
 
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Without a coastline map, the terrain data cannot tell whether the path from "
+"${ 0 } is navigable. Load the coastline or check a nautical chart."
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Write the mission on the planner to a file"
 msgstr ""
@@ -501,6 +605,21 @@ msgid ""
 "operating area."
 msgstr ""
 
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "home to waypoint ${ 0 }"
+msgstr ""
+
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "mission estimates panel"
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "under ${ 0 } m"
+msgstr ""
+
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "waypoint ${ 0 } to ${ 1 }"
 msgstr ""
