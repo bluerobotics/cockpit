@@ -43,4 +43,24 @@ export type TerrainSettings = {
    * Deepest zoom the custom source publishes.
    */
   customMaxZoom: number
+  /**
+   * Height above the ground an aircraft must keep along the whole path, in meters.
+   */
+  minimumClearanceM: number
+  /**
+   * Water a vessel must keep under its keel along the whole path, in meters.
+   */
+  minimumUnderKeelM: number
+  /**
+   * Depth of the hull below the waterline, in meters.
+   */
+  vesselDraftM: number
+  /**
+   * Water level relative to the model's sea level, in meters, for tides and lakes.
+   */
+  waterLevelOffsetM: number
+  /**
+   * Expected difference between high and low tide, in meters, outlined on the profile.
+   */
+  tideRangeM: number
 }
