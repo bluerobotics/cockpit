@@ -37,6 +37,7 @@ import type { CockpitMission, WaypointCoordinates } from '@/types/mission'
 import type { TerrainObserver } from '@/types/terrain'
 
 import { type UseMissionTerrainReturn, useMissionTerrain } from './useMissionTerrain'
+import { type UseMissionTideReturn, useMissionTide } from './useMissionTide'
 import { type UseMissionWaterReturn, useMissionWater } from './useMissionWater'
 import { type UseSafeAltitudeReturn, useSafeAltitude } from './useSafeAltitude'
 
@@ -184,6 +185,10 @@ export interface TerrainDockState {
    * Where an aircraft's or ground vehicle's mission runs over water, which its heights alone do not show.
    */
   water: UseMissionWaterReturn
+  /**
+   * The tide station nearest the mission, or the one the settings name, and the mission day its tide is read for.
+   */
+  tide: UseMissionTideReturn
 }
 
 const terrainDockKey: InjectionKey<TerrainDockState> = Symbol('terrain-dock')
@@ -393,6 +398,8 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     () => terrainStore.waterLevelNowM()
   )
 
+  const tide = useMissionTide(open, terrain.vehicleClass, () => terrain.points().map(({ coordinates }) => coordinates))
+
   const overlay = useTerrainMapOverlay(map, {
     // Each change redraws every finding line, which a waypoint drag would otherwise do at pointer rate.
     stretches: refThrottled(stretches, 100),
@@ -469,6 +476,7 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     loadingCoastline,
     loadMissionCoastline,
     water,
+    tide,
   }
   provide(terrainDockKey, state)
   return state

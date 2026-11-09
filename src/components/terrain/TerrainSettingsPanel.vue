@@ -264,8 +264,8 @@ const MINIMUM_FIELDS: MinimumField[] = [
   },
   {
     key: 'waterLevelOffsetM',
-    label: 'Water level offset',
-    info: 'Height of the water above the terrain model sea level, for lakes, rivers or the tide at mission time.',
+    label: t`Water level offset`,
+    info: t`Height of the water above the terrain model sea level, for lakes, rivers or the tide at mission time. Loaded tide predictions are added to it.`,
     unit: 'm',
     min: -500,
     max: 5000,
@@ -273,8 +273,8 @@ const MINIMUM_FIELDS: MinimumField[] = [
   },
   {
     key: 'tideRangeM',
-    label: 'Expected tide range',
-    info: 'Difference between high and low tide. The profile outlines this band around the water level.',
+    label: t`Expected tide range`,
+    info: t`Difference between high and low tide. While no tide predictions are loaded, the profile outlines this band around the water level.`,
     unit: 'm',
     min: 0,
     max: 20,
