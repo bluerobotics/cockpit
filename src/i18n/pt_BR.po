@@ -110,9 +110,17 @@ msgstr "Missão"
 msgid "Mission Planning"
 msgstr "Planejamento de missão"
 
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Move mission home here"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Reload now"
 msgstr "Recarregar agora"
+
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Set mission home"
+msgstr ""
 
 #: src/components/MainMenu.vue
 msgid "Settings"
