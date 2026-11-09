@@ -2712,6 +2712,11 @@ msgstr ""
 msgid "Waypoint altitudes restored."
 msgstr ""
 
+#: src/composables/mission-planning/useNextWaypointAltitude.ts
+#, javascript-format
+msgid "Waypoint raised to ${ 0 } m, to keep it clear of the terrain."
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid ""
 "Waypoints more than about 3 km apart can leave areas in between the vehicle "

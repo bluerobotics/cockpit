@@ -845,6 +845,7 @@
       :selected-waypoint="selectedWaypoint"
       @remove-waypoint="removeSelectedWaypoint"
       @should-update-waypoints="handleShouldUpdateWaypoints"
+      @altitude-set="adoptWaypointAltitude"
     />
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
@@ -991,6 +992,7 @@ import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceMapInteraction'
 import { useMissionPreflightChecks } from '@/composables/mission-planning/useMissionPreflightChecks'
+import { useNextWaypointAltitude } from '@/composables/mission-planning/useNextWaypointAltitude'
 import { useSnackbar } from '@/composables/snackbar'
 import type { TerrainMissionEdit } from '@/composables/terrain/useTerrainDock'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
@@ -1369,8 +1371,13 @@ useBaseStationOverlay(planningMap, mapReady)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const followerTarget = ref<string | undefined>(undefined)
-const currentWaypointAltitude = ref(0)
-const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
+const {
+  altitude: currentWaypointAltitude,
+  referenceType: currentWaypointAltitudeRefType,
+  reset: resetWaypointAltitude,
+  adopt: adoptWaypointAltitude,
+  settle: settlePlacedWaypoint,
+} = useNextWaypointAltitude()
 const availableFrames = Object.values(AltitudeReferenceType).map((value: AltitudeReferenceType) => ({
   name: value,
   value,
@@ -2059,6 +2066,7 @@ const clearCurrentMission = (options?: {
 }): void => {
   missionStore.clearMission(options)
   missionStore.clearUndoStack()
+  resetWaypointAltitude()
   Object.values(waypointMarkers.value).forEach((marker) => {
     planningMap.value?.removeLayer(marker)
   })
@@ -2469,6 +2477,7 @@ const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
   }
 
   missionStore.currentPlanningWaypoints.splice(segmentIndex + 1, 0, newWp)
+  void settlePlacedWaypoint(newWp)
   addWaypointMarker(newWp)
   updateWaypointMarkers()
 }
@@ -3432,6 +3441,7 @@ const addWaypoint = (
   } else {
     missionStore.currentPlanningWaypoints.push(waypoint)
   }
+  void settlePlacedWaypoint(waypoint)
 
   const newMarker = L.marker(coordinates, { draggable: true })
 
