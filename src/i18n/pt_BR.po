@@ -132,6 +132,14 @@ msgstr ""
 msgid "GeoFence"
 msgstr ""
 
+#: src/components/hazards/HazardAdvisoryPanel.vue
+msgid "High ground above (m)"
+msgstr ""
+
+#: src/components/hazards/HazardAdvisoryPanel.vue
+msgid "High ground setting"
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Import"
 msgstr ""
