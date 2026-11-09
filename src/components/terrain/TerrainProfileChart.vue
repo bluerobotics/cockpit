@@ -33,6 +33,7 @@
           <path :d="geometry.uncertaintyBand" fill="#FFFFFF" fill-opacity="0.14" />
           <path :d="geometry.groundArea" fill="#8D6E63" fill-opacity="0.75" />
           <path :d="geometry.raisedSeabedArea" fill="#D7B98E" fill-opacity="0.9" />
+          <path :d="geometry.waterBodyArea" fill="#29B6F6" fill-opacity="0.75" />
           <path
             :d="geometry.tideLines"
             stroke="#81D4FA"
@@ -172,8 +173,9 @@
           :class="hoverOnRight ? '-translate-x-full -ml-2' : 'ml-2'"
           :style="{ left: `${hoverFraction * 100}%` }"
         >
-          <p>{{ formatDistance(hovered.distanceM) }} along</p>
-          <p v-if="hoveredOnShoal">Possible shallow water, depth unknown</p>
+          <p>{{ alongLabel(hovered.distanceM) }}</p>
+          <p v-if="hoveredOverWater">{{ t`Over water` }}</p>
+          <p v-if="hoveredOnShoal">{{ t`Possible shallow water, depth unknown` }}</p>
           <p v-else-if="hovered.groundM !== null">{{ heightLabel }} {{ hovered.groundM.toFixed(1) }} m</p>
           <p v-if="hovered.pathAmslM !== null && vehicleClass !== 'surface'">
             {{ t`Vehicle` }} {{ hovered.pathAmslM.toFixed(1) }} m
@@ -271,6 +273,10 @@ const props = defineProps<{
    */
   coastlineM: number[]
   /**
+   * Whether each station is over water, null where unknown; empty for none marked.
+   */
+  overWater: (boolean | null)[]
+  /**
    * Height the chart is drawn at, in pixels.
    */
   heightPx: number
@@ -329,6 +335,13 @@ onBeforeUnmount(() => cancelAnimationFrame(wheelFrame))
 const lengthM = computed(() => props.samples.at(-1)?.distanceM || 1)
 const toX = (distanceM: number): number => (distanceM / lengthM.value) * PROFILE_CHART_WIDTH
 
+// Marks still loading for the previous profile would land on the wrong stations.
+const stationsOverWater = computed(() => (props.overWater.length === props.samples.length ? props.overWater : []))
+
+const hoveredOverWater = computed(
+  () => !!hovered.value && stationsOverWater.value[props.samples.indexOf(toRaw(hovered.value))] === true
+)
+
 const chartOptions = computed<ProfileChartOptions>(() => ({
   vehicleClass: props.vehicleClass,
   uncertaintyM: props.uncertaintyM,
@@ -336,6 +349,7 @@ const chartOptions = computed<ProfileChartOptions>(() => ({
   draftM: props.draftM,
   tideRangeM: props.tideRangeM,
   shallows: props.shallows,
+  overWater: stationsOverWater.value,
 }))
 
 const baseGeometry = computed(() => profileChartGeometry(props.samples, chartOptions.value))
@@ -617,6 +631,11 @@ const ariaSummary = computed(() => {
 
 const formatDistance = (meters: number): string =>
   meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`
+
+const alongLabel = (meters: number): string => {
+  const distance = formatDistance(meters)
+  return t`${distance} along`
+}
 
 const onMove = (event: MouseEvent): void => {
   const rect = chartEl.value?.getBoundingClientRect()
