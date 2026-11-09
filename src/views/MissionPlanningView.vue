@@ -5211,7 +5211,7 @@ const vehicleMarker = useMapVehicleMarker(planningMap, {
   tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
   headingInDegrees: () => vehicleHeading.value,
   iconAppearance: () => missionStore.vehicleIconAppearance,
-  tooltipClassName: 'waypoint-tooltip',
+  tooltipClassName: 'vehicle-tooltip',
 })
 
 const homeMarker = shallowRef<L.Marker>()
