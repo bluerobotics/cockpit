@@ -277,6 +277,11 @@ export const useHazardStore = defineStore('hazards', () => {
     return []
   })
 
+  /** Water side of the loaded coastline, when the coastline source is enabled. */
+  const coastlineWater = computed<HazardArea[]>(() =>
+    isSourceEnabled('coastline') ? dividedCoastline.value.water : []
+  )
+
   /**
    * Finds a loaded area of any enabled source, grid-traced ones included.
    * @param {string} areaId Area to look up.
@@ -753,6 +758,7 @@ export const useHazardStore = defineStore('hazards', () => {
     results,
     terrainGrid,
     coastlineExclusionAreas,
+    coastlineWater,
     findArea,
     loadedAreasOf,
     isLoadedAt,

@@ -221,6 +221,7 @@
     <MissionPlanningSidebar
       ref="missionToolboxSidebarRef"
       v-model:planning-mode="planningMode"
+      v-model:collapsed="missionToolboxCollapsed"
       :map-center="mapCenter"
       :calculated-height="calculatedHeight"
       :top-offset="missionToolboxTop"
@@ -904,6 +905,7 @@
     </p>
   </div>
   <div class="absolute right-[10px] bottom-[192px] flex flex-col items-end gap-y-[19px] pointer-events-none">
+    <TerrainPlanningDock @select-waypoint="selectWaypointByIndex" @update:open="onTerrainDockOpen" />
     <MissionEstimatesPanel :model-value="missionStore.showMissionEstimates" />
   </div>
   <MissionLibraryModal
@@ -949,6 +951,7 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
+import TerrainPlanningDock from '@/components/terrain/TerrainPlanningDock.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissionPathSignalOverlay'
@@ -4580,12 +4583,8 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     }
 
     // Default: open config panel
-    const oldId = selectedWaypoint.value?.id
-    selectedWaypoint.value = waypoint
-    applySelectedWaypointMarkerVisual(waypoint.id, oldId)
-    selectedSurveyId.value = ''
     hideContextMenu()
-    interfaceStore.configPanelVisible = true
+    openWaypointConfig(waypoint)
   })
 
   const currentMarkerSize = getEffectiveMarkerSize(zoom.value)
@@ -4630,6 +4629,25 @@ const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
     return { iconSize: [12, 12], iconAnchor: [6, 6] }
   }
   return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
+}
+
+const openWaypointConfig = (waypoint: Waypoint): void => {
+  const oldId = selectedWaypoint.value?.id
+  selectedWaypoint.value = waypoint
+  applySelectedWaypointMarkerVisual(waypoint.id, oldId)
+  selectedSurveyId.value = ''
+  interfaceStore.configPanelVisible = true
+}
+
+const selectWaypointByIndex = (index: number): void => {
+  const waypoint = missionStore.currentPlanningWaypoints[index]
+  if (!waypoint) return
+  const oldId = selectedWaypoint.value?.id
+  // Only an already open waypoint panel follows the selection, so a stale flag must not open it.
+  if (!oldId) interfaceStore.configPanelVisible = false
+  selectedWaypoint.value = waypoint
+  applySelectedWaypointMarkerVisual(waypoint.id, oldId)
+  selectedSurveyId.value = ''
 }
 
 // single source of truth for selected-marker visuals
@@ -4817,6 +4835,14 @@ const missionToolboxTop = computed<number>(() => {
 watch(missionActionsMenuExpanded, (expanded) => {
   missionToolboxPinnedTop.value = expanded ? missionToolboxTop.value : null
 })
+
+const missionToolboxCollapsed = ref(false)
+let toolboxCollapsedBeforeTerrain = false
+
+const onTerrainDockOpen = (open: boolean): void => {
+  if (open) toolboxCollapsedBeforeTerrain = missionToolboxCollapsed.value
+  missionToolboxCollapsed.value = open || toolboxCollapsedBeforeTerrain
+}
 
 const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
   if (mission.vehicleType && !vehicleStore.isVehicleOnline) {

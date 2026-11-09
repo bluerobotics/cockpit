@@ -26,10 +26,43 @@ msgid ""
 "instead."
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "${ 0 } itself"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } min ${ 1 } s into the mission, ${ 2 } m along, ${ 3 } m clearance."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } min ${ 1 } s into the mission, ${ 2 } m along, unknown clearance."
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid ""
+"${ 0 } of ${ 1 } terrain tiles stored for offline use, ${ 2 } could not be "
+"downloaded."
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "${ 0 } of ${ 1 } terrain tiles stored for offline use."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } tiles, ${ 1 } MB"
 msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "${ 0 } to review"
+msgid_plural "${ 0 } to review"
+msgstr[0] ""
 
 #: src/stores/widgetManager.ts
 #, javascript-format
@@ -54,6 +87,14 @@ msgstr ""
 msgid "About"
 msgstr "Sobre"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Add at least one waypoint to see the terrain under the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Add mission home"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Alerts settings"
 msgstr ""
@@ -76,6 +117,11 @@ msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
 msgid "Auto"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Auto (${ 0 })"
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -104,6 +150,10 @@ msgstr ""
 msgid "Be careful"
 msgstr "Cuidado"
 
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Bottom"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid "CHS NONNA"
 msgstr ""
@@ -120,8 +170,38 @@ msgid ""
 "read shallower than at mean sea level."
 msgstr ""
 
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Cancelled: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Check failed"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Checking"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Checking the terrain..."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Clear"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Clear the stored terrain?"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Clearance"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Clearance above the terrain"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -167,6 +247,25 @@ msgstr ""
 #: src/stores/terrain.ts
 #, javascript-format
 msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Could not read the terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Could not rebuild the terrain model: ${ 0 }"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Could not store the terrain for offline use: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Create mission path"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -276,6 +375,18 @@ msgid ""
 "territories, 250 m per sample."
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Ghost run information"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Ghost run position along the mission"
+msgstr ""
+
 #: src/libs/terrain/bathymetry.ts
 msgid ""
 "Global ocean depths from grids 1 to 2 km apart at sea, so coastal waters "
@@ -287,10 +398,19 @@ msgstr ""
 msgid "Goes ${ 0 } into the terrain from ${ 1 }."
 msgstr ""
 
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Ground"
+msgstr ""
+
 #: src/libs/terrain/sources.ts
 msgid ""
 "Ground with trees and buildings, 30 m per sample worldwide; the sea reads "
 "as 0 m."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "High and low tide ±${ 0 } m"
 msgstr ""
 
 #: src/libs/hazards/sources.ts
@@ -305,8 +425,25 @@ msgstr ""
 msgid "High ground setting"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"How deep the hull reaches below the waterline. Water under the keel is "
+"counted from there, and sonar depths are taken from that depth."
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Import"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Keep the terrain of the visible map for offline use"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Keep the terrain of the visible map for offline use. What the mission "
+"crosses is already kept as it is checked; this adds the area around it, so\n"
+"waypoints can still be moved with no internet connection."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -322,12 +459,37 @@ msgstr ""
 msgid "Land source information"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Land: ${ 0 } - Bathymetry: ${ 1 }"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Language"
 msgstr "Idioma"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Least water a boat keeps between its hull and the seabed. Less is listed in "
+"Findings."
+msgstr ""
+
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "Length"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Load coastline"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Loading data"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Lowest height aircraft keep over the ground or the water, and submarines "
+"over the seabed. Passing lower is listed in Findings."
 msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
@@ -337,6 +499,10 @@ msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Max. zoom"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Minimums and water"
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -390,6 +556,16 @@ msgstr ""
 msgid "None yet"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Not checked"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Nothing along the mission comes closer to the terrain than the minimums in "
+"the terrain settings."
+msgstr ""
+
 #: src/components/MissionLibraryModal.vue
 msgid "Nothing is planned on the map yet"
 msgstr ""
@@ -406,9 +582,31 @@ msgstr ""
 msgid "Open the ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Open the mission settings"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Part of the mission is outside the loaded coastline map, so shallow water "
+"cannot be told from land there."
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Passes ${ 0 } over the terrain from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Pause the ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Play the ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "Possible shallow water"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -423,6 +621,15 @@ msgid ""
 "model reads land. Check a nautical chart."
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"Previews the mission: play it at ${ 0 } times the planned cruise speed, or "
+"drag the slider. A marker follows on the profile and on the map, with\n"
+"the time into the mission, the distance along it and the clearance under "
+"the vehicle at that point. Nothing is sent to the vehicle."
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "Reaches the coastline from ${ 0 }, onto land."
@@ -430,6 +637,14 @@ msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Reading..."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Rebuild the terrain model"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Rebuilt the terrain model."
 msgstr ""
 
 #: src/views/ConfigurationUIView.vue
@@ -454,6 +669,11 @@ msgid ""
 "and buildings."
 msgstr ""
 
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "Select waypoint ${ 0 }"
+msgstr ""
+
 #: src/components/mission-planning/ContextMenu.vue
 msgid "Set mission home"
 msgstr ""
@@ -472,16 +692,67 @@ msgstr ""
 msgid "Show comms coverage on path"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Show on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Stop storing terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Stored terrain"
+msgstr ""
+
 #: src/stores/terrain.ts
 msgid "Stored terrain cleared."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Stored terrain information"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Storing terrain ${ 0 } / ${ 1 }"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Terrain and mission profile"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Terrain kept for offline use is removed too, and has to be downloaded again "
+"before flying without a connection."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Terrain profile of the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "Terrain profile of the mission, smallest ${ 0 } ${ 1 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Terrain tiles kept on this computer. Keep an area for offline use from the "
+"terrain panel in mission planning."
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrarium-encoded PNG tiles, with {z}, {x} and {y} in the address."
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "That area needs ${ 0 } terrain tiles; zoom in to under ${ 1 }."
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts
@@ -515,6 +786,28 @@ msgstr ""
 msgid "The address needs {z}, {x} and {y}, and to start with http:// or https://."
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid "The bottom may be above the keel here. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid "The bottom may come close to the keel here. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid "The bottom may come close to the surface here. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid ""
+"The coastline map shows water here, but the bottom may come close to the "
+"surface. Check a nautical chart."
+msgstr ""
+
 #: src/stores/terrain.ts
 msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
 msgstr ""
@@ -541,6 +834,14 @@ msgstr ""
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "The terrain is unknown along part of the path from ${ 0 }."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "The terrain under the mission is checked once the mission has a home."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "The terrain under the mission is checked once the mission has waypoints."
 msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
@@ -588,11 +889,38 @@ msgstr ""
 msgid "Unavailable"
 msgstr ""
 
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Under keel"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Vessel draft"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Water under the keel"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "Waypoint ${ 0 } height, drag up or down or use the arrow keys"
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid ""
 "Without a coastline map, the terrain data cannot tell whether the path from "
 "${ 0 } is navigable. Load the coastline or check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Without a coastline map, the terrain data cannot tell whether this region "
+"is navigable. Load the coastline, or check a nautical chart."
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
@@ -612,6 +940,14 @@ msgstr ""
 
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "mission estimates panel"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "terrain panel"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "the most detailed bathymetry published for each point"
 msgstr ""
 
 #: src/libs/terrain/mission-terrain.ts

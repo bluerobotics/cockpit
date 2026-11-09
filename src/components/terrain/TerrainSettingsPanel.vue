@@ -2,11 +2,12 @@
   <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
     <template #title>{{ t`Terrain` }}</template>
     <template #info>
-      <strong>Land source:</strong> Elevation model used for every terrain check. The Copernicus surface model includes
-      trees and buildings and needs Cockpit Standalone; Cockpit Lite uses Tilezen instead.
+      <strong>Land source:</strong> Elevation model used for every terrain check and the profile. The Copernicus surface
+      model includes trees and buildings and needs Cockpit Standalone; Cockpit Lite uses Tilezen instead.
       <br />
       <strong>Bathymetry source:</strong> Depth model read wherever the land source reads sea level or below. Automatic
-      picks the most detailed one published for each point.
+      picks the most detailed one published for each point. <br />
+      <strong>Minimums:</strong> Clearances the mission is checked against.
     </template>
     <template #content>
       <div class="flex flex-col gap-y-3 px-4 pb-4 pt-2 text-sm">
@@ -45,8 +46,12 @@
             </InfoTooltip>
           </div>
           <div class="flex items-center gap-x-1">
-            <span>Stored terrain</span>
-            <InfoTooltip label="Stored terrain information"> Terrain tiles kept on this computer. </InfoTooltip>
+            <span>{{ t`Stored terrain` }}</span>
+            <InfoTooltip :label="t`Stored terrain information`">
+              {{
+                t`Terrain tiles kept on this computer. Keep an area for offline use from the terrain panel in mission planning.`
+              }}
+            </InfoTooltip>
             <span class="grow text-xs opacity-70">{{ cacheText }}</span>
             <v-btn
               variant="flat"
@@ -92,6 +97,24 @@
             @update:model-value="onSetNumber('customMaxZoom', $event)"
           />
         </div>
+
+        <v-divider class="opacity-5" />
+
+        <p class="font-semibold">{{ t`Minimums and water` }}</p>
+        <div class="grid gap-x-6 gap-y-2" :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'">
+          <NumberInputField
+            v-for="field in MINIMUM_FIELDS"
+            :key="field.key"
+            v-model="terrainStore.settings[field.key]"
+            :label="field.label"
+            :info="field.info"
+            :unit="field.unit"
+            :min="field.min"
+            :max="field.max"
+            :step="field.step"
+            @update:model-value="onSetNumber(field.key, $event)"
+          />
+        </div>
       </div>
     </template>
   </ExpansiblePanel>
@@ -110,7 +133,88 @@ import { isValidTileUrlTemplate, TERRAIN_SOURCES } from '@/libs/terrain/sources'
 import { isElectron } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useTerrainStore } from '@/stores/terrain'
-import type { BathymetrySourceId, TerrainSourceId } from '@/types/terrain'
+import type { BathymetrySourceId, TerrainSettings, TerrainSourceId } from '@/types/terrain'
+
+type MinimumField = {
+  /**
+   * Setting the field edits.
+   */
+  key: {
+    [K in keyof TerrainSettings]: TerrainSettings[K] extends number ? K : never
+  }[keyof TerrainSettings]
+  /**
+   * Field label.
+   */
+  label: string
+  /**
+   * Explanation shown from the information icon.
+   */
+  info: string
+  /**
+   * Unit shown after the input.
+   */
+  unit: string
+  /**
+   * Lowest accepted value.
+   */
+  min: number
+  /**
+   * Highest accepted value.
+   */
+  max: number
+  /**
+   * Input step.
+   */
+  step: number
+}
+
+const MINIMUM_FIELDS: MinimumField[] = [
+  {
+    key: 'minimumClearanceM',
+    label: t`Clearance above the terrain`,
+    info: t`Lowest height aircraft keep over the ground or the water, and submarines over the seabed. Passing lower is listed in Findings.`,
+    unit: 'm',
+    min: 0,
+    max: 500,
+    step: 1,
+  },
+  {
+    key: 'minimumUnderKeelM',
+    label: t`Water under the keel`,
+    info: t`Least water a boat keeps between its hull and the seabed. Less is listed in Findings.`,
+    unit: 'm',
+    min: 0,
+    max: 50,
+    step: 0.1,
+  },
+  {
+    key: 'vesselDraftM',
+    label: t`Vessel draft`,
+    info: t`How deep the hull reaches below the waterline. Water under the keel is counted from there, and sonar depths are taken from that depth.`,
+    unit: 'm',
+    min: 0,
+    max: 20,
+    step: 0.05,
+  },
+  {
+    key: 'waterLevelOffsetM',
+    label: 'Water level offset',
+    info: 'Height of the water above the terrain model sea level, for lakes, rivers or the tide at mission time.',
+    unit: 'm',
+    min: -500,
+    max: 5000,
+    step: 0.1,
+  },
+  {
+    key: 'tideRangeM',
+    label: 'Expected tide range',
+    info: 'Difference between high and low tide. The profile outlines this band around the water level.',
+    unit: 'm',
+    min: 0,
+    max: 20,
+    step: 0.1,
+  },
+]
 
 const interfaceStore = useAppInterfaceStore()
 const terrainStore = useTerrainStore()
@@ -169,9 +273,9 @@ const onCustomUrlChange = (event: Event): void => {
 const onClearCache = async (): Promise<void> => {
   logUserAction('Opened the confirmation to clear the stored terrain')
   const confirmed = await confirmAction(
-    'Clear the stored terrain?',
-    'Terrain checks download it again the next time they need it.',
-    'Clear',
+    t`Clear the stored terrain?`,
+    t`Terrain kept for offline use is removed too, and has to be downloaded again before flying without a connection.`,
+    t`Clear`,
     '640px'
   )
   if (!confirmed) {
