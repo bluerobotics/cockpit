@@ -263,6 +263,8 @@
         </ExpansiblePanel>
 
         <TerrainSettingsPanel />
+
+        <TerrainSurveySensorsPanel />
       </div>
     </template>
   </BaseConfigurationView>
@@ -273,6 +275,7 @@ import { ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import TerrainSettingsPanel from '@/components/terrain/TerrainSettingsPanel.vue'
+import TerrainSurveySensorsPanel from '@/components/terrain/TerrainSurveySensorsPanel.vue'
 import { EventCategory, isCategoryConfirmationRequired } from '@/libs/slide-to-confirm'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'

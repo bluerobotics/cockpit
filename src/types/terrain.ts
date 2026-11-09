@@ -87,6 +87,93 @@ export type TerrainObserver = {
 }
 
 /**
+ * Camera used by a photo survey, for ground sample distance and overlap.
+ */
+export type TerrainSurveyCamera = {
+  /**
+   * Camera from the catalog, or `custom` for the one described by the sensor, lens and image width.
+   */
+  id: string
+  /**
+   * Sensor width of the custom camera, in millimeters.
+   */
+  sensorWidthMm: number
+  /**
+   * Lens focal length of the custom camera, in millimeters.
+   */
+  focalLengthMm: number
+  /**
+   * Image width of the custom camera, in pixels.
+   */
+  imageWidthPx: number
+  /**
+   * Side overlap the survey should keep between neighboring lines, in percent.
+   */
+  targetSideOverlapPercent: number
+  /**
+   * How far the camera sees through the water, in meters.
+   */
+  visibilityM: number
+}
+
+/**
+ * Which way a survey sensor looks from the vehicle.
+ */
+export type SurveySensorFacing = 'down' | 'forward' | 'port' | 'starboard' | 'both-sides'
+
+/**
+ * How a survey sensor sits on the vehicle and what it sees of the bottom.
+ */
+export type SurveySensorGeometry = {
+  /**
+   * Sonars see a fan of slant ranges, cameras a rectilinear image.
+   */
+  kind: 'sonar' | 'camera'
+  /**
+   * Which way the sensor looks.
+   */
+  facing: SurveySensorFacing
+  /**
+   * Beam width across the track, in degrees: the full fan for down and forward, the beam height for the sides.
+   */
+  acrossDeg: number
+  /**
+   * Vertical beam of a forward-looking sensor, in degrees.
+   */
+  verticalDeg: number
+  /**
+   * Tilt of the beam center below the horizon, in degrees, for forward and side looking sensors.
+   */
+  tiltDeg: number
+  /**
+   * Sideways offset of the sensor from the vehicle centerline, in meters, positive to starboard.
+   */
+  offsetM: number
+}
+
+/**
+ * Sensor a marine survey is spaced for.
+ */
+export type TerrainSurveySensor = {
+  /**
+   * Sensor from the catalog, or `custom` for the one described by {@link custom}.
+   */
+  id: string
+  /**
+   * Geometry of the custom echo sounder.
+   */
+  custom: Omit<SurveySensorGeometry, 'kind'>
+  /**
+   * Range the sonar is set to, in meters.
+   */
+  rangeM: number
+  /**
+   * Overlap the survey should keep between neighboring swaths, in percent.
+   */
+  overlapPercent: number
+}
+
+/**
  * Terrain database and terrain-aware planning settings.
  */
 export type TerrainSettings = {
@@ -163,6 +250,14 @@ export type TerrainSettings = {
    * Whether recorded measurements replace the model where they exist.
    */
   useMeasuredTerrain: boolean
+  /**
+   * Camera used to judge photo survey resolution and overlap, and that marine surveys can be re-spaced for.
+   */
+  camera: TerrainSurveyCamera
+  /**
+   * Echo sounder marine surveys can be re-spaced for.
+   */
+  surveySensor: TerrainSurveySensor
   /**
    * Radio link frequency, in megahertz, for the line of sight check.
    */
