@@ -47,6 +47,13 @@ msgid ""
 "observer."
 msgstr ""
 
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid ""
+"${ 0 } ${ 1 }: the brown fill is the measured ground and the ${ 2 } is "
+"where the model puts it.${ 3 }"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 #, javascript-format
 msgid "${ 0 } (Cockpit Standalone)"
@@ -79,6 +86,11 @@ msgstr "${ 0 } já existem aqui e serão substituídos."
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } camera targets aimed at the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } cells measured, ${ 1 } with enough readings to trust."
 msgstr ""
 
 #: src/components/VideoLibraryModal.vue
@@ -474,6 +486,11 @@ msgid ""
 msgstr ""
 "${ 0 } — o veículo não confirmou a última solicitação, então ela pode não "
 "ter sido executada"
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "${ 0 }${ 1 }${ 2 } The sources are picked in Settings > Mission > Terrain."
+msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
@@ -2000,6 +2017,16 @@ msgstr ""
 msgid "Building"
 msgstr "Edifício"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Builds a map of the real ground or seabed from the vehicle's own downward "
+"sonar or rangefinder, kept on this computer across sessions. The switch "
+"beside\n"
+"this heading turns it off completely: nothing is recorded, the model is "
+"used everywhere and these controls are hidden, and what was recorded is "
+"kept."
+msgstr ""
+
 #: src/components/custom-widget-elements/Button.vue
 msgid "Button"
 msgstr "Botão"
@@ -2446,6 +2473,7 @@ msgstr "Limpando..."
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainSettingsPanel.vue
 #: src/components/terrain/TerrainSightPanel.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
 #: src/views/MissionPlanningView.vue
 msgid "Clear"
 msgstr "Limpar"
@@ -2490,6 +2518,10 @@ msgstr "Limpar plano"
 #: src/views/MissionPlanningView.vue
 msgid "Clear survey"
 msgstr "Limpar levantamento"
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Clear the measured terrain?"
+msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Clear the stored terrain?"
@@ -2995,6 +3027,18 @@ msgstr "Command+clique, Ctrl+clique ou clique longo para selecionar vários víd
 msgid "Comms"
 msgstr "Comunicação"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Compare with the model"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Compare with the model:"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Comparing"
+msgstr ""
+
 #: src/components/mini-widgets/EkfStateIndicator.vue
 msgid "Compass"
 msgstr "Bússola"
@@ -3313,9 +3357,19 @@ msgstr "Não foi possível verificar atualizações agora. Tente novamente em in
 msgid "Could not check the radio link: ${ 0 }"
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Could not clear the stored measured terrain: ${ 0 }"
+msgstr ""
+
 #: src/stores/terrain.ts
 #, javascript-format
 msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Could not compare with the model: ${ 0 }"
 msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
@@ -5063,6 +5117,12 @@ msgstr ""
 "Todas as velocidades comuns são testadas, então isso pode levar até 15 "
 "segundos."
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Every ground and bottom measurement recorded on this computer is removed. "
+"Export it first to keep a copy."
+msgstr ""
+
 #: src/composables/terrain/useSafeAltitude.ts
 msgid "Every waypoint already keeps a safe height."
 msgstr ""
@@ -6126,6 +6186,11 @@ msgstr ""
 msgid "Height scale percent"
 msgstr "Porcentagem da escala de altura"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Heights on the chart come from ${ 0 }, and depths from ${ 1 }."
+msgstr ""
+
 #: src/views/ConfigurationLogsView.vue
 msgid "Help"
 msgstr "Ajuda"
@@ -6211,6 +6276,10 @@ msgstr "Ocultar ações da missão"
 #: src/components/widgets/MiniMap.vue
 msgid "Hide north indicator"
 msgstr "Ocultar indicador de norte"
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Hide the comparison"
+msgstr ""
 
 #: src/components/widgets/MiniMap.vue
 msgid "Hide vehicle path"
@@ -7764,6 +7833,51 @@ msgid ""
 msgstr ""
 "Distância vertical máxima (metros) que o veículo pode percorrer acima da "
 "posição Home. Valor numérico. 0 → sem limite vertical."
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Measured"
+msgstr ""
+
+#: src/libs/terrain/measured-terrain.ts
+#, javascript-format
+msgid "Measured depth ${ 0 } m, from ${ 1 } readings"
+msgstr ""
+
+#: src/libs/terrain/measured-terrain.ts
+#, javascript-format
+msgid "Measured ground ${ 0 } m above sea level, from ${ 1 } readings"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"Measured ground sits ${ 0 } m above the model, by the median of ${ 1 } "
+"cells."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"Measured ground sits ${ 0 } m below the model, by the median of ${ 1 } "
+"cells."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Measured terrain cleared."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Measured terrain information"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Measured terrain saved as ${ 0 }."
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "Med"
@@ -9662,6 +9776,14 @@ msgid ""
 "of centimeters."
 msgstr ""
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Prefer measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Prefer measurements over the model where they exist"
+msgstr ""
+
 #: src/components/CameraReplacementDialog.vue
 msgid "Preferred"
 msgstr "Preferido"
@@ -10077,6 +10199,18 @@ msgstr "Receitas"
 #: src/views/ToolsDataLakeView.vue
 msgid "Record"
 msgstr "Gravar"
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Record measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Record the ground or seabed under the vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Record:"
+msgstr ""
 
 #: src/stores/video.ts
 #, javascript-format
@@ -11293,6 +11427,10 @@ msgstr "Mostrar chaves legadas/internas"
 msgid "Show map overlays"
 msgstr "Mostrar sobreposições do mapa"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Show measured cells on the map"
+msgstr ""
+
 #: src/components/widgets/MiniMap.vue
 msgid "Show mission"
 msgstr "Mostrar missão"
@@ -11324,6 +11462,10 @@ msgstr "Mostrar ao iniciar"
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Show on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Show on the map:"
 msgstr ""
 
 #: src/components/widgets/Attitude.vue
@@ -12033,6 +12175,11 @@ msgstr "Esse é o endereço do veículo principal, que já está conectado."
 msgid "That vehicle has already been added."
 msgstr "Esse veículo já foi adicionado."
 
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "The ${ 0 } outlines the model."
+msgstr ""
+
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid ""
@@ -12132,6 +12279,10 @@ msgstr ""
 "cheios - a função ${ 0 } não pode ser atribuída. Considere mapeá-la em um "
 "slot com \"shift\" ou desmapear antes uma função de botão do piloto "
 "automático que não esteja em uso."
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "The blue strip along the bottom marks water, from OpenStreetMap."
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "The bottom may be above the keel here. Check a nautical chart."
@@ -12269,6 +12420,10 @@ msgstr ""
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 #, javascript-format
 msgid "The mission starts with a climb to ${ 0 } m over home."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "The model has no heights where the vehicle measured."
 msgstr ""
 
 #: src/libs/terrain/bathymetry.ts
@@ -13608,6 +13763,10 @@ msgstr "Usar padrões"
 msgid "Use last selected"
 msgstr "Usar o último selecionado"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Use measured terrain"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "Use serial/USB device"
 msgstr "Usar dispositivo serial/USB"
@@ -14500,6 +14659,12 @@ msgstr "Quando as variáveis mudarem:"
 msgid "Where should \"${ 0 }\" be placed?"
 msgstr "Onde \"${ 0 }\" deve ser colocado?"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Where the vehicle measured the ground or seabed with enough readings, those "
+"measurements are used instead"
+msgstr ""
+
 #: src/components/geofence/GeoFenceParametersPanel.vue
 msgid ""
 "Whether the autopilot acts as soon as a breach is predicted, rather than "
@@ -14957,6 +15122,12 @@ msgstr "alterações/s"
 msgid "close"
 msgstr "fechar"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"colored dots on those cells, from the lowest to the highest, while the "
+"terrain panel is open."
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid ""
 "comes from open-source tower databases (OpenCellID and OpenStreetMap). "
@@ -15000,6 +15171,10 @@ msgstr "criar"
 msgid "current vehicle"
 msgstr "veículo atual"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "dashed line"
+msgstr ""
+
 #: src/components/InputElementConfig.vue
 msgid "delete"
 msgstr "excluir"
@@ -15011,6 +15186,17 @@ msgstr ""
 #: src/libs/sensors/gnss.ts
 msgid "disconnected"
 msgstr "desconectado"
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"each reading becomes a ground height under the vehicle, corrected for its "
+"tilt and averaged into cells of about 11 m. It needs a sensor pointing "
+"down.\n"
+"Readings taken while tilted more than about 20°, flagged as invalid by the "
+"sensor, or outside its range are skipped. On boats, the vessel draft from "
+"the\n"
+"terrain settings is taken as the sonar depth. Rovers are not recorded."
+msgstr ""
 
 #: src/components/InputElementConfig.vue
 msgid "edit"
@@ -15104,12 +15290,24 @@ msgstr ""
 msgid "max:"
 msgstr "máx.:"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"median difference between the measured cells and the model, to see how far "
+"off the model is in this area, with the model's ground outlined in black "
+"along\n"
+"the whole profile."
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "min:"
 msgstr "mín.:"
 
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "mission estimates panel"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "no downward rangefinder or sonar readings"
 msgstr ""
 
 #: src/components/VehicleDiscoveryDialog.vue
@@ -15171,6 +15369,10 @@ msgstr "excluir permanentemente suas ${ 0 } visualização(ões) atuais"
 msgid "points"
 msgstr "pontos"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "receiving readings"
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 msgid "removes it. Overlays are saved on this computer unless"
 msgstr "a remove. As sobreposições são salvas neste computador, a menos que"
@@ -15215,6 +15417,10 @@ msgstr "enviar mensagens ao veículo"
 #: src/components/configuration/JavascriptActionConfig.vue
 msgid "so saving or deleting the action stops them."
 msgstr "para que salvar ou excluir a ação os interrompa."
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "solid black line"
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "starts with"
