@@ -140,7 +140,7 @@
           class="absolute bottom-4 -translate-x-1/2"
           :style="{ left: `${marker.percent}%` }"
         >
-          <TerrainShallowsMarker :description="marker.description" />
+          <TerrainShallowsMarker :bbox="marker.bbox" :description="marker.description" />
         </div>
         <div
           v-for="marker in collisionMarkers"
@@ -210,6 +210,7 @@ import { computed, onBeforeUnmount, ref, toRaw, watch } from 'vue'
 
 import TerrainShallowsMarker from '@/components/terrain/TerrainShallowsMarker.vue'
 import TerrainWarningTriangle from '@/components/terrain/TerrainWarningTriangle.vue'
+import { paddedBbox } from '@/libs/hazards/hazard-areas'
 import type { ProfilePoint, TerrainProfileSample, TerrainVehicleClass } from '@/libs/terrain/mission-profile'
 import {
   type ProfileChartBand,
@@ -503,6 +504,9 @@ const tideLabel = computed(() => {
 const SHALLOWS_RUN_GAP_PERCENT = 2
 const SHALLOWS_LABEL_GAP_PERCENT = 5
 
+// Charted shallows just beside the flagged stretch still explain it, as the model's cells are coarse.
+const SHALLOWS_SEARCH_MARGIN_M = 50
+
 const markerPercent = (fromM: number, toM: number): number =>
   Math.min(97, Math.max(3, (((fromM + toM) / 2) * 100) / lengthM.value))
 
@@ -524,7 +528,11 @@ const shallowsMarkers = computed(() => {
     const stations = props.samples.filter(({ distanceM }) => distanceM >= fromM && distanceM <= toM)
     if (percent - lastPercent < SHALLOWS_LABEL_GAP_PERCENT / widthScale.value || stations.length === 0) return []
     lastPercent = percent
-    return [{ key: `${fromM}-${toM}`, percent, description }]
+    const bbox = paddedBbox(
+      stations.map(({ coordinates }) => coordinates),
+      SHALLOWS_SEARCH_MARGIN_M
+    )
+    return [{ key: Object.values(bbox).join(), percent, bbox, description }]
   })
 })
 
