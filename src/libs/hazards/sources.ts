@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import type { HazardAreaSourceId, HazardGridSourceId, HazardSourceId } from '@/types/hazards'
 
 /**
@@ -61,8 +63,9 @@ export const HAZARD_SOURCES: Record<HazardSourceId, HazardSourceMeta> = {
     icon: 'mdi-airplane-alert',
   },
   'terrain': {
-    label: 'High ground',
-    caveat: 'Sampled from a global elevation model with roughly 30 m spacing, so it misses masts, trees and buildings.',
+    label: t`High ground`,
+    // eslint-disable-next-line max-len, vue/max-len
+    caveat: t`Sampled from the terrain model chosen in the mission settings, roughly 30 m between samples, so it can miss masts and, on the bare-ground models, trees and buildings.`,
     color: '#F97316',
     icon: 'mdi-terrain',
   },

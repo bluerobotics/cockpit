@@ -305,6 +305,8 @@
             </div>
           </template>
         </ExpansiblePanel>
+
+        <TerrainSettingsPanel />
       </div>
     </template>
   </BaseConfigurationView>
@@ -315,6 +317,7 @@ import { t } from 'ttag'
 import { ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import TerrainSettingsPanel from '@/components/terrain/TerrainSettingsPanel.vue'
 import { EventCategory, isCategoryConfirmationRequired } from '@/libs/slide-to-confirm'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
