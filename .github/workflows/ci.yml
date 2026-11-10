@@ -168,6 +168,11 @@ jobs:
           yarn typecheck
           yarn build
 
+      - name: Check the translation catalogs are up to date
+        run: |
+          yarn i18n:extract
+          git diff --exit-code src/i18n || { echo "Run yarn i18n:extract and commit src/i18n"; exit 1; }
+
       # `yarn lint` cannot reach this directory: ESLint 8 ignores dot-directories, and `--no-ignore` on
       # `eslint .` would drag in `node_modules`. So the scripts get the zero-warning bar of their own.
       - name: Lint the workflow scripts
