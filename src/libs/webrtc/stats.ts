@@ -1,18 +1,8 @@
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
 
-import { StreamPeerConnectionInfo, WebRTCVideoStat } from '@/types/video'
+import { StreamPeerConnectionInfo } from '@/types/video'
 
 const maxVideoStatAge = 2000
-
-/**
- * Data-lake variable id under which a stream's inbound-video stat is published
- * @param {string} streamName - Name of the stream the stat belongs to
- * @param {WebRTCVideoStat} statName - Stat published under the id
- * @returns {string} The data-lake variable id
- */
-export const streamStatVariableId = (streamName: string, statName: WebRTCVideoStat): string => {
-  return `stream-${streamName}-${statName}`
-}
 
 // Latest bytes received per stream, keyed by the external id its callers hold, so the watchdog follows every
 // active stream whether or not it has a correspondency entry
