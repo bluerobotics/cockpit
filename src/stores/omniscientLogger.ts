@@ -306,6 +306,10 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
        * The ID of the connected vehicle
        */
       vehicleId: string | null
+      /**
+       * The BlueOS hardware ID of the connected vehicle, which survives reflashing BlueOS
+       */
+      blueOsHardwareId: string | null
     }
   }
 
@@ -321,6 +325,7 @@ export const useOmniscientLoggerStore = defineStore('omniscient-logger', () => {
         firmwareType: mainVehicleStore.firmwareType ?? null,
         vehicleType: mainVehicleStore.vehicleType ?? null,
         vehicleId: mainVehicleStore.currentlyConnectedVehicleId ?? null,
+        blueOsHardwareId: mainVehicleStore.currentlyConnectedVehicleHardwareId ?? null,
       }
     }
 

@@ -15,6 +15,7 @@ import {
   counterDeltaToMbps,
   getCpusInfo,
   getCpuTempCelsius,
+  getHardwareId,
   getIpsInformationFromVehicle,
   getKeyDataFromCockpitVehicleStorage,
   getNetworkInfo,
@@ -121,6 +122,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   })
 
   const currentlyConnectedVehicleId = ref<string | undefined>()
+  const currentlyConnectedVehicleHardwareId = ref<string | undefined>()
 
   const lastHeartbeat = ref<Date>()
 
@@ -960,6 +962,10 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     updateVehicleId()
 
+    getHardwareId(globalAddress.value)
+      .then((hardwareId) => (currentlyConnectedVehicleHardwareId.value = hardwareId))
+      .catch((error) => console.warn((error as Error).message))
+
     // Register BlueOS variables in the data lake
     const blueOsVariables = {
       cpuTemp: { id: 'blueos/cpu/tempC', name: 'CPU Temperature', type: 'number' },
@@ -1354,6 +1360,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     customWebRTCSignallingURI,
     defaultWebRTCSignallingURI,
     currentlyConnectedVehicleId,
+    currentlyConnectedVehicleHardwareId,
     cpuLoad,
     lastHeartbeat,
     firmwareType,
