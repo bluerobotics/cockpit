@@ -7,7 +7,7 @@
       frosted-backdrop
       @outside-click="close"
     >
-      <div class="relative w-[578px] max-w-[95vw] p-4">
+      <div class="relative w-[1176px] max-w-[95vw] p-4">
         <div class="mb-2 flex flex-col items-center justify-center gap-1">
           <h2 class="text-xl font-semibold">Stick mode</h2>
         </div>
@@ -20,64 +20,74 @@
           @click="close"
         />
 
-        <div class="mt-4 flex items-center px-4 text-caption">
-          <span class="w-[110px]">Mode</span>
-          <span class="flex-1 text-center">Left stick</span>
-          <span class="flex-1 text-center">Right stick</span>
-        </div>
+        <div class="flex gap-4 px-[5px]" :class="{ 'flex-col': interfaceStore.isOnPhoneScreen }">
+          <div class="min-w-0 flex-1">
+            <div class="mt-4 flex items-center px-4 text-caption">
+              <span class="w-[110px]">Mode</span>
+              <span class="flex-1 text-center">Left stick</span>
+              <span class="flex-1 text-center">Right stick</span>
+            </div>
 
-        <div v-if="currentMode === null" class="my-1 flex items-center rounded-lg bg-[#FFFFFF11] px-4">
-          <div class="flex w-[110px] flex-col">
-            <span class="text-body-2 font-weight-bold">Custom</span>
-            <span class="text-caption">Current</span>
-          </div>
-          <StickDiagram
-            v-for="stick in stickAxes"
-            :key="stick.name"
-            class="flex-1"
-            :horizontal="currentAxes[stick.horizontal]"
-            :vertical="currentAxes[stick.vertical]"
-            :horizontal-value="0"
-            :vertical-value="0"
-            :vehicle-type="labelledVehicleType"
-          />
-        </div>
-
-        <v-list class="bg-transparent py-0" theme="dark">
-          <v-list-item
-            v-for="option in modeOptions"
-            :key="option.mode"
-            link
-            :active="option.mode === selectedMode"
-            class="my-1 rounded-lg bg-[#FFFFFF11] px-4"
-            :class="{ 'shadow-[0_2px_5px_rgba(0,0,0,0.25)]': option.mode === selectedMode }"
-            @click="select(option.mode)"
-          >
-            <div class="flex items-center">
+            <div v-if="currentMode === null" class="my-1 flex items-center rounded-lg bg-[#FFFFFF11] px-4">
               <div class="flex w-[110px] flex-col">
-                <span class="text-body-2 font-weight-bold">Mode {{ option.mode }}</span>
-                <span class="text-caption">{{ option.mode === currentMode ? 'Current' : '' }}</span>
+                <span class="text-body-2 font-weight-bold">Custom</span>
+                <span class="text-caption">Current</span>
               </div>
               <StickDiagram
                 v-for="stick in stickAxes"
                 :key="stick.name"
                 class="flex-1"
-                :horizontal="option.axes[stick.horizontal]"
-                :vertical="option.axes[stick.vertical]"
-                :horizontal-value="liveDeflection(option.mode, stick.horizontal)"
-                :vertical-value="liveDeflection(option.mode, stick.vertical)"
+                :horizontal="currentAxes[stick.horizontal]"
+                :vertical="currentAxes[stick.vertical]"
+                :horizontal-value="0"
+                :vertical-value="0"
                 :vehicle-type="labelledVehicleType"
+                :preview-vehicle-type="previewVehicleType"
+                @preview="previewMotion"
               />
             </div>
-          </v-list-item>
-        </v-list>
 
-        <p class="my-4 text-center text-caption">
-          The sticks are laid out as <span class="font-weight-bold">{{ currentModeLabel }}</span
-          >. Choosing a mode moves the four stick functions and their ranges onto the sticks, clearing them from any
-          other axis that held one and replacing whatever else was assigned to the four stick axes. Buttons and
-          calibration are left as they are.
-        </p>
+            <v-list class="bg-transparent py-0" theme="dark">
+              <v-list-item
+                v-for="option in modeOptions"
+                :key="option.mode"
+                link
+                :active="option.mode === selectedMode"
+                class="my-1 rounded-lg bg-[#FFFFFF11] px-4"
+                :class="{ 'shadow-[0_2px_5px_rgba(0,0,0,0.25)]': option.mode === selectedMode }"
+                @click="select(option.mode)"
+              >
+                <div class="flex items-center">
+                  <div class="flex w-[110px] flex-col">
+                    <span class="text-body-2 font-weight-bold">Mode {{ option.mode }}</span>
+                    <span class="text-caption">{{ option.mode === currentMode ? 'Current' : '' }}</span>
+                  </div>
+                  <StickDiagram
+                    v-for="stick in stickAxes"
+                    :key="stick.name"
+                    class="flex-1"
+                    :horizontal="option.axes[stick.horizontal]"
+                    :vertical="option.axes[stick.vertical]"
+                    :horizontal-value="liveDeflection(option.mode, stick.horizontal)"
+                    :vertical-value="liveDeflection(option.mode, stick.vertical)"
+                    :vehicle-type="labelledVehicleType"
+                    :preview-vehicle-type="previewVehicleType"
+                    @preview="previewMotion"
+                  />
+                </div>
+              </v-list-item>
+            </v-list>
+
+            <p class="my-4 text-center text-caption">
+              The sticks are laid out as <span class="font-weight-bold">{{ currentModeLabel }}</span
+              >. Choosing a mode moves the four stick functions and their ranges onto the sticks, clearing them from any
+              other axis that held one and replacing whatever else was assigned to the four stick axes. Buttons and
+              calibration are left as they are.
+            </p>
+          </div>
+
+          <VehicleMotionPreview ref="motionPreview" class="my-4 flex-1" :vehicle-type="previewVehicleType" />
+        </div>
 
         <v-divider class="mx-10" />
 
@@ -112,20 +122,25 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import GlassModal from '@/components/GlassModal.vue'
 import StickDiagram from '@/components/joysticks/StickDiagram.vue'
+import VehicleMotionPreview from '@/components/joysticks/VehicleMotionPreview.vue'
 import { openSnackbar } from '@/composables/snackbar'
 import {
   type StickMode,
   detectStickMode,
   hasVehicleMotionNames,
+  motionDirection,
   remapToStickMode,
   stickAxes,
   stickModes,
+  vehicleMotion,
+  vehicleMotionName,
 } from '@/libs/joystick/stick-modes'
+import { Type as VehicleType } from '@/libs/vehicle/vehicle'
 import { cloneMapping } from '@/migration/default-profile-importer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
-import { JoystickAxis } from '@/types/joystick'
+import { type JoystickAxisActionCorrespondency, JoystickAxis } from '@/types/joystick'
 
 const interfaceStore = useAppInterfaceStore()
 const controllerStore = useControllerStore()
@@ -142,6 +157,13 @@ const vehicleMotionsLabel = computed(() => {
   return `View as vehicle axis functions (${reason})`
 })
 const labelledVehicleType = computed(() => (showVehicleMotions.value ? vehicleType.value : undefined))
+
+// Offline there is no vehicle to read the motions from, so the preview stands in a sub, the vehicle most operators fly.
+const previewVehicleType = computed(() => {
+  const type = vehicleType.value ?? VehicleType.Sub
+  return [VehicleType.Sub, VehicleType.Rover, VehicleType.Copter].includes(type) ? type : undefined
+})
+const motionPreview = ref<InstanceType<typeof VehicleMotionPreview>>()
 
 const isVisible = computed({
   get: () => interfaceStore.isJoystickStickModeModalVisible,
@@ -181,6 +203,43 @@ const axisDeflections = computed(() => {
 // Only the picked layout reads live, so the operator watches one diagram answer the sticks instead of five at once.
 const liveDeflection = (mode: StickMode, axis: JoystickAxis): number =>
   mode === selectedMode.value ? axisDeflections.value[axis] : 0
+
+const liveAxes = computed(
+  () => modeOptions.value.find((option) => option.mode === selectedMode.value)?.axes ?? currentAxes.value
+)
+
+const playMotion = (axis: JoystickAxisActionCorrespondency[number], deflection: number): void => {
+  const motion = vehicleMotion(axis.action, previewVehicleType.value)
+  if (motion !== undefined) motionPreview.value?.play(motion, motionDirection(axis, deflection))
+}
+
+const previewMotion = (axis: JoystickAxisActionCorrespondency[number], deflection: number): void => {
+  const motionName = vehicleMotionName(axis.action, previewVehicleType.value)
+  logUserAction(`Previewed the "${motionName}" motion in the joystick stick mode selector`)
+  playMotion(axis, deflection)
+}
+
+// A push past the first threshold plays the motion once, and that axis plays again only after easing back near rest.
+const stickPushThreshold = 0.5
+const stickRestThreshold = 0.2
+const pushedAxes = new Set<JoystickAxis>()
+
+watch(
+  () => (isVisible.value ? axisDeflections.value : undefined),
+  (deflections) => {
+    if (deflections === undefined) return pushedAxes.clear()
+    stickAxes
+      .flatMap((stick) => [stick.horizontal, stick.vertical])
+      .forEach((slot) => {
+        const deflection = deflections[slot]
+        if (Math.abs(deflection) < stickRestThreshold) pushedAxes.delete(slot)
+        if (Math.abs(deflection) < stickPushThreshold || pushedAxes.has(slot)) return
+        pushedAxes.add(slot)
+        const axis = liveAxes.value[slot]
+        if (axis !== undefined) playMotion(axis, deflection)
+      })
+  }
+)
 
 const onToggleVehicleMotions = (enabled: boolean | null): void => {
   logUserAction(`Turned the vehicle axis functions view ${enabled ? 'on' : 'off'} in the joystick stick mode selector`)
