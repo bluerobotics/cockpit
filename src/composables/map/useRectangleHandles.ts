@@ -1,4 +1,5 @@
 import L, { type Map as LeafletMap } from 'leaflet'
+import { t } from 'ttag'
 import { type Ref, onBeforeUnmount, ref, watch } from 'vue'
 
 import { rectangleRotatedAbout, rectangleTranslatedBy } from '@/libs/map/survey-rectangle'
@@ -113,7 +114,7 @@ export const useRectangleHandles = (options: UseRectangleHandlesOptions): UseRec
     if (axisHandle && turnHandle) return
 
     axisHandle = L.marker([0, 0], {
-      icon: handleIcon('#3B82F6', 'Drag to move the survey rectangle'),
+      icon: handleIcon('#3B82F6', t`Drag to move the survey rectangle`),
       draggable: true,
       zIndexOffset: handleZIndexOffset,
     })
@@ -123,7 +124,7 @@ export const useRectangleHandles = (options: UseRectangleHandlesOptions): UseRec
       .addTo(map)
 
     turnHandle = L.marker([0, 0], {
-      icon: handleIcon('#F97316', 'Drag to turn the survey rectangle'),
+      icon: handleIcon('#F97316', t`Drag to turn the survey rectangle`),
       draggable: true,
       zIndexOffset: handleZIndexOffset,
     })

@@ -1,4 +1,5 @@
 import { useStorage } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { NativePiperEngine } from '@/libs/tts/nativePiperEngine'
@@ -94,10 +95,10 @@ const selectedVoiceId = computed<string | undefined>({
 // computer's own voices, which will never bring back a curated one that was never downloaded here.
 const wayBackTo = (stored: string): string => {
   if (parsePiperVoiceKey(stored)) {
-    return piperAvailable.value ? ' The Alerts settings can download the higher-quality voices.' : ''
+    return piperAvailable.value ? ` ${t`The Alerts settings can download the higher-quality voices.`}` : ''
   }
   const canListHostVoices = piperAvailable.value && hostVoices.value.length > 0 && !showOsVoices.value
-  return canListHostVoices ? " The Alerts settings can list this computer's own voices again." : ''
+  return canListHostVoices ? ` ${t`The Alerts settings can list this computer's own voices again.`}` : ''
 }
 
 // The stored choice survives untouched when this machine cannot offer it, so an operator who had picked a
@@ -118,7 +119,7 @@ const reportVoiceOverride = (): void => {
   const chosen = piperVoices.find((voice) => piperVoiceOptionValue(voice.key) === stored)?.label ?? stored
   const wayBack = wayBackTo(stored)
   openSnackbar({
-    message: `Alerts are now read by ${speaking}, because ${chosen} is not offered on this computer.${wayBack}`,
+    message: t`Alerts are now read by ${speaking}, because ${chosen} is not offered on this computer.` + wayBack,
     variant: 'info',
     duration: 8000,
   })
@@ -191,7 +192,7 @@ const reportSpeechFailure = (error: unknown): void => {
   reportedSpeechFailure = true
   console.error(`Text-to-speech failed: ${error}`)
   openSnackbar({
-    message: 'Voice system not working. Check the alert voice in the Alerts settings.',
+    message: t`Voice system not working. Check the alert voice in the Alerts settings.`,
     variant: 'error',
     duration: 6000,
   })

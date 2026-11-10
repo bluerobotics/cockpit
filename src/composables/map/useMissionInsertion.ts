@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { type Ref, ref } from 'vue'
 
@@ -113,7 +114,7 @@ export const useMissionInsertion = (
 
   const appendMissionToPlanning = (mission: CockpitMission): void => {
     if (!mission.waypoints?.length && !mission.surveys?.length) {
-      openSnackbar({ variant: 'error', message: 'Mission has nothing to add.', duration: 2500 })
+      openSnackbar({ variant: 'error', message: t`Mission has nothing to add.`, duration: 2500 })
       return
     }
 
@@ -128,7 +129,7 @@ export const useMissionInsertion = (
     }
     newSurveys.forEach((survey) => missionStore.currentPlanningSurveys.push(survey))
 
-    openSnackbar({ variant: 'success', message: 'Mission added to current planning.', duration: 2000 })
+    openSnackbar({ variant: 'success', message: t`Mission added to current planning.`, duration: 2000 })
   }
 
   // Splices the mission at `segmentIndex + 1` so it sits between waypoint `segmentIndex` and
@@ -137,11 +138,11 @@ export const useMissionInsertion = (
   const insertMissionIntoSegment = (mission: CockpitMission, segmentIndex: number): void => {
     const planning = missionStore.currentPlanningWaypoints
     if (segmentIndex < -1 || segmentIndex >= planning.length - 1) {
-      openSnackbar({ variant: 'error', message: 'Cannot insert mission: invalid segment.', duration: 2500 })
+      openSnackbar({ variant: 'error', message: t`Cannot insert mission: invalid segment.`, duration: 2500 })
       return
     }
     if (!mission.waypoints?.length) {
-      openSnackbar({ variant: 'error', message: 'Mission has no waypoints to insert.', duration: 2500 })
+      openSnackbar({ variant: 'error', message: t`Mission has no waypoints to insert.`, duration: 2500 })
       return
     }
 
@@ -156,10 +157,12 @@ export const useMissionInsertion = (
 
     newSurveys.forEach((survey) => missionStore.currentPlanningSurveys.push(survey))
 
+    const firstWaypoint = segmentIndex + 1
+    const secondWaypoint = segmentIndex + 2
     const message =
       segmentIndex === -1
-        ? 'Mission inserted at the start of the planning.'
-        : `Mission inserted between waypoints ${segmentIndex + 1} and ${segmentIndex + 2}.`
+        ? t`Mission inserted at the start of the planning.`
+        : t`Mission inserted between waypoints ${firstWaypoint} and ${secondWaypoint}.`
     openSnackbar({ variant: 'success', message, duration: 2500 })
   }
 
@@ -179,7 +182,7 @@ export const useMissionInsertion = (
       // A repositioned mission was just dropped on the visible map, so restoring the saved
       // center/zoom would yank the camera away; one kept at its original location needs it.
       options.loadDraftMission(mission, { preserveMapView: placement?.wasRepositioned === true }).catch((err) => {
-        openSnackbar({ variant: 'error', message: `Failed to load mission: ${err}`, duration: 3500 })
+        openSnackbar({ variant: 'error', message: t`Failed to load mission: ${err}`, duration: 3500 })
       })
     }
   }

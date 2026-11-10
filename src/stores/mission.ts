@@ -1,5 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
@@ -424,7 +425,7 @@ export const useMissionStore = defineStore('mission', () => {
     .catch((error) => {
       console.error('Could not restore the vehicle position history.', error)
       warnPositionHistoryStorage(
-        'Could not open the saved vehicle path history. The previous path is not shown, and this one will not be saved.'
+        t`Could not open the saved vehicle path history. The previous path is not shown, and this one will not be saved.`
       )
     })
 
@@ -438,7 +439,7 @@ export const useMissionStore = defineStore('mission', () => {
       console.error('Could not save the vehicle position history.', error)
       positionHistoryDirty = true
       warnPositionHistoryStorage(
-        'Could not save the vehicle path history. It is still shown, but may be lost when Cockpit closes.'
+        t`Could not save the vehicle path history. It is still shown, but may be lost when Cockpit closes.`
       )
     }
   }
@@ -507,8 +508,8 @@ export const useMissionStore = defineStore('mission', () => {
     // If the user cancels the prompt or sets a name with less than 3 chars, do nothing
     if (!newUsername || newUsername.trim().length < 3) {
       showDialog({
-        title: 'Invalid username',
-        message: 'Username must be at least 3 characters long. No username was set. Auto-sync disabled.',
+        title: t`Invalid username`,
+        message: t`Username must be at least 3 characters long. No username was set. Auto-sync disabled.`,
         variant: 'error',
         maxWidth: 560,
       })

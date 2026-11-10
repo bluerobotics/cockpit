@@ -16,18 +16,18 @@
           class="bg-[#FFFFFF11] hover:bg-[#FFFFFF22] cursor-pointer text-sm"
           @click="handleOpenSnapshotLibrary"
           ><template #title>
-            <span class="text-white text-[16px] font-bold">Open snapshot library</span>
+            <span class="text-white text-[16px] font-bold">{{ t`Open snapshot library` }}</span>
           </template>
         </v-list-item>
         <v-divider />
-        <v-list-item title="Single capture" @click="handleSelectSnapshotTriggerType('single')">
+        <v-list-item :title="t`Single capture`" @click="handleSelectSnapshotTriggerType('single')">
           <template #append>
             <v-icon size="22" icon="mdi-video-image" />
           </template>
         </v-list-item>
         <v-divider />
         <v-divider />
-        <v-list-item title="Timed multi-capture" @click="handleSelectSnapshotTriggerType('timed')">
+        <v-list-item :title="t`Timed multi-capture`" @click="handleSelectSnapshotTriggerType('timed')">
           <template #append> <v-icon size="20" icon="mdi-timer-outline" /> </template>
         </v-list-item>
       </v-list>
@@ -58,7 +58,7 @@
       class="flex flex-col items-center p-2 px-4 pt-1 m-5 rounded-md gap-y-4"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <p class="text-xl font-semibold mt-2 mb-4">Snapshot settings</p>
+      <p class="text-xl font-semibold mt-2 mb-4">{{ t`Snapshot settings` }}</p>
       <div class="absolute top-0 right-0">
         <v-tooltip
           location="bottom"
@@ -77,7 +77,9 @@
             />
           </template>
 
-          <span> Some features like “Capturing Cockpit work area” are only available in Cockpit standalone. </span>
+          <span>
+            {{ t`Some features like “Capturing Cockpit work area” are only available in Cockpit standalone.` }}
+          </span>
         </v-tooltip>
       </div>
       <div class="flex items-center justify-start w-[90%] -mb-2">
@@ -87,7 +89,7 @@
           hide-details
           theme="dark"
         />
-        <p class="ml-[4px] -mb-[2px] text-sm">Snapshot all available sources</p>
+        <p class="ml-[4px] -mb-[2px] text-sm">{{ t`Snapshot all available sources` }}</p>
       </div>
       <v-select
         v-model="miniWidget.options.selectedStreams"
@@ -97,9 +99,9 @@
         density="compact"
         multiple
         clearable
-        label="Streams to capture"
+        :label="t`Streams to capture`"
         variant="outlined"
-        no-data-text="No streams available."
+        :no-data-text="t`No streams available.`"
         hide-details
         theme="dark"
         class="w-[90%]"
@@ -154,12 +156,12 @@
           @update:model-value="(val) => (miniWidget.options.captureWorkspace = val)"
         />
         <p class="ml-[4px] -mb-[2px] text-sm" :class="{ 'opacity-20 pointer-events-none': !isElectronEnv }">
-          Capture Cockpit work area (standalone-only feature)
+          {{ t`Capture Cockpit work area (standalone-only feature)` }}
         </p>
       </div>
       <v-text-field
         v-model.number="timedSnapshotInterval"
-        label="Timed snapshot interval (seconds)"
+        :label="t`Timed snapshot interval (seconds)`"
         type="number"
         density="compact"
         variant="outlined"
@@ -173,7 +175,7 @@
       />
       <div class="flex items-center justify-start w-[90%] mt-2">
         <v-checkbox v-model="miniWidget.options.flashOnSnapshot" density="compact" hide-details theme="dark" />
-        <p class="ml-3 text-sm">Flash screen on capture (timed captures blink at most once per second)</p>
+        <p class="ml-3 text-sm">{{ t`Flash screen on capture (timed captures blink at most once per second)` }}</p>
       </div>
       <div class="flex w-[90%] justify-end items-center mt-4 border-t-[1px] border-t-[#FFFFFF11]">
         <v-btn
@@ -181,7 +183,7 @@
           variant="text"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
-          Close
+          {{ t`Close` }}
         </v-btn>
       </div>
     </div>
@@ -189,6 +191,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -307,7 +310,7 @@ const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => 
   if (succeeded.length > 0 && failed.length === 0) {
     maybeFlash(isTimed)
     if (!isTimed) {
-      openSnackbar({ message: 'Snapshot recorded successfully.', variant: 'success', duration: 2000 })
+      openSnackbar({ message: t`Snapshot recorded successfully.`, variant: 'success', duration: 2000 })
     }
     return
   }
@@ -317,7 +320,7 @@ const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => 
   if (succeeded.length > 0 && failed.length > 0) {
     maybeFlash(isTimed)
     openSnackbar({
-      message: `Snapshot captured, but failed for: ${failedNames}.`,
+      message: t`Snapshot captured, but failed for: ${failedNames}.`,
       variant: 'warning',
       duration: 4000,
     })
@@ -330,8 +333,8 @@ const handleSnapshotResult = (result: SnapshotResult, isTimed = false): void => 
   openSnackbar({
     message:
       failed.length > 0
-        ? `Failed to take snapshot for: ${failedNames}. Make sure the streams have finished loading.`
-        : 'No sources available for capture. Make sure streams are connected or select specific ones in the widget settings.',
+        ? t`Failed to take snapshot for: ${failedNames}. Make sure the streams have finished loading.`
+        : t`No sources available for capture. Make sure streams are connected or select specific ones in the widget settings.`,
     variant: 'error',
     duration: SNAPSHOT_ERROR_SNACKBAR_DURATION,
     closeButton: true,
@@ -369,7 +372,7 @@ const isValidTimedSnapshotInterval = (v: unknown): boolean =>
 
 const timedSnapshotIntervalRules = [
   (v: unknown): boolean | string =>
-    isValidTimedSnapshotInterval(v) || `Must be at least ${MIN_TIMED_SNAPSHOT_INTERVAL_SEC} seconds.`,
+    isValidTimedSnapshotInterval(v) || t`Must be at least ${MIN_TIMED_SNAPSHOT_INTERVAL_SEC} seconds.`,
 ]
 
 const normalizeTimedSnapshotInterval = (): void => {
@@ -386,7 +389,7 @@ const toggleTimedSnapshot = (): void => {
   }
   if (!isValidTimedSnapshotInterval(timedSnapshotInterval.value)) {
     openSnackbar({
-      message: `Timed snapshot interval must be at least ${MIN_TIMED_SNAPSHOT_INTERVAL_SEC} seconds.`,
+      message: t`Timed snapshot interval must be at least ${MIN_TIMED_SNAPSHOT_INTERVAL_SEC} seconds.`,
       variant: 'error',
       duration: 3000,
     })
@@ -423,7 +426,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
     timedFlashCounter = 0
     fireTimedSnapshot().catch((err) => console.error('Timed snapshot capture failed:', err))
     openSnackbar({
-      message: `Timed snapshot started. This will capture the selected interfaces every ${timedSnapshotInterval.value} seconds until you press the camera button again.`,
+      message: t`Timed snapshot started. This will capture the selected interfaces every ${timedSnapshotInterval.value} seconds until you press the camera button again.`,
       variant: 'info',
       duration: 4000,
     })
@@ -443,7 +446,7 @@ watch(isTakingTimedSnapshot, (newValue) => {
     }, PROGRESS_TICK)
     return
   }
-  openSnackbar({ message: 'Timed snapshot stopped.', variant: 'info', duration: 2000 })
+  openSnackbar({ message: t`Timed snapshot stopped.`, variant: 'info', duration: 2000 })
   stopTimedSnapshotIntervals()
 })
 
@@ -476,7 +479,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (stopTimedSnapshotIntervals()) {
-    openSnackbar({ message: 'Timed snapshot stopped.', variant: 'info', duration: 2000 })
+    openSnackbar({ message: t`Timed snapshot stopped.`, variant: 'info', duration: 2000 })
   }
 })
 </script>

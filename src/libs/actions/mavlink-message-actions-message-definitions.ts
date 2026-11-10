@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import { MessageFieldType } from '@/types/cockpit-actions'
 
 import { MAVLinkType } from '../connection/m2r/messages/mavlink2rest-enum'
@@ -204,11 +206,11 @@ export const commandParamFieldInfo = (command: string): Record<string, CommandPa
   for (const [field, index] of Object.entries(commandParamIndexByField)) {
     const param = entry.params?.find((p) => p.index === index)
     if (!param) {
-      info[field] = { label: `${field} · Unused`, unused: true }
+      info[field] = { label: t`${field} · Unused`, unused: true }
       continue
     }
     if (param.reserved === 'true') {
-      info[field] = { label: `${field} · Reserved`, hint: param.default ? `Send ${param.default}` : undefined }
+      info[field] = { label: t`${field} · Reserved`, hint: param.default ? t`Send ${param.default}` : undefined }
       continue
     }
     // COMMAND_INT x/y are int32 scaled (degE7, or m×1e4 in local frames), so the float param's units and limits don't apply

@@ -2,6 +2,7 @@ import '@/styles/baseStationOverlay.css'
 
 import { useDebounceFn } from '@vueuse/core'
 import L from 'leaflet'
+import { msgid, ngettext, t } from 'ttag'
 import { type Ref, type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
@@ -67,8 +68,8 @@ const notifyOpenCellIdKeyRequired = (): void => {
   openSnackbar({
     variant: 'info',
     message: isElectron()
-      ? 'OpenCellID requires a personal API key. Add one in the base-station config, or switch to OpenStreetMap coverage to load data without a key.'
-      : 'OpenCellID coverage cannot be loaded from a browser. Switch to OpenStreetMap coverage, or install Cockpit Standalone to use OpenCellID.',
+      ? t`OpenCellID requires a personal API key. Add one in the base-station config, or switch to OpenStreetMap coverage to load data without a key.`
+      : t`OpenCellID coverage cannot be loaded from a browser. Switch to OpenStreetMap coverage, or install Cockpit Standalone to use OpenCellID.`,
     duration: 5000,
   })
 }
@@ -321,8 +322,12 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       variant: 'info',
       message:
         removedEntries > 0
-          ? `Reset ${removedEntries} cached mobile coverage area${removedEntries === 1 ? '' : 's'} in view.`
-          : 'No cached mobile coverage data was stored for the current view.',
+          ? ngettext(
+              msgid`Reset ${removedEntries} cached mobile coverage area in view.`,
+              `Reset ${removedEntries} cached mobile coverage areas in view.`,
+              removedEntries
+            )
+          : t`No cached mobile coverage data was stored for the current view.`,
       duration: 3000,
     })
   }
@@ -899,7 +904,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   const renderOsmCoverage = (towers: OverpassTower[], config: BaseStationConfig): void => {
     if (!map.value || towers.length === 0) return
     const selectedOperator = config.mobileCoverage.osmOperator
-    const filtered = selectedOperator ? towers.filter((t) => t.operator === selectedOperator) : towers
+    const filtered = selectedOperator ? towers.filter((tower) => tower.operator === selectedOperator) : towers
     if (filtered.length === 0) return
 
     const group = L.layerGroup()
@@ -991,10 +996,10 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     renderOsmCoverage(towers, config)
   }
 
-  const notifyNoMobileCoverageData = (provider: MobileCoverageProvider, around: string): void => {
+  const notifyNoMobileCoverageData = (message: string): void => {
     openSnackbar({
       variant: 'info',
-      message: `${provider} returned no cellular data around ${around}.`,
+      message,
       duration: 4000,
     })
   }
@@ -1009,7 +1014,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
         store.openCellIdApiKeyStatus = 'invalid'
         openSnackbar({
           variant: 'error',
-          message: 'OpenCellID API key is invalid. Check the key and try again.',
+          message: t`OpenCellID API key is invalid. Check the key and try again.`,
           duration: 4000,
         })
         return null
@@ -1023,7 +1028,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
   // the map target tool both read their arm from here instead of each repeating the two branches.
   const mobileCoverageFetchers: Record<FetchableMobileCoverageProvider, MobileCoverageFetcher> = {
     [MobileCoverageProvider.OpenCellID]: {
-      noun: 'OpenCellID sites',
+      noun: t`OpenCellID sites`,
       loadFromStorage: loadOpenCellIdSitesFromStorage,
       fetch: async (position, signal, mode) => {
         const { sites, fetchedBbox } = await fetchOpenCellIdSites(position, store.openCellIdApiKey.trim(), signal)
@@ -1035,7 +1040,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       },
     },
     [MobileCoverageProvider.OSMOverpass]: {
-      noun: 'OSM towers',
+      noun: t`OSM towers`,
       loadFromStorage: loadOverpassTowersFromStorage,
       fetch: async (position, signal, mode) => {
         const bbox = overpassBboxAround(position[0], position[1])
@@ -1053,7 +1058,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
     if (provider === MobileCoverageProvider.Custom) {
       openSnackbar({
         variant: 'info',
-        message: 'Custom overlays cannot be fetched from the map target tool.',
+        message: t`Custom overlays cannot be fetched from the map target tool.`,
         duration: 3500,
       })
       return
@@ -1075,11 +1080,11 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       if (addedCount === null) return
 
       if (addedCount === 0) {
-        notifyNoMobileCoverageData(provider, 'the dropped target')
+        notifyNoMobileCoverageData(t`${provider} returned no cellular data around the dropped target.`)
       } else {
         openSnackbar({
           variant: 'success',
-          message: `Added ${addedCount} ${fetcher.noun} around the dropped target.`,
+          message: t`Added ${addedCount} ${fetcher.noun} around the dropped target.`,
           duration: 3000,
         })
       }
@@ -1090,7 +1095,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       if (errorMessage === null) return
       openSnackbar({
         variant: 'error',
-        message: `Mobile coverage fetch failed: ${errorMessage}`,
+        message: t`Mobile coverage fetch failed: ${errorMessage}`,
         duration: 4000,
       })
     } finally {
@@ -1136,7 +1141,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       if (fetchedCount === null) return
 
       if (fetchedCount === 0) {
-        notifyNoMobileCoverageData(provider, 'the base station')
+        notifyNoMobileCoverageData(t`${provider} returned no cellular data around the base station.`)
         return
       }
 
@@ -1155,7 +1160,7 @@ export const useBaseStationOverlay = (map: ShallowRef<L.Map | undefined>, mapRea
       }
       openSnackbar({
         variant: 'error',
-        message: `Mobile coverage fetch failed: ${errorMessage}`,
+        message: t`Mobile coverage fetch failed: ${errorMessage}`,
         duration: 4000,
       })
     } finally {

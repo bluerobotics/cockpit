@@ -26,7 +26,7 @@
           </v-btn>
         </template>
       </v-tooltip>
-      <v-btn v-if="closeButton" color="white" variant="text" aria-label="Dismiss" @click="closeSnackbar">
+      <v-btn v-if="closeButton" color="white" variant="text" :aria-label="t`Dismiss`" @click="closeSnackbar">
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </template>

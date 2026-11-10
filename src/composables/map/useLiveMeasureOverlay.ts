@@ -1,4 +1,5 @@
 import L, { type Map as LeafletMap } from 'leaflet'
+import { t } from 'ttag'
 import { onBeforeUnmount } from 'vue'
 
 import { fieldUnitPreferences } from '@/composables/useUnitInput'
@@ -74,7 +75,7 @@ interface LiveMeasureElements {
 const createSvgElement = <K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] =>
   document.createElementNS('http://www.w3.org/2000/svg', tag)
 
-const tagLabel = 'Type the distance'
+const tagLabel = t`Type the distance`
 
 /**
  * Draws the measure of the segment being drawn on a Leaflet map: a dashed line from the last point to where the

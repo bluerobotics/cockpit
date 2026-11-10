@@ -9,6 +9,8 @@
  * orchestration lives in the `useGnss` composable.
  */
 
+import { t } from 'ttag'
+
 import {
   createDataLakeVariable,
   DataLakeVariable,
@@ -250,7 +252,13 @@ export const gnssStatusIcon = (status: GnssStatus): string => {
  * @param {GnssStatus} status - The connection status.
  * @returns {string} The label.
  */
-export const gnssStatusLabel = (status: GnssStatus): string => (status === 'no-data' ? 'connected (no data)' : status)
+export const gnssStatusLabel = (status: GnssStatus): string =>
+  ({
+    'disconnected': t`disconnected`,
+    'connecting': t`connecting`,
+    'connected': t`connected`,
+    'no-data': t`connected (no data)`,
+  }[status])
 
 const formatFixNumber = (value: number | undefined, digits: number): string =>
   value === undefined ? '-' : value.toFixed(digits)
@@ -263,32 +271,32 @@ const formatFixNumber = (value: number | undefined, digits: number): string =>
  * @returns {GnssFixItem[]} One row per displayed field, in display order.
  */
 export const gnssFixItems = (fix: GnssFix, preferences: DisplayUnitPreferences): GnssFixItem[] => [
-  { key: 'fixQuality', label: 'Fix', value: fix.fixQualityLabel ?? fixQualityLabel(fix.fixQuality ?? 0) },
+  { key: 'fixQuality', label: t`Fix`, value: fix.fixQualityLabel ?? fixQualityLabel(fix.fixQuality ?? 0) },
   {
     key: 'fixMode',
-    label: 'Fix mode',
-    value: fix.fixMode === undefined ? '-' : `${fix.fixMode}D`.replace('1D', 'No fix'),
+    label: t`Fix mode`,
+    value: fix.fixMode === undefined ? '-' : `${fix.fixMode}D`.replace('1D', t`No fix`),
   },
-  { key: 'latitude', label: 'Latitude', value: formatFixNumber(fix.latitude, 7) },
-  { key: 'longitude', label: 'Longitude', value: formatFixNumber(fix.longitude, 7) },
+  { key: 'latitude', label: t`Latitude`, value: formatFixNumber(fix.latitude, 7) },
+  { key: 'longitude', label: t`Longitude`, value: formatFixNumber(fix.longitude, 7) },
   {
     key: 'altitudeMslM',
-    label: 'Altitude (MSL)',
+    label: t`Altitude (MSL)`,
     value:
       fix.altitudeMslM === undefined
         ? '-'
         : formatValueWithUnit(fix.altitudeMslM, 'm', readingLengthsAs(preferences, 'altitude'), 1),
   },
-  { key: 'satellitesUsed', label: 'Satellites used', value: fix.satellitesUsed?.toString() ?? '-' },
-  { key: 'satellitesInView', label: 'Satellites in view', value: fix.satellitesInView?.toString() ?? '-' },
+  { key: 'satellitesUsed', label: t`Satellites used`, value: fix.satellitesUsed?.toString() ?? '-' },
+  { key: 'satellitesInView', label: t`Satellites in view`, value: fix.satellitesInView?.toString() ?? '-' },
   { key: 'hdop', label: 'HDOP', value: formatFixNumber(fix.hdop, 2) },
   {
     key: 'speedOverGroundMps',
-    label: 'Speed',
+    label: t`Speed`,
     value:
       fix.speedOverGroundMps === undefined ? '-' : formatValueWithUnit(fix.speedOverGroundMps, 'm/s', preferences, 2),
   },
-  { key: 'utcTime', label: 'UTC time', value: fix.utcTime ?? '-' },
+  { key: 'utcTime', label: t`UTC time`, value: fix.utcTime ?? '-' },
 ]
 
 const recordSerialLine = (deviceId: string, line: string): void => {

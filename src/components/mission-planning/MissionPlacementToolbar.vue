@@ -1,10 +1,10 @@
 <template>
-  <v-tooltip location="top" text="Place mission here">
+  <v-tooltip location="top" :text="t`Place mission here`">
     <template #activator="{ props: tooltipProps }">
       <button
         v-bind="tooltipProps"
         type="button"
-        aria-label="Place mission here"
+        :aria-label="t`Place mission here`"
         :style="positionStyle"
         class="absolute text-[22px] -ml-[10px] -mt-[10px] bg-transparent rounded-full cursor-pointer elevation-4 z-[650]"
         @click="emit('confirm')"
@@ -13,7 +13,7 @@
       </button>
     </template>
   </v-tooltip>
-  <v-tooltip location="top" text="Width scale (%) — drag corners to resize, hold Shift for uniform">
+  <v-tooltip location="top" :text="t`Width scale (%) — drag corners to resize, hold Shift for uniform`">
     <template #activator="{ props: tooltipProps }">
       <div
         v-bind="tooltipProps"
@@ -25,7 +25,7 @@
           v-model.number="scaleXModel"
           class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
           type="number"
-          aria-label="Width scale percent"
+          :aria-label="t`Width scale percent`"
           :min="limits.scaleMinPercent"
           :max="limits.scaleMaxPercent"
           step="5"
@@ -35,7 +35,7 @@
       </div>
     </template>
   </v-tooltip>
-  <v-tooltip location="top" text="Height scale (%) — drag corners to resize, hold Shift for uniform">
+  <v-tooltip location="top" :text="t`Height scale (%) — drag corners to resize, hold Shift for uniform`">
     <template #activator="{ props: tooltipProps }">
       <div
         v-bind="tooltipProps"
@@ -47,7 +47,7 @@
           v-model.number="scaleYModel"
           class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
           type="number"
-          aria-label="Height scale percent"
+          :aria-label="t`Height scale percent`"
           :min="limits.scaleMinPercent"
           :max="limits.scaleMaxPercent"
           step="5"
@@ -57,7 +57,7 @@
       </div>
     </template>
   </v-tooltip>
-  <v-tooltip location="top" text="Rotation (°)">
+  <v-tooltip location="top" :text="t`Rotation (°)`">
     <template #activator="{ props: tooltipProps }">
       <div
         v-bind="tooltipProps"
@@ -69,7 +69,7 @@
           v-model.number="rotationModel"
           class="rounded-lg bg-transparent text-white w-12 pl-1 pa-0"
           type="number"
-          aria-label="Rotation degrees"
+          :aria-label="t`Rotation degrees`"
           :min="limits.rotationMinDeg"
           :max="limits.rotationMaxDeg"
           step="5"
@@ -79,12 +79,12 @@
       </div>
     </template>
   </v-tooltip>
-  <v-tooltip location="top" text="Reset scale & rotation">
+  <v-tooltip location="top" :text="t`Reset scale & rotation`">
     <template #activator="{ props: tooltipProps }">
       <button
         v-bind="tooltipProps"
         type="button"
-        aria-label="Reset scale and rotation"
+        :aria-label="t`Reset scale and rotation`"
         :style="positionStyle"
         class="absolute mt-[136px] ml-[56px] flex items-center justify-center w-6 h-6 rounded-full cursor-pointer elevation-4 z-[650] bg-[#333333EE]"
         @click="emit('reset')"
@@ -93,12 +93,12 @@
       </button>
     </template>
   </v-tooltip>
-  <v-tooltip location="top" text="Cancel placement">
+  <v-tooltip location="top" :text="t`Cancel placement`">
     <template #activator="{ props: tooltipProps }">
       <button
         v-bind="tooltipProps"
         type="button"
-        aria-label="Cancel placement"
+        :aria-label="t`Cancel placement`"
         :style="positionStyle"
         class="absolute text-[14px] -mt-[5px] ml-[52px] bg-transparent rounded-full cursor-pointer elevation-4 z-[650]"
         @click="emit('cancel')"

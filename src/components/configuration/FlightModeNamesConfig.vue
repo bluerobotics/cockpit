@@ -4,7 +4,7 @@
       <v-select
         :model-value="selectedVehicleType"
         :items="vehicleTypesWithNames"
-        label="Vehicle"
+        :label="t`Vehicle`"
         variant="filled"
         density="compact"
         hide-details
@@ -13,7 +13,7 @@
         @update:model-value="setSelectedVehicleType"
       />
       <v-btn variant="text" size="small" :disabled="!hasCustomNames" @click="resetModeNamesToDefault">
-        Reset names to ArduPilot defaults
+        {{ t`Reset names to ArduPilot defaults` }}
       </v-btn>
     </div>
     <div class="grid gap-x-8 gap-y-2" :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'">

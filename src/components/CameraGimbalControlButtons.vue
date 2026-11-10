@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, reactive } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -111,27 +112,27 @@ interface ControlButton {
 }
 
 const buttons = computed((): ControlButton[] => [
-  { key: 'zoom-out', device: 'camera', zoom: -1, label: 'Zoom out', icon: 'mdi-magnify-minus-outline' },
-  { key: 'zoom-in', device: 'camera', zoom: 1, label: 'Zoom in', icon: 'mdi-magnify-plus-outline' },
+  { key: 'zoom-out', device: 'camera', zoom: -1, label: t`Zoom out`, icon: 'mdi-magnify-minus-outline' },
+  { key: 'zoom-in', device: 'camera', zoom: 1, label: t`Zoom in`, icon: 'mdi-magnify-plus-outline' },
   {
     key: 'focus',
     device: 'camera',
     action: 'vehicle_camera_auto_focus',
-    label: 'Autofocus',
+    label: t`Autofocus`,
     icon: 'mdi-image-filter-center-focus',
   },
   {
     key: 'picture',
     device: 'camera',
     action: 'vehicle_camera_take_picture',
-    label: 'Take picture',
+    label: t`Take picture`,
     icon: 'mdi-camera',
   },
   {
     key: 'recording',
     device: 'camera',
     action: 'vehicle_camera_toggle_recording',
-    label: isRecording.value === true ? 'Stop recording' : 'Start recording',
+    label: isRecording.value === true ? t`Stop recording` : t`Start recording`,
     icon: isRecording.value === true ? 'mdi-stop' : 'mdi-record-rec',
     iconClass: isRecording.value === true ? 'text-red-500' : 'scale-[1.2]',
   },
@@ -139,7 +140,7 @@ const buttons = computed((): ControlButton[] => [
     key: 'down',
     device: 'gimbal',
     action: 'gimbal_point_down',
-    label: 'Point gimbal down',
+    label: t`Point gimbal down`,
     icon: 'mdi-pan-down',
     // The pan glyphs fill half the icon box, off-center, so they are enlarged and moved back to the middle
     iconClass: 'scale-[1.6] -translate-y-1/4',
@@ -148,23 +149,23 @@ const buttons = computed((): ControlButton[] => [
     key: 'retract',
     device: 'gimbal',
     action: 'gimbal_retract',
-    label: 'Retract gimbal',
+    label: t`Retract gimbal`,
     icon: 'mdi-pan-up',
     iconClass: 'scale-[1.6] translate-y-1/4',
   },
-  { key: 'center', device: 'gimbal', action: 'gimbal_center', label: 'Center gimbal', icon: 'mdi-crosshairs' },
+  { key: 'center', device: 'gimbal', action: 'gimbal_center', label: t`Center gimbal`, icon: 'mdi-crosshairs' },
   {
     key: 'home',
     device: 'gimbal',
     action: 'gimbal_point_home',
-    label: 'Point gimbal at home',
+    label: t`Point gimbal at home`,
     icon: 'mdi-home-import-outline',
   },
   {
     key: 'yaw-lock',
     device: 'gimbal',
     action: 'gimbal_toggle_yaw_lock',
-    label: isYawLocked.value ? 'Unlock gimbal yaw (follow vehicle)' : 'Lock gimbal yaw to North',
+    label: isYawLocked.value ? t`Unlock gimbal yaw (follow vehicle)` : t`Lock gimbal yaw to North`,
     icon: isYawLocked.value ? 'mdi-lock' : 'mdi-lock-open-variant-outline',
   },
 ])
@@ -174,11 +175,11 @@ const unacknowledgedKeys = reactive(new Set<string>())
 
 const unavailableReason = (button: ControlButton): string | undefined => {
   if (button.action === 'gimbal_point_home' && props.deviceId !== 1) {
-    return 'ArduPilot only points its primary gimbal (gimbal 1) at home'
+    return t`ArduPilot only points its primary gimbal (gimbal 1) at home`
   }
   if (props.sendWithoutDetection) return undefined
-  if (button.device === 'gimbal' && !isGimbalDetected.value) return `Gimbal ${props.deviceId} was not detected`
-  if (button.device === 'camera' && cameraDetected.value !== true) return 'No vehicle camera was detected'
+  if (button.device === 'gimbal' && !isGimbalDetected.value) return t`Gimbal ${props.deviceId} was not detected`
+  if (button.device === 'camera' && cameraDetected.value !== true) return t`No vehicle camera was detected`
   return undefined
 }
 
@@ -186,12 +187,12 @@ const tooltipFor = (button: ControlButton): string => {
   const reason = unavailableReason(button)
   if (reason) return `${button.label} — ${reason}`
   if (!unacknowledgedKeys.has(button.key)) return button.label
-  return `${button.label} — the vehicle did not confirm the last request, so it may not have run`
+  return t`${button.label} — the vehicle did not confirm the last request, so it may not have run`
 }
 
 const canSend = (button: ControlButton): boolean => {
   if (!vehicleStore.isVehicleOnline) {
-    openSnackbar({ message: 'Vehicle is disconnected.', variant: 'error', duration: 3000 })
+    openSnackbar({ message: t`Vehicle is disconnected.`, variant: 'error', duration: 3000 })
     return false
   }
   const reason = unavailableReason(button)
@@ -199,7 +200,7 @@ const canSend = (button: ControlButton): boolean => {
     const hint =
       button.action === 'gimbal_point_home'
         ? ''
-        : " Turn on 'Send without detection' in the widget settings to try anyway."
+        : ' ' + t`Turn on "Send without detection" in the widget settings to try anyway.`
     openSnackbar({ message: `${reason}.${hint}`, variant: 'error', duration: 4000 })
     return false
   }
@@ -213,11 +214,12 @@ const track = async (button: ControlButton, send: () => Promise<CameraGimbalComm
     if (outcome === 'unacknowledged') unacknowledgedKeys.add(button.key)
     else unacknowledgedKeys.delete(button.key)
     if (button.action === 'vehicle_camera_take_picture') {
-      openSnackbar({ message: 'Asked the vehicle camera to take a picture.', variant: 'success', duration: 2000 })
+      openSnackbar({ message: t`Asked the vehicle camera to take a picture.`, variant: 'success', duration: 2000 })
     }
   } catch (error) {
     unacknowledgedKeys.delete(button.key)
-    openSnackbar({ message: `${button.label} failed: ${(error as Error).message}`, variant: 'error', duration: 3000 })
+    const errorMessage = (error as Error).message
+    openSnackbar({ message: t`${button.label} failed: ${errorMessage}`, variant: 'error', duration: 3000 })
   } finally {
     pendingKeys.delete(button.key)
   }

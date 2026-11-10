@@ -1,7 +1,5 @@
 <template>
-  <v-tooltip
-    :text="`Battery remaining: ${remainingDisplayValue < 0 ? 'No Data' : remainingDisplayValue.toFixed(1) + '%'}`"
-  >
+  <v-tooltip :text="remainingTooltip">
     <template #activator="{ props: tooltipProps }">
       <div v-bind="tooltipProps" class="flex items-center w-[95px] h-12 text-white justify-center">
         <div v-if="remainingDisplayValue >= 0" class="relative w-[1.5rem] battery-icon">
@@ -72,7 +70,7 @@
   </v-tooltip>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white w-[400px]" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Battery Indicator Config</v-card-title>
+      <v-card-title class="text-center">{{ t`Battery Indicator Config` }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <div class="absolute top-2 right-2 z-10">
           <v-btn
@@ -80,17 +78,17 @@
             size="30"
             variant="text"
             class="text-white text-[22px]"
-            aria-label="Close"
+            :aria-label="t`Close`"
             @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
           >
             <i class="mdi mdi-close"></i>
           </v-btn>
         </div>
-        <v-checkbox v-model="miniWidget.options.showCurrent" label="Show Current" hide-details class="-mb-5" />
-        <v-checkbox v-model="miniWidget.options.showPower" label="Show Power" hide-details />
+        <v-checkbox v-model="miniWidget.options.showCurrent" :label="t`Show Current`" hide-details class="-mb-5" />
+        <v-checkbox v-model="miniWidget.options.showPower" :label="t`Show Power`" hide-details />
         <v-text-field
           v-model.number="userSetToggleInterval"
-          label="Toggle Interval (ms)"
+          :label="t`Toggle Interval (ms)`"
           type="number"
           :min="minInterval"
           step="100"
@@ -104,14 +102,16 @@
         <div class="flex justify-between items-center -mt-1">
           <v-checkbox
             v-model="miniWidget.options.useVoltageToColor"
-            label="Change color by voltage"
+            :label="t`Change color by voltage`"
             hide-details
             class="mr-1"
           />
           <div class="flex items-center gap-x-1">
             <v-tooltip
               location="top"
-              text="Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack."
+              :text="
+                t`Configure these voltage levels according to your battery pack. Defaults are based on Blue Robotics' 4S Li-ion battery pack.`
+              "
             >
               <template #activator="{ props: infoProps }">
                 <v-icon
@@ -122,7 +122,7 @@
                 />
               </template>
             </v-tooltip>
-            <v-tooltip location="top" text="Reset colors and voltage thresholds to default values">
+            <v-tooltip location="top" :text="t`Reset colors and voltage thresholds to default values`">
               <template #activator="{ props: resetProps }">
                 <v-btn v-bind="resetProps" icon size="small" variant="text" class="text-white" @click="resetToDefaults">
                   <v-icon icon="mdi-restore" size="18" />
@@ -137,7 +137,7 @@
             <div class="h-3 shrink-0" />
             <v-text-field
               v-model.number="batteryThresholds.medium"
-              label="Medium threshold (V)"
+              :label="t`Medium threshold (V)`"
               type="number"
               density="compact"
               variant="outlined"
@@ -145,7 +145,7 @@
             />
             <v-text-field
               v-model.number="batteryThresholds.low"
-              label="Low threshold (V)"
+              :label="t`Low threshold (V)`"
               type="number"
               density="compact"
               variant="outlined"
@@ -153,7 +153,7 @@
             />
             <v-text-field
               v-model.number="batteryThresholds.critical"
-              label="Critical threshold (V)"
+              :label="t`Critical threshold (V)`"
               type="number"
               density="compact"
               variant="outlined"
@@ -212,6 +212,7 @@
 
 <script setup lang="ts">
 import { useDebounce } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, onBeforeMount, onUnmounted, ref, toRefs, watch } from 'vue'
 
 import { defaultBatteryLevelColorScheme, defaultBatteryLevelThresholds } from '@/assets/defaults'
@@ -334,6 +335,12 @@ const remainingDisplayValue = computed(() => {
   return Math.abs(remaining) > 100 ? 100 : remaining
 })
 
+const remainingTooltip = computed(() => {
+  if (remainingDisplayValue.value < 0) return t`Battery remaining: No Data`
+  const remaining = remainingDisplayValue.value.toFixed(1)
+  return t`Battery remaining: ${remaining}%`
+})
+
 const setupToggleInterval = (): void => {
   if (toggleIntervaler.value || errorMessageTimeout.value) {
     clearInterval(toggleIntervaler.value)
@@ -343,7 +350,7 @@ const setupToggleInterval = (): void => {
   // Ensure toggle interval is at least minInterval
   if (userSetToggleInterval.value < minInterval) {
     miniWidget.value.options.toggleInterval = minInterval
-    errorMessage.value = `Interval must be at least ${minInterval}ms.`
+    errorMessage.value = t`Interval must be at least ${minInterval}ms.`
   } else {
     miniWidget.value.options.toggleInterval = userSetToggleInterval.value
   }
@@ -352,7 +359,7 @@ const setupToggleInterval = (): void => {
   if (!miniWidget.value.options.showCurrent && !miniWidget.value.options.showPower) {
     miniWidget.value.options.showCurrent = true
     miniWidget.value.options.showPower = true
-    errorMessage.value = 'At least one of the options must be enabled.'
+    errorMessage.value = t`At least one of the options must be enabled.`
   }
 
   if (miniWidget.value.options.showCurrent && miniWidget.value.options.showPower) {

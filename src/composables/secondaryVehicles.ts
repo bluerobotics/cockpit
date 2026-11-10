@@ -1,4 +1,5 @@
 import { useStorage } from '@vueuse/core'
+import { msgid, ngettext, t } from 'ttag'
 import { computed, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -69,20 +70,20 @@ export const addSecondaryVehicle = (uri: string): boolean => {
     normalizedUri = parsedUri.toString()
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
-    return refuse(`Could not add the vehicle: ${reason}.`)
+    return refuse(t`Could not add the vehicle: ${reason}.`)
   }
 
   if (secondaryVehicleUris.value.includes(normalizedUri)) {
-    return refuse('That vehicle has already been added.')
+    return refuse(t`That vehicle has already been added.`)
   }
   if (normalizedUri === ConnectionManager.mainConnection()?.uri().toString()) {
-    return refuse('That is the address of the main vehicle, which is already connected.')
+    return refuse(t`That is the address of the main vehicle, which is already connected.`)
   }
 
   storedUris.value = [...secondaryVehicleUris.value, normalizedUri]
   logUserAction(`Added the secondary vehicle at '${normalizedUri}'`)
   openSnackbar({
-    message: 'Vehicle added. Its telemetry will show up as data-lake variables once it starts arriving.',
+    message: t`Vehicle added. Its telemetry will show up as data-lake variables once it starts arriving.`,
     variant: 'success',
     duration: 5000,
   })
@@ -97,7 +98,7 @@ export const addSecondaryVehicle = (uri: string): boolean => {
 export const removeSecondaryVehicle = (uri: string): void => {
   storedUris.value = secondaryVehicleUris.value.filter((entry) => entry !== uri)
   logUserAction(`Removed the secondary vehicle at '${uri}'`)
-  openSnackbar({ message: 'Vehicle removed.', variant: 'success', duration: 3000 })
+  openSnackbar({ message: t`Vehicle removed.`, variant: 'success', duration: 3000 })
 }
 
 // The autopilot is component 1, as in every other place the vehicle position is read from, and it reports
@@ -173,13 +174,25 @@ export const placeSecondaryVehiclesOnMap = (systemIds: number[]): void => {
   // An address can carry several vehicles, so each outcome is reported on its own instead of letting the
   // ones that were skipped, and why, go unmentioned.
   const outcomes: string[] = []
-  if (placedNames.length > 0) outcomes.push(`${placedNames.join(', ')} placed on the map, tracking the live position.`)
+  if (placedNames.length > 0) {
+    const placed = placedNames.join(', ')
+    outcomes.push(t`${placed} placed on the map, tracking the live position.`)
+  }
   if (alreadyPlacedNames.length > 0) {
-    outcomes.push(`${alreadyPlacedNames.join(', ')} ${alreadyPlacedNames.length === 1 ? 'was' : 'were'} already there.`)
+    const alreadyPlaced = alreadyPlacedNames.join(', ')
+    const count = alreadyPlacedNames.length
+    outcomes.push(ngettext(msgid`${alreadyPlaced} was already there.`, `${alreadyPlaced} were already there.`, count))
   }
   if (waitingNames.length > 0) {
-    const verb = waitingNames.length === 1 ? 'has' : 'have'
-    outcomes.push(`${waitingNames.join(', ')} ${verb} not reported a position yet, and stayed off the map.`)
+    const waiting = waitingNames.join(', ')
+    const count = waitingNames.length
+    outcomes.push(
+      ngettext(
+        msgid`${waiting} has not reported a position yet, and stayed off the map.`,
+        `${waiting} have not reported a position yet, and stayed off the map.`,
+        count
+      )
+    )
   }
   if (outcomes.length === 0) return
 

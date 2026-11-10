@@ -8,34 +8,38 @@
       <statsForNerds :stream-name="externalStreamId" />
     </div>
     <div v-if="nameSelectedStream === undefined" class="no-video-alert">
-      <span>No video stream selected.</span>
+      <span>{{ t`No video stream selected.` }}</span>
     </div>
     <div v-else-if="!namesAvailableStreams.includes(nameSelectedStream)" class="no-video-alert">
       <template v-if="namesAvailableStreams.isEmpty()">
-        <p>No video streams are available.</p>
+        <p>{{ t`No video streams are available.` }}</p>
         <br />
         <p>
-          Cockpit may still be looking for this vehicle's streams, or every stream may have been deleted, ignored or
-          turned off.
+          {{
+            t`Cockpit may still be looking for this vehicle's streams, or every stream may have been deleted, ignored or turned off.`
+          }}
         </p>
         <br />
         <p>
-          If this message stays, open the video configuration page to restore a stream from the ignored streams list, or
-          check that the vehicle's cameras are on and streaming.
+          {{
+            t`If this message stays, open the video configuration page to restore a stream from the ignored streams list, or check that the vehicle's cameras are on and streaming.`
+          }}
         </p>
       </template>
       <template v-else>
-        <p>The selected stream "{{ nameSelectedStream }}" is not available.</p>
-        <p>Available ones are: {{ namesAvailableStreams.map((name) => `"${name}"`).join(', ') }}.</p>
+        <p>{{ t`The selected stream "${nameSelectedStream}" is not available.` }}</p>
+        <p>{{ t`Available ones are:` }} {{ namesAvailableStreams.map((name) => `"${name}"`).join(', ') }}.</p>
         <br />
         <p>
-          This can happen if you changed vehicles and the stream name in the new one is different from the former, or if
-          the source is not available at all.
+          {{
+            t`This can happen if you changed vehicles and the stream name in the new one is different from the former, or if the source is not available at all.`
+          }}
         </p>
         <br />
         <p>
-          Please open this video player configuration and select a new stream from the ones available, or check your
-          source for issues.
+          {{
+            t`Please open this video player configuration and select a new stream from the ones available, or check your source for issues.`
+          }}
         </p>
       </template>
     </div>
@@ -48,13 +52,13 @@
         <p class="loading-text">{{ loadingMessage }}</p>
         <div v-if="shouldShowVerboseLoading && !streamConnected && !showSuccessState" class="verbose-status">
           <p class="status-line">
-            <span class="status-label">Server: </span>
+            <span class="status-label">{{ t`Server:` }} </span>
             <span v-for="(statusParagraph, i) in serverStatus.toString().split('\\n')" :key="'server-' + i">
               {{ statusParagraph }}
             </span>
           </p>
           <p class="status-line">
-            <span class="status-label">Stream: </span>
+            <span class="status-label">{{ t`Stream:` }} </span>
             <span v-for="(statusParagraph, i) in streamStatus.toString().split('\\n')" :key="'stream-' + i">
               {{ statusParagraph }}
             </span>
@@ -67,27 +71,27 @@
           class="mt-3 toggle-details-btn"
           @click="toggleVerboseLoading"
         >
-          {{ shouldShowVerboseLoading ? 'Hide details' : 'Show details' }}
+          {{ shouldShowVerboseLoading ? t`Hide details` : t`Show details` }}
         </v-btn>
       </div>
     </Transition>
     <video id="mainDisplayStream" ref="videoElement" muted autoplay playsinline disablePictureInPicture>
-      Your browser does not support the video tag.
+      {{ t`Your browser does not support the video tag.` }}
     </video>
   </div>
   <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" width="auto">
     <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Video widget config</v-card-title>
+      <v-card-title class="text-center">{{ t`Video widget config` }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <v-select
           v-model="nameSelectedStream"
-          label="Stream"
+          :label="t`Stream`"
           class="my-3"
           :items="enrichedStreamItems"
           item-value="internalName"
           density="compact"
           variant="outlined"
-          no-data-text="No streams available."
+          :no-data-text="t`No streams available.`"
           hide-details
           theme="dark"
         >
@@ -131,47 +135,51 @@
         </v-select>
         <v-select
           v-model="widget.options.videoFitStyle"
-          label="Fit style"
+          :label="t`Fit style`"
           class="my-3"
           :items="['cover', 'fill', 'contain']"
           item-title="style"
           density="compact"
           variant="outlined"
-          no-data-text="No streams available."
+          :no-data-text="t`No streams available.`"
           hide-details
           return-object
         />
         <v-switch
           v-model="widget.options.flipHorizontally"
           class="my-1"
-          label="Flip horizontally"
+          :label="t`Flip horizontally`"
           :color="widget.options.flipHorizontally ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.flipVertically"
           class="my-1"
-          label="Flip vertically"
+          :label="t`Flip vertically`"
           :color="widget.options.flipVertically ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.statsForNerds"
           class="my-1"
-          label="Stats for nerds"
+          :label="t`Stats for nerds`"
           :color="widget.options.statsForNerds ? 'white' : undefined"
           hide-details
         />
         <v-switch
           v-model="widget.options.showVerboseLoading"
           class="my-1"
-          label="Verbose loading status"
+          :label="t`Verbose loading status`"
           :color="widget.options.showVerboseLoading ? 'white' : undefined"
           hide-details
         />
         <div class="flex-wrap justify-center d-flex ga-5">
-          <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)"> Rotate Left</v-btn>
-          <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)"> Rotate Right</v-btn>
+          <v-btn prepend-icon="mdi-file-rotate-left" variant="outlined" @click="rotateVideo(-90)">
+            {{ t`Rotate Left` }}</v-btn
+          >
+          <v-btn prepend-icon="mdi-file-rotate-right" variant="outlined" @click="rotateVideo(+90)">
+            {{ t`Rotate Right` }}</v-btn
+          >
         </div>
       </v-card-text>
     </v-card>
@@ -180,6 +188,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { t } from 'ttag'
 import { computed, onBeforeMount, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 
 import StatsForNerds from '@/components/VideoPlayerStatsForNerds.vue'
@@ -387,17 +396,18 @@ const inverseTransformStyle = computed(() => {
 })
 
 const serverStatus = computed(() => {
-  if (externalStreamId.value === undefined) return 'Unknown.'
+  if (externalStreamId.value === undefined) return t`Unknown.`
   return videoStore.getSignallerStatus(externalStreamId.value)
 })
 
 const streamStatus = computed(() => {
-  if (externalStreamId.value === undefined) return 'Unknown.'
+  if (externalStreamId.value === undefined) return t`Unknown.`
 
   const availableSources = videoStore.availableIceIps
   if (!availableSources.isEmpty() && !availableSources.find((ip) => videoStore.allowedIceIps.includes(ip))) {
-    return `Stream is coming from IPs [${availableSources.join(', ')}], which are not in the list of allowed sources
-      [${videoStore.allowedIceIps.join(', ')}].\\n Please check your configuration.`
+    const sources = availableSources.join(', ')
+    const allowedSources = videoStore.allowedIceIps.join(', ')
+    return t`Stream is coming from IPs [${sources}], which are not in the list of allowed sources [${allowedSources}].\\n Please check your configuration.`
   }
   return videoStore.getStreamStatus(externalStreamId.value)
 })
@@ -417,8 +427,8 @@ const loadingMessage = computed(() => {
   const streamInfo = nameSelectedStream.value
     ? `'${nameSelectedStream.value} (${externalStreamId.value ?? 'unknown'})'`
     : ''
-  if (showSuccessState.value) return 'Stream loaded'
-  return (streamConnected.value ? 'Loading' : 'Connecting to') + ` stream ${streamInfo}`
+  if (showSuccessState.value) return t`Stream loaded`
+  return streamConnected.value ? t`Loading stream ${streamInfo}` : t`Connecting to stream ${streamInfo}`
 })
 
 const toggleVerboseLoading = (): void => {

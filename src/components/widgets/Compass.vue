@@ -12,7 +12,7 @@
     class="flex pa-4 bg-[#ffffff10] text-white backdrop-blur-2xl border-[1px] border-[#FAFAFA12]"
   >
     <div class="flex items-center">
-      <span class="mr-3 text-slate-100">Heading style</span>
+      <span class="mr-3 text-slate-100">{{ t`Heading style` }}</span>
       <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
     </div>
   </Dialog>

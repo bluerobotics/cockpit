@@ -2,18 +2,20 @@
   <div class="fence-expansible-wrapper -mx-2 w-auto">
     <ExpansiblePanel compact invert-chevron hover-effect elevation-effect :is-expanded="false" darken-content>
       <template #title>
-        <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">Fence parameters</div>
+        <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
+          {{ t`Fence parameters` }}
+        </div>
       </template>
       <template #content>
         <div class="flex flex-col w-full">
           <div class="flex items-start justify-between gap-x-2 px-3">
             <p v-if="!isApm && !isPx4" class="text-xs opacity-70 py-2">
-              Connect a vehicle to view its geofence parameters.
+              {{ t`Connect a vehicle to view its geofence parameters.` }}
             </p>
             <p v-else class="text-[11px] opacity-70 pt-2 pb-1">
-              These parameters apply to all fences uploaded to the vehicle.
+              {{ t`These parameters apply to all fences uploaded to the vehicle.` }}
             </p>
-            <v-tooltip location="top" text="Reload values from vehicle">
+            <v-tooltip location="top" :text="t`Reload values from vehicle`">
               <template #activator="{ props }">
                 <v-btn v-bind="props" variant="text" size="x-small" icon class="mt-1 -mr-2" @click="onRefreshAllParams">
                   <v-icon size="14">mdi-refresh</v-icon>
@@ -23,7 +25,7 @@
           </div>
 
           <div v-if="!isApm && !isPx4 && breachOptions.length" class="px-3 pb-2 text-[11px]">
-            <p class="opacity-70 mb-1">On a fence breach, the planned vehicle can be set to:</p>
+            <p class="opacity-70 mb-1">{{ t`On a fence breach, the planned vehicle can be set to:` }}</p>
             <p v-for="action in breachOptions" :key="action.value">{{ action.label }}</p>
           </div>
 
@@ -93,7 +95,7 @@
     </ExpansiblePanel>
     <InteractionDialog
       :show-dialog="pendingDriftWrite !== undefined"
-      title="This leaves the boat drifting"
+      :title="t`This leaves the boat drifting`"
       variant="text-only"
       max-width="560px"
       :message="DRIFT_WARNING"
@@ -102,11 +104,15 @@
       <template #actions>
         <div class="flex items-center w-full gap-x-2 px-2 pb-2">
           <v-checkbox v-model="dontShowDriftAgain" hide-details density="compact" class="flex-none">
-            <template #label><span class="text-sm">Don't show again</span></template>
+            <template #label>
+              <span class="text-sm">{{ t`Don't show again` }}</span>
+            </template>
           </v-checkbox>
           <div class="flex-1" />
-          <v-btn variant="text" size="small" @click="closeDriftWarning(false)">Cancel</v-btn>
-          <v-btn size="small" class="bg-[#FFFFFF33] text-white" @click="closeDriftWarning(true)">Use this action</v-btn>
+          <v-btn variant="text" size="small" @click="closeDriftWarning(false)">{{ t`Cancel` }}</v-btn>
+          <v-btn size="small" class="bg-[#FFFFFF33] text-white" @click="closeDriftWarning(true)">
+            {{ t`Use this action` }}
+          </v-btn>
         </div>
       </template>
     </InteractionDialog>
@@ -114,6 +120,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -195,34 +202,33 @@ interface PendingDriftWrite {
 const apmParams: ParamDescriptor[] = [
   {
     name: 'FENCE_ACTION',
-    description: 'What the vehicle does when it crosses the fence. The options depend on the vehicle type.',
+    description: t`What the vehicle does when it crosses the fence. The options depend on the vehicle type.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 } as DialectMavParamType,
   },
   {
     name: 'FENCE_ALT_MAX',
-    description: 'Maximum altitude (meters) before the fence triggers. Numeric value, range 10 to 1000, increment 1.',
+    description: t`Maximum altitude (meters) before the fence triggers. Numeric value, range 10 to 1000, increment 1.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
     min: 10,
     max: 1000,
   },
   {
     name: 'FENCE_ALT_MIN',
-    description: 'Minimum altitude (meters) before the fence triggers. Numeric value, range -100 to 100, increment 1.',
+    description: t`Minimum altitude (meters) before the fence triggers. Numeric value, range -100 to 100, increment 1.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
     min: -100,
     max: 100,
   },
   {
     name: 'FENCE_MARGIN',
-    description:
-      'Buffer distance (meters) the autopilot tries to keep from the fence boundary to avoid breaching. Numeric value, range 1 to 10.',
+    description: t`Buffer distance (meters) the autopilot tries to keep from the fence boundary to avoid breaching. Numeric value, range 1 to 10.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
     min: 1,
     max: 10,
   },
   {
     name: 'FENCE_AUTOENABLE',
-    description: 'Whether the autopilot turns the fence on by itself, and when.',
+    description: t`Whether the autopilot turns the fence on by itself, and when.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_UINT8 } as DialectMavParamType,
   },
 ]
@@ -230,32 +236,30 @@ const apmParams: ParamDescriptor[] = [
 const px4Params: ParamDescriptor[] = [
   {
     name: 'GF_ACTION',
-    description: 'What the vehicle does when it crosses the fence.',
+    description: t`What the vehicle does when it crosses the fence.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_INT32 } as DialectMavParamType,
   },
   {
     name: 'GF_MAX_HOR_DIST',
-    description:
-      'Maximum horizontal distance (meters) the vehicle may travel from the home position. Numeric value. 0 → no horizontal limit.',
+    description: t`Maximum horizontal distance (meters) the vehicle may travel from the home position. Numeric value. 0 → no horizontal limit.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
     min: 0,
     max: 10000,
   },
   {
     name: 'GF_MAX_VER_DIST',
-    description:
-      'Maximum vertical distance (meters) the vehicle may travel above the home position. Numeric value. 0 → no vertical limit.',
+    description: t`Maximum vertical distance (meters) the vehicle may travel above the home position. Numeric value. 0 → no vertical limit.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_REAL32 } as DialectMavParamType,
     min: 0,
     max: 1000,
   },
   {
     name: 'GF_PREDICT',
-    description: 'Whether the autopilot acts as soon as a breach is predicted, rather than once it has happened.',
+    description: t`Whether the autopilot acts as soon as a breach is predicted, rather than once it has happened.`,
     type: { type: MavParamType.MAV_PARAM_TYPE_INT32 } as DialectMavParamType,
     options: [
-      { value: 0, label: 'Off' },
-      { value: 1, label: 'On' },
+      { value: 0, label: t`Off` },
+      { value: 1, label: t`On` },
     ],
   },
 ]
@@ -282,7 +286,7 @@ const rows = computed<ParamDescriptor[]>(() => {
       const options = vehicleOptions[param.name] ?? param.options
       const value = paramValues[param.name] as number
       if (!options || options.some((option) => option.value === value)) return { ...param, options }
-      return { ...param, options: [...options, { value, label: 'Not used by this vehicle' }] }
+      return { ...param, options: [...options, { value, label: t`Not used by this vehicle` }] }
     })
 })
 
@@ -295,10 +299,7 @@ const onRefreshAllParams = (): void => {
   refreshAllParams()
 }
 
-const DRIFT_WARNING =
-  'When the boat crosses the fence, this action cuts its motors. Any current, tide or wind then carries it ' +
-  'further past the fence, toward whatever lies beyond, and it will not come back by itself. Unless someone ' +
-  'can reach the boat quickly, pick an action that returns home or holds position instead.'
+const DRIFT_WARNING = t`When the boat crosses the fence, this action cuts its motors. Any current, tide or wind then carries it further past the fence, toward whatever lies beyond, and it will not come back by itself. Unless someone can reach the boat quickly, pick an action that returns home or holds position instead.`
 
 const pendingDriftWrite = ref<PendingDriftWrite>()
 const dontShowDriftAgain = ref(false)
@@ -345,9 +346,10 @@ const onWriteParam = (name: string, value: number, type: DialectMavParamType): v
     // the value back so the PARAM_VALUE reply reconciles the optimistic update.
     vehicleStore.requestParameter(name)
   } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
     openSnackbar({
       variant: 'error',
-      message: `Failed to write ${name}: ${error instanceof Error ? error.message : String(error)}`,
+      message: t`Failed to write ${name}: ${reason}`,
       duration: 4000,
     })
   }

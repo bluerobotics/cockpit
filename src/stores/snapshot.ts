@@ -2,6 +2,7 @@ import { useThrottleFn } from '@vueuse/core'
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import saveAs from 'file-saver'
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -213,7 +214,7 @@ export const useSnapshotStore = defineStore('snapshot', () => {
 
     const files = maybeFiles.filter((file): file is SnapshotFileDescriptor => file.blob instanceof Blob)
     if (files.length === 0) {
-      showDialog({ message: 'No files found.', variant: 'error' })
+      showDialog({ message: t`No files found.`, variant: 'error' })
       return
     }
     if (shouldZip) {

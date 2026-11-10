@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { type Ref, ref } from 'vue'
 
@@ -85,8 +86,8 @@ export class Go2RTCManager {
     if (this.closed) return
 
     this.cleanup()
-    this.signallerStatus.value = 'Connecting...'
-    this.streamStatus.value = 'Connecting...'
+    this.signallerStatus.value = t`Connecting...`
+    this.streamStatus.value = t`Connecting...`
 
     const pc = new RTCPeerConnection()
     this.pc = pc
@@ -162,7 +163,7 @@ export class Go2RTCManager {
         })
         .catch((error) => {
           console.error(`[go2rtc] Failed to create offer for '${this.streamName}':`, error)
-          this.streamStatus.value = 'Offer failed'
+          this.streamStatus.value = t`Offer failed`
           this.scheduleReconnect()
         })
     }
@@ -235,7 +236,7 @@ export class Go2RTCManager {
       console.warn(
         `[go2rtc] Stream '${this.streamName}' did not connect within ${CONNECT_WATCHDOG_MS}ms. Forcing reconnect.`
       )
-      this.streamStatus.value = 'Source unavailable'
+      this.streamStatus.value = t`Source unavailable`
       this.cleanup()
       this.scheduleReconnect()
     }, CONNECT_WATCHDOG_MS)
@@ -264,7 +265,7 @@ export class Go2RTCManager {
       console.warn(
         `[go2rtc] No video received on '${this.streamName}' for ${SECONDS_WITHOUT_VIDEO_TO_RECONNECT}s. Forcing reconnect.`
       )
-      this.streamStatus.value = 'Source unavailable'
+      this.streamStatus.value = t`Source unavailable`
       // Cleared before the peer connection closes, so whoever reacts to its track ending finds the stream away
       this.connected.value = false
       this.mediaStream.value = undefined
@@ -325,7 +326,7 @@ export class Go2RTCManager {
     this.cleanup()
     this.connected.value = false
     this.mediaStream.value = undefined
-    this.signallerStatus.value = 'Closed'
-    this.streamStatus.value = 'Closed'
+    this.signallerStatus.value = t`Closed`
+    this.streamStatus.value = t`Closed`
   }
 }

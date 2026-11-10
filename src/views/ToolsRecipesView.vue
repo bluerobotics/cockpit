@@ -1,18 +1,19 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Recipes</template>
+    <template #title>{{ t`Recipes` }}</template>
     <template #content>
       <div class="flex flex-col gap-y-4 py-3" :class="interfaceStore.isOnSmallScreen ? 'w-[80vw]' : 'w-[480px]'">
         <p class="text-body-2 text-white/70">
-          A recipe bundles your data lake variables, actions, WebSocket connections and DIY widgets in one file, to set
-          up another Cockpit the same way or share a setup with others.
+          {{
+            t`A recipe bundles your data lake variables, actions, WebSocket connections and DIY widgets in one file, to set up another Cockpit the same way or share a setup with others.`
+          }}
         </p>
         <div class="flex gap-x-3">
           <v-btn class="flex-1 bg-[#FFFFFF22] text-white" prepend-icon="mdi-file-export-outline" @click="openCreate">
-            Create recipe
+            {{ t`Create recipe` }}
           </v-btn>
           <v-btn class="flex-1 bg-[#FFFFFF22] text-white" prepend-icon="mdi-file-import-outline" @click="openRead">
-            Read recipe
+            {{ t`Read recipe` }}
           </v-btn>
         </div>
       </div>

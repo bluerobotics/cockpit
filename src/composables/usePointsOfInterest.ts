@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { type ComputedRef, computed, reactive, watch } from 'vue'
 import { z } from 'zod'
 
@@ -218,7 +219,7 @@ const createState = (): PointsOfInterestState => {
         // Every later POI edit hits the same failure, so tell the user once instead of on each one.
         if (!coordinateSyncFailureReported) {
           coordinateSyncFailureReported = true
-          const failureMessage = 'Could not update the points of interest. Their positions may be out of date.'
+          const failureMessage = t`Could not update the points of interest. Their positions may be out of date.`
           openSnackbar({ message: failureMessage, variant: 'error', closeButton: true })
         }
       }

@@ -2,7 +2,7 @@
   <v-tooltip
     v-if="fenceDraft.isDrawingPolygon && polygonVertexes.length >= 3"
     location="top"
-    text="Finish polygon fence"
+    :text="t`Finish polygon fence`"
   >
     <template #activator="{ props: tooltipProps }">
       <div
@@ -19,7 +19,7 @@
   <v-tooltip
     v-if="fenceDraft.isDrawingPolygon && polygonVertexes.length >= 1"
     location="top"
-    text="Discard polygon fence"
+    :text="t`Discard polygon fence`"
   >
     <template #activator="{ props: tooltipProps }">
       <div

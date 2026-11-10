@@ -1,5 +1,6 @@
 import { tryOnScopeDispose, useDebounceFn, useDocumentVisibility } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { msgid, ngettext, t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -668,13 +669,18 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
       // Transferring a plan deliberately leaves enforcement alone: arming it
       // can make a vehicle already outside the new fence act on its own, and
       // `FENCE_AUTOENABLE` is a user preference owned by the parameters panel.
-      const simplifiedNote = removedPoints > 0 ? ` ${removedPoints} redundant points were removed to fit it.` : ''
+      const removedNote = ngettext(
+        msgid`${removedPoints} redundant point was removed to fit it.`,
+        `${removedPoints} redundant points were removed to fit it.`,
+        removedPoints
+      )
+      const simplifiedNote = removedPoints > 0 ? ` ${removedNote}` : ''
       openSnackbar({
         variant: 'success',
         message:
           (fenceEnabled.value
-            ? 'Geofence uploaded to vehicle. Enforcement is on, so the vehicle is already obeying the new shapes.'
-            : 'Geofence uploaded to vehicle. Enforcement was left unchanged.') + simplifiedNote,
+            ? t`Geofence uploaded to vehicle. Enforcement is on, so the vehicle is already obeying the new shapes.`
+            : t`Geofence uploaded to vehicle. Enforcement was left unchanged.`) + simplifiedNote,
         duration: removedPoints > 0 ? 5000 : 3000,
       })
     } finally {
@@ -706,7 +712,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     openSnackbar(
       planHasShapes(plan)
         ? { variant: 'success', message: successMessage, duration: 3000 }
-        : { variant: 'info', message: 'No geofence is stored on the vehicle.', duration: 3000 }
+        : { variant: 'info', message: t`No geofence is stored on the vehicle.`, duration: 3000 }
     )
   }
 
@@ -717,7 +723,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
    */
   const refreshVehicleFenceOverlay = async (loadingCallback?: MissionLoadingCallback): Promise<void> => {
     const plan = await fetchIntoOverlayCache(loadingCallback)
-    announceFetchedFence(plan, 'Geofence overlay refreshed from vehicle.')
+    announceFetchedFence(plan, t`Geofence overlay refreshed from vehicle.`)
   }
 
   /**
@@ -730,7 +736,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     const plan = await fetchIntoOverlayCache(loadingCallback)
     loadFromPlan(plan)
     dirty.value = false
-    announceFetchedFence(plan, 'Geofence downloaded from vehicle.')
+    announceFetchedFence(plan, t`Geofence downloaded from vehicle.`)
   }
 
   /**
@@ -742,7 +748,7 @@ export const useGeoFenceStore = defineStore('geo-fence', () => {
     try {
       await mainVehicleStore.clearFence()
       cacheVehicleFence(undefined)
-      openSnackbar({ variant: 'success', message: 'Geofence cleared on the vehicle.', duration: 3000 })
+      openSnackbar({ variant: 'success', message: t`Geofence cleared on the vehicle.`, duration: 3000 })
     } finally {
       syncInProgress.value = false
     }

@@ -1,7 +1,7 @@
 <template>
   <div ref="widgetRoot" class="flex items-center" :class="{ 'pointer-events-none': widgetStore.editingMode }">
     <div v-if="miniWidget.options.displayMode === 'full'" class="flex items-center pl-2 rounded-lg bg-slate-800/60">
-      <div class="relative flex text-white" :aria-label="`Camera and gimbal ${miniWidget.options.deviceId}`">
+      <div class="relative flex text-white" :aria-label="t`Camera and gimbal ${miniWidget.options.deviceId}`">
         <v-icon icon="mdi-camera-wireless" size="24" />
         <span :class="idBadgeClass">{{ miniWidget.options.deviceId }}</span>
       </div>
@@ -23,7 +23,7 @@
           v-bind="menuProps"
           variant="text"
           class="h-9 px-2 rounded-lg bg-slate-800/60 text-white"
-          :aria-label="`Camera and gimbal ${miniWidget.options.deviceId} controls`"
+          :aria-label="t`Camera and gimbal ${miniWidget.options.deviceId} controls`"
         >
           <div class="relative flex">
             <v-icon icon="mdi-camera-wireless" size="24" />
@@ -46,14 +46,14 @@
       style="border-radius: 15px"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <v-card-title class="text-center">Camera and gimbal controls</v-card-title>
+      <v-card-title class="text-center">{{ t`Camera and gimbal controls` }}</v-card-title>
       <div class="absolute top-4 right-4">
         <v-btn
           icon
           size="30"
           variant="text"
           class="text-white text-[22px]"
-          aria-label="Close"
+          :aria-label="t`Close`"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
           <v-icon icon="mdi-close" />
@@ -62,7 +62,7 @@
       <v-card-text class="flex flex-col gap-y-3">
         <v-text-field
           :model-value="miniWidget.options.deviceId"
-          label="Gimbal/camera ID"
+          :label="t`Gimbal/camera ID`"
           type="number"
           min="1"
           step="1"
@@ -74,20 +74,20 @@
         />
         <v-checkbox
           :model-value="miniWidget.options.sendWithoutDetection"
-          label="Send without detection"
-          hint="Send commands even to a gimbal or camera the vehicle has not reported"
+          :label="t`Send without detection`"
+          :hint="t`Send commands even to a gimbal or camera the vehicle has not reported`"
           persistent-hint
           density="compact"
           @update:model-value="setSendWithoutDetection"
         />
         <v-radio-group
           :model-value="miniWidget.options.displayMode"
-          label="Display"
+          :label="t`Display`"
           hide-details
           @update:model-value="setDisplayMode"
         >
-          <v-radio label="Collapsed, with the controls in a popup" value="collapsed" />
-          <v-radio label="Full, with every control on the bar" value="full" />
+          <v-radio :label="t`Collapsed, with the controls in a popup`" value="collapsed" />
+          <v-radio :label="t`Full, with every control on the bar`" value="full" />
         </v-radio-group>
       </v-card-text>
       <v-divider />
@@ -97,7 +97,7 @@
           class="text-white"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
-          Close
+          {{ t`Close` }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -106,6 +106,7 @@
 
 <script setup lang="ts">
 import { useElementBounding, useWindowSize } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, onBeforeMount, ref, toRefs } from 'vue'
 
 import CameraGimbalControlButtons from '@/components/CameraGimbalControlButtons.vue'
@@ -151,7 +152,8 @@ const detectedGimbalsHint = computed(() => {
   // Re-read whenever the dialog opens, as gimbals are found by their attitude reports
   if (!widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen) return ''
   const ids = detectedGimbalIds(Number(systemId.value ?? 1))
-  return ids.length ? `Detected gimbals: ${ids.join(', ')}` : 'No gimbal detected on the vehicle'
+  const idList = ids.join(', ')
+  return ids.length ? t`Detected gimbals: ${idList}` : t`No gimbal detected on the vehicle`
 })
 
 const onMenuToggle = (open: boolean): void => {

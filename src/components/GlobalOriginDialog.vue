@@ -1,7 +1,7 @@
 <template>
   <InteractionDialog
     :show-dialog="showDialog"
-    title="Set Global Origin"
+    :title="t`Set Global Origin`"
     variant="text-only"
     max-width="500px"
     :actions="dialogActions"
@@ -9,23 +9,23 @@
   >
     <template #content>
       <p class="text-sm mb-8 -mt-6 text-gray-300">
-        This feature allows you to set the GNSS coordinates of the vehicle's local origin (0,0,0). This is useful when
-        using local position units (such as indoor positioning systems or DVLs) where you want to define a corresponding
-        global position.
+        {{
+          t`This feature allows you to set the GNSS coordinates of the vehicle's local origin (0,0,0). This is useful when using local position units (such as indoor positioning systems or DVLs) where you want to define a corresponding global position.`
+        }}
       </p>
 
       <div class="flex items-center gap-2 mb-6">
         <v-text-field
           v-model.number="latitude"
-          label="Latitude"
+          :label="t`Latitude`"
           type="number"
           step="0.000001"
-          hint="Latitude in degrees (-90 to 90)"
+          :hint="t`Latitude in degrees (-90 to 90)`"
           persistent-hint
           variant="outlined"
           :rules="[
-            (v: number) => v !== null && v !== undefined || 'Latitude is required',
-            (v: number) => (v >= -90 && v <= 90) || 'Latitude must be between -90 and 90',
+            (v: number) => v !== null && v !== undefined || t`Latitude is required`,
+            (v: number) => (v >= -90 && v <= 90) || t`Latitude must be between -90 and 90`,
           ]"
           class="flex-1"
         />
@@ -35,15 +35,15 @@
       <div class="flex items-center gap-2 mb-6">
         <v-text-field
           v-model.number="longitude"
-          label="Longitude"
+          :label="t`Longitude`"
           type="number"
           step="0.000001"
-          hint="Longitude in degrees (-180 to 180)"
+          :hint="t`Longitude in degrees (-180 to 180)`"
           persistent-hint
           variant="outlined"
           :rules="[
-            (v: number) => v !== null && v !== undefined || 'Longitude is required',
-            (v: number) => (v >= -180 && v <= 180) || 'Longitude must be between -180 and 180',
+            (v: number) => v !== null && v !== undefined || t`Longitude is required`,
+            (v: number) => (v >= -180 && v <= 180) || t`Longitude must be between -180 and 180`,
           ]"
           class="flex-1"
         />
@@ -53,14 +53,14 @@
       <div class="flex items-center gap-2 mb-2">
         <v-text-field
           v-model.number="displayedAltitude"
-          label="Altitude"
+          :label="t`Altitude`"
           type="number"
           step="0.1"
-          :hint="`Altitude in ${altitudeUnit} (MSL)`"
+          :hint="t`Altitude in ${altitudeUnit} (MSL)`"
           persistent-hint
           variant="outlined"
           :rules="[
-            (v: number) => v !== null && v !== undefined || 'Altitude is required',
+            (v: number) => v !== null && v !== undefined || t`Altitude is required`,
           ]"
           class="flex-1"
         />
@@ -71,6 +71,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, defineModel, ref, watch } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
@@ -149,7 +150,7 @@ const saveGlobalOrigin = async (): Promise<void> => {
   logUserAction('Set vehicle global origin')
 
   if (props.vehicle === undefined || !vehicleStore.isVehicleOnline) {
-    openSnackbar({ message: 'Cannot set global origin. Vehicle does not appear to be online.', variant: 'error' })
+    openSnackbar({ message: t`Cannot set global origin. Vehicle does not appear to be online.`, variant: 'error' })
     return
   }
 
@@ -157,11 +158,11 @@ const saveGlobalOrigin = async (): Promise<void> => {
   try {
     const origin = await props.vehicle.setGlobalOrigin([latitude.value, longitude.value], altitude.value)
     const confirmedPosition = `${origin.latitude.toFixed(7)}°, ${origin.longitude.toFixed(7)}°`
-    openSnackbar({ message: `Global origin confirmed by the vehicle at ${confirmedPosition}.`, variant: 'success' })
+    openSnackbar({ message: t`Global origin confirmed by the vehicle at ${confirmedPosition}.`, variant: 'success' })
     emit('origin-set', origin.latitude, origin.longitude) // eslint-disable-line
     closeDialog()
   } catch (error) {
-    openSnackbar({ message: `Failed to set global origin: ${error}`, variant: 'error' })
+    openSnackbar({ message: t`Failed to set global origin: ${error}`, variant: 'error' })
   } finally {
     isSaving.value = false
   }
@@ -169,12 +170,12 @@ const saveGlobalOrigin = async (): Promise<void> => {
 
 const dialogActions = computed<Action[]>(() => [
   {
-    text: 'Cancel',
+    text: t`Cancel`,
     action: closeDialog,
     disabled: isSaving.value,
   },
   {
-    text: isSaving.value ? 'Saving...' : 'Save',
+    text: isSaving.value ? t`Saving...` : t`Save`,
     disabled: !isValid.value || isSaving.value,
     action: saveGlobalOrigin,
     class: isSaving.value ? 'opacity-70' : '',

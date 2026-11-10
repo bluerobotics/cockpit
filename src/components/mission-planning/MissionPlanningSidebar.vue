@@ -15,7 +15,7 @@
         @click="onSelectPlanningMode('mission')"
       >
         <v-icon size="18" class="mr-1">mdi-map-marker-path</v-icon>
-        Mission
+        {{ t`Mission` }}
       </button>
       <div class="w-px bg-[#FFFFFF22]" />
       <button
@@ -24,7 +24,7 @@
         @click="onSelectPlanningMode('geofence')"
       >
         <v-icon size="18" class="mr-1">mdi-shield-outline</v-icon>
-        GeoFence
+        {{ t`GeoFence` }}
       </button>
     </div>
     <OverflowIndicatorArrows class="w-full" content-class="flex flex-col w-full p-2" align="right">

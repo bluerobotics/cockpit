@@ -1,3 +1,4 @@
+import { msgid, ngettext } from 'ttag'
 import { watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -79,9 +80,12 @@ export const useCustomTileProviderVehicleSync = (): void => {
     }
 
     if (synced > 0) {
-      const plural = synced > 1 ? 's' : ''
       openSnackbar({
-        message: `${synced} custom map provider${plural} synced to the vehicle.`,
+        message: ngettext(
+          msgid`${synced} custom map provider synced to the vehicle.`,
+          `${synced} custom map providers synced to the vehicle.`,
+          synced
+        ),
         variant: 'success',
         duration: 3000,
       })
@@ -89,10 +93,11 @@ export const useCustomTileProviderVehicleSync = (): void => {
 
     if (failedNames.length > 0) {
       const names = failedNames.map((name) => `"${name}"`).join(', ')
-      const plural = failedNames.length > 1 ? 's' : ''
-      const message = `Could not upload the ${names} map${plural} to the vehicle. Cockpit will try again on the next connection, and meanwhile ${
-        plural ? 'they stay' : 'it stays'
-      } available on this computer only.`
+      const message = ngettext(
+        msgid`Could not upload the ${names} map to the vehicle. Cockpit will try again on the next connection, and meanwhile it stays available on this computer only.`,
+        `Could not upload the ${names} maps to the vehicle. Cockpit will try again on the next connection, and meanwhile they stay available on this computer only.`,
+        failedNames.length
+      )
       openSnackbar({ message, variant: 'error', duration: 6000 })
     }
   }

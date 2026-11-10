@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { ref } from 'vue'
 
 import { LiveVideoProcessor } from '@/libs/live-video-processor'
@@ -208,7 +209,7 @@ export const useVideoChunkManager = (): {
       chunkGroups.value = Object.values(groups).sort((a, b) => b.firstChunkDate.getTime() - a.firstChunkDate.getTime())
       totalChunkSize.value = totalSize
     } catch (error) {
-      openSnackbar({ message: 'Failed to load temporary chunks', variant: 'error' })
+      openSnackbar({ message: t`Failed to load temporary chunks`, variant: 'error' })
     } finally {
       loadingData.value = false
     }
@@ -246,13 +247,13 @@ export const useVideoChunkManager = (): {
   const deleteChunkGroup = async (group: ChunkGroup): Promise<void> => {
     const size = formatBytes(group.totalSize)
     showDialog({
-      title: 'Delete Chunk Group',
-      message: `Delete ${group.chunkCount} chunks for ${group.hash}? This will free up ${size} of storage space.`,
+      title: t`Delete Chunk Group`,
+      message: t`Delete ${group.chunkCount} chunks for ${group.hash}? This will free up ${size} of storage space.`,
       variant: 'warning',
       actions: [
-        { text: 'Cancel', action: () => closeDialog() },
+        { text: t`Cancel`, action: () => closeDialog() },
         {
-          text: 'Delete',
+          text: t`Delete`,
           action: async () => {
             closeDialog()
             try {
@@ -262,11 +263,11 @@ export const useVideoChunkManager = (): {
                 await videoStore.tempVideoStorage.removeItem(chunk.key)
               }
 
-              openSnackbar({ message: `Deleted ${group.chunkCount} chunks for ${group.hash}`, variant: 'success' })
+              openSnackbar({ message: t`Deleted ${group.chunkCount} chunks for ${group.hash}`, variant: 'success' })
 
               await fetchChunkGroups()
             } catch (error) {
-              openSnackbar({ message: 'Failed to delete chunks', variant: 'error' })
+              openSnackbar({ message: t`Failed to delete chunks`, variant: 'error' })
             } finally {
               isProcessingChunks.value = false
             }
@@ -286,13 +287,13 @@ export const useVideoChunkManager = (): {
     const count = chunkGroups.value.length
     const size = formatBytes(totalChunkSize.value)
     showDialog({
-      title: 'Delete All Temporary Chunks',
-      message: `Are you sure you want to delete all ${count} chunk groups? This will free up ${size} of storage space.`,
+      title: t`Delete All Temporary Chunks`,
+      message: t`Are you sure you want to delete all ${count} chunk groups? This will free up ${size} of storage space.`,
       variant: 'warning',
       actions: [
-        { text: 'Cancel', action: () => closeDialog() },
+        { text: t`Cancel`, action: () => closeDialog() },
         {
-          text: 'Delete All',
+          text: t`Delete All`,
           action: async () => {
             closeDialog()
             try {
@@ -304,11 +305,11 @@ export const useVideoChunkManager = (): {
                 }
               }
 
-              openSnackbar({ message: `Deleted all temporary chunks (${size} freed)`, variant: 'success' })
+              openSnackbar({ message: t`Deleted all temporary chunks (${size} freed)`, variant: 'success' })
 
               await fetchChunkGroups()
             } catch (error) {
-              openSnackbar({ message: 'Failed to delete all chunks', variant: 'error' })
+              openSnackbar({ message: t`Failed to delete all chunks`, variant: 'error' })
             } finally {
               isProcessingChunks.value = false
             }
@@ -418,7 +419,7 @@ export const useVideoChunkManager = (): {
             throw new Error(`Could not store the telemetry overlay as '${filename}'.`)
           }
         } catch (error) {
-          const message = `Creating the ZIP without a telemetry subtitle file. ${error}`
+          const message = t`Creating the ZIP without a telemetry subtitle file. ${error}`
           openSnackbar({ message, variant: 'warning' })
         }
 
@@ -427,7 +428,7 @@ export const useVideoChunkManager = (): {
 
         if (zipFilePath) {
           const count = group.chunkCount
-          const msg = `ZIP file created successfully with ${count} chunks at: ${zipFilePath}`
+          const msg = t`ZIP file created successfully with ${count} chunks at: ${zipFilePath}`
           openSnackbar({ message: msg, variant: 'success' })
         } else {
           throw new Error('Failed to create ZIP file')
@@ -486,7 +487,7 @@ export const useVideoChunkManager = (): {
                 lastModDate: files[0].lastModDate,
               })
             } catch (error) {
-              const message = `Downloading the chunks without a telemetry subtitle file. ${error}`
+              const message = t`Downloading the chunks without a telemetry subtitle file. ${error}`
               openSnackbar({ message, variant: 'warning' })
             }
           }
@@ -499,10 +500,10 @@ export const useVideoChunkManager = (): {
         }
 
         const count = group.chunkCount
-        openSnackbar({ message: `Downloaded ${count} chunks in ${batches.length} archive(s)`, variant: 'success' })
+        openSnackbar({ message: t`Downloaded ${count} chunks in ${batches.length} archive(s)`, variant: 'success' })
       }
     } catch (error) {
-      openSnackbar({ message: 'Failed to download chunks', variant: 'error' })
+      openSnackbar({ message: t`Failed to download chunks`, variant: 'error' })
     } finally {
       isProcessingChunks.value = false
     }
@@ -518,7 +519,7 @@ export const useVideoChunkManager = (): {
         await window.electronAPI.openVideoChunksFolder()
       }
     } catch (error) {
-      openSnackbar({ message: 'Failed to open temporary chunks folder', variant: 'error' })
+      openSnackbar({ message: t`Failed to open temporary chunks folder`, variant: 'error' })
     }
   }
 
@@ -540,7 +541,7 @@ export const useVideoChunkManager = (): {
       if (siblings && siblings.length > 1) {
         const siblingCount = siblings.length - 1
         openSnackbar({
-          message: `Detected ${siblingCount} sibling part-zip(s) for this recording — they will be processed together.`,
+          message: t`Detected ${siblingCount} sibling part-zip(s) for this recording — they will be processed together.`,
           variant: 'info',
         })
         return siblings
@@ -565,8 +566,8 @@ export const useVideoChunkManager = (): {
 
     try {
       const selectedPaths = await window.electronAPI?.getPathsOfSelectedFiles({
-        title: 'Select Video ZIP File(s)',
-        filters: [{ name: 'ZIP Files', extensions: ['zip'] }],
+        title: t`Select Video ZIP File(s)`,
+        filters: [{ name: t`ZIP Files`, extensions: ['zip'] }],
       })
 
       if (!selectedPaths || selectedPaths.length === 0) return
@@ -578,8 +579,8 @@ export const useVideoChunkManager = (): {
       zipProcessingProgress.value = 0
       zipProcessingMessage.value =
         zipPathsToProcess.length > 1
-          ? `Starting processing of ${zipPathsToProcess.length} ZIP files...`
-          : 'Starting ZIP processing...'
+          ? t`Starting processing of ${zipPathsToProcess.length} ZIP files...`
+          : t`Starting ZIP processing...`
 
       await LiveVideoProcessor.processZipFiles(zipPathsToProcess, (progress: number, message: string) => {
         zipProcessingProgress.value = progress
@@ -588,15 +589,16 @@ export const useVideoChunkManager = (): {
 
       const successMessage =
         zipPathsToProcess.length > 1
-          ? `${zipPathsToProcess.length} ZIP files processed successfully! Video is now available in the Videos tab.`
-          : 'ZIP file processed successfully! Video is now available in the Videos tab.'
+          ? t`${zipPathsToProcess.length} ZIP files processed successfully! Video is now available in the Videos tab.`
+          : t`ZIP file processed successfully! Video is now available in the Videos tab.`
       openSnackbar({ message: successMessage, variant: 'success' })
 
       if (onComplete) await onComplete()
 
       zipProcessingComplete.value = true
     } catch (error) {
-      const msg = `Failed to process ZIP file(s): ${error instanceof Error ? error.message : 'Unknown error'}`
+      const reason = error instanceof Error ? error.message : t`Unknown error`
+      const msg = t`Failed to process ZIP file(s): ${reason}`
       openSnackbar({ message: msg, variant: 'error' })
     } finally {
       isProcessingZip.value = false
@@ -612,7 +614,7 @@ export const useVideoChunkManager = (): {
    */
   const processChunkGroup = async (group: ChunkGroup): Promise<void> => {
     if (!isElectron() || !window.electronAPI) {
-      openSnackbar({ message: 'Manual processing is only available in Cockpit standalone', variant: 'error' })
+      openSnackbar({ message: t`Manual processing is only available in Cockpit standalone`, variant: 'error' })
       return
     }
 
@@ -666,16 +668,17 @@ export const useVideoChunkManager = (): {
         }
         await window.electronAPI.copyTelemetryFile(filename, videoSubtitlesFilename(outputPath))
       } catch (telemetryError) {
-        const errorMessage = `Could not generate telemetry overlay for the processed video: ${telemetryError}`
+        const errorMessage = t`Could not generate telemetry overlay for the processed video: ${telemetryError}`
         openSnackbar({ message: errorMessage, variant: 'error' })
       }
 
       openSnackbar({
-        message: `Video processed successfully! Output: ${outputPath}`,
+        message: t`Video processed successfully! Output: ${outputPath}`,
         variant: 'success',
       })
     } catch (error) {
-      const msg = `Failed to process video chunks: ${error instanceof Error ? error.message : 'Unknown error'}`
+      const reason = error instanceof Error ? error.message : t`Unknown error`
+      const msg = t`Failed to process video chunks: ${reason}`
       openSnackbar({ message: msg, variant: 'error' })
     } finally {
       isProcessingChunks.value = false

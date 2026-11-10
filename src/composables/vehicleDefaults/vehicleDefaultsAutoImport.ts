@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { type Ref, onUnmounted } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -52,7 +53,7 @@ export const useVehicleDefaultsAutoImport = (): void => {
       if (evaluation.views.action === 'auto-import' && evaluation.views.defaultProfile) {
         widgetStore.viewsGroup = buildFreshViewsGroupFromDefault(evaluation.views.defaultProfile)
         openSnackbar({
-          message: `Imported default views for ${evaluation.vehicleTypeName}.`,
+          message: t`Imported default views for ${evaluation.vehicleTypeName}.`,
           variant: 'success',
           duration: 5000,
         })
@@ -61,7 +62,7 @@ export const useVehicleDefaultsAutoImport = (): void => {
       if (evaluation.joystick.action === 'auto-import' && evaluation.joystick.defaultMapping) {
         controllerStore.protocolMapping = buildReplacementMapping(evaluation.joystick.defaultMapping)
         openSnackbar({
-          message: `Imported default joystick mapping for ${evaluation.vehicleTypeName}.`,
+          message: t`Imported default joystick mapping for ${evaluation.vehicleTypeName}.`,
           variant: 'success',
           duration: 5000,
         })
@@ -82,10 +83,10 @@ export const useVehicleDefaultsAutoImport = (): void => {
         // Every sync re-evaluates, so replace the previous offer instead of stacking another one.
         if (offerId !== undefined) closeSnackbar(offerId)
         offerId = openSnackbar({
-          message: `Cockpit has a default configuration for ${evaluation.vehicleTypeName} that you are not using.`,
+          message: t`Cockpit has a default configuration for ${evaluation.vehicleTypeName} that you are not using.`,
           variant: 'info',
           persistent: true,
-          action: { label: 'Review', handler: () => interfaceStore.openVehicleDefaultsAutoImport() },
+          action: { label: t`Review`, handler: () => interfaceStore.openVehicleDefaultsAutoImport() },
         })
       } else {
         defaultsHandled.value = true

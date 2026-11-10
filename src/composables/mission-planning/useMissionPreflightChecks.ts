@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import type { UseMissionFenceBreachesReturn } from '@/composables/map/useMissionFenceBreaches'
 import { useFenceBreachAction } from '@/composables/useFenceBreachAction'
@@ -13,11 +15,11 @@ const MAX_LISTED_ADVISORIES = 6
 const HAZARD_CHECK_DEADLINE_MS = 10000
 
 const uploadWarningTitle = (breaches: boolean, hazards: boolean, unchecked: boolean): string => {
-  if (breaches && hazards) return 'Mission breaches the geofence and touches hazard areas'
+  if (breaches && hazards) return t`Mission breaches the geofence and touches hazard areas`
   if (breaches)
-    return unchecked ? 'Mission breaches geofence, and hazards were not checked' : 'Mission breaches geofence'
-  if (hazards) return 'Mission touches hazard areas'
-  return 'Mission was not checked against hazard data'
+    return unchecked ? t`Mission breaches geofence, and hazards were not checked` : t`Mission breaches geofence`
+  if (hazards) return t`Mission touches hazard areas`
+  return t`Mission was not checked against hazard data`
 }
 
 type UploadWarningFindings = MissionFenceBreachReports & {
@@ -45,32 +47,29 @@ const uploadWarningMessage = ({
   const message: string[] = []
   if (unchecked) {
     message.push(
-      'The hazard check could not finish, so this mission has not been checked against hazard data. Loading ' +
-        'that data needs an internet connection.'
+      t`The hazard check could not finish, so this mission has not been checked against hazard data. Loading that data needs an internet connection.`
     )
   }
   if (vehicle?.hasBreaches) {
     message.push(
-      `${vehicle.breaches.length} of ${vehicle.totalChecked} waypoints breach the geofence stored ` +
-        `on the vehicle. ${consequence}`
+      t`${vehicle.breaches.length} of ${vehicle.totalChecked} waypoints breach the geofence stored on the vehicle.` +
+        ` ${consequence}`
     )
   }
   if (draft?.hasBreaches) {
     message.push(
-      `${draft.breaches.length} of ${draft.totalChecked} waypoints breach the geofence you are ` +
-        'drawing, which has not been uploaded to the vehicle yet.'
+      t`${draft.breaches.length} of ${draft.totalChecked} waypoints breach the geofence you are drawing, which has not been uploaded to the vehicle yet.`
     )
   }
   if (vehicle?.hasBreaches || draft?.hasBreaches) {
-    message.push('The waypoints in question are marked red on the map, each with the reason on hover.')
+    message.push(t`The waypoints in question are marked red on the map, each with the reason on hover.`)
   }
   if (advisories.length > 0) {
     message.push(...advisories.slice(0, MAX_LISTED_ADVISORIES).map((advisory) => advisory.message))
     const hidden = advisories.length - MAX_LISTED_ADVISORIES
-    if (hidden > 0) message.push(`And ${hidden} more, listed in the hazard advisories panel.`)
+    if (hidden > 0) message.push(t`And ${hidden} more, listed in the hazard advisories panel.`)
     message.push(
-      'Hazard data comes from public, contributor-maintained databases and only covers the area it was loaded ' +
-        'for, so it can be incomplete or out of date.'
+      t`Hazard data comes from public, contributor-maintained databases and only covers the area it was loaded for, so it can be incomplete or out of date.`
     )
   }
   return message
@@ -143,16 +142,16 @@ export const useMissionPreflightChecks = ({
       unchecked: checked === undefined,
       consequence:
         breachOutcome.value ??
-        'Uploading anyway may trigger the fence action the autopilot is configured with once the mission runs.',
+        t`Uploading anyway may trigger the fence action the autopilot is configured with once the mission runs.`,
     })
     const title = uploadWarningTitle(hasBreaches, advisories.length > 0, checked === undefined)
 
     const confirmed = await confirmAction(
       title,
       message,
-      'Upload to vehicle anyway',
+      t`Upload to vehicle anyway`,
       '720px',
-      'Back to mission planning'
+      t`Back to mission planning`
     )
     const outcome = confirmed ? 'Uploaded the mission despite' : 'Cancelled the mission upload from'
     logUserAction(`${outcome} the pre-flight warning`)

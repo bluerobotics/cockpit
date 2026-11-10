@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
 import Alerter from '@/components/mini-widgets/Alerter.vue'
+import i18n from '@/plugins/i18n'
 import { MiniWidget, MiniWidgetType } from '@/types/widgets'
 
 vi.mock('@/stores/alert', () => {
@@ -30,7 +31,7 @@ test('unlocking closes hovered alerts immediately and lets a later hover reopen 
     component: MiniWidgetType.Alerter,
     options: {},
   })
-  const wrapper = mount(Alerter, { props: { miniWidget } })
+  const wrapper = mount(Alerter, { props: { miniWidget }, global: { plugins: [i18n] } })
 
   try {
     await nextTick()

@@ -1,5 +1,6 @@
 import { differenceInMilliseconds, differenceInSeconds, format, intervalToDuration } from 'date-fns'
 import localforage from 'localforage'
+import { t } from 'ttag'
 
 import { defaultSensorDataloggerProfile } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -269,7 +270,7 @@ class DataLogger {
 
   set logInterval(value: number) {
     if (value < 1) {
-      showDialog({ message: 'Minimum log interval is 1 millisecond (1000 Hz).', variant: 'error' })
+      showDialog({ message: t`Minimum log interval is 1 millisecond (1000 Hz).`, variant: 'error' })
       return
     }
 
@@ -283,7 +284,7 @@ class DataLogger {
 
   set frequency(value: number) {
     if (value > 1000 || value < 0.1) {
-      showDialog({ message: 'Log frequency should stay between 0.1 Hz and 1000 Hz.', variant: 'error' })
+      showDialog({ message: t`Log frequency should stay between 0.1 Hz and 1000 Hz.`, variant: 'error' })
       return
     }
 

@@ -8,13 +8,21 @@
   >
     <template #content>
       <div class="flex gap-x-2 absolute top-0 right-0 py-2 pr-3">
-        <v-btn icon :width="34" :height="34" variant="text" aria-label="Close" class="bg-transparent" @click="close">
+        <v-btn
+          icon
+          :width="34"
+          :height="34"
+          variant="text"
+          :aria-label="t`Close`"
+          class="bg-transparent"
+          @click="close"
+        >
           <v-icon :size="22">mdi-close</v-icon>
         </v-btn>
       </div>
       <div class="-mt-7 text-white">
         <v-tabs v-model="activeTab" density="compact" show-arrows @update:model-value="onTabChange">
-          <v-tab value="general">General</v-tab>
+          <v-tab value="general">{{ t`General` }}</v-tab>
           <v-tab
             v-for="area in areas"
             :key="area.value"
@@ -34,8 +42,9 @@
               >
                 <v-icon size="20" color="amber">mdi-alert-outline</v-icon>
                 <span>
-                  {{ Object.keys(missing).length }} selected item(s) need others that were left out, and may not work.
-                  Their tabs mark which ones.
+                  {{
+                    t`${missingCount} selected item(s) need others that were left out, and may not work. Their tabs mark which ones.`
+                  }}
                 </span>
               </div>
             </div>
@@ -61,13 +70,13 @@
               <template #item.notes="{ item }">
                 <div class="flex flex-wrap justify-end gap-1">
                   <v-chip v-if="conflicts.includes(item.key)" size="x-small" label>
-                    {{ item.area === 'websockets' ? 'Already added' : 'Replaces existing' }}
+                    {{ item.area === 'websockets' ? t`Already added` : t`Replaces existing` }}
                   </v-chip>
                   <v-chip v-if="neededBy[item.key]" size="x-small" color="amber" label>
-                    Needed by {{ namesOf(neededBy[item.key]) }}
+                    {{ neededByText(item.key) }}
                   </v-chip>
                   <v-chip v-if="missing[item.key]" size="x-small" color="amber" label>
-                    Needs {{ namesOf(missing[item.key]) }}
+                    {{ needsText(item.key) }}
                   </v-chip>
                 </div>
               </template>
@@ -78,7 +87,7 @@
     </template>
     <template #actions>
       <div class="flex w-full px-1 py-2">
-        <v-btn variant="text" size="small" @click="close">Cancel</v-btn>
+        <v-btn variant="text" size="small" @click="close">{{ t`Cancel` }}</v-btn>
         <v-spacer />
         <v-btn size="small" class="bg-[#FFFFFF33] text-white" :disabled="primaryDisabled" @click="emit('primary')">
           {{ primaryText }}
@@ -89,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
@@ -154,14 +164,14 @@ const areas: {
    */
   title: string
 }[] = [
-  { value: 'dataLake', title: 'Data lake' },
-  { value: 'actions', title: 'Actions' },
+  { value: 'dataLake', title: t`Data lake` },
+  { value: 'actions', title: t`Actions` },
   { value: 'websockets', title: 'WebSockets' },
-  { value: 'diyWidgets', title: 'DIY widgets' },
+  { value: 'diyWidgets', title: t`DIY widgets` },
 ]
 const headers = [
-  { title: 'Name', key: 'name' },
-  { title: 'Type', key: 'kind' },
+  { title: t`Name`, key: 'name' },
+  { title: t`Type`, key: 'kind' },
   { title: '', key: 'notes', sortable: false, align: 'end' as const },
 ]
 
@@ -173,7 +183,6 @@ watch(
   }
 )
 
-const areaTitle = (area: RecipeArea): string => areas.find((a) => a.value === area)?.title ?? area
 const itemsOf = (area: RecipeArea): RecipeItem[] => props.items.filter((item) => item.area === area)
 const selectedOf = (area: RecipeArea): string[] => {
   const keys = new Set(itemsOf(area).map((item) => item.key))
@@ -183,11 +192,20 @@ const namesOf = (keys: string[]): string =>
   keys.map((key) => props.items.find((item) => item.key === key)?.name ?? key).join(', ')
 
 const missing = computed(() => missingDependencies(props.selected, props.dependencies))
+const missingCount = computed(() => Object.keys(missing.value).length)
 const neededBy = computed(() => {
   const result: Record<string, string[]> = {}
   Object.entries(missing.value).forEach(([key, needed]) => needed.forEach((n) => (result[n] ??= []).push(key)))
   return result
 })
+const neededByText = (key: string): string => {
+  const names = namesOf(neededBy.value[key])
+  return t`Needed by ${names}`
+}
+const needsText = (key: string): string => {
+  const names = namesOf(missing.value[key])
+  return t`Needs ${names}`
+}
 
 const onTableSelection = (area: RecipeArea, keys: string[]): void => {
   const areaKeys = new Set(itemsOf(area).map((item) => item.key))
@@ -197,16 +215,15 @@ const onTableSelection = (area: RecipeArea, keys: string[]): void => {
   // Only what was just chosen brings its dependencies along, so items the user left out stay out.
   const next = [...new Set([...kept, ...withDependencies(added, props.dependencies)])]
   const extra = next.length - kept.length - added.length
-  logUserAction(`Changed the ${areaTitle(area)} items chosen in the "${props.title}" dialog`)
+  logUserAction(`Changed the ${area} items chosen in the "${props.title}" dialog`)
   if (extra > 0) {
-    openSnackbar({ message: `Also selected ${extra} item(s) the selection needs.`, variant: 'info', duration: 3000 })
+    openSnackbar({ message: t`Also selected ${extra} item(s) the selection needs.`, variant: 'info', duration: 3000 })
   }
   emit('update:selected', next)
 }
 
 const onTabChange = (tab: unknown): void => {
-  const title = tab === 'general' ? 'General' : areaTitle(tab as RecipeArea)
-  logUserAction(`Switched to the "${title}" tab of the "${props.title}" dialog`)
+  logUserAction(`Switched to the "${tab}" tab of the "${props.title}" dialog`)
 }
 
 const close = (): void => {

@@ -9,10 +9,10 @@
   >
     <template #content>
       <div v-if="updateInfo.version" class="mt-2">
-        <strong>Update Details:</strong>
-        <p>Current Version: {{ app_version.version }}</p>
-        <p>New Version: {{ updateInfo.version }}</p>
-        <p>Release Date: {{ formatDate(updateInfo.releaseDate) }}</p>
+        <strong>{{ t`Update Details:` }}</strong>
+        <p>{{ t`Current Version: ${app_version.version}` }}</p>
+        <p>{{ t`New Version: ${updateInfo.version}` }}</p>
+        <p>{{ t`Release Date:` }} {{ formatDate(updateInfo.releaseDate) }}</p>
       </div>
       <v-progress-linear
         v-if="showProgress"
@@ -32,6 +32,7 @@
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
+import { t } from 'ttag'
 import { onBeforeMount, ref } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
@@ -73,8 +74,8 @@ onBeforeMount(() => {
   // Listen for update events
   window.electronAPI.onCheckingForUpdate(() => {
     console.log('Checking if there are updates for the Electron app...')
-    dialogTitle.value = 'Checking for Updates'
-    dialogMessage.value = 'Looking for new versions of the application...'
+    dialogTitle.value = t`Checking for Updates`
+    dialogMessage.value = t`Looking for new versions of the application...`
     dialogVariant.value = 'info'
     dialogActions.value = []
     showProgress.value = false
@@ -87,12 +88,12 @@ onBeforeMount(() => {
 
   window.electronAPI.onUpdateNotAvailable(() => {
     console.log('No updates available for the Electron app.')
-    dialogTitle.value = 'No Updates Available'
-    dialogMessage.value = 'You are running the latest version of the application.'
+    dialogTitle.value = t`No Updates Available`
+    dialogMessage.value = t`You are running the latest version of the application.`
     dialogVariant.value = 'success'
     dialogActions.value = [
       {
-        text: 'OK',
+        text: t`OK`,
         action: () => {
           showUpdateDialog.value = false
         },
@@ -103,13 +104,13 @@ onBeforeMount(() => {
 
   window.electronAPI.onUpdateAvailable((info) => {
     console.log('Update available for the Electron app.', info)
-    dialogTitle.value = 'Update Available'
-    dialogMessage.value = 'A new version of the application is available. Would you like to download it now?'
+    dialogTitle.value = t`Update Available`
+    dialogMessage.value = t`A new version of the application is available. Would you like to download it now?`
     dialogVariant.value = 'info'
     updateInfo.value = { ...info }
     dialogActions.value = [
       {
-        text: 'Ignore This Version',
+        text: t`Ignore This Version`,
         action: () => {
           logUserAction(`Ignored app update version ${updateInfo.value.version}`)
           if (!ignoredUpdateVersions.value.includes(updateInfo.value.version)) {
@@ -120,26 +121,26 @@ onBeforeMount(() => {
         },
       },
       {
-        text: 'Download',
+        text: t`Download`,
         action: () => {
           logUserAction('Started downloading app update')
           window.electronAPI!.downloadUpdate()
           showProgress.value = true
           dialogActions.value = [
             {
-              text: 'Cancel',
+              text: t`Cancel`,
               action: () => {
                 logUserAction('Cancelled app update download')
                 window.electronAPI!.cancelUpdate()
                 showUpdateDialog.value = false
-                dialogMessage.value = 'Downloading update...'
+                dialogMessage.value = t`Downloading update...`
               },
             },
           ]
         },
       },
       {
-        text: 'Not Now',
+        text: t`Not Now`,
         action: () => {
           logUserAction('Dismissed app update prompt')
           window.electronAPI!.cancelUpdate()
@@ -158,10 +159,10 @@ onBeforeMount(() => {
     // A check the user started already has the dialog up; the startup check offers the update without interrupting.
     if (showUpdateDialog.value) return
     openSnackbar({
-      message: `Cockpit ${info.version} is available.`,
+      message: t`Cockpit ${info.version} is available.`,
       variant: 'info',
       persistent: true,
-      action: { label: 'See update', handler: () => (showUpdateDialog.value = true) },
+      action: { label: t`See update`, handler: () => (showUpdateDialog.value = true) },
     })
   })
 
@@ -172,16 +173,18 @@ onBeforeMount(() => {
   window.electronAPI.onUpdateError((message) => {
     console.error('Failed to update the Electron app.', message)
     if (!userAskedForUpdates.value) return
-    dialogTitle.value = 'Update Failed'
+    dialogTitle.value = t`Update Failed`
     // The updater reports everything it cannot do through this event, so the reason it gives is the only thing that
     // says which failure this is. A download is the only step that runs with the progress bar up.
-    const failedStep = showProgress.value ? 'download the update' : 'check for updates'
-    dialogMessage.value = [`Cockpit could not ${failedStep}.`, `Reported reason: ${message}`]
+    const failure = showProgress.value
+      ? t`Cockpit could not download the update.`
+      : t`Cockpit could not check for updates.`
+    dialogMessage.value = [failure, t`Reported reason: ${message}`]
     dialogVariant.value = 'error'
     showProgress.value = false
     dialogActions.value = [
       {
-        text: 'OK',
+        text: t`OK`,
         action: () => {
           showUpdateDialog.value = false
         },
@@ -192,14 +195,13 @@ onBeforeMount(() => {
 
   window.electronAPI.onUpdateDownloaded(() => {
     console.log('Finished downloading the update for the Electron app.')
-    dialogTitle.value = 'Update Ready to Install'
-    dialogMessage.value =
-      'The update has been downloaded. Would you like to install it now? The application will restart during installation.'
+    dialogTitle.value = t`Update Ready to Install`
+    dialogMessage.value = t`The update has been downloaded. Would you like to install it now? The application will restart during installation.`
     dialogVariant.value = 'info'
     showProgress.value = false
     dialogActions.value = [
       {
-        text: 'Install Now',
+        text: t`Install Now`,
         action: () => {
           logUserAction('Installed app update now')
           window.electronAPI!.installUpdate()
@@ -207,7 +209,7 @@ onBeforeMount(() => {
         },
       },
       {
-        text: 'Later',
+        text: t`Later`,
         action: () => {
           logUserAction('Postponed app update installation')
           showUpdateDialog.value = false

@@ -19,7 +19,7 @@
         margin: '1px',
       }"
     >
-      {{ miniWidget.options.layout?.text || 'Label' }}
+      {{ miniWidget.options.layout?.text || t`Label` }}
     </div>
   </div>
 </template>

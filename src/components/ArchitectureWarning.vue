@@ -1,7 +1,7 @@
 <template>
   <InteractionDialog
     v-model="showArchWarningDialog"
-    title="Performance Warning"
+    :title="t`Performance Warning`"
     variant="text-only"
     :actions="dialogActions"
     max-width="820"
@@ -10,16 +10,18 @@
       <div class="flex items-center justify-center mb-2">
         <v-icon class="text-yellow text-[60px] mx-8">mdi-alert-rhombus</v-icon>
         <div class="flex flex-col font-medium gap-y-3 w-full">
-          You are running the x64 version of Cockpit on an Apple Silicon Mac (M series), which causes severely degraded
-          performance, including:
+          {{
+            t`You are running the x64 version of Cockpit on an Apple Silicon Mac (M series), which causes severely degraded performance, including:`
+          }}
           <ul class="mt- ml-4">
-            <li>- 3-4x slower application startup times</li>
-            <li>- 2x the memory usage</li>
-            <li>- Reduced overall performance</li>
+            <li>- {{ t`3-4x slower application startup times` }}</li>
+            <li>- {{ t`2x the memory usage` }}</li>
+            <li>- {{ t`Reduced overall performance` }}</li>
           </ul>
           <p class="text-sm text-gray-600 mt-2">
-            This warning cannot be disabled - we strongly recommend that you download and install the intended version
-            for your system.
+            {{
+              t`This warning cannot be disabled - we strongly recommend that you download and install the intended version for your system.`
+            }}
           </p>
         </div>
       </div>
@@ -28,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { onBeforeMount, ref } from 'vue'
 
 import InteractionDialog, { type Action } from '@/components/InteractionDialog.vue'
@@ -39,13 +42,13 @@ const showArchWarningDialog = ref(false)
 
 const dialogActions = [
   {
-    text: 'Dismiss',
+    text: t`Dismiss`,
     action: () => {
       showArchWarningDialog.value = false
     },
   },
   {
-    text: 'Download ARM64 Version',
+    text: t`Download ARM64 Version`,
     action: () => {
       window.open('https://github.com/bluerobotics/cockpit/releases/', '_blank')
       showArchWarningDialog.value = false
@@ -68,10 +71,10 @@ const checkArchitectureAndWarn = async (): Promise<void> => {
     // Only show warning if we detect x64 on ARM64 Mac
     if (!PlatformUtils.isX64OnArm64Mac(systemInfo.platform, systemInfo.arch, systemInfo.processArch)) return
     openSnackbar({
-      message: 'This Cockpit version is made for Intel Macs and runs much slower on this Mac.',
+      message: t`This Cockpit version is made for Intel Macs and runs much slower on this Mac.`,
       variant: 'warning',
       persistent: true,
-      action: { label: 'Details', handler: () => (showArchWarningDialog.value = true) },
+      action: { label: t`Details`, handler: () => (showArchWarningDialog.value = true) },
     })
   } catch (error) {
     console.error('Failed to get system info for architecture check:', error)

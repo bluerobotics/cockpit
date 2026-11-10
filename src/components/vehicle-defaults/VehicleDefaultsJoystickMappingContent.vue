@@ -3,8 +3,9 @@
     <div v-if="evaluation?.joystick.defaultMapping && hasImportOffer" class="space-y-3">
       <div class="space-y-1.5 text-sm opacity-80">
         <p class="pl-2 mb-2">
-          Cockpit has a default joystick mapping for {{ evaluation.vehicleTypeName }} with
-          {{ defaultMappingAxisCount }} axis function(s)
+          {{
+            t`Cockpit has a default joystick mapping for ${evaluation.vehicleTypeName} with ${defaultMappingAxisCount} axis function(s)`
+          }}
         </p>
         <ul v-if="!isCurrentMappingBlank" class="list-none space-y-1.5 pl-2">
           <li class="flex items-start gap-2">
@@ -12,7 +13,9 @@
               {{ evaluation.joystick.missingAxisFunctions === 0 ? 'mdi-check' : 'mdi-close' }}
             </v-icon>
             <span>
-              Your current mapping is missing {{ evaluation.joystick.missingAxisFunctions }} default axis function(s).
+              {{
+                t`Your current mapping is missing ${evaluation.joystick.missingAxisFunctions} default axis function(s).`
+              }}
             </span>
           </li>
           <li class="flex items-start gap-2">
@@ -20,8 +23,9 @@
               {{ evaluation.joystick.axisFunctionsWithRangeMismatch === 0 ? 'mdi-check' : 'mdi-close' }}
             </v-icon>
             <span>
-              Your current mapping has {{ evaluation.joystick.axisFunctionsWithRangeMismatch }} axis function(s) with a
-              range that differs from the default by more than 5%.
+              {{
+                t`Your current mapping has ${evaluation.joystick.axisFunctionsWithRangeMismatch} axis function(s) with a range that differs from the default by more than 5%.`
+              }}
             </span>
           </li>
         </ul>
@@ -29,10 +33,10 @@
 
       <div class="rounded-lg border border-white/10 px-2.5 py-2">
         <div class="mb-1 flex items-center justify-between">
-          <span class="text-sm font-semibold">Bindings to import ({{ joystickImportRows.length }})</span>
+          <span class="text-sm font-semibold">{{ t`Bindings to import (${joystickImportRows.length})` }}</span>
           <div class="flex gap-1">
-            <v-btn size="x-small" variant="text" @click="selectAllJoystickRows">All</v-btn>
-            <v-btn size="x-small" variant="text" @click="selectNoneJoystickRows">None</v-btn>
+            <v-btn size="x-small" variant="text" @click="selectAllJoystickRows">{{ t`All` }}</v-btn>
+            <v-btn size="x-small" variant="text" @click="selectNoneJoystickRows">{{ t`None` }}</v-btn>
           </div>
         </div>
         <div class="max-h-[280px] space-y-1.5 overflow-y-auto pr-0.5">
@@ -77,31 +81,34 @@
     <div v-else-if="evaluation?.joystick.defaultMapping && !hasImportOffer" class="space-y-3">
       <p class="my-8 text-sm text-center opacity-80">
         <template v-if="variant === 'wizard'">
-          Your joystick mapping already matches the default for {{ evaluation.vehicleTypeName }}. Click
-          <strong>Next</strong> to continue to the views group screen.
+          {{ t`Your joystick mapping already matches the default for ${evaluation.vehicleTypeName}.` }}
+          {{ t`Click` }} <strong>{{ t`Next` }}</strong> {{ t`to continue to the views group screen.` }}
         </template>
         <template v-else-if="!isCurrentMappingBlank">
-          Your joystick mapping matches the default for {{ evaluation.vehicleTypeName }} exactly.
+          {{ t`Your joystick mapping matches the default for ${evaluation.vehicleTypeName} exactly.` }}
         </template>
         <template v-else>
-          Your joystick mapping already matches the default for {{ evaluation.vehicleTypeName }}.
+          {{ t`Your joystick mapping already matches the default for ${evaluation.vehicleTypeName}.` }}
         </template>
       </p>
     </div>
 
     <div v-else class="py-2 text-center text-sm opacity-80">
       <template v-if="variant === 'wizard'">
-        No default joystick mapping is available for {{ evaluation?.vehicleTypeName ?? 'this vehicle' }}. Click
-        <strong>Next</strong> to continue.
+        {{ t`No default joystick mapping is available for ${vehicleTypeName}.` }} {{ t`Click` }}
+        <strong>{{ t`Next` }}</strong> {{ t`to continue.` }}
       </template>
       <template v-else>
-        No default joystick mapping is available for {{ evaluation?.vehicleTypeName ?? 'this vehicle' }}.
+        {{ t`No default joystick mapping is available for ${vehicleTypeName}.` }}
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
+import { computed } from 'vue'
+
 import { useVehicleDefaultsJoystickImportInject } from '@/composables/vehicleDefaults/useVehicleDefaultsJoystickImport'
 
 withDefaults(
@@ -122,4 +129,6 @@ const {
   selectAllJoystickRows,
   selectNoneJoystickRows,
 } = useVehicleDefaultsJoystickImportInject()
+
+const vehicleTypeName = computed(() => evaluation.value?.vehicleTypeName ?? t`this vehicle`)
 </script>

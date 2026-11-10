@@ -85,6 +85,7 @@
 
 <script setup lang="ts">
 import { useElementHover, useWindowSize } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { useWidgetGeometry } from '@/composables/useWidgetGeometry'
@@ -197,7 +198,7 @@ const openWidgetConfig = (): void => {
 const contextMenuItems = computed(() => {
   const registered = widgetStore.widgetManagerVars(widget.value.hash).contextMenuItems ?? []
   const optionsItem = isWidgetConfigurable[widget.value.component as WidgetType]
-    ? [{ item: 'Options', action: openWidgetConfig, icon: 'mdi-cog' }]
+    ? [{ item: t`Options`, action: openWidgetConfig, icon: 'mdi-cog' }]
     : []
   return [...registered, ...optionsItem]
 })
@@ -693,7 +694,7 @@ const cursorStyle = computed(() => {
 })
 
 const isWidgetFullScreen = computed(() => widgetStore.isFullScreen(widget.value))
-const fullScreenToggleLabel = computed(() => (isWidgetFullScreen.value ? 'Restore widget size' : 'Maximize widget'))
+const fullScreenToggleLabel = computed(() => (isWidgetFullScreen.value ? t`Restore widget size` : t`Maximize widget`))
 
 // Resizing stops each edge at its bar, but a widget can already be under one (maximized, taller than the visible area,
 // or from an older layout), so each handle is inset past its bar as drawn (the scaled height) to stay clickable.

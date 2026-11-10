@@ -10,7 +10,7 @@
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="500">
     <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">View selector</v-card-title>
+      <v-card-title class="text-center">{{ t`View selector` }}</v-card-title>
       <v-card-text class="flex flex-col gap-y-4">
         <div class="absolute top-2 right-2 z-10">
           <v-btn
@@ -18,7 +18,7 @@
             size="30"
             variant="text"
             class="text-white text-[22px]"
-            aria-label="Close"
+            :aria-label="t`Close`"
             @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
           >
             <i class="mdi mdi-close"></i>
@@ -26,15 +26,16 @@
         </div>
         <v-switch
           :model-value="widgetStore.unmountHiddenViews"
-          label="Unload hidden views"
+          :label="t`Unload hidden views`"
           color="white"
           hide-details
           base-color="#FFFFFF33"
           @update:model-value="widgetStore.setUnmountHiddenViews"
         />
         <p class="text-sm opacity-80">
-          Only the view you are looking at stays loaded. Widgets on other views start again when you switch to them.
-          Opening Mission planning also unloads the flight widgets until you come back.
+          {{
+            t`Only the view you are looking at stays loaded. Widgets on other views start again when you switch to them. Opening Mission planning also unloads the flight widgets until you come back.`
+          }}
         </p>
       </v-card-text>
     </v-card>

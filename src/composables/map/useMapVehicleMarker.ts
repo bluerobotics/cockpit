@@ -1,4 +1,5 @@
 import L, { type LatLngTuple, type Map, type Marker, type MarkerOptions } from 'leaflet'
+import { t } from 'ttag'
 import { type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
 const VEHICLE_ICON_SIZE_PX = 64
@@ -70,7 +71,7 @@ export const useMapVehicleMarker = (
 
     marker.value = L.marker(position, markerOptions)
     marker.value.bindTooltip(
-      L.tooltip({ content: 'No data available', className: options.tooltipClassName, offset: [40, 0] })
+      L.tooltip({ content: t`No data available`, className: options.tooltipClassName, offset: [40, 0] })
     )
     map.value.addLayer(marker.value)
   }

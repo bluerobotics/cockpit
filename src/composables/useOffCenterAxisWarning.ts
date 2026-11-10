@@ -1,3 +1,4 @@
+import { msgid, ngettext, t } from 'ttag'
 import { onUnmounted, watch } from 'vue'
 
 import { goToMenuPage } from '@/composables/menuRouting'
@@ -47,23 +48,25 @@ export const useOffCenterAxisWarning = (): void => {
     openWarningId = undefined
     if (axes.length === 0 || suppressedFindings.value.includes(key)) return
 
-    const names = axes.map((axis) => axis.action.name)
-    const subject =
-      names.length === 1 ? `The joystick range of ${names[0]} is` : `The joystick ranges of ${names.join(', ')} are`
+    const names = axes.map((axis) => axis.action.name).join(', ')
     const vehicle = vehicleTypeName(vehicleType)
     openWarningId = openSnackbar({
-      message: `${subject} off-center for ${vehicle}, so the vehicle can move with the stick at rest.`,
+      message: ngettext(
+        msgid`The joystick range of ${names} is off-center for ${vehicle}, so the vehicle can move with the stick at rest.`,
+        `The joystick ranges of ${names} are off-center for ${vehicle}, so the vehicle can move with the stick at rest.`,
+        axes.length
+      ),
       variant: 'warning',
       persistent: true,
       action: {
-        label: 'Joystick settings',
+        label: t`Joystick settings`,
         handler: () => {
           logUserAction('Opened the joystick settings from the off-center axis warning')
           goToMenuPage(SubMenuComponentName.SettingsJoystick)
         },
       },
       suppress: {
-        tooltip: 'Do not warn about these ranges again on this vehicle',
+        tooltip: t`Do not warn about these ranges again on this vehicle`,
         handler: () => (suppressedFindings.value = [...suppressedFindings.value, key]),
       },
     })

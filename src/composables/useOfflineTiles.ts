@@ -1,5 +1,6 @@
 import L from 'leaflet'
 import { type SaveStatus, type TileInfo, downloadTile, savetiles } from 'leaflet.offline'
+import { t } from 'ttag'
 import { computed, ref } from 'vue'
 
 import { type DialogOptions, type DialogResult } from '@/composables/interactionDialog'
@@ -36,7 +37,7 @@ async function estimateAvgTileSize(tiles: TileInfo[], count: number = SAMPLE_COU
   const samples = tiles.slice(0, Math.min(count, tiles.length))
   if (samples.length === 0) return 0
   try {
-    const blobs = await Promise.all(samples.map((t) => downloadTile(t.url)))
+    const blobs = await Promise.all(samples.map((tile) => downloadTile(tile.url)))
     return blobs.reduce((sum, b) => sum + b.size, 0) / blobs.length
   } catch {
     return 0
@@ -100,13 +101,13 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
 
       showDialog({
         variant: 'info',
-        message: `Save ${tileCount} ${layerLabel} tiles${sizeInfo} for offline use?`,
+        message: t`Save ${tileCount} ${layerLabel} tiles${sizeInfo} for offline use?`,
         persistent: false,
         maxWidth: '450px',
         actions: [
-          { text: 'Cancel', color: 'white', action: closeDialog },
+          { text: t`Cancel`, color: 'white', action: closeDialog },
           {
-            text: 'Save tiles',
+            text: t`Save tiles`,
             color: 'white',
             action: () => {
               ok()
@@ -122,18 +123,18 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
     (_status: SaveStatus, ok: () => void): void => {
       showDialog({
         variant: 'warning',
-        message: `Remove all saved ${layerLabel} tiles for this layer?`,
+        message: t`Remove all saved ${layerLabel} tiles for this layer?`,
         persistent: false,
         maxWidth: '450px',
         actions: [
-          { text: 'Cancel', color: 'white', action: closeDialog },
+          { text: t`Cancel`, color: 'white', action: closeDialog },
           {
-            text: 'Remove tiles',
+            text: t`Remove tiles`,
             color: 'white',
             action: () => {
               ok()
               closeDialog()
-              openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
+              openSnackbar({ message: t`${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
             },
           },
         ] as DialogActions[],
@@ -148,6 +149,8 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
    * @returns {L.Control} The savetiles control instance
    */
   const downloadOfflineMapTiles = (layer: any, layerLabel: string, maxZoom: number): L.Control => {
+    const saveTitle = t`Save ${layerLabel} tiles`
+    const removeTitle = t`Remove ${layerLabel} tiles`
     return savetiles(layer, {
       saveWhatYouSee: true,
       maxZoom,
@@ -156,8 +159,8 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
       parallel: 20,
       confirm: confirmDownloadDialog(layerLabel),
       confirmRemoval: deleteDownloadedTilesDialog(layerLabel),
-      saveText: `<i class="mdi mdi-download" title="Save ${layerLabel} tiles"></i>`,
-      rmText: `<i class="mdi mdi-trash-can" title="Remove ${layerLabel} tiles"></i>`,
+      saveText: `<i class="mdi mdi-download" title="${saveTitle}"></i>`,
+      rmText: `<i class="mdi mdi-trash-can" title="${removeTitle}"></i>`,
     })
   }
 
@@ -172,13 +175,13 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
       tilesTotal.value = e?._tilesforSave?.length ?? 0
       savingLayerName.value = layerName
       isSavingOfflineTiles.value = true
-      openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+      openSnackbar({ message: t`Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
     })
 
     layer.on('loadtileend', () => {
       tilesSaved.value += 1
       if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
-        openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+        openSnackbar({ message: t`${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
         isSavingOfflineTiles.value = false
         savingLayerName.value = ''
         tilesSaved.value = 0

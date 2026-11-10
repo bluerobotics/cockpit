@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -44,19 +45,21 @@ export const useAxisMappingDrafts = () => {
 
   const hasDirtyAxes = computed(() => Object.keys(drafts.value).length > 0)
 
-  const discardDrafts = (reason: string): void => {
+  const discardDrafts = (message: string): void => {
     if (!hasDirtyAxes.value) return
     drafts.value = {}
-    openSnackbar({ message: `Unsaved axis changes were discarded because ${reason}.`, variant: 'warning' })
+    openSnackbar({ message, variant: 'warning' })
   }
 
   // An import or a sync replaces the mapping whole, so the pending edits no longer describe what they would change.
   watch(
     () => controllerStore.protocolMapping,
-    () => discardDrafts('the joystick mapping was replaced')
+    () => discardDrafts(t`Unsaved axis changes were discarded because the joystick mapping was replaced.`)
   )
 
-  onUnmounted(() => discardDrafts('the joystick configuration was closed'))
+  onUnmounted(() =>
+    discardDrafts(t`Unsaved axis changes were discarded because the joystick configuration was closed.`)
+  )
 
   const savedMapping = (axis: JoystickAxis): AxisCorrespondence =>
     controllerStore.protocolMapping.axesCorrespondencies[axis]

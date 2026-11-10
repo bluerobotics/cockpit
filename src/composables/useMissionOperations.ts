@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { computed, ComputedRef } from 'vue'
 
 import { type DialogOptions, type DialogResult } from '@/composables/interactionDialog'
@@ -59,7 +60,7 @@ export const useMissionOperations = (
     const doRestore = (): void => {
       logUserAction('Restored the last uploaded mission')
       loadDraftMission(mission).catch((err) => {
-        openSnackbar({ variant: 'error', message: `Failed to restore last uploaded mission: ${err}`, duration: 3500 })
+        openSnackbar({ variant: 'error', message: t`Failed to restore last uploaded mission: ${err}`, duration: 3500 })
       })
     }
 
@@ -71,14 +72,14 @@ export const useMissionOperations = (
     logUserAction('Opened the restore-last-uploaded-mission dialog')
     showDialog({
       variant: 'warning',
-      title: 'Restore last uploaded mission',
-      message: 'This will replace the current mission with the last one uploaded to the vehicle. Continue?',
+      title: t`Restore last uploaded mission`,
+      message: t`This will replace the current mission with the last one uploaded to the vehicle. Continue?`,
       persistent: false,
       maxWidth: 620,
       actions: [
-        { text: 'Cancel', color: 'white', action: closeDialog },
+        { text: t`Cancel`, color: 'white', action: closeDialog },
         {
-          text: 'Restore',
+          text: t`Restore`,
           color: 'white',
           action: () => {
             closeDialog()

@@ -1,4 +1,5 @@
 import { useStorage, useThrottleFn } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, reactive, ref, watch } from 'vue'
 
 import type { DialogOptions, DialogResult } from '@/composables/interactionDialog'
@@ -138,7 +139,7 @@ function initialize() {
 
   // Serial GNSS receivers only work on Standalone, so Lite is left with the browser's Geolocation API.
   const gpsSourceOptions = computed(() => [
-    { id: BROWSER_GEOLOCATION_SOURCE_ID, label: 'Browser geolocation' },
+    { id: BROWSER_GEOLOCATION_SOURCE_ID, label: t`Browser geolocation` },
     ...(gnss.isSupported ? gnss.devices.value.map((device) => ({ id: device.id, label: device.name })) : []),
   ])
 
@@ -173,7 +174,7 @@ function initialize() {
       (error) => {
         openSnackbar({
           variant: 'error',
-          message: `Base station GPS tracking failed: ${error.message}. Disabling.`,
+          message: t`Base station GPS tracking failed: ${error.message}. Disabling.`,
           duration: 4000,
         })
         trackByGps.value = false
@@ -274,13 +275,13 @@ export const confirmRemoveBaseStation = (
 ): void => {
   showDialog({
     variant: 'text-only',
-    message: 'Remove the base station? This will clear its position and configuration.',
+    message: t`Remove the base station? This will clear its position and configuration.`,
     persistent: false,
     maxWidth: '480px',
     actions: [
-      { text: 'Cancel', color: 'white', action: closeDialog },
+      { text: t`Cancel`, color: 'white', action: closeDialog },
       {
-        text: 'Remove',
+        text: t`Remove`,
         color: 'white',
         action: () => {
           logUserAction('Removed the base station')

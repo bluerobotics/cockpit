@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { CockpitMission, SavedMission, Waypoint, WaypointCoordinates } from '@/types/mission'
 
@@ -18,10 +20,10 @@ export const PLANNABLE_VEHICLE_TYPES: ReadonlyArray<{
   /** Underlying MavType value persisted with the mission. */
   value: MavType
 }> = [
-  { label: 'Surface Boat', value: MavType.MAV_TYPE_SURFACE_BOAT },
-  { label: 'Submarine', value: MavType.MAV_TYPE_SUBMARINE },
-  { label: 'UAV', value: MavType.MAV_TYPE_QUADROTOR },
-  { label: 'Ground Rover', value: MavType.MAV_TYPE_GROUND_ROVER },
+  { label: t`Surface Boat`, value: MavType.MAV_TYPE_SURFACE_BOAT },
+  { label: t`Submarine`, value: MavType.MAV_TYPE_SUBMARINE },
+  { label: t`UAV`, value: MavType.MAV_TYPE_QUADROTOR },
+  { label: t`Ground Rover`, value: MavType.MAV_TYPE_GROUND_ROVER },
 ]
 
 const PLANNABLE_VEHICLE_TYPE_LABELS: Partial<Record<MavType, string>> = Object.fromEntries(
@@ -35,7 +37,7 @@ const PLANNABLE_VEHICLE_TYPE_LABELS: Partial<Record<MavType, string>> = Object.f
  * @returns {string} The label to render, or 'Any' when no type was captured.
  */
 export const vehicleTypeLabel = (type?: MavType): string => {
-  if (!type) return 'Any'
+  if (!type) return t`Any`
   return (
     PLANNABLE_VEHICLE_TYPE_LABELS[type] ??
     String(type)

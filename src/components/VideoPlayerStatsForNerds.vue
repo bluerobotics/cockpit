@@ -6,6 +6,7 @@
 
 <script lang="ts" setup>
 import { WebRTCStats } from '@peermetrics/webrtc-stats'
+import { t } from 'ttag'
 import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
@@ -143,17 +144,17 @@ function draw(): void {
     const bitrateStr = info?.bitrateKbps ? `${info.bitrateKbps}kbps` : '...'
     const ppsStr = info?.packetsPerSec ? `${info.packetsPerSec}/s` : '...'
     const stats = [
-      { label: 'Stream', value: props.streamName, color: statusColor },
-      { label: 'Source', value: 'Direct RTSP', color: statusColor },
-      { label: 'Codec', value: info?.codec ?? '...', color: statusColor },
-      { label: 'Size', value: info?.width ? `${info.width}x${info.height}` : '...', color: statusColor },
-      { label: 'Transport', value: info?.protocol ?? '...', color: statusColor },
+      { label: t`Stream`, value: props.streamName, color: statusColor },
+      { label: t`Source`, value: 'Direct RTSP', color: statusColor },
+      { label: t`Codec`, value: info?.codec ?? '...', color: statusColor },
+      { label: t`Size`, value: info?.width ? `${info.width}x${info.height}` : '...', color: statusColor },
+      { label: t`Transport`, value: info?.protocol ?? '...', color: statusColor },
       { label: 'FPS', value: info?.fps ?? '...', color: 'rgb(0, 255, 0)' },
-      { label: 'Bitrate', value: bitrateStr, color: 'rgb(255, 165, 0)' },
-      { label: 'Packets', value: ppsStr, color: 'rgb(100, 200, 255)' },
-      { label: 'Stalls', value: rtspStallCount, color: rtspStallCount > 0 ? 'rgb(255, 0, 0)' : 'white' },
-      { label: 'Buffer', value: `${jitterBufferDelayPerFrame.toFixed(0)}ms`, color: statusColor },
-      { label: 'Frame drops', value: framedrops, color: statusColor },
+      { label: t`Bitrate`, value: bitrateStr, color: 'rgb(255, 165, 0)' },
+      { label: t`Packets`, value: ppsStr, color: 'rgb(100, 200, 255)' },
+      { label: t`Stalls`, value: rtspStallCount, color: rtspStallCount > 0 ? 'rgb(255, 0, 0)' : 'white' },
+      { label: t`Buffer`, value: `${jitterBufferDelayPerFrame.toFixed(0)}ms`, color: statusColor },
+      { label: t`Frame drops`, value: framedrops, color: statusColor },
     ]
 
     stats.forEach((stat, index) => {
@@ -167,17 +168,17 @@ function draw(): void {
 
     const color = connectionLost ? 'red' : 'white'
     const stats = [
-      { label: 'Stream', value: props.streamName, color: color },
-      { label: 'Size', value: videoHeight ? `${videoHeight}p` : 'N/A', color: color },
-      { label: 'Packets Lost', value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`, color: color },
-      { label: 'Frame drops', value: framedrops, color: color },
+      { label: t`Stream`, value: props.streamName, color: color },
+      { label: t`Size`, value: videoHeight ? `${videoHeight}p` : 'N/A', color: color },
+      { label: t`Packets Lost`, value: `${packetsLost} (${packetLossPercentage.toFixed(0)}%)`, color: color },
+      { label: t`Frame drops`, value: framedrops, color: color },
       { label: 'Nack', value: nackCount, color: color },
       { label: 'Pli', value: pliCount, color: color },
       { label: 'Fir', value: firCount, color: color },
-      { label: 'Processing ', value: `${processingDelayDelta.toFixed(0)}ms`, color: color },
-      { label: 'Buffer', value: `${jitterBufferDelayPerFrame.toFixed(0)}ms`, color: color },
-      { label: 'Freezes', value: `${freezes}(${frozenTime.toFixed(1)}s)`, color: color },
-      { label: 'Bitrate', value: `${bitrate.toFixed(0)}kbps`, color: 'rgb(255, 165, 0)' },
+      { label: t`Processing`, value: `${processingDelayDelta.toFixed(0)}ms`, color: color },
+      { label: t`Buffer`, value: `${jitterBufferDelayPerFrame.toFixed(0)}ms`, color: color },
+      { label: t`Freezes`, value: `${freezes}(${frozenTime.toFixed(1)}s)`, color: color },
+      { label: t`Bitrate`, value: `${bitrate.toFixed(0)}kbps`, color: 'rgb(255, 165, 0)' },
       { label: 'FPS', value: framerate.toFixed(2), color: 'rgb(0, 255, 0)' },
     ]
 

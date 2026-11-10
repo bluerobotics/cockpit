@@ -1,5 +1,6 @@
 import ky from 'ky'
 import localforage from 'localforage'
+import { t } from 'ttag'
 import { type ComputedRef, computed, ref } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -233,7 +234,7 @@ const createState = (): ExternalMapOverlaysState => {
             if (reportedGeoTiffFailures.has(failure)) return
             reportedGeoTiffFailures.add(failure)
             const reason = messageFromError(error)
-            openSnackbar({ message: `Could not show the "${geoTiff.name}" map overlay: ${reason}`, variant: 'error' })
+            openSnackbar({ message: t`Could not show the "${geoTiff.name}" map overlay: ${reason}`, variant: 'error' })
           }
         )
         return

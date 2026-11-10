@@ -2,15 +2,15 @@
   <div class="flex flex-col gap-4">
     <div class="flex flex-row gap-4 mb-4 flex-wrap">
       <div>
-        <div class="text-lg mb-2">Available Message Types</div>
+        <div class="text-lg mb-2">{{ t`Available Message Types` }}</div>
         <div class="mb-2 flex items-center">
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search messages..."
+            :placeholder="t`Search messages...`"
             class="w-full px-3 py-2 bg-[#FFFFFF22] rounded-md text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <v-btn variant="outlined" class="rounded-md ml-2" @click="resetTrackedMessageTypes">Reset</v-btn>
+          <v-btn variant="outlined" class="rounded-md ml-2" @click="resetTrackedMessageTypes">{{ t`Reset` }}</v-btn>
         </div>
         <div class="bg-[#FFFFFF11] rounded-md p-2 max-h-[320px] overflow-y-auto">
           <v-tooltip v-for="type in filteredMessageTypes" :key="type" location="top" open-delay="300">
@@ -26,11 +26,13 @@
             </template>
             <div class="whitespace-pre-line">{{ messageTooltip(type) }}</div>
           </v-tooltip>
-          <div v-if="filteredMessageTypes.length === 0" class="text-gray-400 text-center p-2">No messages found</div>
+          <div v-if="filteredMessageTypes.length === 0" class="text-gray-400 text-center p-2">
+            {{ t`No messages found` }}
+          </div>
         </div>
       </div>
       <div v-if="trackedMessageTypes.size > 0" class="w-auto mr-2">
-        <div class="text-lg mb-2">Message Values</div>
+        <div class="text-lg mb-2">{{ t`Message Values` }}</div>
         <div class="bg-[#FFFFFF11] rounded-md p-2 w-[24rem] overflow-y-auto">
           <MAVLinkInspectorItem
             v-for="type in trackedMessageTypes"

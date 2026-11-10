@@ -1,4 +1,5 @@
 import L from 'leaflet'
+import { t } from 'ttag'
 import { type Ref, type ShallowRef, onScopeDispose, ref, shallowRef, toRaw, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -705,7 +706,7 @@ export const useMissionPlacement = (
     rebuildPlacementPreview()
     openSnackbar({
       variant: 'info',
-      message: 'Drag to reposition. Drag corners to scale (Shift = uniform), drag the top circle to rotate.',
+      message: t`Drag to reposition. Drag corners to scale (Shift = uniform), drag the top circle to rotate.`,
       duration: 4500,
     })
   }

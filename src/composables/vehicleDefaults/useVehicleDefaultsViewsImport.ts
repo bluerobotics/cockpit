@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { type InjectionKey, computed, inject, nextTick, ref } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -88,11 +89,12 @@ export const useVehicleDefaultsViewsImport = (evaluationBundle?: VehicleDefaults
       nextTick(() => selectFirstViewOfCurrentGroup())
     }
 
+    const vehicleTypeName = evaluation.value?.vehicleTypeName
     openSnackbar({
       message:
         effectiveMode === 'replace'
-          ? `Imported default views for ${evaluation.value?.vehicleTypeName}.`
-          : `Appended ${selectedDefaultViewNames.value.length} default view(s) for ${evaluation.value?.vehicleTypeName}.`,
+          ? t`Imported default views for ${vehicleTypeName}.`
+          : t`Appended ${selectedDefaultViewNames.value.length} default view(s) for ${vehicleTypeName}.`,
       variant: 'success',
       duration: 5000,
     })

@@ -1,4 +1,5 @@
 import { type Control, type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
+import { t } from 'ttag'
 import { watch } from 'vue'
 
 import type { MapTileLayers } from '@/composables/map/useMapTileLayers'
@@ -71,7 +72,7 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
 
   const createLayerControl = (): Control.Layers =>
     createLayersControlWithAction(baseMaps, overlays, {
-      label: 'Add map provider',
+      label: t`Add map provider`,
       onClick: () => {
         logUserAction('Opened custom map providers from the map layer selector')
         interfaceStore.mapCustomProvidersExpandRequested = true

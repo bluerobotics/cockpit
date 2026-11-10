@@ -7,11 +7,13 @@
     :disabled="!vehicleStore.flying"
     @click="changeAlt()"
   >
-    <span class="inline-block font-extrabold align-middle text-white"> Change Alt </span>
+    <span class="inline-block font-extrabold align-middle text-white"> {{ t`Change Alt` }} </span>
   </button>
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
+
 import { useSnackbar } from '@/composables/snackbar'
 import { showAltitudeSlider } from '@/libs/altitude-slider'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
@@ -25,7 +27,7 @@ const changeAlt = async (): Promise<void> => {
   showAltitudeSlider.value = true
 
   try {
-    await slideToConfirm({ command: 'Altitude Change' }, canByPassCategory(EventCategory.ALT_CHANGE))
+    await slideToConfirm({ command: t`Altitude Change` }, canByPassCategory(EventCategory.ALT_CHANGE))
     showAltitudeSlider.value = false
     vehicleStore.changeAlt()
   } catch (error) {
