@@ -1,4 +1,4 @@
-import type { Go2RTCStreamInfo } from '@/types/video'
+import type { Go2RTCStreamInfo, WebRTCVideoStat } from '@/types/video'
 
 /**
  * The raw cumulative ingest counters of a go2rtc stream and the epoch they were sampled at
@@ -62,3 +62,79 @@ export const buildGo2rtcStreamSample = (
   ...info,
   ...(previous === undefined ? undefined : differenceGo2rtcSamples(previous, info)),
 })
+
+// WebRTC stats published to the data lake for every monitored stream
+const webRtcCumulativeStatKeys: WebRTCVideoStat[] = [
+  'bytesReceived',
+  'firCount',
+  'framesDecoded',
+  'framesDropped',
+  'framesReceived',
+  'freezeCount',
+  'headerBytesReceived',
+  'jitterBufferEmittedCount',
+  'keyFramesDecoded',
+  'lastPacketReceivedTimestamp',
+  'nackCount',
+  'packetsLost',
+  'packetsReceived',
+  'pauseCount',
+  'pliCount',
+  'timestamp',
+  'totalAssemblyTime',
+  'totalDecodeTime',
+  'totalFreezesDuration',
+  'totalInterFrameDelay',
+  'totalPausesDuration',
+  'totalProcessingDelay',
+  'totalSquaredInterFrameDelay',
+] // Keys that have cumulative values
+const webRtcAverageStatKeys: WebRTCVideoStat[] = [
+  'clockRate',
+  'framesAssembledFromMultiplePackets',
+  'framesPerSecond',
+  'jitter',
+  'jitterBufferDelay',
+  'jitterBufferMinimumDelay',
+  'jitterBufferTargetDelay',
+  'packetRate',
+] // Keys that have average values
+export const webRtcStreamStatKeys = [...webRtcCumulativeStatKeys, ...webRtcAverageStatKeys]
+
+// go2rtc ingest stats published to the data lake for every active RTSP stream (Standalone only)
+export const go2rtcStreamStatKeys = [
+  'bytes',
+  'packets',
+  'sampleEpoch',
+  'bitrateKbps',
+  'packetsPerSec',
+  'codec',
+  'width',
+  'height',
+  'fps',
+  'protocol',
+] as const
+
+/**
+ * The go2rtc ingest stats published to the data lake
+ */
+export type Go2rtcStreamStatKey = (typeof go2rtcStreamStatKeys)[number]
+
+/**
+ * Build the data lake variable id of a stream's WebRTC stat
+ * @param {string} internalName - Internal stream name (persisted artifacts never use the external id)
+ * @param {string} statKey - WebRTC stat key
+ * @returns {string} Data lake variable id
+ */
+export const streamStatVariableId = (internalName: string, statKey: string): string =>
+  `stream-${internalName}-${statKey}`
+
+/**
+ * Build the data lake variable id of a stream's go2rtc ingest stat. The 'rtsp' infix keeps the two
+ * legs of an RTSP stream played through go2rtc's WebRTC output unmistakable under one stream name.
+ * @param {string} internalName - Internal stream name (persisted artifacts never use the external id)
+ * @param {Go2rtcStreamStatKey} statKey - go2rtc ingest stat key
+ * @returns {string} Data lake variable id
+ */
+export const go2rtcStreamStatVariableId = (internalName: string, statKey: Go2rtcStreamStatKey): string =>
+  `stream-${internalName}-rtsp-${statKey}`
