@@ -1,10 +1,10 @@
-import { coolMissionNames } from '@/libs/funny-name/words'
+import { Words } from '@/libs/funny-name/funny-name'
 
 /**
  * Picks a random human-friendly name to use as an automatic mission name.
  * @returns {string} A cool mission name.
  */
-export const generateAutomaticMissionName = (): string => coolMissionNames.random() ?? coolMissionNames[0]
+export const generateAutomaticMissionName = (): string => Words.coolMissionNames.random() ?? Words.coolMissionNames[0]
 
 /**
  * Whether two dates fall on different local calendar days.
