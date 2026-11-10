@@ -4,6 +4,16 @@ msgstr ""
 "Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/components/widgets/MiniWidgetsBar.vue
+#, javascript-format
+msgid "${ 0 } floating container"
+msgstr "Contêiner flutuante ${ 0 }"
+
+#: src/stores/widgetManager.ts
+#, javascript-format
+msgid "${ 0 } view"
+msgstr "Visualização ${ 0 }"
+
 #: src/components/MainMenu.vue
 msgid "About"
 msgstr "Sobre"

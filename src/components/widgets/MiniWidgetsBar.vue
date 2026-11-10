@@ -11,9 +11,10 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { capitalize, onBeforeMount, toRefs } from 'vue'
 
-import * as Words from '@/libs/funny-name/words'
+import { Words } from '@/libs/funny-name/funny-name'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
@@ -32,8 +33,9 @@ const widgetStore = useWidgetManagerStore()
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
   if (widget.value.options.miniWidgetsContainer === undefined) {
+    const animal = capitalize(Words.animalsOcean.random() || 'Plankton')
     widget.value.options.miniWidgetsContainer = {
-      name: `${capitalize(Words.animalsOcean.random() || 'Plankton')} floating container`,
+      name: t`${animal} floating container`,
       widgets: [],
     }
   }

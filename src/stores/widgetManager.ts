@@ -3,6 +3,7 @@ import '@/libs/cosmos'
 import { useStorage, useWindowSize } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { v4 as uuid4 } from 'uuid'
 import { computed, onBeforeMount, onBeforeUnmount, Ref, ref, toRaw, watch } from 'vue'
 
@@ -16,7 +17,7 @@ import {
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
-import * as Words from '@/libs/funny-name/words'
+import { Words } from '@/libs/funny-name/funny-name'
 import {
   availableCockpitActions,
   registerActionCallback,
@@ -434,9 +435,10 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
    * Adds new view to the store, with a randomly generated hash with UUID4 pattern
    */
   function addView(): void {
+    const animal = Words.animalsOcean.random()
     currentProfile.value.views.unshift({
       hash: uuid4(),
-      name: `${Words.animalsOcean.random()} view`,
+      name: t`${animal} view`,
       widgets: [],
       miniWidgetContainers: [
         { name: 'Bottom-left container', widgets: [] },

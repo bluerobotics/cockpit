@@ -1,3 +1,5 @@
+export const adjectiveFirst = true
+
 // From: https://7esl.com/positive-adjectives/
 export const adjetives = [
   'abiding',
