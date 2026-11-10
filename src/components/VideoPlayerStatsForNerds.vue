@@ -65,6 +65,9 @@ let pliCount = 0
 let firCount = 0
 let framesReceived = 0
 let connectionLost = false
+// A low-framerate stream gets no packet in many stats samples, so only a longer silence means the connection is lost
+const connectionLossTimeout = 2000 // in milliseconds
+let lastVideoArrivalTime = Date.now()
 
 let processingDelayDelta = 0
 let freezes = 0
@@ -254,7 +257,8 @@ onMounted(() => {
 
       const videoData = ev.data.video.inbound[0]
       if (videoData === undefined) return
-      connectionLost = videoData.bitrate === 0
+      if (videoData.bitrate > 0) lastVideoArrivalTime = Date.now()
+      connectionLost = Date.now() - lastVideoArrivalTime > connectionLossTimeout
       if (!isNaN(videoData.bitrate)) {
         const newBitrate = videoData.bitrate / 1000
         bitrate = bitrate * 0.8 + newBitrate * 0.2
