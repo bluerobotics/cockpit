@@ -1,5 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { ref, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -24,9 +25,7 @@ export const useDevelopmentStore = defineStore('development', () => {
     if (enableBlueOsSettingsSync.value || syncOffNoticeShown) return
     syncOffNoticeShown = true
     openSnackbar({
-      message:
-        'BlueOS settings sync is off on this computer, so settings are not shared through the vehicle. ' +
-        'It can be turned back on in Settings > Dev.',
+      message: t`BlueOS settings sync is off on this computer, so settings are not shared through the vehicle. It can be turned back on in Settings > Dev.`,
       variant: 'info',
       duration: 8000,
     })

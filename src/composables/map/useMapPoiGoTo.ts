@@ -1,4 +1,5 @@
 import { useThrottleFn } from '@vueuse/core'
+import { t } from 'ttag'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -147,11 +148,12 @@ export const useMapPoiGoTo = (
       await vehicleStore.pauseMission()
       clearTarget()
       openSnackbar({
-        message: 'GoTo command cancelled. Vehicle will hold at its current position.',
+        message: t`GoTo command cancelled. Vehicle will hold at its current position.`,
         variant: 'success',
       })
     } catch (error) {
-      openSnackbar({ message: `Cancel GoTo failed: ${(error as Error).message}`, variant: 'error' })
+      const reason = (error as Error).message
+      openSnackbar({ message: t`Cancel GoTo failed: ${reason}`, variant: 'error' })
     }
   }
 
@@ -161,7 +163,7 @@ export const useMapPoiGoTo = (
     (isNowArmed, wasArmed) => {
       if (!poiMarkers.gotoTargetId.value) return
       if (wasArmed && isNowArmed === false) {
-        cancelPoiGotoTarget('GoTo cancelled: the vehicle was disarmed.')
+        cancelPoiGotoTarget(t`GoTo cancelled: the vehicle was disarmed.`)
       }
     }
   )
@@ -171,7 +173,7 @@ export const useMapPoiGoTo = (
     (newMode) => {
       if (!poiMarkers.gotoTargetId.value || !poiGotoModeTracking.value) return
       if (newMode !== poiGotoBaselineMode.value) {
-        cancelPoiGotoTarget('GoTo cancelled: the vehicle flight mode changed.')
+        cancelPoiGotoTarget(t`GoTo cancelled: the vehicle flight mode changed.`)
       }
     }
   )

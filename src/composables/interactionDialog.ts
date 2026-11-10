@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import {
   type InjectionKey,
   type Ref,
@@ -210,7 +211,7 @@ export function useInteractionDialog(): {
     message: string | string[],
     confirmText: string,
     maxWidth = '520px',
-    cancelText = 'Cancel'
+    cancelText = t`Cancel`
   ): Promise<boolean> => {
     let confirmed = false
     try {

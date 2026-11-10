@@ -4,7 +4,7 @@
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">
         <div class="flex justify-between w-full -mt-1">
           <div class="w-10" />
-          Cockpit settings manager
+          {{ t`Cockpit settings manager` }}
           <v-icon class="self-end" @click="closeConfigDialog">mdi-close</v-icon>
         </div>
       </v-card-title>
@@ -17,7 +17,7 @@
                 <v-select
                   v-model="selectedUserId"
                   :items="availableUsers"
-                  label="User"
+                  :label="t`User`"
                   density="compact"
                   variant="outlined"
                   hide-details
@@ -27,7 +27,7 @@
                 <v-select
                   v-model="selectedVehicleId"
                   :items="availableVehicles"
-                  label="Vehicle"
+                  :label="t`Vehicle`"
                   density="compact"
                   variant="outlined"
                   hide-details
@@ -39,13 +39,13 @@
               <div v-if="interfaceStore.pirateMode" class="flex flex-wrap gap-x-4">
                 <v-checkbox
                   v-model="showLegacyInternalKeys"
-                  label="Show legacy/internal keys"
+                  :label="t`Show legacy/internal keys`"
                   density="compact"
                   hide-details
                 />
                 <v-checkbox
                   v-model="showAllKeyPairs"
-                  label="Show all localStorage key-pairs"
+                  :label="t`Show all localStorage key-pairs`"
                   density="compact"
                   hide-details
                 />
@@ -57,8 +57,8 @@
             <table class="w-full table-fixed border-collapse">
               <thead>
                 <tr class="bg-[#00000022]">
-                  <th class="text-center w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">Setting</th>
-                  <th class="text-center py-2 pr-4 border-b border-b-[rgba(255,255,255,0.3)]">Value</th>
+                  <th class="text-center w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">{{ t`Setting` }}</th>
+                  <th class="text-center py-2 pr-4 border-b border-b-[rgba(255,255,255,0.3)]">{{ t`Value` }}</th>
                 </tr>
               </thead>
             </table>
@@ -68,12 +68,12 @@
             <template v-if="!isLoaded">
               <div class="flex flex-row w-full h-full justify-center items-center text-center py-4">
                 <v-circular-progress size="40" color="white" />
-                <p>Loading settings...</p>
+                <p>{{ t`Loading settings...` }}</p>
               </div>
             </template>
             <template v-else-if="settingsArray.length === 0">
               <div class="flex flex-row w-full h-full justify-center items-center text-center py-4">
-                <p>No settings available for current selection.</p>
+                <p>{{ t`No settings available for current selection.` }}</p>
               </div>
             </template>
             <template v-else>
@@ -87,7 +87,7 @@
                       <template v-if="saving[item.originalKey]">
                         <div class="flex w-full justify-center items-center gap-x-2 py-2">
                           <v-progress-circular size="16" width="2" indeterminate />
-                          <span class="text-xs opacity-80">Updating...</span>
+                          <span class="text-xs opacity-80">{{ t`Updating...` }}</span>
                         </div>
                       </template>
                       <template v-else-if="isPrimitive(editedValues[item.originalKey])">
@@ -102,7 +102,7 @@
                               <template v-if="editedValues[item.originalKey] === null">
                                 <input
                                   v-model="editedValues[item.originalKey]"
-                                  placeholder="Enter value"
+                                  :placeholder="t`Enter value`"
                                   class="text-center bg-[#00000022] flex-1 min-w-0 mx-[10px] h-[40px]"
                                 />
                               </template>
@@ -125,12 +125,12 @@
                               <template v-else-if="typeof editedValues[item.originalKey] === 'string'">
                                 <input
                                   v-model="editedValues[item.originalKey]"
-                                  placeholder="Enter value"
+                                  :placeholder="t`Enter value`"
                                   class="text-center bg-[#00000022] flex-1 min-w-0 mx-[10px] h-[40px]"
                                 />
                               </template>
                               <div class="shrink-0">
-                                <v-tooltip location="top" text="Cancel">
+                                <v-tooltip location="top" :text="t`Cancel`">
                                   <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                       size="x-small"
@@ -143,7 +143,7 @@
                                     />
                                   </template>
                                 </v-tooltip>
-                                <v-tooltip location="top" text="Save">
+                                <v-tooltip location="top" :text="t`Save`">
                                   <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                       size="x-small"
@@ -170,7 +170,7 @@
                                 {{ editedValues[item.originalKey] }}
                               </p>
                               <div class="w-7 shrink-0 flex justify-center">
-                                <v-tooltip location="top" text="Edit value">
+                                <v-tooltip location="top" :text="t`Edit value`">
                                   <template #activator="{ props: tooltipProps }">
                                     <v-btn
                                       v-bind="tooltipProps"
@@ -203,7 +203,7 @@
                               :disabled="saving[item.originalKey]"
                               @click="cancelJsonEditing()"
                             >
-                              close
+                              {{ t`close` }}
                             </v-btn>
                             <v-btn
                               size="x-small"
@@ -213,7 +213,7 @@
                               :disabled="saving[item.originalKey]"
                               @click="finishInlineJsonEditing(item.originalKey)"
                             >
-                              Save
+                              {{ t`Save` }}
                             </v-btn>
                           </div>
                         </div>
@@ -227,7 +227,7 @@
                               {...}
                             </p>
                             <div class="w-7 shrink-0 flex justify-center">
-                              <v-tooltip location="top" text="Edit value">
+                              <v-tooltip location="top" :text="t`Edit value`">
                                 <template #activator="{ props: tooltipProps }">
                                   <v-btn
                                     v-bind="tooltipProps"
@@ -255,7 +255,7 @@
           >
             <v-text-field
               v-model="searchTerm"
-              placeholder="Search settings"
+              :placeholder="t`Search settings`"
               variant="plain"
               density="compact"
               hide-details
@@ -274,14 +274,14 @@
               </template>
             </v-text-field>
             <v-divider vertical class="mr-6 my-2" />
-            <v-tooltip location="top" text="Upload and apply config file">
+            <v-tooltip location="top" :text="t`Upload and apply config file`">
               <template #activator="{ props: tooltipProps }">
                 <v-btn icon variant="text" class="bg-transparent" v-bind="tooltipProps" @click="uploadConfigFile">
                   <v-icon>mdi-upload-outline</v-icon>
                 </v-btn>
               </template>
             </v-tooltip>
-            <v-tooltip location="top" text="Save config file">
+            <v-tooltip location="top" :text="t`Save config file`">
               <template #activator="{ props: tooltipProps }">
                 <v-btn icon variant="text" class="bg-transparent" v-bind="tooltipProps" @click="downloadConfigFile">
                   <v-icon>mdi-download</v-icon>
@@ -294,8 +294,8 @@
 
       <v-card-actions>
         <div class="flex justify-between items-center p-2 w-full h-full text-[rgba(255,255,255,0.5)]">
-          <v-btn @click="resetAllCockpitSettings">Reset to defaults</v-btn>
-          <v-btn class="text-white" @click="closeConfigDialog">Close</v-btn>
+          <v-btn @click="resetAllCockpitSettings">{{ t`Reset to defaults` }}</v-btn>
+          <v-btn class="text-white" @click="closeConfigDialog">{{ t`Close` }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -303,6 +303,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -553,7 +554,7 @@ const waitForV2ValueToPersist = async (
     }
     await new Promise((resolve) => setTimeout(resolve, v2WriteWaitIntervalMs))
   }
-  throw new Error('Timed out while waiting for settings update to be persisted.')
+  throw new Error(t`Timed out while waiting for settings update to be persisted.`)
 }
 
 const loadUserSettings = (): void => {
@@ -616,8 +617,9 @@ const commitChanges = async (item: SettingsRow): Promise<void> => {
     if (!isApplyingImportedConfig) logUserAction(`Changed setting '${displaySettingName(item)}'`)
   } catch (error: any) {
     editedValues[item.originalKey] = previousValue
+    const reason = error?.message ?? t`Unknown error`
     openSnackbar({
-      message: `Failed to update setting: ${error?.message ?? 'Unknown error'}`,
+      message: t`Failed to update setting: ${reason}`,
       variant: 'error',
       duration: 5000,
     })
@@ -642,7 +644,8 @@ const finishInlineJsonEditing = async (key: string): Promise<void> => {
     if (row) await commitChanges(row)
   } catch (error: any) {
     JsonEditError.value = true
-    openSnackbar({ message: 'Invalid JSON: ' + error.message, variant: 'error', duration: 5000 })
+    const reason = error.message
+    openSnackbar({ message: t`Invalid JSON: ${reason}`, variant: 'error', duration: 5000 })
   }
 }
 
@@ -687,7 +690,7 @@ const uploadConfigFile = (): void => {
         const json = JSON.parse(text)
         if (!json || typeof json !== 'object') {
           openSnackbar({
-            message: 'Invalid configuration file: content is not an object.',
+            message: t`Invalid configuration file: content is not an object.`,
             variant: 'warning',
             duration: 5000,
           })
@@ -704,11 +707,12 @@ const uploadConfigFile = (): void => {
           isApplyingImportedConfig = false
         }
         logUserAction('Imported Cockpit settings from file')
-        openSnackbar({ message: 'Configuration file applied successfully.', variant: 'success', duration: 5000 })
+        openSnackbar({ message: t`Configuration file applied successfully.`, variant: 'success', duration: 5000 })
       } catch (error: any) {
         console.error('Error parsing configuration file: ' + error.message)
+        const reason = error.message
         openSnackbar({
-          message: 'Error parsing configuration file: ' + error.message,
+          message: t`Error parsing configuration file: ${reason}`,
           variant: 'error',
           duration: 5000,
         })
@@ -721,23 +725,23 @@ const uploadConfigFile = (): void => {
 
 const resetAllCockpitSettings = (): void => {
   showDialog({
-    message:
-      "Are you sure you want to reset Cockpit's stored browser settings to defaults? " +
-      'Settings on the vehicle will not be affected - ' +
-      'once you connect back to the vehicle, the settings will be restored.',
+    message: [
+      t`Are you sure you want to reset Cockpit's stored browser settings to defaults?`,
+      t`Settings on the vehicle will not be affected - once you connect back to the vehicle, the settings will be restored.`,
+    ].join(' '),
     variant: 'warning',
     maxWidth: 800,
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         action: () => closeDialog(),
       },
       {
-        text: 'Reset settings',
+        text: t`Reset settings`,
         action: () => {
           logUserAction('Reset all Cockpit settings to defaults')
           localStorage.clear()
-          openSnackbar({ message: 'All settings have been reset to default values.', variant: 'success' })
+          openSnackbar({ message: t`All settings have been reset to default values.`, variant: 'success' })
           closeDialog()
           reloadCockpitAndWarnUser()
         },

@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import { openSnackbar } from '@/composables/snackbar'
 import { createDataLakeVariable, deleteDataLakeVariable, getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions, updateTransformingFunction } from '@/libs/actions/data-lake-transformations'
@@ -152,9 +154,7 @@ const migrateCameraSpeedFactorRemoval = (): void => {
   )
   if (rewroteShippedFormula || hadPersistedSpeed || leftoverSpeedRef) {
     openSnackbar({
-      message:
-        'Camera zoom and focus speed are now set on the vehicle. Cockpit no longer keeps those settings, so zoom and focus no longer use them. ' +
-        'If something you made still refers to them, edit it in Tools → Data-lake.',
+      message: t`Camera zoom and focus speed are now set on the vehicle. Cockpit no longer keeps those settings, so zoom and focus no longer use them. If something you made still refers to them, edit it in Tools → Data-lake.`,
       variant: 'info',
       duration: 12000,
     })

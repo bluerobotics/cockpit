@@ -1,23 +1,23 @@
 <template>
   <BaseConfigurationView>
-    <template #title>MAVLink configuration</template>
+    <template #title>{{ t`MAVLink configuration` }}</template>
     <template #content>
       <div class="max-h-[80vh] w-[730px] overflow-y-auto pr-3">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>DataLake variables creation</template>
+          <template #title>{{ t`DataLake variables creation` }}</template>
           <template #info>
             <ul class="list-disc pl-4 space-y-2">
               <li>
-                <strong>Variables from other systems:</strong> Enable creation of DataLake variables from MAVLink
-                messages originating from systems/components other than the main vehicle (System ID
-                {{ mainVehicleStore.mainVehicle?.systemId }}, Component ID 1). When enabled, variables from all MAVLink
-                systems on the network will be available in the DataLake.
+                <strong>{{ t`Variables from other systems:` }}</strong>
+                {{
+                  t`Enable creation of DataLake variables from MAVLink messages originating from systems/components other than the main vehicle (System ID ${mainVehicleSystemId}, Component ID 1). When enabled, variables from all MAVLink systems on the network will be available in the DataLake.`
+                }}
               </li>
               <li>
-                <strong>Legacy variable names:</strong> Creates duplicate variables with the old naming format for
-                backward compatibility. Enabled by default - users with old devices may want to disable this to improve
-                performance. If disabled, you will need to manually replace the usage of legacy variables with the new
-                ones in your widgets (e.g.: VGI, Plotter) and scripts (e.g.: DataLake Transforming functions).
+                <strong>{{ t`Legacy variable names:` }}</strong>
+                {{
+                  t`Creates duplicate variables with the old naming format for backward compatibility. Enabled by default - users with old devices may want to disable this to improve performance. If disabled, you will need to manually replace the usage of legacy variables with the new ones in your widgets (e.g.: VGI, Plotter) and scripts (e.g.: DataLake Transforming functions).`
+                }}
               </li>
             </ul>
           </template>
@@ -26,14 +26,14 @@
               <v-switch
                 :model-value="mainVehicleStore.enableDatalakeVariablesFromOtherSystems"
                 color="white"
-                label="Enable DataLake variables from other systems"
+                :label="t`Enable DataLake variables from other systems`"
                 hide-details
                 @update:model-value="setEnableDatalakeFromOtherSystems"
               />
               <v-switch
                 :model-value="mainVehicleStore.enableLegacyDataLakeVariableNames"
                 color="white"
-                label="Enable legacy variable names (e.g., 'ATTITUDE/roll')"
+                :label="t`Enable legacy variable names (e.g., 'ATTITUDE/roll')`"
                 hide-details
                 @update:model-value="setEnableLegacyDataLakeNames"
               />
@@ -41,12 +41,12 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Message intervals</template>
+          <template #title>{{ t`Message intervals` }}</template>
           <template #info>
             <p>
-              Configure the frequency at which each MAVLink message is requested from the vehicle. Higher frequencies
-              provide more responsive data but increase the load on the network and in the vehicle's CPU. If the message
-              is not already configured, you can add it to the interval configuration with the forms in the bottom.
+              {{
+                t`Configure the frequency at which each MAVLink message is requested from the vehicle. Higher frequencies provide more responsive data but increase the load on the network and in the vehicle's CPU. If the message is not already configured, you can add it to the interval configuration with the forms in the bottom.`
+              }}
             </p>
           </template>
           <template #content>
@@ -55,7 +55,7 @@
                 <div class="flex flex-row justify-between items-center w-full mb-1">
                   <v-text-field
                     v-model="searchTerm"
-                    placeholder="Search messages"
+                    :placeholder="t`Search messages`"
                     variant="plain"
                     density="compact"
                     hide-details
@@ -74,7 +74,7 @@
                     </template>
                   </v-text-field>
                   <v-btn size="small" variant="text" class="ml-4" @click="resetToCockpitDefault">
-                    Reset intervals to Cockpit defaults
+                    {{ t`Reset intervals to Cockpit defaults` }}
                   </v-btn>
                 </div>
                 <v-data-table
@@ -96,10 +96,10 @@
                           <v-select
                             v-model="item.intervalType"
                             :items="[
-                              { title: 'Vehicle default', value: 'default' },
-                              { title: 'Disabled', value: 'disabled' },
-                              { title: 'Custom', value: 'custom' },
-                              { title: 'Don\'t touch', value: 'dontTouch' },
+                              { title: t`Vehicle default`, value: 'default' },
+                              { title: t`Disabled`, value: 'disabled' },
+                              { title: t`Custom`, value: 'custom' },
+                              { title: t`Don't touch`, value: 'dontTouch' },
                             ]"
                             density="compact"
                             variant="outlined"
@@ -152,12 +152,12 @@
                 theme="dark"
                 :style="interfaceStore.globalGlassMenuStyles"
               >
-                <span class="text-sm text-gray-200 mb-3">Set the interval for a new message</span>
+                <span class="text-sm text-gray-200 mb-3">{{ t`Set the interval for a new message` }}</span>
                 <div class="flex flex-row items-center justify-between mb-2">
                   <v-select
                     v-model="newMessageType"
                     :items="availableMessageTypes"
-                    label="Message Type"
+                    :label="t`Message Type`"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -166,12 +166,12 @@
                   <v-select
                     v-model="newIntervalType"
                     :items="[
-                      { title: 'Vehicle default', value: 'default' },
-                      { title: 'Disabled', value: 'disabled' },
-                      { title: 'Custom', value: 'custom' },
-                      { title: 'Don\'t touch', value: 'dontTouch' },
+                      { title: t`Vehicle default`, value: 'default' },
+                      { title: t`Disabled`, value: 'disabled' },
+                      { title: t`Custom`, value: 'custom' },
+                      { title: t`Don't touch`, value: 'dontTouch' },
                     ]"
-                    label="Interval Type"
+                    :label="t`Interval Type`"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -217,18 +217,19 @@
                   :disabled="!newMessageType || !newIntervalType"
                   @click="addNewMessageInterval"
                 >
-                  Add new message
+                  {{ t`Add new message` }}
                 </v-btn>
               </v-card>
             </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Flight mode names</template>
+          <template #title>{{ t`Flight mode names` }}</template>
           <template #info>
             <p>
-              How each vehicle mode is named throughout Cockpit. The defaults are the names ArduPilot itself uses, and a
-              mode with no name of its own is shown exactly as the vehicle reports it.
+              {{
+                t`How each vehicle mode is named throughout Cockpit. The defaults are the names ArduPilot itself uses, and a mode with no name of its own is shown exactly as the vehicle reports it.`
+              }}
             </p>
           </template>
           <template #content>
@@ -241,6 +242,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, ref } from 'vue'
 
 import FlightModeNamesConfig from '@/components/configuration/FlightModeNamesConfig.vue'
@@ -254,6 +256,7 @@ import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const interfaceStore = useAppInterfaceStore()
 const mainVehicleStore = useMainVehicleStore()
+const mainVehicleSystemId = computed(() => mainVehicleStore.mainVehicle?.systemId ?? '')
 const searchTerm = ref('')
 
 const setEnableDatalakeFromOtherSystems = (value: boolean | null): void => {
@@ -274,8 +277,8 @@ const newIntervalType = ref<'default' | 'disabled' | 'custom' | 'dontTouch'>('de
 const newFrequency = ref(1)
 
 const headers = [
-  { title: 'Message', key: 'name', align: 'start' },
-  { title: 'Configuration', key: 'configuration', align: 'center' },
+  { title: t`Message`, key: 'name', align: 'start' },
+  { title: t`Configuration`, key: 'configuration', align: 'center' },
 ]
 
 // Convert message intervals to table items

@@ -2,6 +2,7 @@ import { useStorage, useTimestamp } from '@vueuse/core'
 import { useThrottleFn } from '@vueuse/core'
 import { differenceInSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -444,7 +445,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
     const askGoToConfirm = !canByPassCategory(EventCategory.GOTO)
 
     if (!skipConfirmation && (askArmConfirm || askGoToConfirm)) {
-      const command = askArmConfirm && askGoToConfirm ? 'Arm and GoTo' : askArmConfirm ? 'Arm' : 'GoTo'
+      const command = askArmConfirm && askGoToConfirm ? t`Arm and GoTo` : askArmConfirm ? t`Arm` : t`GoTo`
       try {
         await slideToConfirm({ command })
       } catch (error) {
@@ -493,14 +494,14 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
       throw new Error('Setting the vehicle position is not supported by this vehicle.')
     }
 
-    const command = 'Set Position'
+    const command = t`Set Position`
     try {
       await slideToConfirm({ command }, canByPassCategory(EventCategory.SET_POSITION))
     } catch (error) {
       throw new Error(`${command} command ignored or cancelled by the user.`)
     }
 
-    openSnackbar({ message: 'Sending the new position to the vehicle...', variant: 'info' })
+    openSnackbar({ message: t`Sending the new position to the vehicle...`, variant: 'info' })
     try {
       await mainVehicle.value.sendExternalPositionEstimate(latitude, longitude, accuracy)
     } catch (error) {
@@ -670,7 +671,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   async function clearMissions(): Promise<void> {
     mainVehicle.value?.clearMissions()
     clearReachedMissionItems()
-    openSnackbar({ message: 'Mission deleted from vehicle', variant: 'info' })
+    openSnackbar({ message: t`Mission deleted from vehicle`, variant: 'info' })
   }
 
   /**
@@ -1019,8 +1020,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
       wirelessTrafficWatcher.registerWarningShown()
       openSnackbar({
-        message:
-          "A lot of data is going through the vehicle's WiFi connection. Connecting through the cabled network should give you better video quality and less delay.",
+        message: t`A lot of data is going through the vehicle's WiFi connection. Connecting through the cabled network should give you better video quality and less delay.`,
         variant: 'warning',
         persistent: true,
       })

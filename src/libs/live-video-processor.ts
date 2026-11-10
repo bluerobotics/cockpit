@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import { isElectron } from '@/libs/utils'
 import { tempVideoStorage } from '@/libs/videoStorage'
 import type { VideoChunkQueueItem, ZipExtractionResult } from '@/types/video'
@@ -243,7 +245,7 @@ export class LiveVideoProcessor {
     try {
       onProgress?.(
         10,
-        zipFilePaths.length > 1 ? `Extracting ${zipFilePaths.length} ZIP files...` : 'Extracting ZIP file...'
+        zipFilePaths.length > 1 ? t`Extracting ${zipFilePaths.length} ZIP files...` : t`Extracting ZIP file...`
       )
 
       // Extract ZIP(s) and get chunk information
@@ -251,7 +253,7 @@ export class LiveVideoProcessor {
       const { chunkPaths, assFilePath, fileName, tempDir } = extractionResult
 
       console.log(`Extracted ${chunkPaths.length} chunks from ${zipFilePaths.length} ZIP file(s)`)
-      onProgress?.(30, 'Starting video processing...')
+      onProgress?.(30, t`Starting video processing...`)
 
       // Read first chunk
       const firstChunkData = await window.electronAPI.readChunkFile(chunkPaths[0])
@@ -262,7 +264,7 @@ export class LiveVideoProcessor {
 
       console.log(`Started streaming process ${processId}`)
       console.log(`Output path: ${outputPath}`)
-      onProgress?.(40, 'Streaming video chunks to FFmpeg...')
+      onProgress?.(40, t`Streaming video chunks to FFmpeg...`)
 
       // Stream remaining chunks to FFmpeg
       for (let i = 1; i < chunkPaths.length; i++) {
@@ -273,26 +275,27 @@ export class LiveVideoProcessor {
 
         // Update progress
         const progress = 40 + (i / chunkPaths.length) * 40
-        onProgress?.(progress, `Processing chunk ${i + 1}/${chunkPaths.length}`)
+        const chunkNumber = i + 1
+        onProgress?.(progress, t`Processing chunk ${chunkNumber}/${chunkPaths.length}`)
       }
 
       console.log('All chunks streamed, finalizing...')
-      onProgress?.(85, 'Finalizing video...')
+      onProgress?.(85, t`Finalizing video...`)
 
       // Finalize the streaming process
       await window.electronAPI.finalizeVideoRecording(processId)
 
       // Copy telemetry file if it exists (using the full output path)
       if (assFilePath) {
-        onProgress?.(95, 'Copying telemetry file...')
+        onProgress?.(95, t`Copying telemetry file...`)
         await window.electronAPI.copyTelemetryFile(assFilePath, videoSubtitlesFilename(outputPath))
       }
 
       // Clean up temporary extraction directory
-      onProgress?.(98, 'Cleaning up...')
+      onProgress?.(98, t`Cleaning up...`)
       await window.electronAPI.cleanupTempDir(tempDir)
 
-      onProgress?.(100, 'Processing complete!')
+      onProgress?.(100, t`Processing complete!`)
       console.log(`ZIP processing complete: ${outputPath}`)
 
       return outputPath

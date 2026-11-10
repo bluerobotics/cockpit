@@ -2,22 +2,24 @@
   <GlassModal :is-visible="isVisible" position="center" no-close-on-outside-click @outside-click="requestCloseModal">
     <div class="features-modal p-4 max-w-[95vw]">
       <div class="flex justify-center items-center mb-2">
-        <h2 class="text-xl font-semibold">BlueOS Extension Features</h2>
+        <h2 class="text-xl font-semibold">{{ t`BlueOS Extension Features` }}</h2>
       </div>
       <div class="fixed top-1 right-1">
         <v-btn icon="mdi-close" size="small" variant="text" class="text-lg" @click="requestCloseModal"></v-btn>
       </div>
 
       <v-tabs v-model="activeTab" class="mb-4">
-        <v-tab value="actions" :class="{ 'tab-blink': activeTab !== 'actions' && hasPendingActions }">Actions</v-tab>
+        <v-tab value="actions" :class="{ 'tab-blink': activeTab !== 'actions' && hasPendingActions }">{{
+          t`Actions`
+        }}</v-tab>
         <v-tab
           value="joystick-suggestions"
           :class="{ 'tab-blink': activeTab !== 'joystick-suggestions' && hasPendingJoystickSuggestions }"
         >
-          Joystick Mappings
+          {{ t`Joystick Mappings` }}
         </v-tab>
         <v-tab value="connections" :class="{ 'tab-blink': activeTab !== 'connections' && pendingOffers.length > 0 }">
-          Connections
+          {{ t`Connections` }}
         </v-tab>
       </v-tabs>
 
@@ -30,21 +32,25 @@
               class="text-center py-8"
             >
               <v-icon size="50" class="mb-3 opacity-50">mdi-lightning-bolt-outline</v-icon>
-              <p class="opacity-70">No actions available from extensions.</p>
+              <p class="opacity-70">{{ t`No actions available from extensions.` }}</p>
             </div>
 
             <div v-else-if="filteredActions.length === 0" class="text-center py-6">
               <v-icon size="40" class="mb-2 opacity-50">mdi-check-circle-outline</v-icon>
-              <p class="opacity-70 max-w-[70%] mx-auto">No new actions — all extension actions have been reviewed.</p>
+              <p class="opacity-70 max-w-[70%] mx-auto">
+                {{ t`No new actions — all extension actions have been reviewed.` }}
+              </p>
             </div>
 
             <!-- New Actions -->
             <div v-if="filteredActions.length > 0" class="mb-4">
               <div class="flex items-center gap-2 mb-2">
                 <v-icon size="24">mdi-lightning-bolt-outline</v-icon>
-                <h2 class="text-xl font-semibold">New Actions</h2>
+                <h2 class="text-xl font-semibold">{{ t`New Actions` }}</h2>
               </div>
-              <p class="mb-2 opacity-70">The following actions are offered to be added by BlueOS extensions:</p>
+              <p class="mb-2 opacity-70">
+                {{ t`The following actions are offered to be added by BlueOS extensions:` }}
+              </p>
               <v-list class="bg-transparent">
                 <v-list-item v-for="action in filteredActions" :key="action.id" class="mb-3 p-0">
                   <v-card variant="outlined" class="w-full action-card">
@@ -64,9 +70,9 @@
                           size="small"
                           @click="ignoreAction(action)"
                         >
-                          Ignore
+                          {{ t`Ignore` }}
                         </v-btn>
-                        <span class="text-xs opacity-70">from {{ action.extensionName }}</span>
+                        <span class="text-xs opacity-70">{{ t`from ${action.extensionName}` }}</span>
                         <v-btn
                           class="bg-[#FFFFFF22]"
                           variant="flat"
@@ -74,7 +80,7 @@
                           size="small"
                           @click="addAction(action)"
                         >
-                          Add Action
+                          {{ t`Add Action` }}
                         </v-btn>
                       </div>
                     </v-card-item>
@@ -91,7 +97,7 @@
                 size="small"
                 @click="showAppliedActions = !showAppliedActions"
               >
-                {{ showAppliedActions ? 'Hide applied actions' : 'Show applied actions' }}
+                {{ showAppliedActions ? t`Hide applied actions` : t`Show applied actions` }}
               </v-btn>
               <div v-if="showAppliedActions" class="mt-2">
                 <v-list class="bg-transparent">
@@ -110,7 +116,7 @@
                             prepend-icon="mdi-check"
                             size="small"
                           >
-                            Applied
+                            {{ t`Applied` }}
                           </v-chip>
                           <v-chip
                             v-else
@@ -119,9 +125,9 @@
                             prepend-icon="mdi-alert-outline"
                             size="small"
                           >
-                            Applied but removed
+                            {{ t`Applied but removed` }}
                           </v-chip>
-                          <span class="text-xs opacity-70">from {{ action.extensionName }}</span>
+                          <span class="text-xs opacity-70">{{ t`from ${action.extensionName}` }}</span>
                         </div>
                         <div v-if="!existingActionNames.has(action.name)" class="flex justify-center gap-4 my-2">
                           <v-btn
@@ -131,7 +137,7 @@
                             size="small"
                             @click="moveAppliedToIgnored(action)"
                           >
-                            Ignore
+                            {{ t`Ignore` }}
                           </v-btn>
                           <v-btn
                             class="bg-[#FFFFFF22]"
@@ -140,7 +146,7 @@
                             size="small"
                             @click="reAddAction(action)"
                           >
-                            Re-add
+                            {{ t`Re-add` }}
                           </v-btn>
                         </div>
                       </v-card-item>
@@ -158,7 +164,7 @@
                 size="small"
                 @click="showIgnoredActions = !showIgnoredActions"
               >
-                {{ showIgnoredActions ? 'Hide ignored actions' : 'Show ignored actions' }}
+                {{ showIgnoredActions ? t`Hide ignored actions` : t`Show ignored actions` }}
               </v-btn>
               <div v-if="showIgnoredActions" class="mt-2">
                 <div class="flex justify-end mb-2">
@@ -169,7 +175,7 @@
                     size="small"
                     @click="restoreAllIgnoredActions"
                   >
-                    Restore All
+                    {{ t`Restore All` }}
                   </v-btn>
                 </div>
                 <v-list class="bg-transparent">
@@ -182,9 +188,9 @@
                         </v-card-subtitle>
                         <div class="flex justify-between items-center my-2">
                           <v-chip class="bg-[#FFFFFF22]" variant="flat" prepend-icon="mdi-close-circle" size="small">
-                            Ignored
+                            {{ t`Ignored` }}
                           </v-chip>
-                          <span class="text-xs opacity-70">from {{ action.extensionName }}</span>
+                          <span class="text-xs opacity-70">{{ t`from ${action.extensionName}` }}</span>
                           <v-btn
                             class="bg-[#FFFFFF22]"
                             variant="flat"
@@ -192,7 +198,7 @@
                             size="small"
                             @click="restoreIgnoredAction(action)"
                           >
-                            Restore
+                            {{ t`Restore` }}
                           </v-btn>
                         </div>
                       </v-card-item>
@@ -215,14 +221,14 @@
             class="text-center py-8"
           >
             <v-icon size="50" class="mb-3 opacity-50">mdi-gamepad-variant-outline</v-icon>
-            <p class="opacity-70">No joystick mapping suggestions available.</p>
+            <p class="opacity-70">{{ t`No joystick mapping suggestions available.` }}</p>
           </div>
 
           <div v-else class="actions-container">
             <div v-if="filteredJoystickSuggestionsByExtension.length === 0" class="text-center py-6">
               <v-icon size="40" class="mb-2 opacity-50">mdi-check-circle-outline</v-icon>
               <p class="opacity-70 max-w-[70%] mx-auto">
-                No new suggestions — all joystick mapping suggestions have been reviewed.
+                {{ t`No new suggestions — all joystick mapping suggestions have been reviewed.` }}
               </p>
             </div>
 
@@ -230,9 +236,11 @@
             <div v-if="filteredJoystickSuggestionsByExtension.length > 0" class="mb-8">
               <div class="flex items-center gap-2 mb-4">
                 <v-icon size="24">mdi-gamepad-variant-outline</v-icon>
-                <h2 class="text-xl font-semibold">New Suggestions</h2>
+                <h2 class="text-xl font-semibold">{{ t`New Suggestions` }}</h2>
               </div>
-              <p class="mb-2 opacity-70">The following joystick mappings are suggested by BlueOS extensions:</p>
+              <p class="mb-2 opacity-70">
+                {{ t`The following joystick mappings are suggested by BlueOS extensions:` }}
+              </p>
 
               <!-- Group suggestions by extension -->
               <div
@@ -255,7 +263,7 @@
                       size="x-small"
                       @click="ignoreRemainingSuggestionsFromExtension(extensionGroup)"
                     >
-                      Ignore remaining suggestions
+                      {{ t`Ignore remaining suggestions` }}
                     </v-btn>
                   </div>
 
@@ -289,7 +297,7 @@
                             size="x-small"
                             @click.stop="acceptAllGroupSuggestions(extensionGroup.extensionName, group)"
                           >
-                            Accept All
+                            {{ t`Accept All` }}
                           </v-btn>
                           <v-btn
                             class="bg-[#FFFFFF22]"
@@ -298,7 +306,7 @@
                             size="x-small"
                             @click.stop="ignoreAllGroupSuggestions(group)"
                           >
-                            Ignore all
+                            {{ t`Ignore all` }}
                           </v-btn>
                         </div>
                       </v-expansion-panel-title>
@@ -328,7 +336,7 @@
                                 size="small"
                                 @click="ignoreSuggestion(suggestion)"
                               >
-                                Ignore
+                                {{ t`Ignore` }}
                               </v-btn>
                               <v-btn
                                 class="bg-[#FFFFFF22]"
@@ -337,7 +345,7 @@
                                 size="small"
                                 @click="openJoystickSuggestionDialog(suggestion, extensionGroup.extensionName)"
                               >
-                                Apply
+                                {{ t`Apply` }}
                               </v-btn>
                             </div>
                           </div>
@@ -356,7 +364,7 @@
                 size="small"
                 @click="showAppliedMappings = !showAppliedMappings"
               >
-                {{ showAppliedMappings ? 'Hide applied mappings' : 'Show applied mappings' }}
+                {{ showAppliedMappings ? t`Hide applied mappings` : t`Show applied mappings` }}
               </v-btn>
             </div>
 
@@ -364,9 +372,9 @@
             <div v-if="showAppliedMappings && appliedJoystickSuggestionsByExtension.length > 0" class="mb-8">
               <div class="flex items-center gap-2 mb-4">
                 <v-icon size="24">mdi-check-circle</v-icon>
-                <h2 class="text-xl font-semibold">Applied Mappings</h2>
+                <h2 class="text-xl font-semibold">{{ t`Applied Mappings` }}</h2>
               </div>
-              <p class="mb-4 opacity-70">These joystick mappings have been applied from BlueOS extensions:</p>
+              <p class="mb-4 opacity-70">{{ t`These joystick mappings have been applied from BlueOS extensions:` }}</p>
 
               <!-- Group applied suggestions by extension -->
               <div
@@ -447,7 +455,7 @@
                                 prepend-icon="mdi-check"
                                 size="small"
                               >
-                                Applied
+                                {{ t`Applied` }}
                               </v-chip>
                               <v-chip
                                 v-else
@@ -456,7 +464,7 @@
                                 prepend-icon="mdi-alert-outline"
                                 size="small"
                               >
-                                Applied but changed
+                                {{ t`Applied but changed` }}
                               </v-chip>
                             </div>
                             <div
@@ -470,7 +478,7 @@
                                 size="small"
                                 @click="moveAppliedSuggestionToIgnored(suggestion)"
                               >
-                                Ignore
+                                {{ t`Ignore` }}
                               </v-btn>
                               <v-btn
                                 class="bg-[#FFFFFF22]"
@@ -479,7 +487,7 @@
                                 size="small"
                                 @click="openJoystickSuggestionDialog(suggestion, extensionGroup.extensionName)"
                               >
-                                Re-apply
+                                {{ t`Re-apply` }}
                               </v-btn>
                             </div>
                           </div>
@@ -499,7 +507,7 @@
                 size="small"
                 @click="showIgnoredMappings = !showIgnoredMappings"
               >
-                {{ showIgnoredMappings ? 'Hide ignored mappings' : 'Show ignored mappings' }}
+                {{ showIgnoredMappings ? t`Hide ignored mappings` : t`Show ignored mappings` }}
               </v-btn>
             </div>
 
@@ -507,9 +515,9 @@
             <div v-if="showIgnoredMappings && ignoredJoystickSuggestionsByExtension.length > 0" class="mb-8">
               <div class="flex items-center gap-2 mb-4">
                 <v-icon size="24">mdi-close-circle</v-icon>
-                <h2 class="text-xl font-semibold">Ignored Mappings</h2>
+                <h2 class="text-xl font-semibold">{{ t`Ignored Mappings` }}</h2>
               </div>
-              <p class="mb-4 opacity-70">These joystick mappings have been ignored:</p>
+              <p class="mb-4 opacity-70">{{ t`These joystick mappings have been ignored:` }}</p>
 
               <!-- Group ignored suggestions by extension -->
               <div
@@ -534,7 +542,7 @@
                       size="small"
                       @click="restoreAllIgnoredSuggestions(extensionGroup.extensionName)"
                     >
-                      Restore All
+                      {{ t`Restore All` }}
                     </v-btn>
                   </div>
 
@@ -594,7 +602,7 @@
                                 size="small"
                                 @click="restoreIgnoredSuggestion(suggestion)"
                               >
-                                Restore
+                                {{ t`Restore` }}
                               </v-btn>
                             </div>
                           </div>
@@ -611,11 +619,11 @@
         <v-tabs-window-item value="connections">
           <div v-if="pendingOffers.length === 0" class="text-center py-8">
             <v-icon size="50" class="mb-3 opacity-50">mdi-lan-connect</v-icon>
-            <p class="opacity-70">No new connections offered by extensions.</p>
+            <p class="opacity-70">{{ t`No new connections offered by extensions.` }}</p>
           </div>
           <template v-else>
             <p class="mb-2 opacity-70">
-              These extensions can send data, points of interest and map overlays to Cockpit once connected:
+              {{ t`These extensions can send data, points of interest and map overlays to Cockpit once connected:` }}
             </p>
             <v-list class="bg-transparent">
               <v-list-item v-for="offer in pendingOffers" :key="offer.url" class="mb-3 p-0">
@@ -630,9 +638,9 @@
                         size="small"
                         @click="ignoreOffer(offer)"
                       >
-                        Ignore
+                        {{ t`Ignore` }}
                       </v-btn>
-                      <span class="text-xs opacity-70">from {{ offer.extensionName }}</span>
+                      <span class="text-xs opacity-70">{{ t`from ${offer.extensionName}` }}</span>
                       <v-btn
                         class="bg-[#FFFFFF22]"
                         variant="flat"
@@ -640,7 +648,7 @@
                         size="small"
                         @click="acceptOffer(offer)"
                       >
-                        Connect
+                        {{ t`Connect` }}
                       </v-btn>
                     </div>
                   </v-card-item>
@@ -649,14 +657,14 @@
             </v-list>
           </template>
           <template v-if="handledOffers.length > 0">
-            <p class="mb-2 opacity-70">Offered before and not connected:</p>
+            <p class="mb-2 opacity-70">{{ t`Offered before and not connected:` }}</p>
             <v-list class="bg-transparent">
               <v-list-item v-for="offer in handledOffers" :key="offer.url" class="mb-3 p-0">
                 <v-card variant="outlined" class="w-full">
                   <v-card-item>
                     <v-card-title class="font-medium pb-0">{{ offer.name }}</v-card-title>
                     <div class="flex justify-between items-center my-2">
-                      <span class="text-xs opacity-70">from {{ offer.extensionName }}</span>
+                      <span class="text-xs opacity-70">{{ t`from ${offer.extensionName}` }}</span>
                       <v-btn
                         class="bg-[#FFFFFF22]"
                         variant="flat"
@@ -664,7 +672,7 @@
                         size="small"
                         @click="acceptOffer(offer)"
                       >
-                        Connect
+                        {{ t`Connect` }}
                       </v-btn>
                     </div>
                   </v-card-item>
@@ -679,7 +687,7 @@
       <v-dialog v-model="joystickSuggestionDialog" max-width="700px">
         <v-card v-if="selectedSuggestion" class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
           <v-card-title class="text-center pt-4 pb-0">
-            <h2 class="text-xl font-semibold">Apply Joystick Mapping Suggestion</h2>
+            <h2 class="text-xl font-semibold">{{ t`Apply Joystick Mapping Suggestion` }}</h2>
           </v-card-title>
           <v-btn
             icon="mdi-close"
@@ -692,7 +700,7 @@
           <v-card-text class="px-6 pb-4">
             <div class="mb-2">
               <p class="text-center text-sm text-gray-300 mb-2">
-                <strong>{{ selectedSuggestion.actionName }}</strong> from {{ selectedSuggestion.extensionName }}
+                <strong>{{ selectedSuggestion.actionName }}</strong> {{ t`from ${selectedSuggestion.extensionName}` }}
               </p>
               <p v-if="selectedSuggestion.description" class="text-center text-xs text-gray-400 mb-2">
                 {{ selectedSuggestion.description }}
@@ -702,16 +710,16 @@
             <div class="space-y-3">
               <div class="rounded-lg border border-gray-600 bg-gray-800/20 p-4">
                 <p class="text-center text-xs text-gray-400 mb-2">
-                  Button {{ selectedSuggestion.button }} ({{ selectedSuggestion.modifier }})
+                  {{ t`Button ${selectedSuggestion.button} (${selectedSuggestion.modifier})` }}
                 </p>
                 <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                   <div class="text-center">
-                    <p class="text-xs text-gray-400 mb-1">Current mapping</p>
+                    <p class="text-xs text-gray-400 mb-1">{{ t`Current mapping` }}</p>
                     <p class="font-medium text-gray-200">{{ selectedSuggestionCurrentActionName }}</p>
                   </div>
                   <v-icon size="20" color="green">mdi-arrow-right</v-icon>
                   <div class="text-center">
-                    <p class="text-xs text-gray-400 mb-1">New mapping</p>
+                    <p class="text-xs text-gray-400 mb-1">{{ t`New mapping` }}</p>
                     <p class="font-medium text-green-400">{{ selectedSuggestion.actionName }}</p>
                   </div>
                 </div>
@@ -724,8 +732,8 @@
           </div>
 
           <v-card-actions class="px-6 pb-4 justify-space-between">
-            <v-btn variant="text" @click="joystickSuggestionDialog = false">Cancel</v-btn>
-            <v-btn @click="applyJoystickSuggestion">Apply</v-btn>
+            <v-btn variant="text" @click="joystickSuggestionDialog = false">{{ t`Cancel` }}</v-btn>
+            <v-btn @click="applyJoystickSuggestion">{{ t`Apply` }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -734,7 +742,7 @@
       <v-dialog v-model="acceptAllDialog" max-width="500px">
         <v-card v-if="acceptAllGroup" class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
           <v-card-title class="text-center pt-4 pb-0">
-            <h2 class="text-xl font-semibold">Accept All Suggestions</h2>
+            <h2 class="text-xl font-semibold">{{ t`Accept All Suggestions` }}</h2>
           </v-card-title>
           <v-btn
             icon="mdi-close"
@@ -747,7 +755,7 @@
           <v-card-text class="px-6 pb-4">
             <div class="mb-2">
               <p class="text-center text-sm text-gray-300 mb-2">
-                Accept all {{ acceptAllGroupSuggestionCount }} suggestions from
+                {{ t`Accept all ${acceptAllGroupSuggestionCount} suggestions from` }}
                 <strong>{{ acceptAllGroup.name }}</strong> ({{ acceptAllExtensionName }})?
               </p>
             </div>
@@ -773,8 +781,10 @@
           </div>
 
           <v-card-actions class="px-6 pb-4 justify-space-between">
-            <v-btn variant="text" @click="acceptAllDialog = false">Cancel</v-btn>
-            <v-btn :disabled="acceptAllGroupSuggestionCount === 0" @click="applyAllSuggestions">Apply All</v-btn>
+            <v-btn variant="text" @click="acceptAllDialog = false">{{ t`Cancel` }}</v-btn>
+            <v-btn :disabled="acceptAllGroupSuggestionCount === 0" @click="applyAllSuggestions">{{
+              t`Apply All`
+            }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -785,7 +795,7 @@
           <v-card-title class="text-center pt-4 pb-0">
             <div class="flex items-center justify-center gap-2">
               <v-icon color="warning" size="24">mdi-alert</v-icon>
-              <h2 class="text-xl font-semibold">Pending Extension Features</h2>
+              <h2 class="text-xl font-semibold">{{ t`Pending Extension Features` }}</h2>
             </div>
           </v-card-title>
           <v-btn
@@ -798,20 +808,20 @@
 
           <v-card-text class="px-6 pb-4">
             <p class="text-center text-sm text-gray-300 mb-4">
-              There are still extension features pending your decision. Please accept or ignore each suggestion from
-              your BlueOS extensions. Otherwise, this dialog will open automatically again the next time you start
-              Cockpit.
+              {{
+                t`There are still extension features pending your decision. Please accept or ignore each suggestion from your BlueOS extensions. Otherwise, this dialog will open automatically again the next time you start Cockpit.`
+              }}
             </p>
 
             <div class="max-h-[260px] overflow-y-auto pr-1 space-y-3">
               <div v-if="filteredActions.length > 0">
                 <div class="flex items-center gap-2 mb-1">
                   <v-icon size="16">mdi-lightning-bolt-outline</v-icon>
-                  <h3 class="text-sm font-semibold">Pending actions ({{ filteredActions.length }})</h3>
+                  <h3 class="text-sm font-semibold">{{ t`Pending actions (${filteredActions.length})` }}</h3>
                 </div>
                 <ul class="list-disc list-inside text-xs text-gray-300 space-y-0.5">
                   <li v-for="action in filteredActions" :key="action.id">
-                    {{ action.name }} <span class="opacity-60">— from {{ action.extensionName }}</span>
+                    {{ action.name }} <span class="opacity-60">{{ t`— from ${action.extensionName}` }}</span>
                   </li>
                 </ul>
               </div>
@@ -820,12 +830,12 @@
                 <div class="flex items-center gap-2 mb-1">
                   <v-icon size="16">mdi-gamepad-variant-outline</v-icon>
                   <h3 class="text-sm font-semibold">
-                    Pending joystick mappings ({{ pendingJoystickSuggestions.length }})
+                    {{ t`Pending joystick mappings (${pendingJoystickSuggestions.length})` }}
                   </h3>
                 </div>
                 <ul class="list-disc list-inside text-xs text-gray-300 space-y-0.5">
                   <li v-for="item in pendingJoystickSuggestions" :key="item.id">
-                    {{ item.actionName }} <span class="opacity-60">— from {{ item.extensionName }}</span>
+                    {{ item.actionName }} <span class="opacity-60">{{ t`— from ${item.extensionName}` }}</span>
                   </li>
                 </ul>
               </div>
@@ -833,11 +843,11 @@
               <div v-if="pendingOffers.length > 0">
                 <div class="flex items-center gap-2 mb-1">
                   <v-icon size="16">mdi-lan-connect</v-icon>
-                  <h3 class="text-sm font-semibold">Pending connections ({{ pendingOffers.length }})</h3>
+                  <h3 class="text-sm font-semibold">{{ t`Pending connections (${pendingOffers.length})` }}</h3>
                 </div>
                 <ul class="list-disc list-inside text-xs text-gray-300 space-y-0.5">
                   <li v-for="offer in pendingOffers" :key="offer.url">
-                    {{ offer.name }} <span class="opacity-60">— from {{ offer.extensionName }}</span>
+                    {{ offer.name }} <span class="opacity-60">{{ t`— from ${offer.extensionName}` }}</span>
                   </li>
                 </ul>
               </div>
@@ -849,8 +859,8 @@
           </div>
 
           <v-card-actions class="px-6 pb-4 justify-space-between">
-            <v-btn variant="text" @click="confirmCloseModal">Close anyway</v-btn>
-            <v-btn @click="closeConfirmationDialog = false">Keep reviewing</v-btn>
+            <v-btn variant="text" @click="confirmCloseModal">{{ t`Close anyway` }}</v-btn>
+            <v-btn @click="closeConfirmationDialog = false">{{ t`Keep reviewing` }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -859,6 +869,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import GlassModal from '@/components/GlassModal.vue'
@@ -1081,17 +1092,17 @@ const suggestionDiffersFromCurrentMapping = (suggestion: JoystickMapSuggestion):
  */
 const getCurrentActionNameForSuggestion = (suggestion: JoystickMapSuggestion): string => {
   const mapping = controllerStore.protocolMapping
-  if (!mapping) return 'No function'
+  if (!mapping) return t`No function`
 
   const currentAction = mapping.buttonsCorrespondencies?.[suggestion.modifier]?.[suggestion.button]?.action
-  return currentAction ? actionDisplayName(currentAction) : 'No function'
+  return currentAction ? actionDisplayName(currentAction) : t`No function`
 }
 
 /**
  * Current action name for selected suggestion and selected profile
  */
 const selectedSuggestionCurrentActionName = computed(() => {
-  if (!selectedSuggestion.value) return 'No function'
+  if (!selectedSuggestion.value) return t`No function`
   return getCurrentActionNameForSuggestion(selectedSuggestion.value)
 })
 
@@ -1110,7 +1121,7 @@ const acceptAllGroupSuggestionDiffRows = computed(() => {
     )
     .map((suggestion) => ({
       id: suggestion.id,
-      inputLabel: `Button ${suggestion.button} (${suggestion.modifier})`,
+      inputLabel: t`Button ${suggestion.button} (${suggestion.modifier})`,
       fromActionName: getCurrentActionNameForSuggestion(suggestion),
       toActionName: suggestion.actionName,
     }))
@@ -1302,7 +1313,7 @@ const pendingJoystickSuggestions = computed((): JoystickSuggestionWithExtensionN
  * @returns {string} The human-readable name for the action type
  */
 const getActionTypeName = (type: customActionTypes): string => {
-  return customActionTypesNames[type] || 'Unknown'
+  return customActionTypesNames[type] || t`Unknown`
 }
 
 /**
@@ -1330,7 +1341,7 @@ const acceptAllGroupSuggestionCount = computed((): number => {
 const ignoreSuggestion = (suggestion: JoystickMapSuggestion): void => {
   addIgnoredSuggestionIds([suggestion.id])
   openSnackbar({
-    message: `Suggestion "${suggestion.actionName}" has been ignored.`,
+    message: t`Suggestion "${suggestion.actionName}" has been ignored.`,
     variant: 'info',
   })
 }
@@ -1343,7 +1354,7 @@ const moveAppliedSuggestionToIgnored = (suggestion: JoystickMapSuggestion): void
   handledSuggestions.value.applied = handledSuggestions.value.applied.filter((id) => id !== suggestion.id)
   addIgnoredSuggestionIds([suggestion.id])
   openSnackbar({
-    message: `Mapping "${suggestion.actionName}" moved to ignored.`,
+    message: t`Mapping "${suggestion.actionName}" moved to ignored.`,
     variant: 'info',
   })
 }
@@ -1359,7 +1370,7 @@ const ignoreRemainingSuggestionsFromExtension = (extensionGroup: FilteredExtensi
   addIgnoredSuggestionIds(suggestionsToIgnore.map((suggestion) => suggestion.id))
 
   openSnackbar({
-    message: `Ignored ${suggestionsToIgnore.length} remaining suggestion(s) from ${extensionGroup.extensionName}.`,
+    message: t`Ignored ${suggestionsToIgnore.length} remaining suggestion(s) from ${extensionGroup.extensionName}.`,
     variant: 'info',
   })
 }
@@ -1375,7 +1386,7 @@ const ignoreAllGroupSuggestions = (group: JoystickMapSuggestionGroup): void => {
   addIgnoredSuggestionIds(suggestionsToIgnore.map((suggestion) => suggestion.id))
 
   openSnackbar({
-    message: `Ignored ${suggestionsToIgnore.length} suggestion(s) from group "${group.name}".`,
+    message: t`Ignored ${suggestionsToIgnore.length} suggestion(s) from group "${group.name}".`,
     variant: 'info',
   })
 }
@@ -1458,9 +1469,11 @@ const applyAllSuggestions = (): void => {
 
   if (appliedCount > 0) {
     const ignoredNote =
-      siblingIdsToIgnore.length > 0 ? ` Ignored ${siblingIdsToIgnore.length} from the extension's other groups.` : ''
+      siblingIdsToIgnore.length > 0
+        ? ` ${t`Ignored ${siblingIdsToIgnore.length} from the extension's other groups.`}`
+        : ''
     openSnackbar({
-      message: `Applied ${appliedCount} joystick mapping(s) from "${groupName}".${ignoredNote}`,
+      message: t`Applied ${appliedCount} joystick mapping(s) from "${groupName}".${ignoredNote}`,
       variant: 'success',
       duration: 5000,
     })
@@ -1468,7 +1481,7 @@ const applyAllSuggestions = (): void => {
 
   if (failedSuggestionNames.length > 0) {
     openSnackbar({
-      message: `Could not apply ${failedSuggestionNames.length} mapping(s) from "${groupName}". Please add the necessary actions first.`,
+      message: t`Could not apply ${failedSuggestionNames.length} mapping(s) from "${groupName}". Please add the necessary actions first.`,
       variant: 'warning',
       duration: 10000,
     })
@@ -1503,7 +1516,7 @@ const applyJoystickSuggestion = (): void => {
 
   if (!matchingAction) {
     openSnackbar({
-      message: `Could not find a matching action for "${selectedSuggestion.value.actionName}". Please add the action first.`,
+      message: t`Could not find a matching action for "${selectedSuggestion.value.actionName}". Please add the action first.`,
       variant: 'warning',
     })
     return
@@ -1519,7 +1532,7 @@ const applyJoystickSuggestion = (): void => {
 
   joystickSuggestionDialog.value = false
   openSnackbar({
-    message: `Joystick mapping "${selectedSuggestion.value.actionName}" applied successfully.`,
+    message: t`Joystick mapping "${selectedSuggestion.value.actionName}" applied successfully.`,
     variant: 'success',
   })
 }
@@ -1543,7 +1556,7 @@ const addAction = (action: ActionConfig): void => {
         break
       default:
         openSnackbar({
-          message: `Unknown action type: ${action.type}`,
+          message: t`Unknown action type: ${action.type}`,
           variant: 'error',
         })
         return
@@ -1554,12 +1567,12 @@ const addAction = (action: ActionConfig): void => {
 
     emit('action-added', action)
     openSnackbar({
-      message: `Action "${action.name}" has been added successfully!`,
+      message: t`Action "${action.name}" has been added successfully!`,
       variant: 'success',
     })
   } catch (error) {
     openSnackbar({
-      message: `Failed to add action "${action.name}": ${error}`,
+      message: t`Failed to add action "${action.name}": ${error}`,
       variant: 'error',
     })
   }
@@ -1582,7 +1595,7 @@ const moveAppliedToIgnored = (action: ActionWithExtensionName): void => {
   handledActions.value.applied = handledActions.value.applied.filter((id) => id !== action.id)
   handledActions.value.ignored.push(action.id)
   openSnackbar({
-    message: `Action "${action.name}" moved to ignored.`,
+    message: t`Action "${action.name}" moved to ignored.`,
     variant: 'info',
   })
 }
@@ -1595,7 +1608,7 @@ const ignoreAction = (action: ActionConfig): void => {
   logUserAction(`Ignored discovered action '${action.name}'`)
   handledActions.value.ignored.push(action.id)
   openSnackbar({
-    message: `Action "${action.name}" has been ignored.`,
+    message: t`Action "${action.name}" has been ignored.`,
     variant: 'info',
   })
 }
@@ -1608,7 +1621,7 @@ const restoreIgnoredAction = (action: ActionWithExtensionName): void => {
   logUserAction(`Restored ignored action '${action.name}'`)
   handledActions.value.ignored = handledActions.value.ignored.filter((id) => id !== action.id)
   openSnackbar({
-    message: `Action "${action.name}" restored.`,
+    message: t`Action "${action.name}" restored.`,
     variant: 'success',
   })
 }
@@ -1624,7 +1637,7 @@ const restoreAllIgnoredActions = (): void => {
   const idsToRestore = ignoredActions.value.map((a) => a.id)
   handledActions.value.ignored = handledActions.value.ignored.filter((id) => !idsToRestore.includes(id))
   openSnackbar({
-    message: `Restored ${count} ignored action(s).`,
+    message: t`Restored ${count} ignored action(s).`,
     variant: 'success',
   })
 }
@@ -1645,7 +1658,7 @@ const restoreAllIgnoredSuggestions = (extensionName: string): void => {
 
   removeIgnoredSuggestionIds(suggestionsToRestore.map((suggestion) => suggestion.id))
   openSnackbar({
-    message: `Restored ${suggestionsToRestore.length} ignored joystick mappings from ${extensionName}.`,
+    message: t`Restored ${suggestionsToRestore.length} ignored joystick mappings from ${extensionName}.`,
     variant: 'success',
   })
 }
@@ -1657,7 +1670,7 @@ const restoreAllIgnoredSuggestions = (extensionName: string): void => {
 const restoreIgnoredSuggestion = (suggestion: JoystickMapSuggestion): void => {
   removeIgnoredSuggestionIds([suggestion.id])
   openSnackbar({
-    message: `Mapping "${suggestion.actionName}" restored.`,
+    message: t`Mapping "${suggestion.actionName}" restored.`,
     variant: 'success',
   })
 }
@@ -1724,11 +1737,11 @@ const announceIfPending = (): void => {
   if (hasAnnounced || !hasPendingBlueOSFeatures.value) return
   hasAnnounced = true
   openSnackbar({
-    message: 'Your vehicle has extensions offering new features.',
+    message: t`Your vehicle has extensions offering new features.`,
     variant: 'info',
     persistent: true,
     action: {
-      label: 'Review',
+      label: t`Review`,
       handler: () => {
         if (filteredJoystickSuggestionsByExtension.value.length > 0 && filteredActions.value.length === 0) {
           activeTab.value = 'joystick-suggestions'

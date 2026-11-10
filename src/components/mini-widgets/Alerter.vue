@@ -73,7 +73,7 @@
 
   <InteractionDialog
     v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen"
-    title="Alerter options"
+    :title="t`Alerter options`"
     max-width="400px"
     variant="text-only"
   >
@@ -82,10 +82,10 @@
         <v-switch
           v-model="miniWidget.options.enableColorCoding"
           hide-details
-          label="Enable color coded alerts"
+          :label="t`Enable color coded alerts`"
           color="white"
         />
-        <v-switch v-model="alertStore.enableVoiceAlerts" hide-details label="Enable voice alerts" color="white" />
+        <v-switch v-model="alertStore.enableVoiceAlerts" hide-details :label="t`Enable voice alerts`" color="white" />
         <v-slider
           v-model="alertStore.alertVolume"
           min="0"
@@ -93,7 +93,7 @@
           step="0.05"
           hide-details
           thumb-label
-          label="Alert volume"
+          :label="t`Alert volume`"
           color="white"
           class="w-[250px] mt-2"
           :disabled="!alertStore.enableVoiceAlerts"
@@ -101,7 +101,7 @@
       </div>
     </template>
     <template #actions>
-      <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">Close</v-btn>
+      <v-btn @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false">{{ t`Close` }}</v-btn>
     </template>
   </InteractionDialog>
 </template>

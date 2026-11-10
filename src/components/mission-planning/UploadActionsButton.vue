@@ -47,9 +47,17 @@ const props = defineProps<{
    */
   disabled?: boolean
   /**
-   * What the collapsed actions are about, as in "mission actions", used in the toggle's tooltip and logs.
+   * What the collapsed actions are about, as in "mission actions", used in the logs.
    */
   actionsName: string
+  /**
+   * Tooltip of the toggle while the actions are collapsed.
+   */
+  showText: string
+  /**
+   * Tooltip of the toggle while the actions are expanded.
+   */
+  hideText: string
   /**
    * Shows a dot on the collapsed toggle, hinting that it hides something worth opening.
    */
@@ -62,7 +70,7 @@ const emit = defineEmits<{
 
 const expanded = defineModel<boolean>('expanded', { default: false })
 
-const toggleText = computed(() => `${expanded.value ? 'Hide' : 'Show'} ${props.actionsName}`)
+const toggleText = computed(() => (expanded.value ? props.hideText : props.showText))
 
 const toggleActions = (): void => {
   logUserAction(`${expanded.value ? 'Closed' : 'Opened'} the ${props.actionsName} menu`)

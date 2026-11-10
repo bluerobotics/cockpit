@@ -57,7 +57,7 @@
       @update:model-value="onLayersMenuToggle"
     >
       <template #activator="{ props: menuProps }">
-        <v-tooltip location="left" text="Hazard layers" :disabled="layersMenuOpen">
+        <v-tooltip location="left" :text="t`Hazard layers`" :disabled="layersMenuOpen">
           <template #activator="{ props: tooltipProps }">
             <v-btn
               v-bind="{ ...menuProps, ...tooltipProps }"
@@ -98,7 +98,7 @@
         </v-tooltip>
       </div>
     </v-menu>
-    <v-tooltip v-if="fenceStore.isArduPilot" location="left" text="Refresh fence from vehicle">
+    <v-tooltip v-if="fenceStore.isArduPilot" location="left" :text="t`Refresh fence from vehicle`">
       <template #activator="{ props: tooltipProps }">
         <v-btn
           key="reload"
@@ -119,6 +119,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { type StyleValue, computed, defineModel, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -185,18 +186,18 @@ const canToggleEnforcement = computed<boolean>(
 )
 
 const fenceMainButtonTooltip = computed<string>(() => {
-  if (!vehicleStore.isVehicleOnline || !fenceStore.isArduPilot) return 'Geofence and hazard layers'
-  if (!hasVehicleFence.value) return 'No geofence on the vehicle'
+  if (!vehicleStore.isVehicleOnline || !fenceStore.isArduPilot) return t`Geofence and hazard layers`
+  if (!hasVehicleFence.value) return t`No geofence on the vehicle`
   return fenceStore.fenceEnabled
-    ? 'Geofence enforcement on (double-click to disable)'
-    : 'Geofence enforcement off (double-click to enable)'
+    ? t`Geofence enforcement on (double-click to disable)`
+    : t`Geofence enforcement off (double-click to enable)`
 })
 
 const fenceToggleItemTooltip = computed<string>(() => {
-  if (!vehicleStore.isVehicleOnline) return 'Connect to the vehicle to toggle fence enforcement'
-  if (!fenceStore.isArduPilot) return 'Fence enforcement can only be toggled on ArduPilot vehicles'
-  if (!hasVehicleFence.value) return 'No geofence on the vehicle'
-  return fenceStore.fenceEnabled ? 'Disable fence enforcement on vehicle' : 'Enable fence enforcement on vehicle'
+  if (!vehicleStore.isVehicleOnline) return t`Connect to the vehicle to toggle fence enforcement`
+  if (!fenceStore.isArduPilot) return t`Fence enforcement can only be toggled on ArduPilot vehicles`
+  if (!hasVehicleFence.value) return t`No geofence on the vehicle`
+  return fenceStore.fenceEnabled ? t`Disable fence enforcement on vehicle` : t`Enable fence enforcement on vehicle`
 })
 
 const hazardToggleTooltip = (sourceId: HazardSourceId): string => {
@@ -218,7 +219,7 @@ const onToggleFenceEnforcement = (): void => {
   } catch (error) {
     showDialog({
       variant: 'error',
-      title: target ? 'Failed to enable geofence' : 'Failed to disable geofence',
+      title: target ? t`Failed to enable geofence` : t`Failed to disable geofence`,
       message: error instanceof Error ? error.message : String(error),
       timer: 4000,
     })
@@ -230,7 +231,7 @@ const onRefreshFenceOverlay = (): void => {
   fenceStore.refreshVehicleFenceOverlay().catch((error) => {
     showDialog({
       variant: 'error',
-      title: 'Geofence refresh failed',
+      title: t`Geofence refresh failed`,
       message: error instanceof Error ? error.message : String(error),
       timer: 5000,
     })

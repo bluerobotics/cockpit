@@ -1,4 +1,5 @@
 import { useEventListener, useMediaQuery } from '@vueuse/core'
+import { t } from 'ttag'
 import { type ComputedRef, computed, ref, shallowRef } from 'vue'
 
 import { isElectron } from '@/libs/utils'
@@ -54,7 +55,7 @@ export const usePwaInstallation = (): {
       logUserAction(outcome === 'accepted' ? 'Accepted app installation' : 'Dismissed app installation')
     } catch {
       openSnackbar({
-        message: 'Could not open app installation. Try installing from your browser menu.',
+        message: t`Could not open app installation. Try installing from your browser menu.`,
         variant: 'error',
         duration: 5000,
       })

@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { ref } from 'vue'
 
 import { useMissionStore } from '@/stores/mission'
@@ -17,10 +18,10 @@ export type ConfirmCallback = () => void | Promise<void>
 
 /** Refs */
 export const showSlideToConfirm = ref(false)
-export const sliderText = ref('Slide to Confirm')
-export const confirmationSliderText = ref('Action Confirm')
-export const deniedText = ref('Action Denied')
-export const expiredText = ref('Action Expired')
+export const sliderText = ref(t`Slide to Confirm`)
+export const confirmationSliderText = ref(t`Action Confirm`)
+export const deniedText = ref(t`Action Denied`)
+export const expiredText = ref(t`Action Expired`)
 export const sliderPercentage = ref(0)
 export const onAction = ref<(confirmed: boolean) => void>()
 
@@ -178,10 +179,10 @@ export function slideToConfirm(content: ConfirmContent, byPass = false): Promise
   const holdToConfirmCallbackId = registerHoldToConfirm()
 
   // Setup and show the slide to confirm component
-  sliderText.value = content.text ?? `Confirm ${content.command}`
-  confirmationSliderText.value = content.confirmedText ?? `${content.command} confirmed`
-  deniedText.value = content.deniedText ?? `${content.command} denied`
-  expiredText.value = content.expiredText ?? `${content.command} expired`
+  sliderText.value = content.text ?? t`Confirm ${content.command}`
+  confirmationSliderText.value = content.confirmedText ?? t`${content.command} confirmed`
+  deniedText.value = content.deniedText ?? t`${content.command} denied`
+  expiredText.value = content.expiredText ?? t`${content.command} expired`
   showSlideToConfirm.value = true
 
   // Register the callback to call the action

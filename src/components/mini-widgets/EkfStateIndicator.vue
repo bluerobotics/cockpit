@@ -21,11 +21,13 @@
       <v-card min-width="420" min-height="280" class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
         <v-card-text class="pa-3">
           <div v-if="dataStatus === 'error'" class="text-center mb-3">
-            <v-alert type="warning" density="compact" class="text-sm"> No EKF data - Check vehicle connection </v-alert>
+            <v-alert type="warning" density="compact" class="text-sm">
+              {{ t`No EKF data - Check vehicle connection` }}
+            </v-alert>
           </div>
           <div v-else-if="dataStatus === 'loading'" class="text-center mb-3">
             <v-progress-circular indeterminate size="20" width="2" class="mr-2" />
-            <span class="text-sm text-white opacity-70">Waiting for EKF data...</span>
+            <span class="text-sm text-white opacity-70">{{ t`Waiting for EKF data...` }}</span>
           </div>
           <div class="d-flex">
             <!-- EKF Bars Section -->
@@ -81,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 
 import { listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
@@ -98,11 +101,11 @@ const dataStatus = ref<'loading' | 'connected' | 'error'>('loading')
 
 // EKF bar data
 const ekfBars = reactive([
-  { label: 'Velocity', value: 0.0 },
-  { label: 'Position (Horiz)', value: 0.0 },
-  { label: 'Position (Vert)', value: 0.0 },
-  { label: 'Compass', value: 0.0 },
-  { label: 'Terrain', value: 0.0 },
+  { label: t`Velocity`, value: 0.0 },
+  { label: t`Position (Horiz)`, value: 0.0 },
+  { label: t`Position (Vert)`, value: 0.0 },
+  { label: t`Compass`, value: 0.0 },
+  { label: t`Terrain`, value: 0.0 },
 ])
 
 // EKF flags data
@@ -140,23 +143,20 @@ const getFlagIcon = (key: string, flag: boolean): string => {
 
 const getFlagTooltip = (key: string): string => {
   const tooltips: Record<string, string> = {
-    attitude: 'EKF attitude estimate quality - indicates how well the system knows its orientation (roll, pitch, yaw)',
-    velocity_horiz: 'EKF horizontal velocity estimate quality - indicates confidence in horizontal speed measurements',
-    velocity_vert: 'EKF vertical velocity estimate quality - indicates confidence in vertical speed measurements',
-    pos_horiz_rel:
-      'EKF horizontal position (relative) estimate quality - confidence in relative positioning from starting point',
-    pos_horiz_abs: 'EKF horizontal position (absolute) estimate quality - confidence in GPS-based absolute positioning',
-    pos_vert_abs: 'EKF vertical position (absolute) estimate quality - confidence in altitude measurements',
-    pos_vert_agl: 'EKF vertical position (above ground) estimate quality - confidence in height above terrain',
-    const_pos_mode: 'EKF constant position mode - system assumes stationary position when other estimates are poor',
-    pred_pos_horiz_rel:
-      'EKF predicted horizontal position (relative) estimate quality - confidence in future relative position',
-    pred_pos_horiz_abs:
-      'EKF predicted horizontal position (absolute) estimate quality - confidence in future absolute position',
-    uninitialized: 'EKF initialization status - whether the Extended Kalman Filter has been properly initialized',
-    gps_glitching: 'GPS health status - whether the EKF detects problems with GPS input data',
+    attitude: t`EKF attitude estimate quality - indicates how well the system knows its orientation (roll, pitch, yaw)`,
+    velocity_horiz: t`EKF horizontal velocity estimate quality - indicates confidence in horizontal speed measurements`,
+    velocity_vert: t`EKF vertical velocity estimate quality - indicates confidence in vertical speed measurements`,
+    pos_horiz_rel: t`EKF horizontal position (relative) estimate quality - confidence in relative positioning from starting point`,
+    pos_horiz_abs: t`EKF horizontal position (absolute) estimate quality - confidence in GPS-based absolute positioning`,
+    pos_vert_abs: t`EKF vertical position (absolute) estimate quality - confidence in altitude measurements`,
+    pos_vert_agl: t`EKF vertical position (above ground) estimate quality - confidence in height above terrain`,
+    const_pos_mode: t`EKF constant position mode - system assumes stationary position when other estimates are poor`,
+    pred_pos_horiz_rel: t`EKF predicted horizontal position (relative) estimate quality - confidence in future relative position`,
+    pred_pos_horiz_abs: t`EKF predicted horizontal position (absolute) estimate quality - confidence in future absolute position`,
+    uninitialized: t`EKF initialization status - whether the Extended Kalman Filter has been properly initialized`,
+    gps_glitching: t`GPS health status - whether the EKF detects problems with GPS input data`,
   }
-  return tooltips[key] || 'EKF status flag'
+  return tooltips[key] || t`EKF status flag`
 }
 
 const worstStatusBackgroundColor = computed(() => {

@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { type ComputedRef, type Ref, computed, onScopeDispose, ref } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -70,13 +71,13 @@ export const useExtensionWebSocketOffers = (): UseExtensionWebSocketOffersReturn
     addGenericWebSocketConnection(offer.url)
     markHandled(offer)
     logUserAction(`Accepted the '${offer.name}' WebSocket offered by ${offer.extensionName}`)
-    openSnackbar({ message: `Connecting to "${offer.name}" from ${offer.extensionName}.`, variant: 'success' })
+    openSnackbar({ message: t`Connecting to "${offer.name}" from ${offer.extensionName}.`, variant: 'success' })
   }
 
   const ignoreOffer = (offer: WebSocketOfferFromExtension): void => {
     markHandled(offer)
     logUserAction(`Ignored the '${offer.name}' WebSocket offered by ${offer.extensionName}`)
-    const message = `"${offer.name}" ignored. You can still connect it from the Connections tab.`
+    const message = t`"${offer.name}" ignored. You can still connect it from the Connections tab.`
     openSnackbar({ message, variant: 'info' })
   }
 

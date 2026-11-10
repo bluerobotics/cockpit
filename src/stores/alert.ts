@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -7,7 +8,7 @@ import { useTextToSpeech } from '@/composables/useTextToSpeech'
 import { Alert, AlertLevel } from '../types/alert'
 
 export const useAlertStore = defineStore('alert', () => {
-  const alerts = reactive([new Alert(AlertLevel.Success, 'Cockpit started')])
+  const alerts = reactive([new Alert(AlertLevel.Success, t`Cockpit started`)])
   const enableVoiceAlerts = useBlueOsStorage('cockpit-enable-voice-alerts', true)
   const neverShowArmedMenuWarning = useBlueOsStorage('cockpit-never-show-armed-menu-warning', false)
   const neverShowBoatDriftFenceWarning = useBlueOsStorage('cockpit-never-show-boat-drift-fence-warning', false)

@@ -11,7 +11,7 @@
   </div>
   <v-dialog v-model="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen" width="700">
     <v-card class="pa-4 text-white" style="border-radius: 15px" :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-center">Mode names</v-card-title>
+      <v-card-title class="text-center">{{ t`Mode names` }}</v-card-title>
       <v-card-text class="max-h-[60vh] overflow-y-auto">
         <div class="absolute top-2 right-2 z-10">
           <v-btn
@@ -19,7 +19,7 @@
             size="30"
             variant="text"
             class="text-white text-[22px]"
-            aria-label="Close"
+            :aria-label="t`Close`"
             @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
           >
             <i class="mdi mdi-close"></i>

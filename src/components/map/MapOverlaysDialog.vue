@@ -1,7 +1,7 @@
 <template>
   <v-dialog :model-value="modelValue" width="700" @update:model-value="emit('update:modelValue', $event)">
     <v-card :style="interfaceStore.globalGlassMenuStyles">
-      <v-card-title class="text-lg text-center font-semibold mt-2">Map overlays</v-card-title>
+      <v-card-title class="text-lg text-center font-semibold mt-2">{{ t`Map overlays` }}</v-card-title>
       <v-icon icon="mdi-close" class="absolute top-3 right-5 mt-2" @click="emit('update:modelValue', false)" />
       <v-card-text>
         <div class="flex flex-col gap-y-3">
@@ -11,13 +11,14 @@
           >
             <v-icon icon="mdi-information-outline" size="16" class="mt-[2px]" />
             <span>
-              In Cockpit Lite, overlays are stored in limited browser storage that the browser may clear, so very large
-              surveys may fail to save or not persist. For large datasets or reliable storage, use Cockpit standalone.
+              {{
+                t`In Cockpit Lite, overlays are stored in limited browser storage that the browser may clear, so very large surveys may fail to save or not persist. For large datasets or reliable storage, use Cockpit standalone.`
+              }}
             </span>
           </div>
 
           <div class="flex items-center justify-between">
-            <p class="text-md">Loaded overlays</p>
+            <p class="text-md">{{ t`Loaded overlays` }}</p>
             <v-btn
               class="bg-[#FFFFFF22]"
               variant="plain"
@@ -26,12 +27,12 @@
               :loading="importingOverlays"
               @click="addOverlays"
             >
-              Add GeoTIFF
+              {{ t`Add GeoTIFF` }}
             </v-btn>
           </div>
 
           <p v-if="missionStore.mapOverlays.length === 0" class="text-sm text-slate-400">
-            No GeoTIFF overlays loaded. Use "Add GeoTIFF" to load a survey.
+            {{ t`No GeoTIFF overlays loaded. Use "Add GeoTIFF" to load a survey.` }}
           </p>
 
           <div
@@ -43,7 +44,7 @@
               <div class="flex items-center gap-x-2 min-w-0">
                 <v-progress-circular
                   v-if="loadingIds.includes(overlay.id)"
-                  v-tooltip.bottom="'Rendering overlay…'"
+                  v-tooltip.bottom="t`Rendering overlay…`"
                   indeterminate
                   size="16"
                   width="2"
@@ -57,14 +58,14 @@
               <div class="flex items-center gap-x-3 shrink-0">
                 <v-switch
                   v-model="overlay.visible"
-                  label="Visible"
+                  :label="t`Visible`"
                   color="white"
                   hide-details
                   density="compact"
                   base-color="#FFFFFF33"
                 />
                 <v-icon
-                  v-tooltip.bottom="'Center map on overlay'"
+                  v-tooltip.bottom="t`Center map on overlay`"
                   icon="mdi-image-filter-center-focus"
                   size="18"
                   color="white"
@@ -72,7 +73,7 @@
                   @click="centerOnOverlay(overlay)"
                 />
                 <v-icon
-                  v-tooltip.bottom="'Remove overlay'"
+                  v-tooltip.bottom="t`Remove overlay`"
                   icon="mdi-trash-can-outline"
                   size="18"
                   color="white"
@@ -85,7 +86,7 @@
               <v-select
                 v-model="overlay.renderMode"
                 :items="renderModeOptions"
-                label="Render mode"
+                :label="t`Render mode`"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -93,7 +94,7 @@
                 theme="dark"
               />
               <div class="flex items-center gap-x-2 flex-1 min-w-[200px]">
-                <span class="text-sm text-slate-200 whitespace-nowrap">Opacity</span>
+                <span class="text-sm text-slate-200 whitespace-nowrap">{{ t`Opacity` }}</span>
                 <v-slider
                   v-model="overlay.opacity"
                   :min="0"
@@ -109,7 +110,7 @@
           </div>
 
           <template v-if="externalOverlays.length > 0">
-            <p class="text-md">Sent by extensions and other software</p>
+            <p class="text-md">{{ t`Sent by extensions and other software` }}</p>
             <div
               v-for="overlay in externalOverlays"
               :key="overlay.id"
@@ -118,15 +119,15 @@
               <div class="flex flex-col min-w-0">
                 <span class="text-sm text-white truncate">{{ overlay.name }}</span>
                 <span class="text-xs text-slate-400">
-                  {{ overlay.live ? 'Live, cleared when Cockpit restarts' : 'Saved on this computer' }}
+                  {{ overlay.live ? t`Live, cleared when Cockpit restarts` : t`Saved on this computer` }}
                 </span>
               </div>
               <v-btn
-                v-tooltip.bottom="'Remove overlay'"
+                v-tooltip.bottom="t`Remove overlay`"
                 icon="mdi-trash-can-outline"
                 variant="text"
                 size="small"
-                aria-label="Remove overlay"
+                :aria-label="t`Remove overlay`"
                 @click="removeExternalOverlay(overlay)"
               />
             </div>
@@ -136,7 +137,7 @@
       <v-divider class="mx-8" />
       <v-card-actions>
         <div class="flex justify-end w-full pa-0 mr-2">
-          <v-btn color="white" @click="emit('update:modelValue', false)">Close</v-btn>
+          <v-btn color="white" @click="emit('update:modelValue', false)">{{ t`Close` }}</v-btn>
         </div>
       </v-card-actions>
     </v-card>
@@ -144,6 +145,7 @@
 </template>
 
 <script setup lang="ts">
+import { msgid, ngettext, t } from 'ttag'
 import { ref } from 'vue'
 
 import { type ReceivedMapOverlay, useExternalMapOverlays } from '@/composables/map/useExternalMapOverlays'
@@ -195,9 +197,9 @@ const renderModeOptions: {
    */
   value: MapOverlayRenderMode
 }[] = [
-  { title: 'Grayscale / RGB', value: 'grayscale' },
-  { title: 'Intensity', value: 'intensity' },
-  { title: 'Bathymetry', value: 'bathymetry' },
+  { title: t`Grayscale / RGB`, value: 'grayscale' },
+  { title: t`Intensity`, value: 'intensity' },
+  { title: t`Bathymetry`, value: 'bathymetry' },
 ]
 
 const importingOverlays = ref(false)
@@ -210,7 +212,7 @@ const addOverlays = async (): Promise<void> => {
   let addedCount = 0
   for (const file of files) {
     if (!isGeoTiffFile(file)) {
-      openSnackbar({ message: `"${file.name}" is not a GeoTIFF file.`, variant: 'error', duration: 4000 })
+      openSnackbar({ message: t`"${file.name}" is not a GeoTIFF file.`, variant: 'error', duration: 4000 })
       continue
     }
     try {
@@ -220,7 +222,7 @@ const addOverlays = async (): Promise<void> => {
       const message =
         error instanceof OverlayStorageQuotaError
           ? error.message
-          : `Failed to load "${file.name}". It may be an unsupported or corrupted GeoTIFF.`
+          : t`Failed to load "${file.name}". It may be an unsupported or corrupted GeoTIFF.`
       openSnackbar({ message, variant: 'error', duration: 6000 })
       console.error('Failed to import GeoTIFF overlay', file.name, error)
     }
@@ -229,7 +231,7 @@ const addOverlays = async (): Promise<void> => {
 
   if (addedCount > 0) {
     openSnackbar({
-      message: `${addedCount} map overlay${addedCount > 1 ? 's' : ''} added.`,
+      message: ngettext(msgid`${addedCount} map overlay added.`, `${addedCount} map overlays added.`, addedCount),
       variant: 'success',
       duration: 3000,
     })

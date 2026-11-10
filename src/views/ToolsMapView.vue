@@ -1,16 +1,16 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Map</template>
+    <template #title>{{ t`Map` }}</template>
     <template #content>
       <div
         class="flex-col h-full overflow-y-auto ml-[10px] pr-3 -mr-[10px] -mb-[10px]"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[80vw]' : 'max-w-[60vw]'"
       >
         <ExpansiblePanel v-model:is-expanded="poisExpanded" no-top-divider>
-          <template #title>Points of Interest</template>
+          <template #title>{{ t`Points of Interest` }}</template>
           <template #info>
-            <li>View, edit and remove the points of interest shown on the map.</li>
-            <li>Static POIs have fixed coordinates, while live POIs follow data-lake variables.</li>
+            <li>{{ t`View, edit and remove the points of interest shown on the map.` }}</li>
+            <li>{{ t`Static POIs have fixed coordinates, while live POIs follow data-lake variables.` }}</li>
           </template>
           <template #content>
             <div class="flex justify-center flex-col ml-2 pr-4 mb-5 mt-2 w-full">
@@ -96,7 +96,7 @@
                     <td colspan="4" class="text-center flex items-center justify-center h-[50px] mb-3 w-full gap-2">
                       <v-btn variant="outlined" class="rounded-lg" @click="openNewPoiDialog">
                         <v-icon start>mdi-plus</v-icon>
-                        Add point of interest
+                        {{ t`Add point of interest` }}
                       </v-btn>
                     </td>
                   </tr>
@@ -104,7 +104,7 @@
                 <template #no-data>
                   <tr>
                     <td colspan="4" class="text-center flex items-center justify-center h-[50px] w-full">
-                      <p class="text-[16px] w-full">No points of interest found</p>
+                      <p class="text-[16px] w-full">{{ t`No points of interest found` }}</p>
                     </td>
                   </tr>
                 </template>
@@ -114,18 +114,18 @@
         </ExpansiblePanel>
 
         <ExpansiblePanel v-model:is-expanded="customProvidersExpanded" no-top-divider no-bottom-divider>
-          <template #title>Custom map providers</template>
+          <template #title>{{ t`Custom map providers` }}</template>
           <template #info>
             <div class="w-full">
               <p>
-                Add your own map tile sources via an XYZ URL (remote or hosted on your vehicle) or an imported archive
-                (ZIP of {z}/{x}/{y} tiles, MBTiles or PMTiles).
+                {{
+                  t`Add your own map tile sources via an XYZ URL (remote or hosted on your vehicle) or an imported archive (ZIP of {z}/{x}/{y} tiles, MBTiles or PMTiles).`
+                }}
               </p>
               <p class="mt-2">
-                For URL providers, the tile URL must contain the {z}, {x} and {y} placeholders. Imported archives are
-                cached on this computer for offline rendering and uploaded to the vehicle, which keeps the durable copy,
-                as soon as it is online. Each provider appears as a selectable base map under "Esri World Imagery" in
-                the map's layer selector.
+                {{
+                  t`For URL providers, the tile URL must contain the {z}, {x} and {y} placeholders. Imported archives are cached on this computer for offline rendering and uploaded to the vehicle, which keeps the durable copy, as soon as it is online. Each provider appears as a selectable base map under "Esri World Imagery" in the map's layer selector.`
+                }}
               </p>
             </div>
           </template>
@@ -141,6 +141,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -181,15 +182,15 @@ watch(
 )
 
 const headers = [
-  { title: 'Name', key: 'name', align: 'start', sortable: true },
-  { title: 'Status', key: 'status', align: 'center', sortable: false },
-  { title: 'Coordinates', key: 'coordinates', align: 'center', sortable: false },
-  { title: 'Actions', key: 'actions', align: 'end', sortable: false },
+  { title: t`Name`, key: 'name', align: 'start', sortable: true },
+  { title: t`Status`, key: 'status', align: 'center', sortable: false },
+  { title: t`Coordinates`, key: 'coordinates', align: 'center', sortable: false },
+  { title: t`Actions`, key: 'actions', align: 'end', sortable: false },
 ] as const
 
 const poiStatusLabel = (poi: ResolvedPointOfInterest): string => {
-  if (!poi.isLiveTracked) return 'Static'
-  return poi.hasValidPosition ? 'Live' : 'No data'
+  if (!poi.isLiveTracked) return t`Static`
+  return poi.hasValidPosition ? t`Live` : t`No data`
 }
 
 const poiStatusColor = (poi: ResolvedPointOfInterest): string => {
@@ -198,7 +199,7 @@ const poiStatusColor = (poi: ResolvedPointOfInterest): string => {
 }
 
 const poiCoordinatesText = (poi: ResolvedPointOfInterest): string => {
-  if (poi.isLiveTracked && !poi.hasValidPosition) return 'Coordinates unknown'
+  if (poi.isLiveTracked && !poi.hasValidPosition) return t`Coordinates unknown`
   return `${poi.coordinates[0].toFixed(7)}, ${poi.coordinates[1].toFixed(7)}`
 }
 
@@ -216,12 +217,12 @@ const editPoi = (poi: ResolvedPointOfInterest): void => {
 const removePoi = (poi: ResolvedPointOfInterest): void => {
   showDialog({
     variant: 'warning',
-    title: 'Remove point of interest?',
-    message: `Remove "${poi.name}"? This deletes it and its backing data-lake variables.`,
+    title: t`Remove point of interest?`,
+    message: t`Remove "${poi.name}"? This deletes it and its backing data-lake variables.`,
     actions: [
-      { text: 'Cancel', size: 'small', action: closeDialog },
+      { text: t`Cancel`, size: 'small', action: closeDialog },
       {
-        text: 'Remove',
+        text: t`Remove`,
         size: 'small',
         action: () => {
           closeDialog()

@@ -9,13 +9,15 @@
     <div class="mt-6 grid grid-cols-2 gap-6 px-2">
       <div class="flex flex-col items-start text-left">
         <p class="max-w-[220px] text-xs leading-snug opacity-80">
-          Click <strong>Ignore</strong> if you are happy with your current views group and joystick mapping.
+          {{ t`Click` }} <strong>{{ t`Ignore` }}</strong>
+          {{ t`if you are happy with your current views group and joystick mapping.` }}
         </p>
         <v-icon size="42" color="white" class="mt-3 -rotate-[25deg]">mdi-arrow-down-left-bold</v-icon>
       </div>
       <div class="flex flex-col items-end text-right">
         <p class="max-w-[220px] text-xs leading-snug opacity-80">
-          Click <strong>Next</strong> to review the defaults and decide whether to import them.
+          {{ t`Click` }} <strong>{{ t`Next` }}</strong>
+          {{ t`to review the defaults and decide whether to import them.` }}
         </p>
         <v-icon size="48" color="white" class="mt-4 rotate-[25deg]">mdi-arrow-down-right-bold</v-icon>
       </div>

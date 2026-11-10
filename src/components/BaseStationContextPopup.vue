@@ -12,7 +12,7 @@
       @contextmenu.stop.prevent
     >
       <div class="flex justify-between items-center pt-1 pb-2 px-2">
-        <p class="text-[14px] truncate mr-2">Base station</p>
+        <p class="text-[14px] truncate mr-2">{{ t`Base station` }}</p>
         <div class="flex shrink-0 items-center gap-x-1">
           <v-btn
             v-tooltip="{ text: signalVisibilityTooltip, zIndex: TOOLTIP_Z_INDEX }"
@@ -24,21 +24,21 @@
             @click="onToggleSignalVisibility"
           />
           <v-btn
-            v-tooltip="{ text: 'Remove base station', zIndex: TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Remove base station`, zIndex: TOOLTIP_Z_INDEX }"
             icon="mdi-trash-can"
             variant="text"
             size="x-small"
             color="white"
-            aria-label="Remove base station"
+            :aria-label="t`Remove base station`"
             @click="onDelete"
           />
           <v-btn
-            v-tooltip="{ text: 'Configure base station', zIndex: TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Configure base station`, zIndex: TOOLTIP_Z_INDEX }"
             icon="mdi-cog"
             variant="text"
             size="x-small"
             color="white"
-            aria-label="Configure base station"
+            :aria-label="t`Configure base station`"
             @click="onConfigure"
           />
         </div>
@@ -51,33 +51,33 @@
       >
         <div class="flex w-full items-center gap-x-2 text-[10px] py-[1px] mb-[2px]">
           <v-btn
-            v-tooltip="{ text: 'Copy latitude to clipboard', zIndex: TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Copy latitude to clipboard`, zIndex: TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-content-copy"
             size="x-small"
             density="compact"
             color="black"
-            :aria-label="'Copy latitude to clipboard'"
+            :aria-label="t`Copy latitude to clipboard`"
             class="text-[12px] shrink-0"
             @click="onCopyCoordinate(0)"
           />
-          <p class="flex-1">Lat.:</p>
+          <p class="flex-1">{{ t`Lat.:` }}</p>
           <p>{{ config.position[0].toFixed(7) }}</p>
         </div>
         <v-divider class="border-black w-full" />
         <div class="flex w-full items-center gap-x-2 text-[10px] py-[1px]">
           <v-btn
-            v-tooltip="{ text: 'Copy longitude to clipboard', zIndex: TOOLTIP_Z_INDEX }"
+            v-tooltip="{ text: t`Copy longitude to clipboard`, zIndex: TOOLTIP_Z_INDEX }"
             variant="text"
             icon="mdi-content-copy"
             size="x-small"
             density="compact"
             color="black"
-            :aria-label="'Copy longitude to clipboard'"
+            :aria-label="t`Copy longitude to clipboard`"
             class="text-[12px] shrink-0"
             @click="onCopyCoordinate(1)"
           />
-          <p class="flex-1">Long.:</p>
+          <p class="flex-1">{{ t`Long.:` }}</p>
           <p>{{ config.position[1].toFixed(7) }}</p>
         </div>
       </div>
@@ -86,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
@@ -140,9 +141,13 @@ const onCopyCoordinate = async (index: 0 | 1): Promise<void> => {
   try {
     await copyToClipboard(`${config.value.position[index]}`)
     logUserAction(`Copied the base station ${label.toLowerCase()} to the clipboard`)
-    openSnackbar({ message: `${label} copied to clipboard.`, variant: 'success' })
+    const message = index === 0 ? t`Latitude copied to clipboard.` : t`Longitude copied to clipboard.`
+    openSnackbar({ message, variant: 'success' })
   } catch (error) {
-    openSnackbar({ message: `Failed to copy ${label.toLowerCase()}: ${(error as Error).message}`, variant: 'error' })
+    const errorMessage = (error as Error).message
+    const message =
+      index === 0 ? t`Failed to copy latitude: ${errorMessage}` : t`Failed to copy longitude: ${errorMessage}`
+    openSnackbar({ message, variant: 'error' })
   }
 }
 

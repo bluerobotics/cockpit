@@ -46,15 +46,15 @@
       class="flex flex-col items-center p-2 pt-1 m-5 rounded-md gap-y-4"
       :style="interfaceStore.globalGlassMenuStyles"
     >
-      <p class="text-xl font-semibold m-4">Choose a stream to record</p>
+      <p class="text-xl font-semibold m-4">{{ t`Choose a stream to record` }}</p>
       <v-select
         :model-value="nameSelectedStream"
-        label="Stream"
+        :label="t`Stream`"
         :items="enrichedStreamItems"
         item-value="internalName"
         density="compact"
         variant="outlined"
-        no-data-text="No streams available."
+        :no-data-text="t`No streams available.`"
         hide-details
         theme="dark"
         class="w-[90%]"
@@ -104,7 +104,7 @@
           variant="text"
           @click="widgetStore.miniWidgetManagerVars(miniWidget.hash).configMenuOpen = false"
         >
-          Close
+          {{ t`Close` }}
         </v-btn>
         <v-btn
           class="bg-[#FFFFFF11] hover:bg-[#FFFFFF33]"
@@ -112,7 +112,7 @@
           :class="{ 'opacity-30 pointer-events-none': isLoadingStream }"
           @click="startRecording"
         >
-          <span>Record</span>
+          <span>{{ t`Record` }}</span>
           <v-icon v-if="isLoadingStream" class="m-2 animate-spin">mdi-loading</v-icon>
           <div v-else class="w-5 h-5 ml-2 rounded-full bg-red" />
         </v-btn>
@@ -125,6 +125,7 @@
 import { useMouseInElement, useTimestamp } from '@vueuse/core'
 import { intervalToDuration } from 'date-fns'
 import { storeToRefs } from 'pinia'
+import { t } from 'ttag'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -274,13 +275,13 @@ function assertStreamIsSelectedAndAvailable(
   nameSelectedStream.value = selectedStream
 
   if (nameSelectedStream.value === undefined) {
-    showDialog({ message: 'No stream selected.', variant: 'error' })
+    showDialog({ message: t`No stream selected.`, variant: 'error' })
     return
   }
 
   if (namesAvailableStreams.value.includes(nameSelectedStream.value)) return
 
-  const errorMsg = `The selected stream is not available. Please check its source or select another stream.`
+  const errorMsg = t`The selected stream is not available. Please check its source or select another stream.`
   showDialog({ message: errorMsg, variant: 'error' })
   throw new Error(errorMsg)
 }
@@ -304,12 +305,12 @@ const toggleRecording = async (): Promise<void> => {
 
 const startRecording = (): void => {
   if (!selectedExternalId.value) {
-    showDialog({ title: 'Cannot start recording.', message: 'No stream selected.', variant: 'error' })
+    showDialog({ title: t`Cannot start recording.`, message: t`No stream selected.`, variant: 'error' })
     return
   }
 
   if (!videoStore.getStreamData(selectedExternalId.value)?.connected) {
-    showDialog({ title: 'Cannot start recording.', message: 'Stream is not connected.', variant: 'error' })
+    showDialog({ title: t`Cannot start recording.`, message: t`Stream is not connected.`, variant: 'error' })
     return
   }
 
@@ -356,7 +357,7 @@ const updateCurrentStream = (internalStreamName: string | undefined): void => {
     if (!isLoadingStream.value) return
     isLoadingStream.value = false
     openSnackbar({
-      message: `Could not load media stream '${internalStreamName}'. Check the stream source and try again.`,
+      message: t`Could not load media stream '${internalStreamName}'. Check the stream source and try again.`,
       variant: 'error',
     })
   }, streamLoadingTimeoutMs)

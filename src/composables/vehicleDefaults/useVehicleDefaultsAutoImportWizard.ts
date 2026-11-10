@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { type InjectionKey, computed, inject, nextTick, ref, watch } from 'vue'
 
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -41,48 +42,43 @@ export const useVehicleDefaultsAutoImportWizard = () => {
     if (!evaluation.value) return []
     const vehicleTypeName = evaluation.value.vehicleTypeName
     return [
-      `Cockpit detected that you are not using the default configuration for your connected ${vehicleTypeName}. ` +
-        `You can import Cockpit's defaults now, or keep your current setup.`,
-      `On the next screens you can review joystick mapping and views group defaults. For views, you may append the ` +
-        `default views after yours or replace your entire views group. For joystick mapping, select which default ` +
-        `bindings to import.`,
-      `Cockpit offers this walkthrough for this vehicle until you finish it. After that, it will not be offered ` +
-        `again. You can still import defaults later from the Edit menu (views) or Joystick configuration (import ` +
-        `button on the mapping toolbar).`,
+      t`Cockpit detected that you are not using the default configuration for your connected ${vehicleTypeName}. You can import Cockpit's defaults now, or keep your current setup.`,
+      t`On the next screens you can review joystick mapping and views group defaults. For views, you may append the default views after yours or replace your entire views group. For joystick mapping, select which default bindings to import.`,
+      t`Cockpit offers this walkthrough for this vehicle until you finish it. After that, it will not be offered again. You can still import defaults later from the Edit menu (views) or Joystick configuration (import button on the mapping toolbar).`,
     ]
   })
 
   const stepNumbers: Record<AutoWizardStep, number> = { intro: 1, joystick: 2, views: 3, done: 4 }
   const stepTitles: Record<AutoWizardStep, string> = {
-    intro: 'Default Configuration',
-    joystick: 'Default Joystick Mapping',
-    views: 'Default Views',
-    done: 'All set',
+    intro: t`Default Configuration`,
+    joystick: t`Default Joystick Mapping`,
+    views: t`Default Views`,
+    done: t`All set`,
   }
 
   const autoWizardStepNumber = computed(() => stepNumbers[autoWizardStep.value])
   const modalTitle = computed(() => stepTitles[autoWizardStep.value])
 
   const wizardSecondaryLabel = computed(() => {
-    if (autoWizardStep.value === 'intro') return 'Ignore'
+    if (autoWizardStep.value === 'intro') return t`Ignore`
     if (autoWizardStep.value === 'joystick') {
-      return joystickImport.hasImportOffer.value ? 'Ignore Joystick Mapping defaults' : ''
+      return joystickImport.hasImportOffer.value ? t`Ignore Joystick Mapping defaults` : ''
     }
     if (autoWizardStep.value === 'views') {
-      return viewsImport.hasImportOffer.value ? 'Ignore Views Group defaults' : ''
+      return viewsImport.hasImportOffer.value ? t`Ignore Views Group defaults` : ''
     }
     return ''
   })
 
   const wizardPrimaryLabel = computed(() => {
-    if (autoWizardStep.value === 'intro') return 'Next'
+    if (autoWizardStep.value === 'intro') return t`Next`
     if (autoWizardStep.value === 'joystick') {
-      return joystickImport.hasImportOffer.value ? 'Import Joystick Mapping defaults' : 'Next'
+      return joystickImport.hasImportOffer.value ? t`Import Joystick Mapping defaults` : t`Next`
     }
     if (autoWizardStep.value === 'views') {
-      return viewsImport.hasImportOffer.value ? 'Import Views Group defaults' : 'Next'
+      return viewsImport.hasImportOffer.value ? t`Import Views Group defaults` : t`Next`
     }
-    return 'Done'
+    return t`Done`
   })
 
   const wizardShowSecondaryButton = computed(() => {

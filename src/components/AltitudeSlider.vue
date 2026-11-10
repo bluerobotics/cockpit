@@ -12,7 +12,9 @@
       :min="0"
       :max="maxDisplayedAltitude"
     />
-    <div class="slider-value"><span>Alt (Rel)</span></div>
+    <div class="slider-value">
+      <span>{{ t`Alt (Rel)` }}</span>
+    </div>
     <div class="slider-value">{{ formattedValue }}</div>
   </div>
 </template>

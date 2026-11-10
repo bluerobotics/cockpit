@@ -20,6 +20,7 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 // @ts-ignore: Worker imports
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
+import { t } from 'ttag'
 
 import {
   type DataLakeVariable,
@@ -334,7 +335,7 @@ function attachDataLakeLiveTooltip(editor: monaco.editor.IStandaloneCodeEditor):
   let pendingFrame: number | null = null
 
   const renderValue = (value: string | number | boolean | undefined): void => {
-    valueDataEl.textContent = value === undefined ? 'no value yet' : String(value)
+    valueDataEl.textContent = value === undefined ? t`no value yet` : String(value)
   }
 
   const unsubscribe = (): void => {
@@ -363,7 +364,7 @@ function attachDataLakeLiveTooltip(editor: monaco.editor.IStandaloneCodeEditor):
 
     const variableInfo = getDataLakeVariableInfo(variableId)
     if (!variableInfo) {
-      headerEl.textContent = `Unknown data lake variable: ${variableId}`
+      headerEl.textContent = t`Unknown data lake variable: ${variableId}`
       valueEl.style.display = 'none'
       descriptionEl.style.display = 'none'
     } else {

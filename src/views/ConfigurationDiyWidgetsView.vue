@@ -1,11 +1,12 @@
 <template>
   <BaseConfigurationView>
-    <template #title>DIY widgets</template>
+    <template #title>{{ t`DIY widgets` }}</template>
     <template #content>
       <div class="flex flex-col gap-y-3 py-3" :class="interfaceStore.isOnSmallScreen ? 'w-[80vw]' : 'w-[600px]'">
         <p class="text-sm text-white/70">
-          Widgets saved with "Save to library" in a DIY widget's editor. Add them to the current view, or share them
-          through a recipe in Tools > Recipes.
+          {{
+            t`Widgets saved with "Save to library" in a DIY widget's editor. Add them to the current view, or share them through a recipe in Tools > Recipes.`
+          }}
         </p>
         <v-data-table
           :items="templateItems"
@@ -21,22 +22,22 @@
                 icon="mdi-plus-box-outline"
                 variant="text"
                 size="small"
-                :aria-label="`Add ${item.name} to the current view`"
-                title="Add to the current view"
+                :aria-label="t`Add ${item.name} to the current view`"
+                :title="t`Add to the current view`"
                 @click="addToCurrentView(item.id)"
               />
               <v-btn
                 icon="mdi-trash-can-outline"
                 variant="text"
                 size="small"
-                :aria-label="`Remove ${item.name} from the library`"
-                title="Remove from the library"
+                :aria-label="t`Remove ${item.name} from the library`"
+                :title="t`Remove from the library`"
                 @click="confirmDelete(item.id)"
               />
             </div>
           </template>
           <template #no-data>
-            <p class="py-3">No DIY widgets saved yet</p>
+            <p class="py-3">{{ t`No DIY widgets saved yet` }}</p>
           </template>
         </v-data-table>
       </div>
@@ -45,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, ref } from 'vue'
 
 import DoItYourselfImg from '@/assets/widgets/DoItYourself.png'
@@ -66,7 +68,7 @@ const templates = ref(getAllDiyWidgetTemplates())
 const templateItems = computed(() => Object.entries(templates.value).map(([id, template]) => ({ id, ...template })))
 
 const headers = [
-  { title: 'Name', key: 'name' },
+  { title: t`Name`, key: 'name' },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
 
@@ -82,34 +84,34 @@ const addToCurrentView = (id: string): void => {
     defaultSize: widgetDefaultSizes[WidgetType.DoItYourself],
   }
   widgetStore.addWidget(setup, view)
-  openSnackbar({ message: `Added "${name}" to the current view.`, variant: 'success', duration: 3000 })
+  openSnackbar({ message: t`Added "${name}" to the current view.`, variant: 'success', duration: 3000 })
 }
 
 const confirmDelete = (id: string): void => {
   const { name } = templates.value[id]
   logUserAction(`Opened the dialog to remove DIY widget "${name}" from the library`)
   showDialog({
-    title: 'Remove DIY widget',
+    title: t`Remove DIY widget`,
     variant: 'warning',
     maxWidth: 480,
-    message: `Remove "${name}" from the library? Widgets already placed on views are kept.`,
+    message: t`Remove "${name}" from the library? Widgets already placed on views are kept.`,
     actions: [
       {
-        text: 'Cancel',
+        text: t`Cancel`,
         action: () => {
           logUserAction(`Cancelled removing DIY widget "${name}" from the library`)
           closeDialog()
         },
       },
       {
-        text: 'Remove',
+        text: t`Remove`,
         class: 'bg-[#FFFFFF33] text-white',
         action: () => {
           logUserAction(`Removed DIY widget "${name}" from the library`)
           closeDialog()
           deleteDiyWidgetTemplate(id)
           templates.value = getAllDiyWidgetTemplates()
-          openSnackbar({ message: `Removed "${name}" from the library.`, variant: 'success', duration: 3000 })
+          openSnackbar({ message: t`Removed "${name}" from the library.`, variant: 'success', duration: 3000 })
         },
       },
     ],

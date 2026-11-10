@@ -3,6 +3,7 @@ import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import { differenceInSeconds } from 'date-fns'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
+import { msgid, ngettext, t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { computed, markRaw, ref, watch } from 'vue'
 import adapter from 'webrtc-adapter'
@@ -166,11 +167,11 @@ export const useVideoStore = defineStore('video', () => {
       persistent: true,
       actions: [
         {
-          text: "Don't show again during this session",
+          text: t`Don't show again during this session`,
           size: 'small',
           action: () => suppressRecordingHealthDialog(warning),
         },
-        { text: 'Close', size: 'small', action: () => closeRecordingHealthDialog(warning) },
+        { text: t`Close`, size: 'small', action: () => closeRecordingHealthDialog(warning) },
       ],
     }).then(release, release)
   }
@@ -511,7 +512,7 @@ export const useVideoStore = defineStore('video', () => {
         // settings the user has just changed and without the warning this branch gives a recording user
         if (isRecording(streamName) || isWaitingToResumeRecording(streamName)) {
           const displayName = streamDisplayName(streamName)
-          showDialog({ message: `Stream '${displayName}' has changed. Stopping recording...`, variant: 'error' })
+          showDialog({ message: t`Stream '${displayName}' has changed. Stopping recording...`, variant: 'error' })
           stopRecording(streamName)
         }
 
@@ -560,9 +561,7 @@ export const useVideoStore = defineStore('video', () => {
       const rtspUrl = getRtspUrl(streamName)
       if (!rtspUrl) {
         if (rtspActivationBackoff.registerFailure(streamName)) {
-          const msg =
-            `Video stream '${displayName}' has no address configured.` +
-            ' Delete it and add it again in the video configuration page.'
+          const msg = t`Video stream '${displayName}' has no address configured. Delete it and add it again in the video configuration page.`
           showDialog({ message: msg, variant: 'error' })
         }
         return
@@ -573,10 +572,7 @@ export const useVideoStore = defineStore('video', () => {
         if (!rtspUnsupportedWarned) {
           rtspUnsupportedWarned = true
           showDialog({
-            message:
-              'It looks like some of your video-related widgets (e.g.: video player, mini video recorder, snapshot tool)' +
-              ' are connected to RTSP streams, which are not supported in Cockpit Lite. To make sure those widgets work,' +
-              ' re-configure them to only use WebRTC, or upgrade to Cockpit standalone, which supports both WebRTC and RTSP streams.',
+            message: t`It looks like some of your video-related widgets (e.g.: video player, mini video recorder, snapshot tool) are connected to RTSP streams, which are not supported in Cockpit Lite. To make sure those widgets work, re-configure them to only use WebRTC, or upgrade to Cockpit standalone, which supports both WebRTC and RTSP streams.`,
             variant: 'error',
           })
         }
@@ -610,9 +606,7 @@ export const useVideoStore = defineStore('video', () => {
           console.error(`Failed to activate RTSP stream '${streamName}':`, error)
           if (rtspActivationBackoff.registerFailure(streamName)) {
             // Nothing in the try above reaches the camera, so a failure here is always local to Cockpit
-            const msg =
-              `Could not start video stream '${displayName}'. Cockpit's video service is not responding.` +
-              ' Restart Cockpit and try again.'
+            const msg = t`Could not start video stream '${displayName}'. Cockpit's video service is not responding. Restart Cockpit and try again.`
             showDialog({ message: msg, variant: 'error' })
           }
         } finally {
@@ -631,9 +625,7 @@ export const useVideoStore = defineStore('video', () => {
       unreceivableVideoWarned.add(streamName)
 
       const codecNames = codecs.map(readableVideoCodecName).join(' or ')
-      const message =
-        `Stream '${streamName}' sends video as ${codecNames}, which Cockpit cannot play.` +
-        ' Set the camera to H.264 to watch it.'
+      const message = t`Stream '${streamName}' sends video as ${codecNames}, which Cockpit cannot play. Set the camera to H.264 to watch it.`
       alertStore.pushAlert(new Alert(AlertLevel.Error, message))
 
       // A second camera would replace the dialog of the first, leaving only one of the two ever read, so only
@@ -790,7 +782,7 @@ export const useVideoStore = defineStore('video', () => {
    */
   const getSignallerStatus = (streamName: string): string => {
     const data = getStreamData(streamName)
-    return data?.go2rtcManager?.signallerStatus.value ?? data?.webRtcManager?.signallerStatus.value ?? 'Unknown.'
+    return data?.go2rtcManager?.signallerStatus.value ?? data?.webRtcManager?.signallerStatus.value ?? t`Unknown.`
   }
 
   /**
@@ -800,8 +792,8 @@ export const useVideoStore = defineStore('video', () => {
    */
   const getStreamStatus = (streamName: string): string => {
     const data = getStreamData(streamName)
-    if (data?.go2rtcManager) return data.go2rtcManager.streamStatus.value ?? 'Unknown.'
-    return data?.webRtcManager?.streamStatus.value ?? 'Unknown.'
+    if (data?.go2rtcManager) return data.go2rtcManager.streamStatus.value ?? t`Unknown.`
+    return data?.webRtcManager?.streamStatus.value ?? t`Unknown.`
   }
 
   /**
@@ -938,14 +930,8 @@ export const useVideoStore = defineStore('video', () => {
       }
       const alertMsg =
         state === 'recording'
-          ? `
-      You have a video recording ongoing.
-      Remember to stop it before closing Cockpit, or the record will be lost.
-    `
-          : `
-      Your last video recording is still being saved.
-      Wait for it to finish before closing Cockpit, or the record will be lost.
-    `
+          ? t`You have a video recording ongoing. Remember to stop it before closing Cockpit, or the record will be lost.`
+          : t`Your last video recording is still being saved. Wait for it to finish before closing Cockpit, or the record will be lost.`
       window.onbeforeunload = () => {
         showDialog({ message: alertMsg, variant: 'warning' })
         return 'I hope the user does not click on the leave button.'
@@ -1015,9 +1001,7 @@ export const useVideoStore = defineStore('video', () => {
 
     const resumesSoFar = sequentialRecordingResumes[streamName] ?? 0
     if (resumesSoFar >= maxSequentialRecordingResumes) {
-      const keepsDropping =
-        `Video stream '${streamLabel}' keeps dropping, so Cockpit stopped recording it again on its own. ` +
-        'The next recording has to be started by hand.'
+      const keepsDropping = t`Video stream '${streamLabel}' keeps dropping, so Cockpit stopped recording it again on its own. The next recording has to be started by hand.`
       alertStore.pushAlert(new Alert(AlertLevel.Warning, keepsDropping))
       // This bout of flapping is over as far as Cockpit is concerned, so a recording started from here is given its
       // own budget rather than inheriting a spent one
@@ -1037,13 +1021,13 @@ export const useVideoStore = defineStore('video', () => {
           // startRecording reports its own refusals, so the stream is only announced back once a recorder attached
           if (!isRecording(streamName)) return
           openSnackbar({
-            message: `Video stream '${streamLabel}' is back. Recording continues in a new file.`,
+            message: t`Video stream '${streamLabel}' is back. Recording continues in a new file.`,
             duration: secondsToShowRecordingResumeNotice * 1000,
             variant: 'success',
           })
         })
         .catch((error) => {
-          openSnackbar({ message: `Could not record '${streamLabel}' again: ${error}`, variant: 'error' })
+          openSnackbar({ message: t`Could not record '${streamLabel}' again: ${error}`, variant: 'error' })
         })
     }
 
@@ -1076,9 +1060,7 @@ export const useVideoStore = defineStore('video', () => {
 
     const giveUp = setTimeout(() => {
       // Says what the generic report below cannot: the recording that stopped is the one the drop message promised
-      const stoppedWaiting =
-        `Video stream '${streamLabel}' did not come back within ${secondsToWaitForStreamToResumeRecording} seconds, ` +
-        'so Cockpit stopped waiting to record it again.'
+      const stoppedWaiting = t`Video stream '${streamLabel}' did not come back within ${secondsToWaitForStreamToResumeRecording} seconds, so Cockpit stopped waiting to record it again.`
       alertStore.pushAlert(new Alert(AlertLevel.Warning, stoppedWaiting))
       forgetRecordingResumes(streamName)
       // Without the dialog: the stop was announced minutes ago, and a modal about it now interrupts the operator
@@ -1104,9 +1086,7 @@ export const useVideoStore = defineStore('video', () => {
 
     // The snackbar is gone in seconds, so the alert is what is left to tell the operator later why a take of
     // theirs is split across two files
-    const dropped =
-      `Video stream '${streamLabel}' dropped. The recording was saved, and a new one starts if the stream comes back ` +
-      `within ${secondsToWaitForStreamToResumeRecording} seconds.`
+    const dropped = t`Video stream '${streamLabel}' dropped. The recording was saved, and a new one starts if the stream comes back within ${secondsToWaitForStreamToResumeRecording} seconds.`
     alertStore.pushAlert(new Alert(AlertLevel.Info, dropped))
     openSnackbar({ message: dropped, duration: secondsToShowRecordingResumeNotice * 1000, variant: 'info' })
   }
@@ -1134,7 +1114,7 @@ export const useVideoStore = defineStore('video', () => {
     if (streamData?.mediaRecorder === undefined) {
       console.debug(`No recorder attached to stream '${streamName}'. Nothing to stop.`)
       if (wasWaitingToResume) {
-        alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped waiting to record stream '${streamLabel}' again.`))
+        alertStore.pushAlert(new Alert(AlertLevel.Success, t`Stopped waiting to record stream '${streamLabel}' again.`))
         // The wait cancelled above was the only thing holding this stream open, and no recorder will attach to it now
         deactivateStreamIfUnused(streamName)
       }
@@ -1156,7 +1136,7 @@ export const useVideoStore = defineStore('video', () => {
 
     streamData.mediaRecorder.stop()
 
-    alertStore.pushAlert(new Alert(AlertLevel.Success, `Stopped recording stream ${streamLabel}.`))
+    alertStore.pushAlert(new Alert(AlertLevel.Success, t`Stopped recording stream ${streamLabel}.`))
   }
 
   const getVideoThumbnail = async (videoFileNameOrHash: string, isProcessed: boolean): Promise<Blob | null> => {
@@ -1174,7 +1154,7 @@ export const useVideoStore = defineStore('video', () => {
   const waitForStreamReadyToRecord = async (streamName: string): Promise<boolean> => {
     const streamLabel = streamDisplayName(streamName)
     // Before the repeated-start check too, so a second press is answered rather than dropped without a word
-    const waitingMsg = `Recording of '${streamLabel}' starts once its video arrives...`
+    const waitingMsg = t`Recording of '${streamLabel}' starts once its video arrives...`
     openSnackbar({ message: waitingMsg, duration: secondsToShowWaitForVideoNotice * 1000, variant: 'info' })
     if (recordingStartsWaitingForVideo.has(streamName)) return false
 
@@ -1191,9 +1171,9 @@ export const useVideoStore = defineStore('video', () => {
     if (!wasCancelled && isStreamReadyToRecord(streamName)) return true
 
     if (!wasCancelled) {
-      alertStore.pushAlert(new Alert(AlertLevel.Error, `Stream '${streamLabel}' did not start sending video.`))
+      alertStore.pushAlert(new Alert(AlertLevel.Error, t`Stream '${streamLabel}' did not start sending video.`))
       // Streams time out together, and a dialog naming one would replace the dialog of the one before it
-      const msg = 'A video stream did not start sending video, so it was not recorded. Check its connection.'
+      const msg = t`A video stream did not start sending video, so it was not recorded. Check its connection.`
       showDialog({ message: msg, variant: 'error' })
     }
     // Only the wait was holding a stream nothing shows, and no recorder is going to attach to it now
@@ -1209,7 +1189,7 @@ export const useVideoStore = defineStore('video', () => {
     eventTracker.capture('Video recording start', { streamName: streamName })
 
     if (namesAvailableStreams.value.isEmpty()) {
-      showDialog({ message: 'No streams available.', variant: 'error' })
+      showDialog({ message: t`No streams available.`, variant: 'error' })
       return
     }
 
@@ -1284,15 +1264,15 @@ export const useVideoStore = defineStore('video', () => {
 
     // Shared by the two ways a recording ends without anyone asking, a failed recorder and a lost video connection
     const reportUnexpectedStop = (interruptWithDialog = true): void => {
-      const footageKept = 'The video recorded until then was kept and is available in the Video Library.'
+      const footageKept = t`The video recorded until then was kept and is available in the Video Library.`
       alertStore.pushAlert(
-        new Alert(AlertLevel.Error, `Recording of stream '${streamLabel}' stopped unexpectedly. ${footageKept}`)
+        new Alert(AlertLevel.Error, t`Recording of stream '${streamLabel}' stopped unexpectedly. ${footageKept}`)
       )
 
       // One lost link stops every recording it was serving, and a dialog naming a stream would replace the dialog of
       // the stream before it, so the streams are named in the alerts above and the dialog stays the same for all
       if (interruptWithDialog) {
-        showDialog({ message: `A recording stopped unexpectedly. ${footageKept}`, variant: 'error' })
+        showDialog({ message: t`A recording stopped unexpectedly. ${footageKept}`, variant: 'error' })
       }
 
       // The recording is over, so the monitor would otherwise nag about a file that stopped growing
@@ -1305,7 +1285,7 @@ export const useVideoStore = defineStore('video', () => {
       recordingMonitors[streamName] = setInterval(async () => {
         // Check if the stream is still recording before proceeding with checks
         if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamLabel}' has stopped. Stopping health monitor for this stream.`
+          const msg = t`Recording for stream '${streamLabel}' has stopped. Stopping health monitor for this stream.`
           showDialog({ message: msg, variant: 'warning' })
           clearInterval(recordingMonitors[streamName])
           delete recordingMonitors[streamName]
@@ -1314,7 +1294,7 @@ export const useVideoStore = defineStore('video', () => {
         const fileStats = await window.electronAPI?.getFileStats(fileName, ['videos'])
         if (!fileStats || !fileStats.exists) {
           showRecordingHealthDialog(
-            `Cockpit cannot find the file for the recording of stream '${streamLabel}', which means the recording may be lost. We recommend stopping it and starting a new one.`,
+            t`Cockpit cannot find the file for the recording of stream '${streamLabel}', which means the recording may be lost. We recommend stopping it and starting a new one.`,
             true
           )
           return
@@ -1322,7 +1302,7 @@ export const useVideoStore = defineStore('video', () => {
         const lastKnownFileSize = unprocessedVideos.value[recordingHash].lastKnownFileSize
         if (fileStats.size! <= lastKnownFileSize!) {
           showRecordingHealthDialog(
-            `The video output file for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
+            t`The video output file for stream '${streamLabel}' is not growing. This can indicate a problem with the recording.`
           )
           return
         }
@@ -1334,7 +1314,7 @@ export const useVideoStore = defineStore('video', () => {
       recordingMonitors[streamName] = setInterval(async () => {
         // Check if the stream is still recording before proceeding with checks
         if (!activeStreams.value[streamName] || !activeStreams.value[streamName]!.mediaRecorder) {
-          const msg = `Recording for stream '${streamLabel}' has stopped. Stopping health monitor for this stream.`
+          const msg = t`Recording for stream '${streamLabel}' has stopped. Stopping health monitor for this stream.`
           showDialog({ message: msg, variant: 'warning' })
           clearInterval(recordingMonitors[streamName])
           delete recordingMonitors[streamName]
@@ -1389,13 +1369,13 @@ export const useVideoStore = defineStore('video', () => {
         This usually happens when the device's storage is full or the performance is low.
         We recommend stopping the recording and trying again, as the video may be incomplete or corrupted
         on several parts.`
-      const sequentialChunksLossMessage = `Warning: Several video chunks could not be saved. The video recording may be impacted.`
-      const fivePercentChunksLossMessage = `Warning: More than 5% of the video chunks could not be saved. The video recording may be impacted.`
+      const sequentialChunksLossMessage = t`Warning: Several video chunks could not be saved. The video recording may be impacted.`
+      const fivePercentChunksLossMessage = t`Warning: More than 5% of the video chunks could not be saved. The video recording may be impacted.`
 
       console.error(chunkLossWarningMsg)
 
       openSnackbar({
-        message: 'Oops, looks like a video chunk could not be saved. Retrying...',
+        message: t`Oops, looks like a video chunk could not be saved. Retrying...`,
         duration: 2000,
         variant: 'info',
         closeButton: false,
@@ -1450,7 +1430,7 @@ export const useVideoStore = defineStore('video', () => {
         sequentialLostChunks = 0
       } catch {
         if (chunksCount === 0) {
-          const msg = 'Failed to initiate recording. First chunk was lost. Try again.'
+          const msg = t`Failed to initiate recording. First chunk was lost. Try again.`
           showDialog({ message: msg, variant: 'error' })
           alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
           if (recorderIsStillAttached()) stopRecording(streamName)
@@ -1475,10 +1455,10 @@ export const useVideoStore = defineStore('video', () => {
               console.warn(`Failed to add chunk ${chunksCount} to live video processor but stream ${streamName} was already not recording. This usually happens when stopping the recording, so it's expected and should not be a problem.`)
               return
             }
-            const msg = `Failed to add chunk ${chunksCount} to live processor: ${error.message}`
+            const msg = t`Failed to add chunk ${chunksCount} to live processor: ${error.message}`
             openSnackbar({ message: msg, variant: 'error' })
           } else if (error instanceof LiveVideoProcessorInitializationError) {
-            const msg = `Failed to initialize live processor for stream ${streamLabel}: ${error.message}`
+            const msg = t`Failed to initialize live processor for stream ${streamLabel}: ${error.message}`
             showDialog({ message: msg, variant: 'error' })
             alertStore.pushAlert(new Alert(AlertLevel.Error, msg))
             if (recorderIsStillAttached()) stopRecording(streamName)
@@ -1487,8 +1467,7 @@ export const useVideoStore = defineStore('video', () => {
             if (!unexpectedProcessorErrorWarned) {
               unexpectedProcessorErrorWarned = true
               openSnackbar({
-                message:
-                  'Something went wrong while assembling the recorded video. Recording is still running; the saved file may be incomplete.',
+                message: t`Something went wrong while assembling the recorded video. Recording is still running; the saved file may be incomplete.`,
                 variant: 'error',
               })
             }
@@ -1534,7 +1513,7 @@ export const useVideoStore = defineStore('video', () => {
 
       const info = unprocessedVideos.value[recordingHash]
       if (!info) {
-        const errorMessage = `Failed to generate telemetry overlay: recording metadata for '${recordingHash}' not found.`
+        const errorMessage = t`Failed to generate telemetry overlay: recording metadata for '${recordingHash}' not found.`
         openSnackbar({ message: errorMessage, variant: 'error' })
         delete liveProcessors.value[recordingHash]
         if (recorderIsStillAttached()) {
@@ -1555,14 +1534,14 @@ export const useVideoStore = defineStore('video', () => {
         try {
           await processor.stopProcessing()
           openSnackbar({
-            message: 'Video processing completed.',
+            message: t`Video processing completed.`,
             duration: 2000,
             variant: 'success',
             closeButton: false,
           })
         } catch (error) {
           console.error('Failed to process video:', error)
-          alertStore.pushAlert(new Alert(AlertLevel.Error, `Failed to process video for stream ${streamLabel}.`))
+          alertStore.pushAlert(new Alert(AlertLevel.Error, t`Failed to process video for stream ${streamLabel}.`))
         } finally {
           delete liveProcessors.value[recordingHash]
         }
@@ -1572,7 +1551,7 @@ export const useVideoStore = defineStore('video', () => {
       try {
         await generateTelemetryOverlay(recordingHash)
       } catch (telemetryError) {
-        openSnackbar({ message: `Failed to generate telemetry overlay: ${telemetryError}`, variant: 'error' })
+        openSnackbar({ message: t`Failed to generate telemetry overlay: ${telemetryError}`, variant: 'error' })
       }
 
       if (activeStreams.value[streamName]) {
@@ -1593,10 +1572,10 @@ export const useVideoStore = defineStore('video', () => {
     // init failing) never leaves the stream marked as mirrored.
     broadcastRecordingStart(streamName)
 
-    alertStore.pushAlert(new Alert(AlertLevel.Success, `Started recording stream ${streamLabel}.`))
+    alertStore.pushAlert(new Alert(AlertLevel.Success, t`Started recording stream ${streamLabel}.`))
     // Closes the wait the operator was told about, which the alert above does not show on its own
     if (hadToWaitForVideo) {
-      const arrivedMsg = `Video of '${streamLabel}' arrived. Recording started.`
+      const arrivedMsg = t`Video of '${streamLabel}' arrived. Recording started.`
       openSnackbar({ message: arrivedMsg, duration: secondsToShowWaitForVideoNotice * 1000, variant: 'success' })
     }
   }
@@ -1647,20 +1626,18 @@ export const useVideoStore = defineStore('video', () => {
   // The settings the warnings are about are what they exist to offer, so that action carries the committing fill both
   // of them use.
   const videoStreamingWarningActions = [
-    { text: 'Close', action: dismissVideoStreamingWarning },
-    { text: 'Open video settings', class: 'bg-[#FFFFFF33] text-white', action: openVideoSettings },
+    { text: t`Close`, action: dismissVideoStreamingWarning },
+    { text: t`Open video settings`, class: 'bg-[#FFFFFF33] text-white', action: openVideoSettings },
   ]
 
   const issueSelectedIpNotAvailableWarning = (): void => {
     showDialog({
       maxWidth: 600,
-      title: 'All available video stream IPs are being blocked',
+      title: t`All available video stream IPs are being blocked`,
       message: [
-        `Cockpit detected that none of the IPs that are streaming video from your server are in the allowed list. This
-        will lead to no video being streamed.`,
-        'This can happen if you changed your network or the IP of your vehicle.',
-        `To solve this problem, please open the video settings and clear the selected IPs. Then, select an available
-        IP from the list.`,
+        t`Cockpit detected that none of the IPs that are streaming video from your server are in the allowed list. This will lead to no video being streamed.`,
+        t`This can happen if you changed your network or the IP of your vehicle.`,
+        t`To solve this problem, please open the video settings and clear the selected IPs. Then, select an available IP from the list.`,
       ],
       variant: 'warning',
       actions: videoStreamingWarningActions,
@@ -1670,12 +1647,10 @@ export const useVideoStore = defineStore('video', () => {
   const issueNoIpSelectedWarning = (): void => {
     showDialog({
       maxWidth: 600,
-      title: 'Video being routed from multiple IPs',
+      title: t`Video being routed from multiple IPs`,
       message: [
-        `Cockpit detected that the video streams are being routed from multiple IPs. This often leads to video
-        stuttering, especially if one of the IPs is from a non-wired connection.`,
-        `To prevent issues and achieve an optimal streaming experience, please open the video settings and select the
-        IP address that should be used for the video streaming.`,
+        t`Cockpit detected that the video streams are being routed from multiple IPs. This often leads to video stuttering, especially if one of the IPs is from a non-wired connection.`,
+        t`To prevent issues and achieve an optimal streaming experience, please open the video settings and select the IP address that should be used for the video streaming.`,
       ],
       variant: 'warning',
       actions: videoStreamingWarningActions,
@@ -1724,7 +1699,7 @@ export const useVideoStore = defineStore('video', () => {
           allowedIceIps.value = newAllowedIps
           if (!allowedIceIps.value.isEmpty()) {
             showDialog({
-              message: 'Preferred video stream routes fetched from BlueOS.',
+              message: t`Preferred video stream routes fetched from BlueOS.`,
               variant: 'success',
               timer: 5000,
             })
@@ -1774,8 +1749,8 @@ export const useVideoStore = defineStore('video', () => {
 
     if (!streamsWaitingForVideo.isEmpty()) {
       // The internal names, since the external id of an RTSP stream is its URL, credentials included
-      const waitingLabels = streamsWaitingForVideo.map(streamDisplayName)
-      const waiting = `Recording of ${waitingLabels.join(', ')} starts again when the video comes back.`
+      const waitingLabels = streamsWaitingForVideo.map(streamDisplayName).join(', ')
+      const waiting = t`Recording of ${waitingLabels} starts again when the video comes back.`
       alertStore.pushAlert(new Alert(AlertLevel.Info, waiting))
     }
 
@@ -1783,10 +1758,10 @@ export const useVideoStore = defineStore('video', () => {
       // A stream waiting for its video is neither started here nor unavailable, and is already reported above
       if (!streamsWaitingForVideo.isEmpty()) return
       if (namesAvailableStreams.value.some(isRecordingOrAboutTo)) {
-        alertStore.pushAlert(new Alert(AlertLevel.Info, 'All streams are already being recorded.'))
+        alertStore.pushAlert(new Alert(AlertLevel.Info, t`All streams are already being recorded.`))
         return
       }
-      alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams available to be recorded.'))
+      alertStore.pushAlert(new Alert(AlertLevel.Error, t`No streams available to be recorded.`))
       return
     }
 
@@ -1799,8 +1774,13 @@ export const useVideoStore = defineStore('video', () => {
     )
     if (streamsThatStarted.isEmpty()) return
 
-    const streamLabels = streamsThatStarted.map(streamDisplayName)
-    const msg = `Started recording all ${streamsThatStarted.length} streams: ${streamLabels.join(', ')}.`
+    const streamLabels = streamsThatStarted.map(streamDisplayName).join(', ')
+    const count = streamsThatStarted.length
+    const msg = ngettext(
+      msgid`Started recording all ${count} stream: ${streamLabels}.`,
+      `Started recording all ${count} streams: ${streamLabels}.`,
+      count
+    )
     alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
 
@@ -1817,11 +1797,16 @@ export const useVideoStore = defineStore('video', () => {
     })
 
     if (streamsThatStopped.isEmpty()) {
-      alertStore.pushAlert(new Alert(AlertLevel.Error, 'No streams were being recorded.'))
+      alertStore.pushAlert(new Alert(AlertLevel.Error, t`No streams were being recorded.`))
       return
     }
-    const streamLabels = streamsThatStopped.map(streamDisplayName)
-    const msg = `Stopped recording all ${streamsThatStopped.length} streams: ${streamLabels.join(', ')}.`
+    const streamLabels = streamsThatStopped.map(streamDisplayName).join(', ')
+    const count = streamsThatStopped.length
+    const msg = ngettext(
+      msgid`Stopped recording all ${count} stream: ${streamLabels}.`,
+      `Stopped recording all ${count} streams: ${streamLabels}.`,
+      count
+    )
     alertStore.pushAlert(new Alert(AlertLevel.Success, msg))
   }
 
@@ -1877,9 +1862,9 @@ export const useVideoStore = defineStore('video', () => {
         teardownStreamResources(externalId, `External stream '${externalId}' was ignored by user`)
       }
 
-      openSnackbar({ variant: 'success', message: `Stream '${stream.name}' deleted and added to ignored list.` })
+      openSnackbar({ variant: 'success', message: t`Stream '${stream.name}' deleted and added to ignored list.` })
     } else {
-      openSnackbar({ variant: 'warning', message: `Stream with external ID '${externalId}' not found.` })
+      openSnackbar({ variant: 'warning', message: t`Stream with external ID '${externalId}' not found.` })
     }
   }
 
@@ -1902,12 +1887,12 @@ export const useVideoStore = defineStore('video', () => {
       } else if (namesAvailableStreams.value.includes(externalId)) {
         initializeStreamsCorrespondency()
       } else {
-        openSnackbar({ variant: 'warning', message: `Stream '${externalId}' not available anymore.` })
+        openSnackbar({ variant: 'warning', message: t`Stream '${externalId}' not available anymore.` })
       }
 
-      openSnackbar({ variant: 'success', message: `Stream '${externalId}' restored from ignored list.` })
+      openSnackbar({ variant: 'success', message: t`Stream '${externalId}' restored from ignored list.` })
     } else {
-      openSnackbar({ variant: 'warning', message: `Stream with external ID '${externalId}' not on ignored list.` })
+      openSnackbar({ variant: 'warning', message: t`Stream with external ID '${externalId}' not on ignored list.` })
     }
   }
 

@@ -1,21 +1,23 @@
 <template>
   <div class="flex flex-col w-full">
     <p v-if="!fenceStore.isFenceSupported" class="px-2 py-1 mx-2 text-xs rounded-md bg-[#FF8800AA] text-white">
-      This vehicle does not advertise the GeoFence MAVLink service. Editing is allowed but uploads may be rejected.
+      {{
+        t`This vehicle does not advertise the GeoFence MAVLink service. Editing is allowed but uploads may be rejected.`
+      }}
     </p>
 
     <p
       v-if="fenceStore.lastUploadedPlan && !fenceStore.draftMatchesVehicle"
       class="px-2 py-1 mx-2 mt-0.5 mb-[3px] text-xs rounded-md border-[1px] border-orange-500/60 bg-orange-500/10 text-orange-300"
     >
-      Vehicle currently has a fence, drawn dimmed on the planning map. Upload to replace it.
+      {{ t`Vehicle currently has a fence, drawn dimmed on the planning map. Upload to replace it.` }}
       <v-btn
         variant="text"
         size="x-small"
         class="float-right -mt-px px-1 normal-case tracking-normal"
         @click="showVehicleFenceOnMap"
       >
-        Show on map
+        {{ t`Show on map` }}
         <template #append>
           <v-icon class="translate-y-[3px]">mdi-crosshairs-gps</v-icon>
         </template>
@@ -23,9 +25,12 @@
     </p>
 
     <div class="flex flex-row items-center justify-end gap-x-2 mb-3 mt-1">
-      <span class="text-sm font-medium mr-2">Add fence:</span>
+      <span class="text-sm font-medium mr-2">{{ t`Add fence:` }}</span>
       <div class="flex flex-row items-center gap-x-2">
-        <v-tooltip location="top" :text="fenceDraft.isDrawingPolygon ? 'Cancel polygon drawing' : 'Add polygon fence'">
+        <v-tooltip
+          location="top"
+          :text="fenceDraft.isDrawingPolygon ? t`Cancel polygon drawing` : t`Add polygon fence`"
+        >
           <template #activator="{ props: tooltipProps }">
             <v-btn
               v-bind="tooltipProps"
@@ -39,7 +44,7 @@
             />
           </template>
         </v-tooltip>
-        <v-tooltip location="top" :text="fenceDraft.isDrawingCircle ? 'Cancel circle drawing' : 'Add circular fence'">
+        <v-tooltip location="top" :text="fenceDraft.isDrawingCircle ? t`Cancel circle drawing` : t`Add circular fence`">
           <template #activator="{ props: tooltipProps }">
             <v-btn
               v-bind="tooltipProps"
@@ -68,7 +73,7 @@
       >
         <template #title>
           <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
-            Polygons
+            {{ t`Polygons` }}
             <v-badge
               :content="fenceStore.polygons.length"
               color="#3B78A8"
@@ -79,7 +84,7 @@
         </template>
         <template #content>
           <div class="flex flex-col items-center w-full px-1 py-1">
-            <p v-if="fenceStore.polygons.length === 0" class="text-xs opacity-70 my-1">No polygon fences.</p>
+            <p v-if="fenceStore.polygons.length === 0" class="text-xs opacity-70 my-1">{{ t`No polygon fences.` }}</p>
             <div
               v-for="(polygon, idx) in fenceStore.polygons"
               :key="polygon.id"
@@ -101,13 +106,13 @@
                 @mouseenter="onPolygonNameHover($event, polygon.id)"
                 @mouseleave="truncatedNameId = undefined"
               >
-                {{ polygon.name ?? `Polygon ${idx + 1}` }}
+                {{ polygon.name ?? `${t`Polygon`} ${idx + 1}` }}
                 <v-tooltip
                   activator="parent"
                   location="top"
                   :open-on-hover="false"
                   :model-value="truncatedNameId === polygon.id"
-                  :text="polygon.name ?? `Polygon ${idx + 1}`"
+                  :text="polygon.name ?? `${t`Polygon`} ${idx + 1}`"
                 />
               </p>
               <span
@@ -115,11 +120,11 @@
                 :class="polygon.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onTogglePolygonInclusion(polygon.id)"
               >
-                {{ polygon.inclusion ? 'Inclusion' : 'Exclusion' }}
+                {{ polygon.inclusion ? t`Inclusion` : t`Exclusion` }}
               </span>
               <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
-                <v-tooltip location="top" text="Delete polygon">
+                <v-tooltip location="top" :text="t`Delete polygon`">
                   <template #activator="{ props: tooltipProps }">
                     <v-btn
                       v-bind="tooltipProps"
@@ -162,7 +167,7 @@
       >
         <template #title>
           <div class="flex w-[90%] justify-between items-center text-[14px] -mb-3 font-normal ml-2">
-            Circles
+            {{ t`Circles` }}
             <v-badge
               :content="fenceStore.circles.length"
               color="#3B78A8"
@@ -173,7 +178,7 @@
         </template>
         <template #content>
           <div class="flex flex-col items-center w-full px-1 py-1">
-            <p v-if="fenceStore.circles.length === 0" class="text-xs opacity-70 my-1">No circle fences.</p>
+            <p v-if="fenceStore.circles.length === 0" class="text-xs opacity-70 my-1">{{ t`No circle fences.` }}</p>
             <div
               v-for="(circle, idx) in fenceStore.circles"
               :key="circle.id"
@@ -191,18 +196,18 @@
               <v-icon icon="mdi-vector-circle-variant" class="mr-2 opacity-70 text-[18px]" />
               <v-divider vertical class="my-1" />
               <p class="ml-3 mr-[5px] flex-1 min-w-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
-                Circle {{ idx + 1 }}
+                {{ t`Circle` }} {{ idx + 1 }}
               </p>
               <span
                 class="shrink-0 w-[74px] text-center text-[10px] font-medium uppercase tracking-wide py-[1px] rounded-md mr-2 text-white cursor-pointer select-none transition-opacity duration-150 hover:opacity-80"
                 :class="circle.inclusion ? 'bg-[#3B78A8]' : 'bg-[#FF8800]'"
                 @click.stop="onToggleCircleInclusion(circle.id)"
               >
-                {{ circle.inclusion ? 'Inclusion' : 'Exclusion' }}
+                {{ circle.inclusion ? t`Inclusion` : t`Exclusion` }}
               </span>
               <div class="flex shrink-0 justify-start items-center w-[65px]">
                 <v-divider vertical class="my-1 mr-2" />
-                <v-tooltip location="top" text="Delete circle">
+                <v-tooltip location="top" :text="t`Delete circle`">
                   <template #activator="{ props: tooltipProps }">
                     <v-btn
                       v-bind="tooltipProps"
@@ -259,7 +264,7 @@
         class="opacity-10 my-1 mx-12"
       />
       <div v-if="fenceStore.breachReturn" class="flex items-center justify-between gap-x-2">
-        <p class="text-xs">Breach return altitude</p>
+        <p class="text-xs">{{ t`Breach return altitude` }}</p>
         <div class="flex items-center gap-x-1">
           <v-tooltip
             location="left"
@@ -279,10 +284,7 @@
               </v-icon>
             </template>
             <div class="text-xs whitespace-pre-line pa-1 leading-snug">
-              Altitude in meters (relative to the home position) the vehicle targets when returning to the breach point.
-              On a fence breach the autopilot navigates to the rally location and climbs or descends to this altitude
-              before holding or continuing the configured fence action (FENCE_ACTION on ArduPilot, GF_ACTION on PX4).
-              Set it safely above local terrain and obstacles.
+              {{ breachAltitudeHelp }}
             </div>
           </v-tooltip>
           <input
@@ -292,7 +294,7 @@
             :value="fenceStore.breachReturn.altitude"
             @change="onBreachReturnAltInput(($event.target as HTMLInputElement).value)"
           />
-          <v-tooltip location="top" text="Remove breach return point">
+          <v-tooltip location="top" :text="t`Remove breach return point`">
             <template #activator="{ props: tooltipProps }">
               <v-btn
                 v-bind="tooltipProps"
@@ -311,22 +313,27 @@
           class="flex-1 h-auto py-1 px-2 text-xs rounded-md elevation-1 bg-[#FFFFFF22] hover:bg-[#FFFFFF33] transition-colors duration-200"
           @click="onAddBreachReturn"
         >
-          Add breach return point
+          {{ t`Add breach return point` }}
         </button>
         <v-tooltip location="left" max-width="320">
           <template #activator="{ props: tooltipProps }">
             <v-icon v-bind="tooltipProps" class="text-slate-400 text-sm cursor-help">mdi-information-outline</v-icon>
           </template>
           <div class="text-sm pa-1">
-            <p class="mb-1 text-center"><strong>Breach return point</strong></p>
-            <p class="mb-[3px]">
-              Optional rally location the autopilot returns to when the vehicle breaches the geofence.
+            <p class="mb-1 text-center">
+              <strong>{{ t`Breach return point` }}</strong>
             </p>
             <p class="mb-[3px]">
-              Click <em>Add breach return point</em> to seed it at the map center, then drag the orange
-              <strong>B</strong> marker to fine-tune the location and edit the altitude (relative to home) inline.
+              {{ t`Optional rally location the autopilot returns to when the vehicle breaches the geofence.` }}
             </p>
-            <p>Only ArduPilot planes fly to it, when the fence action is set to fly to the breach return point.</p>
+            <p class="mb-[3px]">
+              {{ t`Click` }} <em>{{ t`Add breach return point` }}</em>
+              {{ t`to seed it at the map center, then drag the orange` }} <strong>B</strong>
+              {{ t`marker to fine-tune the location and edit the altitude (relative to home) inline.` }}
+            </p>
+            <p>
+              {{ t`Only ArduPilot planes fly to it, when the fence action is set to fly to the breach return point.` }}
+            </p>
           </div>
         </v-tooltip>
       </div>
@@ -336,13 +343,13 @@
       v-if="fenceStore.isArduPilotPlane && fenceStore.polygons.length === 0"
       class="px-2 py-1 mx-2 text-[11px] rounded-md bg-[#33333366]"
     >
-      ArduPilot Plane: a polygon must be drawn for any fence parameter to take effect.
+      {{ t`ArduPilot Plane: a polygon must be drawn for any fence parameter to take effect.` }}
     </p>
     <p
       v-if="fenceStore.isPx4 && fenceStore.inclusionPolygonCount > 1"
       class="px-2 py-1 mx-2 mt-1 text-[11px] rounded-md bg-[#33333366]"
     >
-      PX4: multiple inclusion polygons are AND-ed (intersection), not OR-ed.
+      {{ t`PX4: multiple inclusion polygons are AND-ed (intersection), not OR-ed.` }}
     </p>
     <v-tooltip
       v-if="breachOutcome"
@@ -361,12 +368,13 @@
         </p>
       </template>
       <p class="text-xs pa-1">
-        Set this under <code>{{ breachActionParameter }}</code> in <strong>Fence parameters</strong>, above.
+        {{ t`Set this under` }} <code>{{ breachActionParameter }}</code> {{ t`in` }}
+        <strong>{{ t`Fence parameters` }}</strong> {{ t`above.` }}
       </p>
     </v-tooltip>
 
     <div class="flex w-full justify-between my-2 px-4 pt-1">
-      <v-tooltip location="top" text="Save fence to file">
+      <v-tooltip location="top" :text="t`Save fence to file`">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
@@ -380,7 +388,7 @@
         </template>
       </v-tooltip>
       <v-divider vertical />
-      <v-tooltip location="top" text="Load fence from file (.cfp / .plan)">
+      <v-tooltip location="top" :text="t`Load fence from file (.cfp / .plan)`">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
@@ -393,7 +401,7 @@
         </template>
       </v-tooltip>
       <v-divider vertical />
-      <v-tooltip location="top" text="Export `.plan` (mission + fence)">
+      <v-tooltip location="top" :text="t`Export \`.plan\` (mission + fence)`">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
@@ -406,7 +414,7 @@
         </template>
       </v-tooltip>
       <v-divider vertical />
-      <v-tooltip location="top" text="Clear fence on vehicle">
+      <v-tooltip location="top" :text="t`Clear fence on vehicle`">
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
@@ -423,8 +431,10 @@
 
     <UploadActionsButton
       v-if="fenceStore.hasItems"
-      label="UPLOAD FENCE TO VEHICLE"
+      :label="t`UPLOAD FENCE TO VEHICLE`"
       actions-name="fence actions"
+      :show-text="t`Show fence actions`"
+      :hide-text="t`Hide fence actions`"
       indicator
       :disabled="!vehicleStore.isVehicleOnline || fenceStore.syncInProgress"
       @upload="onUpload"
@@ -433,7 +443,7 @@
         class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
         @click="onClearLocal"
       >
-        CLEAR CURRENT FENCE
+        {{ t`CLEAR CURRENT FENCE` }}
       </button>
       <button
         :disabled="fenceStore.syncInProgress || !vehicleStore.isVehicleOnline"
@@ -441,7 +451,7 @@
         :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
         @click="onDownload"
       >
-        DOWNLOAD FENCE FROM VEHICLE
+        {{ t`DOWNLOAD FENCE FROM VEHICLE` }}
       </button>
     </UploadActionsButton>
     <button
@@ -451,7 +461,7 @@
       :class="{ 'cursor-not-allowed opacity-50 text-[#FFFFFF44]': !vehicleStore.isVehicleOnline }"
       @click="onDownload"
     >
-      DOWNLOAD FENCE FROM VEHICLE
+      {{ t`DOWNLOAD FENCE FROM VEHICLE` }}
     </button>
 
     <input ref="fileInput" type="file" accept=".cfp,.plan,application/json" class="hidden" @change="onFilePicked" />
@@ -465,6 +475,7 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import { saveAs } from 'file-saver'
+import { t } from 'ttag'
 import { computed, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -517,7 +528,7 @@ const {
   autoEnabled,
 } = useFenceBreachAction()
 const autoEnableLabel = computed(() =>
-  autoEnablesOnTakeoff.value ? 'Auto enable fence on takeoff' : 'Auto enable fence when armed'
+  autoEnablesOnTakeoff.value ? t`Auto enable fence on takeoff` : t`Auto enable fence when armed`
 )
 
 const onBreachOutcomeTooltip = (open: boolean): void => {
@@ -541,6 +552,11 @@ const syncProgress = ref(0)
 const tooLargeOffer = ref<FenceTooLargeOffer>()
 const breachAltTooltipOpen = ref(false)
 const truncatedNameId = ref<string>()
+const breachAltitudeHelp = [
+  t`Altitude in meters (relative to the home position) the vehicle targets when returning to the breach point.`,
+  t`On a fence breach the autopilot navigates to the rally location and climbs or descends to this altitude before holding or continuing the configured fence action (FENCE_ACTION on ArduPilot, GF_ACTION on PX4).`,
+  t`Set it safely above local terrain and obstacles.`,
+].join(' ')
 
 const onPolygonNameHover = (event: MouseEvent, id: string): void => {
   const name = event.currentTarget as HTMLElement
@@ -595,7 +611,7 @@ const onAddPolygon = (): void => {
   fenceDraft.startDrawingPolygon(true)
   openSnackbar({
     variant: 'info',
-    message: 'Click the map to add vertices.',
+    message: t`Click the map to add vertices.`,
     duration: 5000,
     closeButton: true,
   })
@@ -611,7 +627,7 @@ const onAddCircle = (): void => {
   fenceDraft.startDrawingCircle(true)
   openSnackbar({
     variant: 'info',
-    message: 'Click the map to set the circle center, then click again to set the radius.',
+    message: t`Click the map to set the circle center, then click again to set the radius.`,
     duration: 5000,
     closeButton: true,
   })
@@ -644,7 +660,7 @@ const onToggleFenceAutoEnable = (value: boolean | null): void => {
   } catch (error) {
     showDialog({
       variant: 'error',
-      title: target ? 'Failed to enable auto fence' : 'Failed to disable auto fence',
+      title: target ? t`Failed to enable auto fence` : t`Failed to disable auto fence`,
       message: error instanceof Error ? error.message : String(error),
       timer: 4000,
     })
@@ -655,9 +671,9 @@ const confirmPx4MultipleInclusionsIfNeeded = async (): Promise<boolean> => {
   if (!fenceStore.isPx4) return true
   if (fenceStore.inclusionPolygonCount <= 1) return true
   return confirmAction(
-    'PX4 multiple inclusion polygons',
-    'PX4 currently treats multiple inclusion polygons as AND (intersection), not OR. Continue with the upload?',
-    'Upload anyway'
+    t`PX4 multiple inclusion polygons`,
+    t`PX4 currently treats multiple inclusion polygons as AND (intersection), not OR. Continue with the upload?`,
+    t`Upload anyway`
   )
 }
 
@@ -668,11 +684,13 @@ const confirmLiveEnforcementIfNeeded = async (): Promise<boolean> => {
   if (fenceStore.polygons.length === 0 && fenceStore.circles.length === 0) return true
   if (!(await fenceStore.readFenceEnabled())) return true
   return confirmAction(
-    'Enforcement is already on',
-    'This vehicle is enforcing a geofence right now, so it starts obeying the new shapes as soon as they reach it. ' +
-      'If it is already outside a new inclusion area, the fence action configured on the autopilot (return, land ' +
-      'or brake) fires immediately. Continue?',
-    'Upload anyway'
+    t`Enforcement is already on`,
+    [
+      t`This vehicle is enforcing a geofence right now, so it starts obeying the new shapes as soon as they reach it.`,
+      t`If it is already outside a new inclusion area, the fence action configured on the autopilot (return, land or brake) fires immediately.`,
+      t`Continue?`,
+    ].join(' '),
+    t`Upload anyway`
   )
 }
 
@@ -719,23 +737,21 @@ const confirmFenceStorageExpansion = async (): Promise<void> => {
   if (vehicleStore.isArmed) {
     showDialog({
       variant: 'error',
-      title: 'Vehicle is armed',
-      message: 'The autopilot cannot be rebooted while the vehicle is armed. Disarm it and upload the fence again.',
+      title: t`Vehicle is armed`,
+      message: t`The autopilot cannot be rebooted while the vehicle is armed. Disarm it and upload the fence again.`,
       maxWidth: '800px',
     })
     return
   }
   const confirmed = await confirmAction(
-    'Reboot the autopilot?',
+    t`Reboot the autopilot?`,
     [
-      'The fence storage size only takes effect after the autopilot restarts, which takes about 20 seconds.',
-      'While it restarts the vehicle does not respond: its motors stop, it holds no position or heading, and any ' +
-        'running mission is interrupted.',
-      'On the water it drifts with the wind and current until the autopilot is back, and Cockpit shows no ' +
-        'telemetry for it meanwhile.',
-      'Only continue with the vehicle out of the water, or moored where it is safe to drift.',
+      t`The fence storage size only takes effect after the autopilot restarts, which takes about 20 seconds.`,
+      t`While it restarts the vehicle does not respond: its motors stop, it holds no position or heading, and any running mission is interrupted.`,
+      t`On the water it drifts with the wind and current until the autopilot is back, and Cockpit shows no telemetry for it meanwhile.`,
+      t`Only continue with the vehicle out of the water, or moored where it is safe to drift.`,
     ],
-    'Reboot autopilot',
+    t`Reboot autopilot`,
     '800px'
   )
   if (!confirmed) {
@@ -745,21 +761,22 @@ const confirmFenceStorageExpansion = async (): Promise<void> => {
   logUserAction('Confirmed the autopilot reboot to expand the vehicle fence storage')
   try {
     const outcome = await vehicleStore.expandFenceStorage()
-    const pendingMessage =
-      'Fence storage expanded, but the vehicle did not confirm the restart. The new size only applies once the ' +
-      'autopilot starts again, so restart or power-cycle the vehicle before uploading the fence.'
+    const pendingMessage = [
+      t`Fence storage expanded, but the vehicle did not confirm the restart.`,
+      t`The new size only applies once the autopilot starts again, so restart or power-cycle the vehicle before uploading the fence.`,
+    ].join(' ')
     openSnackbar({
       variant: outcome === 'rebooting' ? 'success' : 'warning',
       message:
         outcome === 'rebooting'
-          ? 'Fence storage expanded. The autopilot is rebooting; upload the fence again once the vehicle is back.'
+          ? t`Fence storage expanded. The autopilot is rebooting; upload the fence again once the vehicle is back.`
           : pendingMessage,
       duration: 8000,
     })
   } catch (error) {
     showDialog({
       variant: 'error',
-      title: 'Could not expand fence storage',
+      title: t`Could not expand fence storage`,
       message: error instanceof Error ? error.message : String(error),
       maxWidth: '800px',
     })
@@ -776,7 +793,7 @@ const uploadFence = async (): Promise<void> => {
     if (error instanceof MissionRefusedError && error.isNoSpace && (await offerCoarserFence())) return
     showDialog({
       variant: 'error',
-      title: 'Geofence upload failed',
+      title: t`Geofence upload failed`,
       message: error instanceof Error ? error.message : String(error),
       timer: 5000,
     })
@@ -786,9 +803,9 @@ const uploadFence = async (): Promise<void> => {
 const confirmReplaceLocalPlanIfNeeded = async (): Promise<boolean> => {
   if (!fenceStore.hasItems) return true
   return confirmAction(
-    'Replace local fence plan',
-    'This replaces the polygons, circles and breach return point you are editing. Continue?',
-    'Replace'
+    t`Replace local fence plan`,
+    t`This replaces the polygons, circles and breach return point you are editing. Continue?`,
+    t`Replace`
   )
 }
 
@@ -804,7 +821,7 @@ const onDownload = async (): Promise<void> => {
   } catch (error) {
     showDialog({
       variant: 'error',
-      title: 'Geofence download failed',
+      title: t`Geofence download failed`,
       message: error instanceof Error ? error.message : String(error),
       timer: 5000,
     })
@@ -813,9 +830,9 @@ const onDownload = async (): Promise<void> => {
 
 const onClearOnVehicle = async (): Promise<void> => {
   const confirmed = await confirmAction(
-    'Clear fence on vehicle',
-    'This permanently removes the geofence currently stored on the vehicle. Continue?',
-    'Clear on vehicle'
+    t`Clear fence on vehicle`,
+    t`This permanently removes the geofence currently stored on the vehicle. Continue?`,
+    t`Clear on vehicle`
   )
   if (!confirmed) return
   logUserAction('Cleared the fence stored on the vehicle')
@@ -824,7 +841,7 @@ const onClearOnVehicle = async (): Promise<void> => {
   } catch (error) {
     showDialog({
       variant: 'error',
-      title: 'Geofence clear failed',
+      title: t`Geofence clear failed`,
       message: error instanceof Error ? error.message : String(error),
       timer: 5000,
     })
@@ -832,11 +849,11 @@ const onClearOnVehicle = async (): Promise<void> => {
 }
 
 const onClearLocal = async (): Promise<void> => {
-  const message = ['This removes all polygons, circles and the breach return point from the local fence plan.']
+  const message = [t`This removes all polygons, circles and the breach return point from the local fence plan.`]
   if (fenceStore.lastUploadedPlan) {
-    message.push('The geofence stored on the vehicle is not affected, and missions are still checked against it.')
+    message.push(t`The geofence stored on the vehicle is not affected, and missions are still checked against it.`)
   }
-  const confirmed = await confirmAction('Clear local fence plan', [...message, 'Continue?'], 'Clear plan')
+  const confirmed = await confirmAction(t`Clear local fence plan`, [...message, t`Continue?`], t`Clear plan`)
   if (!confirmed) return
   logUserAction('Cleared the local fence plan')
   fenceStore.clearAll()
@@ -849,7 +866,7 @@ const onSaveCfp = (): void => {
   const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' })
   const date = format(new Date(), 'LLL_dd_yyyy_HH_mm_ss')
   saveAs(blob, `cockpit_fence_plan_${date}.cfp`)
-  openSnackbar({ variant: 'success', message: 'Fence saved to file.', duration: 3000 })
+  openSnackbar({ variant: 'success', message: t`Fence saved to file.`, duration: 3000 })
 }
 
 const onExportMavlinkPlan = (): void => {
@@ -861,16 +878,18 @@ const onExportMavlinkPlan = (): void => {
   const keptMission = importedPlanSections.value.mission !== undefined
   const openWaypointsLeftOut = missionStore.currentPlanningWaypoints.length > 0
   if (!keptMission && !openWaypointsLeftOut) {
-    openSnackbar({ variant: 'success', message: 'Fence exported as a plan file.', duration: 3000 })
+    openSnackbar({ variant: 'success', message: t`Fence exported as a plan file.`, duration: 3000 })
     return
   }
-  const parts = [
-    keptMission ? 'the mission from the plan file you imported was kept unchanged' : null,
-    openWaypointsLeftOut ? 'the waypoints open in mission planning were not added' : null,
-  ].filter((part) => part !== null)
+  let message = t`Fence exported as a plan file: the waypoints open in mission planning were not added.`
+  if (keptMission) {
+    message = openWaypointsLeftOut
+      ? t`Fence exported as a plan file: the mission from the plan file you imported was kept unchanged, and the waypoints open in mission planning were not added.`
+      : t`Fence exported as a plan file: the mission from the plan file you imported was kept unchanged.`
+  }
   openSnackbar({
     variant: keptMission ? 'info' : 'warning',
-    message: `Fence exported as a plan file: ${parts.join(', and ')}.`,
+    message,
     duration: 6000,
   })
 }
@@ -894,16 +913,16 @@ const importMavlinkPlan = (planFile: MavlinkPlanFile): SnackbarOptions => {
   // being dropped from the file.
   importedPlanSections.value = { mission: planFile.mission, rallyPoints: planFile.rallyPoints }
   const keptNote =
-    planFile.mission !== undefined ? ' The mission in it is kept and restored if you export it again.' : ''
+    planFile.mission !== undefined ? ` ${t`The mission in it is kept and restored if you export it again.`}` : ''
 
   if (plan === undefined) {
     const reason =
       planFile.geoFence === undefined
-        ? 'This plan file has no fence, so no fence was loaded.'
-        : 'This plan file stores its fence in a format Cockpit cannot read, so no fence was loaded.'
+        ? t`This plan file has no fence, so no fence was loaded.`
+        : t`This plan file stores its fence in a format Cockpit cannot read, so no fence was loaded.`
     return { variant: 'warning', message: `${reason}${keptNote}`, duration: 5000 }
   }
-  return { variant: 'success', message: `Fence loaded from the plan file.${keptNote}`, duration: 5000 }
+  return { variant: 'success', message: `${t`Fence loaded from the plan file.`}${keptNote}`, duration: 5000 }
 }
 
 const onFilePicked = async (event: Event): Promise<void> => {
@@ -919,12 +938,12 @@ const onFilePicked = async (event: Event): Promise<void> => {
     try {
       parsed = JSON.parse(text)
     } catch (error) {
-      showDialog({ variant: 'error', message: 'Invalid JSON file.', timer: 3000 })
+      showDialog({ variant: 'error', message: t`Invalid JSON file.`, timer: 3000 })
       return
     }
 
     if (!instanceOfCockpitFencePlanFile(parsed) && !instanceOfMavlinkPlanFile(parsed)) {
-      showDialog({ variant: 'error', message: 'Unsupported file format.', timer: 3000 })
+      showDialog({ variant: 'error', message: t`Unsupported file format.`, timer: 3000 })
       return
     }
 
@@ -935,13 +954,13 @@ const onFilePicked = async (event: Event): Promise<void> => {
         logUserAction('Loaded a Cockpit fence plan file into the local fence')
         fenceStore.loadFromPlan(parsed.plan)
         importedPlanSections.value = {}
-        openSnackbar({ variant: 'success', message: 'Cockpit fence plan loaded.', duration: 3000 })
+        openSnackbar({ variant: 'success', message: t`Cockpit fence plan loaded.`, duration: 3000 })
       } else if (instanceOfMavlinkPlanFile(parsed)) {
         logUserAction('Loaded a MAVLink `.plan` file into the local fence')
         openSnackbar(importMavlinkPlan(parsed))
       }
     } catch (error) {
-      showDialog({ variant: 'error', message: 'Could not load the fence plan from this file.', timer: 3000 })
+      showDialog({ variant: 'error', message: t`Could not load the fence plan from this file.`, timer: 3000 })
     }
   } finally {
     input.value = ''

@@ -1,4 +1,5 @@
 import L from 'leaflet'
+import { t } from 'ttag'
 import { watchEffect } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -138,7 +139,7 @@ export const useCustomTileProviderLayer = (): UseCustomTileProviderLayerReturn =
           if (!failureReported) {
             failureReported = true
             const reason = messageFromError(error)
-            openSnackbar({ message: `Could not load the "${meta.name}" map: ${reason}`, variant: 'error' })
+            openSnackbar({ message: t`Could not load the "${meta.name}" map: ${reason}`, variant: 'error' })
           }
           throw error
         })

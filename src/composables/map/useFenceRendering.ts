@@ -1,5 +1,6 @@
 import { useDebounceFn } from '@vueuse/core'
 import L from 'leaflet'
+import { t } from 'ttag'
 import { onBeforeUnmount, watch } from 'vue'
 
 import { useMapContext } from '@/composables/map/useMapContext'
@@ -547,7 +548,8 @@ export const useFenceRendering = (props: FenceRenderingProps): void => {
         })
       }
     }
-    breachReturnMarker.bindTooltip(`Breach return — ${point.altitude.toFixed(1)} m`, {
+    const altitude = point.altitude.toFixed(1)
+    breachReturnMarker.bindTooltip(t`Breach return — ${altitude} m`, {
       direction: 'top',
       offset: [0, -10],
     })

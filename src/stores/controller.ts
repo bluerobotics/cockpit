@@ -1,6 +1,7 @@
 import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import { defaultJoystickCalibration } from '@/assets/defaults'
@@ -434,8 +435,7 @@ export const useControllerStore = defineStore('controller', () => {
           const oldMappingId = oldMapping.axesCorrespondencies[axis as unknown as JoystickAxis]?.action?.id
           const wasMapped = oldMappingId === mapping.action.id
           if (isDuplicated && wasMapped) {
-            const warningText = `Unmapping '${mapping.action.name}' from input ${axis} layout.
-              Cannot use same action on multiple axes.`
+            const warningText = t`Unmapping '${mapping.action.name}' from input ${axis} layout. Cannot use same action on multiple axes.`
             showDialog({ message: warningText, variant: 'warning' })
             newMapping.axesCorrespondencies[axis as unknown as JoystickAxis].action = otherAvailableActions.no_function
           }
@@ -459,7 +459,7 @@ export const useControllerStore = defineStore('controller', () => {
       Object.entries(mapping).forEach(([btn, action]) => {
         const modKeyAction = modifierKeyActions[modKey as CockpitModifierKeyOption]
         if (JSON.stringify(action.action) !== JSON.stringify(modKeyAction)) return
-        showDialog({ message: "Cannot map modifier key to it's own layout.", variant: 'warning' })
+        showDialog({ message: t`Cannot map modifier key to it's own layout.`, variant: 'warning' })
         protocolMapping.value.buttonsCorrespondencies[modKey as CockpitModifierKeyOption][
           Number(btn) as JoystickButton
         ].action = otherAvailableActions.no_function
@@ -470,7 +470,7 @@ export const useControllerStore = defineStore('controller', () => {
       const actionToUnmap = protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action
       if (JSON.stringify(actionToUnmap) === JSON.stringify(otherAvailableActions.no_function)) return
       showDialog({
-        message: `Unmapping '${actionToUnmap.name} from ${v.modKey} layout. Cannot use same button as the modifier.`,
+        message: t`Unmapping '${actionToUnmap.name} from ${v.modKey} layout. Cannot use same button as the modifier.`,
         variant: 'warning',
       })
       protocolMapping.value.buttonsCorrespondencies[v.modKey][v.button].action = otherAvailableActions.no_function
@@ -489,7 +489,7 @@ export const useControllerStore = defineStore('controller', () => {
       const contents = event.target.result
       const maybeProfile = JSON.parse(contents)
       if (!maybeProfile['name'] || !maybeProfile['axes'] || !maybeProfile['buttons']) {
-        showDialog({ variant: 'error', message: 'Invalid joystick mapping file.', timer: 3000 })
+        showDialog({ variant: 'error', message: t`Invalid joystick mapping file.`, timer: 3000 })
         return
       }
       cockpitStdMappings.value[joystick.model] = maybeProfile
@@ -514,11 +514,11 @@ export const useControllerStore = defineStore('controller', () => {
         !maybeFunctionsMapping['axesCorrespondencies'] ||
         !maybeFunctionsMapping['buttonsCorrespondencies']
       ) {
-        showDialog({ message: 'Invalid functions mapping file.', variant: 'error', timer: 3000 })
+        showDialog({ message: t`Invalid functions mapping file.`, variant: 'error', timer: 3000 })
         return
       }
       protocolMapping.value = maybeFunctionsMapping
-      showDialog({ message: 'Functions mapping imported successfully.', variant: 'success', timer: 2000 })
+      showDialog({ message: t`Functions mapping imported successfully.`, variant: 'success', timer: 2000 })
     }
     // @ts-ignore: We know the event type and need refactor of the event typing
     reader.readAsText(e.target.files[0])

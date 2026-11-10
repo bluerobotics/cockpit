@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { v4 as uuid } from 'uuid'
 import { createApp } from 'vue'
 
@@ -29,7 +30,7 @@ export const openMainMenuIfSafeOrDesired = (): void => {
   // Skip warning if user has chosen to never show it again or skip for this session
   if (alertStore.neverShowArmedMenuWarning || alertStore.skipArmedMenuWarningThisSession) {
     // Show a snackbar warning instead
-    openSnackbar({ message: 'Take care, your vehicle is armed', variant: 'warning' })
+    openSnackbar({ message: t`Take care, your vehicle is armed`, variant: 'warning' })
     interfaceStore.isMainMenuVisible = true
     return
   }

@@ -3,13 +3,13 @@
   <v-dialog v-model="actionDialog.show" max-width="500px">
     <v-card class="rounded-lg" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-h6 font-weight-bold py-4 text-center">
-        {{ editMode ? 'Edit action' : 'Create new action' }}
+        {{ editMode ? t`Edit action` : t`Create new action` }}
       </v-card-title>
       <v-card-text class="px-8">
         <v-form class="d-flex flex-column gap-2" @submit.prevent="saveActionConfig">
           <v-text-field
             v-model="newActionConfig.name"
-            label="Action Name"
+            :label="t`Action Name`"
             required
             variant="outlined"
             density="compact"
@@ -17,7 +17,7 @@
           <v-select
             v-model="newActionConfig.messageType"
             :items="availableMessageTypes"
-            label="Message Type"
+            :label="t`Message Type`"
             required
             variant="outlined"
             density="compact"
@@ -27,11 +27,11 @@
 
           <div v-if="newActionConfig.messageType" class="mt-4">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-subtitle-1 font-weight-bold">Message Configuration</h3>
+              <h3 class="text-subtitle-1 font-weight-bold">{{ t`Message Configuration` }}</h3>
               <v-switch
                 v-if="hasUnusedParams"
                 v-model="showUnusedParams"
-                label="Show unused params"
+                :label="t`Show unused params`"
                 color="white"
                 density="compact"
                 hide-details
@@ -52,7 +52,7 @@
                   variant="outlined"
                   density="compact"
                   hide-details="auto"
-                  :rules="[field.required ? (v) => !!v || 'This field is required' : () => true]"
+                  :rules="[field.required ? (v) => !!v || t`This field is required` : () => true]"
                 >
                   <template v-if="paramFieldInfo[key]?.hint" #append-inner>
                     <v-menu location="bottom" max-width="320">
@@ -77,10 +77,16 @@
             <div v-else>
               <v-textarea
                 v-model="newActionConfig.messageConfig"
-                label="Message fields object"
+                :label="t`Message fields object`"
                 variant="outlined"
                 density="compact"
-                hint="Insert a JSON object with the message fields here. Use {{ data_lake_key }} for dynamic values. Use { type: 'ENUM_VALUE' } for enum values (e.g.: MAV_CMD_COMPONENT_ARM_DISARM)."
+                :hint="
+                  [
+                    t`Insert a JSON object with the message fields here.`,
+                    t`Use {{ data_lake_key }} for dynamic values.`,
+                    t`Use { type: 'ENUM_VALUE' } for enum values (e.g.: MAV_CMD_COMPONENT_ARM_DISARM).`,
+                  ].join(' ')
+                "
                 persistent-hint
                 rows="12"
               />
@@ -91,11 +97,11 @@
       <v-divider class="mt-2 mx-10" />
       <v-card-actions>
         <div class="flex justify-between items-center pa-2 w-full h-full" style="color: rgba(255, 255, 255, 0.5)">
-          <v-btn @click="closeActionDialog">Cancel</v-btn>
+          <v-btn @click="closeActionDialog">{{ t`Cancel` }}</v-btn>
           <div class="flex gap-x-10">
-            <v-btn @click="resetNewAction">Reset</v-btn>
+            <v-btn @click="resetNewAction">{{ t`Reset` }}</v-btn>
             <v-btn :disabled="!isFormValid" class="text-white" @click="saveActionConfig">
-              {{ editMode ? 'Save' : 'Create' }}
+              {{ editMode ? t`Save` : t`Create` }}
             </v-btn>
           </div>
         </div>

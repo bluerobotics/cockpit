@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { t } from 'ttag'
 import { watch } from 'vue'
 
 import { useAlertStore } from '@/stores/alert'
@@ -21,15 +22,14 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     (newMode) => {
       if (newMode === undefined) return
       const modeName = vehicleStore.flightModeDisplayName(newMode)
-      alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle mode changed to ${modeName}.`))
+      alertStore.pushAlert(new Alert(AlertLevel.Info, t`Vehicle mode changed to ${modeName}.`))
     }
   )
 
   watch(
     () => vehicleStore.isArmed,
     (isArmedNow) => {
-      const state = isArmedNow ? 'armed' : 'disarmed'
-      alertStore.pushAlert(new Alert(AlertLevel.Info, `Vehicle ${state}`))
+      alertStore.pushAlert(new Alert(AlertLevel.Info, isArmedNow ? t`Vehicle armed` : t`Vehicle disarmed`))
     }
   )
 
@@ -37,9 +37,9 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     () => fenceStore.fenceBreached,
     (breached, wasBreached) => {
       if (breached === true && wasBreached !== true) {
-        alertStore.pushAlert(new Alert(AlertLevel.Critical, 'Vehicle is outside the geofence.'))
+        alertStore.pushAlert(new Alert(AlertLevel.Critical, t`Vehicle is outside the geofence.`))
       } else if (breached === false && wasBreached === true) {
-        alertStore.pushAlert(new Alert(AlertLevel.Success, 'Vehicle is back inside the geofence.'))
+        alertStore.pushAlert(new Alert(AlertLevel.Success, t`Vehicle is back inside the geofence.`))
       }
     }
   )
@@ -48,8 +48,7 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     () => vehicleStore.isVehicleOnline,
     (isOnlineNow) => {
       const alertLevel = isOnlineNow ? AlertLevel.Success : AlertLevel.Error
-      const alertMessage = isOnlineNow ? 'connected' : 'disconnected'
-      alertStore.pushAlert(new Alert(alertLevel, `Vehicle ${alertMessage}`))
+      alertStore.pushAlert(new Alert(alertLevel, isOnlineNow ? t`Vehicle connected` : t`Vehicle disconnected`))
     }
   )
 })

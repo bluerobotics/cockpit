@@ -1,5 +1,6 @@
 import { watchDebounced } from '@vueuse/core'
 import type { Map } from 'leaflet'
+import { msgid, ngettext, t } from 'ttag'
 import { type ComputedRef, type Ref, type ShallowRef, computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { closeSnackbar, openSnackbar } from '@/composables/snackbar'
@@ -11,11 +12,6 @@ import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 // Both the fence shapes and the waypoints move under a drag, so the check only runs once the
 // operator settles rather than on every pointer frame.
 const RECHECK_DEBOUNCE_MS = 250
-
-const reasonText: Record<BreachReason, string> = {
-  'outside-inclusion': 'outside the inclusion area of',
-  'inside-exclusion': 'inside an exclusion area of',
-}
 
 /**
  * Reactive inputs driving the breach check.
@@ -62,15 +58,21 @@ export const useMissionFenceBreaches = (
   const reasonsById = computed<Record<string, string[]>>(() => {
     const waypoints = options.waypoints()
     const reasons: Record<string, string[]> = {}
-    const collect = (report: MissionBreachReport | undefined, fence: string): void => {
+    const collect = (report: MissionBreachReport | undefined, sentences: Record<BreachReason, string>): void => {
       report?.breaches.forEach(({ index, reason }) => {
         const waypoint = waypoints[index]
         if (!waypoint) return
-        reasons[waypoint.id] = [...(reasons[waypoint.id] ?? []), `This waypoint is ${reasonText[reason]} ${fence}.`]
+        reasons[waypoint.id] = [...(reasons[waypoint.id] ?? []), sentences[reason]]
       })
     }
-    collect(reports.value.vehicle, 'the geofence stored on the vehicle')
-    collect(reports.value.draft, 'the geofence you are drawing')
+    collect(reports.value.vehicle, {
+      'outside-inclusion': t`This waypoint is outside the inclusion area of the geofence stored on the vehicle.`,
+      'inside-exclusion': t`This waypoint is inside an exclusion area of the geofence stored on the vehicle.`,
+    })
+    collect(reports.value.draft, {
+      'outside-inclusion': t`This waypoint is outside the inclusion area of the geofence you are drawing.`,
+      'inside-exclusion': t`This waypoint is inside an exclusion area of the geofence you are drawing.`,
+    })
     return reasons
   })
 
@@ -117,12 +119,15 @@ export const useMissionFenceBreaches = (
     warningId = undefined
     announcedCount = count
     if (count === 0) return
-    const subject = count === 1 ? 'waypoint breaches' : 'waypoints breach'
     warningId = openSnackbar({
       variant: 'warning',
-      message: `${count} mission ${subject} the geofence. They are marked red on the map.`,
+      message: ngettext(
+        msgid`${count} mission waypoint breaches the geofence. It is marked red on the map.`,
+        `${count} mission waypoints breach the geofence. They are marked red on the map.`,
+        count
+      ),
       persistent: true,
-      action: { label: 'Show', handler: focusBreaches },
+      action: { label: t`Show`, handler: focusBreaches },
     })
   }
 

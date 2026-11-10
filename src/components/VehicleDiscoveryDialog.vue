@@ -1,20 +1,28 @@
 <template>
   <InteractionDialog
     v-model="isOpen"
-    :title="displaySearching ? 'Searching for vehicles...' : 'Vehicle Discovery'"
+    :title="displaySearching ? t`Searching for vehicles...` : t`Vehicle Discovery`"
     :actions="dialogActions"
     :persistent="displaySearching"
     :variant="'text-only'"
   >
     <template #content>
       <div v-if="props.showAutoSearchOption && preventAutoSearch">
-        <div class="text-sm mb-4">You can still search for vehicles in the general configuration menu.</div>
+        <div class="text-sm mb-4">{{ t`You can still search for vehicles in the general configuration menu.` }}</div>
       </div>
       <div v-else class="flex flex-col items-center justify-center gap-4 min-w-[300px] min-h-[100px]">
         <div v-if="displaySearching" class="flex flex-col items-center gap-2 mb-2 max-w-[420px]">
           <v-progress-circular class="mb-2" indeterminate />
-          <span v-if="vehicles.length === 0">Searching for vehicles in your network...</span>
-          <span v-else> Found {{ vehicles.length }} vehicle{{ vehicles.length > 1 ? 's' : '' }} so far... </span>
+          <span v-if="vehicles.length === 0">{{ t`Searching for vehicles in your network...` }}</span>
+          <span v-else>
+            {{
+              ngettext(
+                msgid`Found ${vehicles.length} vehicle so far...`,
+                `Found ${vehicles.length} vehicles so far...`,
+                vehicles.length
+              )
+            }}
+          </span>
           <div v-if="progressStatus" class="text-xs opacity-75 text-center">
             <div>{{ progressStatus.headline }}</div>
             <div v-if="progressStatus.detail" class="opacity-75">{{ progressStatus.detail }}</div>
@@ -22,7 +30,7 @@
         </div>
 
         <div v-if="vehicles.length > 0" class="flex flex-col gap-2 mb-3">
-          <div v-if="!displaySearching" class="h-4 font-weight-bold text-center mb-5">Vehicles found!</div>
+          <div v-if="!displaySearching" class="h-4 font-weight-bold text-center mb-5">{{ t`Vehicles found!` }}</div>
           <div v-for="vehicle in vehicles" :key="vehicle.address" class="flex items-center gap-2">
             <v-btn variant="tonal" class="max-w-[500px] justify-start truncate" @click="selectVehicle(vehicle.address)">
               <span class="max-w-[300px] truncate">{{ vehicle.name }}</span>
@@ -31,18 +39,20 @@
           </div>
         </div>
 
-        <div v-else-if="searched && !displaySearching" class="text-sm">No vehicles found in your network.</div>
+        <div v-else-if="searched && !displaySearching" class="text-sm">{{ t`No vehicles found in your network.` }}</div>
 
         <div v-if="!displaySearching && !searched" class="flex flex-col gap-2 items-center justify-center text-center">
-          <p v-if="props.showAutoSearchOption" class="font-bold">It looks like you're not connected to a vehicle!</p>
+          <p v-if="props.showAutoSearchOption" class="font-bold">
+            {{ t`It looks like you're not connected to a vehicle!` }}
+          </p>
           <p class="max-w-[25rem] mb-2">
-            This tool allows you to locate and connect to BlueOS vehicles within your network.
+            {{ t`This tool allows you to locate and connect to BlueOS vehicles within your network.` }}
           </p>
         </div>
 
         <div v-if="!displaySearching" class="flex justify-center items-center">
           <v-btn variant="outlined" :disabled="searching" class="mb-5" @click="searchVehicles">
-            {{ searched ? 'Search again' : 'Search for vehicles' }}
+            {{ searched ? t`Search again` : t`Search for vehicles` }}
           </v-btn>
         </div>
       </div>
@@ -52,6 +62,7 @@
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
+import { msgid, ngettext, t } from 'ttag'
 import { computed, ref, watch } from 'vue'
 
 import { useSnackbar } from '@/composables/snackbar'
@@ -62,10 +73,10 @@ import { useMainVehicleStore } from '@/stores/mainVehicle'
 import InteractionDialog, { Action } from './InteractionDialog.vue'
 
 const tierLabels: Record<number, string> = {
-  0: 'wired Ethernet',
-  1: 'Wi-Fi',
-  2: 'local network',
-  3: 'VPN / overlay network',
+  0: t`wired Ethernet`,
+  1: t`Wi-Fi`,
+  2: t`local network`,
+  3: t`VPN / overlay network`,
 }
 
 /**
@@ -120,18 +131,19 @@ const displaySearching = computed(() => searching.value && !userStopped.value)
 const progressStatus = computed<ProgressStatusLine | null>(() => {
   if (!progress.value) return null
   const { tier, interfaces, passIndex, totalPasses, passTimeoutMs, addressesInPass } = progress.value
-  const tierLabel = tierLabels[tier] ?? `tier ${tier}`
-  const ifaceList = interfaces.join(', ') || 'no interfaces'
-  const headline = `Scanning ${tierLabel} (${ifaceList})`
+  const tierLabel = tierLabels[tier] ?? t`tier ${tier}`
+  const ifaceList = interfaces.join(', ') || t`no interfaces`
+  const headline = t`Scanning ${tierLabel} (${ifaceList})`
   const passInfo =
-    totalPasses > 1 ? `Pass ${passIndex}/${totalPasses} at ${passTimeoutMs}ms` : `Probe timeout ${passTimeoutMs}ms`
-  const detail = `${passInfo} — ${addressesInPass.toLocaleString()} address(es)`
+    totalPasses > 1 ? t`Pass ${passIndex}/${totalPasses} at ${passTimeoutMs}ms` : t`Probe timeout ${passTimeoutMs}ms`
+  const addressCount = addressesInPass.toLocaleString()
+  const detail = t`${passInfo} — ${addressCount} address(es)`
   return { headline, detail }
 })
 
 const originalActions = [
   {
-    text: 'Close',
+    text: t`Close`,
     action: () => {
       logUserAction('Closed Vehicle Discovery dialog')
       isOpen.value = false
@@ -141,7 +153,7 @@ const originalActions = [
 
 if (props.showAutoSearchOption) {
   originalActions.unshift({
-    text: "Don't show again",
+    text: t`Don't show again`,
     action: () => preventFutureAutoSearchs(),
   })
 }
@@ -181,7 +193,7 @@ const searchVehicles = async (): Promise<void> => {
   } catch (error) {
     if (!userStopped.value) {
       console.error(`[VehicleDiscoveryDialog] Vehicle discovery failed: ${error}`)
-      openSnackbar({ message: `Vehicle discovery failed: ${error}`, variant: 'error', duration: 5000 })
+      openSnackbar({ message: t`Vehicle discovery failed: ${error}`, variant: 'error', duration: 5000 })
     }
   } finally {
     searching.value = false
@@ -208,7 +220,7 @@ const selectVehicle = async (address: string): Promise<void> => {
   mainVehicleStore.globalAddress = address
   isOpen.value = false
   await reloadCockpitAndWarnUser()
-  openSnackbar({ message: 'Vehicle address updated', variant: 'success', duration: 5000 })
+  openSnackbar({ message: t`Vehicle address updated`, variant: 'success', duration: 5000 })
 }
 
 const preventFutureAutoSearchs = (): void => {
@@ -229,7 +241,7 @@ const enableButtons = (): void => {
 }
 
 const showStopAction = (): void => {
-  dialogActions.value = [{ text: 'Stop', action: stopSearch }]
+  dialogActions.value = [{ text: t`Stop`, action: stopSearch }]
 }
 
 watch(isOpen, (isNowOpen) => {

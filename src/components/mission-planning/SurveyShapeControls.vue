@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col">
     <div class="flex items-center justify-between mx-5 my-2">
-      <p class="overflow-visible text-sm text-slate-200">Survey format</p>
+      <p class="overflow-visible text-sm text-slate-200">{{ t`Survey format` }}</p>
       <div class="flex items-center gap-x-4">
         <v-tooltip v-for="format in formats" :key="format.value" :text="formatHint(format)" location="bottom">
           <template #activator="{ props: tooltipProps }">
@@ -28,7 +28,7 @@
     </div>
 
     <template v-if="dimensions">
-      <p class="m-1 overflow-visible text-sm text-slate-200">Length ({{ unit }})</p>
+      <p class="m-1 overflow-visible text-sm text-slate-200">{{ t`Length (${unit})` }}</p>
       <input
         v-model.number="length"
         class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
@@ -37,7 +37,7 @@
         @change="commitDimensions"
         @keydown.enter.stop="commitDimensions"
       />
-      <p class="m-1 overflow-visible text-sm text-slate-200">Width ({{ unit }})</p>
+      <p class="m-1 overflow-visible text-sm text-slate-200">{{ t`Width (${unit})` }}</p>
       <input
         v-model.number="width"
         class="px-2 py-1 m-1 mx-5 rounded-sm bg-[#FFFFFF22]"
@@ -51,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { nextTick, ref, watch } from 'vue'
 
 import type { SurveyDrawShape, SurveyRectangleDimensions } from '@/composables/map/useSurveyRectangleDrawing'
@@ -87,13 +88,15 @@ interface SurveyFormatOption {
 }
 
 const formats: SurveyFormatOption[] = [
-  { value: 'free-form', label: 'Free form', icon: 'mdi-vector-polygon' },
-  { value: 'rectangle', label: 'Rectangle', icon: 'mdi-rectangle-outline' },
+  { value: 'free-form', label: t`Free form`, icon: 'mdi-vector-polygon' },
+  { value: 'rectangle', label: t`Rectangle`, icon: 'mdi-rectangle-outline' },
 ]
 
 // A format the draft cannot be switched to says so where the user is already looking for the format's name.
-const formatHint = (format: SurveyFormatOption): string =>
-  props.locked && format.value !== props.shape ? `Clear Path to switch to ${format.label.toLowerCase()}` : format.label
+const formatHint = (format: SurveyFormatOption): string => {
+  const name = format.label.toLowerCase()
+  return props.locked && format.value !== props.shape ? t`Clear Path to switch to ${name}` : format.label
+}
 
 const { toDisplayUnit, toDisplayBound, toRawUnit, unit } = useUnitConversion('m')
 

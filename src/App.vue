@@ -103,10 +103,10 @@
   <BaseStationConfigPanel :is-mission-planning-context="baseRouteName === 'Mission planning'" />
   <BaseStationContextPopup />
   <SnackbarContainer />
-  <FloatingWrapper v-model="devStore.showConsole" title="Console">
+  <FloatingWrapper v-model="devStore.showConsole" :title="t`Console`">
     <ConsoleViewer
       :disabled="!devStore.enableSystemLogging"
-      disabled-message="System logging is disabled — enable it above to capture console output."
+      :disabled-message="t`System logging is disabled — enable it above to capture console output.`"
     />
   </FloatingWrapper>
   <SkullAnimation
@@ -124,6 +124,7 @@
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
+import { t } from 'ttag'
 import { type Component, computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import ArchitectureWarning from '@/components/ArchitectureWarning.vue'
@@ -363,7 +364,7 @@ watch(
       showReconnectedFeedback.value = false
       if (!vehicleStore.isVehicleConnectionLost) return
       openSnackbar({
-        message: 'Vehicle connection lost: reestablishing',
+        message: t`Vehicle connection lost: reestablishing`,
         variant: 'error',
         duration: 3000,
         closeButton: false,
@@ -371,7 +372,7 @@ watch(
       return
     }
 
-    openSnackbar({ message: 'Vehicle connected', variant: 'success', duration: 3000, closeButton: false })
+    openSnackbar({ message: t`Vehicle connected`, variant: 'success', duration: 3000, closeButton: false })
     showReconnectedFeedback.value = true
     reconnectedFeedbackTimeout = setTimeout(() => (showReconnectedFeedback.value = false), 4000)
   }
@@ -427,12 +428,12 @@ onMounted(() => {
     setTimeout(() => {
       if (vehicleStore.isVehicleOnline) return
       discoveryOfferId = openSnackbar({
-        message: 'No vehicle connected yet.',
+        message: t`No vehicle connected yet.`,
         variant: 'info',
         persistent: true,
-        action: { label: 'Search for vehicles', handler: () => (showDiscoveryDialog.value = true) },
+        action: { label: t`Search for vehicles`, handler: () => (showDiscoveryDialog.value = true) },
         suppress: {
-          tooltip: 'Do not offer a vehicle search on startup',
+          tooltip: t`Do not offer a vehicle search on startup`,
           handler: () => (preventAutoSearch.value = true),
         },
       })
@@ -442,12 +443,12 @@ onMounted(() => {
   if (!interfaceStore.userHasSeenTutorial) {
     setTimeout(() => {
       openSnackbar({
-        message: 'New to Cockpit? A short tour shows where everything is.',
+        message: t`New to Cockpit? A short tour shows where everything is.`,
         variant: 'info',
         persistent: true,
-        action: { label: 'Start tour', handler: () => (interfaceStore.isTutorialVisible = true) },
+        action: { label: t`Start tour`, handler: () => (interfaceStore.isTutorialVisible = true) },
         suppress: {
-          tooltip: 'Do not offer the tour again',
+          tooltip: t`Do not offer the tour again`,
           handler: () => (interfaceStore.userHasSeenTutorial = true),
         },
       })

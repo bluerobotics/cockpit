@@ -1,38 +1,41 @@
 <template>
   <InteractionDialog
     :show-dialog="area !== undefined"
-    title="Create geofence exclusion zone"
+    :title="t`Create geofence exclusion zone`"
     variant="text-only"
     max-width="420px"
     @update:show-dialog="(open: boolean) => !open && dismiss()"
   >
     <template #content>
       <div class="flex flex-col gap-4 -mt-6">
-        <p class="text-body-2">Keep the vehicle this far from "{{ area?.label }}".</p>
+        <p class="text-body-2">{{ t`Keep the vehicle this far from "${areaLabel}".` }}</p>
         <v-text-field
           v-model.number="clearanceM"
           type="number"
-          label="Clearance (m)"
+          :label="t`Clearance (m)`"
           variant="outlined"
           density="compact"
           :min="0"
           :max="MAX_HAZARD_CLEARANCE_M"
           :hide-details="isValid"
-          :error-messages="isValid ? [] : [`Enter a clearance from 0 to ${MAX_HAZARD_CLEARANCE_M} m.`]"
+          :error-messages="isValid ? [] : [t`Enter a clearance from 0 to ${MAX_HAZARD_CLEARANCE_M} m.`]"
           @keyup.enter="create"
         />
       </div>
     </template>
     <template #actions>
       <div class="flex justify-between items-center w-full px-2 pb-2">
-        <v-btn variant="text" size="small" @click="dismiss">Cancel</v-btn>
-        <v-btn size="small" class="bg-[#FFFFFF33] text-white" :disabled="!isValid" @click="create">Create</v-btn>
+        <v-btn variant="text" size="small" @click="dismiss">{{ t`Cancel` }}</v-btn>
+        <v-btn size="small" class="bg-[#FFFFFF33] text-white" :disabled="!isValid" @click="create">
+          {{ t`Create` }}
+        </v-btn>
       </div>
     </template>
   </InteractionDialog>
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, defineModel, ref, watch } from 'vue'
 
 import InteractionDialog from '@/components/InteractionDialog.vue'
@@ -43,6 +46,7 @@ import type { HazardArea } from '@/types/hazards'
 const hazardStore = useHazardStore()
 
 const area = defineModel<HazardArea | undefined>('area', { required: true })
+const areaLabel = computed(() => area.value?.label)
 
 const clearanceM = ref<number>(hazardStore.settings.proximityMarginMeters)
 

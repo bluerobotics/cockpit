@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { ref } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -22,17 +23,17 @@ export const checkForUpdates = async (): Promise<void> => {
     if (await window.electronAPI!.checkForUpdates()) return
 
     openSnackbar({
-      message: 'Cockpit does not update itself on this computer. Download the latest version from our releases page.',
+      message: t`Cockpit does not update itself on this computer. Download the latest version from our releases page.`,
       variant: 'warning',
       duration: 10000,
       action: {
-        label: 'Open',
+        label: t`Open`,
         handler: () => window.open('https://github.com/bluerobotics/cockpit/releases/', '_blank'),
       },
     })
   } catch {
     openSnackbar({
-      message: 'Could not check for updates right now. Please try again in a moment.',
+      message: t`Could not check for updates right now. Please try again in a moment.`,
       variant: 'error',
       duration: 6000,
     })

@@ -1,7 +1,7 @@
 <template>
   <InteractionDialog
     v-model="poiDialogVisible"
-    :title="`${editingPoiId ? 'Edit' : 'Place'} Point of Interest`"
+    :title="editingPoiId ? t`Edit Point of Interest` : t`Place Point of Interest`"
     variant="text-only"
     max-width="500px"
     :persistent="true"
@@ -13,17 +13,17 @@
         </v-btn>
       </div>
       <div class="p-3">
-        <v-text-field v-model="newPoiName" label="Name" variant="outlined" class="mb-2"></v-text-field>
+        <v-text-field v-model="newPoiName" :label="t`Name`" variant="outlined" class="mb-2"></v-text-field>
         <div class="flex items-start mb-2">
           <v-text-field
             v-model="newPoiId"
-            label="ID"
+            :label="t`ID`"
             variant="outlined"
             :disabled="!!editingPoiId || !isManualIdEnabled"
             :error-messages="idError"
             class="flex-1"
           />
-          <v-tooltip location="top" :text="editingPoiId ? `A POI's ID can't be changed after creation` : 'Edit ID'">
+          <v-tooltip location="top" :text="editingPoiId ? t`A POI's ID can't be changed after creation` : t`Edit ID`">
             <template #activator="{ props }">
               <v-btn
                 v-bind="props"
@@ -37,58 +37,59 @@
             </template>
           </v-tooltip>
         </div>
-        <v-text-field v-model="newPoiDescription" label="Description" variant="outlined"></v-text-field>
+        <v-text-field v-model="newPoiDescription" :label="t`Description`" variant="outlined"></v-text-field>
 
         <div class="flex flex-col mb-2">
           <DataLakeExpressionInput
             v-if="poiDialogVisible"
             v-model="newPoiLatExpression"
-            label="Latitude"
+            :label="t`Latitude`"
             :variable-filter="isCoordinateVariable"
             class="mb-5"
           >
             <template #hint>
               <p class="text-sm mb-2">
-                Enter a fixed coordinate, or an expression that follows live data and updates on the map.
+                {{ t`Enter a fixed coordinate, or an expression that follows live data and updates on the map.` }}
               </p>
               <p class="text-sm">
-                Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
-                &#123;&#123; mavlink/buoy/latitude &#125;&#125; + 0.0001.
+                {{ t`Click the field to pick a data-lake variable, or wrap variables in` }} &#123;&#123; &#125;&#125;
+                {{ t`— e.g.` }} &#123;&#123; mavlink/buoy/latitude &#125;&#125; + 0.0001.
               </p>
             </template>
           </DataLakeExpressionInput>
           <DataLakeExpressionInput
             v-if="poiDialogVisible"
             v-model="newPoiLngExpression"
-            label="Longitude"
+            :label="t`Longitude`"
             :variable-filter="isCoordinateVariable"
             class="mb-5"
           >
             <template #hint>
               <p class="text-sm mb-2">
-                Enter a fixed coordinate, or an expression that follows live data and updates on the map.
+                {{ t`Enter a fixed coordinate, or an expression that follows live data and updates on the map.` }}
               </p>
               <p class="text-sm">
-                Click the field to pick a data-lake variable, or wrap variables in &#123;&#123; &#125;&#125; — e.g.
-                &#123;&#123; mavlink/buoy/longitude &#125;&#125; + 0.0001.
+                {{ t`Click the field to pick a data-lake variable, or wrap variables in` }} &#123;&#123; &#125;&#125;
+                {{ t`— e.g.` }} &#123;&#123; mavlink/buoy/longitude &#125;&#125; + 0.0001.
               </p>
             </template>
           </DataLakeExpressionInput>
           <DataLakeExpressionInput
             v-if="poiDialogVisible"
             v-model="newPoiHeadingExpression"
-            label="Heading (optional)"
+            :label="t`Heading (optional)`"
             :variable-filter="isCoordinateVariable"
             class="mb-4"
           >
             <template #hint>
               <p class="text-sm mb-2">
-                Direction the point of interest faces, in degrees clockwise from north. Leave it empty for a point with
-                no direction.
+                {{
+                  t`Direction the point of interest faces, in degrees clockwise from north. Leave it empty for a point with no direction.`
+                }}
               </p>
               <p class="text-sm">
-                Enter a fixed angle, or an expression that follows live data — e.g. &#123;&#123; mavlink/boat/heading
-                &#125;&#125;.
+                {{ t`Enter a fixed angle, or an expression that follows live data — e.g.` }} &#123;&#123;
+                mavlink/boat/heading &#125;&#125;.
               </p>
             </template>
           </DataLakeExpressionInput>
@@ -105,14 +106,20 @@
                 <v-icon>mdi-palette</v-icon>
               </v-btn>
             </div>
-            <v-text-field v-model="newPoiColor" label="Hex Color" hide-details variant="outlined" class="flex-grow" />
+            <v-text-field
+              v-model="newPoiColor"
+              :label="t`Hex Color`"
+              hide-details
+              variant="outlined"
+              class="flex-grow"
+            />
             <v-spacer />
             <div
               class="cursor-pointer hover:opacity-80 flex flex-col items-center"
               @click="isIconPickerOpen = !isIconPickerOpen"
             >
               <v-icon :icon="newPoiIcon" size="48" :color="newPoiColor" />
-              <span class="text-white opacity-50 mx-2 text-xs mt-1">Click to change icon</span>
+              <span class="text-white opacity-50 mx-2 text-xs mt-1">{{ t`Click to change icon` }}</span>
             </div>
           </div>
 
@@ -123,7 +130,7 @@
           <div v-if="isIconPickerOpen" class="icon-picker-container">
             <v-text-field
               v-model="iconSearchQuery"
-              label="Search icons"
+              :label="t`Search icons`"
               variant="outlined"
               density="compact"
               prepend-inner-icon="mdi-magnify"
@@ -149,14 +156,15 @@
       </div>
     </template>
     <template #actions>
-      <v-btn v-if="editingPoiId" text @click="deletePoi">Delete</v-btn>
+      <v-btn v-if="editingPoiId" text @click="deletePoi">{{ t`Delete` }}</v-btn>
       <v-spacer></v-spacer>
-      <v-btn text @click="savePoi">Save</v-btn>
+      <v-btn text @click="savePoi">{{ t`Save` }}</v-btn>
     </template>
   </InteractionDialog>
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, defineExpose, ref, watch } from 'vue'
 
 import DataLakeExpressionInput from '@/components/DataLakeExpressionInput.vue'
@@ -207,8 +215,8 @@ const idError = computed(() => {
   if (editingPoiId.value) return ''
   const id = newPoiId.value.trim()
   if (!id) return 'ID is required'
-  if (machinizeString(id) !== id) return 'Only lowercase letters, numbers and dashes are allowed'
-  if (otherPoiIds().includes(id)) return 'This ID is already in use'
+  if (machinizeString(id) !== id) return t`Only lowercase letters, numbers and dashes are allowed`
+  if (otherPoiIds().includes(id)) return t`This ID is already in use`
   return ''
 })
 
@@ -232,36 +240,36 @@ watch(newPoiName, (name) => {
 const dialogInitialCoordinates = ref<PointOfInterestCoordinates | null>(null)
 
 const availableIcons = ref([
-  { name: 'Map Marker', value: 'mdi-map-marker' },
-  { name: 'Star', value: 'mdi-star' },
-  { name: 'Heart', value: 'mdi-heart' },
-  { name: 'Home', value: 'mdi-home' },
-  { name: 'Flag', value: 'mdi-flag' },
-  { name: 'Camera', value: 'mdi-camera' },
-  { name: 'Information', value: 'mdi-information' },
-  { name: 'Warning', value: 'mdi-alert-circle' },
-  { name: 'Navigation', value: 'mdi-navigation' },
-  { name: 'Anchor', value: 'mdi-anchor' },
-  { name: 'Building', value: 'mdi-office-building' },
-  { name: 'Restaurant', value: 'mdi-food' },
-  { name: 'Gas Station', value: 'mdi-gas-station' },
-  { name: 'Hospital', value: 'mdi-hospital' },
-  { name: 'School', value: 'mdi-school' },
-  { name: 'Shopping', value: 'mdi-shopping' },
-  { name: 'Mountain', value: 'mdi-terrain' },
-  { name: 'Water', value: 'mdi-water' },
-  { name: 'Binoculars', value: 'mdi-binoculars' },
-  { name: 'Car', value: 'mdi-car' },
-  { name: 'Ferry', value: 'mdi-ferry' },
-  { name: 'Lighthouse', value: 'mdi-lighthouse' },
-  { name: 'Parking', value: 'mdi-parking' },
-  { name: 'Tree', value: 'mdi-tree' },
-  { name: 'Bike', value: 'mdi-bike' },
-  { name: 'Pier', value: 'mdi-pier' },
-  { name: 'Drone', value: 'mdi-quadcopter' },
-  { name: 'Hiking', value: 'mdi-hiking' },
-  { name: 'Fish', value: 'mdi-fish' },
-  { name: 'Boat', value: 'mdi-sail-boat' },
+  { name: t`Map Marker`, value: 'mdi-map-marker' },
+  { name: t`Star`, value: 'mdi-star' },
+  { name: t`Heart`, value: 'mdi-heart' },
+  { name: t`Home`, value: 'mdi-home' },
+  { name: t`Flag`, value: 'mdi-flag' },
+  { name: t`Camera`, value: 'mdi-camera' },
+  { name: t`Information`, value: 'mdi-information' },
+  { name: t`Warning`, value: 'mdi-alert-circle' },
+  { name: t`Navigation`, value: 'mdi-navigation' },
+  { name: t`Anchor`, value: 'mdi-anchor' },
+  { name: t`Building`, value: 'mdi-office-building' },
+  { name: t`Restaurant`, value: 'mdi-food' },
+  { name: t`Gas Station`, value: 'mdi-gas-station' },
+  { name: t`Hospital`, value: 'mdi-hospital' },
+  { name: t`School`, value: 'mdi-school' },
+  { name: t`Shopping`, value: 'mdi-shopping' },
+  { name: t`Mountain`, value: 'mdi-terrain' },
+  { name: t`Water`, value: 'mdi-water' },
+  { name: t`Binoculars`, value: 'mdi-binoculars' },
+  { name: t`Car`, value: 'mdi-car' },
+  { name: t`Ferry`, value: 'mdi-ferry' },
+  { name: t`Lighthouse`, value: 'mdi-lighthouse' },
+  { name: t`Parking`, value: 'mdi-parking' },
+  { name: t`Tree`, value: 'mdi-tree' },
+  { name: t`Bike`, value: 'mdi-bike' },
+  { name: t`Pier`, value: 'mdi-pier' },
+  { name: t`Drone`, value: 'mdi-quadcopter' },
+  { name: t`Hiking`, value: 'mdi-hiking' },
+  { name: t`Fish`, value: 'mdi-fish' },
+  { name: t`Boat`, value: 'mdi-sail-boat' },
 ])
 
 const filteredIcons = ref(availableIcons.value)
@@ -414,8 +422,8 @@ const openDialog = (coordinates?: PointOfInterestCoordinates | null, poiToEdit?:
     if (!freshPoi) {
       showDialog({
         variant: 'error',
-        title: 'Error',
-        message: 'POI not found.',
+        title: t`Error`,
+        message: t`POI not found.`,
       })
       isInitializingDialog.value = false
       return
@@ -508,22 +516,22 @@ const closeDialog = (logClose = true): void => {
 
 const savePoi = (): void => {
   if (!newPoiName.value.trim()) {
-    showDialog({ title: 'Invalid Name', message: 'POI name cannot be empty.', variant: 'error' })
+    showDialog({ title: t`Invalid Name`, message: t`POI name cannot be empty.`, variant: 'error' })
     return
   }
 
   const coordinateFields = buildCoordinateFields()
   if (!coordinateFields) {
     showDialog({
-      title: 'Invalid Coordinates',
-      message: 'Latitude and Longitude must be provided.',
+      title: t`Invalid Coordinates`,
+      message: t`Latitude and Longitude must be provided.`,
       variant: 'error',
     })
     return
   }
 
   if (!editingPoiId.value && idError.value) {
-    showDialog({ title: 'Invalid ID', message: idError.value, variant: 'error' })
+    showDialog({ title: t`Invalid ID`, message: idError.value, variant: 'error' })
     return
   }
 
@@ -567,8 +575,8 @@ const deletePoi = (): void => {
     // This case should ideally not be reached if the delete button is only visible when editingPoiId is set.
     showDialog({
       variant: 'error',
-      title: 'Error',
-      message: 'No Point of Interest selected for deletion.',
+      title: t`Error`,
+      message: t`No Point of Interest selected for deletion.`,
     })
   }
 }

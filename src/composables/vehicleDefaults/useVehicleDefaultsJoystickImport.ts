@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { type InjectionKey, computed, inject, ref } from 'vue'
 
 import { openSnackbar } from '@/composables/snackbar'
@@ -79,8 +80,9 @@ export const useVehicleDefaultsJoystickImport = (evaluationBundle?: VehicleDefau
     }
     controllerStore.protocolMapping = nextMapping
 
+    const vehicleTypeName = evaluation.value?.vehicleTypeName
     openSnackbar({
-      message: `Imported ${selectedJoystickRowsCount.value} default joystick binding(s) for ${evaluation.value?.vehicleTypeName}.`,
+      message: t`Imported ${selectedJoystickRowsCount.value} default joystick binding(s) for ${vehicleTypeName}.`,
       variant: 'success',
       duration: 5000,
     })

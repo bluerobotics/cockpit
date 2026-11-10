@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { reactive } from 'vue'
 
 /**
@@ -112,7 +113,7 @@ export const openSnackbar = (options: SnackbarOptions): number => {
 
 export const openActionErrorSnackbar = (error: unknown): void => {
   openSnackbar({
-    message: error instanceof Error ? error.message : 'Action failed.',
+    message: error instanceof Error ? error.message : t`Action failed.`,
     variant: 'error',
     duration: 5000,
   })

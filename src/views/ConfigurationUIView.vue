@@ -1,15 +1,15 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Interface configuration</template>
+    <template #title>{{ t`Interface configuration` }}</template>
     <template #content>
       <div class="max-h-[85vh] overflow-y-auto" :class="{ [contentSizedLayout]: !interfaceStore.isOnPhoneScreen }">
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Window material</template>
+          <template #title>{{ t`Window material` }}</template>
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-3">
                 <div class="flex flex-row items-center w-full mb-3">
-                  <div class="flex w-56 shrink-0">Glass color</div>
+                  <div class="flex w-56 shrink-0">{{ t`Glass color` }}</div>
                   <v-menu
                     :close-on-content-click="false"
                     location="top start"
@@ -34,7 +34,7 @@
                   </v-menu>
                 </div>
                 <div class="flex flex-row items-center w-full mb-3 opacity-40">
-                  <div class="flex w-56 shrink-0">Font color</div>
+                  <div class="flex w-56 shrink-0">{{ t`Font color` }}</div>
                   <v-menu
                     :close-on-content-click="false"
                     location="top start"
@@ -60,7 +60,7 @@
                   </v-menu>
                 </div>
                 <div class="flex w-full mb-3">
-                  <div class="flex w-56 shrink-0 mt-[2px]">Opacity</div>
+                  <div class="flex w-56 shrink-0 mt-[2px]">{{ t`Opacity` }}</div>
                   <div class="flex flex-1">
                     <v-slider
                       :model-value="parseInt(interfaceStore.UIGlassEffect.bgColor.slice(-2), 16) / 255"
@@ -75,7 +75,7 @@
                   </div>
                 </div>
                 <div class="flex w-full mb-2">
-                  <div class="flex w-56 shrink-0 mt-[2px]">Blur</div>
+                  <div class="flex w-56 shrink-0 mt-[2px]">{{ t`Blur` }}</div>
                   <div class="flex flex-1">
                     <v-slider
                       v-model="interfaceStore.UIGlassEffect.blur"
@@ -89,21 +89,21 @@
                   </div>
                 </div>
                 <div class="flex w-full mb-4">
-                  <v-btn variant="text" size="small" class="-ml-3" @click="resetColorsToDefault"
-                    >Reset to defaults</v-btn
-                  >
+                  <v-btn variant="text" size="small" class="-ml-3" @click="resetColorsToDefault">{{
+                    t`Reset to defaults`
+                  }}</v-btn>
                 </div>
               </div>
             </div>
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Menu</template>
+          <template #title>{{ t`Menu` }}</template>
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-3">
                 <div class="flex flex-row justify-start items-center w-full mb-4">
-                  <div class="flex w-56 shrink-0">Main menu trigger position</div>
+                  <div class="flex w-56 shrink-0">{{ t`Main menu trigger position` }}</div>
                   <div class="flex flex-1">
                     <v-radio-group
                       :model-value="interfaceStore.mainMenuStyleTrigger"
@@ -111,8 +111,8 @@
                       hide-details
                       @update:model-value="setMainMenuTrigger"
                     >
-                      <v-radio label="Center-left tab" value="center-left" />
-                      <v-radio label="Top bar button" value="burger" class="ml-6" />
+                      <v-radio :label="t`Center-left tab`" value="center-left" />
+                      <v-radio :label="t`Top bar button`" value="burger" class="ml-6" />
                     </v-radio-group>
                   </div>
                 </div>
@@ -121,12 +121,12 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Display units</template>
+          <template #title>{{ t`Display units` }}</template>
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-3">
                 <div class="flex flex-row justify-start items-center w-full mb-4">
-                  <div class="flex w-56 shrink-0">System</div>
+                  <div class="flex w-56 shrink-0">{{ t`System` }}</div>
                   <div class="flex flex-1 items-center">
                     <v-radio-group
                       :model-value="currentUnitSystem"
@@ -143,7 +143,7 @@
                       />
                     </v-radio-group>
                     <span v-if="currentUnitSystem === UnitSystem.Custom" class="text-sm opacity-60">
-                      Mixed — pick a system, or set each quantity below
+                      {{ t`Mixed — pick a system, or set each quantity below` }}
                     </span>
                   </div>
                 </div>
@@ -175,18 +175,18 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Performance</template>
+          <template #title>{{ t`Performance` }}</template>
           <template #info>
-            When enabled, only the view you are looking at stays loaded. Widgets on other views start again when you
-            switch to them. Opening Mission planning also unloads the flight widgets until you come back. Turn this on
-            if this computer slows down with several views.
+            {{
+              t`When enabled, only the view you are looking at stays loaded. Widgets on other views start again when you switch to them. Opening Mission planning also unloads the flight widgets until you come back. Turn this on if this computer slows down with several views.`
+            }}
           </template>
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-[10px]">
                 <v-switch
                   :model-value="widgetStore.unmountHiddenViews"
-                  label="Unload hidden views"
+                  :label="t`Unload hidden views`"
                   color="white"
                   hide-details
                   base-color="#FFFFFF33"
@@ -264,15 +264,15 @@ const contentSizedLayout =
 const heightUnits: HeightDisplayUnit[] = [DistanceDisplayUnit.Meters, DistanceDisplayUnit.Feet]
 
 const unitChoices = [
-  { quantity: 'distance', label: 'Distance', units: Object.values(DistanceDisplayUnit) },
-  { quantity: 'smallDistance', label: 'Distances under 1 nmi', units: Object.values(DistanceDisplayUnit) },
-  { quantity: 'depth', label: 'Depth', units: heightUnits },
-  { quantity: 'altitude', label: 'Altitude', units: heightUnits },
-  { quantity: 'area', label: 'Area', units: Object.values(AreaDisplayUnit) },
-  { quantity: 'smallArea', label: 'Areas under 1 nmi²', units: Object.values(AreaDisplayUnit) },
-  { quantity: 'speed', label: 'Speed', units: Object.values(SpeedDisplayUnit) },
-  { quantity: 'temperature', label: 'Temperature', units: Object.values(TemperatureDisplayUnit) },
-  { quantity: 'pressure', label: 'Pressure', units: Object.values(PressureDisplayUnit) },
+  { quantity: 'distance', label: t`Distance`, units: Object.values(DistanceDisplayUnit) },
+  { quantity: 'smallDistance', label: t`Distances under 1 nmi`, units: Object.values(DistanceDisplayUnit) },
+  { quantity: 'depth', label: t`Depth`, units: heightUnits },
+  { quantity: 'altitude', label: t`Altitude`, units: heightUnits },
+  { quantity: 'area', label: t`Area`, units: Object.values(AreaDisplayUnit) },
+  { quantity: 'smallArea', label: t`Areas under 1 nmi²`, units: Object.values(AreaDisplayUnit) },
+  { quantity: 'speed', label: t`Speed`, units: Object.values(SpeedDisplayUnit) },
+  { quantity: 'temperature', label: t`Temperature`, units: Object.values(TemperatureDisplayUnit) },
+  { quantity: 'pressure', label: t`Pressure`, units: Object.values(PressureDisplayUnit) },
 ] as const
 
 // The units for small quantities only apply while the larger one is read in nautical miles.

@@ -1,14 +1,15 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Data Lake</template>
+    <template #title>{{ t`Data Lake` }}</template>
     <template #content>
       <div class="flex-col overflow-y-auto ml-[10px] pr-3 -mr-[10px] max-h-[80vh] w-[880px] max-w-[calc(100vw-9rem)]">
         <ExpansiblePanel no-top-divider no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>Variables monitor</template>
+          <template #title>{{ t`Variables monitor` }}</template>
           <template #info>
             <p>
-              View, manage, and create data lake variables. Use the Record checkbox to include a variable in CSV/JSON
-              data logs.
+              {{
+                t`View, manage, and create data lake variables. Use the Record checkbox to include a variable in CSV/JSON data logs.`
+              }}
             </p>
           </template>
           <template #content>
@@ -18,7 +19,7 @@
                   <input
                     v-model="searchQuery"
                     type="text"
-                    placeholder="Search variables..."
+                    :placeholder="t`Search variables...`"
                     class="w-full px-2 py-1.5 bg-[#FFFFFF22] rounded-md text-xs text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <span
@@ -29,11 +30,11 @@
                 </div>
                 <v-btn variant="text" size="small" class="rounded-md text-xs" @click="openNewVariableDialog">
                   <v-icon start size="16">mdi-plus</v-icon>
-                  Add variable
+                  {{ t`Add variable` }}
                 </v-btn>
                 <v-btn variant="text" size="small" class="rounded-md text-xs" @click="openNewFunctionDialog">
                   <v-icon start size="16">mdi-function-variant</v-icon>
-                  Add compound variable
+                  {{ t`Add compound variable` }}
                 </v-btn>
                 <v-btn-toggle
                   :model-value="viewMode"
@@ -79,7 +80,7 @@
                               ? 'text-green-400 hover:text-green-400'
                               : 'text-gray-400 hover:text-white',
                           ]"
-                          title="Copy ID"
+                          :title="t`Copy ID`"
                           @click="handleCopy(item.id)"
                         >
                           <span class="mdi mdi-content-copy" />
@@ -87,7 +88,7 @@
                             v-if="copiedId === item.id"
                             class="absolute -top-5 left-1/2 translate-x-2 bg-green-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-10"
                           >
-                            Variable ID copied!
+                            {{ t`Variable ID copied!` }}
                           </div>
                         </button>
 
@@ -110,7 +111,7 @@
                           <v-tooltip
                             v-if="isCompoundVariable(item.id)"
                             location="top"
-                            text="Compound variable: its value is calculated from an expression"
+                            :text="t`Compound variable: its value is calculated from an expression`"
                           >
                             <template #activator="{ props: tooltipProps }">
                               <span v-bind="tooltipProps" class="mdi mdi-function-variant text-gray-400 text-sm" />
@@ -121,7 +122,7 @@
                     </td>
                     <td>
                       <p class="whitespace-nowrap overflow-hidden text-ellipsis text-center">
-                        {{ item.source }}
+                        {{ variableSourceLabels[item.source] }}
                       </p>
                     </td>
                     <td>
@@ -140,7 +141,7 @@
                           <button
                             v-if="isCompoundVariable(item.id) && canEditVariable(item.id)"
                             class="text-gray-400 hover:text-white text-sm leading-none"
-                            title="Edit"
+                            :title="t`Edit`"
                             @click="editCompoundVariable(item.id)"
                           >
                             <span class="mdi mdi-pencil" />
@@ -148,7 +149,7 @@
                           <button
                             v-else-if="!isCompoundVariable(item.id) && canEditVariable(item.id)"
                             class="text-gray-400 hover:text-white text-sm leading-none"
-                            title="Edit"
+                            :title="t`Edit`"
                             @click="editVariable(item.id)"
                           >
                             <span class="mdi mdi-pencil" />
@@ -158,7 +159,7 @@
                           <button
                             v-if="canDeleteVariable(item.id)"
                             class="text-red-400 hover:text-red-300 text-sm leading-none"
-                            title="Delete"
+                            :title="t`Delete`"
                             @click="deleteVariable(item.id)"
                           >
                             <span class="mdi mdi-delete" />
@@ -184,7 +185,7 @@
                 <template #no-data>
                   <tr>
                     <td colspan="7" class="text-center flex items-center justify-center h-[50px] w-full">
-                      <p class="text-[16px] ml-[170px] w-full">No data lake variables found</p>
+                      <p class="text-[16px] ml-[170px] w-full">{{ t`No data lake variables found` }}</p>
                     </td>
                   </tr>
                 </template>
@@ -211,6 +212,7 @@
 
 <script setup lang="ts">
 import { useThrottle } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue'
 
 import DataLakeVariableDialog from '@/components/DataLakeVariableDialog.vue'
@@ -252,6 +254,16 @@ const interfaceStore = useAppInterfaceStore()
 
 type VariableSource = 'Cockpit internal' | 'User defined' | DataLakeVariableSource
 
+const variableSourceLabels: Record<VariableSource, string> = {
+  'Cockpit internal': t`Cockpit internal`,
+  'User defined': t`User defined`,
+  'BlueOS': 'BlueOS',
+  'Generic WebSocket': t`Generic WebSocket`,
+  'GNSS receiver': t`GNSS receiver`,
+  'Joystick': t`Joystick`,
+  'MAVLink': 'MAVLink',
+}
+
 /**
  * DataLakeVariable with source type
  */
@@ -263,14 +275,14 @@ interface DataLakeVariableWithSource extends Omit<DataLakeVariable, 'source'> {
 }
 
 const tableHeaders = [
-  { title: 'Name', align: 'start', key: 'name', width: '260px' },
-  { title: 'Type', align: 'center', key: 'type', width: '78px' },
-  { title: 'Source', align: 'center', key: 'source', width: '118px' },
-  { title: 'Value', align: 'center', key: 'value', width: '160px', sortable: false },
-  { title: 'Unit', align: 'center', key: 'unit', width: '52px' },
-  { title: 'Actions', align: 'end', key: 'actions', width: '56px' },
+  { title: t`Name`, align: 'start', key: 'name', width: '260px' },
+  { title: t`Type`, align: 'center', key: 'type', width: '78px' },
+  { title: t`Source`, align: 'center', key: 'source', width: '118px' },
+  { title: t`Value`, align: 'center', key: 'value', width: '160px', sortable: false },
+  { title: t`Unit`, align: 'center', key: 'unit', width: '52px' },
+  { title: t`Actions`, align: 'end', key: 'actions', width: '56px' },
   {
-    title: 'Record',
+    title: t`Record`,
     align: 'center',
     key: 'record',
     width: '56px',
@@ -420,7 +432,7 @@ const filteredVariables = computed<DataLakeVariableWithSource[]>(() => {
       v.name.toLowerCase().includes(query) ||
       (v.description && v.description.toLowerCase().includes(query)) ||
       v.id.toLowerCase().includes(query) ||
-      v.source.toLowerCase().includes(query) ||
+      variableSourceLabels[v.source].toLowerCase().includes(query) ||
       // Searchable by the word the table no longer shows, since the "Add compound variable" button teaches it.
       (isCompoundVariable(v.id) && 'compound'.startsWith(query))
     )
@@ -466,9 +478,9 @@ const editVariable = (variableId: string): void => {
     idVariableBeingEdited = variableId
     showVariableDialog.value = true
   } else if (variable) {
-    openSnackbar({ message: `Variable with ID ${variableId} is not editable`, variant: 'error' })
+    openSnackbar({ message: t`Variable with ID ${variableId} is not editable`, variant: 'error' })
   } else {
-    openSnackbar({ message: `Variable with ID ${variableId} not found`, variant: 'error' })
+    openSnackbar({ message: t`Variable with ID ${variableId} not found`, variant: 'error' })
   }
 }
 
@@ -486,7 +498,7 @@ const handleVariableSaved = (): void => {
  */
 const deleteVariable = (id: string): void => {
   if (!canDeleteVariable(id)) {
-    openSnackbar({ message: `Variable with ID ${id} cannot be deleted`, variant: 'error' })
+    openSnackbar({ message: t`Variable with ID ${id} cannot be deleted`, variant: 'error' })
     return
   }
 
@@ -520,7 +532,7 @@ const canEditVariable = (id: string): boolean => {
 
 const editCompoundVariable = (id: string): void => {
   if (!canEditVariable(id)) {
-    openSnackbar({ message: `Variable with ID ${id} is not editable`, variant: 'error' })
+    openSnackbar({ message: t`Variable with ID ${id} is not editable`, variant: 'error' })
     return
   }
 
