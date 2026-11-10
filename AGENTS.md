@@ -49,6 +49,7 @@ When writing code:
 - Follow the rules specified on `eslintrc.cjs`
 - Use optional chaining (`?.`) when possible in typescript
 - Avoid `any`. Give the real type, or `unknown` narrowed at the point of use. `@typescript-eslint/no-explicit-any` is `'off'` in `.eslintrc.cjs`, so lint will not catch this for you
+- Wrap user-facing strings in ttag's `t` (``t`Settings` ``, in templates too) and regenerate the catalogs with `yarn i18n:extract` in the same commit; CI fails when `src/i18n` is stale. Logs, ids, stored values and protocol names stay untranslated
 - Prefer Tailwind utility classes over writing new scoped CSS when a utility already covers the styling need
 - Prefer editing existing files over creating new ones, but do create dedicated composables, components, or `.ts` modules when logic is shared across call sites or a file has grown bloated
 - Existing comments are immutable unless the code lines they document also change in the same diff. Do not reword, shorten, or delete a comment whose code is unchanged.
