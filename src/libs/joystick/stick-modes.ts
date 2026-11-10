@@ -101,26 +101,25 @@ export const rcFunctionName = (action?: ProtocolAction): string | undefined => {
   return stickFunction === undefined ? undefined : rcNames[stickFunction]
 }
 
+/**
+ * A motion of the vehicle along or about one of its own axes, positive forward, right, up and turning right.
+ */
+export type VehicleMotion = 'surge' | 'sway' | 'heave' | 'yaw'
+
+const motionNames: Record<VehicleMotion, string> = {
+  surge: 'Forward/back',
+  sway: 'Left/right',
+  heave: 'Up/down',
+  yaw: 'Turn left/right',
+}
+
 // Each firmware reads the manual-control axes its own way, so the same stick drives a different motion on each
 // vehicle. Taken from the handlers themselves: ArduSub/joystick.cpp, Rover/GCS_MAVLink_Rover.cpp and
 // ArduCopter/GCS_MAVLink_Copter.cpp. A rover only reads two of them, so the other two do nothing on a boat.
-const vehicleMotionNames: Partial<Record<VehicleType, Partial<Record<StickFunction, string>>>> = {
-  [VehicleType.Sub]: {
-    axis_x: 'Forward/back',
-    axis_y: 'Left/right',
-    axis_z: 'Up/down',
-    axis_r: 'Turn left/right',
-  },
-  [VehicleType.Copter]: {
-    axis_x: 'Forward/back',
-    axis_y: 'Left/right',
-    axis_z: 'Up/down',
-    axis_r: 'Turn left/right',
-  },
-  [VehicleType.Rover]: {
-    axis_y: 'Turn left/right',
-    axis_z: 'Forward/back',
-  },
+const vehicleMotions: Partial<Record<VehicleType, Partial<Record<StickFunction, VehicleMotion>>>> = {
+  [VehicleType.Sub]: { axis_x: 'surge', axis_y: 'sway', axis_z: 'heave', axis_r: 'yaw' },
+  [VehicleType.Copter]: { axis_x: 'surge', axis_y: 'sway', axis_z: 'heave', axis_r: 'yaw' },
+  [VehicleType.Rover]: { axis_y: 'yaw', axis_z: 'surge' },
 }
 
 /**
@@ -129,7 +128,28 @@ const vehicleMotionNames: Partial<Record<VehicleType, Partial<Record<StickFuncti
  * @returns {boolean} True when that vehicle has motion names for the stick functions.
  */
 export const hasVehicleMotionNames = (vehicleType?: VehicleType): boolean =>
-  vehicleType !== undefined && vehicleMotionNames[vehicleType] !== undefined
+  vehicleType !== undefined && vehicleMotions[vehicleType] !== undefined
+
+/**
+ * Lists the motions the sticks can command on a given vehicle.
+ * @param {VehicleType} vehicleType - Vehicle to list them for.
+ * @returns {VehicleMotion[]} Its motions, or none when Cockpit does not know its manual-control handling.
+ */
+export const vehicleMotionsOf = (vehicleType?: VehicleType): VehicleMotion[] =>
+  Object.values(vehicleType === undefined ? {} : vehicleMotions[vehicleType] ?? {})
+
+/**
+ * Reads the motion a stick function commands on a given vehicle.
+ * @param {ProtocolAction} action - Action assigned to a stick axis.
+ * @param {VehicleType} vehicleType - Vehicle the action would be flying.
+ * @returns {VehicleMotion | undefined} The motion it commands, or undefined when the action is not a stick function,
+ * the vehicle ignores it, or the vehicle is not one Cockpit knows the manual-control handling of.
+ */
+export const vehicleMotion = (action?: ProtocolAction, vehicleType?: VehicleType): VehicleMotion | undefined => {
+  const stickFunction = functionOf(action)
+  if (stickFunction === undefined || vehicleType === undefined) return undefined
+  return vehicleMotions[vehicleType]?.[stickFunction]
+}
 
 /**
  * Reads the motion a stick function commands on a given vehicle, rather than the RC name of the function itself.
@@ -139,11 +159,19 @@ export const hasVehicleMotionNames = (vehicleType?: VehicleType): boolean =>
  * when the action is not a stick function or the vehicle is not one Cockpit knows the manual-control handling of.
  */
 export const vehicleMotionName = (action?: ProtocolAction, vehicleType?: VehicleType): string | undefined => {
-  const stickFunction = functionOf(action)
-  const names = vehicleType === undefined ? undefined : vehicleMotionNames[vehicleType]
-  if (stickFunction === undefined || names === undefined) return undefined
-  return names[stickFunction] ?? 'Not used'
+  if (functionOf(action) === undefined || !hasVehicleMotionNames(vehicleType)) return undefined
+  const motion = vehicleMotion(action, vehicleType)
+  return motion === undefined ? 'Not used' : motionNames[motion]
 }
+
+/**
+ * Reads which way a deflection of an axis drives the vehicle, through the range the axis is mapped to.
+ * @param {JoystickAxisActionCorrespondency[number]} axis - Correspondency of the deflected axis.
+ * @param {number} deflection - Reading of the axis, from -1 to +1.
+ * @returns {number} 1 for the positive direction of its motion, -1 for the opposite one, or 0 at rest.
+ */
+export const motionDirection = (axis: JoystickAxisActionCorrespondency[number], deflection: number): number =>
+  Math.sign(deflection * (axis.max - axis.min))
 
 /**
  * Reads which RC mode the four stick axes of a mapping are laid out as.
