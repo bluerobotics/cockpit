@@ -1,6 +1,7 @@
 import { addLocale, useLocale } from 'ttag'
 
 import pt_BR from '@/i18n/pt_BR.po'
+import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { settingsManager } from '@/libs/settings-management'
 
 export const languageKey = 'cockpit-language'
@@ -18,4 +19,16 @@ if (catalog) {
   useLocale(language)
 }
 
+export const interfaceLanguage = catalog ? language : 'en'
 export const vuetifyLocale = catalog?.vuetifyLocale ?? 'en'
+
+// Lets extensions (iframes, custom widgets) follow the interface language.
+createDataLakeVariable(
+  {
+    id: 'cockpit-interface-language',
+    name: 'Cockpit interface language',
+    type: 'string',
+    description: 'The language the interface is shown in, such as en or pt_BR.',
+  },
+  interfaceLanguage
+)
