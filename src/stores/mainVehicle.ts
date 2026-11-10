@@ -21,6 +21,7 @@ import {
   getStatus,
   getVehicleName,
   setKeyDataOnCockpitVehicleStorage,
+  syncBlueOsClock,
 } from '@/libs/blueos'
 import * as Connection from '@/libs/connection/connection'
 import { ConnectionManager } from '@/libs/connection/connection-manager'
@@ -265,6 +266,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   watch(isVehicleOnline, (isOnline) => {
     if (isOnline) {
       hasVehicleBeenOnlineThisSession.value = true
+      syncBlueOsClock(globalAddress.value).catch((error) => console.warn(error))
       dispatchEvent(new CustomEvent('vehicle-online', { detail: { vehicleAddress: globalAddress.value } }))
       return
     }

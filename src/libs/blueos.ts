@@ -2,7 +2,7 @@ import ky, { HTTPError } from 'ky'
 import { z } from 'zod'
 
 import { ExtrasJsonSchema, ServiceSchema } from '@/libs/blueos/schemas'
-import { sleep } from '@/libs/utils'
+import { sleep, tryACoupleOfTimes } from '@/libs/utils'
 import {
   type ActionsFromExtension,
   type BagOfHoldingsError,
@@ -18,6 +18,8 @@ import {
 } from '@/types/blueos'
 import { vehicleNewStyleSettingsKey } from '@/types/settings-management'
 import { ExternalWidgetSetupInfo } from '@/types/widgets'
+
+declare const __APP_VERSION_DATE__: string
 
 const defaultTimeout = 10000
 const quickStatusTimeout = 3000
@@ -299,6 +301,30 @@ export const getStatus = async (vehicleAddress: string): Promise<boolean> => {
     return statusResponse.ok
   } catch (error) {
     throw new Error(`Could not get BlueOS status. ${error}`)
+  }
+}
+
+/**
+ * Sets the BlueOS host clock to this computer's time, so a vehicle with no NTP gets the right time
+ * @param {string} vehicleAddress - Address of the vehicle running BlueOS
+ */
+export const syncBlueOsClock = async (vehicleAddress: string): Promise<void> => {
+  // A topside clock earlier than this Cockpit release is unset (e.g. a board with no RTC) and must not overwrite the
+  // vehicle's. Written to fail closed, so a build with no known release date never pushes.
+  if (!(Date.now() >= new Date(__APP_VERSION_DATE__).getTime())) {
+    throw new Error('Topside clock is earlier than this Cockpit release. Not syncing BlueOS clock.')
+  }
+  const url = `${protocol}//${vehicleAddress}/commander/v1.0/set_time`
+  // BlueOS only changes its clock when it is more than 5 minutes off, so this is a no-op on a synced vehicle.
+  const setTime = async (): Promise<void> => {
+    const searchParams = { unix_time_seconds: Math.round(Date.now() / 1000), i_know_what_i_am_doing: true }
+    await ky.post(url, { searchParams, timeout: defaultTimeout, retry: 0 })
+  }
+  try {
+    // Right after boot the commander can come up later than the MAVLink link that marks the vehicle online.
+    await tryACoupleOfTimes(setTime, 5, 5000, 'Could not sync BlueOS clock')
+  } catch (error) {
+    throw new Error(`Could not sync BlueOS clock. ${error}`)
   }
 }
 
