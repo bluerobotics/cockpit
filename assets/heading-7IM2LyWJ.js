@@ -1,1 +1,0 @@
-import{f as r}from"./source-options-DkGHr_Sf.js";import{j as s}from"./index-w55pI9bo.js";const a=[{value:"/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw",toDegrees:s},{value:"/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/hdg",toDegrees:e=>e/100}],d=a[0].value,l=(e,o)=>{const t=r(a,e);return t?t.toDegrees(o):o};export{d,l as r};
