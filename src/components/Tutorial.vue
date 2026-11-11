@@ -204,7 +204,7 @@ const handleStepChange = (newStep: number): void => {
       goToMenuPage(SubMenuComponentName.SettingsGeneral, true)
       tallContent.value = true
       interfaceStore.userHasSeenTutorial = false
-      interfaceStore.componentToHighlight = 'General'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsGeneral
       break
     case 5:
       interfaceStore.isMainMenuVisible = true
@@ -219,21 +219,21 @@ const handleStepChange = (newStep: number): void => {
       goToMenuPage(SubMenuComponentName.SettingsInterface, true)
       tallContent.value = false
       interfaceStore.userHasSeenTutorial = false
-      interfaceStore.componentToHighlight = 'Interface'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsInterface
       break
     case 7:
       interfaceStore.isMainMenuVisible = true
       goToMenuPage(SubMenuComponentName.SettingsJoystick, true)
       interfaceStore.userHasSeenTutorial = false
       tallContent.value = true
-      interfaceStore.componentToHighlight = 'Joystick'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsJoystick
       break
     case 8:
       interfaceStore.isMainMenuVisible = true
       goToMenuPage(SubMenuComponentName.SettingsVideo, true)
       interfaceStore.userHasSeenTutorial = false
       tallContent.value = true
-      interfaceStore.componentToHighlight = 'Video'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsVideo
       break
     case 9:
       interfaceStore.isMainMenuVisible = true
@@ -241,7 +241,7 @@ const handleStepChange = (newStep: number): void => {
       interfaceStore.userHasSeenTutorial = false
       tallContent.value = false
       interfaceStore.isGlassModalAlwaysOnTop = true
-      interfaceStore.componentToHighlight = 'Telemetry'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsTelemetry
       break
     case 10:
       interfaceStore.isMainMenuVisible = true
@@ -249,7 +249,7 @@ const handleStepChange = (newStep: number): void => {
       interfaceStore.userHasSeenTutorial = false
       tallContent.value = false
       interfaceStore.isGlassModalAlwaysOnTop = false
-      interfaceStore.componentToHighlight = 'Alerts'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsAlerts
       break
     case 11:
       interfaceStore.isMainMenuVisible = true
@@ -257,7 +257,7 @@ const handleStepChange = (newStep: number): void => {
       interfaceStore.userHasSeenTutorial = false
       tallContent.value = true
       interfaceStore.isGlassModalAlwaysOnTop = false
-      interfaceStore.componentToHighlight = 'Dev'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsDev
       break
     case 12:
       interfaceStore.isMainMenuVisible = true
@@ -265,7 +265,7 @@ const handleStepChange = (newStep: number): void => {
       interfaceStore.userHasSeenTutorial = false
       tallContent.value = false
       interfaceStore.isGlassModalAlwaysOnTop = false
-      interfaceStore.componentToHighlight = 'Mission'
+      interfaceStore.componentToHighlight = SubMenuComponentName.SettingsMission
       break
     case 13:
       goToSubMenu(SubMenuName.settings, true)
