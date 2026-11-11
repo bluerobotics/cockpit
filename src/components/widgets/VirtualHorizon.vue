@@ -11,12 +11,12 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { tweenTo } from '@/libs/tween'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -252,11 +252,11 @@ const renderVariables = reactive<RenderVariables>({
 })
 
 watch(pitchAngleDeg, () => {
-  gsap.to(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
+  tweenTo(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
 })
 
 watch(rollAngleDeg, () => {
-  gsap.to(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
+  tweenTo(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
 })
 
 // Update canvas whenever reference variables changes
@@ -267,8 +267,8 @@ watch([renderVariables, width, height], () => {
 
 onMounted(() => {
   // Set initial values, since 0 or 360 degrees does not render
-  gsap.to(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
-  gsap.to(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
+  tweenTo(renderVariables, 0.1, { pitchAngleDegrees: pitchAngleDeg.value })
+  tweenTo(renderVariables, 0.1, { rollAngleDegrees: -1 * rollAngleDeg.value })
 
   renderCanvas()
 })
