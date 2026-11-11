@@ -370,6 +370,24 @@ export class MavlinkManualControlState {
   target = 1
 }
 
+/**
+ * A MAVLink button function mapped on the joystick that has no matching vehicle button parameter
+ */
+export interface UnassignedButtonFunction {
+  /**
+   * Modifier layer the function is mapped on
+   */
+  modifier: CockpitModifierKeyOption
+  /**
+   * Joystick button the function is mapped to
+   */
+  button: JoystickButton
+  /**
+   * The mapped function
+   */
+  action: ProtocolAction
+}
+
 type VehicleButtonFunction = { button: string; actionId: string }
 
 export class MavlinkManualControlManager {
@@ -383,6 +401,8 @@ export class MavlinkManualControlManager {
   currentVehicleParameters: { [key in string]: number } = {}
   vehicleTotalParametersCount: number | undefined = undefined
   public vehicle: ArduPilot | undefined
+  autoAssignButtonFunctions = true
+  onUnassignedButtonFunctions?: (functions: UnassignedButtonFunction[]) => void
 
   constructor() {
     setInterval(() => {
@@ -559,22 +579,58 @@ export class MavlinkManualControlManager {
     }
   }
 
+  /**
+   * Put a joystick-mapped function on a vehicle button that is currently disabled, never overwriting a used one
+   * @param {CockpitModifierKeyOption} modifier Modifier layer the function is mapped on
+   * @param {string} actionId The function to assign
+   * @returns {string | undefined} Why the function could not be assigned, or undefined on success
+   */
+  assignButtonFunction = (modifier: CockpitModifierKeyOption, actionId: string): string | undefined => {
+    if (!this.vehicle) return 'No vehicle connected.'
+    const { regular, shift } = this.vehicleButtonFunctions()
+    const value = this.vehicleButtonParameterTable.find((e) => e.title === actionId)?.value
+    if (value === undefined) return `The vehicle does not support the '${actionId}' function.`
+
+    const isShift = modifier === CockpitModifierKeyOption.shift
+    const slots = isShift ? shift : regular
+    if (slots.some((v) => v.actionId === actionId)) return undefined
+
+    const shiftButton = regular.find((v) => v.actionId === MAVLinkButtonFunction.shift)
+    const shiftSlotOfShiftButton = shiftButton?.button.replace('FUNCTION', 'SFUNCTION')
+    if (isShift) {
+      if (shiftButton === undefined) {
+        return 'The vehicle has no Shift button, so shifted functions cannot be assigned. Set one in the vehicle parameters first.'
+      }
+      const shiftButtonShiftedFunction = shift.find((v) => v.button === shiftSlotOfShiftButton)?.actionId
+      if (shiftButtonShiftedFunction !== MAVLinkButtonFunction.disabled && shiftButtonShiftedFunction !== MAVLinkButtonFunction.shift) {
+        return `The vehicle's Shift button has '${shiftButtonShiftedFunction}' on its shifted layer, where Shift itself is needed. Clear it in the vehicle parameters first.`
+      }
+    }
+
+    const freeSlot = slots.find((v) => v.actionId === MAVLinkButtonFunction.disabled && v.button !== shiftSlotOfShiftButton)
+    if (freeSlot === undefined) return `The vehicle has no free button left for the '${actionId}' function.`
+
+    if (isShift) this.mapShiftButton(regular)
+    this.vehicle.setParameter({ id: freeSlot.button, value })
+    // Mirror the write until the vehicle echoes it, so a quick second Assign does not pick the same slot.
+    this.currentVehicleParameters = { ...this.currentVehicleParameters, [freeSlot.button]: value }
+    return undefined
+  }
+
   remapActionsToVehicleButtonParameters = (): void => {
     // TODO: Refactor this routine to reuse all methods for regular and shift
-    if (!this.vehicle || !this.currentActionsMapping || !this.currentVehicleParameters || !this.vehicleButtonParameterTable || !this.vehicleTotalParametersCount) return
+    if (!this.vehicle || !this.currentActionsMapping || !this.currentVehicleParameters || !this.vehicleButtonParameterTable || !this.vehicleTotalParametersCount) return this.onUnassignedButtonFunctions?.([])
     // Do not proceed with remapping unless we already have all parameters downloaded
     // This prevents us from thinking some function is not mapped in the vehicle when in fact we just didn't download it yet
     const allParametersDownloaded = Object.entries(this.currentVehicleParameters).length >= this.vehicleTotalParametersCount
     if (!allParametersDownloaded) {
-      return
+      return this.onUnassignedButtonFunctions?.([])
     }
 
     const { regular: currentRegularButtonParameters, shift: currentShiftButtonParameters } = this.vehicleButtonFunctions()
 
     // Do not use buttons system if the vehicle has no button parameters
-    if (currentRegularButtonParameters.length === 0) return
-
-    this.mapShiftButton(currentRegularButtonParameters)
+    if (currentRegularButtonParameters.length === 0) return this.onUnassignedButtonFunctions?.([])
 
     const currentMappedActionsInRegularButtons = currentRegularButtonParameters.map((v) => v.actionId)
     const currentMappedActionsInShiftButtons = currentShiftButtonParameters.map((v) => v.actionId)
@@ -589,6 +645,21 @@ export class MavlinkManualControlManager {
       .map((corr) => corr[1].action.id)
     const wantedUnmappedShiftMavlinkActions = wantedShiftMavlinkActions
       .filter((actionId) => !currentMappedActionsInShiftButtons.includes(actionId))
+
+    if (!this.autoAssignButtonFunctions) {
+      const unassigned = (modifier: CockpitModifierKeyOption, wantedUnmapped: string[]): UnassignedButtonFunction[] =>
+        Object.entries(this.currentActionsMapping.buttonsCorrespondencies[modifier])
+          .filter(([, corr]) => corr.action.protocol === JoystickProtocol.MAVLinkManualControl && wantedUnmapped.includes(corr.action.id))
+          .map(([button, corr]) => ({ modifier, button: Number(button) as JoystickButton, action: corr.action }))
+      this.onUnassignedButtonFunctions?.([
+        ...unassigned(CockpitModifierKeyOption.regular, wantedUnmappedRegularMavlinkActions),
+        ...unassigned(CockpitModifierKeyOption.shift, wantedUnmappedShiftMavlinkActions),
+      ])
+      return
+    }
+    this.onUnassignedButtonFunctions?.([])
+
+    this.mapShiftButton(currentRegularButtonParameters)
 
     const disabledVehicleRegularButtons = currentRegularButtonParameters.filter((v) => v.actionId === 'Disabled')
     const disabledVehicleShiftButtons = currentShiftButtonParameters.filter((v) => v.actionId === 'Disabled')

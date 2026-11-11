@@ -89,6 +89,7 @@ export const useControllerStore = defineStore('controller', () => {
     updateForwardingPrevention()
   }
   const holdLastInputWhenWindowHidden = useBlueOsStorage('cockpit-hold-last-joystick-input-when-window-hidden', false)
+  const autoAssignVehicleButtonFunctions = useBlueOsStorage('cockpit-auto-assign-vehicle-button-functions', true)
 
   // Self-heal: if we booted with a blank mapping but legacy data is reachable now (e.g. from raw localStorage or
   // from a late settings-manager import), migrate it in place so the user doesn't have to lose their bindings.
@@ -546,6 +547,7 @@ export const useControllerStore = defineStore('controller', () => {
     showOtherControlStationWarning,
     enableJoystickForwardingIfSafe,
     holdLastInputWhenWindowHidden,
+    autoAssignVehicleButtonFunctions,
     joysticks,
     protocolMapping,
     cockpitStdMappings,

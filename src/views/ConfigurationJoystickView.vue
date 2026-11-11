@@ -521,6 +521,46 @@
               </div>
             </template>
           </ExpansiblePanel>
+          <ExpansiblePanel no-top-divider no-bottom-divider compact follow-window-width>
+            <template #title>Vehicle button functions</template>
+            <template #content>
+              <div class="flex flex-col items-start px-5 pb-4">
+                <v-switch
+                  :model-value="controllerStore.autoAssignVehicleButtonFunctions"
+                  label="Let Cockpit change the vehicle's button functions to match this mapping"
+                  density="compact"
+                  hide-details
+                  @update:model-value="setAutoAssignVehicleButtonFunctions"
+                />
+                <div
+                  v-if="
+                    !controllerStore.autoAssignVehicleButtonFunctions &&
+                    mainVehicleStore.unassignedButtonFunctions.length
+                  "
+                  class="w-full mt-1 p-3 rounded-md bg-[#FFFFFF11]"
+                >
+                  <p class="text-sm text-yellow-200">
+                    These mapped functions have no matching button on the vehicle, so pressing them does nothing.
+                  </p>
+                  <div
+                    v-for="item in mainVehicleStore.unassignedButtonFunctions"
+                    :key="`${item.modifier}-${item.button}`"
+                    class="flex items-center justify-between gap-2 mt-2"
+                  >
+                    <span class="text-sm">
+                      Button {{ item.button }}{{ item.modifier === 'shift' ? ' (shift)' : '' }}: {{ item.action.name }}
+                    </span>
+                    <div class="flex gap-2">
+                      <v-btn size="small" variant="text" @click="unmapUnassignedButtonFunction(item)">Remove</v-btn>
+                      <v-btn size="small" color="#FFFFFF22" @click="assignUnassignedButtonFunction(item)">
+                        Assign
+                      </v-btn>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </ExpansiblePanel>
         </div>
       </div>
     </template>
@@ -731,8 +771,8 @@ import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { getDefaultMapping } from '@/libs/joystick/default-mappings'
 import { JoystickModel } from '@/libs/joystick/manager'
 import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
-import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
-import { modifierKeyActions } from '@/libs/joystick/protocols/other'
+import { type UnassignedButtonFunction, MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
+import { modifierKeyActions, otherAvailableActions } from '@/libs/joystick/protocols/other'
 import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
 import { scale } from '@/libs/utils'
 import { vehicleTypeName } from '@/migration/default-profile-importer'
@@ -1237,6 +1277,30 @@ const setHoldLastInputWhenWindowHidden = (value: boolean | null): void => {
   const enabled = value ?? false
   logUserAction(`${enabled ? 'Enabled' : 'Disabled'} holding last joystick input when window is hidden`)
   controllerStore.holdLastInputWhenWindowHidden = enabled
+}
+
+const setAutoAssignVehicleButtonFunctions = (value: boolean | null): void => {
+  const enabled = value ?? false
+  logUserAction(`${enabled ? 'Enabled' : 'Disabled'} letting Cockpit change the vehicle's button functions`)
+  controllerStore.autoAssignVehicleButtonFunctions = enabled
+}
+
+const unmapUnassignedButtonFunction = (item: UnassignedButtonFunction): void => {
+  logUserAction(`Removed unassigned function '${item.action.name}' from button ${item.button} (${item.modifier})`)
+  controllerStore.protocolMapping.buttonsCorrespondencies[item.modifier][item.button].action =
+    otherAvailableActions.no_function
+  openSnackbar({ message: `Removed '${item.action.name}' from button ${item.button}.`, variant: 'success' })
+}
+
+const assignUnassignedButtonFunction = (item: UnassignedButtonFunction): void => {
+  const error = mainVehicleStore.assignButtonFunction(item.modifier, item.action.id)
+  const outcome = error ? 'Failed to assign' : 'Assigned'
+  logUserAction(`${outcome} function '${item.action.name}' to a free vehicle button (${item.modifier})`)
+  if (error) {
+    openSnackbar({ message: error, variant: 'error' })
+    return
+  }
+  openSnackbar({ message: `Assigned '${item.action.name}' to a free vehicle button.`, variant: 'success' })
 }
 
 const toggleJoystickEnabling = (joystickModel: string): void => {
