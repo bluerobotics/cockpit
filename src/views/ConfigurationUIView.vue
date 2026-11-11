@@ -197,16 +197,45 @@
             </div>
           </template>
         </ExpansiblePanel>
+        <ExpansiblePanel no-bottom-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>{{ t`Language` }}</template>
+          <template #content>
+            <div class="flex flex-row items-start w-full gap-4 px-4 pt-3 pb-4">
+              <v-select
+                :model-value="selectedLanguage"
+                :items="availableLanguages"
+                :hint="selectedLanguage === interfaceLanguage ? undefined : reloadTexts.hint"
+                persistent-hint
+                density="compact"
+                variant="outlined"
+                theme="dark"
+                class="max-w-[300px]"
+                @update:model-value="setLanguage"
+              />
+              <v-btn
+                v-if="selectedLanguage !== interfaceLanguage"
+                height="40"
+                class="bg-[#FFFFFF22]"
+                @click="reloadCockpit"
+              >
+                {{ reloadTexts.button }}
+              </v-btn>
+            </div>
+          </template>
+        </ExpansiblePanel>
       </div>
     </template>
   </BaseConfigurationView>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { t } from 'ttag'
+import { computed, ref } from 'vue'
 
 import { defaultUIGlassColor } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import { availableLanguages, interfaceLanguage, languageKey, translatedIn } from '@/libs/i18n'
+import { settingsManager } from '@/libs/settings-management'
 import {
   type HeightDisplayUnit,
   AreaDisplayUnit,
@@ -279,6 +308,28 @@ const setMainMenuTrigger = (value: unknown): void => {
 const setDisplayUnit = (choice: (typeof unitChoices)[number], value: unknown): void => {
   logUserAction(`Set ${choice.quantity} display unit to '${value}'`)
   Object.assign(interfaceStore.storedDisplayUnitPreferences, { [choice.quantity]: value })
+}
+
+const storedLanguage = settingsManager.getKeyValue<string>(languageKey)
+// A language this build has no catalog for, such as one synced from a newer Cockpit, already falls back to the interface one.
+const isStoredLanguageAvailable = availableLanguages.some((language) => language.value === storedLanguage)
+const selectedLanguage = ref(isStoredLanguageAvailable ? storedLanguage! : interfaceLanguage)
+
+// Strings are translated as the interface loads, so a new language only shows after a reload.
+const setLanguage = (value: string): void => {
+  logUserAction(`Set interface language to '${value}'`)
+  selectedLanguage.value = value
+  settingsManager.setKeyValue(languageKey, value)
+}
+
+// Shown in the language just picked, so someone who cannot read the current one still understands them.
+const reloadTexts = computed(() => {
+  return translatedIn(selectedLanguage.value, () => ({ hint: t`Applies after Cockpit reloads`, button: t`Reload now` }))
+})
+
+const reloadCockpit = (): void => {
+  logUserAction('Reloaded Cockpit to apply the interface language')
+  window.location.reload()
 }
 
 const setUnitSystem = (value: unknown): void => {

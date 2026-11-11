@@ -22,6 +22,10 @@ msgstr "Sobre"
 msgid "Alerts settings"
 msgstr ""
 
+#: src/views/ConfigurationUIView.vue
+msgid "Applies after Cockpit reloads"
+msgstr "Aplicado quando o Cockpit recarregar"
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Armed menu warning disabled. You can re-enable it in the alerts settings."
 msgstr ""
@@ -94,6 +98,10 @@ msgstr "Voo"
 msgid "Fullscreen"
 msgstr ""
 
+#: src/views/ConfigurationUIView.vue
+msgid "Language"
+msgstr "Idioma"
+
 #: src/components/MainMenu.vue
 msgid "Mission"
 msgstr "Missão"
@@ -101,6 +109,10 @@ msgstr "Missão"
 #: src/components/MainMenu.vue
 msgid "Mission Planning"
 msgstr "Planejamento de missão"
+
+#: src/views/ConfigurationUIView.vue
+msgid "Reload now"
+msgstr "Recarregar agora"
 
 #: src/components/MainMenu.vue
 msgid "Settings"
