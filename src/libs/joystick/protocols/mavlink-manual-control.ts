@@ -374,6 +374,8 @@ export class MavlinkManualControlState {
   target = 1
 }
 
+type VehicleButtonFunction = { button: string; actionId: string }
+
 export class MavlinkManualControlManager {
   joystickState: JoystickState
   currentActionsMapping: JoystickProtocolActionsMapping
@@ -538,6 +540,34 @@ export class MavlinkManualControlManager {
     }
   }
 
+  private vehicleButtonFunctions = (): { regular: VehicleButtonFunction[]; shift: VehicleButtonFunction[] } => {
+    const buttonParametersNamedObject: { [key in number]: string } = {}
+    this.vehicleButtonParameterTable.forEach((entry) => (buttonParametersNamedObject[entry.value] = entry.title))
+    const currentRegularButtonParameters = Object.entries(this.currentVehicleParameters)
+      .filter(([k]) => k.includes('BTN') && k.includes('FUNCTION') && !k.includes('S'))
+      .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
+    const currentShiftButtonParameters = Object.entries(this.currentVehicleParameters)
+      .filter(([k]) => k.includes('BTN') && k.includes('FUNCTION') && k.includes('S'))
+      .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
+    return { regular: currentRegularButtonParameters, shift: currentShiftButtonParameters }
+  }
+
+  private mapShiftButton = (currentRegularButtonParameters: VehicleButtonFunction[]): void => {
+    // Re-use shift button if already mapped. Otherwise use R0 and S0.
+    const regularShiftFunction = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
+    const shiftActionValue = this.vehicleButtonParameterTable.find((e) => e.title === MAVLinkButtonFunction.shift)
+    if (regularShiftFunction === undefined) {
+      // Map shift to R0
+      this.vehicle?.setParameter({ id: MAVLinkManualControlButton.R0, value: shiftActionValue!.value })
+
+      // Map shift to S0
+      this.vehicle?.setParameter({ id: MAVLinkManualControlButton.S0, value: shiftActionValue!.value })
+    } else {
+      const sFunction = regularShiftFunction.button.replace('FUNCTION', 'SFUNCTION')
+      this.vehicle?.setParameter({ id: sFunction, value: shiftActionValue!.value })
+    }
+  }
+
   remapActionsToVehicleButtonParameters = (): void => {
     // TODO: Refactor this routine to reuse all methods for regular and shift
     if (!this.vehicle || !this.currentActionsMapping || !this.currentVehicleParameters || !this.vehicleButtonParameterTable || !this.vehicleTotalParametersCount) return
@@ -548,31 +578,12 @@ export class MavlinkManualControlManager {
       return
     }
 
-    const buttonParametersNamedObject: { [key in number]: string } = {}
-    this.vehicleButtonParameterTable.forEach((entry) => (buttonParametersNamedObject[entry.value] = entry.title))
-    const currentRegularButtonParameters = Object.entries(this.currentVehicleParameters)
-      .filter(([k]) => k.includes('BTN') && k.includes('FUNCTION') && !k.includes('S'))
-      .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
-    const currentShiftButtonParameters = Object.entries(this.currentVehicleParameters)
-      .filter(([k]) => k.includes('BTN') && k.includes('FUNCTION') && k.includes('S'))
-      .map((btn) => ({ button: btn[0], actionId: buttonParametersNamedObject[btn[1]] }))
+    const { regular: currentRegularButtonParameters, shift: currentShiftButtonParameters } = this.vehicleButtonFunctions()
 
     // Do not use buttons system if the vehicle has no button parameters
     if (currentRegularButtonParameters.length === 0) return
 
-    // Re-use shift button if already mapped. Otherwise use R0 and S0.
-    const regularShiftFunction = currentRegularButtonParameters.find((v) => v.actionId === MAVLinkButtonFunction.shift)
-    const shiftActionValue = this.vehicleButtonParameterTable.find((e) => e.title === MAVLinkButtonFunction.shift)
-    if (regularShiftFunction === undefined) {
-      // Map shift to R0
-      this.vehicle.setParameter({ id: MAVLinkManualControlButton.R0, value: shiftActionValue!.value })
-
-      // Map shift to S0
-      this.vehicle.setParameter({ id: MAVLinkManualControlButton.S0, value: shiftActionValue!.value })
-    } else {
-      const sFunction = regularShiftFunction.button.replace('FUNCTION', 'SFUNCTION')
-      this.vehicle.setParameter({ id: sFunction, value: shiftActionValue!.value })
-    }
+    this.mapShiftButton(currentRegularButtonParameters)
 
     const currentMappedActionsInRegularButtons = currentRegularButtonParameters.map((v) => v.actionId)
     const currentMappedActionsInShiftButtons = currentShiftButtonParameters.map((v) => v.actionId)
