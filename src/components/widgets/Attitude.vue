@@ -69,12 +69,12 @@
 
 <script setup lang="ts">
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
-import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { tweenTo } from '@/libs/tween'
 import { constrain, degrees, radians, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -132,8 +132,8 @@ const renderVars = reactive<RenderVariables>({
   pitchDegrees: 0,
 })
 
-// Instantiate the pitch heights synchronously, before the attitude watchers can fire. Otherwise gsap.to() would
-// target properties that don't exist yet on the object, emitting "Invalid property ... Missing plugin?" warnings.
+// Instantiate the pitch heights synchronously, before the attitude watchers can fire. Otherwise tweenTo() would
+// target properties that don't exist yet on the object, and they would jump instead of animating.
 pitchAngles.forEach((a: number) => (renderVars.pitchLinesHeights[a] = 5 * a))
 
 // Pre-defined HUD colors
@@ -338,21 +338,21 @@ const renderCanvas = (): void => {
 watch(pitchAngleDeg, () => {
   pitchAngles.forEach((angle: number) => {
     const y = -round(angleY(angle + renderVars.cameraTiltDeg - pitchAngleDeg.value), 2)
-    gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
+    tweenTo(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
   })
-  gsap.to(renderVars, 0.1, { pitchDegrees: pitchAngleDeg.value })
+  tweenTo(renderVars, 0.1, { pitchDegrees: pitchAngleDeg.value })
 })
 
 // Update the HUD roll angle when the vehicle roll is updated
 watch(rollAngleDeg, () => {
-  gsap.to(renderVars, 0.1, { rollDegrees: -round(rollAngleDeg.value, 2) })
+  tweenTo(renderVars, 0.1, { rollDegrees: -round(rollAngleDeg.value, 2) })
 })
 
 watch(cameraTiltDeg, () => {
-  gsap.to(renderVars, 0.1, { cameraTiltDeg: cameraTiltDeg.value })
+  tweenTo(renderVars, 0.1, { cameraTiltDeg: cameraTiltDeg.value })
   pitchAngles.forEach((angle: number) => {
     const y = -round(angleY(angle + renderVars.cameraTiltDeg - pitchAngleDeg.value), 2)
-    gsap.to(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
+    tweenTo(renderVars.pitchLinesHeights, 0.1, { [angle]: y })
   })
 })
 
