@@ -30,7 +30,10 @@ import { MavAutopilot, MavFrame, MAVLinkType, MavType } from '@/libs/connection/
 import type { Message } from '@/libs/connection/m2r/messages/mavlink2rest-message'
 import eventTracker from '@/libs/external-telemetry/event-tracking'
 import { availableCockpitActions, registerActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
-import { MavlinkManualControlManager } from '@/libs/joystick/protocols/mavlink-manual-control'
+import {
+  type UnassignedButtonFunction,
+  MavlinkManualControlManager,
+} from '@/libs/joystick/protocols/mavlink-manual-control'
 import { canByPassCategory, EventCategory, slideToConfirm } from '@/libs/slide-to-confirm'
 import type { ArduPilot } from '@/libs/vehicle/ardupilot/ardupilot'
 import { CustomMode } from '@/libs/vehicle/ardupilot/ardurover'
@@ -1213,6 +1216,23 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
   const mavlinkManualControlManager = new MavlinkManualControlManager()
   controllerStore.registerControllerUpdateCallback(mavlinkManualControlManager.updateControllerData)
+  // Hold automatic button writes until the vehicle's copy of the setting is read, or a machine that never stored it
+  // would act on the default and rewrite the buttons of a user who turned it off. A failed sync still opens the gate.
+  const vehicleSettingsSynced = ref(false)
+  window.addEventListener('vehicle-online', () => (vehicleSettingsSynced.value = false))
+  window.addEventListener('vehicle-sync-complete', () => (vehicleSettingsSynced.value = true))
+  watch(
+    () => controllerStore.autoAssignVehicleButtonFunctions && vehicleSettingsSynced.value,
+    (enabled) => (mavlinkManualControlManager.autoAssignButtonFunctions = enabled),
+    { immediate: true }
+  )
+  const unassignedButtonFunctions = ref<UnassignedButtonFunction[]>([])
+  mavlinkManualControlManager.onUnassignedButtonFunctions = (functions) => {
+    // Reported every second, so only replace the list when it changes to avoid re-rendering its consumers.
+    if (JSON.stringify(functions) === JSON.stringify(unassignedButtonFunctions.value)) return
+    unassignedButtonFunctions.value = functions
+  }
+  const assignButtonFunction = mavlinkManualControlManager.assignButtonFunction
 
   // Loop to send MAVLink Manual Control messages
   setInterval(() => {
@@ -1313,6 +1333,8 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
   }
 
   return {
+    unassignedButtonFunctions,
+    assignButtonFunction,
     arm,
     takeoff,
     changeAlt,
