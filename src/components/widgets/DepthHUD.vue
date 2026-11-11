@@ -76,7 +76,6 @@
 <script setup lang="ts">
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
-import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
@@ -88,6 +87,7 @@ import {
   rawAltitudeToMeters,
 } from '@/libs/data-sources/altitude'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { tweenTo } from '@/libs/tween'
 import { convertValue, readingLengthsAs, unitAbbreviation } from '@/libs/units'
 import { range, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -135,7 +135,7 @@ type RenderVariables = {
    * Object that stores the current state of the variables used on rendering
    * It acts like a buffer between the system state variables and the rendering process
    * Without it the state variables would be synced with rendering, which would
-   * make the rendering aliased. With this buffer we use GSAP to control the transisioning smoothing process.
+   * make the rendering aliased. With this buffer we use tweens to control the transisioning smoothing process.
    */
   depthLinesY: { [distance: string]: number }
   /**
@@ -284,19 +284,19 @@ const renderCanvas = (): void => {
   ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 }
 
-// Update the X position of each line in the render variables with GSAP to smooth the transition
+// Update the X position of each line in the render variables with a tween to smooth the transition
 watch(depth, () => {
   depthGraphDistances.value.forEach((distance) => {
     renderVars.depthLinesY[distance] ??= round(canvasSize.value.height + 100)
-    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: distanceY(distance) })
+    tweenTo(renderVars.depthLinesY, 0.5, { [distance]: distanceY(distance) })
   })
   const distancesToExclude = Object.keys(renderVars.depthLinesY).filter(
     (distance) => !depthGraphDistances.value.includes(Number(distance))
   )
   distancesToExclude.forEach((distance) => {
-    gsap.to(renderVars.depthLinesY, 0.5, { [distance]: round(canvasSize.value.height + 100) })
+    tweenTo(renderVars.depthLinesY, 0.5, { [distance]: round(canvasSize.value.height + 100) })
   })
-  gsap.to(renderVars, 0.5, { indicatorY: distanceY(depth.value) })
+  tweenTo(renderVars, 0.5, { indicatorY: distanceY(depth.value) })
 })
 
 // Update canvas whenever reference variables changes
