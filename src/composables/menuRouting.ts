@@ -1,3 +1,4 @@
+import { t } from 'ttag'
 import { type ComputedRef, computed, onBeforeUnmount, watch } from 'vue'
 import { type RouteRecordName, useRoute } from 'vue-router'
 
@@ -85,7 +86,7 @@ export const closeMenuPage = (): void => {
   const page = activePage()
   const subMenu = activeSubMenu()
   if (subMenu === undefined) return
-  if (page !== undefined) logUserAction(`Closed '${menuPages[page].title}' panel`)
+  if (page !== undefined) logUserAction(`Closed '${page}' panel`)
   goToSubMenu(subMenu)
 }
 
@@ -98,7 +99,7 @@ export const toggleMenuPage = (page: SubMenuComponentName): void => {
     closeMenuPage()
     return
   }
-  logUserAction(`Opened '${menuPages[page].title}' panel`)
+  logUserAction(`Opened '${page}' panel`)
   goToMenuPage(page)
 }
 
@@ -161,11 +162,12 @@ export const useMenuRouteSync = (): void => {
       const page = route.meta.menuPage
       if (page !== undefined && menuPages[page].pirateModeOnly === true && !interfaceStore.pirateMode) {
         goToBaseView(true)
+        const pageTitle = menuPages[page].title
         openSnackbar({
-          message: `'${menuPages[page].title}' is only available with pirate mode on.`,
+          message: t`'${pageTitle}' is only available with pirate mode on.`,
           variant: 'warning',
           duration: 5000,
-          action: { label: 'General settings', handler: () => goToMenuPage(SubMenuComponentName.SettingsGeneral) },
+          action: { label: t`General settings`, handler: () => goToMenuPage(SubMenuComponentName.SettingsGeneral) },
         })
         return
       }

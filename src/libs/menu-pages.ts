@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import { SubMenuComponentName, SubMenuName } from '@/types/general'
 
 /**
@@ -13,7 +15,7 @@ export interface MenuPage {
    */
   slug: string
   /**
-   * Label shown for the page in the main menu.
+   * Label shown for the page in the main menu, already in the interface language.
    */
   title: string
   /**
@@ -53,123 +55,123 @@ export const menuPages: Record<SubMenuComponentName, MenuPage> = {
   [SubMenuComponentName.SettingsGeneral]: {
     subMenu: SubMenuName.settings,
     slug: 'general',
-    title: 'General',
+    title: t`General`,
     icon: 'mdi-view-dashboard-variant',
     iconNudgeY: 1,
   },
   [SubMenuComponentName.SettingsInterface]: {
     subMenu: SubMenuName.settings,
     slug: 'interface',
-    title: 'Interface',
+    title: t`Interface`,
     icon: 'mdi-monitor-cellphone',
     iconNudgeY: -2,
   },
   [SubMenuComponentName.SettingsJoystick]: {
     subMenu: SubMenuName.settings,
     slug: 'joystick',
-    title: 'Joystick',
+    title: t`Joystick`,
     icon: 'mdi-controller',
     iconNudgeY: 1,
   },
   [SubMenuComponentName.SettingsVideo]: {
     subMenu: SubMenuName.settings,
     slug: 'video',
-    title: 'Video',
+    title: t`Video`,
     icon: 'mdi-video',
     iconNudgeY: 3,
   },
   [SubMenuComponentName.SettingsTelemetry]: {
     subMenu: SubMenuName.settings,
     slug: 'telemetry',
-    title: 'Telemetry',
+    title: t`Telemetry`,
     icon: 'mdi-subtitles-outline',
   },
   [SubMenuComponentName.SettingsAlerts]: {
     subMenu: SubMenuName.settings,
     slug: 'alerts',
-    title: 'Alerts',
+    title: t`Alerts`,
     icon: 'mdi-alert-rhombus-outline',
     iconNudgeY: -2,
   },
   [SubMenuComponentName.SettingsDev]: {
     subMenu: SubMenuName.settings,
     slug: 'dev',
-    title: 'Dev',
+    title: t`Dev`,
     icon: 'mdi-dev-to',
     iconNudgeY: 2,
   },
   [SubMenuComponentName.SettingsMission]: {
     subMenu: SubMenuName.settings,
     slug: 'mission',
-    title: 'Mission',
+    title: t`Mission`,
     icon: 'mdi-map-marker-path',
     iconNudgeY: -1,
   },
   [SubMenuComponentName.SettingsActions]: {
     subMenu: SubMenuName.settings,
     slug: 'actions',
-    title: 'Actions',
+    title: t`Actions`,
     icon: 'mdi-run-fast',
     iconNudgeY: -3,
   },
   [SubMenuComponentName.SettingsDiyWidgets]: {
     subMenu: SubMenuName.settings,
     slug: 'diy-widgets',
-    title: 'DIY widgets',
+    title: t`DIY widgets`,
     icon: 'mdi-puzzle-outline',
     iconNudgeY: -2,
   },
   [SubMenuComponentName.SettingsSources]: {
     subMenu: SubMenuName.settings,
     slug: 'sources',
-    title: 'Sources',
+    title: t`Sources`,
     icon: 'mdi-import',
   },
   [SubMenuComponentName.SettingsMAVLink]: {
     subMenu: SubMenuName.settings,
     slug: 'mavlink',
-    title: 'MAVLink',
+    title: t`MAVLink`,
     icon: 'mdi-protocol',
     pirateModeOnly: true,
   },
   [SubMenuComponentName.SettingsCloud]: {
     subMenu: SubMenuName.settings,
     slug: 'cloud',
-    title: 'Cloud',
+    title: t`Cloud`,
     icon: 'mdi-cloud-outline',
     pirateModeOnly: true,
   },
   [SubMenuComponentName.ToolsMAVLink]: {
     subMenu: SubMenuName.tools,
     slug: 'mavlink',
-    title: 'MAVLink',
+    title: t`MAVLink`,
     icon: 'mdi-protocol',
   },
   [SubMenuComponentName.ToolsDataLake]: {
     subMenu: SubMenuName.tools,
     slug: 'data-lake',
-    title: 'Data-lake',
+    title: t`Data-lake`,
     icon: 'mdi-database-outline',
     iconNudgeY: -1,
   },
   [SubMenuComponentName.ToolsLogs]: {
     subMenu: SubMenuName.tools,
     slug: 'logs',
-    title: 'Data Logs',
+    title: t`Data Logs`,
     icon: 'mdi-file-chart-outline',
     iconNudgeY: -2,
   },
   [SubMenuComponentName.ToolsMap]: {
     subMenu: SubMenuName.tools,
     slug: 'map',
-    title: 'Map',
+    title: t`Map`,
     icon: 'mdi-map-marker-radius',
     iconNudgeY: -3,
   },
   [SubMenuComponentName.ToolsRecipes]: {
     subMenu: SubMenuName.tools,
     slug: 'recipes',
-    title: 'Recipes',
+    title: t`Recipes`,
     icon: 'mdi-list-box-outline',
     iconNudgeY: -1,
   },

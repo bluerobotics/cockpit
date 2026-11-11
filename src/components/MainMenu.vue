@@ -113,12 +113,12 @@
               </GlassButton>
               <GlassButton
                 v-if="canInstall"
-                :label="simplifiedMainMenu ? '' : 'Install app'"
+                :label="simplifiedMainMenu ? '' : t`Install app`"
                 :label-class="[menuLabelSize, '-mb-0.5 mt-6']"
                 icon="mdi-download"
                 :icon-size="simplifiedMainMenu ? 25 : buttonSize * 0.5"
                 variant="uncontained"
-                :tooltip="simplifiedMainMenu ? 'Install app' : undefined"
+                :tooltip="simplifiedMainMenu ? t`Install app` : undefined"
                 :width="buttonSize"
                 @click="install"
               />
@@ -130,7 +130,7 @@
             <div ref="subMenuScrollContainerRef" class="min-h-0 overflow-y-auto scrollbar-hide">
               <GlassButton
                 v-for="menuitem in currentSubMenu"
-                :key="menuitem.title"
+                :key="menuitem.componentName"
                 :label="menuitem.title"
                 :label-class="
                   simplifiedMainMenu ? [simplifiedMenuLabelClass, '!mt-1 mb-px'] : [menuLabelSize, '!px-2 mb-1']
@@ -145,7 +145,7 @@
                 icon-class="translate-y-[var(--icon-nudge-y)]"
                 :style="[
                   { '--icon-nudge-y': `${menuitem.iconNudgeY ?? 0}px` },
-                  interfaceStore.highlightedComponent === menuitem.title && {
+                  interfaceStore.highlightedComponent === menuitem.componentName && {
                     animation: 'highlightBackground 0.5s alternate 50',
                     borderRadius: '4px',
                   },
