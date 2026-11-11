@@ -358,8 +358,7 @@ const {
   estimatedTotalMB,
   estimatedDownloadedMB,
   savePercentage,
-  downloadOfflineMapTiles,
-  attachOfflineProgress,
+  saveOfflineTiles,
 } = useOfflineTiles({ showDialog, closeDialog, openSnackbar })
 // Instantiate the necessary stores
 const vehicleStore = useMainVehicleStore()
@@ -414,9 +413,6 @@ const { initMapBoxZoom } = useMapBoxZoom({
 })
 const isPinching = ref(false)
 const isMissionChecklistOpen = ref(false)
-let esriSaveBtn: HTMLAnchorElement | undefined
-let osmSaveBtn: HTMLAnchorElement | undefined
-let seamarksSaveBtn: HTMLAnchorElement | undefined
 const downloadMenuOpen = ref(false)
 const missionItemsInVehicle = ref<Waypoint[]>([])
 const missionSeqToMarkerSeq = shallowRef<Record<number, number>>({})
@@ -435,17 +431,17 @@ const glassMenuCssVars = computed(() => ({
 
 const saveEsri = (): void => {
   logUserAction('Saved visible Esri map tiles for offline use')
-  esriSaveBtn?.click()
+  if (map.value) saveOfflineTiles(map.value, esri, 'Esri')
   downloadMenuOpen.value = false
 }
 const saveOSM = (): void => {
   logUserAction('Saved visible OSM map tiles for offline use')
-  osmSaveBtn?.click()
+  if (map.value) saveOfflineTiles(map.value, osm, 'OSM')
   downloadMenuOpen.value = false
 }
 const saveSeamarks = (): void => {
   logUserAction('Saved visible Seamarks map tiles for offline use')
-  seamarksSaveBtn?.click()
+  if (map.value && tileLayers.seamarks) saveOfflineTiles(map.value, tileLayers.seamarks, 'Seamarks')
   downloadMenuOpen.value = false
 }
 
@@ -661,8 +657,7 @@ onBeforeMount(() => {
 
 // Build the shared base maps and overlays (tile-provider definitions live in useMapTileLayers)
 const tileLayers = useMapTileLayers({ seamarks: true, marineProfile: true })
-const { osm, esri, overlays } = tileLayers
-const seamarks = overlays['Seamarks']
+const { osm, esri } = tileLayers
 
 // Restore and persist the user's base-map and overlay selection
 const { preferredBaseLayer, getInitialLayers, createLayerControl, registerLayerSync } =
@@ -857,48 +852,6 @@ onMounted(async () => {
       mapCenter.value = [lat, lng]
     }
   })
-
-  // Builds map layers offline content controls
-  const saveCtlEsri = downloadOfflineMapTiles(esri, 'Esri', 19)
-  const saveCtlOSM = downloadOfflineMapTiles(osm, 'OSM', 19)
-  const saveCtlSeamarks = downloadOfflineMapTiles(seamarks, 'Seamarks', 18)
-
-  if (map.value) {
-    saveCtlEsri.addTo(map.value)
-    saveCtlOSM.addTo(map.value)
-    saveCtlSeamarks.addTo(map.value)
-  }
-
-  // Hide native UI for offline map download controls
-  const hideCtl = (ctl: any): void => {
-    const el = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
-    if (!el) return
-    el.classList.add('hidden-savetiles')
-    el.style.display = 'none'
-  }
-
-  hideCtl(saveCtlEsri)
-  hideCtl(saveCtlOSM)
-  hideCtl(saveCtlSeamarks)
-
-  await nextTick()
-
-  const getBtns = (ctl: any): HTMLAnchorElement[] => {
-    const container = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
-    return Array.from(container?.querySelectorAll('a') ?? []) as HTMLAnchorElement[]
-  }
-
-  const [esriSave] = getBtns(saveCtlEsri)
-  const [osmSave] = getBtns(saveCtlOSM)
-  const [seaSave] = getBtns(saveCtlSeamarks)
-
-  esriSaveBtn = esriSave
-  osmSaveBtn = osmSave
-  seamarksSaveBtn = seaSave
-
-  attachOfflineProgress(esri, 'Esri')
-  attachOfflineProgress(osm, 'OSM')
-  attachOfflineProgress(seamarks, 'Seamarks')
 
   map.value.on('dragstart', () => {
     isDragging.value = true
@@ -2230,11 +2183,6 @@ const centerOnMission = (): void => {
   border: none;
   border-radius: 4px;
   padding: 5px 8px;
-}
-
-:deep(.leaflet-control-savetiles),
-:deep(.hidden-savetiles) {
-  display: none !important;
 }
 
 /* Style the standard Leaflet scale control */

@@ -1,9 +1,15 @@
 import L from 'leaflet'
-import { type SaveStatus, type TileInfo, downloadTile, savetiles } from 'leaflet.offline'
 import { computed, ref } from 'vue'
 
 import { type DialogOptions, type DialogResult } from '@/composables/interactionDialog'
 import { type SnackbarOptions } from '@/composables/snackbar'
+import {
+  type OfflineTile,
+  type OfflineTileLayer,
+  downloadTile,
+  saveTiles,
+  storedTileKeys,
+} from '@/libs/map/offline-tile-layer'
 import { type DialogActions } from '@/types/general'
 
 /**
@@ -26,13 +32,17 @@ interface OfflineTilesDeps {
 
 const SAMPLE_COUNT = 3
 
+// ponytail: fixed cap that keeps listing the tiles quick and the download finite; base it on the free storage
+// (getStorageBytesAvailable) if operators need to save larger areas in one go.
+const MAX_TILES_PER_SAVE = 100_000
+
 /**
  * Estimates the average byte size of tiles by downloading a small sample.
- * @param {TileInfo[]} tiles - The array of tile info objects to sample from
+ * @param {OfflineTile[]} tiles - The tiles to sample from
  * @param {number} count - How many tiles to sample
  * @returns {Promise<number>} Average tile size in bytes, or 0 on failure
  */
-async function estimateAvgTileSize(tiles: TileInfo[], count: number = SAMPLE_COUNT): Promise<number> {
+async function estimateAvgTileSize(tiles: OfflineTile[], count: number = SAMPLE_COUNT): Promise<number> {
   const samples = tiles.slice(0, Math.min(count, tiles.length))
   if (samples.length === 0) return 0
   try {
@@ -83,109 +93,101 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
     return Math.round((tilesSaved.value / tilesTotal.value) * 100)
   })
 
-  const confirmDownloadDialog =
-    (layerLabel: string) =>
-    async (status: SaveStatus, ok: () => void): Promise<void> => {
-      const tileCount = status._tilesforSave.length
-      let sizeInfo = ''
-      try {
-        const avg = await estimateAvgTileSize(status._tilesforSave)
-        if (avg > 0) {
-          avgTileSize.value = avg
-          sizeInfo = ` (~${formatMB(avg * tileCount)} MB)`
-        }
-      } catch {
-        // Fall back to count-only display
+  const confirmDownloadDialog = async (tiles: OfflineTile[], layerLabel: string, ok: () => void): Promise<void> => {
+    const tileCount = tiles.length
+    let sizeInfo = ''
+    try {
+      const avg = await estimateAvgTileSize(tiles)
+      if (avg > 0) {
+        avgTileSize.value = avg
+        sizeInfo = ` (~${formatMB(avg * tileCount)} MB)`
       }
-
-      showDialog({
-        variant: 'info',
-        message: `Save ${tileCount} ${layerLabel} tiles${sizeInfo} for offline use?`,
-        persistent: false,
-        maxWidth: '450px',
-        actions: [
-          { text: 'Cancel', color: 'white', action: closeDialog },
-          {
-            text: 'Save tiles',
-            color: 'white',
-            action: () => {
-              ok()
-              closeDialog()
-            },
-          },
-        ] as DialogActions[],
-      })
+    } catch {
+      // Fall back to count-only display
     }
 
-  const deleteDownloadedTilesDialog =
-    (layerLabel: string) =>
-    (_status: SaveStatus, ok: () => void): void => {
-      showDialog({
-        variant: 'warning',
-        message: `Remove all saved ${layerLabel} tiles for this layer?`,
-        persistent: false,
-        maxWidth: '450px',
-        actions: [
-          { text: 'Cancel', color: 'white', action: closeDialog },
-          {
-            text: 'Remove tiles',
-            color: 'white',
-            action: () => {
-              ok()
-              closeDialog()
-              openSnackbar({ message: `${layerLabel} offline tiles removed`, variant: 'info', duration: 3000 })
-            },
+    showDialog({
+      variant: 'info',
+      message: `Save ${tileCount} ${layerLabel} tiles${sizeInfo} for offline use?`,
+      persistent: false,
+      maxWidth: '450px',
+      actions: [
+        { text: 'Cancel', color: 'white', action: closeDialog },
+        {
+          text: 'Save tiles',
+          color: 'white',
+          action: () => {
+            ok()
+            closeDialog()
           },
-        ] as DialogActions[],
-      })
-    }
-
-  /**
-   * Creates a savetiles control for the given layer with download size estimation.
-   * @param {any} layer - The TileLayerOffline instance
-   * @param {string} layerLabel - Human-readable label for the layer (e.g. "Esri")
-   * @param {number} maxZoom - Maximum zoom level to save
-   * @returns {L.Control} The savetiles control instance
-   */
-  const downloadOfflineMapTiles = (layer: any, layerLabel: string, maxZoom: number): L.Control => {
-    return savetiles(layer, {
-      saveWhatYouSee: true,
-      maxZoom,
-      alwaysDownload: false,
-      position: 'topright',
-      parallel: 20,
-      confirm: confirmDownloadDialog(layerLabel),
-      confirmRemoval: deleteDownloadedTilesDialog(layerLabel),
-      saveText: `<i class="mdi mdi-download" title="Save ${layerLabel} tiles"></i>`,
-      rmText: `<i class="mdi mdi-trash-can" title="Remove ${layerLabel} tiles"></i>`,
+        },
+      ] as DialogActions[],
     })
   }
 
-  /**
-   * Attaches progress event listeners to a tile layer for tracking download state.
-   * @param {any} layer - The TileLayerOffline instance
-   * @param {string} layerName - Human-readable name for snackbar messages
-   */
-  const attachOfflineProgress = (layer: any, layerName: string): void => {
-    layer.on('savestart', (e: any) => {
-      tilesSaved.value = 0
-      tilesTotal.value = e?._tilesforSave?.length ?? 0
-      savingLayerName.value = layerName
-      isSavingOfflineTiles.value = true
-      openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
-    })
+  // The progress readout is shared, and a second save of the same layer would download the tiles still in flight.
+  // Checked on entry, and again when a download starts, since two saves can both pass the entry while preparing.
+  const refuseWhileSaving = (): boolean => {
+    if (!isSavingOfflineTiles.value) return false
+    const message = `${savingLayerName.value} tiles are still being saved. Wait for that to finish.`
+    openSnackbar({ message, variant: 'info', duration: 3000 })
+    return true
+  }
 
-    layer.on('loadtileend', () => {
-      tilesSaved.value += 1
-      if (tilesTotal.value > 0 && tilesSaved.value >= tilesTotal.value) {
-        openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
-        isSavingOfflineTiles.value = false
-        savingLayerName.value = ''
-        tilesSaved.value = 0
-        tilesTotal.value = 0
-        avgTileSize.value = 0
-      }
-    })
+  const downloadTiles = async (tiles: OfflineTile[], layerName: string): Promise<void> => {
+    if (refuseWhileSaving()) return
+    tilesSaved.value = 0
+    tilesTotal.value = tiles.length
+    savingLayerName.value = layerName
+    isSavingOfflineTiles.value = true
+    openSnackbar({ message: `Saving ${tilesTotal.value} ${layerName} tiles...`, variant: 'info', duration: 2000 })
+
+    const failed = await saveTiles(tiles, () => (tilesSaved.value += 1))
+
+    if (failed > 0) {
+      const message = `${tiles.length - failed} ${layerName} tiles saved, ${failed} could not be downloaded`
+      openSnackbar({ message, variant: 'warning', duration: 5000 })
+    } else {
+      openSnackbar({ message: `${layerName} offline tiles saved!`, variant: 'success', duration: 3000 })
+    }
+    isSavingOfflineTiles.value = false
+    savingLayerName.value = ''
+    tilesSaved.value = 0
+    tilesTotal.value = 0
+    avgTileSize.value = 0
+  }
+
+  /**
+   * Saves the tiles of the visible area, from the current zoom level up to the layer's last native zoom level,
+   * after the user confirms the download size. Tiles already saved are skipped.
+   * @param {L.Map} map - The map whose visible area is saved
+   * @param {OfflineTileLayer} layer - The layer whose tiles are saved
+   * @param {string} layerLabel - Human-readable label for the layer (e.g. "Esri")
+   */
+  const saveOfflineTiles = async (map: L.Map, layer: OfflineTileLayer, layerLabel: string): Promise<void> => {
+    if (refuseWhileSaving()) return
+
+    const maxZoom = layer.options.maxNativeZoom ?? layer.options.maxZoom ?? map.getMaxZoom()
+    // Past the last native level Leaflet scales up that level's tiles, so those are the ones to save.
+    const minZoom = Math.min(Math.round(map.getZoom()), maxZoom)
+    const bounds = map.getBounds()
+
+    const tileCount = layer.countTilesIn(map, bounds, minZoom, maxZoom)
+    if (tileCount > MAX_TILES_PER_SAVE) {
+      const limit = MAX_TILES_PER_SAVE.toLocaleString()
+      const message = `This area has too many ${layerLabel} tiles to save at once (over ${limit}). Zoom in and try again.`
+      openSnackbar({ message, variant: 'warning', duration: 5000 })
+      return
+    }
+
+    const saved = await storedTileKeys(layer.urlTemplate).catch(() => new Set<string>())
+    const tiles = layer.tilesIn(map, bounds, minZoom, maxZoom).filter((tile) => !saved.has(tile.key))
+    if (tiles.length === 0) {
+      const message = `The visible ${layerLabel} tiles are already saved for offline use`
+      openSnackbar({ message, variant: 'info', duration: 3000 })
+      return
+    }
+    await confirmDownloadDialog(tiles, layerLabel, () => downloadTiles(tiles, layerLabel))
   }
 
   return {
@@ -197,7 +199,6 @@ export function useOfflineTiles(deps: OfflineTilesDeps) {
     estimatedTotalMB,
     estimatedDownloadedMB,
     savePercentage,
-    downloadOfflineMapTiles,
-    attachOfflineProgress,
+    saveOfflineTiles,
   }
 }

@@ -986,6 +986,7 @@ import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
+import type { OfflineTileLayer } from '@/libs/map/offline-tile-layer'
 import { positionPanelNearBounds, screenBounds } from '@/libs/map/screen-placement'
 import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
 import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
@@ -1073,8 +1074,7 @@ const {
   estimatedTotalMB,
   estimatedDownloadedMB,
   savePercentage,
-  downloadOfflineMapTiles,
-  attachOfflineProgress,
+  saveOfflineTiles,
 } = useOfflineTiles({ showDialog, closeDialog, openSnackbar })
 
 const clearMissionOnVehicle = (): void => {
@@ -1580,8 +1580,8 @@ const isSettingHomeWaypoint = ref(false)
 const downloadMenuOpen = ref(false)
 const speedDialOpen = ref(false)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
-let esriSaveBtn: HTMLAnchorElement | undefined
-let osmSaveBtn: HTMLAnchorElement | undefined
+let esriLayer: OfflineTileLayer | undefined
+let osmLayer: OfflineTileLayer | undefined
 const nearMissionPathTolerance = 16 // in pixels
 const waypointPickToleranceInPixels = 10
 const measureLayer = shallowRef<L.LayerGroup | null>(null)
@@ -1826,12 +1826,12 @@ const onMapMouseMove = (e: L.LeafletMouseEvent): void => {
 
 const saveEsri = (): void => {
   logUserAction('Saved visible Esri map tiles')
-  esriSaveBtn?.click()
+  if (planningMap.value && esriLayer) saveOfflineTiles(planningMap.value, esriLayer, 'Esri')
   downloadMenuOpen.value = false
 }
 const saveOSM = (): void => {
   logUserAction('Saved visible OSM map tiles')
-  osmSaveBtn?.click()
+  if (planningMap.value && osmLayer) saveOfflineTiles(planningMap.value, osmLayer, 'OSM')
   downloadMenuOpen.value = false
 }
 
@@ -4921,35 +4921,8 @@ onMounted(async () => {
     zoom.value = planningMap.value?.getZoom() ?? mapCenter.value
   })
 
-  const saveCtlEsri = downloadOfflineMapTiles(esri, 'Esri', 19)
-  const saveCtlOSM = downloadOfflineMapTiles(osm, 'OSM', 19)
-
-  if (planningMap.value) {
-    saveCtlEsri.addTo(planningMap.value)
-    saveCtlOSM.addTo(planningMap.value)
-  }
-
-  // Hide native UI for offline map download controls
-  const hideCtl = (ctl: any): void => {
-    const el = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
-    if (!el) return
-    el.classList.add('hidden-savetiles')
-    el.style.display = 'none'
-  }
-  hideCtl(saveCtlEsri)
-  hideCtl(saveCtlOSM)
-
-  await nextTick()
-  const getBtns = (ctl: any): HTMLAnchorElement[] => {
-    const el = (ctl.getContainer?.() ?? ctl._container) as HTMLElement | undefined
-    return Array.from(el?.querySelectorAll('a') ?? []) as HTMLAnchorElement[]
-  }
-  ;[esriSaveBtn] = getBtns(saveCtlEsri) // [0]=save, [1]=remove
-  ;[osmSaveBtn] = getBtns(saveCtlOSM)
-
-  // Download progress hooks
-  attachOfflineProgress(esri, 'Esri')
-  attachOfflineProgress(osm, 'OSM')
+  esriLayer = esri
+  osmLayer = osm
 
   await nextTick()
 
