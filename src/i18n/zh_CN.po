@@ -194,11 +194,6 @@ msgstr "${ 1 } 个航点中有 ${ 0 } 个超出您正在绘制、尚未上传到
 
 #: src/composables/useOfflineTiles.ts
 #, javascript-format
-msgid "${ 0 } offline tiles removed"
-msgstr "${ 0 } 离线瓦片已移除"
-
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
 msgid "${ 0 } offline tiles saved!"
 msgstr "${ 0 } 离线瓦片已保存！"
 
@@ -8218,19 +8213,9 @@ msgstr "移除“${ 0 }”？这将删除它及其关联的数据湖变量。"
 msgid "Remove ${ 0 } from the library"
 msgstr "从库中移除 ${ 0 }"
 
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
-msgid "Remove ${ 0 } tiles"
-msgstr "删除 ${ 0 } 瓦片"
-
 #: src/views/ConfigurationDiyWidgetsView.vue
 msgid "Remove DIY widget"
 msgstr "移除 DIY 小部件"
-
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
-msgid "Remove all saved ${ 0 } tiles for this layer?"
-msgstr "移除此图层的所有已保存的 ${ 0 } 瓦片？"
 
 #: src/components/BaseStationConfigPanel.vue
 #: src/components/BaseStationContextPopup.vue
@@ -8278,10 +8263,6 @@ msgstr "删除选定日期之前记录的遥测条目以释放空间。"
 #: src/composables/baseStation/useBaseStation.ts
 msgid "Remove the base station? This will clear its position and configuration."
 msgstr "移除基站？这将清除其位置和配置。"
-
-#: src/composables/useOfflineTiles.ts
-msgid "Remove tiles"
-msgstr "移除瓦片"
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "Remove vehicle"
@@ -8599,11 +8580,6 @@ msgstr "保存"
 #, javascript-format
 msgid "Save ${ 0 } ${ 1 } tiles${ 2 } for offline use?"
 msgstr "保存 ${ 0 } 个 ${ 1 } 瓦片${ 2 }以供离线使用？"
-
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
-msgid "Save ${ 0 } tiles"
-msgstr "保存 ${ 0 } 瓦片"
 
 #: src/components/widgets/DoItYourself.vue
 msgid "Save as new"
@@ -12351,3 +12327,18 @@ msgid ""
 "sends. Older Cockpit versions cannot read it, so leave it off if you share "
 "this vehicle with one."
 msgstr "——以按该单位制读取，而不是设备发送的原始值。较旧的 Cockpit 版本无法读取它，因此如果您与旧版本共用此设备，请不要添加。"
+
+#~ msgid "${ 0 } offline tiles removed"
+#~ msgstr "${ 0 } 离线瓦片已移除"
+
+#~ msgid "Remove ${ 0 } tiles"
+#~ msgstr "删除 ${ 0 } 瓦片"
+
+#~ msgid "Remove all saved ${ 0 } tiles for this layer?"
+#~ msgstr "移除此图层的所有已保存的 ${ 0 } 瓦片？"
+
+#~ msgid "Remove tiles"
+#~ msgstr "移除瓦片"
+
+#~ msgid "Save ${ 0 } tiles"
+#~ msgstr "保存 ${ 0 } 瓦片"
