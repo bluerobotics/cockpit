@@ -223,11 +223,6 @@ msgstr ""
 
 #: src/composables/useOfflineTiles.ts
 #, javascript-format
-msgid "${ 0 } offline tiles removed"
-msgstr "${ 0 } blocos offline removidos"
-
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
 msgid "${ 0 } offline tiles saved!"
 msgstr "${ 0 } blocos offline salvos!"
 
@@ -8777,19 +8772,9 @@ msgstr ""
 msgid "Remove ${ 0 } from the library"
 msgstr "Remover ${ 0 } da biblioteca"
 
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
-msgid "Remove ${ 0 } tiles"
-msgstr "Remover blocos de ${ 0 }"
-
 #: src/views/ConfigurationDiyWidgetsView.vue
 msgid "Remove DIY widget"
 msgstr "Remover widget DIY"
-
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
-msgid "Remove all saved ${ 0 } tiles for this layer?"
-msgstr "Remover todos os blocos de ${ 0 } salvos desta camada?"
 
 #: src/components/BaseStationConfigPanel.vue
 #: src/components/BaseStationContextPopup.vue
@@ -8841,10 +8826,6 @@ msgstr ""
 #: src/composables/baseStation/useBaseStation.ts
 msgid "Remove the base station? This will clear its position and configuration."
 msgstr "Remover a estação base? Isso vai apagar a posição e a configuração dela."
-
-#: src/composables/useOfflineTiles.ts
-msgid "Remove tiles"
-msgstr "Remover blocos"
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "Remove vehicle"
@@ -9165,11 +9146,6 @@ msgstr "Salvar"
 #, javascript-format
 msgid "Save ${ 0 } ${ 1 } tiles${ 2 } for offline use?"
 msgstr "Salvar ${ 0 } blocos de ${ 1 }${ 2 } para uso offline?"
-
-#: src/composables/useOfflineTiles.ts
-#, javascript-format
-msgid "Save ${ 0 } tiles"
-msgstr "Salvar blocos de ${ 0 }"
 
 #: src/components/widgets/DoItYourself.vue
 msgid "Save as new"
@@ -13319,3 +13295,18 @@ msgstr ""
 "— para lê-la nesse sistema de unidades, em vez do valor bruto que o veículo "
 "envia. Versões mais antigas do Cockpit não conseguem lê-lo, então deixe "
 "desativado se você compartilha este veículo com uma delas."
+
+#~ msgid "${ 0 } offline tiles removed"
+#~ msgstr "${ 0 } blocos offline removidos"
+
+#~ msgid "Remove ${ 0 } tiles"
+#~ msgstr "Remover blocos de ${ 0 }"
+
+#~ msgid "Remove all saved ${ 0 } tiles for this layer?"
+#~ msgstr "Remover todos os blocos de ${ 0 } salvos desta camada?"
+
+#~ msgid "Remove tiles"
+#~ msgstr "Remover blocos"
+
+#~ msgid "Save ${ 0 } tiles"
+#~ msgstr "Salvar blocos de ${ 0 }"
