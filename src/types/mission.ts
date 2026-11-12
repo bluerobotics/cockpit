@@ -661,6 +661,18 @@ export type MapTileProvider = 'Esri World Imagery' | 'OpenStreetMap' | 'OpenTopo
 export type MapTileProviderPreference = MapTileProvider | 'Use last selected'
 
 /**
+ * How the vehicle is drawn on the maps.
+ */
+export interface VehicleIconAppearance {
+  /** The vehicle's picture, the picture with a heading arrow ahead of it, or an arrow in place of the picture. */
+  style: 'picture' | 'picture-with-arrow' | 'arrow'
+  /** Fill color of the arrow. */
+  arrowColor: string
+  /** Outline color of the arrow. */
+  arrowOutlineColor: string
+}
+
+/**
  * How a GeoTIFF map overlay's raster values are mapped to colors.
  * - `grayscale`: render RGB(A) rasters directly, or a single band as grey (sidescan mosaics, orthophotos).
  * - `intensity`: stretch a single band between its min/max as greyscale (backscatter).

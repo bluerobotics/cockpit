@@ -5225,6 +5225,7 @@ const vehicleMarker = useMapVehicleMarker(planningMap, {
   iconUrl: () => planningVehicleIconUrl.value,
   tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
   headingInDegrees: () => vehicleHeading.value,
+  iconAppearance: () => missionStore.vehicleIconAppearance,
   tooltipClassName: 'waypoint-tooltip',
 })
 

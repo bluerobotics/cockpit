@@ -7,6 +7,7 @@ import roverMarkerImage from '@/assets/rover-marker.avif'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
+import type { VehicleIconAppearance } from '@/types/mission'
 
 const markerImageByVehicleType: Partial<Record<VehicleType, string>> = {
   [VehicleType.Sub]: brov2MarkerImage,
@@ -27,3 +28,25 @@ export const vehicleMarkerImageUrl = (vehicleType: MavType | undefined): string 
   const vehicleClass = getVehicleTypeFromMavType(vehicleType)
   return (vehicleClass && markerImageByVehicleType[vehicleClass]) ?? genericVehicleMarkerImage
 }
+
+/**
+ * Attributes that make the shared `.vehicle-heading-arrow` styles draw a vehicle icon in the chosen appearance.
+ * They go on the element holding both the arrow and the vehicle's picture.
+ * @param {VehicleIconAppearance} appearance - The icon style and arrow colors chosen by the user.
+ * @returns {{ iconStyle: string, cssVariables: Record<string, string> }} The `data-icon-style` value and the CSS
+ * custom properties carrying the arrow colors.
+ */
+export const vehicleIconAttributes = (
+  appearance: VehicleIconAppearance
+): {
+  /** Value for the element's `data-icon-style` attribute. */
+  iconStyle: string
+  /** CSS custom properties carrying the arrow colors. */
+  cssVariables: Record<string, string>
+} => ({
+  iconStyle: appearance.style,
+  cssVariables: {
+    '--vehicle-arrow-color': appearance.arrowColor,
+    '--vehicle-arrow-outline-color': appearance.arrowOutlineColor,
+  },
+})

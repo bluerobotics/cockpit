@@ -1286,6 +1286,7 @@ const vehicleMarker = useMapVehicleMarker(map, {
   iconUrl: () => vehicleMarkerImageUrl(vehicleStore.vehicleType),
   tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
   headingInDegrees: () => vehicleHeading.value,
+  iconAppearance: () => missionStore.vehicleIconAppearance,
   tooltipClassName: 'vehicle-tooltip',
   paneName: 'vehiclePane',
   paneZIndex: '650',
