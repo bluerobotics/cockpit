@@ -143,7 +143,6 @@
 <script setup lang="ts">
 import { useDebounceFn, useElementVisibility, useThrottleFn, useWindowSize } from '@vueuse/core'
 import { colord } from 'colord'
-import gsap from 'gsap'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
@@ -159,6 +158,7 @@ import {
 } from '@/libs/data-sources/position'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { elasticOut, tweenTo } from '@/libs/tween'
 import { formatDistance } from '@/libs/units'
 import { degrees, radians, resetCanvas } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -218,7 +218,7 @@ type RenderVariables = {
    * Object that stores the current state of the variables used on rendering
    * It acts like a buffer between the system state variables and the rendering process
    * Without it the state variables would be synced with rendering, which would
-   * make the rendering aliased. With this buffer we use GSAP to control the transisioning smoothing process.
+   * make the rendering aliased. With this buffer we use tweens to control the transisioning smoothing process.
    */
   yawLinesX: { [angle: string]: number }
 }
@@ -744,19 +744,21 @@ const updatePoiMarkers = (): void => {
   poiMarkers.value = markers
 }
 
-// Update the X position of each line in the render variables with GSAP to smooth the transition
+const yawLineEase = elasticOut(1.2, 0.5)
+
+// Update the X position of each line in the render variables with a tween to smooth the transition
 watch(yaw, () => {
   yawAngles.forEach((angle: number) => {
     const position = angleX(angle)
     // Ensure the line exists before tweening. The yaw watcher can fire before onMounted populates yawLinesX,
-    // and gsap.to() against a missing property emits "Invalid property ... Missing plugin?" warnings.
+    // and tweenTo() against a missing property makes it jump instead of animating.
     renderVars.yawLinesX[angle] ??= position
-    // Only interpolate angle render with GSAP when the angle is not changing
+    // Only interpolate angle render with a tween when the angle is not changing
     // sides, so it doesn't cross across the screen.
     if (Math.abs(renderVars.yawLinesX[angle] - position) > 90) {
       renderVars.yawLinesX[angle] = position
     } else {
-      gsap.to(renderVars.yawLinesX, { duration: 2.5, ease: 'elastic.out(1.2, 0.5)', [angle]: position })
+      tweenTo(renderVars.yawLinesX, 2.5, { [angle]: position }, yawLineEase)
     }
   })
 })

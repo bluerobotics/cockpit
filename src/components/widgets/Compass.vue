@@ -20,7 +20,6 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
 import Dialog from '@/components/Dialog.vue'
@@ -29,6 +28,7 @@ import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { defaultHeadingVariableId, rawHeadingToDegrees } from '@/libs/data-sources/heading'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { tweenTo } from '@/libs/tween'
 import { radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -212,7 +212,7 @@ type RenderVariables = { yawAngleDegrees: number }
 // Object used to store current render state
 const renderVariables = reactive<RenderVariables>({ yawAngleDegrees: 0 })
 
-// Update the X position of each line in the render variables with GSAP to smooth the transition
+// Update the X position of each line in the render variables with a tween to smooth the transition
 const adjustLinesX = (): void => {
   const angleDegrees = yaw.value
 
@@ -222,13 +222,13 @@ const adjustLinesX = (): void => {
   const fromEastToWest = renderVariables.yawAngleDegrees < 90 && fullRangeAngleDegrees > 270
   // If cruzing 0 degrees, use a chained animation, so the pointer does not turn 360 degrees to the other side (visual artifact)
   if (fromWestToEast) {
-    gsap.to(renderVariables, 0.05, { yawAngleDegrees: 0 })
-    gsap.fromTo(renderVariables, 0.05, { yawAngleDegrees: 0 }, { yawAngleDegrees: fullRangeAngleDegrees })
+    renderVariables.yawAngleDegrees = 0
+    tweenTo(renderVariables, 0.05, { yawAngleDegrees: fullRangeAngleDegrees })
   } else if (fromEastToWest) {
-    gsap.to(renderVariables, 0.05, { yawAngleDegrees: 360 })
-    gsap.fromTo(renderVariables, 0.05, { yawAngleDegrees: 360 }, { yawAngleDegrees: fullRangeAngleDegrees })
+    renderVariables.yawAngleDegrees = 360
+    tweenTo(renderVariables, 0.05, { yawAngleDegrees: fullRangeAngleDegrees })
   } else {
-    gsap.to(renderVariables, 0.1, { yawAngleDegrees: fullRangeAngleDegrees })
+    tweenTo(renderVariables, 0.1, { yawAngleDegrees: fullRangeAngleDegrees })
   }
 }
 
