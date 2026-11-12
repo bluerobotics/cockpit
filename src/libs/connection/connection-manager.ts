@@ -63,7 +63,7 @@ export class ConnectionManager {
       case Connection.Type.UdpOut:
       case Connection.Type.UdpBroadcast:
         connection = new ElectronConnection(uri, vehicleProtocol)
-        connection.initialize()
+        started = connection.initialize()
         break
       case Connection.Type.Sitl:
         connection = new SitlConnection(uri, vehicleProtocol)
