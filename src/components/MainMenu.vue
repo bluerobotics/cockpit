@@ -27,7 +27,7 @@
                 :tooltip="simplifiedMainMenu ? 'Edit Mode' : undefined"
                 :width="mainMenuIconSize"
                 @click="toggleEditMode"
-                ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="Edit Mode Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="EditModeIcon" alt="" />
               </GlassButton>
               <GlassButton
                 v-if="baseRouteName !== 'widgets-view'"
@@ -39,7 +39,7 @@
                 :tooltip="simplifiedMainMenu ? 'Flight' : undefined"
                 :width="mainMenuIconSize"
                 @click="goToFlightView"
-                ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="Flight Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="FlightIcon" alt="" />
               </GlassButton>
               <GlassButton
                 v-if="baseRouteName !== 'Mission planning'"
@@ -51,7 +51,7 @@
                 :tooltip="simplifiedMainMenu ? 'Mission Planning' : undefined"
                 :width="mainMenuIconSize"
                 @click="goToMissionPlanning"
-                ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="MissionPlanning Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="" />
               </GlassButton>
               <GlassButton
                 label="Settings"
@@ -70,7 +70,7 @@
                   }
                 "
                 @click="selectSubMenu(SubMenuName.settings)"
-                ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="Settings Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="" />
               </GlassButton>
               <GlassButton
                 label="Tools"
@@ -83,7 +83,7 @@
                 :selected="showSubMenu"
                 class="mb-1"
                 @click="selectSubMenu(SubMenuName.tools)"
-                ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="Tools Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="ToolsIcon" alt="" />
               </GlassButton>
               <GlassButton
                 :label="fullScreenToggleLabel"
@@ -96,11 +96,7 @@
                 :width="mainMenuIconSize"
                 :selected="false"
                 @click="toggleFullscreenAndCloseMenu"
-                ><img
-                  v-if="!simplifiedMainMenu"
-                  :src="isFullscreen ? ExitFullScreenIcon : FullScreenIcon"
-                  alt="Fullscreen Icon"
-                />
+                ><img v-if="!simplifiedMainMenu" :src="isFullscreen ? ExitFullScreenIcon : FullScreenIcon" alt="" />
               </GlassButton>
               <GlassButton
                 label="About"
@@ -113,7 +109,7 @@
                 :width="mainMenuIconSize"
                 :selected="showSubMenu"
                 @click="openAboutDialog"
-                ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="Info Icon" />
+                ><img v-if="!simplifiedMainMenu" :src="InfoIcon" alt="" />
               </GlassButton>
               <GlassButton
                 v-if="canInstall"
