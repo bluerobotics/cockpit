@@ -96,7 +96,7 @@ export const useMissionStore = defineStore('mission', () => {
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
   const vehicleIconAppearance = useBlueOsStorage<VehicleIconAppearance>('cockpit-vehicle-icon-appearance', {
-    style: 'picture',
+    style: 'picture-with-arrow',
     arrowColor: '#ffffff',
     arrowOutlineColor: '#000000',
   })
