@@ -505,9 +505,13 @@ jobs:
           # 80 then died mid-investigation on a rebased PR, where the compare covers the whole diff
           # again and every file has to be re-read: the run ended having written no review at all.
           # 120 turns measured out at ~22min, so the timeout has to clear that with room to spare.
+          # Subagents run in the background and a headless run exits when the main agent ends its
+          # turn, so on a large PR it fanned out, said it was waiting, and quit with no review.
+          # Known gap: `Skill` stays loaded, and a skill that runs in the background can do the same.
           claude_args: |
             --model "${{ vars.CLAUDE_AGENT_MODEL || 'claude-opus-5-5' }}"
             --max-turns 120
+            --disallowedTools "Agent,Task,Workflow"
             --allowedTools "Bash(jq:*),Bash(wc:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(rg:*),Bash(grep:*),Bash(git log:*),Read,Glob,Grep,Write"
             --system-prompt-file "${{ runner.temp }}/system-prompt.md"
           prompt: |
