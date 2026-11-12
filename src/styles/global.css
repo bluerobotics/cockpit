@@ -8,6 +8,47 @@
     justify-content: center;
 }
 
+/*
+ * Arrow of a vehicle icon. The parent holds it next to the vehicle's picture, must be positioned, and picks the
+ * look with `data-icon-style` and the colors with the two custom properties.
+ */
+.vehicle-heading-arrow {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    width: max(12px, 25%);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    background-color: var(--vehicle-arrow-outline-color);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 20 20 12 16 4 20Z' stroke='black' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    pointer-events: none;
+}
+
+.vehicle-heading-arrow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--vehicle-arrow-color);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 20 20 12 16 4 20Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+[data-icon-style='picture-with-arrow'] > .vehicle-heading-arrow,
+[data-icon-style='arrow'] > .vehicle-heading-arrow {
+    display: block;
+}
+
+[data-icon-style='arrow'] > .vehicle-heading-arrow {
+    top: 50%;
+    bottom: auto;
+    width: 60%;
+    transform: translate(-50%, -50%);
+}
+
+[data-icon-style='arrow'] > img {
+    visibility: hidden;
+}
+
 @supports(padding:max(0px)) {
     body, header, footer {
         padding-left: min(0vmin, env(safe-area-inset-left));

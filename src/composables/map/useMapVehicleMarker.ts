@@ -1,6 +1,9 @@
 import L, { type LatLngTuple, type Map, type Marker, type MarkerOptions } from 'leaflet'
 import { type ShallowRef, onBeforeUnmount, shallowRef, watch } from 'vue'
 
+import { vehicleIconAttributes } from '@/libs/vehicle/vehicle-marker'
+import type { VehicleIconAppearance } from '@/types/mission'
+
 const VEHICLE_ICON_SIZE_PX = 64
 
 /**
@@ -15,6 +18,8 @@ export interface UseMapVehicleMarkerOptions {
   tooltipContent: () => string
   /** Vehicle heading in degrees, applied as the icon's rotation. */
   headingInDegrees: () => number
+  /** Whether the icon is the vehicle's picture, the picture with a heading arrow, or an arrow alone, and its colors. */
+  iconAppearance: () => VehicleIconAppearance
   /** Leaflet class name for the tooltip, so each map keeps its own styling. */
   tooltipClassName: string
   /** Pane to draw the marker in; Leaflet's own marker pane when omitted. */
@@ -42,17 +47,28 @@ export const useMapVehicleMarker = (
 
     marker.value.getTooltip()?.setContent(content)
 
-    const iconElement = marker.value.getElement()?.querySelector('img')
+    const iconElement = marker.value.getElement()?.querySelector<HTMLElement>('.vehicle-marker-body')
     if (iconElement) iconElement.style.transform = `rotate(${headingInDegrees}deg)`
+  }
+
+  const applyIconAppearance = (appearance: VehicleIconAppearance): void => {
+    const iconElement = marker.value?.getElement()?.querySelector<HTMLElement>('.vehicle-marker-body')
+    if (!iconElement) return
+
+    const { iconStyle, cssVariables } = vehicleIconAttributes(appearance)
+    iconElement.dataset.iconStyle = iconStyle
+    Object.entries(cssVariables).forEach(([name, value]) => iconElement.style.setProperty(name, value))
   }
 
   const create = (position: LatLngTuple): void => {
     if (!map.value) return
 
+    const iconSizeStyle = `width: ${VEHICLE_ICON_SIZE_PX}px; height: ${VEHICLE_ICON_SIZE_PX}px;`
+    const arrowAndImage = `<div class="vehicle-heading-arrow"></div><img src="${options.iconUrl()}" style="${iconSizeStyle}">`
     const markerOptions: MarkerOptions = {
       icon: L.divIcon({
         className: 'vehicle-marker',
-        html: `<img src="${options.iconUrl()}" style="width: ${VEHICLE_ICON_SIZE_PX}px; height: ${VEHICLE_ICON_SIZE_PX}px;">`,
+        html: `<div class="vehicle-marker-body" style="position: relative; ${iconSizeStyle}">${arrowAndImage}</div>`,
         iconSize: [VEHICLE_ICON_SIZE_PX, VEHICLE_ICON_SIZE_PX],
         iconAnchor: [VEHICLE_ICON_SIZE_PX / 2, VEHICLE_ICON_SIZE_PX / 2],
       }),
@@ -88,6 +104,7 @@ export const useMapVehicleMarker = (
         // A station-keeping vehicle may never fire the telemetry watch below, which would leave the
         // placeholder tooltip in place for as long as it holds position.
         applyTooltipAndRotation(options.tooltipContent(), options.headingInDegrees())
+        applyIconAppearance(options.iconAppearance())
       }
 
       marker.value?.setLatLng(position)
@@ -98,6 +115,8 @@ export const useMapVehicleMarker = (
   watch([() => options.tooltipContent(), () => options.headingInDegrees()], ([content, heading]) =>
     applyTooltipAndRotation(content, heading)
   )
+
+  watch(() => options.iconAppearance(), applyIconAppearance, { deep: true })
 
   onBeforeUnmount(() => {
     if (marker.value && map.value) map.value.removeLayer(marker.value)

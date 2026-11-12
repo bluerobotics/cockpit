@@ -258,6 +258,39 @@
                   />
                 </div>
               </div>
+              <div class="flex items-center gap-x-4">
+                <span class="text-white text-sm whitespace-nowrap">{{ t`Vehicle icon on maps` }}</span>
+                <v-select
+                  :model-value="missionStore.vehicleIconAppearance.style"
+                  :items="vehicleIconStyleOptions"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="max-w-[300px]"
+                  theme="dark"
+                  @update:model-value="setVehicleIconStyle"
+                />
+              </div>
+              <div v-if="missionStore.vehicleIconAppearance.style !== 'picture'" class="flex items-center gap-x-8">
+                <label class="flex items-center gap-x-2 text-white text-sm whitespace-nowrap">
+                  {{ t`Arrow color` }}
+                  <input
+                    :value="missionStore.vehicleIconAppearance.arrowColor"
+                    type="color"
+                    class="w-10 h-8 rounded-sm bg-transparent border border-[#FFFFFF33] cursor-pointer"
+                    @change="setVehicleArrowColor('arrowColor', $event)"
+                  />
+                </label>
+                <label class="flex items-center gap-x-2 text-white text-sm whitespace-nowrap">
+                  {{ t`Arrow outline color` }}
+                  <input
+                    :value="missionStore.vehicleIconAppearance.arrowOutlineColor"
+                    type="color"
+                    class="w-10 h-8 rounded-sm bg-transparent border border-[#FFFFFF33] cursor-pointer"
+                    @change="setVehicleArrowColor('arrowOutlineColor', $event)"
+                  />
+                </label>
+              </div>
             </div>
           </template>
         </ExpansiblePanel>
@@ -267,6 +300,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -274,13 +308,24 @@ import { EventCategory, isCategoryConfirmationRequired } from '@/libs/slide-to-c
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { DEFAULT_MAX_POSITION_HISTORY_SIZE, MIN_MAX_POSITION_HISTORY_SIZE, useMissionStore } from '@/stores/mission'
-import type { MapTileProviderPreference, WaypointCoordinates } from '@/types/mission'
+import type { MapTileProviderPreference, VehicleIconAppearance, WaypointCoordinates } from '@/types/mission'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
 const missionStore = useMissionStore()
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
+
+const vehicleIconStyleOptions: {
+  /** Translated name shown in the dropdown. */
+  title: string
+  /** Icon style the entry selects. */
+  value: VehicleIconAppearance['style']
+}[] = [
+  { title: t`Vehicle picture`, value: 'picture' },
+  { title: t`Vehicle picture with heading arrow`, value: 'picture-with-arrow' },
+  { title: t`Arrow only`, value: 'arrow' },
+]
 
 const mapTileProviderOptions: MapTileProviderPreference[] = [
   'Use last selected',
@@ -369,6 +414,17 @@ const setVehicleHistoryPersistent = (value: boolean | null): void => {
   const enabled = value ?? false
   logUserAction(`${enabled ? 'Enabled' : 'Disabled'} persistent vehicle history line`)
   missionStore.isVehiclePositionHistoryPersistent = enabled
+}
+
+const setVehicleIconStyle = (style: VehicleIconAppearance['style']): void => {
+  logUserAction(`Set the vehicle icon on maps to '${style}'`)
+  missionStore.vehicleIconAppearance.style = style
+}
+
+const setVehicleArrowColor = (colorKey: 'arrowColor' | 'arrowOutlineColor', event: Event): void => {
+  const color = (event.target as HTMLInputElement).value
+  logUserAction(`Set the vehicle icon ${colorKey === 'arrowColor' ? 'arrow' : 'arrow outline'} color to ${color}`)
+  missionStore.vehicleIconAppearance[colorKey] = color
 }
 
 const setDefaultMapTileProvider = (value: unknown): void => {

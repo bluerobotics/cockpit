@@ -30,6 +30,18 @@ msgstr "Aplicado quando o Cockpit recarregar"
 msgid "Armed menu warning disabled. You can re-enable it in the alerts settings."
 msgstr ""
 
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow color"
+msgstr "Cor da seta"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow only"
+msgstr "Apenas seta"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow outline color"
+msgstr "Cor do contorno da seta"
+
 #: src/components/MainMenu.vue
 msgid "Back"
 msgstr ""
@@ -127,3 +139,15 @@ msgstr ""
 #: src/components/MainMenu.vue
 msgid "Tools"
 msgstr "Ferramentas"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle icon on maps"
+msgstr "Ícone do veículo nos mapas"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle picture"
+msgstr "Imagem do veículo"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle picture with heading arrow"
+msgstr "Imagem do veículo com seta de direção"
