@@ -599,3 +599,16 @@ jobs:
             -f state='success' \
             -f context='review-is-current' \
             -f description="Reviewed at ${HEAD_SHA:0:7}."
+
+      # The action keeps the transcript out of the log, so a run that ends without a review leaves
+      # no other record of why. It holds what the agent read: this repository and the PR's diff.
+      - name: Keep the transcript of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-review-transcript
+          path: |
+            ${{ steps.review.outputs.execution_file }}
+            review.md
+          if-no-files-found: ignore
+          retention-days: 14
