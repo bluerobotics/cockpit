@@ -1,5 +1,7 @@
 import * as Connection from './connection'
+import { resolveSerialConnectionUri } from './connection-form'
 import { RawMavlinkCodec } from './raw-mavlink-codec'
+import { listSerialPorts } from './serial'
 
 /**
  * Electron connection abstraction using IPC
@@ -19,11 +21,7 @@ class ElectronConnectionIPC {
     this._uri = uri
     this._onRead = undefined
 
-    // Fix the path to be compatible with WHATWG URL standard
-    // otherwise URL won't separate port from ip address
-    // eg. (udpin:) -> (udpin://), (udpin://) -> (udpin://)
-    // would not work with: (udpin:/), (:0.0.0.0)
-    this.path = uri.toString().replace(/^([^:]+):(\/\/)?/, '$1://')
+    this.path = Connection.withAuthoritySlashes(uri.toString())
   }
 
   /**
@@ -93,7 +91,7 @@ export class ElectronConnection extends Connection.Abstract {
    */
   async initialize(): Promise<void> {
     await this._codec.initialize()
-    this._connection = this.createConnection(this.uri())
+    this._connection = this.createConnection(await this.currentUri())
     await this._connection.initialize()
 
     window!.electronAPI!.onLinkData((data) => {
@@ -101,6 +99,27 @@ export class ElectronConnection extends Connection.Abstract {
         this.processRawMavlink(new Uint8Array(data.data))
       }
     })
+  }
+
+  /**
+   * The URI to open now, with a serial device followed to the port it currently sits at
+   * @returns {Promise<Connection.URI>}
+   */
+  private async currentUri(): Promise<Connection.URI> {
+    const usbIds = this.uri().searchParams
+    const namesUsbDevice = usbIds.has('vid') && usbIds.has('pid')
+    if (this.uri().type() !== Connection.Type.Serial || !namesUsbDevice || !window.electronAPI) return this.uri()
+    // A system that can not list its ports can still open one, so the saved path is tried as it is
+    let ports
+    try {
+      ports = await listSerialPorts()
+    } catch (error) {
+      console.warn('Could not list the serial ports, opening the saved path without checking its device.', error)
+      return this.uri()
+    }
+    const uri = resolveSerialConnectionUri(this.uri().toString(), ports)
+    if (uri === undefined) throw new Error('The serial device of this connection is not plugged in')
+    return new Connection.URI(uri)
   }
 
   /**

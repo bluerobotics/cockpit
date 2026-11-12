@@ -86,7 +86,7 @@ Once you have Cockpit running, it's time to connect to your vehicle:
 
 If you're running Cockpit as a BlueOS extension, it should automatically connect to your vehicle, but if you're running the native app and you have BlueOS in your vehicle, you can use the Vehicle Discovery dialog to easily connect to it. If for some reason you missed this dialog during boot you can just head to `Menu>Settings>General` and find the "Search for vehicles" button there.
 
-If you have your vehicle connected through a serial interface, like a [USB-Serial radio](https://ardupilot.org/plane/docs/common-telemetry-landingpage.html#common-telemetry-landingpage), you should [manually configure the connection address]((https://blueos.cloud/cockpit/docs/latest/usage/getting-started/#general-configuration)). To do that activate the checkmark for "Mavlink2Rest connection" under `Menu>Settings>General` and use `serial:path/to/serial/device?baudrate=desired-baudrate` there.
+If you have your vehicle connected through a serial interface, like a [USB-Serial radio](https://ardupilot.org/plane/docs/common-telemetry-landingpage.html#common-telemetry-landingpage), or through a UDP or TCP link, open "Vehicle connection" under `Menu>Settings>General` on the native app, pick the connection type, fill in the serial port and baud rate (or the host and port) and apply.
 
 ### Streaming video
 
@@ -109,6 +109,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
 | **ArduSub Simulator (`sitl://ardusub`)** | Only on the GitHub Pages version, in browsers with cross-origin isolation support (Chrome, Edge, Firefox). Embedded pages, like iframe widgets, may not load while it runs | ❌ Not available |
+| **Serial, UDP and TCP Vehicle Links** | ❌ Not available (needs a vehicle address reachable from the browser) | ✅ Connect straight to an autopilot or telemetry radio |
 | **External Serial GNSS** | ❌ Not available (browsers can't access serial devices outside a secure context) | ✅ Read one or more USB/serial NMEA GNSS receivers into the data-lake |
 | **Mobile Coverage Heatmap** | Limited to OpenStreetMap tower data | ✅ Also supports OpenCellID, with a personal API key |
 | **Updates** | Manual updates required | ✅ Auto-updates / update notifications |
