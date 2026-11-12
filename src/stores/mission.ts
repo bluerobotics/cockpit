@@ -47,6 +47,7 @@ import {
   MissionEstimatesSnapshot,
   SavedMission,
   Survey,
+  VehicleIconAppearance,
   Waypoint,
   WaypointCoordinates,
 } from '@/types/mission'
@@ -106,6 +107,11 @@ export const useMissionStore = defineStore('mission', () => {
   const showMissionCreationTips = useBlueOsStorage('cockpit-show-mission-creation-tips', true)
   const showChecklistBeforeArm = useBlueOsStorage('cockpit-show-checklist-before-arm', true)
   const showGridOnMissionPlanning = useBlueOsStorage('cockpit-show-grid-on-mission-planning', false)
+  const vehicleIconAppearance = useBlueOsStorage<VehicleIconAppearance>('cockpit-vehicle-icon-appearance', {
+    style: 'picture',
+    arrowColor: '#ffffff',
+    arrowOutlineColor: '#000000',
+  })
   const alwaysShowWaypointNumbers = useBlueOsStorage('cockpit-always-show-waypoint-numbers', false, { debounceMs: 0 })
   const showMissionEstimates = useBlueOsStorage('cockpit-show-mission-estimates', true)
   const showMissionPathSignalStrength = useBlueOsStorage('cockpit-show-mission-path-signal-strength', false)
@@ -1231,6 +1237,7 @@ export const useMissionStore = defineStore('mission', () => {
     showMissionCreationTips,
     showChecklistBeforeArm,
     showGridOnMissionPlanning,
+    vehicleIconAppearance,
     alwaysShowWaypointNumbers,
     toggleAlwaysShowWaypointNumbers,
     showMissionEstimates,

@@ -1178,6 +1178,18 @@ msgstr "已解锁"
 msgid "Armed menu warning disabled. You can re-enable it in the alerts settings."
 msgstr "已禁用解锁菜单警告。您可以在警报设置中重新启用它。"
 
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow color"
+msgstr ""
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow only"
+msgstr ""
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow outline color"
+msgstr ""
+
 #: src/components/CameraGimbalControlButtons.vue
 msgid "Asked the vehicle camera to take a picture."
 msgstr "已请求设备摄像头拍照。"
@@ -11137,6 +11149,10 @@ msgstr "设备有水下探头（例如 Ping1D 声纳）"
 msgid "Vehicle has antenna mast"
 msgstr "设备配有天线桅杆"
 
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle icon on maps"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Vehicle is armed"
 msgstr "设备已解锁"
@@ -11190,6 +11206,14 @@ msgstr "设备路径"
 #: src/views/MissionPlanningView.vue
 msgid "Vehicle path history cleared"
 msgstr "设备路径历史已清除"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle picture"
+msgstr ""
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle picture with heading arrow"
+msgstr ""
 
 #: src/components/widgets/Map.vue
 msgid "Vehicle position updated."

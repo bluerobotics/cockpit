@@ -19,8 +19,10 @@
     <div
       v-if="showVehicleGlyph"
       class="minimap-vehicle"
-      :style="{ transform: `translate(-50%, -50%) rotate(${vehicleRotation}deg)` }"
+      :data-icon-style="vehicleIconAttrs.iconStyle"
+      :style="{ transform: `translate(-50%, -50%) rotate(${vehicleRotation}deg)`, ...vehicleIconAttrs.cssVariables }"
     >
+      <div class="vehicle-heading-arrow" />
       <img class="minimap-vehicle-icon" :src="vehicleImageUrl" :alt="t`Vehicle`" />
     </div>
     <PoiMapArrows
@@ -206,7 +208,7 @@ import { useWidgetContextMenu } from '@/composables/useWidgetContextMenu'
 import { defaultHeadingVariableId } from '@/libs/data-sources/heading'
 import { defaultLatitudeVariableId, defaultLongitudeVariableId } from '@/libs/data-sources/position'
 import { convertValueTo } from '@/libs/units'
-import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
+import { vehicleIconAttributes, vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
@@ -309,6 +311,7 @@ const mapCenter = computed<WaypointCoordinates>(() => trackedPosition.value ?? [
 const vehicleRotation = computed(() => (effectiveHeadingUp.value ? 0 : trackedHeading.value))
 const northRotation = computed(() => (effectiveHeadingUp.value ? -trackedHeading.value : 0))
 const vehicleImageUrl = computed(() => vehicleMarkerImageUrl(vehicleStore.vehicleType))
+const vehicleIconAttrs = computed(() => vehicleIconAttributes(missionStore.vehicleIconAppearance))
 
 // The built-in base maps plus every provider configured under Settings > Sources. Custom ones are selected by
 // id, since their names are not guaranteed to be unique.
