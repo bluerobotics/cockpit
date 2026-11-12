@@ -581,7 +581,7 @@ export const useVideoStore = defineStore('video', () => {
             message:
               'It looks like some of your video-related widgets (e.g.: video player, mini video recorder, snapshot tool)' +
               ' are connected to RTSP streams, which are not supported in Cockpit Lite. To make sure those widgets work,' +
-              ' re-configure them to only use WebRTC, or upgrade to Cockpit standalone, which supports both WebRTC and RTSP streams.',
+              ' re-configure them to only use WebRTC, or install Cockpit Standalone, which supports both WebRTC and RTSP streams.',
             variant: 'error',
           })
         }
