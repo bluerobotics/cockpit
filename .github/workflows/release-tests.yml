@@ -6,9 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       cases:
-        description: Case ids or group prefixes, space-separated
-        required: true
-        default: MP-01.1 MP-01.2 MP-01.3 MP-02.1 MP-02.2 MP-03.1 MP-04.1 MP-05.1 MP-06.1 POI-12.1
+        description: Case ids or group prefixes, space-separated; empty runs every group, one job each
+        required: false
 
 env:
   NODE_OPTIONS: --max-old-space-size=6144
@@ -16,10 +15,38 @@ env:
   BLUEOS_IMAGE: bluerobotics/blueos-core:1.4.6
 
 jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      batches: ${{ steps.batches.outputs.batches }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Groups are read from e2e/cases rather than listed here, so a new group is not silently left out.
+      # The trailing dash keeps a prefix like MAP from also matching MAPSRC.
+      - name: Split the cases into batches
+        id: batches
+        env:
+          CASES: ${{ inputs.cases }}
+        run: |
+          if [ -n "${CASES//[[:space:]]}" ]; then
+            batches=$(jq -cn --arg cases "$CASES" '[{name: "selected", cases: $cases}]')
+          else
+            batches=$(cd e2e/cases && ls *.mjs | sed 's/-.*//' | sort -u | jq -R '{name: ., cases: (. + "-")}' | jq -sc .)
+          fi
+          echo "batches=$batches" >> "$GITHUB_OUTPUT"
+
   web:
-    name: Web
+    name: Web (${{ matrix.batch.name }})
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: ${{ fromJson(needs.plan.outputs.batches) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,7 +88,7 @@ jobs:
 
       - name: Run the cases
         env:
-          CASES: ${{ inputs.cases }}
+          CASES: ${{ matrix.batch.cases }}
         # CASES is left unquoted on purpose: it is a list of ids.
         run: node e2e/run.mjs $CASES --url http://localhost:5050 --vehicle localhost --build "${GITHUB_REF_NAME} ${GITHUB_SHA::10}" --out e2e/output
 
@@ -69,10 +96,25 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-tests-web
+          name: release-tests-web-${{ matrix.batch.name }}
           path: e2e/output
           if-no-files-found: ignore
 
       - name: BlueOS logs
         if: failure()
         run: docker logs --tail 200 blueos
+
+  # One artifact for the whole run, so a release sign-off does not mean opening a report per group.
+  # Separate directories, since jobs that start in the same second write the same timestamped output folder.
+  report:
+    name: Report
+    needs: web
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the group reports
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: release-tests-web
+          pattern: release-tests-web-*
+          separate-directories: true
