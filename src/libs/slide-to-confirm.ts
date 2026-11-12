@@ -96,14 +96,7 @@ export const eventCategoriesDefaultMapping: Record<string, boolean> = Object.val
 )
 
 /**
- * The maximum interval in milliseconds between the last call from a joystick action
- * to be considered as a repeat action
- * @type {number}
- */
-const maxRepeatIntervalMs = 150
-
-/**
- * Time interval in ms needed to keep a repeat action pressed to be considered as a hold action
+ * Time interval in ms a hold has to last, from its start action, to be considered as a confirmation
  * @type {number}
  */
 const holdActionTimeMs = 1000
@@ -132,29 +125,40 @@ export const canByPassCategory = (category: EventCategory): boolean => {
 }
 
 /**
- * Register the hold to confirm action
- * @returns {string} The id of the registered action callback
+ * Register the actions that start and stop a hold to confirm
+ * @returns {() => void} Unregisters both actions and ends a hold still in progress
  */
-const registerHoldToConfirm = (): string => {
-  let lastConfirmCall = 0
-  let totalPressedTime = 0
+const registerHoldToConfirm = (): (() => void) => {
+  let holdProgressInterval: ReturnType<typeof setInterval> | undefined
+  // The percentage left by the previous confirmation would otherwise confirm this one as soon as it opens
+  sliderPercentage.value = 0
 
-  const onHoldConfirmCallback = (): void => {
-    const dt = Date.now() - lastConfirmCall
-
-    // Reset total pressed time if user releases the button
-    if (dt > maxRepeatIntervalMs) {
-      totalPressedTime = 0
-      sliderPercentage.value = 0
-    } else {
-      totalPressedTime += dt
-      sliderPercentage.value = Math.min((totalPressedTime / holdActionTimeMs) * 100, 100)
-    }
-
-    lastConfirmCall = Date.now()
+  const endHold = (): void => {
+    clearInterval(holdProgressInterval)
+    holdProgressInterval = undefined
   }
 
-  return registerActionCallback(availableCockpitActions.hold_to_confirm, onHoldConfirmCallback)
+  const onStartHold = (): void => {
+    if (holdProgressInterval !== undefined) return
+    const holdStart = Date.now()
+    holdProgressInterval = setInterval(() => {
+      sliderPercentage.value = Math.min(((Date.now() - holdStart) / holdActionTimeMs) * 100, 100)
+    }, 50)
+  }
+
+  const onStopHold = (): void => {
+    endHold()
+    sliderPercentage.value = 0
+  }
+
+  const startCallbackId = registerActionCallback(availableCockpitActions.start_hold_to_confirm, onStartHold)
+  const stopCallbackId = registerActionCallback(availableCockpitActions.stop_hold_to_confirm, onStopHold)
+
+  return () => {
+    unregisterActionCallback(startCallbackId)
+    unregisterActionCallback(stopCallbackId)
+    endHold()
+  }
 }
 
 /**
@@ -174,8 +178,8 @@ export function slideToConfirm(content: ConfirmContent, byPass = false): Promise
     return Promise.reject(new Error(`Cannot confirm ${content.command}. Another confirmation is already in progress.`))
   }
 
-  // Register the hold to confirm action for joystick listening
-  const holdToConfirmCallbackId = registerHoldToConfirm()
+  // Register the hold to confirm actions for joystick and keyboard listening
+  const unregisterHoldToConfirm = registerHoldToConfirm()
 
   // Setup and show the slide to confirm component
   sliderText.value = content.text ?? `Confirm ${content.command}`
@@ -187,8 +191,8 @@ export function slideToConfirm(content: ConfirmContent, byPass = false): Promise
   // Register the callback to call the action
   return new Promise((resolve, reject) => {
     onAction.value = (confirmed: boolean) => {
-      // Unregister the hold to confirm action callback
-      unregisterActionCallback(holdToConfirmCallbackId)
+      // Unregister the hold to confirm action callbacks
+      unregisterHoldToConfirm()
 
       if (confirmed) {
         return resolve()

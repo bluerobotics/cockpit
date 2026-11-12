@@ -1,14 +1,25 @@
 <template>
   <BaseConfigurationView>
-    <template #title>Joystick configuration </template>
+    <template #title>Controllers configuration</template>
     <template #content>
       <div
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[88vw] max-h-[95vh]' : 'max-w-[880px] max-h-[80vh]'"
         class="overflow-y-auto"
         style="scrollbar-gutter: stable"
       >
+        <v-tabs
+          :model-value="controllerTab"
+          theme="dark"
+          density="compact"
+          align-tabs="center"
+          class="mb-2"
+          @update:model-value="setControllerTab"
+        >
+          <v-tab value="joystick">Joystick</v-tab>
+          <v-tab value="keyboard">Keyboard</v-tab>
+        </v-tabs>
         <div
-          v-if="!controllerStore.joysticks.size"
+          v-if="controllerTab === 'joystick' && !controllerStore.joysticks.size"
           class="px-6 pb-2 flex-centered flex-column position-relative"
           :class="interfaceStore.isOnSmallScreen ? 'pt-1' : 'pt-3'"
         >
@@ -17,7 +28,7 @@
             import or export joystick configurations below.
           </p>
         </div>
-        <div>
+        <div v-if="controllerTab === 'joystick'">
           <ExpansiblePanel
             no-top-divider
             no-bottom-divider
@@ -525,6 +536,7 @@
             </template>
           </ExpansiblePanel>
         </div>
+        <KeyboardMappingConfig v-else />
       </div>
     </template>
   </BaseConfigurationView>
@@ -719,6 +731,7 @@ import semver from 'semver'
 import { type Ref, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '@/components/Button.vue'
+import KeyboardMappingConfig from '@/components/configuration/KeyboardMappingConfig.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import AxisDraftActions from '@/components/joysticks/AxisDraftActions.vue'
@@ -729,14 +742,14 @@ import JoystickPS from '@/components/joysticks/JoystickPS.vue'
 import { useSnackbar } from '@/composables/snackbar'
 import { type AxisRangeReview, useAxisMappingDrafts } from '@/composables/useAxisMappingDrafts'
 import { getDataLakeVariableInfo } from '@/libs/actions/data-lake'
-import { getAllTransformingFunctions, isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
+import { isCompoundDataLakeVariable } from '@/libs/actions/data-lake-transformations'
 import { getArdupilotVersion, getMavlink2RestVersion } from '@/libs/blueos'
 import { getDefaultMapping } from '@/libs/joystick/default-mappings'
 import { JoystickModel } from '@/libs/joystick/manager'
+import { isAssignableToButton } from '@/libs/joystick/protocols'
 import { actionDisplayName } from '@/libs/joystick/protocols/cockpit-actions'
-import { MAVLinkButtonFunction } from '@/libs/joystick/protocols/mavlink-manual-control'
 import { modifierKeyActions } from '@/libs/joystick/protocols/other'
-import { mavlinkCameraFocusActionId, mavlinkCameraZoomActionId } from '@/libs/joystick/protocols/predefined-resources'
+import { setKeyboardControlPaused } from '@/libs/keyboard'
 import { scale } from '@/libs/utils'
 import { vehicleTypeName } from '@/migration/default-profile-importer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -773,6 +786,7 @@ onMounted(async () => {
   showJoystickControlPaused.value =
     controllerStore.enableForwarding && controllerStore.joysticks.size > 0 && mainVehicleStore.isVehicleOnline
   controllerStore.enableForwarding = false
+  setKeyboardControlPaused(true)
   warnIfJoystickDoesNotSupportExtendedManualControl()
 })
 
@@ -869,17 +883,17 @@ const shiftFunction = {
   name: 'Shift',
 }
 
-const idsExcludedJoystickActions = [
-  MAVLinkButtonFunction.arm,
-  MAVLinkButtonFunction.disarm,
-  mavlinkCameraZoomActionId,
-  mavlinkCameraFocusActionId,
-]
-
 watch(
   () => currentJoystick.value?.model,
   (newModel) => (currentTabVIew.value = tabViewForModel(newModel))
 )
+
+const controllerTab = ref('joystick')
+
+const setControllerTab = (tab: unknown): void => {
+  controllerTab.value = String(tab)
+  logUserAction(`Switched to the "${controllerTab.value === 'joystick' ? 'Joystick' : 'Keyboard'}" controller tab`)
+}
 
 const setTabView = (view: unknown): void => {
   const newView = String(view)
@@ -911,12 +925,7 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
   return buttonActionsToShow.value
     .filter((action: JoystickAction) => action.name.toLowerCase().includes(searchText.value.toLowerCase()))
     .filter((action: JoystickAction) => allowedProtocols.includes(action.protocol as JoystickProtocol))
-    .filter((action: JoystickAction) => {
-      const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
-      if (!dataLakeVariableInfo) return true
-      return dataLakeVariableInfo.allowUserToChangeValue && dataLakeVariableInfo.type !== 'string'
-    })
-    .filter((action: JoystickAction) => !idsExcludedJoystickActions.includes(action.id))
+    .filter((action: JoystickAction) => isAssignableToButton(action.id))
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 })
 
@@ -1005,6 +1014,7 @@ onUnmounted(() => {
   // Going through the helper so a session where another ground station was detected stays silent until the user
   // re-enables forwarding by hand, instead of leaving this page bringing the sticks back live.
   controllerStore.enableJoystickForwardingIfSafe()
+  setKeyboardControlPaused(false)
 })
 
 watch(inputClickedDialog, () => {
@@ -1104,13 +1114,7 @@ const axisRemappingText = computed(() => {
 const buttonActionsToShow = computed(() =>
   controllerStore.availableButtonActions.filter((a) => {
     // Do not show the action to the regular modifier key, as it's the default behavior when not pressing any modifier key
-    const isNotRegularAction = JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular)
-
-    // Do not show transforming functions, as they are calculated, not to be injected
-    const transformingFunctions = getAllTransformingFunctions()
-    const isNotTransformingFunction = !transformingFunctions.some((v) => v.id === a.id)
-
-    return isNotRegularAction && isNotTransformingFunction
+    return JSON.stringify(a) !== JSON.stringify(modifierKeyActions.regular)
   })
 )
 
