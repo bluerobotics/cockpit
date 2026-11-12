@@ -11401,14 +11401,6 @@ msgid "UPLOAD MISSION TO VEHICLE"
 msgstr "ENVIAR MISSÃO AO VEÍCULO"
 
 #: src/views/ConfigurationGeneralView.vue
-msgid "URI of a Mavlink2Rest"
-msgstr "URI de um MAVLink2REST"
-
-#: src/views/ConfigurationGeneralView.vue
-msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
-msgstr "URI de um MAVLink2REST, ou sitl://ardusub para o simulador"
-
-#: src/views/ConfigurationGeneralView.vue
 msgid "URI of a WebRTC Signalling Server URI"
 msgstr "URI de um servidor de sinalização WebRTC"
 
@@ -13339,3 +13331,9 @@ msgstr ""
 
 #~ msgid "Select any numeric data lake variable"
 #~ msgstr "Selecione qualquer variável numérica do data lake"
+
+#~ msgid "URI of a Mavlink2Rest"
+#~ msgstr "URI de um MAVLink2REST"
+
+#~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
+#~ msgstr "URI de um MAVLink2REST, ou sitl://ardusub para o simulador"
