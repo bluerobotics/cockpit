@@ -1282,6 +1282,18 @@ msgstr ""
 "Aviso de menu com veículo armado desativado. Você pode reativá-lo nas "
 "configurações de alertas."
 
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow color"
+msgstr "Cor da seta"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow only"
+msgstr "Apenas seta"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Arrow outline color"
+msgstr "Cor do contorno da seta"
+
 #: src/components/CameraGimbalControlButtons.vue
 msgid "Asked the vehicle camera to take a picture."
 msgstr "Solicitado à câmera do veículo que tire uma foto."
@@ -11981,6 +11993,10 @@ msgstr "O veículo tem uma sonda submersa (ex.: sonar Ping1D)"
 msgid "Vehicle has antenna mast"
 msgstr "O veículo tem mastro de antena"
 
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle icon on maps"
+msgstr "Ícone do veículo nos mapas"
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "Vehicle is armed"
 msgstr "O veículo está armado"
@@ -12036,6 +12052,14 @@ msgstr "Trajeto do veículo"
 #: src/views/MissionPlanningView.vue
 msgid "Vehicle path history cleared"
 msgstr "Histórico de trajeto do veículo apagado"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle picture"
+msgstr "Imagem do veículo"
+
+#: src/views/ConfigurationMissionView.vue
+msgid "Vehicle picture with heading arrow"
+msgstr "Imagem do veículo com seta de direção"
 
 #: src/components/widgets/Map.vue
 msgid "Vehicle position updated."
