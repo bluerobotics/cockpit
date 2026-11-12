@@ -37,9 +37,9 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     () => fenceStore.fenceBreached,
     (breached, wasBreached) => {
       if (breached === true && wasBreached !== true) {
-        alertStore.pushAlert(new Alert(AlertLevel.Critical, t`Vehicle is outside the geofence.`))
+        alertStore.pushAlert(new Alert(AlertLevel.Critical, t`Vehicle is outside the geofence.`), 'geofence')
       } else if (breached === false && wasBreached === true) {
-        alertStore.pushAlert(new Alert(AlertLevel.Success, t`Vehicle is back inside the geofence.`))
+        alertStore.pushAlert(new Alert(AlertLevel.Success, t`Vehicle is back inside the geofence.`), 'geofence')
       }
     }
   )
@@ -48,7 +48,10 @@ export const useVehicleAlerterStore = defineStore('vehicle-alerter', () => {
     () => vehicleStore.isVehicleOnline,
     (isOnlineNow) => {
       const alertLevel = isOnlineNow ? AlertLevel.Success : AlertLevel.Error
-      alertStore.pushAlert(new Alert(alertLevel, isOnlineNow ? t`Vehicle connected` : t`Vehicle disconnected`))
+      alertStore.pushAlert(
+        new Alert(alertLevel, isOnlineNow ? t`Vehicle connected` : t`Vehicle disconnected`),
+        'vehicle-connection'
+      )
     }
   )
 })
