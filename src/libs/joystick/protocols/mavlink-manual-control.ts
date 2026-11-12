@@ -627,7 +627,7 @@ export class MavlinkManualControlManager {
       } else {
         const mavlinkActionValue = this.vehicleButtonParameterTable.find((e) => e.title === actionId)
         if (mavlinkActionValue === undefined) return
-        this.vehicle?.setParameter({ id: unnecessaryVehicleRegularButtons[unnecessaryVehicleRegularButtons.length - 1].button, value: mavlinkActionValue.value })
+        this.vehicle?.setParameter({ id: unnecessaryVehicleRegularButtons[unnecessaryVehicleRegularButtons.length - 1 - indexRegularButtonToUse].button, value: mavlinkActionValue.value })
       }
       indexRegularButtonToUse++
     })
@@ -640,7 +640,7 @@ export class MavlinkManualControlManager {
       } else {
         const mavlinkActionValue = this.vehicleButtonParameterTable.find((e) => e.title === actionId)
         if (mavlinkActionValue === undefined) return
-        this.vehicle?.setParameter({ id: unnecessaryVehicleShiftButtons[unnecessaryVehicleShiftButtons.length - 1].button, value: mavlinkActionValue.value })
+        this.vehicle?.setParameter({ id: unnecessaryVehicleShiftButtons[unnecessaryVehicleShiftButtons.length - 1 - indexShiftButtonToUse].button, value: mavlinkActionValue.value })
       }
       indexShiftButtonToUse++
     })
