@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+import type { RtpSourceConfig } from '@/libs/rtp-source'
 import type { OpenCellIdBboxRequest } from '@/types/baseStation'
 import type { ElectronSDLJoystickControllerStateEventData } from '@/types/joystick'
 import type { McpConfig, McpToolCall, McpToolDefinition, McpToolResult } from '@/types/mcp'
@@ -71,6 +72,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   finalizeVideoRecording: (processId: string) => ipcRenderer.invoke('finalize-video-recording', processId),
   go2rtcAddStream: (name: string, rtspUrl: string) => ipcRenderer.invoke('go2rtc-add-stream', name, rtspUrl),
+  go2rtcAddRtpStream: (name: string, config: RtpSourceConfig) =>
+    ipcRenderer.invoke('go2rtc-add-rtp-stream', name, config),
   go2rtcRemoveStream: (name: string) => ipcRenderer.invoke('go2rtc-remove-stream', name),
   go2rtcGetStreamsInfo: () => ipcRenderer.invoke('go2rtc-get-streams-info'),
   go2rtcGetPort: () => ipcRenderer.invoke('go2rtc-get-port'),

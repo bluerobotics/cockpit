@@ -182,6 +182,8 @@ const isStreamCurrentlyAvailable = (corr: VideoStreamCorrespondency): boolean =>
   if ((corr.protocol ?? 'webrtc') === 'webrtc') {
     return videoStore.namesAvailableWebRTCStreams.includes(corr.externalId)
   }
+  // Nothing announces a UDP stream, so it is there wherever Cockpit can listen for it
+  if (corr.protocol === 'rtp') return isStandalone
   return videoStore.streamInformation.some((s) => s.rtspSourceUrl === corr.rtspUrl)
 }
 

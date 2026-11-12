@@ -189,6 +189,44 @@
                   {{ rtspInputError }}
                 </div>
               </div>
+              <div v-if="isElectron()" class="mt-4 mr-2 mb-2 w-[95%]">
+                <div class="text-sm text-gray-300 mb-2">{{ t`Add UDP video stream (Standalone)` }}</div>
+                <div class="flex items-end gap-2 w-full">
+                  <v-text-field
+                    v-model="rtpPortInput"
+                    :label="t`Port`"
+                    type="number"
+                    density="compact"
+                    variant="outlined"
+                    class="flex-1 min-w-0"
+                    hide-details
+                    @keyup.enter="addRtpStream"
+                    @input="rtpInputError = ''"
+                  />
+                  <v-select
+                    v-model="rtpCodecInput"
+                    :items="rtpCodecOptions"
+                    :label="t`Codec`"
+                    density="compact"
+                    variant="outlined"
+                    theme="dark"
+                    class="w-[150px] shrink-0"
+                    hide-details
+                  />
+                  <v-btn variant="text" class="shrink-0 mb-[3px]" @click="addRtpStream">{{ t`Add` }}</v-btn>
+                </div>
+                <div v-if="rtpInputError" class="text-red-300 text-sm mt-2">
+                  {{ rtpInputError }}
+                </div>
+                <div class="text-xs text-gray-400 mt-2">
+                  {{
+                    t`Receives video sent straight to this computer over the network, the way ArduPilot and PX4 companion computers send it.`
+                  }}
+                  {{
+                    t`Pick the port it is sent to and the codec the sender is using, as this kind of stream does not announce it.`
+                  }}
+                </div>
+              </div>
             </div>
           </template>
         </ExpansiblePanel>
@@ -470,13 +508,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { t } from 'ttag'
 import { computed, onMounted, ref } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import InteractionDialog from '@/components/InteractionDialog.vue'
 import ScrollingText from '@/components/ScrollingText.vue'
 import { openSnackbar } from '@/composables/snackbar'
-import { isElectron, isValidIpv4Address, sanitizeIpv4Address } from '@/libs/utils'
+import { type RtpCodec, rtpConfigError } from '@/libs/rtp-source'
+import { isElectron, isValidIpv4Address, messageFromError, sanitizeIpv4Address } from '@/libs/utils'
 import { protocolFromExternalId, streamProtocolChips } from '@/libs/video-stream-protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useSnapshotStore } from '@/stores/snapshot'
@@ -508,6 +548,14 @@ const unavailableStreamId = ref('')
 const showIgnoredStreams = ref(false)
 const rtspUrlInput = ref('rtsp://user:password@camera-ip:554/stream')
 const rtspInputError = ref('')
+
+const rtpPortInput = ref('5600')
+const rtpCodecInput = ref<RtpCodec>('h264')
+const rtpInputError = ref('')
+const rtpCodecOptions = [
+  { title: 'H.264', value: 'h264' as RtpCodec },
+  { title: 'H.265 (HEVC)', value: 'h265' as RtpCodec },
+]
 
 // Falls back rather than indexing blindly, since a vehicle-synced entry may name a protocol this version
 // does not know about, and a missing chip would break the whole page.
@@ -585,14 +633,30 @@ const addRtspStream = (): void => {
   }
 }
 
+const addRtpStream = (): void => {
+  const config = { port: Number(rtpPortInput.value), codec: rtpCodecInput.value }
+
+  rtpInputError.value = rtpConfigError(config) ?? ''
+  if (rtpInputError.value) return
+
+  try {
+    const streamName = videoStore.addRtpStreamCorrespondency(config).name
+    logUserAction(`Added UDP video stream on port ${config.port} (${config.codec})`)
+    openSnackbar({ variant: 'success', message: t`Video stream '${streamName}' added.` })
+  } catch (error) {
+    rtpInputError.value = messageFromError(error)
+  }
+}
+
 const deleteStream = (item: VideoStreamCorrespondency): void => {
   logUserAction(`Removed video stream '${item.name}'`)
   videoStore.deleteStreamCorrespondency(item.externalId)
 }
 
 const restoreIgnoredStream = (externalId: string): void => {
-  const isRtsp = protocolFromExternalId(externalId) === 'rtsp'
-  const isStreamAvailable = isRtsp || videoStore.namesAvailableStreams.includes(externalId)
+  // go2rtc-backed streams are described entirely by their id, so they can always be brought back.
+  const isStreamAvailable =
+    protocolFromExternalId(externalId) !== 'webrtc' || videoStore.namesAvailableStreams.includes(externalId)
 
   // If the stream is available, restore normally, otherwise ask the user to confirm they want to delete it permanently
   if (isStreamAvailable) {
@@ -633,7 +697,7 @@ const getStreamDisplayInfo = (
 // eslint-disable-next-line
 const getStreamStatus = (item: { externalId: string; protocol?: string }): { status: 'Available' | 'Unavailable' | 'Offline' | 'Unknown'; icon: string; color: string } => {
   const protocol = item.protocol ?? videoStore.getStreamProtocol(item.externalId)
-  if (protocol === 'rtsp') {
+  if (protocol !== 'webrtc') {
     return isElectron()
       ? { status: 'Available', icon: 'mdi-check-circle', color: '#297e1944' }
       : { status: 'Unavailable', icon: 'mdi-close-circle', color: '#ff000044' }
