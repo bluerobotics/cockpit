@@ -29,6 +29,7 @@ import {
 import { datalogger } from '@/libs/sensors-logging'
 import { StreamActivationBackoff } from '@/libs/stream-activation-backoff'
 import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import { protocolFromExternalId, streamProtocolChips } from '@/libs/video-stream-protocol'
 import { telemetryOverlayWindowCandidates } from '@/libs/video-telemetry'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
@@ -246,7 +247,7 @@ export const useVideoStore = defineStore('video', () => {
   /**
    * Get display information for a stream (source, resolution, fps, protocol label)
    * @param {string} externalId - External stream identifier
-   * @returns {{ source: string, resolution: string, fps: string, protocolLabel: string }}
+   * @returns {{ source: string, resolution: string, fps: string, protocolLabel: string, protocolColor: string }}
    */
   const getStreamDisplayInfo = (
     externalId: string
@@ -259,6 +260,8 @@ export const useVideoStore = defineStore('video', () => {
     fps: string
     /** Protocol type label ("WebRTC" or "RTSP") */
     protocolLabel: string
+    /** Colour the protocol is shown in */
+    protocolColor: string
   } => {
     if (getStreamProtocol(externalId) === 'rtsp') {
       const mcmInfo = streamInformation.value.find((i) => i.rtspSourceUrl === externalId)
@@ -273,7 +276,8 @@ export const useVideoStore = defineStore('video', () => {
         source: mcmInfo?.sourceName ?? (encode ? `RTSP (${encode})` : 'RTSP (...)'),
         resolution: width ? `${width}x${height}` : '...',
         fps: fps ? `${fps}fps` : '',
-        protocolLabel: 'RTSP',
+        protocolLabel: streamProtocolChips.rtsp.label,
+        protocolColor: streamProtocolChips.rtsp.color,
       }
     }
 
@@ -282,7 +286,8 @@ export const useVideoStore = defineStore('video', () => {
       source: info?.sourceName ?? 'Unknown',
       resolution: info ? `${info.width}x${info.height}` : 'Unknown',
       fps: info?.fps ? `${info.fps}fps` : '',
-      protocolLabel: 'WebRTC',
+      protocolLabel: streamProtocolChips.webrtc.label,
+      protocolColor: streamProtocolChips.webrtc.color,
     }
   }
 
@@ -1896,8 +1901,7 @@ export const useVideoStore = defineStore('video', () => {
         userRestoredStreamIds.value = [...userRestoredStreamIds.value, externalId]
       }
 
-      const isRtsp = externalId.startsWith('rtsp://') || externalId.startsWith('rtsps://')
-      if (isRtsp) {
+      if (protocolFromExternalId(externalId) === 'rtsp') {
         initializeRtspStreamsCorrespondency()
       } else if (namesAvailableStreams.value.includes(externalId)) {
         initializeStreamsCorrespondency()

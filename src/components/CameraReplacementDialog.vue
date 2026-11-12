@@ -37,7 +37,7 @@
                 <span class="detail-value">
                   <v-chip
                     size="x-small"
-                    :color="orphan.displayInfo.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
+                    :color="orphan.displayInfo.protocolColor"
                     variant="flat"
                     label
                     class="text-white"
@@ -95,11 +95,7 @@
                   <span class="detail-value">
                     <v-chip
                       size="x-small"
-                      :color="
-                        videoStore.getStreamDisplayInfo(corr.externalId).protocolLabel === 'RTSP'
-                          ? '#e67e22'
-                          : '#3498db'
-                      "
+                      :color="videoStore.getStreamDisplayInfo(corr.externalId).protocolColor"
                       variant="flat"
                       label
                       class="text-white"
@@ -254,6 +250,10 @@ const orphanedWidgetStreams = computed(() => {
        * Protocol label of the stream
        */
       protocolLabel: string
+      /**
+       * Colour the protocol is shown in
+       */
+      protocolColor: string
     }
   }[] = []
 

@@ -62,20 +62,12 @@
                       <div class="flex items-center justify-center">
                         <v-chip
                           size="small"
-                          :color="
-                            (item.protocol ?? videoStore.getStreamProtocol(item.externalId)) === 'rtsp'
-                              ? '#e67e22'
-                              : '#3498db'
-                          "
+                          :color="protocolChip(item.externalId, item.protocol).color"
                           variant="flat"
                           label
                           class="text-white text-xs font-medium"
                         >
-                          {{
-                            (item.protocol ?? videoStore.getStreamProtocol(item.externalId)) === 'rtsp'
-                              ? 'RTSP'
-                              : 'WebRTC'
-                          }}
+                          {{ protocolChip(item.externalId, item.protocol).label }}
                         </v-chip>
                       </div>
                     </td>
@@ -485,10 +477,11 @@ import InteractionDialog from '@/components/InteractionDialog.vue'
 import ScrollingText from '@/components/ScrollingText.vue'
 import { openSnackbar } from '@/composables/snackbar'
 import { isElectron, isValidIpv4Address, sanitizeIpv4Address } from '@/libs/utils'
+import { protocolFromExternalId, streamProtocolChips } from '@/libs/video-stream-protocol'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useSnapshotStore } from '@/stores/snapshot'
 import { useVideoStore } from '@/stores/video'
-import { VideoStreamCorrespondency } from '@/types/video'
+import { type VideoStreamProtocol, VideoStreamCorrespondency } from '@/types/video'
 
 import BaseConfigurationView from './BaseConfigurationView.vue'
 
@@ -516,6 +509,14 @@ const showIgnoredStreams = ref(false)
 const rtspUrlInput = ref('rtsp://user:password@camera-ip:554/stream')
 const rtspInputError = ref('')
 
+// Falls back rather than indexing blindly, since a vehicle-synced entry may name a protocol this version
+// does not know about, and a missing chip would break the whole page.
+const protocolChip = (
+  externalId: string,
+  protocol?: VideoStreamProtocol
+): (typeof streamProtocolChips)[VideoStreamProtocol] =>
+  streamProtocolChips[protocol ?? videoStore.getStreamProtocol(externalId)] ?? streamProtocolChips.webrtc
+
 const streamsToShow = computed(() => {
   return [
     ...videoStore.streamsCorrespondency.map((item) => ({ ...item, isIgnored: false })),
@@ -524,7 +525,7 @@ const streamsToShow = computed(() => {
           name: '--',
           externalId: id,
           isIgnored: true,
-          protocol: id.startsWith('rtsp://') || id.startsWith('rtsps://') ? ('rtsp' as const) : undefined,
+          protocol: protocolFromExternalId(id),
         }))
       : []),
   ].filter((item) => item.name !== '')
@@ -590,7 +591,7 @@ const deleteStream = (item: VideoStreamCorrespondency): void => {
 }
 
 const restoreIgnoredStream = (externalId: string): void => {
-  const isRtsp = externalId.startsWith('rtsp://') || externalId.startsWith('rtsps://')
+  const isRtsp = protocolFromExternalId(externalId) === 'rtsp'
   const isStreamAvailable = isRtsp || videoStore.namesAvailableStreams.includes(externalId)
 
   // If the stream is available, restore normally, otherwise ask the user to confirm they want to delete it permanently
