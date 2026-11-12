@@ -1,8 +1,8 @@
 import 'leaflet-edgebuffer'
 
 import L from 'leaflet'
-import { tileLayerOffline } from 'leaflet.offline'
 
+import { OfflineTileLayer } from '@/libs/map/offline-tile-layer'
 import type { MapTileProvider } from '@/types/mission'
 
 const tileBufferOptions = { edgeBufferTiles: 2, keepBuffer: 8, updateWhenIdle: false } as const
@@ -36,19 +36,19 @@ export interface MapTileLayers {
   /**
    * OpenStreetMap base layer (offline-capable).
    */
-  osm: L.TileLayer
+  osm: OfflineTileLayer
   /**
    * Esri World Imagery base layer (offline-capable).
    */
-  esri: L.TileLayer
+  esri: OfflineTileLayer
   /**
    * OpenTopoMap contour and hillshade base layer (offline-capable).
    */
-  openTopo: L.TileLayer
+  openTopo: OfflineTileLayer
   /**
    * OpenSeaMap seamarks overlay, when requested.
    */
-  seamarks?: L.TileLayer
+  seamarks?: OfflineTileLayer
   /**
    * GEBCO marine-profile WMS overlay, when requested.
    */
@@ -75,7 +75,7 @@ export interface MapTileLayers {
  * @returns {MapTileLayers} The created tile layers, base maps and overlays.
  */
 export const useMapTileLayers = (options: MapTileLayersOptions = {}): MapTileLayers => {
-  const osm = tileLayerOffline('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const osm = new OfflineTileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
     maxNativeZoom: 19,
     attribution: '© OpenStreetMap',
@@ -88,7 +88,7 @@ export const useMapTileLayers = (options: MapTileLayersOptions = {}): MapTileLay
     ...tileBufferOptions,
   })
 
-  const esri = tileLayerOffline(
+  const esri = new OfflineTileLayer(
     // `blankTile=false` makes ArcGIS return HTTP 404 for missing tiles instead of a
     // "Map data not yet available" placeholder image. This lets the standard `tileerror`
     // path drive our procedural-noise fallback.
@@ -106,7 +106,7 @@ export const useMapTileLayers = (options: MapTileLayersOptions = {}): MapTileLay
 
   // Contour and hillshade rendering, for reading terrain around a launch site. The project asks
   // that its tiles not be requested above zoom 17.
-  const openTopo = tileLayerOffline('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
+  const openTopo = new OfflineTileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
     maxZoom: 23,
     maxNativeZoom: 17,
     attribution: '© OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors',
@@ -124,7 +124,7 @@ export const useMapTileLayers = (options: MapTileLayersOptions = {}): MapTileLay
   const layers: MapTileLayers = { tileBufferOptions, osm, esri, openTopo, baseMaps, overlays: {} }
 
   if (options.seamarks) {
-    layers.seamarks = tileLayerOffline('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+    layers.seamarks = new OfflineTileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '© OpenSeaMap contributors',
       ...tileBufferOptions,
