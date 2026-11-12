@@ -17,6 +17,7 @@ import {
   setDataLakeVariableData,
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
+import { buildSerialUri, findUsbSerialPort, listSerialPorts } from '@/libs/connection/serial'
 import { fixQualityLabel, NmeaAggregator, parseNmeaSentence } from '@/libs/sensors/nmea'
 import { settingsManager } from '@/libs/settings-management'
 import { type DisplayUnitPreferences, formatValueWithUnit, readingLengthsAs } from '@/libs/units'
@@ -374,21 +375,6 @@ export const gnssVariablesForDevice = (device: GnssDeviceInfo): DataLakeVariable
     source: 'GNSS receiver',
   }))
 
-/**
- * Builds a serial URI that opens the given port at the given baud rate.
- *
- * POSIX ports (e.g. `/dev/ttyUSB0`) already start with a slash and become `serial:///dev/ttyUSB0`, while
- * Windows ports (e.g. `COM3`) become the opaque `serial:COM3`; both resolve to the correct `pathname` used
- * by the main-process `SerialLink`.
- * @param {string} port - The serial port path.
- * @param {number} baud - The baud rate.
- * @returns {string} The serial URI.
- */
-const buildSerialUri = (port: string, baud: number): string => {
-  const normalizedPort = port.startsWith('/') ? `//${port}` : port
-  return `serial:${normalizedPort}?baudrate=${baud}`
-}
-
 const setStatus = (deviceId: string, status: GnssStatus): void => {
   if (deviceStatuses.get(deviceId) === status) return
   deviceStatuses.set(deviceId, status)
@@ -636,15 +622,6 @@ export const autodetectBaud = (
 }
 
 /**
- * Lists the serial ports available on the system, including USB descriptors.
- * @returns {Promise<SerialPortInfo[]>} The available serial ports (empty when not in Electron).
- */
-export const listSerialPorts = async (): Promise<SerialPortInfo[]> => {
-  if (!isElectron() || !window.electronAPI) return []
-  return window.electronAPI.serialListPorts()
-}
-
-/**
  * Resolves the serial port a device should open on this machine.
  *
  * Devices are matched by model (USB vendor + product id), so a same-model unit on another computer still
@@ -655,16 +632,8 @@ export const listSerialPorts = async (): Promise<SerialPortInfo[]> => {
  */
 export const resolveDevicePort = async (device: GnssDeviceInfo): Promise<string | undefined> => {
   const ports = await listSerialPorts()
-  const { vendorId, productId } = device.usbMatch ?? {}
-
-  if (vendorId && productId) {
-    const matches = ports.filter((port) => port.vendorId === vendorId && port.productId === productId)
-    if (matches.length === 1) return matches[0].path
-    // Multiple identical-model devices: prefer the exact last-used path, else the first match.
-    if (matches.length > 1) return (matches.find((port) => port.path === device.port) ?? matches[0]).path
-  }
-
-  return ports.find((port) => port.path === device.port)?.path
+  const port = findUsbSerialPort(ports, device.usbMatch, device.port) ?? ports.find(({ path }) => path === device.port)
+  return port?.path
 }
 
 /**
