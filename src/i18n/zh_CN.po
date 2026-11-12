@@ -10596,14 +10596,6 @@ msgid "UPLOAD MISSION TO VEHICLE"
 msgstr "上传任务至设备"
 
 #: src/views/ConfigurationGeneralView.vue
-msgid "URI of a Mavlink2Rest"
-msgstr "MAVLink2Rest 的 URI"
-
-#: src/views/ConfigurationGeneralView.vue
-msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
-msgstr "Mavlink2Rest 的 URI，或模拟器使用的 sitl://ardusub"
-
-#: src/views/ConfigurationGeneralView.vue
 msgid "URI of a WebRTC Signalling Server URI"
 msgstr "WebRTC 信令服务器的 URI"
 
@@ -12391,3 +12383,9 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "Select any numeric data lake variable"
 #~ msgstr "选择任意数值型数据湖变量"
+
+#~ msgid "URI of a Mavlink2Rest"
+#~ msgstr "MAVLink2Rest 的 URI"
+
+#~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
+#~ msgstr "Mavlink2Rest 的 URI，或模拟器使用的 sitl://ardusub"

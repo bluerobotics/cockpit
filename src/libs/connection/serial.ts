@@ -25,22 +25,27 @@ export const buildSerialUri = (port: string, baud: number): string => {
   return `serial:${normalizedPort}?baudrate=${baud}`
 }
 
+type UsbSerialMatch = Pick<SerialPortInfo, 'vendorId' | 'productId' | 'serialNumber'>
+
 /**
- * Finds the connected port of a USB device model, which keeps pointing at the device when the system
+ * Finds the connected port of a USB device, which keeps pointing at the device when the system
  * hands it a different path.
  * @param {SerialPortInfo[]} ports - The ports currently available.
- * @param {Pick<SerialPortInfo, 'vendorId' | 'productId'> | undefined} usbMatch - The USB model to look for.
+ * @param {UsbSerialMatch | undefined} usbMatch - The USB model to look for, and its serial number when it is known.
  * @param {string} lastPath - The path the device was last seen at.
- * @returns {SerialPortInfo | undefined} The port of that model, or undefined when no model is given or none is connected.
+ * @returns {SerialPortInfo | undefined} The port of that device, or undefined when no model is given or it is not connected.
  */
 export const findUsbSerialPort = (
   ports: SerialPortInfo[],
-  usbMatch: Pick<SerialPortInfo, 'vendorId' | 'productId'> | undefined,
+  usbMatch: UsbSerialMatch | undefined,
   lastPath: string
 ): SerialPortInfo | undefined => {
-  const { vendorId, productId } = usbMatch ?? {}
+  const { vendorId, productId, serialNumber } = usbMatch ?? {}
   if (!vendorId || !productId) return undefined
   const matches = ports.filter((port) => port.vendorId === vendorId && port.productId === productId)
+  if (serialNumber) return matches.find((port) => port.serialNumber === serialNumber)
+  // ponytail: devices that share a USB chip and report no serial number are told apart by path only, so a
+  // replug can swap them. Matching on the USB location is the upgrade path.
   // Multiple identical-model devices: prefer the exact last-used path, else the first match.
   return matches.find((port) => port.path === lastPath) ?? matches[0]
 }
