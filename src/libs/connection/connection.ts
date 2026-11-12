@@ -44,6 +44,15 @@ export namespace Type {
 }
 
 /**
+ * Give a connection URI the "//" the WHATWG URL standard needs to separate the port from the address
+ * eg. (udpin:) -> (udpin://), (udpin://) -> (udpin://)
+ * would not work with: (udpin:/), (:0.0.0.0)
+ * @param {string} uri
+ * @returns {string}
+ */
+export const withAuthoritySlashes = (uri: string): string => uri.replace(/^([^:]+):(\/\/)?/, '$1://')
+
+/**
  *  Abstraction over URL component
  */
 export class URI extends URL {

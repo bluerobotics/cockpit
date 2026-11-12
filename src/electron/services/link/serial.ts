@@ -27,7 +27,8 @@ export class SerialLink extends Link {
   constructor(uri: URL) {
     super(uri)
     this.protocol = uri.protocol.replace(':', '')
-    this.path = uri.pathname
+    // A Windows port (serial:COM3) has no leading slash, so it is parsed as the host
+    this.path = uri.pathname || uri.host
     this.baudRate = parseInt(uri.searchParams.get('baudrate') || '115200', 10)
     if (isNaN(this.baudRate) || this.baudRate <= 0) {
       throw new Error(`Invalid baud rate: ${uri.searchParams.get('baudrate')}`)

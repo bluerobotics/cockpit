@@ -1,6 +1,7 @@
 import { reactive, ref } from 'vue'
 
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
+import { listSerialPorts } from '@/libs/connection/serial'
 import {
   autodetectBaud,
   clearSerialLines,
@@ -10,7 +11,6 @@ import {
   getDeviceStatus,
   getLatestFix,
   gnssDevicesKey,
-  listSerialPorts,
   registerDeviceVariables,
   startGnssDevice,
   stopGnssDevice,

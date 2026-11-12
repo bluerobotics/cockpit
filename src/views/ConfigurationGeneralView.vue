@@ -174,7 +174,7 @@
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
-          <template #title>MAVLink2REST URI</template>
+          <template #title>Vehicle connection</template>
           <template #subtitle>
             Current address: {{ ConnectionManager.mainConnection()?.uri().toString() ?? 'none' }}<br />
             Status:
@@ -184,70 +184,12 @@
           </template>
           <template #content>
             <v-progress-circular v-if="vehicleConnected === undefined" indeterminate size="24" class="mr-3" />
-            <v-form
-              ref="mainConnectionForm"
-              v-model="mainConnectionFormValid"
-              class="flex w-full mt-2"
-              @submit.prevent="setMainVehicleConnectionURI"
-            >
-              <div class="flex flex-row w-full justify-start gap-x-8 align-center">
-                <div
-                  class="flex justify-start items-center"
-                  :class="interfaceStore.isOnSmallScreen ? 'scale-80 w-[80%]' : 'scale-100 w-[76%]'"
-                >
-                  <v-text-field
-                    v-model="mavlink2RestWebsocketURI"
-                    :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                    variant="filled"
-                    type="input"
-                    density="compact"
-                    :hint="
-                      sitlAvailable
-                        ? 'URI of a Mavlink2Rest, or sitl://ardusub for the simulator'
-                        : 'URI of a Mavlink2Rest'
-                    "
-                    :rules="[isValidMainConnectionURI]"
-                  >
-                    <template #append-inner>
-                      <v-icon
-                        v-tooltip.bottom="'Reset to default'"
-                        color="white"
-                        :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                        @click="resetMainVehicleConnectionURI"
-                      >
-                        mdi-restore
-                      </v-icon>
-                    </template>
-                  </v-text-field>
-                </div>
-                <v-btn
-                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
-                  class="bg-transparent -mt-5 -ml-6"
-                  :disabled="!mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                  variant="text"
-                  type="submit"
-                >
-                  Apply
-                </v-btn>
-              </div>
-              <div class="flex justify-end mt-6">
-                <div
-                  class="flex flex-col align-end text-[10px]"
-                  :class="interfaceStore.isOnSmallScreen ? '-mt-3' : '-mt-5'"
-                >
-                  <v-switch
-                    v-model="mainVehicleStore.customMAVLink2RestWebsocketURI.enabled"
-                    v-tooltip.bottom="'Enable custom'"
-                    class="-mt-5 bg-transparent mr-1 mb-[7px]"
-                    density="compact"
-                    hide-details
-                  />
-                  <div class="-mt-[4px]">
-                    {{ mainVehicleStore.customMAVLink2RestWebsocketURI.enabled ? 'Enabled' : 'Disabled' }}
-                  </div>
-                </div>
-              </div>
-            </v-form>
+            <VehicleConnectionForm
+              :uri="mavlink2RestWebsocketURI.toString()"
+              :using-default="usingDefaultMainConnection"
+              :uri-rules="[isValidMainConnectionURI]"
+              @apply="setMainVehicleConnectionURI"
+            />
           </template>
         </ExpansiblePanel>
         <ExpansiblePanel no-top-divider :is-expanded="!interfaceStore.isOnPhoneScreen">
@@ -585,6 +527,7 @@ import { defaultGlobalAddress } from '@/assets/defaults'
 import ManageCockpitSettings from '@/components/configuration/CockpitSettingsManager.vue'
 import ConnectionsList from '@/components/configuration/ConnectionsList.vue'
 import McpSettings from '@/components/configuration/McpSettings.vue'
+import VehicleConnectionForm from '@/components/configuration/VehicleConnectionForm.vue'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -751,9 +694,12 @@ watch(
   }
 )
 
-const mainConnectionForm = ref()
-const mainConnectionFormValid = ref(false)
 const mavlink2RestWebsocketURI = ref(mainVehicleStore.MAVLink2RestWebsocketURI)
+const usingDefaultMainConnection = computed(() => {
+  const defaultUri = new Connection.URI(mainVehicleStore.defaultMAVLink2RestWebsocketURI).toString()
+  const usesDefaultUri = mainVehicleStore.MAVLink2RestWebsocketURI.toString() === defaultUri
+  return !mainVehicleStore.customMAVLink2RestWebsocketURI.enabled && usesDefaultUri
+})
 
 const addNewVehicleConnection = async (conn: Connection.URI): Promise<void> => {
   mavlink2RestWebsocketURI.value = conn
@@ -791,14 +737,11 @@ const removeConnectionFromAddress = (): void => {
   window.history.replaceState(window.history.state, '', url)
 }
 
-const setMainVehicleConnectionURI = async (): Promise<void> => {
-  const res = await mainConnectionForm.value.validate()
+const setMainVehicleConnectionURI = async (newUri: string | null): Promise<void> => {
+  if (newUri === null) return resetMainVehicleConnectionURI()
 
-  if (!res.valid) {
-    return
-  }
-
-  const uri = new Connection.URI(mavlink2RestWebsocketURI.value)
+  const uri = new Connection.URI(newUri)
+  mavlink2RestWebsocketURI.value = uri
   if (uri.type() === Connection.Type.Sitl && !window.crossOriginIsolated) {
     logUserAction('Opened the simulator reload confirmation')
     showDialog({
