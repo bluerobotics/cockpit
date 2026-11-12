@@ -152,10 +152,10 @@ export const analyzeMissionTerrain = async (
   const coordinates = stations.map((station) => station.coordinates)
   const seabedOnly = context.vehicleClass === 'surface' || context.vehicleClass === 'underwater'
   const [groundM, groundHighM, groundAtPointsM, modelGroundM] = await Promise.all([
-    sampleTerrain(coordinates, { mode: 'bilinear', seabedOnly }),
-    sampleTerrain(coordinates, { mode: 'highest', seabedOnly }),
-    sampleTerrain(corners, { mode: 'bilinear', seabedOnly }),
-    sampleTerrain(coordinates, { mode: 'bilinear', modelOnly: true, seabedOnly }),
+    sampleTerrain(coordinates, { mode: 'bilinear', seabedOnly, detailNear: corners }),
+    sampleTerrain(coordinates, { mode: 'highest', seabedOnly, detailNear: corners }),
+    sampleTerrain(corners, { mode: 'bilinear', seabedOnly, detailNear: corners }),
+    sampleTerrain(coordinates, { mode: 'bilinear', modelOnly: true, seabedOnly, detailNear: corners }),
   ])
   const profile = buildTerrainProfile(points, stations, groundM, groundHighM, groundAtPointsM, context)
 
@@ -164,14 +164,13 @@ export const analyzeMissionTerrain = async (
   const homeAmslM = profile.pointAmslM[0]
   if (behavior && home && homeAmslM !== undefined) {
     const plan = returnPathPlan(profile.samples, home.coordinates)
-    const returnGround = await Promise.all(
-      plan.returns.map((path) =>
-        sampleTerrain(
-          path.map((station) => station.coordinates),
-          { mode: 'highest', seabedOnly }
-        )
-      )
+    // One batch for every return, so together they stay within a single tile budget.
+    const returnHeights = await sampleTerrain(
+      plan.returns.flat().map((station) => station.coordinates),
+      { mode: 'highest', seabedOnly, detailNear: corners }
     )
+    let offset = 0
+    const returnGround = plan.returns.map((path) => returnHeights.slice(offset, (offset += path.length)))
     returns = returnPathFindings(plan, returnGround, homeAmslM, behavior, context)
   }
   const climbs = performance && context.vehicleClass === 'air' ? climbFindings(profile.samples, performance) : []

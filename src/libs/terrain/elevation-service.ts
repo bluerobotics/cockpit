@@ -79,6 +79,10 @@ export interface TerrainSampleOptions {
    * against the seabed.
    */
   seabedOnly?: boolean
+  /**
+   * Positions whose surroundings keep the deepest zoom when the batch spans too many tiles to read it all there.
+   */
+  detailNear?: WaypointCoordinates[]
 }
 
 /**
@@ -89,6 +93,11 @@ export type TerrainOverride = (coordinates: WaypointCoordinates) => number | nul
 // A decoded tile is 256 KB, so the cache is bounded; oldest out first, which suits a mission that
 // walks across the map rather than jumping back to where it started.
 const MAX_CACHED_TILES = 96
+// Every tile of a batch is fetched and built at once, so a batch spread over hundreds of kilometers reads
+// coarser tiles instead of thousands of detailed ones.
+const MAX_TILES_PER_BATCH = 64
+const DETAIL_MARGIN_M = 2000
+const METERS_PER_DEGREE = 111320
 const TILE_FETCH_TIMEOUT_MS = 20000
 const UNREACHABLE_BACKOFF_MS = 60000
 const TILE_SIGNATURES: Record<TerrainTileFormat, number[][]> = {
@@ -445,6 +454,65 @@ const sampleLand = async (
   return land
 }
 
+const sampleTargets = (
+  coordinates: WaypointCoordinates,
+  zoom: number,
+  mode: TerrainSampleMode
+): TerrainSampleTarget[] =>
+  mode === 'nearest' ? [terrainSampleTarget(coordinates, zoom)] : terrainLatticeCell(coordinates, zoom).corners
+
+const distinctTiles = (coordinates: WaypointCoordinates[], zooms: number[], mode: TerrainSampleMode): number => {
+  const keys = new Set<string>()
+  coordinates.forEach((coordinate, index) =>
+    sampleTargets(coordinate, zooms[index], mode).forEach(({ tile }) => keys.add(`${tile.z}/${tile.x}/${tile.y}`))
+  )
+  return keys.size
+}
+
+const isWithinDetailMargin = ([lat, lon]: WaypointCoordinates, [anchorLat, anchorLon]: WaypointCoordinates): boolean =>
+  Math.hypot((lon - anchorLon) * Math.cos((lat * Math.PI) / 180), lat - anchorLat) * METERS_PER_DEGREE <=
+  DETAIL_MARGIN_M
+
+// Samples away from the anchors coarsen first; when the ones near them overflow the budget alone, all coarsen together.
+const batchZooms = (
+  coordinates: WaypointCoordinates[],
+  maxZoom: number,
+  mode: TerrainSampleMode,
+  detailNear: WaypointCoordinates[]
+): number[] => {
+  const zooms = coordinates.map(() => maxZoom)
+  const fits = (): boolean => distinctTiles(coordinates, zooms, mode) <= MAX_TILES_PER_BATCH
+  if (fits()) return zooms
+  const near = coordinates.map((coordinate) => detailNear.some((anchor) => isWithinDetailMargin(coordinate, anchor)))
+  for (let zoom = maxZoom - 1; zoom >= 0 && !fits(); zoom--) {
+    near.forEach((isNear, index) => (zooms[index] = isNear ? maxZoom : zoom))
+  }
+  for (let zoom = maxZoom - 1; zoom >= 0 && !fits(); zoom--) zooms.fill(zoom)
+  return zooms
+}
+
+let batchZoomsChecked = false
+const checkBatchZoomsOnce = (): void => {
+  // @ts-ignore: import.meta.env does not exist in the types
+  if (batchZoomsChecked || !import.meta.env.DEV || typeof assert !== 'function') return
+  batchZoomsChecked = true
+  const home: WaypointCoordinates = [34.554, -119.95]
+  const mission: WaypointCoordinates = [37.5, -122.3]
+  const path = Array.from({ length: 2001 }, (_, index): WaypointCoordinates => {
+    const fraction = index / 2000
+    return [home[0] + (mission[0] - home[0]) * fraction, home[1] + (mission[1] - home[1]) * fraction]
+  })
+  const zooms = batchZooms(path, 13, 'highest', [home, mission])
+  assert(distinctTiles(path, zooms, 'highest') <= MAX_TILES_PER_BATCH, 'A far-flung batch stays within its tile budget')
+  assert(zooms[0] === 13 && zooms[2000] === 13, 'Home and the mission keep the deepest zoom')
+  assert(zooms[1000] < 13, 'The stretch between them is read coarser')
+  const nearby = batchZooms([home, [home[0] + 0.005, home[1]]], 13, 'bilinear', [])
+  assert(
+    nearby.every((zoom) => zoom === 13),
+    'A compact batch keeps the deepest zoom'
+  )
+}
+
 const sampleModel = async (
   sourceId: TerrainSourceId,
   coordinates: WaypointCoordinates[],
@@ -481,13 +549,24 @@ export const sampleTerrain = async (
   options: TerrainSampleOptions = {}
 ): Promise<(number | null)[]> => {
   if (coordinates.length === 0) return []
+  checkBatchZoomsOnce()
   const sourceId = effectiveTerrainSource(options.sourceId ?? config.sourceId)
-  const heights = await sampleModel(
-    sourceId,
-    coordinates,
-    options.zoom,
-    options.mode ?? 'nearest',
-    options.seabedOnly ?? false
+  const mode = options.mode ?? 'nearest'
+  const maxZoom = Math.min(options.zoom ?? terrainSourceMaxZoom(sourceId), terrainSourceMaxZoom(sourceId))
+  const zooms = batchZooms(coordinates, maxZoom, mode, options.detailNear ?? [])
+  const heights: (number | null)[] = coordinates.map(() => null)
+  await Promise.all(
+    [...new Set(zooms)].map(async (zoom) => {
+      const indices = zooms.flatMap((sampleZoom, index) => (sampleZoom === zoom ? [index] : []))
+      const read = await sampleModel(
+        sourceId,
+        indices.map((index) => coordinates[index]),
+        zoom,
+        mode,
+        options.seabedOnly ?? false
+      )
+      indices.forEach((index, position) => (heights[index] = read[position]))
+    })
   )
   if (!override || options.modelOnly) return heights
   return heights.map((height, index) => override?.(coordinates[index]) ?? height)
