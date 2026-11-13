@@ -57,7 +57,8 @@ const containsTtag = (expression) => {
 }
 
 const transpile = (source, fileName) => {
-  const compilerOptions = { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext }
+  // Comments go, as ttag would copy the ones above a string into the catalogs as notes for the translator
+  const compilerOptions = { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, removeComments: true }
   return ts.transpileModule(source, { compilerOptions, fileName }).outputText
 }
 
