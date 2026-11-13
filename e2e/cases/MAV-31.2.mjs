@@ -11,7 +11,7 @@ const MODE_SELECT = `[...document.querySelectorAll('.custom-select select')].fin
  */
 export default async function run({ page, vehicle }) {
   await page.caption('Main menu → Tools → MAVLink, track COMMAND_LONG')
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   await trackMessage(page, 'COMMAND_LONG')
   // Tracked messages live only while the inspector is open, and the mode selector stays reachable beside it.
   await page.caption('With the inspector open, switch the flight mode to Loiter')

@@ -60,7 +60,7 @@ export default async function run({ page }) {
   await clickActionButton(page, 'Log (release)', 'play')
 
   await page.caption('Settings → Dev → Open console, filtered on the line')
-  await openMenuPage(page, 'Settings', 'Dev')
+  await openMenuPage(page, 'settings-dev')
   await page.click('text=Open console', { settle: 1500 })
   await page.fill('input[placeholder="Filter…"]', LINE)
   await page.wait(1500)

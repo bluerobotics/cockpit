@@ -19,7 +19,7 @@ const PANEL = `[...document.querySelectorAll('*')].find((e) => e.childElementCou
  */
 export default async function run({ page }) {
   await page.caption('Settings → General → Vehicle network connection: look for the vehicle search')
-  await openMenuPage(page, 'Settings', 'General')
+  await openMenuPage(page, 'settings-general')
   await page.eval(`${PANEL}?.scrollIntoView({ block: 'start' })`)
   await page.hover(
     await page.eval(

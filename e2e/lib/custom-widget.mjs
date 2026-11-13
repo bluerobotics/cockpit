@@ -2,6 +2,7 @@
 // view in edit mode, and Button elements dropped into it, each set to run a Cockpit action.
 
 import { chooseOption } from './cockpit.mjs'
+import { clickWhenStill } from './mavlink-tools.mjs'
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; const r = el.getBoundingClientRect()
@@ -19,8 +20,8 @@ export const elementHandle = (name) =>
  * @param {object} page - Driver page
  */
 export async function enterEditMode(page) {
-  await page.click('.mdi-menu-right', { settle: 900 })
-  await page.click('text=Edit Interface', { settle: 2500 })
+  await page.click('#menu-trigger', { settle: 900 })
+  await clickWhenStill(page, '#main-menu-edit', 2500)
 }
 
 /**

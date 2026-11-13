@@ -12,7 +12,7 @@ export default async function run({ page, vehicle }) {
   // Alerts raised before the mute were voiced when they arrived and may still be queued, so only later ones count.
   const alertsBefore = await page.store('alert', 's.alerts.length')
   await page.caption('Settings → Alerts: tick "Info", then turn voice alerts off')
-  await openMenuPage(page, 'Settings', 'Alerts')
+  await openMenuPage(page, 'settings-alerts')
   await page.click('text=Info', { settle: 800 })
   await page.click('text=Enable voice alerts', { settle: 800 })
   await page.check('Voice alerts are off', async () => !(await page.store('alert', 's.enableVoiceAlerts')))

@@ -42,7 +42,7 @@ export default async function run({ page }) {
   if (await page.exists('text=Close anyway')) await page.click('text=Close anyway', { settle: 800 })
 
   await page.caption('Settings → Actions: it is there')
-  await openMenuPage(page, 'Settings', 'Actions')
+  await openMenuPage(page, 'settings-actions')
   await page.waitFor(() => page.eval(`!!${actionRow(ACTION_NAME)}`), { label: 'the action row' })
   await page.check('The action is listed as an HTTP request', async () => {
     const text = await page.eval(`${actionRow(ACTION_NAME)}.innerText.replace(/\\s+/g, ' ')`)

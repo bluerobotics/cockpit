@@ -56,7 +56,7 @@ const row = (label) =>
  * @param {string} panel - Panel title, e.g. "Overlay Options"
  */
 export async function openTelemetryPanel(page, panel) {
-  if (!(await page.exists('text=On screen telemetry data'))) await openMenuPage(page, 'Settings', 'Telemetry')
+  if (!(await page.exists('text=On screen telemetry data'))) await openMenuPage(page, 'settings-telemetry')
   await page.click(`text=${panel}`, { settle: 1200 })
 }
 

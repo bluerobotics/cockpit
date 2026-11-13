@@ -12,13 +12,13 @@ const trackedTypes = (page) =>
  */
 export default async function run({ page }) {
   await page.caption('Main menu → Tools → MAVLink, track HEARTBEAT and ATTITUDE')
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   await trackMessage(page, 'HEARTBEAT')
   await trackMessage(page, 'ATTITUDE')
   await page.caption('Close the page and open it again')
   await closeMenu(page)
   await page.wait(1000)
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   await page.check('Both messages are still tracked', async () => {
     const tracked = await trackedTypes(page)
     return { ok: ['HEARTBEAT', 'ATTITUDE'].every((t) => tracked.includes(t)), detail: tracked.join(', ') || 'none' }

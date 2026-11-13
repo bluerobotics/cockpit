@@ -39,14 +39,14 @@ export default async function run({ page, vehicle }) {
   await switchUser(page, userB)
   const asked = await startNewUserFromDefaults(page)
   await page.check("Cockpit asks whether to copy relusera's settings or start from the defaults", () => ({ ok: asked }))
-  await openMenuPage(page, 'Settings', 'Interface')
+  await openMenuPage(page, 'settings-interface')
   const asB = await inUse(page)
   await page.check("As the new user they are not relusera's imperial", () => ({ ok: asB !== 'imperial', detail: asB }))
   await closeMenu(page)
 
   await page.caption('Manage users: back to relusera')
   await switchUser(page, 'relusera')
-  await openMenuPage(page, 'Settings', 'Interface')
+  await openMenuPage(page, 'settings-interface')
   const again = await inUse(page)
   await page.check('Back as relusera they are imperial again', () => ({ ok: again === 'imperial', detail: again }))
   const [a, b] = [

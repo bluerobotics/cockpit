@@ -10,7 +10,7 @@ export default async function run({ page, vehicle }) {
   await page.eval(SPEECH_SPY)
   // ArduPilot sends "Throttle armed" at Info severity, which Cockpit keeps silent unless Info is ticked.
   await page.caption('Settings → Alerts: voice alerts on, tick "Info"')
-  await openMenuPage(page, 'Settings', 'Alerts')
+  await openMenuPage(page, 'settings-alerts')
   await page.check('Voice alerts are enabled', () => page.store('alert', 's.enableVoiceAlerts'))
   await page.click('text=Info', { settle: 800 })
   await page.check('Info alerts are voiced', async () => {

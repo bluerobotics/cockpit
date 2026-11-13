@@ -10,7 +10,7 @@ const SECONDS = 30
  */
 export default async function run({ page, outDir }) {
   await page.caption('Main menu → Tools → MAVLink, start the messages dumper')
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   const file = await recordDump(page, outDir, SECONDS)
   const types = dumpSummary(file)
   for (const type of ['HEARTBEAT', 'ATTITUDE', 'GLOBAL_POSITION_INT']) {

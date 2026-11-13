@@ -22,6 +22,7 @@
             >
               <GlassButton
                 v-if="baseRouteName === 'widgets-view'"
+                id="main-menu-edit"
                 :label="simplifiedMainMenu ? t`Edit` : t`Edit Interface`"
                 :selected="widgetStore.editingMode"
                 v-bind="mainMenuButtonProps"
@@ -58,6 +59,7 @@
                 ><img v-if="!simplifiedMainMenu" :src="MissionPlanningIcon" alt="" />
               </GlassButton>
               <GlassButton
+                id="main-menu-settings"
                 :label="t`Settings`"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-cog' : undefined"
@@ -77,6 +79,7 @@
                 ><img v-if="!simplifiedMainMenu" :src="SettingsIcon" alt="" />
               </GlassButton>
               <GlassButton
+                id="main-menu-tools"
                 :label="t`Tools`"
                 v-bind="mainMenuButtonProps"
                 :icon="simplifiedMainMenu ? 'mdi-tools' : undefined"
@@ -134,6 +137,7 @@
             <div ref="subMenuScrollContainerRef" class="min-h-0 overflow-y-auto scrollbar-hide">
               <GlassButton
                 v-for="menuitem in currentSubMenu"
+                :id="`menu-page-${menuitem.componentName}`"
                 :key="menuitem.componentName"
                 :label="menuitem.title"
                 :label-class="

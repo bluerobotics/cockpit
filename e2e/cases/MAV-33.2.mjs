@@ -9,7 +9,7 @@ let dump
  * A 15 s dump file, recorded and downloaded before recording.
  */
 export async function setup({ page, outDir, url }) {
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   dump = await recordDump(page, outDir, 15)
   // The file comes from an earlier session, as it would for MAV-33.1's download.
   await page.restartBrowser()
@@ -21,7 +21,7 @@ export async function setup({ page, outDir, url }) {
  */
 export default async function run({ page }) {
   await page.caption('Main menu → Tools → MAVLink, "Load & plot dump"')
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   await page.chooseFiles([dump], () => page.click('text=Load & plot dump', { settle: 300 }))
   await page.waitFor('text=Variables to plot', { timeout: 15000, label: 'the dump viewer' })
   // A click in the first moment after the viewer opens closes it again; give it the pause a person would.

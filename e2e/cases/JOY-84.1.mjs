@@ -34,7 +34,7 @@ export default async function run({ page }) {
   })
 
   await page.caption('Back on Tools → Data-lake, watching the variable')
-  await openMenuPage(page, 'Tools', 'Data-lake')
+  await openMenuPage(page, 'tools-datalake')
   await page.fill('input[placeholder="Search variables..."]', NAME)
   await page.wait(1000)
 

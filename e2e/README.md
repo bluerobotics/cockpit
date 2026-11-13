@@ -76,6 +76,9 @@ Rules of thumb:
 
 - Every case ends with at least one `check`; a case with none fails.
 - Check the state behind what is shown, not only that some text appears somewhere on the page.
+- Find what you click by an `id` (or, on a reused component, a named class) that describes the element, not by
+  its text (translated, and shared by other elements) or a styling class. When the element has none, add one to
+  the component, named for what it is rather than for the test, so the app can use it too.
 - When Cockpit is wrong, let the case fail with the video. Do not script around a product bug.
 - Build preconditions through the UI in `setup`, with the same helpers the cases use, rather than
   writing Cockpit's internal storage formats by hand. The runner's seeding of the test user is the one

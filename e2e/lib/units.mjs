@@ -15,7 +15,7 @@ export const DEPTH_METRES = 12.5
  * @param {'metric'|'imperial'|'nautical'} system - Unit system
  */
 export async function chooseUnitSystem(page, system) {
-  if (!(await page.exists('text=Display units'))) await openMenuPage(page, 'Settings', 'Interface')
+  if (!(await page.exists('text=Display units'))) await openMenuPage(page, 'settings-interface')
   await page.click(`text=${system}`, { settle: 1500 })
 }
 

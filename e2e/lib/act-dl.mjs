@@ -51,7 +51,7 @@ export async function clickInDialog(page, text) {
  * @param {string} [query] - Search text
  */
 export async function openDataLake(page, query) {
-  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'tools-datalake')
   if (query === undefined) return
   await page.fill('input[placeholder="Search variables..."]', query)
   await page.wait(1200)

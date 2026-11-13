@@ -1,3 +1,4 @@
+import { enterEditMode } from '../lib/custom-widget.mjs'
 import {
   DIALOG_CLOSE,
   dialogOpensWithin,
@@ -43,8 +44,7 @@ export default async function run({ page }) {
     await page.click('text=Close anyway', { settle: 800 })
   }
   await page.caption('Main menu → Edit interface')
-  await page.click('.mdi-menu-right', { settle: 900 })
-  await page.click('text=Edit Interface', { settle: 2500 })
+  await enterEditMode(page)
   await page.waitFor(() => card(page), { label: "the extension's widget card" })
   const found = await card(page)
   await page.hover(found, 1200)

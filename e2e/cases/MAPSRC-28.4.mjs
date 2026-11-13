@@ -22,7 +22,7 @@ export default async function run({ page }) {
     return { ok: layer?.filter === '', detail: layer ? layer.filter || 'no filter' : 'provider not shown' }
   })
   await page.caption('Tools → Map: brightness and contrast of the provider')
-  await openMenuPage(page, 'Tools', 'Map')
+  await openMenuPage(page, 'tools-map')
   await page.click('[aria-label="Brightness and contrast"]', { settle: 800 })
   for (const label of ['Brightness', 'Contrast']) {
     const track = await page.eval(`(() => {

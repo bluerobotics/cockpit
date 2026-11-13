@@ -126,7 +126,7 @@ export const lakeValue = (page, id) => page.eval(`window.cockpit.getDataLakeVari
  * @param {string} name - Variable Name, which is how the joystick page lists it
  */
 export async function createNumberVariable(page, id, name) {
-  await openMenuPage(page, 'Tools', 'Data-lake')
+  await openMenuPage(page, 'tools-datalake')
   await page.click('text=Add variable', { settle: 1200 })
   await page.fill(await fieldByLabel(page, 'Variable Name'), name)
   await clickExpr(page, `${topDialog}.querySelector('.mdi-pencil')?.closest('button')`, 'ID edit button', 400)
@@ -155,7 +155,7 @@ export const shownLakeValue = (page, name) =>
  * @param {'Table'|'Visual'} [tab] - Tab to show
  */
 export async function openJoystickPage(page, tab = 'Table') {
-  await openMenuPage(page, 'Settings', 'Joystick')
+  await openMenuPage(page, 'settings-joystick')
   await page.click(`text=${tab}`, { settle: 1000 })
 }
 
