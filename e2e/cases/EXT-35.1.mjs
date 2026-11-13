@@ -1,4 +1,5 @@
 import {
+  ACTION_ID,
   ACTION_NAME,
   ACTION_URL_PART,
   dialogOpensWithin,
@@ -21,7 +22,7 @@ const actionRow = (name) =>
   )})`
 
 /**
- * Accept the 4K Cam Manager action from the BlueOS Extension Features dialog, find it under Settings →
+ * Accept the test extension's action from the BlueOS Extension Features dialog, find it under Settings →
  * Actions, run it with its play button and check the extension got the request.
  */
 export default async function run({ page }) {
@@ -58,7 +59,7 @@ export default async function run({ page }) {
   await page.click(play, { settle: 2500 })
   await page.check('The extension received the request and answered it', () => {
     const post = requests.find((r) => r.method === 'POST')
-    const ok = post?.status === 200 && /onceAWB/.test(post.body ?? '')
+    const ok = post?.status === 200 && (post.body ?? '').includes(ACTION_ID)
     return { ok, detail: post ? `POST ${post.status ?? post.error} ${post.body}` : 'no request' }
   })
   await page.wait(1500)
