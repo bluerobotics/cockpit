@@ -10,7 +10,6 @@ import {
   openLibrary,
   processedCards,
   processZip,
-  standaloneOnly,
   videosFolder,
   watchSnackbars,
   webZipForRun,
@@ -22,13 +21,13 @@ import { setUpRecording } from '../lib/video.mjs'
 export const meta = {
   title: 'Standalone processes a chunks zip downloaded from the web build',
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
   browserArgs: [`--inspect=${INSPECT_PORT}`],
 }
 
 export const setup = async (ctx) => {
   const { page } = ctx
-  await standaloneOnly(page)
   await dismissFeaturesDialog(page)
   await dismissTutorial(page, 3000)
   await keepRecordingsInRun(ctx)

@@ -10,7 +10,6 @@ import {
   mediaSeconds,
   openLibrary,
   seenSnackbar,
-  standaloneOnly,
   videosFolder,
   watchSnackbars,
 } from '../lib/library.mjs'
@@ -20,12 +19,12 @@ import { recordStreams, setUpRecording, STREAM } from '../lib/video.mjs'
 export const meta = {
   title: "Processing a recording's chunks again keeps the video it already has",
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
 }
 
 export const setup = async (ctx) => {
   const { page } = ctx
-  await standaloneOnly(page)
   await dismissFeaturesDialog(page)
   await dismissTutorial(page, 3000)
   await keepRecordingsInRun(ctx)

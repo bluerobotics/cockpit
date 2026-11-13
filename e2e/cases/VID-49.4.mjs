@@ -9,7 +9,6 @@ import {
   RENAMED_MISSION,
   renameMission,
   seenSnackbar,
-  standaloneOnly,
   videosFolder,
   watchSnackbars,
 } from '../lib/library.mjs'
@@ -21,13 +20,13 @@ const LIVE_PROCESSING = 'cockpit-enable-live-processing'
 export const meta = {
   title: 'Processing a raw chunk group keeps the mission name of its recording',
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
   synced: { [LIVE_PROCESSING]: false },
 }
 
 export const setup = async (ctx) => {
   const { page } = ctx
-  await standaloneOnly(page)
   await dismissFeaturesDialog(page)
   await dismissTutorial(page, 3000)
   await keepRecordingsInRun(ctx)

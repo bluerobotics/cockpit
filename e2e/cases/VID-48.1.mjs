@@ -8,7 +8,6 @@ import {
   libraryTab,
   openLibrary,
   processedCards,
-  standaloneOnly,
   videosFolder,
   watchSnackbars,
 } from '../lib/library.mjs'
@@ -20,12 +19,12 @@ const STREAMS = [STREAM, 'PRTest Ball']
 export const meta = {
   title: "Standalone's library lists the processed video and the raw chunks of every camera",
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
 }
 
 export const setup = async (ctx) => {
   const { page } = ctx
-  await standaloneOnly(page)
   await dismissFeaturesDialog(page)
   await dismissTutorial(page, 3000)
   await keepRecordingsInRun(ctx)
