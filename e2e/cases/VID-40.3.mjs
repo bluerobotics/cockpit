@@ -5,7 +5,6 @@ import {
   keepRecordingsInRun,
   openTelemetryPanel,
   OVERLAY_DEFAULTS,
-  OVERLAY_KEYS,
   parseAss,
   pickOverlayColor,
   recordAndReadAss,
@@ -19,7 +18,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle', 'camera'],
   synced: OVERLAY_DEFAULTS,
-  restore: OVERLAY_KEYS,
 }
 
 export const setup = async (ctx) => {

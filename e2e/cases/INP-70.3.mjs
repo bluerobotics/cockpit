@@ -6,7 +6,6 @@ import {
   createElementVariable,
   dropCard,
   elementAt,
-  INPUT_KEYS,
   INPUT_SYNCED,
   lakeValue,
   openElementPanel,
@@ -19,7 +18,6 @@ export const meta = {
   title: 'A Checkbox, a Dial and a Dropdown write their variables',
   route: '/',
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart

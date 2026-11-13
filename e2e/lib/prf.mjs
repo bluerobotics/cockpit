@@ -11,7 +11,6 @@ import { dismissFeaturesDialog, plugVirtualGamepad } from './extensions.mjs'
 import { closeMenu, openMenuPage } from './mavlink-tools.mjs'
 import { confirmSlider } from './mission.mjs'
 
-export const MAPPING_KEY = 'cockpit-joystick-functions-mapping-v1'
 export const VARIABLES_KEYS = ['cockpit-persistent-data-lake-variables', 'cockpit-persistent-data-lake-values']
 // A documentation address (RFC 5737): never routed, so nothing answers there.
 export const NO_VEHICLE = '203.0.113.7'

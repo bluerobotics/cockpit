@@ -14,7 +14,7 @@
 // default to $COCKPIT_E2E_URL / $COCKPIT_E2E_VEHICLE.
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve, win32 } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -110,7 +110,11 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 const outDir = join(outRoot, stamp)
 mkdirSync(outDir, { recursive: true })
 
-const LAYOUT_KEYS = ['cockpit-views-group-v1', 'cockpit-current-view-index-v1']
+// What a fresh install of Cockpit on a boat ends up with once it has imported the boat defaults. Written up front,
+// rather than left to that import, so every case starts from the same layout without waiting on Cockpit.
+const BOAT_DEFAULTS = JSON.parse(readFileSync(join(root, 'fixtures/boat-defaults.json'), 'utf8'))
+const settingsVehicleId = await vehicle.settingsVehicleId()
+const wiredAddresses = await vehicle.wiredAddresses()
 const results = []
 
 const escape = (s) =>
@@ -258,7 +262,6 @@ for (const { id, arm, rep } of jobs) {
   let page
   let error
   let perf
-  let layout = {}
   let boxSampling = false
   // Where a case's wall time goes, phase by phase, so the cost around the test is visible next to it.
   const phases = {}
@@ -276,11 +279,19 @@ for (const { id, arm, rep } of jobs) {
     // Clean slate on the vehicle side: simulator parked, and the synced state cases depend on
     // emptied so a fresh profile does not inherit the previous case's mission or POIs.
     await vehicle.reset()
-    // Cases may rearrange the test user's views (adding a second Map widget, say), or change other
-    // synced state they list in `meta.restore`; whatever they do is put back afterwards.
-    for (const key of [...LAYOUT_KEYS, ...(meta.restore ?? [])])
-      layout[key] = await vehicle.getSyncedSetting(TEST_USER, key)
+    // Where an operator's maps were last left: over the boat, rather than Cockpit's default ~10 km away.
+    const boat = await vehicle.position()
     const synced = {
+      ...BOAT_DEFAULTS,
+      ...(boat && {
+        'cockpit-user-last-map-center': [boat.lat, boat.lon],
+        'cockpit-default-map-center': [boat.lat, boat.lon],
+      }),
+      // The video routes Cockpit would pick from BlueOS on first use, which it otherwise does mid-case: the streams
+      // reconnect and a notice covers the page.
+      'cockpit-allowed-stream-ips': wiredAddresses,
+      // Already run, as on any used profile: it would otherwise record every overlay variable in each case.
+      'cockpit-migrations': { 'recorded-variables-from-overlay': true },
       'cockpit-points-of-interest': [],
       'cockpit-draft-mission': {},
       'cockpit-last-uploaded-mission': {},
@@ -296,11 +307,13 @@ for (const { id, arm, rep } of jobs) {
       'cockpit-map-follow-vehicle': false,
       ...meta.synced,
     }
-    // Written only where they differ, and one at a time like the reads: the vehicle's settings store serves one
-    // request at a time, so a dozen at once queue past the request timeout, and concurrent writes can lose each other.
-    for (const [key, value] of Object.entries(synced)) {
-      const current = await vehicle.getSyncedSetting(TEST_USER, key)
-      if (JSON.stringify(current) !== JSON.stringify(value)) await vehicle.setSyncedSetting(TEST_USER, key, value)
+    // The whole test user is replaced, so nothing an earlier case changed carries over, and the browser profile gets
+    // the same package: Cockpit opens on it and its first sync finds nothing to change.
+    const pack = await vehicle.replaceSyncedSettings(TEST_USER, synced)
+    const seed = {
+      ...seedFor(vehicleHost),
+      'cockpit-settings-v2': JSON.stringify({ [TEST_USER]: { [settingsVehicleId]: pack } }),
+      'cockpit-last-connected-vehicle-id': settingsVehicleId,
     }
     // Vehicle-side state the app should find already there when it starts, like a loaded mission.
     if (mod.beforeLaunch) await mod.beforeLaunch({ vehicle, meta })
@@ -310,7 +323,7 @@ for (const { id, arm, rep } of jobs) {
     const hdmi = hdmiDevice && !bare ? { device: hdmiDevice, mode: hdmiMode } : undefined
     const screen = Boolean(hdmiDevice)
     page = await launch({
-      seed: seedFor(vehicleHost),
+      seed,
       headed,
       app,
       remote,
@@ -323,15 +336,8 @@ for (const { id, arm, rep } of jobs) {
     lap('app start')
     const ctx = { page, vehicle, url, vehicleHost, meta, outDir, user: TEST_USER }
     if (meta.perf) await page.addScript(SAMPLER)
-    // The views the case runs on: its own profile when it brings one, otherwise the test user's.
-    const views = (synced['cockpit-views-group-v1'] ?? layout['cockpit-views-group-v1'])?.views?.map((v) => v.name)
-    await openCockpit(page, { url, route: meta.route, needsVehicle, views })
+    await openCockpit(page, { url, route: meta.route, needsVehicle })
     lap('app ready')
-    // A test user with no layout yet gets Cockpit's default from this start, which is what later cases go back to.
-    for (const key of LAYOUT_KEYS.filter((k) => layout[k] === undefined)) {
-      const arrived = async () => (layout[key] = await vehicle.getSyncedSetting(TEST_USER, key)) !== undefined
-      await page.waitFor(arrived, { label: `${key} to reach the vehicle`, timeout: 30000 }).catch(ignore)
-    }
     // The machine's load during a performance case: started once the app is up, since processes started later are not
     // sampled.
     if (remote && meta.perf && boxStats) {
@@ -394,9 +400,6 @@ for (const { id, arm, rep } of jobs) {
     if (boxSampling) stopBoxStats(remote)
     await page?.close().catch(ignore)
     await vehicle.reset().catch(ignore)
-    for (const [key, value] of Object.entries(layout)) {
-      if (value !== undefined) await vehicle.setSyncedSetting(TEST_USER, key, value).catch(ignore)
-    }
     lap('close and restore')
   }
 

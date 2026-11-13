@@ -10,14 +10,11 @@ import {
 } from '../lib/extensions.mjs'
 import { sawSnackbar } from '../lib/mission.mjs'
 
-const MAPPING_KEY = 'cockpit-joystick-functions-mapping-v1'
-
 export const meta = {
   title: "An extension's joystick suggestion can be applied, and the button works",
   route: '/',
   needs: ['vehicle'],
   synced: UNDECIDED,
-  restore: [MAPPING_KEY],
 }
 
 const GROUP = '4K Cam on any vehicle types'

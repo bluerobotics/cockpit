@@ -9,13 +9,12 @@ import { sleep } from './driver.mjs'
 import { dismissFeaturesDialog } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
-// The user's own variables and compound variables, emptied before a case and restored after it.
+// The user's own variables and compound variables, emptied before a case.
 export const NO_USER_VARIABLES = {
   'cockpit-persistent-data-lake-variables': [],
   'cockpit-persistent-data-lake-values': {},
   'cockpit-transforming-functions': [],
 }
-export const USER_VARIABLE_KEYS = Object.keys(NO_USER_VARIABLES)
 
 export const HEADING = '/mavlink/1/1/VFR_HUD/heading'
 export const GROUNDSPEED = '/mavlink/1/1/VFR_HUD/groundspeed'

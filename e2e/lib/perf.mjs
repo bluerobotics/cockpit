@@ -12,7 +12,7 @@ import { featuresDialogOpen, ignoreAllFeatures } from './extensions.mjs'
 /**
  * Synced settings that give a map case its own profile: one view with the Map widget full screen and the HUDs
  * on top, and no video player or recorder, whose streams would load the machine being measured. Cases spread
- * it into `meta.synced`; the runner puts the test user's layout back afterwards.
+ * it into `meta.synced`; the next case starts from the test user's own layout again.
  */
 export const MAP_PROFILE = {
   'cockpit-views-group-v1': JSON.parse(readFileSync(new URL('../fixtures/perf-map-profile.json', import.meta.url))),

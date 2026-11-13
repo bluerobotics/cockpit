@@ -6,7 +6,6 @@ import {
   buttonAction,
   confirmIfAsked,
   mapButton,
-  MAPPING_KEY,
   openJoystickTable,
   plugGamepad,
   setup as quiet,
@@ -17,7 +16,6 @@ export const meta = {
   title: 'Joystick buttons arm and disarm the vehicle, and the Armer button follows',
   route: '/',
   needs: ['vehicle'],
-  restore: [MAPPING_KEY],
 }
 
 export const setup = async (ctx) => {

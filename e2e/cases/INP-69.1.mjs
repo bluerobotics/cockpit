@@ -1,6 +1,6 @@
-import { ACTION_KEYS, fillHttpAction, newAction, NO_ACTIONS, openActions, startEchoServer } from '../lib/actions.mjs'
+import { fillHttpAction, newAction, NO_ACTIONS, openActions, startEchoServer } from '../lib/actions.mjs'
 import { addActionButton, enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
-import { addInputContainer, INPUT_KEYS, INPUT_SYNCED, placed, quietStart } from '../lib/inputs.mjs'
+import { addInputContainer, INPUT_SYNCED, placed, quietStart } from '../lib/inputs.mjs'
 import { closeMenu } from '../lib/mavlink-tools.mjs'
 
 export const meta = {
@@ -8,7 +8,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { ...NO_ACTIONS, ...INPUT_SYNCED },
-  restore: [...ACTION_KEYS, ...INPUT_KEYS],
 }
 
 const NAME = 'Release button request'

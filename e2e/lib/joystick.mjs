@@ -9,7 +9,6 @@ import { dismissTutorial, fieldByLabel } from './cockpit.mjs'
 import { dismissFeaturesDialog, plugVirtualGamepad } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
-export const MAPPING_KEY = 'cockpit-joystick-functions-mapping-v1'
 export const CALIBRATION_KEY = 'cockpit-joystick-calibration-options'
 export const DISABLED_KEY = 'cockpit-disabled-joystick-models'
 export const PAD_MODEL = 'Xbox controller (bluetooth)'
@@ -19,7 +18,6 @@ export const JOY_META = {
   route: '/',
   needs: ['vehicle'],
   synced: { [CALIBRATION_KEY]: {}, [DISABLED_KEY]: [] },
-  restore: [MAPPING_KEY, CALIBRATION_KEY, DISABLED_KEY],
 }
 
 const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`

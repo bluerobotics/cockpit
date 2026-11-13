@@ -6,7 +6,7 @@ import { createServer } from 'node:http'
 import { fieldByLabel } from './cockpit.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
-// Every custom action the test user has, restored after a case and emptied before it.
+// Every custom action the test user has, emptied before a case.
 export const ACTION_KEYS = [
   'cockpit-http-request-actions',
   'cockpit-mavlink-message-actions',

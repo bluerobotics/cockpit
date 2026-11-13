@@ -1,10 +1,9 @@
-import { ACTION_KEYS, newAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
+import { newAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 import { addActionButton, enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import {
   addInputContainer,
   addUserVariable,
-  INPUT_KEYS,
   INPUT_SYNCED,
   lakeValue,
   quietStart,
@@ -16,7 +15,6 @@ export const meta = {
   title: 'A widget button runs a JavaScript action',
   route: '/',
   synced: { ...NO_ACTIONS, ...INPUT_SYNCED },
-  restore: [...ACTION_KEYS, ...INPUT_KEYS],
 }
 
 const NAME = 'Release button script'

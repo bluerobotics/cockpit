@@ -1,5 +1,5 @@
 import { NAME, runAndCatch, setUpActions, showRequest } from '../lib/act-case.mjs'
-import { ACTION_KEYS, clickActionButton, fillHttpAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
+import { clickActionButton, fillHttpAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
 import { dismissTutorial, vehicleOnline } from '../lib/cockpit.mjs'
 import { dismissFeaturesDialog } from '../lib/extensions.mjs'
 
@@ -8,7 +8,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 export const setup = (ctx) => setUpActions(ctx, true)

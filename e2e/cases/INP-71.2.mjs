@@ -1,4 +1,4 @@
-import { ACTION_KEYS, clickActionButton, newAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
+import { clickActionButton, newAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import {
@@ -6,7 +6,6 @@ import {
   addUserVariable,
   closeElementPanel,
   dropCard,
-  INPUT_KEYS,
   INPUT_SYNCED,
   lakeValue,
   openElementPanel,
@@ -20,7 +19,6 @@ export const meta = {
   title: 'A Slider follows a variable set by a JavaScript action',
   route: '/',
   synced: { ...NO_ACTIONS, ...INPUT_SYNCED },
-  restore: [...ACTION_KEYS, ...INPUT_KEYS],
 }
 
 const NAME = 'release-test/ext-num'

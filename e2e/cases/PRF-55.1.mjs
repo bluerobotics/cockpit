@@ -1,10 +1,9 @@
-import { importDefaultMapping, MAPPING_KEY, openDataLake, plugGamepad, setAxis, setup as quiet } from '../lib/prf.mjs'
+import { importDefaultMapping, openDataLake, plugGamepad, setAxis, setup as quiet } from '../lib/prf.mjs'
 
 export const meta = {
   title: 'The MANUAL_CONTROL output variables follow their joystick inputs',
   route: '/',
   needs: ['vehicle'],
-  restore: [MAPPING_KEY],
 }
 
 export const setup = async (ctx) => {

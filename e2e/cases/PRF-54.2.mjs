@@ -3,7 +3,6 @@ import {
   axisMapping,
   createVariable,
   mapAxis,
-  MAPPING_KEY,
   openDataLake,
   openJoystickTable,
   plugGamepad,
@@ -17,7 +16,6 @@ export const meta = {
   title: 'A joystick axis sets a data-lake variable scaled to its min and max',
   route: '/',
   needs: ['vehicle'],
-  restore: [MAPPING_KEY],
 }
 
 const VARIABLE = 'release-test/axis'

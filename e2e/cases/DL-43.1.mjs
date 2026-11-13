@@ -3,7 +3,6 @@ import {
   downloadCurrentSession,
   downloadsOf,
   LOGGER_DEFAULTS,
-  LOGGER_KEYS,
   medianStep,
   openDataLogs,
   parseCsv,
@@ -17,7 +16,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: LOGGER_DEFAULTS,
-  restore: LOGGER_KEYS,
 }
 
 export const setup = async ({ page }) => {

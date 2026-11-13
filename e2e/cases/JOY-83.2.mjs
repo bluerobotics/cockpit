@@ -1,4 +1,4 @@
-import { ACTION_KEYS, fillHttpAction, newAction, NO_ACTIONS, openActions, startEchoServer } from '../lib/actions.mjs'
+import { fillHttpAction, newAction, NO_ACTIONS, openActions, startEchoServer } from '../lib/actions.mjs'
 import { pressButton } from '../lib/extensions.mjs'
 import { buttonAction, JOY_META, joystickSetup, mapButton, openJoystickPage, settles } from '../lib/joystick.mjs'
 import { closeMenu } from '../lib/mavlink-tools.mjs'
@@ -7,7 +7,6 @@ export const meta = {
   ...JOY_META,
   title: 'A button mapped to a custom action runs it',
   synced: { ...JOY_META.synced, ...NO_ACTIONS },
-  restore: [...JOY_META.restore, ...ACTION_KEYS],
 }
 
 const NAME = 'Joystick request'

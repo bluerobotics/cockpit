@@ -3,7 +3,6 @@ import {
   buttonAction,
   createVariable,
   mapButton,
-  MAPPING_KEY,
   openDataLake,
   openJoystickTable,
   plugGamepad,
@@ -17,7 +16,6 @@ export const meta = {
   title: 'A joystick button sets a data-lake variable',
   route: '/',
   needs: ['vehicle'],
-  restore: [MAPPING_KEY],
 }
 
 const VARIABLE = 'release-test/btn'

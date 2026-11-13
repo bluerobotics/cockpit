@@ -5,7 +5,6 @@ import {
   addViewNamed,
   buttonAction,
   mapButton,
-  MAPPING_KEY,
   openJoystickTable,
   plugGamepad,
   setup as quiet,
@@ -16,7 +15,6 @@ export const meta = {
   title: 'A joystick button runs "Go to next view"',
   route: '/',
   needs: ['vehicle'],
-  restore: [MAPPING_KEY],
 }
 
 /**

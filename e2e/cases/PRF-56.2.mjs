@@ -8,7 +8,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { [VARIABLES_KEYS[0]]: [], [VARIABLES_KEYS[1]]: {} },
-  restore: VARIABLES_KEYS,
 }
 
 const NAME = 'release-test/slider'

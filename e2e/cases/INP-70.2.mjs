@@ -5,7 +5,6 @@ import {
   createElementVariable,
   dropCard,
   elementAt,
-  INPUT_KEYS,
   INPUT_SYNCED,
   lakeValue,
   openElementPanel,
@@ -18,7 +17,6 @@ export const meta = {
   title: 'A Slider writes its number variable within its range',
   route: '/',
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart

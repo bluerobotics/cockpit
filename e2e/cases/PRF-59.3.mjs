@@ -1,11 +1,10 @@
 import { armVehicle } from '../lib/mission.mjs'
-import { importDefaultMapping, MAPPING_KEY, plugGamepad, setAxis, setup as quiet } from '../lib/prf.mjs'
+import { importDefaultMapping, plugGamepad, setAxis, setup as quiet } from '../lib/prf.mjs'
 
 export const meta = {
   title: 'The vehicle moves under joystick control in Manual',
   route: '/',
   needs: ['vehicle'],
-  restore: [MAPPING_KEY],
 }
 
 export const setup = async (ctx) => {

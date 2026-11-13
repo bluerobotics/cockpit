@@ -1,14 +1,6 @@
 import { setUpActions } from '../lib/act-case.mjs'
-import { ACTION_KEYS, NO_ACTIONS } from '../lib/actions.mjs'
-import {
-  callsTo,
-  createRequestAction,
-  medianGap,
-  NO_TRIGGERS,
-  reloadToActions,
-  setTriggers,
-  TRIGGER_KEYS,
-} from '../lib/triggers.mjs'
+import { NO_ACTIONS } from '../lib/actions.mjs'
+import { callsTo, createRequestAction, medianGap, NO_TRIGGERS, reloadToActions, setTriggers } from '../lib/triggers.mjs'
 
 const NAME = 'Release repeated request'
 const PATH = '/repeat'
@@ -18,7 +10,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { ...NO_ACTIONS, ...NO_TRIGGERS },
-  restore: [...ACTION_KEYS, ...TRIGGER_KEYS],
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)

@@ -593,19 +593,32 @@ export async function addVgi(page, preset) {
   return hash
 }
 
-const ROUTES_NOTICE = 'text=Preferred video stream routes fetched from BlueOS.'
+const ROUTES_DIALOGS = ['Preferred video stream routes', 'Video being routed from multiple IPs']
 
 /**
- * Add a Video Player in edit mode and open its config, closing the notice the video store raises once it
- * fetched the vehicle's stream routes, which would otherwise sit over the config.
+ * Get the dialog the video store raises once it knows the vehicle's stream routes out of the way, if it shows up:
+ * the routes notice closes itself after 5 s, while the multiple-routes warning waits for its Close.
+ * @param {object} page - Driver page
+ * @param {number} [within] - How long to wait for it to show up, in ms
+ */
+export async function dismissRoutesDialog(page, within = 12000) {
+  const open = () =>
+    page.eval(`[...document.querySelectorAll('.v-overlay--active')]
+      .some((o) => ${JSON.stringify(ROUTES_DIALOGS)}.some((t) => o.innerText.includes(t)))`)
+  if (!(await page.waitFor(open, { timeout: within }).catch(() => false))) return
+  if (await page.waitFor(async () => !(await open()), { timeout: 8000 }).catch(() => false)) return
+  await dialogButton(page, 'Close', 1000)
+}
+
+/**
+ * Add a Video Player in edit mode and open its config, with the stream-routes dialog, which would otherwise sit over
+ * the config, out of the way.
  * @param {object} page - Driver page
  * @returns {Promise<{hash: string, name: string}>} The widget
  */
 export async function placeVideoWidget(page) {
   const widget = await placeWidget(page, 'Video Player')
-  if (await page.waitFor(() => page.exists(ROUTES_NOTICE), { timeout: 10000 }).catch(() => false)) {
-    await dialogButton(page, 'Close', 1000)
-  }
+  await dismissRoutesDialog(page, 10000)
   await openWidgetConfig(page, widget.name)
   return widget
 }

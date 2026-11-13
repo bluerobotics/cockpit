@@ -5,7 +5,6 @@ import {
   openDataLake,
   shownRow,
   USER_VARIABLE as VARIABLE,
-  USER_VARIABLE_KEYS,
 } from '../lib/act-dl.mjs'
 import { setup } from '../lib/dl-case.mjs'
 
@@ -16,7 +15,6 @@ export const meta = {
   route: '/',
   needs: [],
   synced: NO_USER_VARIABLES,
-  restore: USER_VARIABLE_KEYS,
 }
 
 /**

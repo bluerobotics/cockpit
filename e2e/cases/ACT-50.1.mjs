@@ -1,14 +1,6 @@
 import { setUpActions } from '../lib/act-case.mjs'
-import { ACTION_KEYS, NO_ACTIONS } from '../lib/actions.mjs'
-import {
-  callsTo,
-  createRequestAction,
-  MODE_VARIABLE,
-  MODES,
-  NO_TRIGGERS,
-  setTriggers,
-  TRIGGER_KEYS,
-} from '../lib/triggers.mjs'
+import { NO_ACTIONS } from '../lib/actions.mjs'
+import { callsTo, createRequestAction, MODE_VARIABLE, MODES, NO_TRIGGERS, setTriggers } from '../lib/triggers.mjs'
 
 const NAME = 'Release mode request'
 const PATH = '/mode'
@@ -19,7 +11,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { ...NO_ACTIONS, ...NO_TRIGGERS },
-  restore: [...ACTION_KEYS, ...TRIGGER_KEYS],
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)

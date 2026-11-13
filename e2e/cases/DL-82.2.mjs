@@ -6,7 +6,6 @@ import {
   NO_USER_VARIABLES,
   openDataLake,
   shownRow,
-  USER_VARIABLE_KEYS,
 } from '../lib/act-dl.mjs'
 import { setup as quiet } from '../lib/dl-case.mjs'
 
@@ -15,7 +14,6 @@ export const meta = {
   route: '/',
   needs: [],
   synced: NO_USER_VARIABLES,
-  restore: USER_VARIABLE_KEYS,
 }
 
 const A = { id: 'release-test/a', name: 'Release a', value: 2 }

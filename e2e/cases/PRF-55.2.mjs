@@ -9,7 +9,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { [COMPOUND_KEY]: [] },
-  restore: [COMPOUND_KEY],
 }
 
 const A = 'release-test/a'

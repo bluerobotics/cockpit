@@ -1,12 +1,11 @@
 import { NAME, runAndCatch, setUpActions } from '../lib/act-case.mjs'
-import { ACTION_KEYS, clickActionButton, fillHttpAction, listedActions, NO_ACTIONS } from '../lib/actions.mjs'
+import { clickActionButton, fillHttpAction, listedActions, NO_ACTIONS } from '../lib/actions.mjs'
 
 export const meta = {
   title: 'Renaming an HTTP action keeps a single action',
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 export const setup = (ctx) => setUpActions(ctx, true)

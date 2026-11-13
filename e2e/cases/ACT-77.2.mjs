@@ -1,6 +1,6 @@
 import { setUpActions } from '../lib/act-case.mjs'
 import { angleDiff, armInManual, drive, editorText, HEADING, lake } from '../lib/act-dl.mjs'
-import { ACTION_KEYS, clickActionButton, newAction, NO_ACTIONS } from '../lib/actions.mjs'
+import { clickActionButton, newAction, NO_ACTIONS } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 
 export const meta = {
@@ -8,7 +8,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 export const setup = async (ctx) => {

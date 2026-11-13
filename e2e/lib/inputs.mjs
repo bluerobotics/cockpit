@@ -9,6 +9,7 @@ import { dismissTutorial, fieldByLabel } from './cockpit.mjs'
 import { elementHandle } from './custom-widget.mjs'
 import { dismissFeaturesDialog } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
+import { dismissRoutesDialog } from './widgets.mjs'
 
 // The user variables and widget values these cases create, emptied before a case and put back after it, so a
 // variable made by one case does not make the next one's "create" fail as already taken.
@@ -17,8 +18,6 @@ export const INPUT_SYNCED = {
   'cockpit-persistent-data-lake-values': {},
   'cockpit-mini-widget-last-values': {},
 }
-// The top bar lives in its own key, outside the views the runner restores.
-export const INPUT_KEYS = [...Object.keys(INPUT_SYNCED), 'cockpit-mini-widgets-profile-v4']
 
 /**
  * Close the start-up dialogs every case meets.
@@ -346,15 +345,7 @@ export async function ensureSnapshotTool(page) {
       return true })()`
   )
   await page.wait(1000)
-  // Once the stream's routes are known Cockpit reports them in a dialog over the view; it is closed before the case.
-  const routes = ['Preferred video stream routes', 'Video being routed from multiple IPs']
-  const open = () =>
-    page.eval(
-      `[...document.querySelectorAll('.v-overlay--active')].some((o) => ${JSON.stringify(
-        routes
-      )}.some((t) => o.innerText.includes(t)))`
-    )
-  if (await page.waitFor(open, { timeout: 12000 }).catch(() => false)) await page.click('text=Close', { settle: 800 })
+  await dismissRoutesDialog(page)
 }
 
 /**

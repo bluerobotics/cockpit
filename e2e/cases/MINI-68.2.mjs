@@ -1,5 +1,5 @@
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
-import { addMiniWidget, MINI_PROFILE_KEY, miniWidgetEl, quietStart } from '../lib/widgets.mjs'
+import { addMiniWidget, miniWidgetEl, quietStart } from '../lib/widgets.mjs'
 
 // How Cockpit names each GPS_RAW_INT fix_type.
 const FIX = {
@@ -18,7 +18,6 @@ export const meta = {
   title: 'Satellite indicator shows sats and fix',
   route: '/',
   needs: ['vehicle'],
-  restore: [MINI_PROFILE_KEY],
 }
 
 export const setup = quietStart

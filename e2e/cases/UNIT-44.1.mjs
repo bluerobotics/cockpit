@@ -1,20 +1,12 @@
 import { dismissTutorial } from '../lib/cockpit.mjs'
 import { dismissFeaturesDialog } from '../lib/extensions.mjs'
 import { closeMenu } from '../lib/mavlink-tools.mjs'
-import {
-  chooseUnitSystem,
-  DEPTH_METRES,
-  placeDepthAndTemperature,
-  readouts,
-  TEMPERATURE,
-  UNITS_KEY,
-} from '../lib/units.mjs'
+import { chooseUnitSystem, DEPTH_METRES, placeDepthAndTemperature, readouts, TEMPERATURE } from '../lib/units.mjs'
 
 export const meta = {
   title: 'Depth and temperature widgets follow the display units',
   route: '/',
   needs: ['vehicle'],
-  restore: [UNITS_KEY],
 }
 
 export const setup = async ({ page }) => {

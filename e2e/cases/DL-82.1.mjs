@@ -7,7 +7,6 @@ import {
   sampleSpeedWhileDriving,
   shownRow,
   SPEED_KMH as COMPOUND,
-  USER_VARIABLE_KEYS,
 } from '../lib/act-dl.mjs'
 import { setup as quiet } from '../lib/dl-case.mjs'
 
@@ -16,7 +15,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: NO_USER_VARIABLES,
-  restore: USER_VARIABLE_KEYS,
 }
 
 export const setup = async (ctx) => {

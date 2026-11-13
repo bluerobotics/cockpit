@@ -5,7 +5,6 @@ import {
   createElementVariable,
   dropCard,
   elementAt,
-  INPUT_KEYS,
   INPUT_SYNCED,
   lakeValue,
   openElementPanel,
@@ -18,7 +17,6 @@ export const meta = {
   title: 'Input widgets added to the top and bottom bars',
   route: '/',
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart

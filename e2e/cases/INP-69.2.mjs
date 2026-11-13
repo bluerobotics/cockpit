@@ -1,7 +1,7 @@
-import { ACTION_KEYS, newAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
+import { newAction, NO_ACTIONS, openActions } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 import { addActionButton, enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
-import { addInputContainer, INPUT_KEYS, INPUT_SYNCED, quietStart } from '../lib/inputs.mjs'
+import { addInputContainer, INPUT_SYNCED, quietStart } from '../lib/inputs.mjs'
 import { closeMenu } from '../lib/mavlink-tools.mjs'
 
 export const meta = {
@@ -9,7 +9,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { ...NO_ACTIONS, ...INPUT_SYNCED },
-  restore: [...ACTION_KEYS, ...INPUT_KEYS],
 }
 
 const NAME = 'Release arm'
