@@ -595,8 +595,9 @@ declare global {
        * Register an RTSP stream with the go2rtc sidecar for WebRTC consumption
        * @param name - Unique stream name used for WebRTC signaling
        * @param rtspUrl - Full RTSP URL including optional credentials
+       * @returns True if the stream is read through FFmpeg, as H.265 cameras are once they answer
        */
-      go2rtcAddStream: (name: string, rtspUrl: string) => Promise<void>
+      go2rtcAddStream: (name: string, rtspUrl: string) => Promise<boolean>
       /**
        * Remove an RTSP stream from the go2rtc sidecar
        * @param name - The stream name to remove
