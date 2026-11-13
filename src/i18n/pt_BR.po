@@ -470,6 +470,11 @@ msgstr ""
 msgid "${ 0 } tiles, ${ 1 } MB"
 msgstr ""
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "${ 0 } to ${ 1 } cm per pixel, flying ${ 2 } to ${ 3 } m over the ground."
+msgstr ""
+
 #: src/components/terrain/TerrainLibrarySection.vue
 #, javascript-format
 msgid "${ 0 } to ${ 1 } m"
@@ -519,6 +524,7 @@ msgid_plural "${ 0 } were already there."
 msgstr[0] "${ 0 } já estava lá."
 msgstr[1] "${ 0 } já estavam lá."
 
+#: src/components/terrain/TerrainSurveyPanel.vue
 #: src/composables/terrain/useSafeAltitude.ts
 #, javascript-format
 msgid "${ 0 } waypoint"
@@ -606,6 +612,21 @@ msgstr ""
 msgid ""
 "${ 0 }% of the mission has a clear link. Worst from ${ 1 }, at ${ 2 }% of "
 "the space the signal needs."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "${ 0 }, ${ 1 } m range, ${ 2 }% overlap"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "${ 0 }, lines ${ 1 } m apart"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "${ 0 }, spaced for the sensor"
 msgstr ""
 
 #: src/components/terrain/TerrainSurveySensorsPanel.vue
@@ -2648,6 +2669,10 @@ msgid ""
 "terrain panel."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Checks each survey of the mission against the terrain under it."
+msgstr ""
+
 #: src/components/terrain/TerrainSightPanel.vue
 #, javascript-format
 msgid ""
@@ -3496,6 +3521,10 @@ msgstr ""
 msgid "Console"
 msgstr "Console"
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Constant image scale:"
+msgstr ""
+
 #: src/components/widgets/IFrame.vue
 msgid "Container name"
 msgstr "Nome do contêiner"
@@ -3643,6 +3672,11 @@ msgstr ""
 msgid "Could not compare with the model: ${ 0 }"
 msgstr ""
 
+#: src/composables/terrain/useSurveyCompensation.ts
+#, javascript-format
+msgid "Could not compensate the survey, so its sensor compensation is off. ${ 0 }"
+msgstr ""
+
 #: src/components/terrain/TerrainSightPanel.vue
 #, javascript-format
 msgid "Could not compute the line of sight: ${ 0 }"
@@ -3788,6 +3822,11 @@ msgstr ""
 #: src/composables/terrain/useSafeAltitude.ts
 #, javascript-format
 msgid "Could not raise the waypoints: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "Could not re-space survey ${ 0 }. ${ 1 }"
 msgstr ""
 
 #: src/components/BaseStationGnssSetupDialog.vue
@@ -3964,6 +4003,11 @@ msgstr "Cobertura"
 msgid "Coverage actions"
 msgstr "Ações de cobertura"
 
+#: src/composables/terrain/useSurveyCompensation.ts
+#, javascript-format
+msgid "Covering it with the ${ 0 } from this height takes too many lines. ${ 1 }"
+msgstr ""
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 #: src/components/configuration/JavascriptActionConfig.vue
 #: src/components/configuration/MavlinkMessageActionConfig.vue
@@ -4072,6 +4116,10 @@ msgstr "Distância entre linhas do cruzamento (${ 0 })"
 #, javascript-format
 msgid "Crosshatch scan spacing (${ 0 })"
 msgstr "Espaçamento da varredura cruzada (${ 0 })"
+
+#: src/composables/terrain/useSurveyCompensation.ts
+msgid "Crosshatch surveys cannot be re-spaced for a sensor."
+msgstr ""
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Cruise at a depth of"
@@ -4995,6 +5043,12 @@ msgstr ""
 #: src/composables/map/useRectangleHandles.ts
 msgid "Drag to turn the survey rectangle"
 msgstr "Arraste para girar o retângulo do levantamento"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"Draw a survey to judge its photo quality over the terrain, or to re-space "
+"its lines for the depth."
+msgstr ""
 
 #: src/components/poi/PoiManager.vue
 msgid "Drone"
@@ -6083,6 +6137,13 @@ msgstr ""
 #: src/views/ConfigurationLogsView.vue
 msgid "For additional Help, refer to documentation or contact us."
 msgstr "Para mais ajuda, consulte a documentação ou entre em contato conosco."
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"For constant image scale, set this survey's altitude to \"Relative to "
+"terrain\" and turn on \"Hold terrain height on upload\" in the terrain "
+"settings."
+msgstr ""
 
 #: src/components/OtherControlStationWarningDialog.vue
 msgid "Force forwarding"
@@ -7502,6 +7563,10 @@ msgstr ""
 "Seu centro está deslocado do padrão do veículo, então os motores podem "
 "girar com o stick em repouso."
 
+#: src/composables/terrain/useSurveyCompensation.ts
+msgid "Its sensor is no longer set in the survey sensor settings."
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "Its terrain reads ${ 0 } m against Cockpit's."
@@ -7874,6 +7939,11 @@ msgstr "Espessura da linha"
 #: src/views/MissionPlanningView.vue
 msgid "Lines angle (degrees)"
 msgstr "Ângulo das linhas (graus)"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "Lines spaced for ${ 0 }% side overlap."
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Link and sight"
@@ -9179,6 +9249,13 @@ msgstr "Nenhuma cerca virtual no veículo"
 msgid "No gimbal detected on the vehicle"
 msgstr "Nenhum gimbal detectado no veículo"
 
+#: src/libs/terrain/survey-analysis.ts
+msgid ""
+"No ground or depth is known under the survey. Check the terrain sources in "
+"Settings > Mission > Terrain, or, for a boat or submarine, pick an echo "
+"sounder and set an assumed depth under Survey sensors."
+msgstr ""
+
 #: src/components/development/MAVLinkInspectorItem.vue
 msgid "No incoming messages"
 msgstr "Nenhuma mensagem recebida"
@@ -9196,6 +9273,10 @@ msgstr ""
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid "No joystick mapping suggestions available."
 msgstr "Nenhuma sugestão de mapeamento de joystick disponível."
+
+#: src/composables/terrain/useSurveyCompensation.ts
+msgid "No line fits inside the survey area."
+msgstr ""
 
 #: src/views/ConfigurationDevelopmentView.vue
 msgid "No logs could be read"
@@ -9601,6 +9682,14 @@ msgstr "Dados de telemetria na tela"
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "On startup"
 msgstr "Na inicialização"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"On surveys with sensor compensation on, the purple area on the map is what "
+"each sensor probably covers. Its dashed line is where the sensor is aimed, "
+"off the\n"
+"survey path by its mount and view."
+msgstr ""
 
 #: src/composables/vehicleDefaults/useVehicleDefaultsAutoImportWizard.ts
 msgid ""
@@ -10025,6 +10114,12 @@ msgid ""
 "cannot be told from land there."
 msgstr ""
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"Part of this survey reaches the ground, so its photo quality cannot be "
+"judged. Raise it or set it to \"Relative to terrain\"."
+msgstr ""
+
 #: src/components/VehicleDiscoveryDialog.vue
 #, javascript-format
 msgid "Pass ${ 0 }/${ 1 } at ${ 2 }ms"
@@ -10087,6 +10182,10 @@ msgstr "Aviso de desempenho"
 msgid "Persist variable between boots"
 msgstr "Manter a variável entre inicializações"
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Photo quality:"
+msgstr ""
+
 #: src/components/terrain/TerrainSurveySensorsPanel.vue
 msgid "Photo side overlap"
 msgstr ""
@@ -10094,6 +10193,22 @@ msgstr ""
 #: src/components/BaseStationConfigPanel.vue
 msgid "Pick a point on the map to fetch coverage"
 msgstr "Escolha um ponto no mapa para buscar a cobertura"
+
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Pick a survey sensor in the survey sensor settings to space the lines for it"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"Pick an echo sounder or an imaging sensor in the survey sensor settings to "
+"re-space this survey for the depth."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"Pick an imaging sensor in the survey sensor settings to judge this survey's "
+"photo quality."
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "Pick coverage color"
@@ -10666,6 +10781,26 @@ msgstr "Aplicar novamente"
 #: src/views/MissionPlanningView.vue
 msgid "Re-fly at 90° (crosshatch)"
 msgstr "Voar novamente a 90° (quadriculado)"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Re-space for depth"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Re-space for depth:"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Re-space for terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Re-space for terrain:"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Re-spacing"
+msgstr ""
 
 #: src/components/widgets/CompassHUD.vue
 msgid "Reached"
@@ -11769,8 +11904,20 @@ msgstr ""
 msgid "Sensitivity"
 msgstr "Sensibilidade"
 
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Sensor compensation does not cover crosshatch surveys"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Sensor compensation:"
+msgstr ""
+
 #: src/components/terrain/TerrainSurveySensorsPanel.vue
 msgid "Sensor range"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Sensors:"
 msgstr ""
 
 #: src/components/development/MAVLinkInspectorItem.vue
@@ -12166,6 +12313,11 @@ msgstr ""
 msgid "Side of the frame, scanning around the ROV"
 msgstr ""
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "Side overlap drops to ${ 0 }% (target ${ 1 }%)."
+msgstr ""
+
 #: src/views/ConfigurationCloudView.vue
 msgid "Sign in"
 msgstr "Entrar"
@@ -12229,6 +12381,10 @@ msgstr "Pular para o waypoint anterior"
 #: src/libs/slide-to-confirm.ts
 msgid "Slide to Confirm"
 msgstr "Deslize para confirmar"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "Slopes:"
+msgstr ""
 
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid "Snapshot all available sources"
@@ -12308,6 +12464,18 @@ msgstr "Fonte indisponível"
 msgid "Sources"
 msgstr "Fontes"
 
+#: src/components/mission-planning/ContextMenu.vue
+#, javascript-format
+msgid ""
+"Space the lines so the ${ 0 } leaves no gap, turning them along the slope "
+"where it changes the spacing"
+msgstr ""
+
+#: src/components/mission-planning/ContextMenu.vue
+#, javascript-format
+msgid "Spacing the lines for the ${ 0 }"
+msgstr ""
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 msgid ""
 "Specifying the User-Agent header only works in Cockpit standalone, not in "
@@ -12320,6 +12488,10 @@ msgstr ""
 #: src/views/ConfigurationUIView.vue
 msgid "Speed"
 msgstr "Velocidade"
+
+#: src/composables/terrain/useSurveyCompensation.ts
+msgid "Split the area into smaller surveys or pick a sensor with a wider view."
+msgstr ""
 
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Stalls"
@@ -12485,6 +12657,11 @@ msgstr "Parar"
 #: src/components/CameraGimbalControlButtons.vue
 msgid "Stop recording"
 msgstr "Parar gravação"
+
+#: src/components/mission-planning/ContextMenu.vue
+#, javascript-format
+msgid "Stop spacing the lines for the ${ 0 }"
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Stop storing terrain"
@@ -12673,9 +12850,42 @@ msgstr "A sugestão \"${ 0 }\" foi ignorada."
 msgid "Surface Boat"
 msgstr "Barco de superfície"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Survey"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "Survey ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid ""
+"Survey ${ 0 } re-spaced to ${ 1 } lines with the ${ 2 }, turned along the "
+"slope."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+#, javascript-format
+msgid "Survey ${ 0 } re-spaced to ${ 1 } lines with the ${ 2 }."
+msgstr ""
+
 #: src/components/mission-planning/SurveyVertexList.vue
 msgid "Survey Polygon Vertices"
 msgstr "Vértices do polígono do levantamento"
+
+#: src/composables/terrain/useSurveyCompensation.ts
+#, javascript-format
+msgid ""
+"Survey compensated for the ${ 0 }, ${ 1 } lines covering the area, turned "
+"along the slope."
+msgstr ""
+
+#: src/composables/terrain/useSurveyCompensation.ts
+#, javascript-format
+msgid "Survey compensated for the ${ 0 }, ${ 1 } lines covering the area."
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "Survey deleted."
@@ -12700,6 +12910,7 @@ msgid "Surveyor Integration Kit, on the starboard hull, looking down"
 msgstr ""
 
 #: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainSurveyPanel.vue
 msgid "Surveys"
 msgstr "Levantamentos"
 
@@ -13108,6 +13319,10 @@ msgstr ""
 "foi verificada contra os dados de perigo. Carregar esses dados requer "
 "conexão com a internet."
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid "The height over the ground along this survey is not known yet."
+msgstr ""
+
 #: src/composables/useOffCenterAxisWarning.ts
 #, javascript-format
 msgid ""
@@ -13252,6 +13467,18 @@ msgstr ""
 #: src/views/ConfigurationVideoView.vue
 msgid "The stream"
 msgstr "O stream"
+
+#: src/composables/terrain/useSurveyCompensation.ts
+msgid "The survey changed while it was being re-spaced."
+msgstr ""
+
+#: src/composables/terrain/useSurveyCompensation.ts
+msgid "The survey has no lines to re-space."
+msgstr ""
+
+#: src/composables/terrain/useSurveyCompensation.ts
+msgid "The survey is no longer in the mission."
+msgstr ""
 
 #: src/components/terrain/TerrainSightPanel.vue
 msgid "The terrain between the base and the vehicle is unknown."
@@ -13493,6 +13720,12 @@ msgstr ""
 "processar automaticamente os trechos gravados em arquivos de vídeo e "
 "compactar os arquivos ao baixar vários vídeos ou um vídeo com legendas de "
 "telemetria."
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"There are no survey checks for this vehicle type; they cover aircraft photo "
+"surveys and boat or submarine bottom surveys."
+msgstr ""
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid ""
@@ -16098,6 +16331,17 @@ msgstr ""
 "se você estiver satisfeito com seu grupo de visualizações e mapeamento de "
 "joystick atuais."
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"image detail in centimeters per pixel, from the imaging sensor picked in "
+"Settings > Mission > Survey sensors and the height over the ground along "
+"the lines.\n"
+"Ground that rises under the survey sharpens the images but narrows each "
+"photo, so the side overlap between neighboring lines drops; the target "
+"overlap comes\n"
+"from the sensor settings."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "in"
 msgstr "em"
@@ -16230,9 +16474,35 @@ msgstr ""
 msgid "permanently delete your current ${ 0 } view(s)"
 msgstr "excluir permanentemente suas ${ 0 } visualização(ões) atuais"
 
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"picked in Settings > Mission > Survey sensors, with how each one is mounted "
+"on the vehicle."
+msgstr ""
+
 #: src/views/ToolsLogsView.vue
 msgid "points"
 msgstr "pontos"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"re-spacing here, or the radar button in the survey's radial menu, turns it "
+"on for that sensor: the survey is re-spaced automatically after every edit "
+"and\n"
+"every change to the sensor's settings, and the covered strips are drawn in "
+"purple on the map. Only those two commands turn the lines along the slope; "
+"later\n"
+"edits keep the angle you set."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"re-spacing turns the lines along the slope's contours when the ground or "
+"bottom changes height enough across the area, so each line keeps one height "
+"over\n"
+"it. A strip narrows on the side where the slope rises and widens where it "
+"falls away."
+msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "receiving readings"
@@ -16245,6 +16515,22 @@ msgstr ""
 #: src/views/ConfigurationGeneralView.vue
 msgid "removes it. Overlays are saved on this computer unless"
 msgstr "a remove. As sobreposições são salvas neste computador, a menos que"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"replaces the survey's lines with lines spaced so the photos cover the whole "
+"area with the target overlap over the real ground, closer where it rises "
+"toward\n"
+"the aircraft. Undo brings the previous lines back."
+msgstr ""
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"replaces the survey's lines with lines spaced so the strip the sensor sees "
+"on the bottom covers the whole area at the depth along each line, with the\n"
+"sensor's overlap. Deeper water gives a wider strip and fewer lines. Undo "
+"brings the previous lines back."
+msgstr ""
 
 #: src/components/EditMenu.vue
 #: src/components/InputElementConfig.vue
@@ -16288,6 +16574,14 @@ msgstr "selecionar"
 #: src/components/recipes/ReadRecipeDialog.vue
 msgid "send messages to the vehicle"
 msgstr "enviar mensagens ao veículo"
+
+#: src/components/terrain/TerrainSurveyPanel.vue
+msgid ""
+"setting the survey to \"Relative to terrain\" and turning on \"Hold terrain "
+"height on upload\" keeps the same height over the ground, and so the same "
+"detail,\n"
+"all along it."
+msgstr ""
 
 #: src/components/configuration/JavascriptActionConfig.vue
 msgid "so saving or deleting the action stops them."
