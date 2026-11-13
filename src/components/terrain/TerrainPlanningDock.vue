@@ -189,6 +189,7 @@
           <TerrainQuickActionsPanel v-else-if="currentTab === 'actions'" />
           <TerrainTidePanel v-else-if="currentTab === 'tide'" />
           <TerrainSightPanel v-else-if="currentTab === 'sight'" />
+          <TerrainSurveyPanel v-else-if="currentTab === 'survey'" />
           <TerrainVehiclePanel v-else-if="currentTab === 'vehicle'" />
         </div>
 
@@ -303,6 +304,7 @@ import TerrainProfileChart from '@/components/terrain/TerrainProfileChart.vue'
 import TerrainQuickActionsPanel from '@/components/terrain/TerrainQuickActionsPanel.vue'
 import TerrainSafeAltitude from '@/components/terrain/TerrainSafeAltitude.vue'
 import TerrainSightPanel from '@/components/terrain/TerrainSightPanel.vue'
+import TerrainSurveyPanel from '@/components/terrain/TerrainSurveyPanel.vue'
 import TerrainTidePanel from '@/components/terrain/TerrainTidePanel.vue'
 import TerrainVehiclePanel from '@/components/terrain/TerrainVehiclePanel.vue'
 import TerrainWarningTriangle from '@/components/terrain/TerrainWarningTriangle.vue'
@@ -326,7 +328,7 @@ import { useTerrainStore } from '@/stores/terrain'
 import { SubMenuComponentName } from '@/types/general'
 import type { BathymetrySourceId } from '@/types/terrain'
 
-type TerrainTab = 'findings' | 'actions' | 'tide' | 'sight' | 'vehicle'
+type TerrainTab = 'findings' | 'actions' | 'tide' | 'sight' | 'survey' | 'vehicle'
 
 const emit = defineEmits<{
   (event: 'select-waypoint', waypointIndex: number): void
@@ -369,6 +371,7 @@ const TABS: {
   { id: 'actions', label: t`Quick actions` },
   { id: 'tide', label: t`Tide` },
   { id: 'sight', label: t`Link and sight` },
+  { id: 'survey', label: t`Survey` },
   { id: 'vehicle', label: t`Vehicle` },
 ]
 

@@ -36,6 +36,7 @@ import {
   PATH_SIGHT_COLORS,
   visibilityImagePixels,
 } from '@/libs/terrain/sight-analysis'
+import type { ResolvedSurveySensor } from '@/libs/terrain/survey-sensors'
 import type { TerrainTileBounds } from '@/libs/terrain/tiles'
 import { useHazardStore } from '@/stores/hazards'
 import { useMissionStore } from '@/stores/mission'
@@ -48,6 +49,8 @@ import { type UseMissionTerrainReturn, useMissionTerrain } from './useMissionTer
 import { type UseMissionTideReturn, useMissionTide } from './useMissionTide'
 import { type UseMissionWaterReturn, useMissionWater } from './useMissionWater'
 import { type UseSafeAltitudeReturn, useSafeAltitude } from './useSafeAltitude'
+import { type UseSurveyCompensationReturn, useSurveyCompensation } from './useSurveyCompensation'
+import { useSurveyFootprints } from './useSurveyFootprints'
 import { type TerrainUploadPreview, useTerrainUploadPreview } from './useTerrainUploadPreview'
 
 /**
@@ -124,9 +127,10 @@ export interface TerrainDockFindingAction {
 export type TerrainMissionEdit = Required<Pick<CockpitMission, 'waypoints' | 'surveys'>>
 
 /**
- * Asks the planning view to replace the mission with new waypoints and surveys.
+ * Asks the planning view to replace the mission with new waypoints and surveys, as a step of its own to undo unless
+ * told otherwise.
  */
-export type ReplaceMission = (mission: TerrainMissionEdit, message: string) => void
+export type ReplaceMission = (mission: TerrainMissionEdit, message: string, undoable?: boolean) => void
 
 /**
  * State the terrain dock shares with its panels.
@@ -232,6 +236,15 @@ export interface TerrainDockState {
    * The tide station nearest the mission, or the one the settings name, and the mission day its tide is read for.
    */
   tide: UseMissionTideReturn
+  /**
+   * Echo sounder and camera a boat or submarine survey can be spaced for, the camera alone for an aircraft, empty
+   * for other vehicles.
+   */
+  surveySensors: Ref<ResolvedSurveySensor[]>
+  /**
+   * Re-spaces a survey so a sensor's strips leave no gap on the bottom; throws when it cannot.
+   */
+  respaceSurvey: UseSurveyCompensationReturn['respacedMission']
   /**
    * What an upload holding the height over the ground would send, while that upload option is on for an aircraft.
    */
@@ -549,6 +562,8 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
 
   const tide = useMissionTide(open, terrain.vehicleClass, () => terrain.points().map(({ coordinates }) => coordinates))
 
+  const { sensors: surveySensors, respacedMission: respaceSurvey } = useSurveyCompensation(replaceMission)
+
   const overlay = useTerrainMapOverlay(map, {
     // Each change redraws every finding line, which a waypoint drag would otherwise do at pointer rate.
     stretches: refThrottled(stretches, 100),
@@ -557,6 +572,7 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     observers: computed(() => (open.value ? terrainStore.settings.visualObservers : [])),
     ghost: computed(() => (open.value ? ghostSample.value?.coordinates ?? null : null)),
     measured: measuredDots,
+    footprints: useSurveyFootprints(surveySensors, terrain.vehicleClass),
     uploadWaypoints: computed<TerrainMapDot[]>(() =>
       (uploadPreview.value?.path ?? []).flatMap(({ coordinates, amslM, added }) => {
         const heightM = Math.round(amslM)
@@ -635,6 +651,8 @@ export const provideTerrainDock = (replaceMission: ReplaceMission): TerrainDockS
     loadMissionCoastline,
     water,
     tide,
+    surveySensors,
+    respaceSurvey,
     uploadPreview,
   }
   provide(terrainDockKey, state)

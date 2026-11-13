@@ -66,6 +66,24 @@ export interface TerrainMapDot {
 }
 
 /**
+ * Bottom a survey sensor probably covers, with the line it is aimed along.
+ */
+export interface TerrainMapFootprint {
+  /**
+   * Outline of the covered strip.
+   */
+  outline: WaypointCoordinates[]
+  /**
+   * Middle of the strip.
+   */
+  focusLine: WaypointCoordinates[]
+  /**
+   * Fill and line color.
+   */
+  color: string
+}
+
+/**
  * What the terrain overlay draws.
  */
 export interface UseTerrainMapOverlayOptions {
@@ -93,6 +111,10 @@ export interface UseTerrainMapOverlayOptions {
    * Measured terrain cells to show.
    */
   measured: Ref<TerrainMapDot[]>
+  /**
+   * Survey sensor footprints.
+   */
+  footprints: Ref<TerrainMapFootprint[]>
   /**
    * Waypoints an upload adds to the mission.
    */
@@ -129,11 +151,12 @@ const ABOVE_PATH_TOOLTIP: L.TooltipOptions = { direction: 'top', offset: [0, -18
  */
 export const useTerrainMapOverlay = (
   map: Ref<LeafletMap | undefined>,
-  { stretches, hover, image, observers, ghost, measured, uploadWaypoints }: UseTerrainMapOverlayOptions
+  { stretches, hover, image, observers, ghost, measured, footprints, uploadWaypoints }: UseTerrainMapOverlayOptions
 ): UseTerrainMapOverlayReturn => {
   const stretchLayer = L.layerGroup()
   const markerLayer = L.layerGroup()
   const measuredLayer = L.layerGroup()
+  const footprintLayer = L.layerGroup()
   const uploadLayer = L.layerGroup()
   // The measured dots are only 3 px across, so hovering counts a few pixels around each one.
   const renderer = L.canvas({ padding: 0.2, tolerance: 4 })
@@ -159,7 +182,7 @@ export const useTerrainMapOverlay = (
       }
       current?.on('move viewreset zoomend', followMapPane)
       followMapPane()
-      ;[stretchLayer, markerLayer, measuredLayer, uploadLayer].forEach((layer) => {
+      ;[footprintLayer, stretchLayer, markerLayer, measuredLayer, uploadLayer].forEach((layer) => {
         if (previous) layer.remove()
         if (current) layer.addTo(current)
       })
@@ -293,6 +316,18 @@ export const useTerrainMapOverlay = (
     })
   })
 
+  watch(footprints, (current) => {
+    footprintLayer.clearLayers()
+    current.forEach(({ outline, focusLine, color }) => {
+      footprintLayer.addLayer(
+        L.polygon(outline, { renderer, interactive: false, stroke: false, fillColor: color, fillOpacity: 0.2 })
+      )
+      footprintLayer.addLayer(
+        L.polyline(focusLine, { renderer, interactive: false, color, weight: 2, opacity: 0.9, dashArray: '4 6' })
+      )
+    })
+  })
+
   const pickPoint = (): Promise<WaypointCoordinates | null> => {
     cancelPick?.()
     const instance = map.value
@@ -341,7 +376,7 @@ export const useTerrainMapOverlay = (
   onBeforeUnmount(() => {
     cancelPick?.()
     map.value?.off('move viewreset zoomend', followMapPane)
-    ;[stretchLayer, markerLayer, measuredLayer, uploadLayer].forEach((layer) => layer.remove())
+    ;[footprintLayer, stretchLayer, markerLayer, measuredLayer, uploadLayer].forEach((layer) => layer.remove())
     imageLayer?.remove()
     hoverMarker?.remove()
     ghostMarker?.remove()

@@ -289,6 +289,11 @@ export interface Survey {
    */
   entryCorner?: number
   /**
+   * When set, the lines are re-spaced for the configured echo sounder or camera so its strips leave no gap on
+   * the bottom, instead of keeping `distanceBetweenLines`. Unset on surveys saved before this field existed.
+   */
+  sensorCompensation?: 'sonar' | 'camera'
+  /**
    * Executable mission waypoints.
    */
   waypoints: Waypoint[]
