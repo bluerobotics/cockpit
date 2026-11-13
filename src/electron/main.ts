@@ -15,6 +15,7 @@ import { setupOsmRefererService } from './services/osm-referer'
 import { setupResourceMonitoringService } from './services/resource-monitoring'
 import { setupFilesystemStorage } from './services/storage'
 import { setupSystemInfoService } from './services/system-info'
+import { setupTerrainService } from './services/terrain'
 import { setupTTSService } from './services/tts'
 import { setupUserAgentService } from './services/user-agent'
 import { setupVideoRecordingService } from './services/video-recording'
@@ -172,6 +173,7 @@ protocol.registerSchemesAsPrivileged([
 setupFilesystemStorage()
 setupNetworkService()
 setupOpenCellIdService()
+setupTerrainService()
 setupResourceMonitoringService()
 setupSystemInfoService()
 setupHardwareTelemetryService()

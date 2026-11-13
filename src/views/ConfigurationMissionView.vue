@@ -3,7 +3,7 @@
     <template #title>Mission configuration</template>
     <template #content>
       <div
-        class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto"
+        class="flex flex-col justify-between items-start ml-[1vw] max-h-[85vh] overflow-y-auto [&>*]:shrink-0"
         :class="interfaceStore.isOnSmallScreen ? 'max-w-[75vw]' : 'max-w-[50vw]'"
       >
         <div class="grid grid-cols-3 gap-x-4 mb-4">
@@ -261,6 +261,8 @@
             </div>
           </template>
         </ExpansiblePanel>
+
+        <TerrainSettingsPanel />
       </div>
     </template>
   </BaseConfigurationView>
@@ -270,6 +272,7 @@
 import { ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import TerrainSettingsPanel from '@/components/terrain/TerrainSettingsPanel.vue'
 import { EventCategory, isCategoryConfirmationRequired } from '@/libs/slide-to-confirm'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'

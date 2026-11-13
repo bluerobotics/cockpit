@@ -221,6 +221,7 @@
     <MissionPlanningSidebar
       ref="missionToolboxSidebarRef"
       v-model:planning-mode="planningMode"
+      v-model:collapsed="missionToolboxCollapsed"
       :map-center="mapCenter"
       :calculated-height="calculatedHeight"
       :top-offset="missionToolboxTop"
@@ -745,7 +746,6 @@
       </template>
     </v-tooltip>
     <MapCenterControl
-      v-model:open="speedDialOpen"
       :target-follower="targetFollower"
       :follower-target="followerTarget"
       :home="home"
@@ -845,6 +845,7 @@
       :selected-waypoint="selectedWaypoint"
       @remove-waypoint="removeSelectedWaypoint"
       @should-update-waypoints="handleShouldUpdateWaypoints"
+      @altitude-set="adoptWaypointAltitude"
     />
   </SideConfigPanel>
   <HomePositionSettingHelp v-model="showHomePositionNotSetDialog" />
@@ -904,7 +905,14 @@
       </span>
     </p>
   </div>
-  <MissionEstimatesPanel v-if="!speedDialOpen" v-model="missionStore.showMissionEstimates" />
+  <div class="absolute right-[10px] bottom-[192px] flex flex-col items-end gap-y-[19px] pointer-events-none">
+    <TerrainPlanningDock
+      @select-waypoint="selectWaypointByIndex"
+      @replace-mission="replaceMissionFromTerrain"
+      @update:open="onTerrainDockOpen"
+    />
+    <MissionEstimatesPanel :model-value="missionStore.showMissionEstimates" />
+  </div>
   <MissionLibraryModal
     v-if="interfaceStore.isMissionLibraryVisible"
     :current-mission-snapshot="currentMissionSnapshot"
@@ -948,6 +956,7 @@ import PoiManager from '@/components/poi/PoiManager.vue'
 import PoiMapArrows from '@/components/poi/PoiMapArrows.vue'
 import RadialMenu, { type RadialMenuItem } from '@/components/RadialMenu.vue'
 import SideConfigPanel from '@/components/SideConfigPanel.vue'
+import TerrainPlanningDock from '@/components/terrain/TerrainPlanningDock.vue'
 import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useMissionPathSignalOverlay } from '@/composables/baseStation/useMissionPathSignalOverlay'
@@ -983,7 +992,9 @@ import { useWaypointMarkerSize } from '@/composables/map/useWaypointMarkerSize'
 import { goToMenuPage } from '@/composables/menuRouting'
 import { useFenceMapInteraction } from '@/composables/mission-planning/useFenceMapInteraction'
 import { useMissionPreflightChecks } from '@/composables/mission-planning/useMissionPreflightChecks'
+import { useNextWaypointAltitude } from '@/composables/mission-planning/useNextWaypointAltitude'
 import { useSnackbar } from '@/composables/snackbar'
+import type { TerrainMissionEdit } from '@/composables/terrain/useTerrainDock'
 import { useGeoFenceEditorDraft } from '@/composables/useGeoFenceEditorDraft'
 import {
   clearAllSurveyAreas,
@@ -1003,6 +1014,7 @@ import { applyLiveWaypointCoordinates } from '@/libs/map/survey-arrows'
 import { isOverSurveyHandle } from '@/libs/map/survey-polygon-edges'
 import {
   applyFollowZoomMode,
+  applyMapCenterRequest,
   createGridOverlay,
   fitMapToWaypoints,
   mapPointerPositionFromClient,
@@ -1187,7 +1199,7 @@ const uploadMissionToVehicle = async (): Promise<void> => {
   logUserAction('Uploaded mission to vehicle')
   uploadingMission.value = true
   missionUploadProgress.value = 0
-  const missionItemsToUpload = toPlain(missionStore.currentPlanningWaypoints)
+  const missionItemsToUpload = await prepareMissionUpload(toPlain(missionStore.currentPlanningWaypoints))
 
   const loadingCallback = async (loadingPerc: number): Promise<void> => {
     missionUploadProgress.value = loadingPerc
@@ -1359,8 +1371,13 @@ useBaseStationOverlay(planningMap, mapReady)
 const mapCenter = ref<WaypointCoordinates>(missionStore.userLastMapCenter ?? missionStore.defaultMapCenter)
 const zoom = ref(missionStore.userLastMapZoom ?? missionStore.defaultMapZoom)
 const followerTarget = ref<string | undefined>(undefined)
-const currentWaypointAltitude = ref(0)
-const currentWaypointAltitudeRefType = ref<AltitudeReferenceType>(AltitudeReferenceType.RELATIVE_TO_HOME)
+const {
+  altitude: currentWaypointAltitude,
+  referenceType: currentWaypointAltitudeRefType,
+  reset: resetWaypointAltitude,
+  adopt: adoptWaypointAltitude,
+  settle: settlePlacedWaypoint,
+} = useNextWaypointAltitude()
 const availableFrames = Object.values(AltitudeReferenceType).map((value: AltitudeReferenceType) => ({
   name: value,
   value,
@@ -1647,7 +1664,6 @@ const cruiseSpeedStatus = computed<'invalid' | 'unchanged' | 'valid'>(() => {
 })
 const isSettingHomeWaypoint = ref(false)
 const downloadMenuOpen = ref(false)
-const speedDialOpen = ref(false)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 let esriSaveBtn: HTMLAnchorElement | undefined
 let osmSaveBtn: HTMLAnchorElement | undefined
@@ -2050,6 +2066,7 @@ const clearCurrentMission = (options?: {
 }): void => {
   missionStore.clearMission(options)
   missionStore.clearUndoStack()
+  resetWaypointAltitude()
   Object.values(waypointMarkers.value).forEach((marker) => {
     planningMap.value?.removeLayer(marker)
   })
@@ -2460,6 +2477,7 @@ const insertWaypointAtSegmentMidpoint = (segmentIndex: number): void => {
   }
 
   missionStore.currentPlanningWaypoints.splice(segmentIndex + 1, 0, newWp)
+  void settlePlacedWaypoint(newWp)
   addWaypointMarker(newWp)
   updateWaypointMarkers()
 }
@@ -3196,7 +3214,9 @@ const handleKeyDown = (event: KeyboardEvent): void => {
   if (event.key === 'Enter' && isCreatingSurvey.value) {
     generateWaypointsFromSurvey()
   }
-  if (event.key === 'Delete' && !interfaceStore.configPanelVisible && !baseStationStore.configPanelOpen) {
+  const target = event.target as HTMLElement | null
+  const typing = !!target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
+  if (event.key === 'Delete' && !typing && !baseStationStore.configPanelOpen) {
     if (selectedWaypoint.value) {
       removeSelectedWaypoint()
       selectedWaypoint.value = undefined
@@ -3421,6 +3441,7 @@ const addWaypoint = (
   } else {
     missionStore.currentPlanningWaypoints.push(waypoint)
   }
+  void settlePlacedWaypoint(waypoint)
 
   const newMarker = L.marker(coordinates, { draggable: true })
 
@@ -4578,12 +4599,8 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     }
 
     // Default: open config panel
-    const oldId = selectedWaypoint.value?.id
-    selectedWaypoint.value = waypoint
-    applySelectedWaypointMarkerVisual(waypoint.id, oldId)
-    selectedSurveyId.value = ''
     hideContextMenu()
-    interfaceStore.configPanelVisible = true
+    openWaypointConfig(waypoint)
   })
 
   const currentMarkerSize = getEffectiveMarkerSize(zoom.value)
@@ -4628,6 +4645,25 @@ const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
     return { iconSize: [12, 12], iconAnchor: [6, 6] }
   }
   return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
+}
+
+const openWaypointConfig = (waypoint: Waypoint): void => {
+  const oldId = selectedWaypoint.value?.id
+  selectedWaypoint.value = waypoint
+  applySelectedWaypointMarkerVisual(waypoint.id, oldId)
+  selectedSurveyId.value = ''
+  interfaceStore.configPanelVisible = true
+}
+
+const selectWaypointByIndex = (index: number): void => {
+  const waypoint = missionStore.currentPlanningWaypoints[index]
+  if (!waypoint) return
+  const oldId = selectedWaypoint.value?.id
+  // Only an already open waypoint panel follows the selection, so a stale flag must not open it.
+  if (!oldId) interfaceStore.configPanelVisible = false
+  selectedWaypoint.value = waypoint
+  applySelectedWaypointMarkerVisual(waypoint.id, oldId)
+  selectedSurveyId.value = ''
 }
 
 // single source of truth for selected-marker visuals
@@ -4711,6 +4747,26 @@ const loadDraftMission = async (
   } catch (error) {
     openSnackbar({ variant: 'error', message: `Failed to load draft mission: ${error}`, duration: 3000 })
   }
+}
+
+// Edited in place, like undo, so the undo history, a survey being drawn and the open config panel all survive.
+const replaceMissionFromTerrain = (mission: TerrainMissionEdit, message: string): void => {
+  missionStore.pushUndoSnapshot('terrain')
+  Object.values(waypointMarkers.value).forEach((marker) => planningMap.value?.removeLayer(marker))
+  waypointMarkers.value = {}
+  const byId: Record<string, Waypoint | undefined> = Object.fromEntries(
+    mission.waypoints.map((waypoint) => [waypoint.id, waypoint])
+  )
+  const linkedSurveys = mission.surveys.map((survey) => ({
+    ...survey,
+    waypoints: survey.waypoints.map((waypoint) => byId[waypoint.id] ?? waypoint),
+  }))
+  missionStore.currentPlanningWaypoints.splice(0, missionStore.currentPlanningWaypoints.length, ...mission.waypoints)
+  missionStore.currentPlanningSurveys.splice(0, missionStore.currentPlanningSurveys.length, ...linkedSurveys)
+  missionStore.currentPlanningWaypoints.forEach((waypoint) => addWaypointMarker(waypoint))
+  if (selectedWaypoint.value) selectedWaypoint.value = byId[selectedWaypoint.value.id]
+  updateWaypointMarkers()
+  openSnackbar({ variant: 'success', message, duration: 2000 })
 }
 
 // Backed by a debounced watcher so the deep clone runs at most once per change burst, instead of
@@ -4815,6 +4871,14 @@ const missionToolboxTop = computed<number>(() => {
 watch(missionActionsMenuExpanded, (expanded) => {
   missionToolboxPinnedTop.value = expanded ? missionToolboxTop.value : null
 })
+
+const missionToolboxCollapsed = ref(false)
+let toolboxCollapsedBeforeTerrain = false
+
+const onTerrainDockOpen = (open: boolean): void => {
+  if (open) toolboxCollapsedBeforeTerrain = missionToolboxCollapsed.value
+  missionToolboxCollapsed.value = open || toolboxCollapsedBeforeTerrain
+}
 
 const handleLoadMissionFromLibrary = (mission: SavedMission): void => {
   if (mission.vehicleType && !vehicleStore.isVehicleOnline) {
@@ -5225,7 +5289,7 @@ const vehicleMarker = useMapVehicleMarker(planningMap, {
   iconUrl: () => planningVehicleIconUrl.value,
   tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
   headingInDegrees: () => vehicleHeading.value,
-  tooltipClassName: 'waypoint-tooltip',
+  tooltipClassName: 'vehicle-tooltip',
 })
 
 const homeMarker = shallowRef<L.Marker>()
@@ -5334,7 +5398,7 @@ const {
 })
 
 // Gates the upload on the geofence breach and hazard advisory checks
-const { confirmMissionUpload } = useMissionPreflightChecks({
+const { confirmMissionUpload, prepareMissionUpload } = useMissionPreflightChecks({
   fenceBreaches: { reports: fenceBreachReports, recheck: recheckFenceBreaches, focusBreaches },
 })
 
@@ -5434,7 +5498,7 @@ watch(
   () => missionStore.mapCenterOnRequest,
   (request) => {
     if (!request || !planningMap.value) return
-    planningMap.value.setView(request.coordinates as LatLngTuple, planningMap.value.getZoom(), { animate: true })
+    applyMapCenterRequest(planningMap.value, request)
   }
 )
 </script>

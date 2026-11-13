@@ -1,64 +1,71 @@
 <template>
-  <div
+  <DrawerPanel
     v-if="modelValue"
-    class="absolute right-[10px] bottom-[192px] rounded-[10px] px-3 py-2"
-    :style="[interfaceStore.globalGlassMenuStyles, { width: '280px' }]"
+    v-model:open="isOpen"
+    :label="t`mission estimates panel`"
+    :title="t`Mission estimates`"
+    width="280px"
+    @update:open="onToggleOpen"
   >
-    <p class="text-sm font-semibold mb-[6px]">Mission estimates</p>
-    <v-divider class="mb-2" />
-    <v-icon
-      icon="mdi-eye-off-outline"
-      class="absolute top-[10px] cursor-pointer opacity-80"
-      :class="isOptionsIconVisible ? 'right-[30px]' : 'right-[10px]'"
-      size="14"
-      @click="handleHideMissionEstimates"
-    />
-    <v-icon
-      v-if="isOptionsIconVisible"
-      icon="mdi-cog"
-      class="absolute top-[10px] right-[10px] cursor-pointer opacity-80"
-      size="14"
-      @click="openSettings"
-    />
-    <div class="text-xs leading-6">
-      <div class="flex justify-between">
-        <span>Length</span><span>{{ totalMissionLength }}</span>
-      </div>
-      <div v-if="maxDistance !== '—'" class="flex justify-between">
-        <span>Max distance from {{ maxDistanceReferenceLabel }}</span
-        ><span>{{ maxDistance }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span>ETA</span><span>{{ missionDuration }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span>Energy</span><span>{{ missionEnergy }}</span>
-      </div>
-      <div v-if="totalSurveyCoverage !== '—'" class="flex justify-between">
-        <span>Total survey coverage</span><span>{{ totalSurveyCoverage }}</span>
-      </div>
-      <div v-if="missionCoverage !== '—'" class="flex justify-between">
-        <span>Mission area (≈)</span><span>{{ missionCoverage }}</span>
-      </div>
-      <template v-if="isPathSignalAvailable">
-        <v-divider class="opacity-10 my-1" />
-        <div
-          v-tooltip:top="'Tint the mission path by expected radio or mobile-data coverage at each segment.'"
-          class="flex justify-between items-center -mb-1 pr-1"
-        >
-          <span>Show comms coverage on path</span>
-          <v-checkbox
-            :model-value="missionStore.showMissionPathSignalStrength"
-            theme="dark"
-            density="compact"
-            hide-details
-            class="path-signal-checkbox"
-            @update:model-value="(value) => missionStore.setShowMissionPathSignalStrength(!!value)"
-          />
+    <div class="px-3 py-2">
+      <div class="text-xs leading-6">
+        <div class="flex justify-between">
+          <span>{{ t`Length` }}</span
+          ><span>{{ totalMissionLength }}</span>
         </div>
-      </template>
+        <div v-if="maxDistance !== '—'" class="flex justify-between">
+          <span>{{ t`Max distance from ${maxDistanceReferenceLabel}` }}</span
+          ><span>{{ maxDistance }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>{{ t`ETA` }}</span
+          ><span>{{ missionDuration }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>{{ t`Energy` }}</span
+          ><span>{{ missionEnergy }}</span>
+        </div>
+        <div v-if="totalSurveyCoverage !== '—'" class="flex justify-between">
+          <span>{{ t`Total survey coverage` }}</span
+          ><span>{{ totalSurveyCoverage }}</span>
+        </div>
+        <div v-if="missionCoverage !== '—'" class="flex justify-between">
+          <span>{{ t`Mission area (≈)` }}</span
+          ><span>{{ missionCoverage }}</span>
+        </div>
+        <template v-if="isPathSignalAvailable">
+          <v-divider class="opacity-10 my-1" />
+          <div
+            v-tooltip:top="t`Tint the mission path by expected radio or mobile-data coverage at each segment.`"
+            class="flex justify-between items-center -mb-1 pr-1"
+          >
+            <span>{{ t`Show comms coverage on path` }}</span>
+            <v-checkbox
+              :model-value="missionStore.showMissionPathSignalStrength"
+              theme="dark"
+              density="compact"
+              hide-details
+              class="path-signal-checkbox"
+              @update:model-value="(value) => missionStore.setShowMissionPathSignalStrength(!!value)"
+            />
+          </div>
+        </template>
+      </div>
     </div>
-  </div>
+    <template #strip>
+      <v-btn
+        v-if="isOptionsIconVisible"
+        icon
+        variant="text"
+        size="x-small"
+        :aria-label="t`Mission estimates settings`"
+        @click="openSettings"
+      >
+        <v-icon icon="mdi-cog" size="14" />
+        <v-tooltip activator="parent" location="left" :text="t`Mission estimates settings`" />
+      </v-btn>
+    </template>
+  </DrawerPanel>
   <v-dialog v-model="isSettingsOpen" persistent max-width="500px">
     <v-card :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-lg text-center font-semibold">Mission Statistics Settings</v-card-title>
@@ -169,17 +176,16 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, ref } from 'vue'
 
+import DrawerPanel from '@/components/DrawerPanel.vue'
 import { useMissionPathSignal } from '@/composables/baseStation/useMissionPathSignal'
-import { goToMenuPage } from '@/composables/menuRouting'
-import { openSnackbar } from '@/composables/snackbar'
 import { useMissionEstimates } from '@/composables/useMissionEstimates'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
-import { SubMenuComponentName } from '@/types/general'
 
 defineProps<{
   /**
@@ -187,8 +193,6 @@ defineProps<{
    */
   modelValue: boolean
 }>()
-
-const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 
 const interfaceStore = useAppInterfaceStore()
 const vehicleStore = useMainVehicleStore()
@@ -215,6 +219,8 @@ const missionDuration = computed(() => totalMissionDuration.value)
 const missionEnergy = computed(() => totalMissionEnergy.value)
 const missionCoverage = computed(() => missionCoverageAreaSquareMeters.value)
 
+const isOpen = ref(false)
+const onToggleOpen = (open: boolean): void => logUserAction(`${open ? 'Opened' : 'Closed'} the mission estimates panel`)
 const isSettingsOpen = ref(false)
 const isAboutMessageOpen = ref(false)
 
@@ -226,16 +232,6 @@ const batteryChemistryItems = [
 
 const openSettings = (): void => {
   isSettingsOpen.value = true
-}
-
-const handleHideMissionEstimates = (): void => {
-  emit('update:modelValue', false)
-  openSnackbar({
-    variant: 'info',
-    message: 'You can show the mission estimates again in the mission settings.',
-    duration: 5000,
-    action: { label: 'Mission settings', handler: () => goToMenuPage(SubMenuComponentName.SettingsMission) },
-  })
 }
 </script>
 

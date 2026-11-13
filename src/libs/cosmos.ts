@@ -225,6 +225,14 @@ declare global {
        */
       fetchNearbyOpenCellIdCells: (bbox: OpenCellIdBboxRequest) => Promise<NearbyOpenCellIdCell[]>
       /**
+       * Build one Terrarium tile from the Copernicus surface model, which has no CORS headers.
+       * @param {number} z Tile zoom
+       * @param {number} x Tile column
+       * @param {number} y Tile row
+       * @returns {Promise<Uint8Array>} The tile as a Terrarium-encoded PNG
+       */
+      getCopernicusTerrainTile: (z: number, x: number, y: number) => Promise<Uint8Array>
+      /**
        * Fast TCP port probe used as a pre-filter during vehicle discovery
        * @param host IPv4 address to probe
        * @param port TCP port to probe

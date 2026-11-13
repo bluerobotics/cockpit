@@ -313,6 +313,7 @@ import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
   applyFollowZoomMode,
+  applyMapCenterRequest,
   createGridOverlay,
   fitMapToWaypoints,
   metersPerPixel,
@@ -1005,7 +1006,7 @@ watch(
   () => missionStore.mapCenterOnRequest,
   (request) => {
     if (!request || !map.value || !isFlightVisible.value) return
-    map.value.setView(request.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
+    applyMapCenterRequest(map.value, request)
   }
 )
 
@@ -2004,9 +2005,6 @@ const bottomButtonsDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
 })
 
-// The fence control only mounts on ArduPilot, so the scale control clears its slot only when it is there.
-const scaleControlRightDisplacement = computed(() => (fenceStore.isArduPilot ? '383px' : '338px'))
-
 const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
 })
@@ -2112,21 +2110,6 @@ const centerOnMission = (): void => {
 :global(.leaflet-container.cockpit-drag-active .waypoint-tooltip:not(.waypoint-tooltip--icon)),
 :global(.leaflet-container.cockpit-drag-active .waypoint-marker-icon) {
   display: none !important;
-}
-
-:deep(.vehicle-tooltip) {
-  background-color: var(--glass-background) !important;
-  backdrop-filter: var(--glass-filter);
-  border: var(--glass-border) !important;
-  box-shadow: var(--glass-box-shadow);
-  color: var(--glass-color);
-  padding: 0.75rem;
-  border-radius: 8px;
-  z-index: 100;
-}
-
-:deep(.vehicle-tooltip::before) {
-  border-right-color: var(--glass-background) !important;
 }
 
 :deep(.waypoint-tooltip--current-waypoint) {
@@ -2242,7 +2225,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: v-bind('scaleControlRightDisplacement'); /* Position to the left of the buttons */
+  right: 388px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
