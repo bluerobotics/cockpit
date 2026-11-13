@@ -604,9 +604,12 @@ export const useVideoStore = defineStore('video', () => {
       void (async () => {
         try {
           const port = await window.electronAPI!.go2rtcGetPort()
-          await window.electronAPI!.go2rtcAddStream(streamName, rtspUrl)
+          const registerSource = (): Promise<boolean> => window.electronAPI!.go2rtcAddStream(streamName, rtspUrl)
+          const readThroughFfmpeg = await registerSource()
 
-          const manager = new Go2RTCManager(port, streamName, jitterBufferTarget.value)
+          // A camera that is away cannot be told to be H.265, so the manager is left the means to find out later
+          const registerAgain = readThroughFfmpeg ? undefined : registerSource
+          const manager = new Go2RTCManager(port, streamName, jitterBufferTarget.value, registerAgain)
           const { mediaStream, connected } = manager.start()
 
           activeStreams.value[streamName] = {
@@ -622,6 +625,9 @@ export const useVideoStore = defineStore('video', () => {
           }
           rtspActivationBackoff.forget(streamName)
           console.debug(`Activated RTSP stream '${streamName}' via go2rtc.`)
+          // Whoever asked for the stream may have left while its camera was being asked what it carries, when
+          // there was no entry yet for their teardown to find
+          deactivateStreamIfUnused(streamName)
         } catch (error) {
           console.error(`Failed to activate RTSP stream '${streamName}':`, error)
           if (rtspActivationBackoff.registerFailure(streamName)) {
