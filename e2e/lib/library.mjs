@@ -166,14 +166,6 @@ export async function stubOpenDialog(port, paths) {
 }
 
 /**
- * Stop a Standalone-only case early in the web build.
- * @param {object} page - Driver page
- */
-export async function standaloneOnly(page) {
-  if (!(await page.eval('!!window.electronAPI'))) throw new Error('this case runs in Standalone only (--app)')
-}
-
-/**
  * Where a Standalone case keeps its recordings, as keepRecordingsInRun set it.
  * @param {object} ctx - Case context from the runner
  * @param {string} ctx.outDir - Run folder

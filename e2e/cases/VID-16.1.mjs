@@ -10,7 +10,8 @@ import { recordFor, RECORDING_MINUTES, setUpRecording, STREAM, videoPlayback } f
 export const meta = {
   title: `${RECORDING_MINUTES}-minute recording in Standalone with UsbCam on WebRTC`,
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
 }
 
 /**

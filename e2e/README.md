@@ -75,6 +75,10 @@ export default async function run({ page, vehicle }) {
 Rules of thumb:
 
 - Every case ends with at least one `check`; a case with none fails.
+- A case that only applies to one build sets `meta.platforms` to `['electron']` (Standalone, run with
+  `--app`) or `['web']`; the runner skips it on the other one.
+- A case that measures the machine itself, like CPU use, sets `meta.hardware`; the runner skips it on CI, whose
+  runners draw in software on shared cores.
 - Check the state behind what is shown, not only that some text appears somewhere on the page.
 - Find what you click by an `id` (or, on a reused component, a named class) that describes the element, not by
   its text (translated, and shared by other elements) or a styling class. When the element has none, add one to

@@ -8,7 +8,8 @@ const RTSP = process.env.COCKPIT_E2E_RTSP_STREAM ?? 'RTSP'
 export const meta = {
   title: 'An RTSP stream plays in the Video widget (Standalone)',
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
 }
 
 export const setup = quietStart

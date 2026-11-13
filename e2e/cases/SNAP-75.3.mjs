@@ -12,7 +12,6 @@ import {
   snapshotToolButtons,
   standaloneSnapshots,
 } from '../lib/inputs.mjs'
-import { standaloneOnly } from '../lib/library.mjs'
 import { keepRecordingsInRun } from '../lib/subtitles.mjs'
 import { setUpRecording } from '../lib/video.mjs'
 
@@ -22,7 +21,8 @@ const RTSP_STREAM = process.env.COCKPIT_E2E_RTSP_STREAM ?? 'RTSP Stream'
 export const meta = {
   title: 'Snapshot an RTSP stream in Standalone',
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
   synced: INPUT_SYNCED,
 }
 
@@ -38,7 +38,6 @@ export const setup = async (ctx) => {
  */
 export default async function run(ctx) {
   const { page } = ctx
-  await standaloneOnly(page)
   await page.caption(`Snapshot tool settings: capture "${RTSP_STREAM}" only`)
   await enterEditMode(page)
   await openSnapshotSettings(page)

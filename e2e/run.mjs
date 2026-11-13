@@ -44,6 +44,8 @@ const bool = (name) => {
 }
 
 const app = flag('--app')
+// What a case's `meta.platforms` names: a Standalone build is 'electron', any build in a browser is 'web'.
+const platform = app ? 'electron' : 'web'
 const remote = flag('--remote')
 const remotePage = (exe) =>
   `file:///${win32.join(win32.dirname(exe), 'resources/app.asar/dist/index.html').replace(/\\/g, '/')}`
@@ -193,8 +195,9 @@ const caseSection = (r) => {
   const video = r.video
     ? `<video id="v-${escape(r.key ?? r.id)}" src="${escape(r.video)}" controls preload="metadata"></video>`
     : `<p>No video${r.arm === 'bare' ? ' (unrecorded arm)' : ''}.</p>`
-  const error = r.error ? `<p class="fail">Error: ${escape(r.error)}</p>` : ''
-  const mark = r.status === 'pass' ? '✓' : '✗'
+  const skipped = r.status === 'skip'
+  const error = r.error ? `<p class="${r.status}">${skipped ? 'Skipped' : 'Error'}: ${escape(r.error)}</p>` : ''
+  const mark = { pass: '✓', skip: '–' }[r.status] ?? '✗'
   const checks = r.checks.map((c) => checkItem(r, c)).join('')
   const perf = r.perf?.length
     ? perfTable(
@@ -255,6 +258,19 @@ for (const { id, arm, rep } of jobs) {
   })
   if (!mod) continue
   const meta = { id, needs: [], route: '/', synced: {}, ...mod.meta }
+  // A CI runner draws in software on shared cores, so what a case measures of the machine means nothing there.
+  const skipReason =
+    meta.platforms && !meta.platforms.includes(platform)
+      ? `${meta.platforms.join('/')} only`
+      : meta.hardware && process.env.CI
+      ? 'real hardware only'
+      : undefined
+  if (skipReason) {
+    results.push({ id, title: meta.title, status: 'skip', error: skipReason, checks: [], video: null })
+    console.log(`- ${id} — skipped: ${skipReason}`)
+    writeReport()
+    continue
+  }
   const needsVehicle = meta.needs.includes('vehicle')
   const started = Date.now()
   const jobKey = multi ? `${id}-${arm}-r${rep}` : id
@@ -455,6 +471,7 @@ for (const { id, arm, rep } of jobs) {
 await Promise.all(plots)
 writeReport()
 
-const failed = results.filter((r) => r.status !== 'pass')
-console.log(`\n${results.length - failed.length}/${results.length} passed — ${join(outDir, 'index.html')}`)
+const failed = results.filter((r) => r.status === 'fail')
+const ran = results.filter((r) => r.status !== 'skip')
+console.log(`\n${ran.length - failed.length}/${ran.length} passed — ${join(outDir, 'index.html')}`)
 process.exit(failed.length ? 1 : 0)

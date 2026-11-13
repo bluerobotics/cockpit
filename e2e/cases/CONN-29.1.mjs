@@ -12,7 +12,6 @@ export const meta = {
  * Move Cockpit to an address with no vehicle, outside the recording, so picking the found one is what connects.
  */
 export const setup = async (ctx) => {
-  if (!(await ctx.page.eval('!!window.electronAPI'))) throw new Error('vehicle discovery needs Standalone (--app)')
   await quiet(ctx)
   await applyGlobalAddress(ctx.page, NO_VEHICLE)
 }

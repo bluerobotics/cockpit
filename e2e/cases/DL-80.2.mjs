@@ -1,7 +1,6 @@
 import { openDataLake } from '../lib/act-dl.mjs'
 import { mapPoint, toPlanning } from '../lib/cockpit.mjs'
 import { setup } from '../lib/dl-case.mjs'
-import { standaloneOnly } from '../lib/library.mjs'
 import { closeMenu } from '../lib/mavlink-tools.mjs'
 
 export { setup }
@@ -9,7 +8,10 @@ export { setup }
 export const meta = {
   title: "Standalone's Cockpit CPU usage rises while panning the map hard",
   route: '/',
-  needs: ['vehicle', 'standalone'],
+  needs: ['vehicle'],
+  platforms: ['electron'],
+  // It compares Cockpit's CPU use at rest and while panning, which a software-rendered CI runner already saturates.
+  hardware: true,
 }
 
 const CPU = 'cockpit-cpu-usage'
@@ -20,7 +22,6 @@ const mean = (list) => list.reduce((a, b) => a + b, 0) / list.length
  * forth: the usage while panning is clearly above the usage at rest.
  */
 export default async function run({ page }) {
-  await standaloneOnly(page)
   await page.caption('Tools → Data-lake: "Cockpit CPU Usage (standalone)"')
   await openDataLake(page, 'Cockpit CPU Usage')
   await page.eval(`(() => { window.__cpu = []

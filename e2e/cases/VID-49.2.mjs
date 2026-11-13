@@ -8,7 +8,6 @@ import {
   processedCards,
   RENAMED_MISSION,
   renameMission,
-  standaloneOnly,
   videosFolder,
 } from '../lib/library.mjs'
 import { keepRecordingsInRun } from '../lib/subtitles.mjs'
@@ -19,12 +18,12 @@ const MISSION = RENAMED_MISSION
 export const meta = {
   title: 'A renamed mission names the next processed video (Standalone)',
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
 }
 
 export const setup = async (ctx) => {
   const { page } = ctx
-  await standaloneOnly(page)
   await dismissFeaturesDialog(page)
   await dismissTutorial(page, 3000)
   await keepRecordingsInRun(ctx)

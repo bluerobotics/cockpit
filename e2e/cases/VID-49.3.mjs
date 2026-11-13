@@ -7,7 +7,6 @@ import {
   INSPECT_PORT,
   openLibrary,
   processZip,
-  standaloneOnly,
   videosFolder,
   watchSnackbars,
   webZipForRun,
@@ -19,13 +18,13 @@ import { setUpRecording } from '../lib/video.mjs'
 export const meta = {
   title: 'A chunks zip processed in Standalone keeps the mission name of its recording',
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
   browserArgs: [`--inspect=${INSPECT_PORT}`],
 }
 
 export const setup = async (ctx) => {
   const { page } = ctx
-  await standaloneOnly(page)
   await dismissFeaturesDialog(page)
   await dismissTutorial(page, 3000)
   await keepRecordingsInRun(ctx)
