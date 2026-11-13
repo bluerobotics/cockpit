@@ -1,13 +1,18 @@
 name: Release tests
 
-# Drives the web build through the release checklist cases in e2e/, against a BlueOS running ArduRover SITL as a
-# boat in a container, and keeps each case's video as the proof.
+# Drives the web build, and the Linux Standalone build for the cases that only apply to it, through the release
+# checklist cases in e2e/, against a BlueOS running ArduRover SITL as a boat in a container, and keeps each case's
+# video as the proof.
 on:
   workflow_dispatch:
     inputs:
       cases:
         description: Case ids or group prefixes, space-separated; empty runs every group, one job each
         required: false
+      standalone:
+        description: Run the selected cases on the Standalone build instead of the web one
+        type: boolean
+        default: false
 
 env:
   # The checklist's hour-long recordings, shortened so their group fits the job: a few minutes proves the same path.
@@ -26,21 +31,26 @@ jobs:
         uses: actions/checkout@v4
 
       # Groups are read from e2e/cases rather than listed here, so a new group is not silently left out.
-      # The trailing dash keeps a prefix like MAP from also matching MAPSRC.
+      # The trailing dash keeps a prefix like MAP from also matching MAPSRC. Standalone-only cases are skipped by the
+      # web batches and run together in one Standalone batch.
       - name: Split the cases into batches
         id: batches
         env:
           CASES: ${{ inputs.cases }}
+          STANDALONE: ${{ inputs.standalone }}
         run: |
           if [ -n "${CASES//[[:space:]]}" ]; then
-            batches=$(jq -cn --arg cases "$CASES" '[{name: "selected", cases: $cases}]')
+            batches=$(jq -cn --arg cases "$CASES" --argjson app "${STANDALONE:-false}" '[{name: "selected", cases: $cases, app: $app}]')
           else
-            batches=$(cd e2e/cases && ls *.mjs | sed 's/-.*//' | sort -u | jq -R '{name: ., cases: (. + "-")}' | jq -sc .)
+            cd e2e/cases
+            web=$(ls *.mjs | sed 's/-.*//' | sort -u | jq -R '{name: ., cases: (. + "-"), app: false}' | jq -s .)
+            app=$(grep -l "platforms: \[[^]]*'electron'" *.mjs | sed 's/\.mjs$//' | paste -sd ' ' -)
+            batches=$(jq -cn --argjson web "$web" --arg app "$app" '$web + [{name: "standalone", cases: $app, app: true}]')
           fi
           echo "batches=$batches" >> "$GITHUB_OUTPUT"
 
   web:
-    name: Web (${{ matrix.batch.name }})
+    name: ${{ matrix.batch.app && 'Standalone' || 'Web' }} (${{ matrix.batch.name }})
     needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -65,8 +75,9 @@ jobs:
           docker run -d --name blueos --privileged -p 80:80 -p 6021:6021 -p 5762:5762 -p 5763:5763 -p 14550:14550/udp \
             -p 8554:8554 "$BLUEOS_IMAGE"
 
+      # Electron has no headless mode, so the Standalone build runs on a virtual display.
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg ${{ matrix.batch.app && 'xvfb' || '' }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -77,6 +88,11 @@ jobs:
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
           yarn build
+
+      # Unpacked rather than an AppImage, so it runs without FUSE.
+      - name: Package the Standalone build
+        if: matrix.batch.app
+        run: yarn deploy:electron:dir --linux
 
       - name: Serve the build
         run: |
@@ -104,14 +120,27 @@ jobs:
       - name: Run the cases
         env:
           CASES: ${{ matrix.batch.cases }}
+          APP: ${{ matrix.batch.app }}
         # CASES is left unquoted on purpose: it is a list of ids.
-        run: node e2e/run.mjs $CASES --url http://localhost:5050 --vehicle localhost --build "${GITHUB_REF_NAME} ${GITHUB_SHA::10}" --out e2e/output
+        run: |
+          label="${GITHUB_REF_NAME} ${GITHUB_SHA::10}"
+          if [ "$APP" = true ]; then
+            # The cases that read a web build's recording export need one made first, in the same output folder.
+            web=0
+            node e2e/run.mjs VID-46.1 --url http://localhost:5050 --vehicle localhost --build "$label" --out e2e/output || web=$?
+            app=0
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+              node e2e/run.mjs $CASES --app dist/linux-unpacked --vehicle localhost --build "Standalone $label" --out e2e/output || app=$?
+            exit $(( web || app ))
+          else
+            node e2e/run.mjs $CASES --url http://localhost:5050 --vehicle localhost --build "$label" --out e2e/output
+          fi
 
       - name: Upload the videos and report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-tests-web-${{ matrix.batch.name }}
+          name: release-tests-${{ matrix.batch.app && 'standalone' || 'web' }}-${{ matrix.batch.name }}
           path: e2e/output
           if-no-files-found: ignore
 
@@ -130,6 +159,6 @@ jobs:
       - name: Merge the group reports
         uses: actions/upload-artifact/merge@v4
         with:
-          name: release-tests-web
-          pattern: release-tests-web-*
+          name: release-tests
+          pattern: release-tests-*-*
           separate-directories: true

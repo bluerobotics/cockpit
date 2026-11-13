@@ -287,7 +287,12 @@ export async function launch(options = {}) {
     if (options.app) {
       // Electron takes the same two switches; it has no headless mode, so the window opens in the background.
       const args = [`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, ...(options.args ?? [])]
-      const child = spawn('open', ['-n', '-g', '-W', '-a', options.app, '--args', ...args])
+      // Off macOS the app is electron-builder's unpacked folder; without the setuid sandbox helper a CI runner
+      // lacks, Electron only starts unsandboxed.
+      const child =
+        process.platform === 'darwin'
+          ? spawn('open', ['-n', '-g', '-W', '-a', options.app, '--args', ...args])
+          : spawn(join(options.app, 'cockpit'), [...args, '--no-sandbox'])
       child.stderr.on('data', ignore)
       return child
     }

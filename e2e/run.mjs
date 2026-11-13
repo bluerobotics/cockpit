@@ -49,8 +49,9 @@ const platform = app ? 'electron' : 'web'
 const remote = flag('--remote')
 const remotePage = (exe) =>
   `file:///${win32.join(win32.dirname(exe), 'resources/app.asar/dist/index.html').replace(/\\/g, '/')}`
-const appPage =
-  app && (remote ? remotePage(app) : pathToFileURL(join(app, 'Contents/Resources/app.asar/dist/index.html')).href)
+// On macOS `--app` is the .app bundle; elsewhere it is the folder electron-builder unpacks to (`dist/linux-unpacked`).
+const resources = process.platform === 'darwin' ? 'Contents/Resources' : 'resources'
+const appPage = app && (remote ? remotePage(app) : pathToFileURL(join(app, resources, 'app.asar/dist/index.html')).href)
 const url = flag('--url', appPage ?? process.env.COCKPIT_E2E_URL ?? 'http://localhost:5050')
 // No default: every case force-disarms the vehicle and wipes its mission and fence, so the target is always named.
 const vehicleHost = flag('--vehicle', process.env.COCKPIT_E2E_VEHICLE)
@@ -76,9 +77,11 @@ const gitBuild = () => {
   }
 }
 const appBuild = () =>
-  `Standalone ${execFileSync('defaults', ['read', join(app, 'Contents/Info.plist'), 'CFBundleShortVersionString'], {
-    encoding: 'utf8',
-  }).trim()}`
+  process.platform === 'darwin'
+    ? `Standalone ${execFileSync('defaults', ['read', join(app, 'Contents/Info.plist'), 'CFBundleShortVersionString'], {
+        encoding: 'utf8',
+      }).trim()}`
+    : `Standalone ${gitBuild()}`
 // A remote build is labelled by the folder it was unpacked to (`Cockpit-builds\1.19.0-beta.18`).
 const remoteBuild = () => `Standalone ${win32.basename(win32.dirname(app))} on ${remote}`
 const build = flag('--build', remote ? remoteBuild() : app ? appBuild() : gitBuild())
