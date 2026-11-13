@@ -1,9 +1,13 @@
-// Steps shared by the VID cases: a Video widget on the UsbCam stream and the mini recorder in the
+// Steps shared by the VID cases: a Video widget on the 1080p stream and the mini recorder in the
 // bottom bar, a long recording whose quiet middle is time-lapsed, and the video library afterwards.
 
 import process from 'node:process'
 
-export const STREAM = 'Stream /dev/video2'
+// The vehicle's test-pattern streams, all H264, which e2e/ci/fake-streams.mjs creates.
+export const STREAM_720P = 'Fake 720p'
+export const STREAM = 'Fake 1080p'
+export const STREAM_4K = 'Fake 4K'
+export const RTSP_STREAM = 'Fake RTSP'
 
 // How long the recording runs. The checklist asks for an hour; a few minutes proves the script.
 export const RECORDING_MINUTES = Number(process.env.COCKPIT_E2E_RECORDING_MINUTES ?? 60)
@@ -30,7 +34,7 @@ export const videoPlayback = (page) =>
  * Put a Video widget and a mini recorder in the bottom bar on each stream, through the widget
  * store. The next case starts from the test user's own layout again.
  * @param {object} page - Driver page
- * @param {string[]} [streams] - Streams to show and record, the UsbCam by default
+ * @param {string[]} [streams] - Streams to show and record, the 1080p one by default
  */
 export async function setUpRecording(page, streams = [STREAM]) {
   await page.store(
@@ -47,7 +51,7 @@ export async function setUpRecording(page, streams = [STREAM]) {
   const playing = `[...document.querySelectorAll('video')].filter((v) => v.getClientRects().length && v.videoWidth > 0).length`
   await page.waitFor(async () => (await page.eval(playing)) >= streams.length, {
     timeout: 30000,
-    label: streams.length > 1 ? "every stream's video" : 'the UsbCam video',
+    label: streams.length > 1 ? "every stream's video" : 'the 1080p video',
   })
 }
 

@@ -1,6 +1,5 @@
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import {
-  BALL_STREAM,
   ensureSnapshotTool,
   fileSafe,
   INPUT_SYNCED,
@@ -12,7 +11,7 @@ import {
   snapshotToolButtons,
   storedSnapshots,
 } from '../lib/inputs.mjs'
-import { setUpRecording, STREAM } from '../lib/video.mjs'
+import { setUpRecording, STREAM, STREAM_720P } from '../lib/video.mjs'
 
 export const meta = {
   title: 'Snapshot all WebRTC streams in the web build',
@@ -21,7 +20,7 @@ export const meta = {
   synced: INPUT_SYNCED,
 }
 
-const STREAMS = [STREAM, BALL_STREAM]
+const STREAMS = [STREAM, STREAM_720P]
 
 export const setup = async (ctx) => {
   await quietStart(ctx)

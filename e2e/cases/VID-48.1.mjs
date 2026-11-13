@@ -12,9 +12,9 @@ import {
   watchSnackbars,
 } from '../lib/library.mjs'
 import { keepRecordingsInRun } from '../lib/subtitles.mjs'
-import { recordStreams, setUpRecording, STREAM } from '../lib/video.mjs'
+import { recordStreams, setUpRecording, STREAM, STREAM_720P } from '../lib/video.mjs'
 
-const STREAMS = [STREAM, 'PRTest Ball']
+const STREAMS = [STREAM, STREAM_720P]
 
 export const meta = {
   title: "Standalone's library lists the processed video and the raw chunks of every camera",

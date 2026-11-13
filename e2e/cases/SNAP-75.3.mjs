@@ -1,5 +1,3 @@
-import process from 'node:process'
-
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import {
   centreOf,
@@ -13,10 +11,7 @@ import {
   standaloneSnapshots,
 } from '../lib/inputs.mjs'
 import { keepRecordingsInRun } from '../lib/subtitles.mjs'
-import { setUpRecording } from '../lib/video.mjs'
-
-// The vehicle's RTSP stream; the checklist vehicle has one, CI has none.
-const RTSP_STREAM = process.env.COCKPIT_E2E_RTSP_STREAM ?? 'RTSP Stream'
+import { RTSP_STREAM, setUpRecording } from '../lib/video.mjs'
 
 export const meta = {
   title: 'Snapshot an RTSP stream in Standalone',
