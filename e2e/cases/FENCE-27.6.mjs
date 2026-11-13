@@ -31,8 +31,12 @@ export default async function run({ page, outDir }) {
   await page.caption('"Save fence to file"')
   const file = await page.download(dir, () => page.click('button:has(.mdi-content-save)', { settle: 1500 }))
   await page.check('A fence file was saved', () => ({ ok: Boolean(file), detail: file.split('/').at(-1) }))
-  await page.caption('"Clear current fence"')
-  await page.click('text=CLEAR CURRENT FENCE', { settle: 1200 })
+  await page.caption('Fence actions → "Clear current fence"')
+  const clear = '#fence-clear-local'
+  if (!(await page.exists(clear))) {
+    await page.click('#fence-upload-actions .upload-actions-toggle', { settle: 800 })
+  }
+  await page.click(clear, { settle: 1200 })
   await page.click('text=Clear plan', { settle: 1200 })
   await page.check('Fence cleared', async () => {
     const { polygons, circles } = await fenceState(page)
