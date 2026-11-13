@@ -35,8 +35,15 @@ export class Go2RTCManager {
    * @param {number} go2rtcPort - The port go2rtc is listening on
    * @param {string} streamName - The stream name registered in go2rtc
    * @param {number} jitterBufferTarget - RTP receiver jitter buffer target in milliseconds
+   * @param {() => Promise<boolean>} [registerSource] - Registers the stream's source in go2rtc again, telling whether
+   * it ended up read through FFmpeg. Given only while the stream is not, for the case its camera turns out H.265.
    */
-  constructor(private go2rtcPort: number, private streamName: string, private jitterBufferTarget: number) {}
+  constructor(
+    private go2rtcPort: number,
+    private streamName: string,
+    private jitterBufferTarget: number,
+    private registerSource?: () => Promise<boolean>
+  ) {}
 
   /**
    * The current peer connection, exposed for stats monitoring
@@ -127,6 +134,7 @@ export class Go2RTCManager {
           this.clearConnectWatchdog()
           this.armVideoWatchdog()
           this.connected.value = true
+          void this.moveHevcToFfmpeg(pc)
           break
         case 'disconnected':
         case 'failed':
@@ -207,6 +215,34 @@ export class Go2RTCManager {
         this.scheduleReconnect()
       }
     }
+  }
+
+  /**
+   * go2rtc loses H.265 frames when it reads the camera on its own (see the go2rtc service), which a camera that was
+   * away when its stream was registered still is. Found to be H.265 only now, it is registered again and its
+   * stream connected to anew.
+   * @param {RTCPeerConnection} pc - Connection that was just established
+   * @returns {Promise<void>}
+   */
+  private async moveHevcToFfmpeg(pc: RTCPeerConnection): Promise<void> {
+    const registerSource = this.registerSource
+    // From go2rtc's answer, which names the one codec the camera sends, where the receiver lists all it accepts
+    if (!registerSource || !/a=rtpmap:\d+ H265\//i.test(pc.remoteDescription?.sdp ?? '')) return
+
+    // Tried once: a registration that still is not read through FFmpeg will not become so by asking again
+    this.registerSource = undefined
+    console.log(`[go2rtc] Stream '${this.streamName}' is H.265. Connecting again, to have it read through FFmpeg.`)
+
+    // Closed before registering, as go2rtc hands whoever connects next the reader that is still serving someone
+    this.connected.value = false
+    this.mediaStream.value = undefined
+    this.cleanup()
+    try {
+      await registerSource()
+    } catch (error) {
+      console.warn(`[go2rtc] Could not register H.265 stream '${this.streamName}' again:`, error)
+    }
+    if (!this.closed) this.connect()
   }
 
   /**
