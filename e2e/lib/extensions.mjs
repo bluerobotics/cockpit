@@ -8,14 +8,11 @@ import { Buffer } from 'node:buffer'
  * The proxy adds its own Access-Control-Allow-Origin on top of the extension's, and a browser
  * rejects a response carrying two. A Cockpit served by the vehicle is same-origin and the Standalone
  * app does not enforce it, but the test browser loads Cockpit from localhost, so the pair is
- * collapsed into one in transit. Nothing else about the response changes, unless `editExtras` is
- * given, which rewrites the cockpit_extras.json payloads.
+ * collapsed into one in transit. Nothing else about the response changes.
  * @param {object} page - Driver page
- * @param {object} [options] - Options
- * @param {Function} [options.editExtras] - (extras, url) => extras, for cockpit_extras.json responses
  */
-export async function passExtensionCors(page, { editExtras } = {}) {
-  page.on('Fetch.requestPaused', async ({ requestId, request, responseStatusCode, responseHeaders = [] }) => {
+export async function passExtensionCors(page) {
+  page.on('Fetch.requestPaused', async ({ requestId, responseStatusCode, responseHeaders = [] }) => {
     const seen = new Set()
     const headers = responseHeaders.filter(({ name }) => {
       const key = name.toLowerCase()
@@ -24,25 +21,18 @@ export async function passExtensionCors(page, { editExtras } = {}) {
       seen.add(key)
       return true
     })
-    const extras = editExtras && request.url.endsWith('/cockpit_extras.json')
-    if (headers.length === responseHeaders.length && !extras) {
+    if (headers.length === responseHeaders.length) {
       await page.send('Fetch.continueResponse', { requestId }).catch(() => undefined)
       return
     }
-    let { body, base64Encoded } = await page.send('Fetch.getResponseBody', { requestId })
-    if (extras) {
-      const text = base64Encoded ? Buffer.from(body, 'base64').toString() : body
-      body = Buffer.from(JSON.stringify(editExtras(JSON.parse(text), request.url))).toString('base64')
-      base64Encoded = true
-    }
-    if (!base64Encoded) body = Buffer.from(body).toString('base64')
+    const { body, base64Encoded } = await page.send('Fetch.getResponseBody', { requestId })
     // getResponseBody hands back the decoded body, so the length and encoding headers no longer apply.
     const kept = headers.filter(({ name }) => !['content-length', 'content-encoding'].includes(name.toLowerCase()))
     await page.send('Fetch.fulfillRequest', {
       requestId,
       responseCode: responseStatusCode,
       responseHeaders: kept,
-      body,
+      body: base64Encoded ? body : Buffer.from(body).toString('base64'),
     })
   })
   // Only script requests: a document served from DevTools loses its local-network standing, and
@@ -82,10 +72,19 @@ export async function watchRequests(page, fragment) {
   return seen
 }
 
-/** The test vehicle's only extension with Cockpit extras: 4K Cam Manager. */
-export const EXTENSION = '4kcammanager'
-export const ACTION_NAME = '4K Cam One-Push White Balance (All)'
-export const ACTION_URL_PART = `/extensionv2/${EXTENSION}/v1/camera/control`
+/** The test vehicle's only extension with Cockpit extras, which e2e/ci/fake-extension.py stands up in CI. */
+export const EXTENSION = 'e2e'
+export const ACTION_ID = 'e2e-ping-all'
+export const ACTION_NAME = 'E2E Ping (All)'
+export const ACTION_URL_PART = `/extensionv2/${EXTENSION}/v1/action`
+export const SUGGESTION_GROUP = 'E2E on any vehicle types'
+
+// What every case starts from: the test extension's features already turned down, so its dialog does not open over
+// cases that are not about it.
+export const DECIDED = {
+  'cockpit-handled-actions': { applied: [], ignored: [ACTION_ID] },
+  'cockpit-handled-joystick-suggestions-v2': { applied: [], ignored: ['e2e-ping-on-10'] },
+}
 
 // Every extension feature undecided again, and none of them registered, at the start of a case.
 export const UNDECIDED = {
@@ -100,26 +99,46 @@ export const featuresDialogOpen = (page) => page.exists(DIALOG_TITLE)
 /**
  * Restart Cockpit with the extensions readable, the way an operator reopens it.
  * @param {object} page - Driver page
- * @param {object} [options] - Options for passExtensionCors, applied once per page
  * @returns {Promise<void>}
  */
-export async function restartCockpit(page, options) {
+export async function restartCockpit(page) {
   if (!page.extensionsPassed) {
-    await passExtensionCors(page, options)
+    await passExtensionCors(page)
     page.extensionsPassed = true
   }
   await page.reload()
   await page.waitFor(() => page.eval(`!!document.querySelector('#app')?.__vue_app__`), { label: 'Cockpit to mount' })
 }
 
+// Cockpit announces pending features with a snackbar whose Review button opens the dialog.
+const REVIEW_BUTTON = `[...document.querySelectorAll('.stacked-snackbar')]
+  .find((s) => s.textContent.includes('extensions offering new features'))
+  ?.querySelectorAll('button').values().find((b) => b.textContent.trim() === 'Review')`
+
 /**
- * Wait up to `timeout` for the features dialog to open by itself.
+ * Wait up to `timeout` for Cockpit to offer the features dialog, and open it through the offer's
+ * Review button, as an operator would.
  * @param {object} page - Driver page
  * @param {number} [timeout] - ms
  * @returns {Promise<boolean>} Whether it opened
  */
 export async function dialogOpensWithin(page, timeout = 20000) {
-  return page.waitFor(() => featuresDialogOpen(page), { label: 'the features dialog', timeout }).catch(() => false)
+  const offered = await page
+    .waitFor(async () => (await featuresDialogOpen(page)) || (await page.eval(`Boolean(${REVIEW_BUTTON})`)), {
+      label: 'the features offer',
+      timeout,
+    })
+    .catch(() => false)
+  if (!offered) return false
+  if (!(await featuresDialogOpen(page))) {
+    await page.click(
+      await page.eval(
+        `(() => { const r = ${REVIEW_BUTTON}.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`
+      ),
+      { settle: 1200 }
+    )
+  }
+  return featuresDialogOpen(page)
 }
 
 // The features dialog's own close X (the Ignore buttons carry mdi-close icons too).

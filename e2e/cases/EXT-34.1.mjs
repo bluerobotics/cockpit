@@ -17,11 +17,6 @@ export const meta = {
   browserArgs: ['--disable-features=IsolateOrigins,site-per-process', '--disable-site-isolation-trials'],
 }
 
-// No extension on the test vehicle offers a widget, so 4K Cam Manager's extras get one in transit,
-// shaped like the ones RadCam Manager ships: its own page, with its favicon as the card icon.
-const WIDGET = { name: '4K Cam Manager', iframeUrl: '/', iconUrl: '/favicon.ico', useExtensionPathAsBaseUrl: true }
-const addWidget = (extras) => ({ ...extras, widgets: [WIDGET] })
-
 const card = (page) =>
   page.eval(`(() => { const img = [...document.querySelectorAll('img[alt=widget-icon]')].find((i) => i.src.includes('${EXTENSION}'))
     const c = img?.closest('[draggable=true]'); if (!c) return null; const r = c.getBoundingClientRect()
@@ -38,7 +33,7 @@ const iframeWidget = (page) =>
  * edit mode and check the extension's page loads in it.
  */
 export default async function run({ page }) {
-  await restartCockpit(page, { editExtras: addWidget })
+  await restartCockpit(page)
   if (await dialogOpensWithin(page, 15000)) {
     await page.click(DIALOG_CLOSE, { settle: 800 })
     await page.click('text=Close anyway', { settle: 800 })
