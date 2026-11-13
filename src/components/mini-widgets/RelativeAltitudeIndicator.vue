@@ -29,7 +29,7 @@
           :config="altitudeSourceConfig"
           :presets="altitudeSourceOptions"
           :label="t`Altitude source`"
-          :custom-hint="t`Any numeric data lake variable, read in meters`"
+          :custom-hint="t`Any numeric data lake variable, read in meters when it has no unit`"
         />
       </v-card-text>
     </v-card>
@@ -46,10 +46,9 @@ import {
   altitudeDataSource,
   altitudeSourceOptions,
   defaultAltitudeIndicatorVariableId,
-  rawAltitudeToMeters,
 } from '@/libs/data-sources/altitude'
 import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
-import { convertValue, readingLengthsAs, unitAbbreviation } from '@/libs/units'
+import { convertValue, convertValueTo, readingLengthsAs, unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
@@ -83,11 +82,11 @@ const altitudeSourceConfig = useDataSourceConfig({
 })
 const resolvedAltitudeVariableId = altitudeSourceConfig.resolvedVariableId
 
-const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
+const { value: rawAltitude, unit: rawAltitudeUnit } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 const currentAltitude = computed<number | undefined>(() => {
-  if (resolvedAltitudeVariableId.value === undefined || typeof rawAltitude.value !== 'number') return undefined
-  const altMeters = rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
+  if (typeof rawAltitude.value !== 'number') return undefined
+  const altMeters = convertValueTo(rawAltitude.value, rawAltitudeUnit.value, 'm')
   return convertValue(altMeters, 'm', readingLengthsAs(interfaceStore.displayUnitPreferences, 'altitude')).value
 })
 

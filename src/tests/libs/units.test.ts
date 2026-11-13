@@ -4,6 +4,7 @@ import {
   type DisplayUnitPreferences,
   AreaDisplayUnit,
   convertValue,
+  convertValueTo,
   convertValueToRawUnit,
   DistanceDisplayUnit,
   formatArea,
@@ -28,6 +29,16 @@ test('convertValue scales the units MAVLink states but mathjs cannot parse', () 
   expect(convertValue(-274678364, 'degE7', metric)).toEqual({ value: -27.4678364, unit: '°' })
   expect(convertValue(1000, 'm/s*5', metric).value).toBeCloseTo(200)
   expect(convertValue(2500, 'd%', metric)).toEqual({ value: 250, unit: '%' })
+})
+
+test('convertValueTo reads MAVLink units in a fixed unit and leaves unknown or mismatched ones as they are', () => {
+  expect(convertValueTo(Math.PI, 'rad', 'deg')).toBeCloseTo(180)
+  expect(convertValueTo(9000, 'cdeg', 'deg')).toBeCloseTo(90)
+  expect(convertValueTo(-274678364, 'degE7', 'deg')).toBeCloseTo(-27.4678364, 7)
+  expect(convertValueTo(1500, 'mm', 'm')).toBeCloseTo(1.5)
+  expect(convertValueTo(12, undefined, 'm')).toBe(12)
+  expect(convertValueTo(12, 'not-a-unit', 'm')).toBe(12)
+  expect(convertValueTo(12, 'V', 'm')).toBe(12)
 })
 
 test('convertValue converts to the picked unit of each quantity', () => {

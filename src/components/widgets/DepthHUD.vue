@@ -10,7 +10,7 @@
           :config="altitudeSourceConfig"
           :presets="altitudeSourceOptions"
           :label="t`Altitude source`"
-          :custom-hint="t`Any numeric data lake variable, read in meters`"
+          :custom-hint="t`Any numeric data lake variable, read in meters when it has no unit`"
         />
         <v-switch
           class="ma-1"
@@ -48,15 +48,10 @@ import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, wa
 import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
-import {
-  altitudeDataSource,
-  altitudeSourceOptions,
-  defaultDepthAltitudeVariableId,
-  rawAltitudeToMeters,
-} from '@/libs/data-sources/altitude'
+import { altitudeDataSource, altitudeSourceOptions, defaultDepthAltitudeVariableId } from '@/libs/data-sources/altitude'
 import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { convertValue, readingLengthsAs, unitAbbreviation } from '@/libs/units'
+import { convertValue, convertValueTo, readingLengthsAs, unitAbbreviation } from '@/libs/units'
 import { range, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -136,7 +131,7 @@ const canvasSize = computed(() => ({
 
 // The implementation below makes sure we don't update the Depth value in the widget whenever
 // the system Depth (from vehicle) updates, preventing unnecessary performance bottlenecks.
-const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
+const { value: rawAltitude, unit: rawAltitudeUnit } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 // Reset the depth history when the altitude source changes so the graph scale doesn't carry
 // over the previous source's range while new values are still flowing in.
@@ -144,9 +139,9 @@ watch(resolvedAltitudeVariableId, () => {
   passedDepths.value = Array(10).fill(0)
 })
 
-watch([rawAltitude, resolvedAltitudeVariableId], ([newAlt, resolvedId]) => {
-  if (resolvedId === undefined || typeof newAlt !== 'number') return
-  const depthInMeters = -rawAltitudeToMeters(resolvedId, newAlt)
+watch([rawAltitude, rawAltitudeUnit], ([newAlt, unit]) => {
+  if (typeof newAlt !== 'number') return
+  const depthInMeters = -convertValueTo(newAlt, unit, 'm')
 
   const depthDiff = Math.abs(depthInMeters - (depth.value || 0))
   if (depthDiff < 0.1) return

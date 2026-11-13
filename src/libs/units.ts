@@ -479,6 +479,22 @@ export const convertValue = (
 }
 
 /**
+ * Reads a raw value in a fixed unit, for code that works in that unit rather than in the one the user reads.
+ * A value whose unit is unknown, or measures another quantity, is taken to already be in the target unit.
+ * @param {number} value The value as it was received
+ * @param {string | undefined} rawUnit The unit the value is stored in, as MAVLink states it
+ * @param {string} targetUnit The unit to read it in, such as 'm' or 'deg'
+ * @returns {number} The value in the target unit
+ */
+export const convertValueTo = (value: number, rawUnit: string | undefined, targetUnit: string): number => {
+  const from = rawUnit === undefined ? undefined : resolveUnit(rawUnit)
+  const to = resolveUnit(targetUnit)
+  if (from?.quantity === undefined || from.quantity !== to?.quantity) return value
+
+  return convertBetween(value * from.scale, from.canonical, to.canonical) / to.scale
+}
+
+/**
  * Turns a value the user set in the unit they read back into the unit whoever consumes it expects.
  * The inverse of {@link convertValue}, for the inputs that command the vehicle, which have to be
  * sent in the unit the vehicle works in no matter what the user is reading.

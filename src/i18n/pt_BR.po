@@ -1133,14 +1133,18 @@ msgstr "Qualquer"
 #: src/components/widgets/Compass.vue
 #: src/components/widgets/CompassHUD.vue
 #: src/components/widgets/VirtualHorizon.vue
-msgid "Any numeric data lake variable, read in degrees"
-msgstr "Qualquer variável numérica do data lake, lida em graus"
+msgid "Any numeric data lake variable, read in degrees when it has no unit"
+msgstr ""
+"Qualquer variável numérica do data lake, lida em graus quando não tem "
+"unidade"
 
 #: src/components/mini-widgets/DepthIndicator.vue
 #: src/components/mini-widgets/RelativeAltitudeIndicator.vue
 #: src/components/widgets/DepthHUD.vue
-msgid "Any numeric data lake variable, read in meters"
-msgstr "Qualquer variável numérica do data lake, lida em metros"
+msgid "Any numeric data lake variable, read in meters when it has no unit"
+msgstr ""
+"Qualquer variável numérica do data lake, lida em metros quando não tem "
+"unidade"
 
 #: src/components/widgets/Plotter.vue
 msgid "Appearance"

@@ -12,7 +12,7 @@
               :config="rollSourceConfig"
               :presets="rollSourceOptions"
               :label="t`Roll source`"
-              :custom-hint="t`Any numeric data lake variable, read in degrees`"
+              :custom-hint="t`Any numeric data lake variable, read in degrees when it has no unit`"
             />
           </div>
           <div>
@@ -20,7 +20,7 @@
               :config="pitchSourceConfig"
               :presets="pitchSourceOptions"
               :label="t`Pitch source`"
-              :custom-hint="t`Any numeric data lake variable, read in degrees`"
+              :custom-hint="t`Any numeric data lake variable, read in degrees when it has no unit`"
             />
           </div>
         </div>
@@ -99,12 +99,12 @@ import {
   defaultRollVariableId,
   pitchDataSource,
   pitchSourceOptions,
-  rawAttitudeToDegrees,
   rollDataSource,
   rollSourceOptions,
 } from '@/libs/data-sources/attitude'
 import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { convertValueTo } from '@/libs/units'
 import { constrain, radians, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -224,22 +224,22 @@ const pitchSourceConfig = useDataSourceConfig({
 })
 const resolvedRollVariableId = rollSourceConfig.resolvedVariableId
 const resolvedPitchVariableId = pitchSourceConfig.resolvedVariableId
-const { value: rawRoll } = useDataLakeVariable(resolvedRollVariableId)
-const { value: rawPitch } = useDataLakeVariable(resolvedPitchVariableId)
+const { value: rawRoll, unit: rollUnit } = useDataLakeVariable(resolvedRollVariableId)
+const { value: rawPitch, unit: pitchUnit } = useDataLakeVariable(resolvedPitchVariableId)
 const resolvedCameraTiltVariableId = useResolvedDataLakeTemplate(() => widget.value.options.cameraTiltVariableId)
 const { value: rawCameraTilt } = useDataLakeVariable(resolvedCameraTiltVariableId)
 
 watch(rawRoll, (newRoll) => {
-  if (resolvedRollVariableId.value === undefined || typeof newRoll !== 'number') return
-  const deg = rawAttitudeToDegrees(rollDataSource, resolvedRollVariableId.value, newRoll)
+  if (typeof newRoll !== 'number') return
+  const deg = convertValueTo(newRoll, rollUnit.value, 'deg')
   if (Math.abs(deg - rollAngleDeg.value) > 0.1) {
     rollAngleDeg.value = deg
   }
 })
 
 watch(rawPitch, (newPitch) => {
-  if (resolvedPitchVariableId.value === undefined || typeof newPitch !== 'number') return
-  const deg = rawAttitudeToDegrees(pitchDataSource, resolvedPitchVariableId.value, newPitch)
+  if (typeof newPitch !== 'number') return
+  const deg = convertValueTo(newPitch, pitchUnit.value, 'deg')
   if (Math.abs(deg - pitchAngleDeg.value) > 0.1) {
     pitchAngleDeg.value = deg
   }

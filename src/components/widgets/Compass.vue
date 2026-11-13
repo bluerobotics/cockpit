@@ -20,7 +20,7 @@
         :config="headingSourceConfig"
         :presets="headingSourceOptions"
         :label="t`Heading source`"
-        :custom-hint="t`Any numeric data lake variable, read in degrees`"
+        :custom-hint="t`Any numeric data lake variable, read in degrees when it has no unit`"
       />
     </div>
   </Dialog>
@@ -36,14 +36,10 @@ import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
-import {
-  defaultHeadingVariableId,
-  headingDataSource,
-  headingSourceOptions,
-  rawHeadingToDegrees,
-} from '@/libs/data-sources/heading'
+import { defaultHeadingVariableId, headingDataSource, headingSourceOptions } from '@/libs/data-sources/heading'
 import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { convertValueTo } from '@/libs/units'
 import { radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -219,12 +215,12 @@ const headingSourceConfig = useDataSourceConfig({
   sourceName: 'heading',
 })
 const resolvedYawVariableId = headingSourceConfig.resolvedVariableId
-const { value: rawYaw } = useDataLakeVariable(resolvedYawVariableId)
+const { value: rawYaw, unit: yawUnit } = useDataLakeVariable(resolvedYawVariableId)
 
 const yaw = ref(0.01)
 watch(rawYaw, (newYaw) => {
-  if (resolvedYawVariableId.value === undefined || typeof newYaw !== 'number') return
-  const deg = rawHeadingToDegrees(resolvedYawVariableId.value, newYaw)
+  if (typeof newYaw !== 'number') return
+  const deg = convertValueTo(newYaw, yawUnit.value, 'deg')
   if (Math.abs(deg - yaw.value) > 0.1) {
     yaw.value = deg
   }
