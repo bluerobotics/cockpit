@@ -1,4 +1,4 @@
-import { findSourceOptionForVariableId } from '@/libs/data-sources/source-options'
+import { type DataSourceOptionKeys, findSourceOptionForVariableId } from '@/libs/data-sources/source-options'
 
 /** Altitude source entry for widgets that read MAVLink altitude fields. */
 export type AltitudeSourceOption = {
@@ -40,14 +40,12 @@ export const defaultDepthAltitudeVariableId = altitudeSourceOptions[0].value
 /** Default altitude source for altitude indicators (global_position_int.relative_alt). */
 export const defaultAltitudeIndicatorVariableId = altitudeSourceOptions[3].value
 
-/**
- * Whether the given variable ID matches a known altitude source preset
- * (templated form or a concrete /mavlink/N/N/SUFFIX path).
- * @param {string} altitudeVariableId - Data lake variable ID or template
- * @returns {boolean} True if it matches a preset
- */
-export const isPresetAltitudeVariableId = (altitudeVariableId: string): boolean =>
-  findSourceOptionForVariableId(altitudeSourceOptions, altitudeVariableId) !== undefined
+/** Where the altitude widgets store their altitude source. */
+export const altitudeDataSource: DataSourceOptionKeys = {
+  variableIdKey: 'altitudeVariableId',
+  useCustomVariableKey: 'useCustomAltitudeVariable',
+  presets: altitudeSourceOptions,
+}
 
 /**
  * Convert a raw altitude value from the selected altitude source to meters.
