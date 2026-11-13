@@ -1129,6 +1129,12 @@ msgstr "Altura da antena (${ 0 })"
 msgid "Any"
 msgstr "Qualquer"
 
+#: src/components/mini-widgets/DepthIndicator.vue
+#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
+#: src/components/widgets/DepthHUD.vue
+msgid "Any numeric data lake variable, read in meters"
+msgstr "Qualquer variável numérica do data lake, lida em metros"
+
 #: src/components/widgets/Plotter.vue
 msgid "Appearance"
 msgstr "Aparência"
@@ -3283,12 +3289,6 @@ msgstr "Configurações de exportação de dados"
 #: src/components/recipes/RecipeDialog.vue
 msgid "Data lake"
 msgstr "Data lake"
-
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
-msgid "Data lake variable"
-msgstr "Variável do data lake"
 
 #: src/libs/menu-pages.ts
 msgid "Data-lake"
@@ -9365,12 +9365,6 @@ msgstr ""
 "divididas em vários zips de partes — escolha todos juntos, ou apenas um, e "
 "o restante será detectado automaticamente se estiver na mesma pasta)"
 
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
-msgid "Select any numeric data lake variable"
-msgstr "Selecione qualquer variável numérica do data lake"
-
 #: src/components/VideoLibraryModal.vue
 msgid "Select multiple files"
 msgstr "Selecionar vários arquivos"
@@ -11624,9 +11618,7 @@ msgstr "Usar intervalo -180/+180"
 msgid "Use a serial/USB device"
 msgstr "Usar um dispositivo serial/USB"
 
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
+#: src/components/DataSourceSelect.vue
 msgid "Use custom data lake variable"
 msgstr "Usar variável personalizada do data lake"
 
@@ -13264,3 +13256,9 @@ msgstr ""
 "— para lê-la nesse sistema de unidades, em vez do valor bruto que o veículo "
 "envia. Versões mais antigas do Cockpit não conseguem lê-lo, então deixe "
 "desativado se você compartilha este veículo com uma delas."
+
+#~ msgid "Data lake variable"
+#~ msgstr "Variável do data lake"
+
+#~ msgid "Select any numeric data lake variable"
+#~ msgstr "Selecione qualquer variável numérica do data lake"

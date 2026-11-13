@@ -25,42 +25,11 @@
             <i class="mdi mdi-close"></i>
           </v-btn>
         </div>
-        <v-select
-          v-if="!configUseCustomAltitudeVariable"
-          v-model="configAltitudeVariableId"
+        <DataSourceSelect
+          :config="altitudeSourceConfig"
+          :presets="altitudeSourceOptions"
           :label="t`Altitude source`"
-          :items="altitudeSourceOptions"
-          item-title="title"
-          item-value="value"
-          :value-comparator="isSameDataLakeVariableId"
-          hide-details
-          theme="dark"
-          variant="outlined"
-          density="compact"
-          @update:model-value="onAltitudeSourceSelected"
-        />
-        <v-autocomplete
-          v-else
-          v-model="configAltitudeVariableId"
-          :items="availableDataLakeNumberVariables"
-          item-title="name"
-          item-value="id"
-          :value-comparator="isSameDataLakeVariableId"
-          :label="t`Data lake variable`"
-          :hint="t`Select any numeric data lake variable`"
-          persistent-hint
-          theme="dark"
-          variant="outlined"
-          density="compact"
-          clearable
-          prepend-inner-icon="mdi-magnify"
-          @update:model-value="onAltitudeSourceSelected"
-        />
-        <v-checkbox
-          v-model="configUseCustomAltitudeVariable"
-          :label="t`Use custom data lake variable`"
-          hide-details
-          @update:model-value="onUseCustomAltitudeVariableToggled"
+          :custom-hint="t`Any numeric data lake variable, read in meters`"
         />
       </v-card-text>
     </v-card>
@@ -70,14 +39,16 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, toRefs } from 'vue'
 
-import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
+import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
-import { isSameDataLakeVariableId } from '@/libs/actions/data-lake'
+import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
 import {
+  altitudeDataSource,
   altitudeSourceOptions,
   defaultAltitudeIndicatorVariableId,
   rawAltitudeToMeters,
 } from '@/libs/data-sources/altitude'
+import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { convertValue, readingLengthsAs, unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -100,21 +71,17 @@ const defaultOptions = {
 }
 
 onBeforeMount(() => {
-  miniWidget.value.options = mergeAltitudeVariableOptions(defaultOptions, miniWidget.value.options)
+  miniWidget.value.options = mergeDataSourceOptions(defaultOptions, miniWidget.value.options, [altitudeDataSource])
 })
 
-const {
-  resolvedAltitudeVariableId,
-  configAltitudeVariableId,
-  configUseCustomAltitudeVariable,
-  availableDataLakeNumberVariables,
-  onAltitudeSourceSelected,
-  onUseCustomAltitudeVariableToggled,
-} = useAltitudeSourceConfig({
+const altitudeSourceConfig = useDataSourceConfig({
   widget: miniWidget,
   isConfigMenuOpen: () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
-  defaultAltitudeVariableId: defaultAltitudeIndicatorVariableId,
+  source: altitudeDataSource,
+  defaultVariableId: defaultAltitudeIndicatorVariableId,
+  sourceName: 'altitude',
 })
+const resolvedAltitudeVariableId = altitudeSourceConfig.resolvedVariableId
 
 const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
 
