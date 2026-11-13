@@ -1,6 +1,7 @@
+import { STREAM, STREAM_720P } from '../lib/video.mjs'
 import { closeDialog, openWidgetConfig, pickItem, placeVideoWidget, quietStart, widgetByHash } from '../lib/widgets.mjs'
 
-const STREAMS = ['Stream /dev/video2', 'PRTest Ball']
+const STREAMS = [STREAM, STREAM_720P]
 
 export const meta = {
   title: 'Switch the Video widget between two streams',

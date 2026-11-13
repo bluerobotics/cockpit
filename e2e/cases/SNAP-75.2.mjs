@@ -1,6 +1,5 @@
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import {
-  BALL_STREAM,
   ensureSnapshotTool,
   fileSafe,
   INPUT_SYNCED,
@@ -11,7 +10,7 @@ import {
   standaloneSnapshots,
 } from '../lib/inputs.mjs'
 import { keepRecordingsInRun } from '../lib/subtitles.mjs'
-import { setUpRecording, STREAM } from '../lib/video.mjs'
+import { setUpRecording, STREAM, STREAM_720P } from '../lib/video.mjs'
 
 export const meta = {
   title: 'Snapshot all streams plus the work area in Standalone',
@@ -21,7 +20,7 @@ export const meta = {
   synced: INPUT_SYNCED,
 }
 
-const STREAMS = [STREAM, BALL_STREAM]
+const STREAMS = [STREAM, STREAM_720P]
 
 export const setup = async (ctx) => {
   await quietStart(ctx)

@@ -8,25 +8,25 @@ import {
 } from '../lib/video.mjs'
 
 export const meta = {
-  title: `${RECORDING_MINUTES}-minute recording in Web with UsbCam on WebRTC`,
+  title: `${RECORDING_MINUTES}-minute recording in Web with the 1080p stream on WebRTC`,
   route: '/',
   needs: ['vehicle', 'camera'],
 }
 
 /**
- * A Video widget on the UsbCam stream and the mini recorder, set up before recording.
+ * A Video widget on the 1080p stream and the mini recorder, set up before recording.
  */
 export async function setup({ page }) {
   await setUpRecording(page)
 }
 
 /**
- * Record the UsbCam stream for the configured time and show the recording in the library with
+ * Record the 1080p stream for the configured time and show the recording in the library with
  * that duration.
  */
 export default async function run({ page }) {
   await page.caption(`"${STREAM}" playing live in a Video widget`)
-  await page.check('UsbCam video is live', async () => {
+  await page.check('The 1080p video is live', async () => {
     const v = await videoPlayback(page)
     return { ok: v?.width > 0, detail: v ? `${v.width}×${v.height}` : 'no video' }
   })
