@@ -1035,6 +1035,11 @@ msgstr "天线高度（${ 0 }）"
 msgid "Any"
 msgstr "任意"
 
+#: src/components/widgets/Compass.vue
+#: src/components/widgets/CompassHUD.vue
+msgid "Any numeric data lake variable, read in degrees"
+msgstr ""
+
 #: src/components/mini-widgets/DepthIndicator.vue
 #: src/components/mini-widgets/RelativeAltitudeIndicator.vue
 #: src/components/widgets/DepthHUD.vue
@@ -4930,6 +4935,11 @@ msgstr "请求头"
 #: src/components/poi/PoiManager.vue
 msgid "Heading (optional)"
 msgstr "朝向（可选）"
+
+#: src/components/widgets/Compass.vue
+#: src/components/widgets/CompassHUD.vue
+msgid "Heading source"
+msgstr ""
 
 #: src/components/widgets/Compass.vue
 msgid "Heading style"
