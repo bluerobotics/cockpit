@@ -5,7 +5,6 @@ import {
   centreOf,
   ensureSnapshotTool,
   fileSafe,
-  INPUT_KEYS,
   INPUT_SYNCED,
   openSnapshotSettings,
   quietStart,
@@ -25,7 +24,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle', 'camera', 'standalone'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = async (ctx) => {

@@ -1,12 +1,11 @@
 import { addActionButton, enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
-import { centreOf, dropCard, INPUT_KEYS, INPUT_SYNCED, paletteMode, placed, quietStart } from '../lib/inputs.mjs'
+import { centreOf, dropCard, INPUT_SYNCED, paletteMode, placed, quietStart } from '../lib/inputs.mjs'
 
 export const meta = {
   title: 'Mini and input widgets inside a Mini Widgets Bar',
   route: '/',
   needs: ['vehicle'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart

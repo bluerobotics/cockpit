@@ -1,6 +1,6 @@
 import { setUpActions } from '../lib/act-case.mjs'
 import { createCommandAction, reloadCockpit } from '../lib/act-dl.mjs'
-import { ACTION_KEYS, clickActionButton, listedActions, NO_ACTIONS, openActions } from '../lib/actions.mjs'
+import { clickActionButton, listedActions, NO_ACTIONS, openActions } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 
 export const meta = {
@@ -8,7 +8,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 const NAME = 'Disarm (release)'

@@ -3,7 +3,6 @@ import {
   addInputContainer,
   containerElements,
   dropCard,
-  INPUT_KEYS,
   INPUT_SYNCED,
   paletteMode,
   quietStart,
@@ -14,7 +13,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart

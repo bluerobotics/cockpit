@@ -3,7 +3,6 @@ import {
   BALL_STREAM,
   ensureSnapshotTool,
   fileSafe,
-  INPUT_KEYS,
   INPUT_SYNCED,
   openSnapshotSettings,
   quietStart,
@@ -20,7 +19,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle', 'camera', 'standalone'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 const STREAMS = [STREAM, BALL_STREAM]

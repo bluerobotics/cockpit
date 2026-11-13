@@ -1,12 +1,11 @@
 import { addActionButton, enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
-import { addInputContainer, INPUT_KEYS, INPUT_SYNCED, quietStart } from '../lib/inputs.mjs'
+import { addInputContainer, INPUT_SYNCED, quietStart } from '../lib/inputs.mjs'
 
 export const meta = {
   title: 'Widget buttons run built-in actions',
   route: '/',
   needs: ['vehicle'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart

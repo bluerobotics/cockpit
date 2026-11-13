@@ -1,4 +1,4 @@
-import { downloadCurrentSession, downloadsOf, LOGGER_DEFAULTS, LOGGER_KEYS, medianStep } from '../lib/data-logs.mjs'
+import { downloadCurrentSession, downloadsOf, LOGGER_DEFAULTS, medianStep } from '../lib/data-logs.mjs'
 import { recordWith, setup } from '../lib/dl-case.mjs'
 
 export { setup }
@@ -8,7 +8,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: LOGGER_DEFAULTS,
-  restore: LOGGER_KEYS,
 }
 
 const BOOT = '/mavlink/1/1/SYSTEM_TIME/time_boot_ms'

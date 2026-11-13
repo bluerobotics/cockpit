@@ -38,9 +38,11 @@ The exit code is non-zero when any case fails.
 
 - Cockpit runs as the user `release-tests`, so the operators' own settings synced to the vehicle are
   never touched.
-- Before each case the runner disarms the simulator, sets HOLD, clears its mission, and resets the
-  test user's synced points of interest and mission draft on the vehicle. A fresh browser profile
-  then pulls that clean state on its first sync.
+- Before each case the runner disarms the simulator, sets HOLD, clears its mission, and replaces every
+  synced setting of the test user on the vehicle with a known package: the boat defaults in
+  `fixtures/boat-defaults.json` (the layout and joystick mapping Cockpit imports for a boat), an empty
+  mission, POIs and fence, and whatever the case lists in `meta.synced`. The fresh browser profile is
+  seeded with the same package, so Cockpit opens on it and its first sync has nothing to change.
 - Each case gets its own throwaway browser profile.
 
 ## Writing a case
@@ -76,7 +78,8 @@ Rules of thumb:
 - Check the state behind what is shown, not only that some text appears somewhere on the page.
 - When Cockpit is wrong, let the case fail with the video. Do not script around a product bug.
 - Build preconditions through the UI in `setup`, with the same helpers the cases use, rather than
-  writing Cockpit's internal storage formats by hand.
+  writing Cockpit's internal storage formats by hand. The runner's seeding of the test user is the one
+  exception, and it follows the shapes in `src/types/settings-management.ts`.
 - Look at the frames before trusting a new case:
   `ffmpeg -i e2e/output/<run>/<ID>.mp4 -vf fps=1/3,scale=800:-1 /tmp/frames/%02d.jpg`.
 

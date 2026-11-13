@@ -321,20 +321,23 @@ export const missionState = (page) =>
 
 export const vehicleOnline = (page) => page.store('main-vehicle', 's.isVehicleOnline').catch(() => false)
 
+// Set when Cockpit has finished syncing its settings with the vehicle it connected to.
+const SYNC_HOOK = `addEventListener('vehicle-sync-complete', () => { window.__e2eSynced = true })`
+
 /**
- * Load Cockpit on a route and get it to a quiet state: app mounted, vehicle online when the case
- * needs it, first-run tutorial closed.
+ * Load Cockpit on a route and get it to a quiet state: app mounted, vehicle online and its settings synced when the
+ * case needs it, first-run tutorial closed.
  * @param {object} page - Driver page
  * @param {object} options - Options
  * @param {string} options.url - Cockpit base URL
  * @param {string} [options.route] - Hash route, e.g. '/mission-planning'
  * @param {boolean} [options.needsVehicle] - Wait for the vehicle to come online
- * @param {string[]} [options.views] - The test user's view names on the vehicle; wait until they are loaded
  */
-export async function openCockpit(page, { url, route = '/', needsVehicle = true, views }) {
+export async function openCockpit(page, { url, route = '/', needsVehicle = true }) {
   let hookMissed = false
   if (!page.mapHooked) {
     await page.addScript(MAP_HOOK)
+    await page.addScript(SYNC_HOOK)
     page.mapHooked = true
     // Standalone is already running when the driver attaches, so its first document never got the hook.
     hookMissed = url.endsWith('.html')
@@ -346,15 +349,11 @@ export async function openCockpit(page, { url, route = '/', needsVehicle = true,
   await page.waitFor(mounted, { label: 'Cockpit to mount', timeout: 30000 })
   if (needsVehicle) {
     await page.waitFor(() => vehicleOnline(page), { label: 'the vehicle to come online', timeout: 45000 })
-  }
-  // The test user's layout arrives from the vehicle's settings sync, ~10 s after boot on a slow
-  // machine; until then the app shows its default empty view.
-  if (views?.length) {
-    const names = JSON.stringify(views)
-    const synced = () =>
-      page.eval(`JSON.stringify(document.querySelector('#app').__vue_app__.config.globalProperties.$pinia
-        ._s.get('widget-manager')?.currentProfile?.views?.map((v) => v.name)) === ${JSON.stringify(names)}`)
-    await page.waitFor(synced, { label: 'the layout to sync from the vehicle', timeout: 60000 })
+    // Its first settings sync can still replace what a case does before it lands, like a downloaded mission.
+    await page.waitFor(() => page.eval('window.__e2eSynced === true'), {
+      label: "Cockpit's first sync with the vehicle",
+      timeout: 45000,
+    })
   }
   // The tour opens 6 s after start unless the user has seen it; the runner marks it seen, so the wait is
   // only for profiles where that has not arrived. A tour that opened anyway is still closed.

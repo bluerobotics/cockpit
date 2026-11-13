@@ -13,7 +13,6 @@ export const LOGGER_DEFAULTS = {
   'cockpit-data-lake-log-interval': 1000,
   'cockpit-data-lake-export-variable-key': 'id',
 }
-export const LOGGER_KEYS = Object.keys(LOGGER_DEFAULTS)
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' }); const r = el.getBoundingClientRect()

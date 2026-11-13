@@ -1,12 +1,11 @@
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
-import { barDropPoint, dropCard, INPUT_KEYS, INPUT_SYNCED, paletteMode, placed, quietStart } from '../lib/inputs.mjs'
+import { barDropPoint, dropCard, INPUT_SYNCED, paletteMode, placed, quietStart } from '../lib/inputs.mjs'
 
 export const meta = {
   title: 'Mini widgets added to the top and bottom bars',
   route: '/',
   needs: ['vehicle'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart

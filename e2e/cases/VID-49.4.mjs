@@ -23,7 +23,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle', 'camera', 'standalone'],
   synced: { [LIVE_PROCESSING]: false },
-  restore: [LIVE_PROCESSING],
 }
 
 export const setup = async (ctx) => {

@@ -1,12 +1,11 @@
 import { httpAction, NAME, runAndCatch, setUpActions, showRequest } from '../lib/act-case.mjs'
-import { ACTION_KEYS, fillHttpAction, listedActions, newAction, NO_ACTIONS } from '../lib/actions.mjs'
+import { fillHttpAction, listedActions, newAction, NO_ACTIONS } from '../lib/actions.mjs'
 
 export const meta = {
   title: 'Create an HTTP action and check every field reaches the server',
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)

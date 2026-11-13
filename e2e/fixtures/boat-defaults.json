@@ -1,0 +1,231 @@
+{
+  "cockpit-views-group-v1": {
+    "name": "Boat User",
+    "hash": "c172dcc7-2ca3-41d2-ba15-2f0c5865886d",
+    "views": [
+      {
+        "hash": "a0071309-fa17-48fa-bbd5-d1aae932c90e",
+        "name": "Map view",
+        "showBottomBarOnBoot": true,
+        "visible": true,
+        "widgets": [
+          {
+            "hash": "283c02cc-cb20-4603-a0a7-9077ceff14a1",
+            "name": "MissionControlPanel",
+            "component": "MissionControlPanel",
+            "position": {
+              "x": 0.837604,
+              "y": 0.804823
+            },
+            "size": {
+              "width": 0.134754,
+              "height": 0.09353
+            },
+            "options": {}
+          },
+          {
+            "hash": "1f7f494d-3810-44ee-8fa6-025d341f5cf2",
+            "name": "VirtualHorizon",
+            "component": "VirtualHorizon",
+            "position": {
+              "x": 0.8470340414647122,
+              "y": 0.030779937236477317
+            },
+            "size": {
+              "width": 0.06129068105944188,
+              "height": 0.11777527653033051
+            },
+            "options": {}
+          },
+          {
+            "hash": "675204eb-b980-4547-b0c0-a924ed71985b",
+            "name": "Compass",
+            "component": "Compass",
+            "position": {
+              "x": 0.7791262675380712,
+              "y": 0.030779937236477317
+            },
+            "size": {
+              "width": 0.06129068105944188,
+              "height": 0.11777527653033051
+            },
+            "options": {
+              "headingStyle": "North Up"
+            }
+          },
+          {
+            "hash": "e3b6655b-955b-4f58-b32a-5a71c78ee15f",
+            "name": "Main Map",
+            "component": "Map",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "width": 1,
+              "height": 1
+            },
+            "options": {
+              "showVehiclePath": true
+            }
+          }
+        ],
+        "miniWidgetContainers": [
+          {
+            "name": "Bottom-left container",
+            "widgets": [
+              {
+                "hash": "8bf13534-b317-41e4-80cd-def85fc56bcd",
+                "component": "ViewSelector",
+                "name": "ViewSelector",
+                "options": {}
+              }
+            ]
+          },
+          {
+            "name": "Bottom-center container",
+            "widgets": [
+              {
+                "component": "ArmerButton",
+                "name": "ArmerButton",
+                "options": {},
+                "hash": "dea796e4-a7ac-47a8-8949-ed598afd9b42"
+              },
+              {
+                "component": "VeryGenericIndicator",
+                "name": "Speed (GPS)",
+                "options": {
+                  "displayName": "Speed (GPS)",
+                  "variableName": "VFR_HUD/groundspeed",
+                  "iconName": "mdi-speedometer",
+                  "variableUnit": "m/s",
+                  "variableMultiplier": 1,
+                  "decimalPlaces": 1,
+                  "widgetWidth": 160,
+                  "useVariableUnit": true
+                },
+                "hash": "59c5568c-f5cd-4aac-a844-5b9595a9a797"
+              }
+            ]
+          },
+          {
+            "name": "Bottom-right container",
+            "widgets": [
+              {
+                "component": "ModeSelector",
+                "name": "ModeSelector",
+                "options": {},
+                "hash": "75050972-bf57-4bcd-aa4f-d313c999d4e1"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "cockpit-current-view-index-v1": 0,
+  "cockpit-joystick-functions-mapping-v1": {
+    "name": "Boat functions mapping",
+    "hash": "d3427f20-ba28-4cf7-ae24-ec740dd6dce0",
+    "axesCorrespondencies": {
+      "0": {
+        "action": {
+          "protocol": "data-lake-variable",
+          "id": "inputs/mavlink/axis-y",
+          "name": "Axis Y"
+        },
+        "min": -1000,
+        "max": 1000
+      },
+      "1": {
+        "action": {
+          "protocol": "data-lake-variable",
+          "id": "inputs/mavlink/axis-x",
+          "name": "Axis X"
+        },
+        "min": 1000,
+        "max": -1000
+      },
+      "2": {
+        "action": {
+          "protocol": "data-lake-variable",
+          "id": "inputs/mavlink/axis-r",
+          "name": "Axis R"
+        },
+        "min": -1000,
+        "max": 1000
+      },
+      "3": {
+        "action": {
+          "protocol": "data-lake-variable",
+          "id": "inputs/mavlink/axis-z",
+          "name": "Axis Z"
+        },
+        "min": 1000,
+        "max": -1000
+      }
+    },
+    "buttonsCorrespondencies": {
+      "regular": {
+        "0": {
+          "action": {
+            "id": "ardupilot_rover_mode_loiter",
+            "name": "Loiter Mode (ArduPilot Rover)",
+            "protocol": "cockpit-action"
+          }
+        },
+        "1": {
+          "action": {
+            "id": "ardupilot_rover_mode_manual",
+            "name": "Manual Mode (ArduPilot Rover)",
+            "protocol": "cockpit-action"
+          }
+        },
+        "2": {
+          "action": {
+            "id": "ardupilot_rover_mode_auto",
+            "name": "Auto Mode (ArduPilot Rover)",
+            "protocol": "cockpit-action"
+          }
+        },
+        "3": {
+          "action": {
+            "id": "ardupilot_rover_mode_acro",
+            "name": "Acro Mode (ArduPilot Rover)",
+            "protocol": "cockpit-action"
+          }
+        },
+        "4": {
+          "action": {
+            "id": "go_to_previous_view",
+            "name": "Go to previous view",
+            "protocol": "cockpit-action"
+          }
+        },
+        "5": {
+          "action": {
+            "id": "go_to_next_view",
+            "name": "Go to next view",
+            "protocol": "cockpit-action"
+          }
+        },
+        "8": {
+          "action": {
+            "id": "mavlink_disarm",
+            "name": "Mavlink disarm",
+            "protocol": "cockpit-action"
+          }
+        },
+        "9": {
+          "action": {
+            "id": "mavlink_arm",
+            "name": "Mavlink arm",
+            "protocol": "cockpit-action"
+          }
+        }
+      },
+      "shift": {}
+    }
+  },
+  "cockpit-vehicle-defaults-handled": true
+}

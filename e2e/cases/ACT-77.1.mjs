@@ -1,6 +1,6 @@
 import { setUpActions } from '../lib/act-case.mjs'
 import { editorText, reloadCockpit } from '../lib/act-dl.mjs'
-import { ACTION_KEYS, clickActionButton, clickDialogButton, newAction, NO_ACTIONS } from '../lib/actions.mjs'
+import { clickActionButton, clickDialogButton, newAction, NO_ACTIONS } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 import { dismissFeaturesDialog } from '../lib/extensions.mjs'
 import { openMenuPage } from '../lib/mavlink-tools.mjs'
@@ -12,7 +12,6 @@ export const meta = {
   route: '/',
   needs: [],
   synced: { ...NO_ACTIONS, [LOGGING_KEY]: true },
-  restore: [...ACTION_KEYS, LOGGING_KEY],
 }
 
 const LINE = 'release-test JS ran'

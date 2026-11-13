@@ -11,13 +11,11 @@ import {
   uploadMission,
 } from '../lib/mission.mjs'
 import { LONG_PATH } from '../lib/speed.mjs'
-import { UNITS_KEY } from '../lib/units.mjs'
 
 export const meta = {
   title: 'Mission cruise speed is set and shown in the display speed unit',
   route: '/',
   needs: ['vehicle'],
-  restore: [UNITS_KEY],
 }
 
 export const setup = async ({ page }) => {

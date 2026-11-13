@@ -14,7 +14,7 @@ const mapWidgets = (page) =>
 
 /**
  * Split the view between the existing Map widget and a second one, through the widget store. The
- * runner restores the test user's layout afterwards.
+ * next case starts from the test user's own layout again.
  */
 export async function setup({ page }) {
   await page.store(

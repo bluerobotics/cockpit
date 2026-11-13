@@ -1,5 +1,5 @@
 import { setUpActions } from '../lib/act-case.mjs'
-import { ACTION_KEYS, NO_ACTIONS } from '../lib/actions.mjs'
+import { NO_ACTIONS } from '../lib/actions.mjs'
 import {
   callsTo,
   createRequestAction,
@@ -8,7 +8,6 @@ import {
   setTriggers,
   shownTimeTrigger,
   storedTriggers,
-  TRIGGER_KEYS,
 } from '../lib/triggers.mjs'
 
 const A = { name: 'Release trigger A', path: '/a' }
@@ -19,7 +18,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { ...NO_ACTIONS, ...NO_TRIGGERS },
-  restore: [...ACTION_KEYS, ...TRIGGER_KEYS],
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)

@@ -1,12 +1,5 @@
 import { setUpActions } from '../lib/act-case.mjs'
-import {
-  ACTION_KEYS,
-  clickActionButton,
-  clickDialogButton,
-  listedActions,
-  newAction,
-  NO_ACTIONS,
-} from '../lib/actions.mjs'
+import { clickActionButton, clickDialogButton, listedActions, newAction, NO_ACTIONS } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 
 export const meta = {
@@ -14,7 +7,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)

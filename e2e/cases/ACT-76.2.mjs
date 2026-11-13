@@ -1,12 +1,6 @@
 import { setUpActions } from '../lib/act-case.mjs'
-import {
-  addUserVariable,
-  createCommandAction,
-  editUserVariable,
-  NO_USER_VARIABLES,
-  USER_VARIABLE_KEYS,
-} from '../lib/act-dl.mjs'
-import { ACTION_KEYS, clickActionButton, NO_ACTIONS, openActions } from '../lib/actions.mjs'
+import { addUserVariable, createCommandAction, editUserVariable, NO_USER_VARIABLES } from '../lib/act-dl.mjs'
+import { clickActionButton, NO_ACTIONS, openActions } from '../lib/actions.mjs'
 import { dismissTutorial } from '../lib/cockpit.mjs'
 import { dismissFeaturesDialog } from '../lib/extensions.mjs'
 
@@ -15,7 +9,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { ...NO_ACTIONS, ...NO_USER_VARIABLES },
-  restore: [...ACTION_KEYS, ...USER_VARIABLE_KEYS],
 }
 
 const NAME = 'Release mode from variable'

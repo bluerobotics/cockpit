@@ -28,7 +28,7 @@ export const videoPlayback = (page) =>
 
 /**
  * Put a Video widget and a mini recorder in the bottom bar on each stream, through the widget
- * store. The runner restores the test user's layout afterwards.
+ * store. The next case starts from the test user's own layout again.
  * @param {object} page - Driver page
  * @param {string[]} [streams] - Streams to show and record, the UsbCam by default
  */

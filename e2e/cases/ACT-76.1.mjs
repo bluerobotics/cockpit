@@ -1,13 +1,12 @@
 import { setUpActions } from '../lib/act-case.mjs'
 import { createCommandAction, sentMessages, spyOutgoing } from '../lib/act-dl.mjs'
-import { ACTION_KEYS, clickActionButton, NO_ACTIONS } from '../lib/actions.mjs'
+import { clickActionButton, NO_ACTIONS } from '../lib/actions.mjs'
 
 export const meta = {
   title: 'MAVLink actions arm and disarm, with their fields sent as set',
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)

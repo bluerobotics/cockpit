@@ -39,7 +39,6 @@ export const OVERLAY_DEFAULTS = {
   },
   [INTERVAL_KEY]: 1000,
 }
-export const OVERLAY_KEYS = Object.keys(OVERLAY_DEFAULTS)
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' }); const r = el.getBoundingClientRect()

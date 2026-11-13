@@ -2,7 +2,7 @@ import { clickDialogButton } from '../lib/actions.mjs'
 import { dismissTutorial, fieldByLabel } from '../lib/cockpit.mjs'
 import { dismissFeaturesDialog } from '../lib/extensions.mjs'
 import { openMenuPage } from '../lib/mavlink-tools.mjs'
-import { TEMPERATURE, UNITS_KEY } from '../lib/units.mjs'
+import { TEMPERATURE } from '../lib/units.mjs'
 
 const COMPOUND_KEY = 'cockpit-transforming-functions'
 
@@ -11,7 +11,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { [COMPOUND_KEY]: [] },
-  restore: [COMPOUND_KEY, UNITS_KEY],
 }
 
 export const setup = async ({ page }) => {

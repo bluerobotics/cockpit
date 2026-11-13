@@ -6,7 +6,6 @@ import {
   openDataLake,
   reloadCockpit,
   shownRow,
-  USER_VARIABLE_KEYS,
 } from '../lib/act-dl.mjs'
 import { setup } from '../lib/dl-case.mjs'
 
@@ -17,7 +16,6 @@ export const meta = {
   route: '/',
   needs: [],
   synced: NO_USER_VARIABLES,
-  restore: USER_VARIABLE_KEYS,
 }
 
 const VARIABLE = { id: 'release-test/user-var2', name: 'Release user var 2', value: 1, saveValue: false }
