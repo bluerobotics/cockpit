@@ -10,6 +10,8 @@ on:
         required: false
 
 env:
+  # The checklist's hour-long recordings, shortened so their group fits the job: a few minutes proves the same path.
+  COCKPIT_E2E_RECORDING_MINUTES: 5
   # Pinned, so a BlueOS release cannot change a run's results.
   BLUEOS_IMAGE: bluerobotics/blueos-core:1.4.6
 
@@ -56,8 +58,12 @@ jobs:
       # A bridge network rather than BlueOS's usual host one, so its network manager cannot touch the runner's.
       # Published on port 80, since Cockpit's vehicle address field takes a host without a port.
       # 6021 is mavlink-camera-manager's WebRTC signalling, which Cockpit reaches on the vehicle address directly.
+      # 5762 and 5763 are the autopilot's second and third serial ports, which the serial-connection cases bridge to;
+      # 14550/udp is BlueOS's GCS UDP server link, enabled below; 8554 is the RTSP stream's server.
       - name: Start BlueOS
-        run: docker run -d --name blueos --privileged -p 80:80 -p 6021:6021 "$BLUEOS_IMAGE"
+        run: |
+          docker run -d --name blueos --privileged -p 80:80 -p 6021:6021 -p 5762:5762 -p 5763:5763 -p 14550:14550/udp \
+            -p 8554:8554 "$BLUEOS_IMAGE"
 
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
@@ -80,9 +86,19 @@ jobs:
       - name: Make the vehicle an ArduRover SITL boat
         run: node e2e/ci/blueos-sitl.mjs localhost
 
-      # The container has no camera, so mavlink-camera-manager serves two test-pattern streams instead: one under the
-      # name BlueOS gives a UsbCam, which the VID cases use, and a second one to switch to.
-      - name: Serve two test-pattern camera streams
+      # Off by default in BlueOS; the UDP connection case reaches the vehicle through it. The link only exists once
+      # the autopilot runs, and enabling it restarts BlueOS's MAVLink routing, which the runner waits out.
+      - name: Enable BlueOS's GCS UDP server link
+        run: |
+          api=http://localhost/ardupilot-manager/v1.0/endpoints/
+          for _ in $(seq 100); do
+            links=$(curl -sfL $api | jq -c '[.[] | select(.name == "GCS Server Link") | .enabled = true]') && [ "$links" != "[]" ] && break
+            sleep 3
+          done
+          [ "$links" != "[]" ] && curl -sfL -X PUT -H 'Content-Type: application/json' -d "$links" $api
+
+      # The container has no camera, so mavlink-camera-manager serves H264 test-pattern streams instead.
+      - name: Serve test-pattern camera streams
         run: node e2e/ci/fake-streams.mjs localhost
 
       - name: Run the cases
