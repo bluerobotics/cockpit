@@ -25,8 +25,10 @@ const number = (text) => Number.parseFloat(text)
  * converts, and each quantity follows its own choice.
  */
 export default async function run({ page }) {
-  const celsius = (await page.eval(`window.cockpit.getDataLakeVariableData(${JSON.stringify(TEMPERATURE)})`)) / 100
-  const fahrenheit = celsius * 1.8 + 32
+  // The simulated water temperature drifts, so each check compares against it as read alongside the readout.
+  const waterCelsius = async () =>
+    (await page.eval(`window.cockpit.getDataLakeVariableData(${JSON.stringify(TEMPERATURE)})`)) / 100
+  const celsius = await waterCelsius()
   await page.caption(`Metric: depth ${DEPTH_METRES} m, water at ${celsius.toFixed(1)} °C`)
   let shown = await readouts(page)
   await page.check('Metric: depth in metres, temperature in °C', () => ({
@@ -42,6 +44,7 @@ export default async function run({ page }) {
   await chooseUnitSystem(page, 'imperial')
   await closeMenu(page)
   shown = await readouts(page)
+  const fahrenheit = (await waterCelsius()) * 1.8 + 32
   await page.check('Imperial: depth in feet, temperature in °F, both converted', () => ({
     ok:
       shown.depth.endsWith(' ft') &&
