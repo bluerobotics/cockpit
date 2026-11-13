@@ -1035,6 +1035,12 @@ msgstr "天线高度（${ 0 }）"
 msgid "Any"
 msgstr "任意"
 
+#: src/components/mini-widgets/DepthIndicator.vue
+#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
+#: src/components/widgets/DepthHUD.vue
+msgid "Any numeric data lake variable, read in meters"
+msgstr ""
+
 #: src/components/widgets/Plotter.vue
 msgid "Appearance"
 msgstr "外观"
@@ -3051,12 +3057,6 @@ msgstr "数据导出设置"
 #: src/components/recipes/RecipeDialog.vue
 msgid "Data lake"
 msgstr "数据湖"
-
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
-msgid "Data lake variable"
-msgstr "数据湖变量"
 
 #: src/libs/menu-pages.ts
 msgid "Data-lake"
@@ -8800,12 +8800,6 @@ msgid ""
 "will be auto-detected if they're in the same folder)"
 msgstr "选择并处理您下载的 ZIP 文件（较大的录制会拆分为多个分卷 zip —— 请一起选择所有分卷，或者只选一个，其余分卷若在同一文件夹中会被自动检测）"
 
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
-msgid "Select any numeric data lake variable"
-msgstr "选择任意数值型数据湖变量"
-
 #: src/components/VideoLibraryModal.vue
 msgid "Select multiple files"
 msgstr "选择多个文件"
@@ -10832,9 +10826,7 @@ msgstr "使用 -180/+180 范围"
 msgid "Use a serial/USB device"
 msgstr "使用串口/USB 设备"
 
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
+#: src/components/DataSourceSelect.vue
 msgid "Use custom data lake variable"
 msgstr "使用自定义数据湖变量"
 
@@ -12342,3 +12334,9 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "Save ${ 0 } tiles"
 #~ msgstr "保存 ${ 0 } 瓦片"
+
+#~ msgid "Data lake variable"
+#~ msgstr "数据湖变量"
+
+#~ msgid "Select any numeric data lake variable"
+#~ msgstr "选择任意数值型数据湖变量"
