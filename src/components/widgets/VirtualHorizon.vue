@@ -7,6 +7,49 @@
       class="rounded-[15%] bg-slate-950/70"
     ></canvas>
   </div>
+  <v-dialog v-model="widgetStore.widgetManagerVars(widget.hash).configMenuOpen" min-width="400" max-width="45%">
+    <v-card class="pa-4" :style="interfaceStore.globalGlassMenuStyles">
+      <v-card-title class="text-center">{{ t`Virtual horizon config` }}</v-card-title>
+      <v-btn
+        class="absolute top-3 right-0 text-lg rounded-full"
+        variant="text"
+        size="small"
+        icon
+        :aria-label="t`Close`"
+        @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false"
+      >
+        <v-icon>mdi-close</v-icon>
+      </v-btn>
+      <v-card-text>
+        <div class="grid gap-x-4" :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'">
+          <div>
+            <DataSourceSelect
+              :config="rollSourceConfig"
+              :presets="rollSourceOptions"
+              :label="t`Roll source`"
+              :custom-hint="t`Any numeric data lake variable, read in degrees`"
+            />
+          </div>
+          <div>
+            <DataSourceSelect
+              :config="pitchSourceConfig"
+              :presets="pitchSourceOptions"
+              :label="t`Pitch source`"
+              :custom-hint="t`Any numeric data lake variable, read in degrees`"
+            />
+          </div>
+        </div>
+      </v-card-text>
+      <v-divider class="opacity-20 border-[#fafafa]" />
+      <v-card-actions>
+        <div class="flex w-full justify-end">
+          <v-btn variant="text" @click="widgetStore.widgetManagerVars(widget.hash).configMenuOpen = false">
+            {{ t`Close` }}
+          </v-btn>
+        </div>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -14,14 +57,27 @@ import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
-import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
+import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
+import {
+  defaultPitchVariableId,
+  defaultRollVariableId,
+  pitchDataSource,
+  pitchSourceOptions,
+  rawAttitudeToDegrees,
+  rollDataSource,
+  rollSourceOptions,
+} from '@/libs/data-sources/attitude'
+import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { degrees, radians, resetCanvas } from '@/libs/utils'
+import { radians, resetCanvas } from '@/libs/utils'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
 
 const widgetStore = useWidgetManagerStore()
+const interfaceStore = useAppInterfaceStore()
 
 const props = defineProps<{
   /**
@@ -32,19 +88,36 @@ const props = defineProps<{
 const widget = toRefs(props).widget
 
 const defaultOptions = {
-  rollVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/roll',
-  pitchVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/pitch',
+  rollVariableId: defaultRollVariableId,
+  useCustomRollVariable: false,
+  pitchVariableId: defaultPitchVariableId,
+  useCustomPitchVariable: false,
 }
 
 onBeforeMount(() => {
-  widget.value.options = { ...defaultOptions, ...widget.value.options }
+  widget.value.options = mergeDataSourceOptions(defaultOptions, widget.value.options, [rollDataSource, pitchDataSource])
 })
 
 datalogger.registerUsage(DatalogVariable.roll)
 datalogger.registerUsage(DatalogVariable.pitch)
 
-const resolvedRollVariableId = useResolvedDataLakeTemplate(() => widget.value.options.rollVariableId)
-const resolvedPitchVariableId = useResolvedDataLakeTemplate(() => widget.value.options.pitchVariableId)
+const isConfigMenuOpen = (): boolean => widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen
+const rollSourceConfig = useDataSourceConfig({
+  widget,
+  isConfigMenuOpen,
+  source: rollDataSource,
+  defaultVariableId: defaultRollVariableId,
+  sourceName: 'roll',
+})
+const pitchSourceConfig = useDataSourceConfig({
+  widget,
+  isConfigMenuOpen,
+  source: pitchDataSource,
+  defaultVariableId: defaultPitchVariableId,
+  sourceName: 'pitch',
+})
+const resolvedRollVariableId = rollSourceConfig.resolvedVariableId
+const resolvedPitchVariableId = pitchSourceConfig.resolvedVariableId
 const { value: rawRoll } = useDataLakeVariable(resolvedRollVariableId)
 const { value: rawPitch } = useDataLakeVariable(resolvedPitchVariableId)
 
@@ -228,16 +301,16 @@ const rollAngleDeg = ref(0.01)
 const pitchAngleDeg = ref(0.01)
 
 watch(rawRoll, (newRoll) => {
-  if (newRoll === undefined) return
-  const deg = degrees(newRoll as number)
+  if (resolvedRollVariableId.value === undefined || typeof newRoll !== 'number') return
+  const deg = rawAttitudeToDegrees(rollDataSource, resolvedRollVariableId.value, newRoll)
   if (Math.abs(deg - rollAngleDeg.value) > 0.1) {
     rollAngleDeg.value = deg
   }
 })
 
 watch(rawPitch, (newPitch) => {
-  if (newPitch === undefined) return
-  const deg = degrees(newPitch as number)
+  if (resolvedPitchVariableId.value === undefined || typeof newPitch !== 'number') return
+  const deg = rawAttitudeToDegrees(pitchDataSource, resolvedPitchVariableId.value, newPitch)
   if (Math.abs(deg - pitchAngleDeg.value) > 0.1) {
     pitchAngleDeg.value = deg
   }

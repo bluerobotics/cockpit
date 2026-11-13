@@ -885,7 +885,7 @@ export const isWidgetConfigurable: Record<WidgetType, boolean> = {
   [WidgetType.Plotter]: true,
   [WidgetType.URLVideoPlayer]: true,
   [WidgetType.VideoPlayer]: true,
-  [WidgetType.VirtualHorizon]: false,
+  [WidgetType.VirtualHorizon]: true,
   [WidgetType.MissionControlPanel]: false,
 }
 

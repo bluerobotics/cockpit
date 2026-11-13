@@ -1129,8 +1129,10 @@ msgstr "Altura da antena (${ 0 })"
 msgid "Any"
 msgstr "Qualquer"
 
+#: src/components/widgets/Attitude.vue
 #: src/components/widgets/Compass.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/components/widgets/VirtualHorizon.vue
 msgid "Any numeric data lake variable, read in degrees"
 msgstr "Qualquer variável numérica do data lake, lida em graus"
 
@@ -2209,6 +2211,7 @@ msgstr "Clonar widget para"
 #: src/components/widgets/MiniMap.vue
 #: src/components/widgets/Plotter.vue
 #: src/components/widgets/URLVideoPlayer.vue
+#: src/components/widgets/VirtualHorizon.vue
 #: src/stores/video.ts
 #: src/views/ConfigurationJoystickView.vue
 #: src/views/MissionPlanningView.vue
@@ -8162,6 +8165,11 @@ msgstr "Píer"
 msgid "Pirate mode"
 msgstr "Modo pirata"
 
+#: src/components/widgets/Attitude.vue
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Pitch source"
+msgstr "Fonte de arfagem"
+
 #: src/components/poi/PoiManager.vue
 #: src/components/widgets/Map.vue
 msgid "Place Point of Interest"
@@ -9058,6 +9066,11 @@ msgstr "Reverter alterações"
 #: src/composables/vehicleDefaults/vehicleDefaultsAutoImport.ts
 msgid "Review"
 msgstr "Revisar"
+
+#: src/components/widgets/Attitude.vue
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Roll source"
+msgstr "Fonte de rolagem"
 
 #: src/views/MissionPlanningView.vue
 msgid "Rotate"
@@ -12224,6 +12237,10 @@ msgstr "Visualizações"
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "Views group preview"
 msgstr "Prévia do grupo de visualizações"
+
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Virtual horizon config"
+msgstr "Configuração do horizonte virtual"
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Visible"
