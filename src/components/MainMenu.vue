@@ -6,7 +6,11 @@
       class="left-menu slide-in"
       :style="[glassMenuStyles, mainMenuWidth]"
     >
-      <v-window v-model="interfaceStore.mainMenuCurrentStep" class="h-full w-full">
+      <v-window
+        v-model="interfaceStore.mainMenuCurrentStep"
+        class="h-full w-full transition-[height] duration-300"
+        :style="activeItemHeight ? { height: `${activeItemHeight}px` } : undefined"
+      >
         <v-window-item :value="1" class="h-full">
           <div
             ref="scrollContainerRef"
@@ -282,6 +286,15 @@ useResizeObserver(subMenuContainerRef, (entries) => {
 const activeContainerRect = computed(() => {
   return interfaceStore.mainMenuCurrentStep === 1 ? containerRectMain.value : containerRectSub.value
 })
+
+// Pinned in pixels, since the window's own height transition starts from auto and snaps
+const activeItemHeight = ref<number>()
+watch(
+  () => activeContainerRect.value.height,
+  (height) => {
+    if (height) activeItemHeight.value = height
+  }
+)
 
 const topBottomBarScale = computed(() => {
   return windowWidth.value / originalBarWidth
