@@ -8,14 +8,14 @@ import { keepRecordingsInRun } from '../lib/subtitles.mjs'
 import { recordFor, RECORDING_MINUTES, setUpRecording, STREAM, videoPlayback } from '../lib/video.mjs'
 
 export const meta = {
-  title: `${RECORDING_MINUTES}-minute recording in Standalone with UsbCam on WebRTC`,
+  title: `${RECORDING_MINUTES}-minute recording in Standalone with the 1080p stream on WebRTC`,
   route: '/',
   needs: ['vehicle', 'camera'],
   platforms: ['electron'],
 }
 
 /**
- * Keep the recording in the run folder, and put a Video widget on the UsbCam stream with the mini
+ * Keep the recording in the run folder, and put a Video widget on the 1080p stream with the mini
  * recorder beside it.
  */
 export const setup = async (ctx) => {
@@ -52,12 +52,12 @@ const brightness = (file, seconds) => {
 }
 
 /**
- * Record the UsbCam stream for the configured time in Standalone, wait for Cockpit to finish the file,
+ * Record the 1080p stream for the configured time in Standalone, wait for Cockpit to finish the file,
  * and check the file on disk: its length, and frames at the start, middle and end that are not black.
  */
 export default async function run({ page, outDir, meta: { id } }) {
   await page.caption(`"${STREAM}" playing live in a Video widget`)
-  await page.check('UsbCam video is live', async () => {
+  await page.check('The 1080p video is live', async () => {
     const v = await videoPlayback(page)
     return { ok: v?.width > 0, detail: v ? `${v.width}×${v.height}` : 'no video' }
   })

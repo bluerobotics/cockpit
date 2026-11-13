@@ -384,9 +384,6 @@ export const libraryPictures = (page) =>
   page.eval(`[...document.querySelectorAll('.v-overlay--active div.truncate')].map((d) => d.textContent.trim())
     .filter((t) => t.endsWith('.jpeg'))`)
 
-// The second stream the checklist captures beside STREAM (lib/video.mjs).
-export const BALL_STREAM = 'PRTest Ball'
-
 /**
  * A name as snapshotFilename writes it into a file name (sanitizeFilenameComponent in src/libs/utils.ts).
  * @param {string} name - Mission or stream name
