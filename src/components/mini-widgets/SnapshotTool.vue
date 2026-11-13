@@ -107,13 +107,7 @@
         <template #selection="{ item }">
           <v-chip size="small" class="mr-1 pa-3">
             <span class="text-xs">{{ item.raw.internalName }}</span>
-            <v-chip
-              size="x-small"
-              :color="item.raw.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
-              variant="flat"
-              label
-              class="text-white ml-1 pa-1"
-            >
+            <v-chip size="x-small" :color="item.raw.protocolColor" variant="flat" label class="text-white ml-1 pa-1">
               {{ item.raw.protocolLabel }}
             </v-chip>
           </v-chip>
@@ -129,13 +123,7 @@
                   <template v-if="item.raw.fps"> @ {{ item.raw.fps }}</template>
                 </span>
               </div>
-              <v-chip
-                size="x-small"
-                :color="item.raw.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
-                variant="flat"
-                label
-                class="text-white shrink-0"
-              >
+              <v-chip size="x-small" :color="item.raw.protocolColor" variant="flat" label class="text-white shrink-0">
                 {{ item.raw.protocolLabel }}
               </v-chip>
             </div>
@@ -224,6 +212,7 @@ const enrichedStreamItems = computed(() => {
       fps: displayInfo.fps,
       source: displayInfo.source,
       protocolLabel: displayInfo.protocolLabel,
+      protocolColor: displayInfo.protocolColor,
     }
   })
 })

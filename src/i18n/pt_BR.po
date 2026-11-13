@@ -18,6 +18,14 @@ msgstr "Visualização ${ 0 }"
 msgid "About"
 msgstr "Sobre"
 
+#: src/views/ConfigurationVideoView.vue
+msgid "Add"
+msgstr ""
+
+#: src/views/ConfigurationVideoView.vue
+msgid "Add UDP video stream (Standalone)"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Alerts settings"
 msgstr ""
@@ -38,6 +46,15 @@ msgstr ""
 msgid "Be careful"
 msgstr "Cuidado"
 
+#: src/views/ConfigurationVideoView.vue
+msgid "Codec"
+msgstr ""
+
+#: src/libs/rtp-source.ts
+#, javascript-format
+msgid "Codec must be one of: ${ 0 }."
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Come back later, or proceed carefully with one of the following options:"
 msgstr ""
@@ -53,6 +70,11 @@ msgstr ""
 #: src/components/ArmSafetyDialog.vue
 msgid "Continue anyway"
 msgstr "Continuar mesmo assim"
+
+#: src/stores/video.ts
+#, javascript-format
+msgid "Could not restore the UDP video stream on port ${ 0 }: ${ 1 }"
+msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
 msgid "Disarm vehicle and continue"
@@ -110,6 +132,31 @@ msgstr "Missão"
 msgid "Mission Planning"
 msgstr "Planejamento de missão"
 
+#: src/views/ConfigurationVideoView.vue
+msgid ""
+"Pick the port it is sent to and the codec the sender is using, as this kind "
+"of stream does not announce it."
+msgstr ""
+
+#: src/views/ConfigurationVideoView.vue
+msgid "Port"
+msgstr ""
+
+#: src/stores/video.ts
+#, javascript-format
+msgid "Port ${ 0 } is already used by '${ 1 }'."
+msgstr ""
+
+#: src/libs/rtp-source.ts
+msgid "Port must be a whole number between 1024 and 65535."
+msgstr ""
+
+#: src/views/ConfigurationVideoView.vue
+msgid ""
+"Receives video sent straight to this computer over the network, the way "
+"ArduPilot and PX4 companion computers send it."
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Reload now"
 msgstr "Recarregar agora"
@@ -118,12 +165,42 @@ msgstr "Recarregar agora"
 msgid "Settings"
 msgstr "Configurações"
 
+#: src/stores/video.ts
+msgid ""
+"Some of your video-related widgets (e.g.: video player, mini video "
+"recorder, snapshot tool) are connected to RTSP or UDP video streams."
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid ""
 "The vehicle is currently armed, and the main-menu contains configurations "
 "and tools that can cause unsafe situations."
 msgstr ""
 
+#: src/stores/video.ts
+msgid "Those streams are not supported in Cockpit Lite."
+msgstr ""
+
+#: src/stores/video.ts
+msgid ""
+"To make sure those widgets work, re-configure them to only use WebRTC, or "
+"install Cockpit Standalone, which supports all of them."
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Tools"
 msgstr "Ferramentas"
+
+#: src/stores/video.ts
+#, javascript-format
+msgid "UDP port ${ 0 } (${ 1 })"
+msgstr ""
+
+#: src/stores/video.ts
+msgid "UDP video streams are only available in Cockpit Standalone."
+msgstr ""
+
+#: src/views/ConfigurationVideoView.vue
+#, javascript-format
+msgid "Video stream '${ 0 }' added."
+msgstr ""

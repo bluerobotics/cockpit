@@ -37,7 +37,7 @@
                 <span class="detail-value">
                   <v-chip
                     size="x-small"
-                    :color="orphan.displayInfo.protocolLabel === 'RTSP' ? '#e67e22' : '#3498db'"
+                    :color="orphan.displayInfo.protocolColor"
                     variant="flat"
                     label
                     class="text-white"
@@ -95,11 +95,7 @@
                   <span class="detail-value">
                     <v-chip
                       size="x-small"
-                      :color="
-                        videoStore.getStreamDisplayInfo(corr.externalId).protocolLabel === 'RTSP'
-                          ? '#e67e22'
-                          : '#3498db'
-                      "
+                      :color="videoStore.getStreamDisplayInfo(corr.externalId).protocolColor"
                       variant="flat"
                       label
                       class="text-white"
@@ -186,6 +182,8 @@ const isStreamCurrentlyAvailable = (corr: VideoStreamCorrespondency): boolean =>
   if ((corr.protocol ?? 'webrtc') === 'webrtc') {
     return videoStore.namesAvailableWebRTCStreams.includes(corr.externalId)
   }
+  // Nothing announces a UDP stream, so it is there wherever Cockpit can listen for it
+  if (corr.protocol === 'rtp') return isStandalone
   return videoStore.streamInformation.some((s) => s.rtspSourceUrl === corr.rtspUrl)
 }
 
@@ -254,6 +252,10 @@ const orphanedWidgetStreams = computed(() => {
        * Protocol label of the stream
        */
       protocolLabel: string
+      /**
+       * Colour the protocol is shown in
+       */
+      protocolColor: string
     }
   }[] = []
 
