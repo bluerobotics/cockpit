@@ -298,13 +298,25 @@ const shouldSimplifyMainMEnu = computed(() => {
   return maxScreenHeightPixelsThatFitsLargeMenu.value > activeContainerRect.value.height
 })
 
+// Reapplied on navigation, so a revisited menu renders in its final layout instead of being measured into it
+const simplifiedByMenu: Partial<Record<SubMenuName | 'main', boolean>> = {}
+
+watch(activeSubMenu, (subMenu) => {
+  // A submenu swapped in place keeps reporting the previous one's height until it is measured again
+  containerRectSub.value.height = 0
+  interfaceStore.isMainMenuSimplified = simplifiedByMenu[subMenu ?? 'main'] ?? interfaceStore.isMainMenuSimplified
+})
+
 watchEffect(() => {
+  // The window item being switched to is still display:none and measures 0 until its first resize callback
+  if (!activeContainerRect.value.height) return
   const ratio = (activeContainerRect.value.height * 2) / maxScreenHeightPixelsThatFitsLargeMenu.value
   if (!shouldSimplifyMainMEnu.value && ratio > LOWER_RATIO) {
     interfaceStore.isMainMenuSimplified = true
   } else if (shouldSimplifyMainMEnu.value && ratio * 0.8 < UPPER_RATIO) {
     interfaceStore.isMainMenuSimplified = false
   }
+  simplifiedByMenu[activeSubMenu.value ?? 'main'] = interfaceStore.isMainMenuSimplified
 })
 
 const selectSubMenu = (subMenuName: SubMenuName): void => {
