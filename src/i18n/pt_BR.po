@@ -4,42 +4,716 @@ msgstr ""
 "Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" deleted."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" is now drawn on the maps."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"\"${ 0 }\" kept with ${ 1 } measured cells, and copied to the vehicle when "
+"it is online."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "\"${ 0 }\" saved as ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"\"Add observer\", then click the map where a person stands. Eyes is their "
+"eye height above the ground. The base station, when placed, is always an "
+"observer."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid ""
+"${ 0 } ${ 1 }: the brown fill is the measured ground and the ${ 2 } is "
+"where the model puts it.${ 3 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } (Cockpit Standalone)"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#. Live, so the overlay pipeline keeps no second copy of the mesh: the library file stays the only source.
+#, javascript-format
+msgid "${ 0 } (measured terrain)"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "${ 0 } along"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } camera targets aimed at the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } cells measured, ${ 1 } with enough readings to trust."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } cells over the mission"
+msgstr ""
+
 #: src/components/widgets/MiniWidgetsBar.vue
 #, javascript-format
 msgid "${ 0 } floating container"
 msgstr "Contêiner flutuante ${ 0 }"
+
+#: src/composables/terrain/useTerrainDock.ts
+#, javascript-format
+msgid "${ 0 } from ${ 1 }."
+msgstr ""
+
+#: src/components/InputField.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } information"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid ""
+"${ 0 } is available in Cockpit Standalone, so Cockpit Lite reads Tilezen "
+"instead."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } item total"
+msgid_plural "${ 0 } items total"
+msgstr[0] ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "${ 0 } itself"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } m above model"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } m below model"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "${ 0 } m under the keel"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } m under the keel from ${ 1 }."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"${ 0 } measured cells from \"${ 1 }\" added to the measured terrain, ${ 2 } "
+"feature ignored."
+msgid_plural ""
+"${ 0 } measured cells from \"${ 1 }\" added to the measured terrain, ${ 2 } "
+"features ignored."
+msgstr[0] ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "${ 0 } measured cells from \"${ 1 }\" added to the measured terrain."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } measured cells over the mission on the planner"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "${ 0 } measured cells saved as ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } min ${ 1 } s into the mission, ${ 2 } m along, ${ 3 } m clearance."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } min ${ 1 } s into the mission, ${ 2 } m along, unknown clearance."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } of ${ 1 } checked waypoints have terrain on the vehicle."
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid ""
+"${ 0 } of ${ 1 } terrain tiles stored for offline use, ${ 2 } could not be "
+"downloaded."
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "${ 0 } of ${ 1 } terrain tiles stored for offline use."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "${ 0 } stretch still too close; see the findings."
+msgid_plural "${ 0 } stretches still too close; see the findings."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } surfacing added, every ${ 1 } min."
+msgid_plural "${ 0 } surfacings added, every ${ 1 } min."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } terrain blocks sent, last asked ${ 1 } ago."
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } terrain-following waypoints set above sea level"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid ""
+"${ 0 } terrain-following waypoints were sent as planned, as the terrain "
+"under them is unknown."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#, javascript-format
+msgid "${ 0 } tiles, ${ 1 } MB"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } to ${ 1 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "${ 0 } to ${ 1 } m deep"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "${ 0 } to review"
+msgid_plural "${ 0 } to review"
+msgstr[0] ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } trusted cells"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } turn added between ${ 1 } and ${ 2 } m."
+msgid_plural "${ 0 } turns added between ${ 1 } and ${ 2 } m."
+msgstr[0] ""
 
 #: src/stores/widgetManager.ts
 #, javascript-format
 msgid "${ 0 } view"
 msgstr "Visualização ${ 0 }"
 
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "${ 0 } waypoint"
+msgid_plural "${ 0 } waypoints"
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } waypoint lowered to ${ 1 } m over the ground."
+msgid_plural "${ 0 } waypoints lowered to ${ 1 } m over the ground."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 } waypoint moved inside the safe depths."
+msgid_plural "${ 0 } waypoints moved inside the safe depths."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "${ 0 } waypoint set ${ 1 } m over the ground, held on upload."
+msgid_plural "${ 0 } waypoints set ${ 1 } m over the ground, held on upload."
+msgstr[0] ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "${ 0 } waypoints added to hold the height over the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "${ 0 }${ 1 }${ 2 } The sources are picked in Settings > Mission > Terrain."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "${ 0 }% grade from ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"${ 0 }% of the mission has a clear link. Worst from ${ 1 }, at ${ 2 }% of "
+"the space the signal needs."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "0 means a clear sky."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass ${ 1 } into the terrain on the "
+"straight line home."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"A return home started from ${ 0 } would pass only ${ 1 } over the terrain "
+"on the straight line home."
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "About"
 msgstr "Sobre"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Above the seabed by at least"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Add at least one waypoint to see the terrain under the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Add mission home"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Add observer"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Add waypoints to the mission to reshape it from here."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+#, javascript-format
+msgid "Added on upload, ${ 0 } m above sea level"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Adds waypoints along each leg that go alternately deep and shallow, a "
+"saw-tooth that samples the water from\n"
+"near the surface to near the seabed. Deep turns stop the minimum clearance "
+"of the terrain settings above the\n"
+"seabed. Survey lines are left as they are."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Aim regions of interest at the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Aircraft"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Alerts settings"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+#, javascript-format
+msgid "Also save the measured terrain of this mission (${ 0 } cells)"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Always keep a safe height"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Always keep a safe height information"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "An observer sees the vehicle here."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "And ${ 0 } more, listed in the terrain panel."
+msgid_plural "And ${ 0 } more, listed in the terrain panel."
+msgstr[0] ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Answer terrain requests"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Answer the vehicle's terrain requests"
 msgstr ""
 
 #: src/views/ConfigurationUIView.vue
 msgid "Applies after Cockpit reloads"
 msgstr "Aplicado quando o Cockpit recarregar"
 
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Apply"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Applying"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"ArduPilot copters and planes can fly at a height above the ground: "
+"waypoints set \"Relative to terrain\", returning home over hills, and "
+"terrain following.\n"
+"For that the vehicle needs its own map of ground heights, kept on its SD "
+"card. When it has none for an area, it asks the ground station for it."
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Armed menu warning disabled. You can re-enable it in the alerts settings."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"Asks the vehicle which ground height it holds under up to ${ 0 } of the "
+"mission's waypoints, one at a time, and compares it with\n"
+"Cockpit's terrain model. It reports how many have terrain on the vehicle "
+"and the median difference between the two. A few meters is normal between "
+"models;\n"
+"a large difference usually means the vehicle's terrain is old or uses "
+"another height reference, and its terrain-relative heights are off by that "
+"much."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"At each upload, waypoints set \"Relative to terrain\" are sent as heights "
+"above sea level, with waypoints added wherever the ground rises or falls, "
+"so the\n"
+"vehicle follows the terrain on the mission with no terrain of its own. The "
+"straight lines between them pass at most the tolerance above the height "
+"asked\n"
+"over the ground, never lower. The planned mission keeps the heights over "
+"the ground, while the chart draws the uploaded path dashed and the map "
+"marks the\n"
+"waypoints the upload adds."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "AusBathyTopo"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "AusBathyTopo (Australia)"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "Auto"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Auto (${ 0 })"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "Automatic, by area"
 msgstr ""
 
 #: src/components/MainMenu.vue
 msgid "Back"
 msgstr ""
 
+#: src/libs/terrain/sources.ts
+msgid ""
+"Bare ground, about 30 m per sample in most of the world, with coarse ocean "
+"depths of its own."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Base station"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source information"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Bathymetry source:"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Be careful"
 msgstr "Cuidado"
 
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Best start ${ 0 }: ${ 1 }"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Boats, rovers and submarines do not use this terrain; with them the switch "
+"has no effect."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Bottom"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Builds a map of the real ground or seabed from the vehicle's own downward "
+"sonar or rangefinder, kept on this computer across sessions. The switch "
+"beside\n"
+"this heading turns it off completely: nothing is recorded, the model is "
+"used everywhere and these controls are hidden, and what was recorded is "
+"kept."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "CHS NONNA"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "CHS NONNA (Canada)"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "CSV, every cell"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"Canadian Hydrographic Service surveys of Canadian waters, 10 m per sample "
+"where surveyed and 100 m elsewhere. Depths are below chart datum, so they "
+"read shallower than at mean sea level."
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Cancelled: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Cap the height above the ground at"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Centered the map, but could not draw that dataset:"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change in the mission settings"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Change the draft and minimum under the keel in the mission settings"
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Charted feature"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Check failed"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Check link"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Check the terrain before upload"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Check waypoints on the vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Checking"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Checking the link"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Checking the terrain..."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Checking the vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Checks the mission against the terrain before each upload, and asks to "
+"confirm when anything is found."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"Checks the straight line from the base antenna (${ 0 } m up)\n"
+"to the vehicle at ${ 1 } MHz, with the earth's curve and the space the\n"
+"signal needs around that line. Buildings and trees are only seen by the "
+"surface model."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
+#: src/components/terrain/TerrainSightPanel.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Clear"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Clear the measured terrain?"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Clear the stored terrain?"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Clearance"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Clearance above the terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Clearances the mission is checked against, before upload when that check is "
+"on."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Clears the terrain by ${ 0 } from ${ 1 }, within the terrain model's ${ 2 } "
+"m error."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Click the map"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Click the map where the observer stands. Escape cancels."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Climb over home to"
+msgstr ""
+
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Close the ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Cloud base above the observers"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Cloud base:"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Cockpit never sends terrain on its own. The vehicle asks for the area "
+"around where it is and, once a mission is uploaded, around each waypoint "
+"and rally\n"
+"point. Terrain has to be enabled on the vehicle (its TERRAIN_ENABLE "
+"parameter) for it to ask at all."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Cockpit now answers the vehicle's terrain requests."
+msgstr ""
+
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Collapse the planning panel"
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Come back later, or proceed carefully with one of the following options:"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Come up for a position fix every"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Compare with the model"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Compare with the model:"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Comparing"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Connect a vehicle to check its terrain."
 msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
@@ -54,9 +728,213 @@ msgstr ""
 msgid "Continue anyway"
 msgstr "Continuar mesmo assim"
 
+#: src/libs/terrain/sources.ts
+msgid "Copernicus"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Copernicus surface model"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Could not apply \"${ 0 }\": ${ 1 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Could not check the radio link: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Could not check the vehicle terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Could not clear the stored measured terrain: ${ 0 }"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Could not clear the stored terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Could not compare with the model: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Could not compute the line of sight: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not delete that dataset:"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Could not download the water map. Try again in a minute."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Could not keep a safe height: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not keep the measured terrain:"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not look up the tide stations: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Could not raise the waypoints: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useShallowsNotes.ts
+#, javascript-format
+msgid "Could not read OpenStreetMap: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not read that file:"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid ""
+"Could not read the terrain to prepare the upload, so the mission is sent as "
+"planned: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Could not read the terrain: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Could not read the tide: ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Could not rebuild the terrain model: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not save that dataset:"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not save the measured terrain:"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not show that dataset on the map:"
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "Could not store the terrain for offline use: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Could not use that dataset as measured terrain:"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Create mission path"
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Crosses land from ${ 0 }."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Cruise at a depth of"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Custom Terrarium tiles"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Custom tiles"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Deepest"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "Delete"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "Delete \"${ 0 }\"?"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Delete dataset"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Depth"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Depth model read wherever the land source reads sea level or below. "
+"Automatic picks the most detailed one published for each point."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Difference between high and low tide. While no tide predictions are loaded, "
+"the profile outlines this band around the water level."
+msgstr ""
+
 #: src/components/ArmSafetyDialog.vue
 msgid "Disarm vehicle and continue"
 msgstr "Desarmar o veículo e continuar"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Distance between turns"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloaded the water map along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Downloading"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Draft and minimum under the keel"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "EMODnet"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "EMODnet Bathymetry (Europe)"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "ETA"
+msgstr ""
 
 #: src/components/MainMenu.vue
 msgid "Edit"
@@ -70,12 +948,50 @@ msgstr "Editar interface"
 msgid "Edit Mode"
 msgstr ""
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Elevation model used for every terrain check, the profile and the upload."
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Energy"
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Enter Fullscreen"
 msgstr "Entrar em tela cheia"
 
 #: src/components/mini-widgets/EnterEditMode.vue
 msgid "Enter edit mode"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Every ground and bottom measurement recorded on this computer is removed. "
+"Export it first to keep a copy."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "Every waypoint already keeps a safe height."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint moved down ${ 0 } m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint moved up ${ 0 } m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint set to ${ 0 } m above home."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Every waypoint set to ${ 0 } m deep."
 msgstr ""
 
 #: src/components/MainMenu.vue
@@ -90,33 +1006,1496 @@ msgstr "Sair da tela cheia"
 msgid "Exit edit mode"
 msgstr "Sair do modo de edição"
 
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "Expand the planning panel"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Expected tide range"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Export"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Export as GeoJSON"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Exporting"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Eyes"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Eyes ${ 0 } m, moves with the base station"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Findings"
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Flight"
 msgstr "Voo"
 
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Flying without Cockpit:"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Follow the terrain contour over"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+#. eslint-disable-next-line max-len, vue/max-len
+#, javascript-format
+msgid ""
+"From ${ 0 } the waypoints are set \"Relative to terrain\", so the vehicle "
+"needs terrain data of its own to hold their height over the ground. Turn on "
+"\"Answer the vehicle's terrain requests\" or \"Hold terrain height on "
+"upload\" in the Vehicle tab."
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Fullscreen"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GEBCO"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GEBCO 2024"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GMRT"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "GMRT multibeam synthesis"
+msgstr ""
+
+#: src/components/mission-planning/MissionPlanningSidebar.vue
+msgid "GeoFence"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "GeoJSON, this mission's area"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Geoscience Australia's model of the waters around Australia and its "
+"territories, 250 m per sample."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Ghost run information"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Ghost run position along the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Glide over the seabed at"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Global ocean depths from grids 1 to 2 km apart at sea, so coastal waters "
+"often read as land or sea level."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Goes ${ 0 } into the terrain from ${ 1 }."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Goes into the terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Grade"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Ground"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Ground with trees and buildings, 30 m per sample worldwide; the sea reads "
+"as 0 m."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height above home"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Height of the water above the terrain model sea level, for lakes, rivers or "
+"the tide at mission time. Loaded tide predictions are added to it."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Height over the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Height over the seabed"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Height the waypoints set relative to home are moved to, measured from the "
+"ground under each one. Waypoints set above sea level keep theirs."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Heights on the chart come from ${ 0 }, and depths from ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Hide from the map"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Hide the comparison"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "High"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "High and low tide ±${ 0 } m"
+msgstr ""
+
+#: src/libs/hazards/sources.ts
+msgid "High ground"
+msgstr ""
+
+#: src/components/hazards/HazardAdvisoryPanel.vue
+msgid "High ground above (m)"
+msgstr ""
+
+#: src/components/hazards/HazardAdvisoryPanel.vue
+msgid "High ground setting"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Highest over the ground"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Hold terrain height"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Hold terrain height on upload"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Hold terrain height on upload information"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Hold terrain height on upload:"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Holding ${ 0 } m over the ground, with ${ 1 } waypoint added."
+msgid_plural "Holding ${ 0 } m over the ground, with ${ 1 } waypoints added."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Holding ${ 0 } m over the seabed, with ${ 1 } waypoint added."
+msgid_plural "Holding ${ 0 } m over the seabed, with ${ 1 } waypoints added."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Holds one height over the ground for the whole mission. Every waypoint is "
+"set to that height over the\n"
+"ground under it, and waypoints are added in between wherever the ground "
+"rises or falls enough for a straight line\n"
+"to drift from it. Heights end up fixed above sea level, so the vehicle "
+"needs no terrain data of its own."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Holds one height over the seabed for the whole mission, never coming above "
+"the surface. Waypoints are added\n"
+"wherever the seabed rises or falls enough for a straight line to drift from "
+"it, so the vehicle needs no\n"
+"altimeter reading to follow it."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Horizontal distance between a deep turn and the next shallow one."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"How deep the hull reaches below the waterline. Water under the keel is "
+"counted from there, and sonar depths are taken from that depth."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"How far above that height the line between two waypoints may pass. A "
+"smaller value adds more waypoints,\n"
+"so the vehicle follows the ground more closely."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"How far above that height the line between two waypoints may pass. A "
+"smaller value adds more waypoints,\n"
+"so the vehicle follows the seabed more closely."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"How much higher than the height asked above the terrain the path between "
+"waypoints may pass, never lower. A smaller tolerance adds more waypoints at "
+"upload."
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Import"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Importing"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "In sight"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"It works with \"Answer the vehicle's terrain requests\": that still covers "
+"what the upload cannot, such as returning home over the terrain and "
+"waypoints\n"
+"whose ground is unknown at upload."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Its terrain reads ${ 0 } m against Cockpit's."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Keep inside safe depths"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Keep the terrain of the visible map for offline use"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Keep the terrain of the visible map for offline use. What the mission "
+"crosses is already kept as it is checked; this adds the area around it, so\n"
+"waypoints can still be moved with no internet connection."
+msgstr ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+#, javascript-format
+msgid ""
+"Keeping each waypoint at its planned height, raised where needed to stay ${ "
+"0 } m over the terrain. ${ 1 }"
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Keeps ${ 0 } under the keel from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: lowered ${ 0 }."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: raised ${ 0 } and lowered ${ 1 }."
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Kept a safe height: raised ${ 0 }."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source information"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Land source:"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Land: ${ 0 } - Bathymetry: ${ 1 }"
 msgstr ""
 
 #: src/views/ConfigurationUIView.vue
 msgid "Language"
 msgstr "Idioma"
 
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Least water a boat keeps between its hull and the seabed. Less is listed in "
+"Findings."
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Length"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Level flight at"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Limitations:"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Link and sight"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lists the stretches where the ground along the path rises or falls more "
+"steeply than this grade."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lists the stretches with less water under the keel than this, after the "
+"vessel's draft. The possible shallow\n"
+"water warnings in Findings do not follow this value: they flag water under "
+"the minimum in the terrain settings.\n"
+"Both read the same terrain profile, so a stretch can show up in both."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Load coastline"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Loading data"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Long enough for the GPS to get a fix; a cold start can take a minute or "
+"more."
+msgstr ""
+
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "Looking for charted shoals in OpenStreetMap..."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Looking for the tide stations near the mission..."
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "Low"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Lowers the waypoints that sit higher over the ground than this, such as the "
+"120 m many countries allow.\n"
+"Between waypoints, the path can still pass higher over valleys; those "
+"stretches are listed below."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Lowest height aircraft keep over the ground or the water, and submarines "
+"over the seabed. Passing lower is listed in Findings."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Makes the vehicle wait at each waypoint before going on, for a sample, a "
+"photo or a look around. Survey\n"
+"lines are left as they are. Set 0 to stop pausing."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Map colors:"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+#, javascript-format
+msgid "Max distance from ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Max. zoom"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Measured"
+msgstr ""
+
+#: src/libs/terrain/measured-terrain.ts
+#, javascript-format
+msgid "Measured depth ${ 0 } m, from ${ 1 } readings"
+msgstr ""
+
+#: src/libs/terrain/measured-terrain.ts
+#, javascript-format
+msgid "Measured ground ${ 0 } m above sea level, from ${ 1 } readings"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"Measured ground sits ${ 0 } m above the model, by the median of ${ 1 } "
+"cells."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"Measured ground sits ${ 0 } m below the model, by the median of ${ 1 } "
+"cells."
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Measured terrain cleared."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Measured terrain information"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Measured terrain is kept for this mission"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Measured terrain saved as ${ 0 }."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Minimums and water"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Minimums:"
+msgstr ""
+
 #: src/components/MainMenu.vue
+#: src/components/mission-planning/MissionPlanningSidebar.vue
 msgid "Mission"
 msgstr "Missão"
+
+#: src/components/MissionLibraryModal.vue
+msgid "Mission Library"
+msgstr ""
 
 #: src/components/MainMenu.vue
 msgid "Mission Planning"
 msgstr "Planejamento de missão"
 
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission area (≈)"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid "Mission comes too close to the terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Mission date"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission estimates"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Mission estimates settings"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Mission exported."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Mission heights over the ground are sent as heights above sea level, so the "
+"mission needs no terrain on the vehicle; its own terrain covers the rest."
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid "Mission needs terrain on the vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Mission start on ${ 0 }"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Missions"
+msgstr ""
+
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Move mission home here"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Moves every waypoint up or down by the same amount, keeping the shape of "
+"the mission and the altitude\n"
+"reference of each waypoint."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Moves the waypoints that go deeper than the limit, or closer to the seabed "
+"than the clearance, back inside\n"
+"both. Where the seabed is too shallow for both, the clearance wins."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Must climb to be seen"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "NOAA"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"NOAA coastal elevation models of the United States and its territories, "
+"down to a few meters per sample, with the 450 m ETOPO 2022 grid elsewhere."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "NOAA coastal models (United States)"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Nearest to the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "Nearest: ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Needs terrain on the vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Never seen"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "No deeper than"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#, javascript-format
+msgid "No measurement falls within ${ 0 } m of the mission on the planner"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid ""
+"No measurement the vehicle recorded falls within ${ 0 } m of this mission. "
+"Record along its path, or load a dataset from a file."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "No observer can see the vehicle"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "No observer can see the vehicle here, at any height."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "No terrain saved"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"No tide station within ${ 0 } km of the mission. The water level is the "
+"offset set in the terrain settings."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"No waypoint is set \"Relative to terrain\", so the upload sends the mission "
+"as planned."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid "None"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "None yet"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Not checked"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Nothing along the mission comes closer to the terrain than the minimums in "
+"the terrain settings."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Nothing in the mission needed to change."
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Nothing is planned on the map yet"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "Nothing measured within ${ 0 } m of the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Observer ${ 0 }"
+msgstr ""
+
+#: src/composables/map/useTerrainMapOverlay.ts
+#, javascript-format
+msgid "Observer ${ 0 }, eyes ${ 1 } m above the ground"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Observers:"
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Obstruction"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Only the depths the terrain source holds itself, such as those of your "
+"custom tiles. The Copernicus model holds none, so the depth under water is "
+"unknown."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Only when asked:"
+msgstr ""
+
+#: src/components/DrawerPanel.vue
+#, javascript-format
+msgid "Open the ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Open the mission settings"
+msgstr ""
+
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "OpenStreetMap charts no shoal, reef, rock or wreck here."
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"Or turn on \"Answer the vehicle's terrain requests\" in the Vehicle tab of "
+"the terrain panel, so the vehicle loads the terrain from Cockpit. It only "
+"asks with its terrain enabled (the TERRAIN_ENABLE parameter), and has to "
+"finish loading before the upload."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Over water"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Part of the mission is outside the loaded coastline map, so shallow water "
+"cannot be told from land there."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Passes ${ 0 } over the terrain from ${ 1 }, under the ${ 2 } m minimum."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Path sent on upload, with the waypoints it adds"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Pause at every waypoint for"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Pause the ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Place home on the map before reshaping the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Place the base station on the map to check the radio link."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Play the ghost run"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "Point at the chart to read a start time"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Point out slopes steeper than"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Point out water shallower than"
+msgstr ""
+
+#: src/components/terrain/TerrainShallowsMarker.vue
+msgid "Possible shallow water"
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Possible shallow water from ${ 0 }. Check a nautical chart."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Possible shallow water from ${ 0 }: the map shows water where the terrain "
+"model reads land. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Possible shallow water, depth unknown"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Precision"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }, ${ 1 } km from the mission. Wind and pressure can "
+"move the real water by tens of centimeters."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid ""
+"Predicted tide at ${ 0 }. Wind and pressure can move the real water by tens "
+"of centimeters."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Prefer measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Prefer measurements over the model where they exist"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Prefer measurements:"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"Previews the mission: play it at ${ 0 } times the planned cruise speed, or "
+"drag the slider. A marker follows on the profile and on the map, with\n"
+"the time into the mission, the distance along it and the clearance under "
+"the vehicle at that point. Nothing is sent to the vehicle."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Profile the water column between"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Puts every waypoint, surveys included, at the same depth below the surface "
+"at home. Where the seabed rises\n"
+"above that depth, check the findings afterwards."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Puts every waypoint, surveys included, at the same height above home, so "
+"the vehicle flies level. Ground\n"
+"that rises above home comes closer, so check the findings afterwards."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Quick actions"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio frequency"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio link check information"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Radio link from the base station"
+msgstr ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+#. eslint-disable-next-line vue/max-len
+#, javascript-format
+msgid ""
+"Raise the waypoints so the whole mission keeps ${ 0 } m over the terrain: "
+"your ${ 1 } m safety margin plus the terrain model's ${ 2 } m error."
+msgstr ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Raise to a safe height"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+#, javascript-format
+msgid "Raised ${ 0 } waypoint by up to ${ 1 } m."
+msgid_plural "Raised ${ 0 } waypoints by up to ${ 1 } m."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Raising the waypoints"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid ""
+"Raising the waypoints cannot clear what is left, which is all in the climb "
+"out of home."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Reaches the coastline from ${ 0 }, onto land."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Reading the tide..."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Reading..."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Rebuild the terrain model"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Rebuilt the terrain model."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Recalculating heights..."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Record measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid ""
+"Record the ground or bottom under the vehicle, then keep the measurements "
+"of a mission here, or import a GeoJSON file measured elsewhere."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Record the ground or seabed under the vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Record:"
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Reef"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Regions of interest left at zero altitude are sent at the ground height "
+"under them, so the camera points at the ground there."
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Reload now"
 msgstr "Recarregar agora"
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "Remove observer ${ 0 }"
+msgstr ""
+
+#: src/components/terrain/TerrainSafeAltitude.vue
+msgid "Restore"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Retry"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Reverses the order of the waypoints, so the vehicle runs the same path from "
+"its far end."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Rises above the water surface from ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Rock"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Run the mission backwards"
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "Runs aground from ${ 0 }, with the bottom ${ 1 } above the keel."
+msgstr ""
+
+#: src/libs/hazards/sources.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"Sampled from the terrain model chosen in the mission settings, roughly 30 m "
+"between samples, so it can miss masts and, on the bare-ground models, trees "
+"and buildings."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Save measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "Select waypoint ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"Sends the vehicle ground heights from Cockpit's terrain model whenever it "
+"asks, and the vehicle follows the terrain itself, along the line the chart "
+"draws. It only asks with terrain enabled (its TERRAIN_ENABLE parameter), "
+"and keeps what it gets for flying without Cockpit."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Sends waypoints set above the terrain as heights above sea level, adding "
+"waypoints where the ground changes, so vehicles without terrain data still "
+"follow it."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Sends waypoints set above the terrain as heights above sea level, so "
+"vehicles without terrain data still follow the ground."
+msgstr ""
+
+#: src/components/mission-planning/ContextMenu.vue
+msgid "Set mission home"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Set relative to terrain"
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Settings"
 msgstr "Configurações"
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Shallowest"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Shift every height by"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"Ship multibeam surveys from around the world, about 100 m per sample where "
+"surveyed, over GEBCO everywhere else."
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Shoal"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Show comms coverage on path"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Show measured cells on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+#: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Show on the map"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Show on the map and center it here"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Show on the map:"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Show where the vehicle stays in sight"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+#, javascript-format
+msgid "Showing \"${ 0 }\" on the map."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"Shows where people on the ground can still see the vehicle, with the "
+"terrain in the way."
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }, tide ${ 1 }: ${ 2 }"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Start ${ 0 }: ${ 1 }"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Starts the mission with a waypoint straight above home, so the vehicle "
+"climbs before heading out over\n"
+"rising ground or obstacles. Applying it again changes the height of that "
+"same waypoint."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+#. eslint-disable-next-line max-len, vue/max-len
+#, javascript-format
+msgid ""
+"Still follows the terrain, with no terrain data needed on the vehicle: the "
+"upload adds waypoints wherever the ground rises or falls, so the straight "
+"lines between them pass at most ${ 0 } m above the height over the ground, "
+"and sends every height above sea level. The planned mission keeps its "
+"heights over the ground; the chart and the map preview the waypoints the "
+"upload adds."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Stop storing terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Stored terrain"
+msgstr ""
+
+#: src/stores/terrain.ts
+msgid "Stored terrain cleared."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Stored terrain information"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "Storing terrain ${ 0 } / ${ 1 }"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Submersible"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Survey"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Terrain and mission profile"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Terrain following tolerance"
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid ""
+"Terrain height is now held on upload. The chart and the map show the "
+"waypoints it adds."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Terrain kept for offline use is removed too, and has to be downloaded again "
+"before flying without a connection."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Terrain on the vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Terrain on the vehicle information"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Terrain profile of the mission"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "Terrain profile of the mission, smallest ${ 0 } ${ 1 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"Terrain tiles kept on this computer. Keep an area for offline use from the "
+"terrain panel in mission planning."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Terrarium-encoded PNG tiles, with {z}, {x} and {y} in the address."
+msgstr ""
+
+#: src/stores/terrain.ts
+#, javascript-format
+msgid "That area needs ${ 0 } terrain tiles; zoom in to under ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid "The ${ 0 } outlines the model."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% climb from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"The ${ 0 }% descent from ${ 1 } is steeper than the vehicle can follow at "
+"cruise speed."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The ${ 0 }% grade from ${ 1 } slows the vehicle to ${ 2 } m/s."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid ""
+"The Copernicus surface model includes trees and buildings and needs Cockpit "
+"Standalone; Cockpit Lite uses Tilezen instead."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"The European seas model, about 115 m per sample, including the UK "
+"Hydrographic Office surveys. Depths are below the lowest astronomical tide, "
+"so they read shallower than at mean sea level."
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "The address needs {z}, {x} and {y}, and to start with http:// or https://."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "The blue strip along the bottom marks water, from OpenStreetMap."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid "The bottom may be above the keel here. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid "The bottom may come close to the keel here. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid "The bottom may come close to the surface here. Check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#. Kinds read as possibly shallow water on the chart, with the land the model reads there drawn under the low tide.
+msgid ""
+"The coastline map shows water here, but the bottom may come close to the "
+"surface. Check a nautical chart."
+msgstr ""
+
+#: src/stores/terrain.ts
+msgid "The custom tile address needs http(s) and the {z}, {x} and {y} placeholders."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid ""
+"The dataset is removed from this computer and from the vehicle. "
+"Measurements already added to the measured terrain stay."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The depth is unknown along part of the path from ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+msgid ""
+"The global ocean model, about 450 m per sample. Coastal waters are often "
+"interpolated."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"The grid is coarse: cliffs, buildings and trees narrower than its spacing "
+"are missed."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"The ground under ${ 0 } waypoint is unknown, so it still needs terrain on "
+"the vehicle."
+msgid_plural ""
+"The ground under ${ 0 } waypoints is unknown, so they still need terrain on "
+"the vehicle."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The map shows where the vehicle can be seen."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "The mission now runs backwards."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The mission starts with a climb to ${ 0 } m over home."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "The model has no heights where the vehicle measured."
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#. eslint-disable-next-line max-len, vue/max-len
+msgid ""
+"The most detailed source for each area: CHS NONNA in Canada, NOAA in the "
+"United States, EMODnet in Europe and AusBathyTopo around Australia, then "
+"GMRT, GEBCO and Tilezen anywhere else."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The radio link stays clear of the terrain along the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid ""
+"The result tells how much of the mission keeps a clear link and where the "
+"terrain comes closest. Stretches\n"
+"where the terrain takes more than ${ 0 }% of that space are listed in "
+"Findings. The antenna\n"
+"height and the vehicle mast come from the base station settings."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The terrain between the base and the vehicle is unknown."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The terrain blocks the radio link"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid ""
+"The terrain check did not finish, so the mission was not checked against "
+"the terrain."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The terrain crowds the radio link"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "The terrain gets in the way of the radio link in ${ 0 } places."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "The terrain is unknown along part of the path from ${ 0 }."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The terrain under ${ 0 } waypoint could not be read, so it kept its height."
+msgid_plural ""
+"The terrain under ${ 0 } waypoints could not be read, so they kept their "
+"height."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "The terrain under the mission is checked once the mission has a home."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "The terrain under the mission is checked once the mission has waypoints."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+#, javascript-format
+msgid "The tide service answered HTTP ${ 0 }."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no predictions."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no station list."
+msgstr ""
+
+#: src/libs/terrain/water-level.ts
+msgid "The tide service sent no usable predictions."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"The upload adds ${ 0 } waypoint to hold the height over the ground, dashed "
+"on the chart."
+msgid_plural ""
+"The upload adds ${ 0 } waypoints to hold the height over the ground, dashed "
+"on the chart."
+msgstr[0] ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "The vehicle flies too low for any observer to see it"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid ""
+"The vehicle has ${ 0 } terrain blocks, with ${ 1 } terrain blocks still to "
+"load."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+#, javascript-format
+msgid "The vehicle has ${ 0 } terrain blocks, with all terrain it needs loaded."
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#. eslint-disable-next-line max-len, vue/max-len
+#, javascript-format
+msgid ""
+"The vehicle has no terrain, or did not answer, under ${ 0 } of the ${ 1 } "
+"checked waypoints set \"Relative to terrain\", so it can only hold their "
+"height over the ground with a rangefinder."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "The vehicle has not asked for terrain this session."
+msgstr ""
 
 #: src/components/ArmSafetyDialog.vue
 msgid ""
@@ -124,6 +2503,477 @@ msgid ""
 "and tools that can cause unsafe situations."
 msgstr ""
 
+#: src/components/terrain/TerrainSightPanel.vue
+#, javascript-format
+msgid "The vehicle leaves every observer's sight in ${ 0 } places."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The vehicle no longer waits at ${ 0 } waypoint."
+msgid_plural "The vehicle no longer waits at ${ 0 } waypoints."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "The vehicle stays in sight along the whole mission."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "The vehicle uses only the terrain on its own storage."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "The vehicle waits ${ 0 } s at ${ 1 } waypoint."
+msgid_plural "The vehicle waits ${ 0 } s at ${ 1 } waypoints."
+msgstr[0] ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"The vehicle's terrain is only as good as the model it came from. \"Check "
+"waypoints on the vehicle\" compares the two."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"The water map could not be downloaded for part of the mission, so water is "
+"not marked on the chart there."
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Tidal flat"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Tide"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide data credit"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "Tide over the day: ${ 0 }. ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Tide station"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Tile address information"
+msgstr ""
+
+#: src/libs/terrain/bathymetry.ts
+#: src/libs/terrain/sources.ts
+msgid "Tilezen"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid "Tilezen terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Time at the surface"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Time between surfacings"
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid ""
+"Tint the mission path by expected radio or mobile-data coverage at each "
+"segment."
+msgstr ""
+
+#: src/composables/terrain/useTerrainDock.ts
+msgid "Too low here for any observer to see the vehicle."
+msgstr ""
+
 #: src/components/MainMenu.vue
 msgid "Tools"
 msgstr "Ferramentas"
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "Total survey coverage"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid ""
+"Turn on \"Hold terrain height on upload\" to send their heights above sea "
+"level, which needs no terrain on the vehicle."
+msgstr ""
+
+#: src/components/RotaryEncoderDial.vue
+msgid "Type a value"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Unavailable"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Under keel"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"Underwater the vehicle has no GPS, so the position it navigates by slowly "
+"drifts. This adds stops at the\n"
+"surface along the path, where it can take a new fix. The distance between "
+"them comes from the time and the\n"
+"mission's cruise speed."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#, javascript-format
+msgid "Up to ${ 0 } m over the ground from ${ 1 }."
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Up, negative for down"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+#, javascript-format
+msgid "Uploading with ${ 0 }."
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Use as measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Use measured terrain"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#: src/components/terrain/TerrainProfileChart.vue
+msgid "Vehicle"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Vehicle waypoint check information"
+msgstr ""
+
+#: src/components/terrain/TerrainLibrarySection.vue
+msgid "Vessel"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Vessel draft"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual line of sight"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual line of sight information"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual range"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Visual range:"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Wait"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid "Waiting for the terrain check of the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "Water level now"
+msgstr ""
+
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Water level offset"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+#: src/components/terrain/TerrainSettingsPanel.vue
+msgid "Water under the keel"
+msgstr ""
+
+#: src/components/terrain/TerrainProfileChart.vue
+#, javascript-format
+msgid "Waypoint ${ 0 } height, drag up or down or use the arrow keys"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "Waypoint altitudes restored."
+msgstr ""
+
+#: src/composables/mission-planning/useNextWaypointAltitude.ts
+#, javascript-format
+msgid "Waypoint raised to ${ 0 } m, to keep it clear of the terrain."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"Waypoints more than about 3 km apart can leave areas in between the vehicle "
+"has not asked for yet. It asks for them in flight, which needs the link."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "What Cockpit sends:"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "What it is for:"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Where the vehicle measured the ground or seabed with enough readings, those "
+"measurements are used instead"
+msgstr ""
+
+#: src/components/terrain/TerrainQuickActionsPanel.vue
+msgid ""
+"While on, every change to the mission (moving, adding or removing "
+"waypoints, reshaping or rotating a survey)\n"
+"re-checks it against the terrain. Each waypoint goes back to the height you "
+"planned it at and is raised only as\n"
+"far as needed for the path and the returns home to keep the safety margin "
+"plus the terrain model error, so\n"
+"waypoints the terrain no longer needs high come back down. Lasts until you "
+"leave mission planning."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid ""
+"Without a coastline map, the terrain data cannot tell whether the path from "
+"${ 0 } is navigable. Load the coastline or check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid ""
+"Without a coastline map, the terrain data cannot tell whether this region "
+"is navigable. Load the coastline, or check a nautical chart."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "Without an SD card, the vehicle keeps the terrain only until it restarts."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "Working out the sight lines"
+msgstr ""
+
+#: src/libs/terrain/shallows-osm.ts
+msgid "Wreck"
+msgstr ""
+
+#: src/components/MissionLibraryModal.vue
+msgid "Write the mission on the planner to a file"
+msgstr ""
+
+#: src/libs/terrain/sources.ts
+msgid ""
+"Your own Terrarium-encoded elevation tiles, such as a survey of the "
+"operating area."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"adds the measurements from a GeoJSON file to the measured terrain and keeps "
+"it in the mission library;"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+#, javascript-format
+msgid "aground by ${ 0 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"colored dots on those cells, from the lowest to the highest, while the "
+"terrain panel is open."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "dashed line"
+msgstr ""
+
+#: src/components/terrain/TerrainTidePanel.vue
+msgid "depth unknown"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"each reading becomes a ground height under the vehicle, corrected for its "
+"tilt and averaged into cells of about 11 m. It needs a sensor pointing "
+"down.\n"
+"Readings taken while tilted more than about 20°, flagged as invalid by the "
+"sensor, or outside its range are skipped. On boats, the vessel draft from "
+"the\n"
+"terrain settings is taken as the sonar depth. Rovers are not recorded."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "farthest distance an observer can still make out the vehicle."
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"height above the observers where the vehicle disappears into clouds. 0 "
+"means a clear sky."
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "high tide of ${ 0 } at ${ 1 }"
+msgstr ""
+
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "home to waypoint ${ 0 }"
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "it holds no measured points."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "it is not a GeoJSON file."
+msgstr ""
+
+#: src/composables/terrain/useTerrainLibrary.ts
+msgid "its file is not on this computer yet. Connect to the vehicle and try again."
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+#, javascript-format
+msgid "low tide of ${ 0 } at ${ 1 }"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"median difference between the measured cells and the model, to see how far "
+"off the model is in this area, with the model's ground outlined in black "
+"along\n"
+"the whole profile."
+msgstr ""
+
+#: src/components/mission-planning/MissionEstimates.vue
+msgid "mission estimates panel"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "no downward rangefinder or sonar readings"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "no turning point"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "receiving readings"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid "removes every measurement from this computer."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"saves the cells over this mission as GeoJSON, which opens in mapping "
+"software and can be loaded back here, or every cell as a spreadsheet;"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "solid black line"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "terrain panel"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "the mission changed while it was being checked, try again"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid ""
+"the mission line is green where an observer sees the vehicle at its planned "
+"height, orange where it flies\n"
+"too low to be seen and red where no observer can see it at any height. "
+"Around it, the map is clear where the\n"
+"vehicle is seen even on the surface, warming to orange as it must climb to "
+"be seen and red where nobody sees\n"
+"it. Pointing at a color marks those stretches on the chart. For aircraft, "
+"stretches out of everyone's sight\n"
+"are listed in Findings."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "the most detailed bathymetry published for each point"
+msgstr ""
+
+#: src/composables/terrain/useSafeAltitude.ts
+msgid "the terrain check is still running"
+msgstr ""
+
+#: src/composables/mission-planning/useMissionPreflightChecks.ts
+msgid "the terrain did not load in time"
+msgstr ""
+
+#: src/components/terrain/TerrainSightPanel.vue
+msgid "the terrain under the base station or an observer could not be read"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"the vehicle stores what it receives and keeps using it when the link drops "
+"or Cockpit is closed. Before take-off, upload the mission and wait until "
+"the\n"
+"status below says all the terrain it needs is loaded."
+msgstr ""
+
+#: src/libs/terrain/mission-terrain.ts
+#, javascript-format
+msgid "under ${ 0 } m"
+msgstr ""
+
+#: src/components/terrain/TerrainTideChart.vue
+msgid "unknown"
+msgstr ""
+
+#: src/libs/terrain/mission-profile.ts
+#, javascript-format
+msgid "waypoint ${ 0 } to ${ 1 }"
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"wherever a cell has at least 3 readings, its height replaces the model in "
+"the profile, the findings, the safe height and the terrain sent to the "
+"vehicle.\n"
+"A dashed brown line on the profile then shows where the model would have "
+"put the ground."
+msgstr ""
+
+#: src/components/terrain/TerrainVehiclePanel.vue
+msgid ""
+"with \"Answer the vehicle's terrain requests\" on, Cockpit answers from its "
+"own terrain model, the source picked in the terrain settings, with measured\n"
+"terrain in its place where measurements are preferred. It sends ground "
+"heights on the grid the vehicle asks for, every 100 m unless the vehicle is "
+"set\n"
+"otherwise, taking the highest ground in each spot so it errs on the safe "
+"side. Over water it sends the water surface, not the seabed."
+msgstr ""

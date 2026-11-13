@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   abortTcpPortProbes: () => ipcRenderer.invoke('abort-tcp-port-probes'),
   fetchNearbyOpenCellIdCells: (bbox: OpenCellIdBboxRequest) =>
     ipcRenderer.invoke('fetch-nearby-open-cell-id-cells', bbox),
+  getCopernicusTerrainTile: (z: number, x: number, y: number) =>
+    ipcRenderer.invoke('get-copernicus-terrain-tile', z, x, y),
   getResourceUsage: () => ipcRenderer.invoke('get-resource-usage'),
   onUpdateAvailable: (callback: (info: any) => void) =>
     ipcRenderer.on('update-available', (_event, info) => callback(info)),

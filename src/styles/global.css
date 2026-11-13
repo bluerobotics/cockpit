@@ -121,3 +121,32 @@ select:focus {
     -webkit-backdrop-filter: var(--glass-filter);
     backdrop-filter: var(--glass-filter);
 }
+
+/* The vehicle tooltip on both maps, read from the glass variables each map view sets on its root. */
+.leaflet-tooltip.vehicle-tooltip {
+    background-color: var(--glass-background) !important;
+    backdrop-filter: var(--glass-filter);
+    border: var(--glass-border) !important;
+    box-shadow: var(--glass-box-shadow);
+    color: var(--glass-color);
+    padding: 0.75rem;
+    border-radius: 8px;
+    z-index: 100;
+}
+
+.leaflet-tooltip.vehicle-tooltip::before {
+    border-right-color: var(--glass-background) !important;
+}
+
+/* Chip of the mission library cards, shared by its missions and its terrain datasets. */
+.info-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #00000066;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 10px;
+    border-radius: 999px;
+    padding: 2px 8px;
+}

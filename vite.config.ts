@@ -91,6 +91,10 @@ const baseConfig = {
   server: {
     host: '0.0.0.0',
   },
+  worker: {
+    // geotiff loads its decompressors lazily, and an iife worker cannot be split into chunks.
+    rollupOptions: { output: { inlineDynamicImports: true } },
+  },
 }
 
 // Library-specific configuration

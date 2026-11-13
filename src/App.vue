@@ -153,6 +153,7 @@ import {
 import { isElectron, sleep } from '@/libs/utils'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMissionStore } from '@/stores/mission'
+import { useTerrainStore } from '@/stores/terrain'
 import { SubMenuComponentName } from '@/types/general'
 import ConfigurationActionsView from '@/views/ConfigurationActionsView.vue'
 import ConfigurationAlertsView from '@/views/ConfigurationAlertsView.vue'
@@ -275,6 +276,9 @@ useExternalMapOverlays()
 
 // Created at boot so the vehicle's fence is re-read on every connection, before any map is mounted.
 useGeoFenceStore()
+
+// Created at boot so the vehicle's terrain requests are answered before any map is mounted.
+useTerrainStore()
 
 // Keep the main menu and the address showing the same destination.
 useMenuRouteSync()

@@ -29,6 +29,7 @@ import { generateMissionThumbnailSvg } from '@/libs/mission/library'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { eventCategoriesDefaultMapping } from '@/libs/slide-to-confirm'
 import { toPlain } from '@/libs/utils'
+import type { GeoBbox } from '@/types/general'
 import {
   AltitudeReferenceType,
   CockpitMission,
@@ -181,6 +182,8 @@ export const useMissionStore = defineStore('mission', () => {
   const mapCenterOnRequest = ref<{
     /** Coordinates the map should center on */
     coordinates: WaypointCoordinates
+    /** Area to frame around those coordinates, when the request is for a whole extent rather than a point */
+    bounds?: GeoBbox
     /** Incremented on each request so repeated centerings on the same coordinates still trigger */
     revision: number
   } | null>(null)
@@ -316,8 +319,15 @@ export const useMissionStore = defineStore('mission', () => {
      *
      */
     surveys: Survey[]
+    /**
+     * Whether a terrain tool made the change this step undoes.
+     */
+    fromTerrain?: boolean
   }
   const MAX_UNDO_STACK_SIZE = 50
+  // Terrain tools rewrite whole missions, so their steps are capped by count and by the waypoints they hold.
+  const MAX_TERRAIN_UNDO_STEPS = 10
+  const TERRAIN_UNDO_WAYPOINT_BUDGET = 20000
   const undoStack: MissionSnapshot[] = []
   const redoStack: MissionSnapshot[] = []
   const undoCount = ref(0)
@@ -333,15 +343,31 @@ export const useMissionStore = defineStore('mission', () => {
     surveys: toPlain(currentPlanningSurveys),
   })
 
+  const snapshotSize = ({ waypoints, surveys }: MissionSnapshot): number =>
+    surveys.reduce((total, survey) => total + survey.waypoints.length, waypoints.length)
+
+  const trimTerrainSteps = (): void => {
+    const steps = undoStack.filter(({ fromTerrain }) => fromTerrain)
+    let size = steps.reduce((total, step) => total + snapshotSize(step), 0)
+    for (const [index, oldest] of steps.entries()) {
+      const left = steps.length - index
+      if (left <= 1 || (left <= MAX_TERRAIN_UNDO_STEPS && size <= TERRAIN_UNDO_WAYPOINT_BUDGET)) break
+      size -= snapshotSize(oldest)
+      undoStack.splice(undoStack.indexOf(oldest), 1)
+    }
+  }
+
   /**
    * Captures a deep snapshot of the current waypoints and surveys for undo.
    * Clears the redo stack since a new action invalidates the redo history.
+   * @param {'terrain'} origin Set when a terrain tool makes the change, whose steps are kept fewer.
    */
-  const pushUndoSnapshot = (): void => {
-    undoStack.push(takeSnapshot())
+  const pushUndoSnapshot = (origin?: 'terrain'): void => {
+    undoStack.push({ ...takeSnapshot(), fromTerrain: origin === 'terrain' })
     if (undoStack.length > MAX_UNDO_STACK_SIZE) {
       undoStack.shift()
     }
+    if (origin === 'terrain') trimTerrainSteps()
     redoStack.length = 0
     syncCounts()
   }
@@ -352,9 +378,9 @@ export const useMissionStore = defineStore('mission', () => {
    * @returns {MissionSnapshot | undefined} The snapshot
    */
   const popUndoSnapshot = (): MissionSnapshot | undefined => {
-    if (undoStack.length === 0) return undefined
-    redoStack.push(takeSnapshot())
     const snapshot = undoStack.pop()
+    if (!snapshot) return undefined
+    redoStack.push({ ...takeSnapshot(), fromTerrain: snapshot.fromTerrain })
     syncCounts()
     return snapshot
   }
@@ -365,9 +391,10 @@ export const useMissionStore = defineStore('mission', () => {
    * @returns {MissionSnapshot | undefined} The snapshot
    */
   const popRedoSnapshot = (): MissionSnapshot | undefined => {
-    if (redoStack.length === 0) return undefined
-    undoStack.push(takeSnapshot())
     const snapshot = redoStack.pop()
+    if (!snapshot) return undefined
+    undoStack.push({ ...takeSnapshot(), fromTerrain: snapshot.fromTerrain })
+    if (snapshot.fromTerrain) trimTerrainSteps()
     syncCounts()
     return snapshot
   }
@@ -881,8 +908,8 @@ export const useMissionStore = defineStore('mission', () => {
     mapClearRequestRevision.value += 1
   }
 
-  const requestMapCenterOn = (coordinates: WaypointCoordinates): void => {
-    mapCenterOnRequest.value = { coordinates, revision: (mapCenterOnRequest.value?.revision ?? 0) + 1 }
+  const requestMapCenterOn = (coordinates: WaypointCoordinates, bounds?: GeoBbox): void => {
+    mapCenterOnRequest.value = { coordinates, bounds, revision: (mapCenterOnRequest.value?.revision ?? 0) + 1 }
   }
 
   const requestMapMissionDownload = (): void => {

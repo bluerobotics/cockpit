@@ -230,8 +230,8 @@
                       icon
                       variant="text"
                       size="x-small"
-                      aria-label="Terrain clearance setting"
-                      @click="onOpenMenu('terrain clearance setting')"
+                      :aria-label="t`High ground setting`"
+                      @click="onOpenMenu('high ground setting')"
                     >
                       <v-icon icon="mdi-cog" class="text-[12px] opacity-70" />
                     </v-btn>
@@ -241,14 +241,14 @@
                     :style="interfaceStore.globalGlassMenuStyles"
                   >
                     <div class="flex items-center justify-between">
-                      <span class="text-xs">Mark ground above (m)</span>
+                      <span class="text-xs">{{ t`High ground above (m)` }}</span>
                       <input
-                        :value="hazardStore.settings.terrainClearanceMeters"
+                        :value="hazardStore.settings.highGroundAboveMeters"
                         type="number"
                         min="0"
                         :max="MAX_HAZARD_CLEARANCE_M"
                         class="p-1 bg-[#FFFFFF11] w-[70px] text-xs text-right rounded-sm"
-                        @change="commitTerrainClearance"
+                        @change="commitHighGround"
                       />
                     </div>
                     <p class="text-[10px] opacity-60 leading-snug">
@@ -426,6 +426,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { formatDistanceToNow } from 'date-fns'
+import { t } from 'ttag'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
@@ -646,9 +647,8 @@ const missionSignature = computed(
 // Per source rather than per fetch: a single source reloaded, or restored from another topside
 // computer, leaves the oldest fetch and the area count exactly where they were.
 const areasSignature = computed(() => {
-  const { enabledSources, proximityMarginMeters, terrainClearanceMeters, shallowWaterDepthMeters } =
-    hazardStore.settings
-  const thresholds = `${proximityMarginMeters}:${terrainClearanceMeters}:${shallowWaterDepthMeters}`
+  const { enabledSources, proximityMarginMeters, highGroundAboveMeters, shallowWaterDepthMeters } = hazardStore.settings
+  const thresholds = `${proximityMarginMeters}:${highGroundAboveMeters}:${shallowWaterDepthMeters}`
   const grid = hazardStore.terrainGrid
   const loadedAt = [...HAZARD_AREA_SOURCE_IDS.map((sourceId) => hazardStore.results[sourceId]), grid].map(
     (data) => `${data?.fetchedAtMs ?? 0}:${data?.clearedAtMs ?? 0}`
@@ -667,7 +667,7 @@ const onOpenMenu = (menu: string): void => logUserAction(`Opened the ${menu}`)
 
 type NumericSettingKey =
   | 'proximityMarginMeters'
-  | 'terrainClearanceMeters'
+  | 'highGroundAboveMeters'
   | 'shallowWaterDepthMeters'
   | 'exclusionVertexBudget'
 
@@ -685,9 +685,9 @@ const commitClearanceMargin = (event: Event): void => {
   logUserAction(`Set hazard clearance margin to ${value} m`)
 }
 
-const commitTerrainClearance = (event: Event): void => {
-  const value = commitNumberSetting(event, 'terrainClearanceMeters', 0, MAX_HAZARD_CLEARANCE_M)
-  logUserAction(`Set the terrain marking threshold to ${value} m`)
+const commitHighGround = (event: Event): void => {
+  const value = commitNumberSetting(event, 'highGroundAboveMeters', 0, MAX_HAZARD_CLEARANCE_M)
+  logUserAction(`Set the high ground threshold to ${value} m`)
 }
 
 const commitShallowWaterDepth = (event: Event): void => {

@@ -11,9 +11,10 @@ import {
   HAZARD_SOURCE_IDS,
   HAZARD_SOURCES,
 } from '@/libs/hazards/sources'
+import { terrainAttribution } from '@/libs/terrain/elevation-service'
 import { escapeHtml } from '@/libs/utils'
 import { useHazardStore } from '@/stores/hazards'
-import type { HazardArea, HazardSourceId } from '@/types/hazards'
+import type { HazardArea, HazardGridSourceId, HazardSourceId } from '@/types/hazards'
 import type { WaypointCoordinates } from '@/types/mission'
 
 const HAZARD_PANE = 'hazardAdvisoryPane'
@@ -144,10 +145,10 @@ export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {})
   )
   // The grid sources also follow their elevation thresholds, which change far more often than any fetch.
   const gridSignature = computed(() => {
-    const { terrainClearanceMeters, shallowWaterDepthMeters } = hazardStore.settings
+    const { highGroundAboveMeters, shallowWaterDepthMeters } = hazardStore.settings
     const enabled = HAZARD_GRID_SOURCE_IDS.map((sourceId) => (isShown(sourceId) ? 1 : 0)).join('')
     const loadedAt = `${hazardStore.terrainGrid?.fetchedAtMs ?? 0}:${hazardStore.terrainGrid?.clearedAtMs ?? 0}`
-    return `${enabled}:${loadedAt}:${terrainClearanceMeters}:${shallowWaterDepthMeters}`
+    return `${enabled}:${loadedAt}:${highGroundAboveMeters}:${shallowWaterDepthMeters}`
   })
 
   const areasOf = (sourceId: HazardSourceId): HazardArea[] =>
@@ -180,7 +181,9 @@ export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {})
       weight: 2,
       opacity: 0.9,
       dashArray: '6 4',
-      attribution: meta.attribution,
+      attribution: HAZARD_GRID_SOURCE_IDS.includes(area.sourceId as HazardGridSourceId)
+        ? terrainAttribution()
+        : meta.attribution,
     }
     if (area.kind === 'polygon') {
       if (area.coordinates.length < 3) return undefined

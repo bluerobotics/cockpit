@@ -17,7 +17,11 @@
         />
       </div>
 
-      <div id="button-1" class="orbit-button orbit-button-1">
+      <div
+        id="button-1"
+        class="orbit-button"
+        :class="showSensorCompensation ? 'orbit-button-1-raised' : 'orbit-button-1'"
+      >
         <v-tooltip :text="'Create survey'">
           <template #activator="{ props: tooltipProps0 }">
             <v-btn
@@ -28,7 +32,8 @@
               rounded="full"
               size="x-small"
               color="#FFFFFF22"
-              class="text-[12px] rotate-[145deg]"
+              class="text-[12px]"
+              :class="showSensorCompensation ? 'rotate-[115deg]' : 'rotate-[145deg]'"
               @click="handleToggleSurvey"
             >
             </v-btn>
@@ -36,7 +41,11 @@
         </v-tooltip>
       </div>
 
-      <div id="button-2" class="orbit-button orbit-button-2">
+      <div
+        id="button-2"
+        class="orbit-button"
+        :class="showSensorCompensation ? 'orbit-button-2-raised' : 'orbit-button-2'"
+      >
         <v-tooltip :text="'Add simple path'">
           <template #activator="{ props: tooltipProps1 }">
             <v-btn
@@ -47,9 +56,30 @@
               rounded="full"
               size="x-small"
               color="#FFFFFF22"
-              class="text-[13px] rotate-[170deg]"
+              class="text-[13px]"
+              :class="showSensorCompensation ? 'rotate-[140deg]' : 'rotate-[170deg]'"
               @click="handleToggleSimplePath"
             ></v-btn>
+          </template>
+        </v-tooltip>
+      </div>
+      <div v-if="showSensorCompensation" id="button-6" class="orbit-button orbit-button-6">
+        <v-tooltip :text="sensorCompensationTooltip">
+          <template #activator="{ props: tooltipProps5 }">
+            <div v-bind="tooltipProps5">
+              <v-btn
+                variant="elevated"
+                icon="mdi-radar"
+                :style="{ backgroundColor: sensorCompensationEnabled ? '#A855F7' : '#333333EE' }"
+                rounded="full"
+                size="x-small"
+                :disabled="!sensorCompensationLabel || crosshatchEnabled"
+                color="#FFFFFF22"
+                :aria-label="sensorCompensationTooltip"
+                class="text-[13px] rotate-[170deg] disabled:!text-white/55 disabled:!opacity-50"
+                @click="emit('toggleSensorCompensation')"
+              ></v-btn>
+            </div>
           </template>
         </v-tooltip>
       </div>
@@ -306,6 +336,20 @@
           <span class="text-white text-sm ml-4">{{ pathCreationButtonText }}</span>
         </v-list-item>
         <v-divider />
+        <div v-if="canSetHome" class="flex flex-col" :class="{ 'order-first': !homeSet }">
+          <v-list-item class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
+            <v-icon
+              variant="text"
+              icon="mdi-home-map-marker"
+              rounded="full"
+              size="x-small"
+              color="white"
+              class="text-[16px]"
+            ></v-icon>
+            <span class="text-white text-sm ml-4">{{ homeSet ? t`Move mission home here` : t`Set mission home` }}</span>
+          </v-list-item>
+          <v-divider />
+        </div>
         <v-menu open-on-hover location="end" :close-on-content-click="false" :open-delay="50" :close-delay="120">
           <template #activator="{ props: libraryActivator }">
             <v-list-item v-bind="libraryActivator" class="flex items-center gap-x-2 pb-2 cursor-pointer">
@@ -383,18 +427,6 @@
           <span class="text-white text-sm ml-4">
             {{ hasAnyMapOverlay ? 'Manage overlays' : 'Add overlay (GeoTIFF)' }}
           </span>
-        </v-list-item>
-        <v-divider v-if="canSetHome" />
-        <v-list-item v-if="canSetHome" class="flex items-center gap-x-2 pb-2" @click="handleSetHomePosition">
-          <v-icon
-            variant="text"
-            icon="mdi-home-map-marker"
-            rounded="full"
-            size="x-small"
-            color="white"
-            class="text-[16px]"
-          ></v-icon>
-          <span class="text-white text-sm ml-4">Set mission home</span>
         </v-list-item>
         <v-divider />
         <v-list-item class="flex items-center gap-x-2 pb-2" @click="handlePlaceBaseStation">
@@ -533,6 +565,7 @@
 
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
+import { t } from 'ttag'
 import { computed, defineEmits, defineProps, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import ScanDirectionDial from '@/components/mission-planning/ScanDirectionDial.vue'
@@ -578,6 +611,8 @@ const props = defineProps<{
   nearestSegmentIndex: number | null
   canCreateFenceExclusion: boolean
   hazardRecordLabel?: string
+  // Undefined when the vehicle surveys no bottom, null when it does but no sensor is picked.
+  sensorCompensationLabel?: string | null
 }>()
 /* eslint-enable jsdoc/require-jsdoc */
 
@@ -593,6 +628,7 @@ const emit = defineEmits<{
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
   (event: 'toggleCrosshatch'): void
+  (event: 'toggleSensorCompensation'): void
   (event: 'rotateSurveyEntryPoint'): void
   (event: 'removeWaypoint'): void
   (event: 'placePointOfInterest'): void
@@ -654,10 +690,23 @@ const menuType = computed(() => props.menuType)
 const selectedWaypoint = computed<Waypoint | undefined>(() => props.selectedWaypoint)
 const visible = computed(() => props.visible)
 const canSetHome = computed(() => !props.isCreatingSurvey && !props.isCreatingSimplePath)
+const homeSet = computed(() => missionStore.plannedHomePosition !== undefined)
 const angle = computed(() => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.surveyLinesAngle)
 const crosshatchEnabled = computed(
   () => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.crosshatch ?? false
 )
+const showSensorCompensation = computed(() => props.sensorCompensationLabel !== undefined)
+const sensorCompensationEnabled = computed(
+  () => props.surveys.find((survey) => survey.id === props.selectedSurveyId)?.sensorCompensation ?? false
+)
+const sensorCompensationTooltip = computed(() => {
+  const label = props.sensorCompensationLabel
+  if (!label) return 'Pick a survey sensor in the survey sensor settings to space the lines for it'
+  if (crosshatchEnabled.value) return 'Sensor compensation does not cover crosshatch surveys'
+  return sensorCompensationEnabled.value
+    ? `Stop spacing the lines for the ${label}`
+    : `Space the lines so the ${label} leaves no gap, turning them along the slope where it changes the spacing`
+})
 
 const clampedPosition = ref({ x: 0, y: 0 })
 const menuWidth = ref(0)
@@ -972,6 +1021,20 @@ const handleOpenPanel = (): void => {
   animation-delay: 0.05s;
 }
 
+.orbit-button-6 {
+  animation: orbit-6 0.05s ease-out forwards;
+  animation-delay: 0.05s;
+}
+
+.orbit-button-1-raised {
+  animation: orbit-1-raised 0.05s ease-out forwards;
+}
+
+.orbit-button-2-raised {
+  animation: orbit-2-raised 0.05s ease-out forwards;
+  animation-delay: 0.05s;
+}
+
 @keyframes orbit-1 {
   0% {
     transform: translate(-50%, -50%) rotate(0deg) translateX(0);
@@ -1023,6 +1086,39 @@ const handleOpenPanel = (): void => {
   }
   100% {
     transform: translate(-50%, -50%) rotate(-620deg) translateX(90px);
+    opacity: 1;
+  }
+}
+
+@keyframes orbit-6 {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-530deg) translateX(90px);
+    opacity: 1;
+  }
+}
+
+@keyframes orbit-1-raised {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-470deg) translateX(90px);
+    opacity: 1;
+  }
+}
+
+@keyframes orbit-2-raised {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-500deg) translateX(90px);
     opacity: 1;
   }
 }
