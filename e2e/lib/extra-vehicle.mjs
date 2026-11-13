@@ -31,7 +31,7 @@ export async function startExtraVehicle(ctx, systemId, eastM = 150) {
  * @param {string} url - The vehicle's MAVLink2Rest WebSocket address
  */
 export async function addExtraVehicle(page, url) {
-  await openMenuPage(page, 'Settings', 'General')
+  await openMenuPage(page, 'settings-general')
   await page.eval(`[...document.querySelectorAll('*')].find((e) => e.childElementCount === 0
     && e.textContent.trim() === 'Other vehicles (telemetry only)')?.scrollIntoView({ block: 'center' })`)
   await page.wait(600)

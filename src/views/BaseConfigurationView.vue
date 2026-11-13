@@ -4,6 +4,7 @@
       <slot name="help-icon"></slot>
       <v-btn
         v-if="!hasNoCloseIcon"
+        id="menu-page-close"
         icon
         :width="38"
         :height="34"

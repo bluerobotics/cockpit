@@ -38,7 +38,7 @@ export async function connectionSummary(page) {
  * @param {string} uri - Connection URI, e.g. tcpout://192.168.0.2:5762
  */
 export async function setMainConnection(page, uri) {
-  if (!(await page.eval(`!!${formExpr}`))) await openMenuPage(page, 'Settings', 'General')
+  if (!(await page.eval(`!!${formExpr}`))) await openMenuPage(page, 'settings-general')
   await page.waitFor(() => page.eval(`!!(${formExpr})`), { label: 'the main connection form' })
   const enabled = await page.eval(`(${formExpr}).querySelector('input[type=checkbox]').checked`)
   if (!enabled)

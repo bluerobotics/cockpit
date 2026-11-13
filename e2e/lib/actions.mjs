@@ -99,7 +99,7 @@ export async function pickFromSelect(page, label, option) {
  */
 export async function openActions(page) {
   // After a reload Cockpit comes back on the page it was showing.
-  if (!(await page.exists('text=Cockpit actions configuration'))) await openMenuPage(page, 'Settings', 'Actions')
+  if (!(await page.exists('text=Cockpit actions configuration'))) await openMenuPage(page, 'settings-actions')
   // The panel opens collapsed when Cockpit started in a narrow window, as Standalone's does.
   // A collapsed panel clips the table rather than removing it, so look at what is on top of its middle.
   const tableShown = `(() => { const t = document.querySelector('.v-data-table'); if (!t) return false; const r = t.getBoundingClientRect()

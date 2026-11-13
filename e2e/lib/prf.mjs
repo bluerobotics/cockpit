@@ -159,7 +159,7 @@ export const setButton = (page, button, down) =>
  * @param {object} page - Driver page
  */
 export async function importDefaultMapping(page) {
-  await openMenuPage(page, 'Settings', 'Joystick')
+  await openMenuPage(page, 'settings-joystick')
   await page.click(
     await centre(
       page,
@@ -188,7 +188,7 @@ export async function importDefaultMapping(page) {
  * @param {object} page - Driver page
  */
 export async function openJoystickTable(page) {
-  await openMenuPage(page, 'Settings', 'Joystick')
+  await openMenuPage(page, 'settings-joystick')
   await page.click('text=Table', { settle: 1200 })
 }
 
@@ -279,7 +279,7 @@ export const variable = (page, id) => page.eval(`window.cockpit.getDataLakeVaria
  * @param {string} search - Search text
  */
 export async function openDataLake(page, search) {
-  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'tools-datalake')
   await page.fill('input[placeholder="Search variables..."]', search)
   await page.wait(1200)
 }
@@ -315,7 +315,7 @@ export function pauseBlueOS(host, paused) {
  * @param {string} name - Username
  */
 export async function switchUser(page, name) {
-  if (!(await page.exists('#select-profile'))) await openMenuPage(page, 'Settings', 'General')
+  if (!(await page.exists('#select-profile'))) await openMenuPage(page, 'settings-general')
   await page.click('#select-profile', { settle: 1500 })
   const dialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
   await page.waitFor(() => page.eval(`!${dialog}?.querySelector('.v-progress-circular')`), {

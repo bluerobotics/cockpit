@@ -39,7 +39,7 @@ async function addCompound(page, system, unit) {
 /** A unit suffix converts a variable inside an expression. */
 export default async function run({ page }) {
   await page.caption('Tools → Data-lake → Add compound variable: the temperature read as imperial')
-  await openMenuPage(page, 'Tools', 'Data-lake')
+  await openMenuPage(page, 'tools-datalake')
   await addCompound(page, 'imperial', 'degF')
   await page.caption('… and another read as metric')
   await addCompound(page, 'metric', 'degC')

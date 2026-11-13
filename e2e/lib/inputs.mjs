@@ -252,7 +252,7 @@ export const lakeValue = (page, id) => page.eval(`window.cockpit.getDataLakeVari
  * @returns {Promise<string|undefined>} The value cell's text
  */
 export async function showInDataLake(page, search) {
-  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'tools-datalake')
   await page.fill('input[placeholder="Search variables..."]', search)
   await page.wait(1200)
   return page.eval(`document.querySelector('.v-data-table tbody tr td:nth-child(4)')?.innerText.trim()`)
@@ -267,7 +267,7 @@ export async function showInDataLake(page, search) {
  * @returns {Promise<string>} The id Cockpit gave it
  */
 export async function addUserVariable(page, name, type, initial) {
-  if (!(await page.exists('text=Add variable'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('text=Add variable'))) await openMenuPage(page, 'tools-datalake')
   await page.click('text=Add variable', { settle: 1000 })
   await page.fill(await fieldByLabel(page, 'Variable Name'), name)
   await page.click(`text=${type}`, { settle: 400 })

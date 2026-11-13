@@ -24,7 +24,7 @@ const centre = (page, expr) =>
  * @param {string[]} ids - Data-lake variable IDs, e.g. /mavlink/1/1/SYSTEM_TIME/time_boot_ms
  */
 export async function recordVariables(page, ids) {
-  await openMenuPage(page, 'Tools', 'Data-lake')
+  await openMenuPage(page, 'tools-datalake')
   for (const id of ids) {
     // The table shows names; a MAVLink variable's name is its message/field plus the system it came from.
     const short = id.split('/').slice(-2).join('/')
@@ -42,7 +42,7 @@ export async function recordVariables(page, ids) {
  * @param {object} page - Driver page
  * @returns {Promise<void>} Once the page is open
  */
-export const openDataLogs = (page) => openMenuPage(page, 'Tools', 'Data Logs')
+export const openDataLogs = (page) => openMenuPage(page, 'tools-logs')
 
 /**
  * Open the export settings (the cog), choose the options given, and close.

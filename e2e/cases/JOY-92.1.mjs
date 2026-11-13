@@ -31,7 +31,7 @@ export default async function run({ page }) {
   })
 
   await page.caption('Tools → Data-lake: watch "Camera Zoom"')
-  await openMenuPage(page, 'Tools', 'Data-lake')
+  await openMenuPage(page, 'tools-datalake')
   await page.fill('input[placeholder="Search variables..."]', 'Camera Zoom')
   await page.wait(1000)
   await page.caption('Push axis 3 to +1')

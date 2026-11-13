@@ -31,7 +31,7 @@ const MPH = 4.5
  */
 export default async function run({ page, vehicle }) {
   await page.caption('Settings → Interface → Display units → Speed: Miles per hour')
-  await openMenuPage(page, 'Settings', 'Interface')
+  await openMenuPage(page, 'settings-interface')
   await page.click('text=Miles per hour', { settle: 1500 })
   await closeMenu(page)
 
