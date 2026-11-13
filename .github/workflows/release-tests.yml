@@ -117,6 +117,19 @@ jobs:
       - name: Serve test-pattern camera streams
         run: node e2e/ci/fake-streams.mjs localhost
 
+      # Run inside the container, where BlueOS's helper finds it and serves it under /extensionv2/e2e.
+      # 9876 is free in BlueOS 1.4.6; 9134, for one, is Kraken's.
+      - name: Serve a test extension with Cockpit extras
+        run: |
+          docker cp e2e/ci/fake-extension.py blueos:/tmp/fake-extension.py
+          docker exec -d blueos python3 /tmp/fake-extension.py 9876
+          # Only the EXT cases need it, so a miss is reported with what BlueOS saw and the other cases still run.
+          if ! timeout 240 bash -c 'until curl -sf -o /dev/null http://localhost/extensionv2/e2e/cockpit_extras.json; do sleep 3; done'; then
+            echo "::warning::BlueOS did not serve the test extension; the EXT cases will fail"
+            docker exec blueos sh -c 'ps aux | grep [f]ake-extension; curl -s localhost:9876/register_service'
+            curl -s http://localhost/helper/v1.0/web_services | head -c 3000
+          fi
+
       - name: Run the cases
         env:
           CASES: ${{ matrix.batch.cases }}

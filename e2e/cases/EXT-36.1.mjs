@@ -1,10 +1,12 @@
 import {
+  ACTION_ID,
   ACTION_NAME,
   ACTION_URL_PART,
   dialogOpensWithin,
   plugVirtualGamepad,
   pressButton,
   restartCockpit,
+  SUGGESTION_GROUP,
   UNDECIDED,
   watchRequests,
 } from '../lib/extensions.mjs'
@@ -17,7 +19,6 @@ export const meta = {
   synced: UNDECIDED,
 }
 
-const GROUP = '4K Cam on any vehicle types'
 const BUTTON = 10
 
 const SUGGESTION_APPLY = `(() => { const card = [...document.querySelectorAll('.suggestion-item-compact')]
@@ -63,9 +64,9 @@ export default async function run({ page }) {
   if (!(await dialogOpensWithin(page))) throw new Error('the BlueOS Extension Features dialog did not open')
   await page.click('text=Add Action', { settle: 1500 })
 
-  await page.caption('Joystick Mappings tab → "4K Cam on any vehicle types"')
+  await page.caption(`Joystick Mappings tab → "${SUGGESTION_GROUP}"`)
   await page.click('text=Joystick Mappings', { settle: 1200 })
-  await page.click(`text=${GROUP}`, { settle: 2500 })
+  await page.click(`text=${SUGGESTION_GROUP}`, { settle: 2500 })
   await page.check('Each suggestion card holds its own joystick drawing', async () => {
     const spill =
       await page.eval(`[...document.querySelectorAll('.suggestion-item-compact')].filter((c) => c.getClientRects().length)
@@ -82,7 +83,7 @@ export default async function run({ page }) {
   await page.check(`It suggests "${ACTION_NAME}" on button ${BUTTON}`, async () => {
     const before = await mappedAction(page)
     return {
-      ok: before?.id !== 'br4kcam_white_balance_all',
+      ok: before?.id !== ACTION_ID,
       detail: `button ${BUTTON} now: ${before?.name ?? 'nothing'}`,
     }
   })
@@ -103,7 +104,7 @@ export default async function run({ page }) {
   await page.check(`Button ${BUTTON} is mapped to the action`, async () => {
     const action = await mappedAction(page)
     return {
-      ok: action?.id === 'br4kcam_white_balance_all' && action?.protocol === 'cockpit-action',
+      ok: action?.id === ACTION_ID && action?.protocol === 'cockpit-action',
       detail: JSON.stringify(action),
     }
   })
@@ -119,7 +120,7 @@ export default async function run({ page }) {
   await page.wait(2500)
   await page.check('Pressing it sent the action to the extension, once', () => {
     const posts = requests.filter((r) => r.method === 'POST')
-    const ok = posts.length === 1 && posts[0].status === 200 && /onceAWB/.test(posts[0].body ?? '')
+    const ok = posts.length === 1 && posts[0].status === 200 && (posts[0].body ?? '').includes(ACTION_ID)
     return { ok, detail: posts.map((p) => `POST ${p.status ?? p.error} ${p.body}`).join(' · ') || 'no request' }
   })
   await page.wait(1500)

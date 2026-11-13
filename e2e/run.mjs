@@ -23,6 +23,7 @@ import { BASE_STATION_DEFAULT } from './lib/base-station.mjs'
 import { attachBoxStats, startBoxStats, stopBoxStats } from './lib/box-stats.mjs'
 import { openCockpit, seedFor, TEST_USER } from './lib/cockpit.mjs'
 import { launch } from './lib/driver.mjs'
+import { DECIDED } from './lib/extensions.mjs'
 import { burnOverlays } from './lib/overlay-burn.mjs'
 import { finishSampling, SAMPLER, startSampling } from './lib/perf.mjs'
 import { overlayFrameRate } from './lib/perf-video.mjs'
@@ -322,6 +323,7 @@ for (const { id, arm, rep } of jobs) {
       'cockpit-user-last-custom-map-provider-id': null,
       // The welcome tour only covers the map and costs a wait in every case; no case tests it.
       'cockpit-has-seen-tutorial': true,
+      ...DECIDED,
       // Synced, so a case that follows the vehicle would leave every later one following it too.
       'cockpit-map-follow-vehicle': false,
       ...meta.synced,
