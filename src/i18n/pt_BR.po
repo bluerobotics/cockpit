@@ -127,3 +127,7 @@ msgstr ""
 #: src/components/MainMenu.vue
 msgid "Tools"
 msgstr "Ferramentas"
+
+#: src/stores/controller.ts
+msgid "Vehicle is disarmed. Arm it when safe to use joystick motion controls."
+msgstr ""
