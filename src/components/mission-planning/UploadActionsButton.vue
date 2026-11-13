@@ -14,7 +14,7 @@
           <button
             v-bind="tooltipProps"
             :aria-label="toggleText"
-            class="relative flex items-center justify-center h-[40px] py-2 px-1 rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
+            class="upload-actions-toggle relative flex items-center justify-center h-[40px] py-2 px-1 rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
             @click="toggleActions"
           >
             <span v-if="indicator && !expanded" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#3B78A8]" />
