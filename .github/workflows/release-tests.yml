@@ -10,7 +10,6 @@ on:
         required: false
 
 env:
-  NODE_OPTIONS: --max-old-space-size=6144
   # Pinned, so a BlueOS release cannot change a run's results.
   BLUEOS_IMAGE: bluerobotics/blueos-core:1.4.6
 
