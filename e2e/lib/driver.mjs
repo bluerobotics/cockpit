@@ -422,14 +422,21 @@ export async function launch(options = {}) {
   // --- recording --------------------------------------------------------------------
   // Frames carry a virtual timestamp so time-lapse stretches can be squeezed; `offset` is how
   // much real time has been cut so far.
+  // Each frame is written to disk as it arrives, so a long case does not hold its whole video in memory.
   const frames = []
+  const frameDir = mkdtempSync(join(tmpdir(), 'cockpit-e2e-frames-'))
+  const keepFrame = (data, frame) => {
+    const file = join(frameDir, `f${String(frames.length).padStart(6, '0')}.jpg`)
+    writeFileSync(file, Buffer.from(data, 'base64'))
+    frames.push({ file, ...frame })
+  }
   let recording = false
   let offset = 0
   const now = () => Date.now() - offset
   // `ts` is when the frame was drawn, on the page's own clock (epoch seconds), which is what lines the
   // video up with timings measured inside the page.
   on('Page.screencastFrame', ({ data, sessionId, metadata }) => {
-    if (recording) frames.push({ data, at: now(), ts: metadata?.timestamp })
+    if (recording) keepFrame(data, { at: now(), ts: metadata?.timestamp })
     send('Page.screencastFrameAck', { sessionId }).catch(ignore)
   })
   // A smaller, rougher capture costs the page less: on a weak machine every captured frame is read
@@ -891,7 +898,7 @@ export async function launch(options = {}) {
         await sleep(Math.min(every, end - Date.now()))
         if (onTick) await onTick()
         const { data } = await send('Page.captureScreenshot', { format: 'jpeg', quality: 88 })
-        frames.push({ data, at: now() })
+        keepFrame(data, { at: now() })
         offset += Math.max(0, every - show)
       }
       await startScreencast()
@@ -909,36 +916,33 @@ export async function launch(options = {}) {
     encode: (out, fps = 30) => {
       if (options.hdmi) return encodeCapture(out)
       if (frames.length < 2) throw new Error(`captured only ${frames.length} frames`)
-      const dir = mkdtempSync(join(tmpdir(), 'cockpit-e2e-frames-'))
       const lines = []
       frames.forEach((frame, i) => {
-        const file = join(dir, `f${String(i).padStart(6, '0')}.jpg`)
-        writeFileSync(file, Buffer.from(frame.data, 'base64'))
         const next = frames[i + 1]?.at ?? frame.at + 1000
-        lines.push(`file '${file}'`, `duration ${Math.max(0.016, (next - frame.at) / 1000).toFixed(3)}`)
+        lines.push(`file '${frame.file}'`, `duration ${Math.max(0.016, (next - frame.at) / 1000).toFixed(3)}`)
       })
       // The concat demuxer ignores the final duration unless the last file is repeated.
-      lines.push(`file '${join(dir, `f${String(frames.length - 1).padStart(6, '0')}.jpg`)}'`)
-      writeFileSync(join(dir, 'list.txt'), lines.join('\n'))
-      // ponytail: every screencast frame of a case is held in memory until encode (a ~1 min case is a few
-      // hundred MB, hence the 6 GB heap in release-tests.yml); stream frames to disk if cases get much longer.
+      lines.push(`file '${frames.at(-1).file}'`)
+      writeFileSync(join(frameDir, 'list.txt'), lines.join('\n'))
       const filters = `fps=${fps},scale=trunc(iw/2)*2:trunc(ih/2)*2`
       const ff = spawnSync(
         'ffmpeg',
-        ['-y', '-f', 'concat', '-safe', '0', '-i', join(dir, 'list.txt'), '-vf', filters, '-c:v', 'libx264'].concat([
-          '-preset',
-          'medium',
-          '-crf',
-          '22',
-          '-pix_fmt',
-          'yuv420p',
-          '-movflags',
-          '+faststart',
-          out,
-        ]),
+        [
+          '-y',
+          '-f',
+          'concat',
+          '-safe',
+          '0',
+          '-i',
+          join(frameDir, 'list.txt'),
+          '-vf',
+          filters,
+          '-c:v',
+          'libx264',
+        ].concat(['-preset', 'medium', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]),
         { encoding: 'utf8' }
       )
-      rmSync(dir, { recursive: true, force: true })
+      rmSync(frameDir, { recursive: true, force: true })
       if (ff.status !== 0) throw new Error(ff.stderr?.slice(-2000) ?? 'ffmpeg failed')
       return { frames: frames.length, seconds: (frames.at(-1).at - frames[0].at) / 1000 }
     },
@@ -964,6 +968,7 @@ export async function launch(options = {}) {
     // Close the session; quits a browser this driver started and deletes throwaway profiles.
     close: async () => {
       await quit()
+      rmSync(frameDir, { recursive: true, force: true })
       if (remote) {
         for (const name of [profile, ...throwaway])
           remoteShell(remote, `Remove-Item -Recurse -Force ${remoteProfile(name)} -ErrorAction SilentlyContinue`)
