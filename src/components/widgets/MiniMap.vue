@@ -203,12 +203,9 @@ import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { useWidgetContextMenu } from '@/composables/useWidgetContextMenu'
-import { defaultHeadingVariableId, rawHeadingToDegrees } from '@/libs/data-sources/heading'
-import {
-  defaultLatitudeVariableId,
-  defaultLongitudeVariableId,
-  rawCoordinateToDegrees,
-} from '@/libs/data-sources/position'
+import { defaultHeadingVariableId } from '@/libs/data-sources/heading'
+import { defaultLatitudeVariableId, defaultLongitudeVariableId } from '@/libs/data-sources/position'
+import { convertValueTo } from '@/libs/units'
 import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -260,22 +257,21 @@ const resolvedLatitudeId = useResolvedDataLakeTemplate(() => widget.value.option
 const resolvedLongitudeId = useResolvedDataLakeTemplate(() => widget.value.options.vehicleLongitudeVariableId)
 const resolvedYawId = useResolvedDataLakeTemplate(() => widget.value.options.vehicleYawVariableId)
 
-const { value: rawLatitude } = useDataLakeVariable(resolvedLatitudeId)
-const { value: rawLongitude } = useDataLakeVariable(resolvedLongitudeId)
-const { value: rawYaw } = useDataLakeVariable(resolvedYawId)
+const { value: rawLatitude, unit: latitudeUnit } = useDataLakeVariable(resolvedLatitudeId)
+const { value: rawLongitude, unit: longitudeUnit } = useDataLakeVariable(resolvedLongitudeId)
+const { value: rawYaw, unit: yawUnit } = useDataLakeVariable(resolvedYawId)
 
 // The position sources are configurable, so each raw value is scaled by whatever its own source needs.
 const vehiclePosition = computed<WaypointCoordinates | undefined>(() => {
-  if (resolvedLatitudeId.value === undefined || resolvedLongitudeId.value === undefined) return undefined
   if (typeof rawLatitude.value !== 'number' || typeof rawLongitude.value !== 'number') return undefined
   return [
-    rawCoordinateToDegrees(resolvedLatitudeId.value, rawLatitude.value),
-    rawCoordinateToDegrees(resolvedLongitudeId.value, rawLongitude.value),
+    convertValueTo(rawLatitude.value, latitudeUnit.value, 'deg'),
+    convertValueTo(rawLongitude.value, longitudeUnit.value, 'deg'),
   ]
 })
 const vehicleHeading = computed(() => {
-  if (resolvedYawId.value === undefined || typeof rawYaw.value !== 'number') return 0
-  return rawHeadingToDegrees(resolvedYawId.value, rawYaw.value)
+  if (typeof rawYaw.value !== 'number') return 0
+  return convertValueTo(rawYaw.value, yawUnit.value, 'deg')
 })
 
 const { resolvedPointsOfInterest } = usePointsOfInterest()

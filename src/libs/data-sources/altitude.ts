@@ -1,36 +1,22 @@
-import { type DataSourceOptionKeys, findSourceOptionForVariableId } from '@/libs/data-sources/source-options'
-
-/** Altitude source entry for widgets that read MAVLink altitude fields. */
-export type AltitudeSourceOption = {
-  /** User-facing source label shown in widget config menus. */
-  title: string
-  /** Templated data lake variable ID; resolved at runtime via the mustache system. */
-  value: string
-  /** Converts the raw data lake altitude value to meters. */
-  toMeters: (rawAltitude: number) => number
-}
+import { type DataSourceOptionKeys, type DataSourcePreset } from '@/libs/data-sources/source-options'
 
 /** Altitude source options exposed to widget config menus. */
-export const altitudeSourceOptions: AltitudeSourceOption[] = [
+export const altitudeSourceOptions: DataSourcePreset[] = [
   {
     title: 'ahrs2.alt',
     value: '/mavlink/{{autopilotSystemId}}/1/AHRS2/altitude',
-    toMeters: (rawAltitude) => rawAltitude,
   },
   {
     title: 'vfr_hud.alt',
     value: '/mavlink/{{autopilotSystemId}}/1/VFR_HUD/alt',
-    toMeters: (rawAltitude) => rawAltitude,
   },
   {
     title: 'global_position_int.alt',
     value: '/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/alt',
-    toMeters: (rawAltitude) => rawAltitude / 1000,
   },
   {
     title: 'global_position_int.relative_alt',
     value: '/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/relative_alt',
-    toMeters: (rawAltitude) => rawAltitude / 1000,
   },
 ]
 
@@ -45,17 +31,4 @@ export const altitudeDataSource: DataSourceOptionKeys = {
   variableIdKey: 'altitudeVariableId',
   useCustomVariableKey: 'useCustomAltitudeVariable',
   presets: altitudeSourceOptions,
-}
-
-/**
- * Convert a raw altitude value from the selected altitude source to meters.
- * Accepts either the templated or the concrete data lake variable ID. Custom
- * (non-preset) variables are assumed to already be in meters and pass through unchanged.
- * @param {string} altitudeVariableId - Data lake variable ID for the altitude source
- * @param {number} rawAltitude - Raw altitude value from the data lake
- * @returns {number} Altitude in meters
- */
-export const rawAltitudeToMeters = (altitudeVariableId: string, rawAltitude: number): number => {
-  const option = findSourceOptionForVariableId(altitudeSourceOptions, altitudeVariableId)
-  return option ? option.toMeters(rawAltitude) : rawAltitude
 }

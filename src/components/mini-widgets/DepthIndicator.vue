@@ -31,7 +31,7 @@
           :config="altitudeSourceConfig"
           :presets="altitudeSourceOptions"
           :label="t`Altitude source`"
-          :custom-hint="t`Any numeric data lake variable, read in meters`"
+          :custom-hint="t`Any numeric data lake variable, read in meters when it has no unit`"
         />
       </v-card-text>
     </v-card>
@@ -44,15 +44,10 @@ import { computed, onBeforeMount, toRefs } from 'vue'
 import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
 import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
-import {
-  altitudeDataSource,
-  altitudeSourceOptions,
-  defaultDepthAltitudeVariableId,
-  rawAltitudeToMeters,
-} from '@/libs/data-sources/altitude'
+import { altitudeDataSource, altitudeSourceOptions, defaultDepthAltitudeVariableId } from '@/libs/data-sources/altitude'
 import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { convertValue, readingLengthsAs, unitAbbreviation } from '@/libs/units'
+import { convertValue, convertValueTo, readingLengthsAs, unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
@@ -87,11 +82,11 @@ const altitudeSourceConfig = useDataSourceConfig({
 })
 const resolvedAltitudeVariableId = altitudeSourceConfig.resolvedVariableId
 
-const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
+const { value: rawAltitude, unit: rawAltitudeUnit } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 const currentDepth = computed<number | undefined>(() => {
-  if (resolvedAltitudeVariableId.value === undefined || typeof rawAltitude.value !== 'number') return undefined
-  const depthInMeters = -rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
+  if (typeof rawAltitude.value !== 'number') return undefined
+  const depthInMeters = -convertValueTo(rawAltitude.value, rawAltitudeUnit.value, 'm')
   if (depthInMeters < 0.01) return 0
   return convertValue(depthInMeters, 'm', readingLengthsAs(interfaceStore.displayUnitPreferences, 'depth')).value
 })
