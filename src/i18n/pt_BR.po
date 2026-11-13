@@ -1129,6 +1129,11 @@ msgstr "Altura da antena (${ 0 })"
 msgid "Any"
 msgstr "Qualquer"
 
+#: src/components/widgets/Compass.vue
+#: src/components/widgets/CompassHUD.vue
+msgid "Any numeric data lake variable, read in degrees"
+msgstr "Qualquer variável numérica do data lake, lida em graus"
+
 #: src/components/mini-widgets/DepthIndicator.vue
 #: src/components/mini-widgets/RelativeAltitudeIndicator.vue
 #: src/components/widgets/DepthHUD.vue
@@ -5259,6 +5264,11 @@ msgstr "Cabeçalhos"
 #: src/components/poi/PoiManager.vue
 msgid "Heading (optional)"
 msgstr "Rumo (opcional)"
+
+#: src/components/widgets/Compass.vue
+#: src/components/widgets/CompassHUD.vue
+msgid "Heading source"
+msgstr "Fonte de rumo"
 
 #: src/components/widgets/Compass.vue
 msgid "Heading style"

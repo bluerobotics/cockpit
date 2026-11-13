@@ -56,6 +56,12 @@
         <v-icon>mdi-close</v-icon>
       </v-btn>
       <v-card-text>
+        <DataSourceSelect
+          :config="headingSourceConfig"
+          :presets="headingSourceOptions"
+          :label="t`Heading source`"
+          :custom-hint="t`Any numeric data lake variable, read in degrees`"
+        />
         <div class="flex w-full justify-between">
           <v-switch
             class="ma-1"
@@ -149,17 +155,25 @@ import gsap from 'gsap'
 import { t } from 'ttag'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
 import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import { useVehicleHomePosition } from '@/composables/useVehicleHomePosition'
-import { defaultHeadingVariableId, rawHeadingToDegrees } from '@/libs/data-sources/heading'
+import {
+  defaultHeadingVariableId,
+  headingDataSource,
+  headingSourceOptions,
+  rawHeadingToDegrees,
+} from '@/libs/data-sources/heading'
 import {
   defaultLatitudeVariableId,
   defaultLongitudeVariableId,
   rawCoordinateToDegrees,
 } from '@/libs/data-sources/position'
+import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { formatDistance } from '@/libs/units'
@@ -241,6 +255,7 @@ const defaultOptions = {
   useNegativeRange: false,
   showHomeOnHUD: true,
   yawVariableId: defaultHeadingVariableId,
+  useCustomYawVariable: false,
   latVariableId: defaultLatitudeVariableId,
   lonVariableId: defaultLongitudeVariableId,
   poi: {
@@ -251,7 +266,7 @@ const defaultOptions = {
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  widget.value.options = { ...defaultOptions, ...widget.value.options }
+  widget.value.options = mergeDataSourceOptions(defaultOptions, widget.value.options, [headingDataSource])
 })
 
 onMounted(() => {
@@ -270,7 +285,14 @@ const canvasSize = computed(() => ({
   height: 64,
 }))
 
-const resolvedYawVariableId = useResolvedDataLakeTemplate(() => widget.value.options.yawVariableId)
+const headingSourceConfig = useDataSourceConfig({
+  widget,
+  isConfigMenuOpen: () => widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen,
+  source: headingDataSource,
+  defaultVariableId: defaultHeadingVariableId,
+  sourceName: 'heading',
+})
+const resolvedYawVariableId = headingSourceConfig.resolvedVariableId
 const resolvedLatVariableId = useResolvedDataLakeTemplate(() => widget.value.options.latVariableId)
 const resolvedLonVariableId = useResolvedDataLakeTemplate(() => widget.value.options.lonVariableId)
 const { value: rawYaw } = useDataLakeVariable(resolvedYawVariableId)

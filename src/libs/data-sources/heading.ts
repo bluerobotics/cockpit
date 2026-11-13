@@ -1,21 +1,34 @@
-import { findSourceOptionForVariableId } from '@/libs/data-sources/source-options'
+import {
+  type DataSourceOptionKeys,
+  type DataSourcePreset,
+  findSourceOptionForVariableId,
+} from '@/libs/data-sources/source-options'
 import { degrees } from '@/libs/utils'
 
-type HeadingSourceOption = {
-  /** Templated data lake variable ID; resolved at runtime via the mustache system. */
-  value: string
+type HeadingSourceOption = DataSourcePreset & {
   /** Converts the raw data lake heading value to degrees. */
   toDegrees: (rawHeading: number) => number
 }
 
 // Heading sources whose raw value is not already in degrees.
-const headingSourceOptions: HeadingSourceOption[] = [
-  { value: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw', toDegrees: degrees },
-  { value: '/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/hdg', toDegrees: (rawHeading) => rawHeading / 100 },
+export const headingSourceOptions: HeadingSourceOption[] = [
+  { title: 'attitude.yaw', value: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw', toDegrees: degrees },
+  {
+    title: 'global_position_int.hdg',
+    value: '/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/hdg',
+    toDegrees: (rawHeading) => rawHeading / 100,
+  },
 ]
 
 /** Default heading source for map widgets (attitude.yaw). */
 export const defaultHeadingVariableId = headingSourceOptions[0].value
+
+/** Where the compass widgets store their heading source. */
+export const headingDataSource: DataSourceOptionKeys = {
+  variableIdKey: 'yawVariableId',
+  useCustomVariableKey: 'useCustomYawVariable',
+  presets: headingSourceOptions,
+}
 
 /**
  * Convert a raw heading value from the selected heading source to degrees.
