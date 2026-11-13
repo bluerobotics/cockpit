@@ -1035,8 +1035,10 @@ msgstr "天线高度（${ 0 }）"
 msgid "Any"
 msgstr "任意"
 
+#: src/components/widgets/Attitude.vue
 #: src/components/widgets/Compass.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/components/widgets/VirtualHorizon.vue
 msgid "Any numeric data lake variable, read in degrees"
 msgstr ""
 
@@ -2068,6 +2070,7 @@ msgstr "克隆小部件到"
 #: src/components/widgets/MiniMap.vue
 #: src/components/widgets/Plotter.vue
 #: src/components/widgets/URLVideoPlayer.vue
+#: src/components/widgets/VirtualHorizon.vue
 #: src/stores/video.ts
 #: src/views/ConfigurationJoystickView.vue
 #: src/views/MissionPlanningView.vue
@@ -7669,6 +7672,11 @@ msgstr "码头"
 msgid "Pirate mode"
 msgstr "海盗模式"
 
+#: src/components/widgets/Attitude.vue
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Pitch source"
+msgstr ""
+
 #: src/components/poi/PoiManager.vue
 #: src/components/widgets/Map.vue
 msgid "Place Point of Interest"
@@ -8510,6 +8518,11 @@ msgstr "撤销更改"
 #: src/composables/vehicleDefaults/vehicleDefaultsAutoImport.ts
 msgid "Review"
 msgstr "查看"
+
+#: src/components/widgets/Attitude.vue
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Roll source"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 msgid "Rotate"
@@ -11392,6 +11405,10 @@ msgstr "视图"
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "Views group preview"
 msgstr "视图组预览"
+
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Virtual horizon config"
+msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Visible"
