@@ -431,6 +431,7 @@
 
     <UploadActionsButton
       v-if="fenceStore.hasItems"
+      id="fence-upload-actions"
       :label="t`UPLOAD FENCE TO VEHICLE`"
       actions-name="fence actions"
       :show-text="t`Show fence actions`"
@@ -440,6 +441,7 @@
       @upload="onUpload"
     >
       <button
+        id="fence-clear-local"
         class="h-auto py-1 px-1 m-2 mt-2 text-sm rounded-md elevation-1 bg-[#FFFFFF11] hover:bg-[#FFFFFF22] transition-colors duration-200"
         @click="onClearLocal"
       >
