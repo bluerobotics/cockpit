@@ -12,7 +12,7 @@ export const MODE_VARIABLE = '/mavlink/1/1/HEARTBEAT/custom_mode'
 export const MODES = { MANUAL: 0, STEERING: 3, HOLD: 4 }
 
 const TIME_LABELS = { none: 'No time trigger', once: 'On startup', interval: 'Repeatedly' }
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
 
 /**
  * Create an HTTP action that GETs `path` on the echo server, with no placeholders, so it can run

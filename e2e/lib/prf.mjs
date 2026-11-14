@@ -320,7 +320,7 @@ export function pauseBlueOS(host, paused) {
 export async function switchUser(page, name) {
   if (!(await page.exists('#select-profile'))) await openMenuPage(page, 'settings-general')
   await page.click('#select-profile', { settle: 1500 })
-  const dialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+  const dialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
   await page.waitFor(() => page.eval(`!${dialog}?.querySelector('.v-progress-circular')`), {
     label: 'the users to load',
   })

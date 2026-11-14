@@ -50,7 +50,7 @@ export async function startEchoServer() {
   return { url: `http://127.0.0.1:${server.address().port}`, requests, close: () => server.close() }
 }
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
 
 const centreOf = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' })

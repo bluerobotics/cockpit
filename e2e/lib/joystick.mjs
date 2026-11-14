@@ -20,7 +20,7 @@ export const JOY_META = {
   synced: { [CALIBRATION_KEY]: {}, [DISABLED_KEY]: [] },
 }
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'center' })

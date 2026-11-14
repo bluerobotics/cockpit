@@ -178,7 +178,7 @@ export async function wheelZoom(page, which, zoom, at) {
 export async function fieldByLabel(page, label) {
   const wanted = JSON.stringify(label)
   const p = await page.eval(`(() => {
-    const scope = [...document.querySelectorAll('.v-overlay--active')].at(-1) ?? document
+    const scope = [...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1) ?? document
     const field = [...scope.querySelectorAll('.v-field')]
       .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('label')?.textContent.trim().startsWith(${wanted}))
     // Data-lake expression fields (coordinates, heading) are Monaco editors under a legend.
