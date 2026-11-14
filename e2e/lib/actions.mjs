@@ -107,7 +107,7 @@ export async function openActions(page) {
   if (await page.eval(tableShown)) return
   // The panel's own "Actions" title, right of the side menu entry of the same name.
   const title = `[...document.querySelectorAll('*')].find((e) => e.childElementCount === 0 && e.textContent.trim() === 'Actions'
-    && e.getClientRects().length && e.getBoundingClientRect().x > 150)`
+    && e.checkVisibility({ visibilityProperty: true }) && e.getBoundingClientRect().x > 150)`
   await page.click(await centreOf(page, title), { settle: 1000 })
 }
 

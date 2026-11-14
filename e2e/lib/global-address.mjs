@@ -7,7 +7,7 @@ import { openMenuPage } from './mavlink-tools.mjs'
 // Nothing answers there on the test network.
 export const NO_VEHICLE = '192.168.0.250'
 
-const panelInput = `[...document.querySelectorAll('form')].find((f) => f.getClientRects().length
+const panelInput = `[...document.querySelectorAll('form')].find((f) => f.checkVisibility({ visibilityProperty: true })
   && f.querySelector('.mdi-restore'))?.querySelector('input')`
 
 /**

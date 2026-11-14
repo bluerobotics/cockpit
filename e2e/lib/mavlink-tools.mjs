@@ -87,7 +87,7 @@ export const inspectorMessage = (page, type, direction) => {
  */
 export const inspectorListed = (page) =>
   page.eval(`[...document.querySelectorAll('.cursor-pointer.rounded')]
-    .filter((e) => e.getClientRects().length && /^[A-Z0-9_]+$/.test(e.textContent.trim())).map((e) => e.textContent.trim())`)
+    .filter((e) => e.checkVisibility({ visibilityProperty: true }) && /^[A-Z0-9_]+$/.test(e.textContent.trim())).map((e) => e.textContent.trim())`)
 
 /**
  * Text currently shown in the top alert bar.

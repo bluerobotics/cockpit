@@ -21,7 +21,8 @@ export default async function run({ page, vehicle }) {
   await addActionButton(page, rows[1], 'Arm', 'Mavlink arm')
   await exitEditMode(page)
 
-  const topBar = () => page.eval(`!!document.querySelector('#mainTopBar')?.getClientRects().length`)
+  const topBar = () =>
+    page.eval(`!!document.querySelector('#mainTopBar')?.checkVisibility({ visibilityProperty: true })`)
   await page.caption('Press "Top bar" twice')
   await page.click('text=Top bar', { settle: 1500 })
   const hidden = !(await topBar())

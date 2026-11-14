@@ -112,7 +112,7 @@ export async function openWidgetConfig(page, name) {
     page,
     `[...document.querySelectorAll('#view-widgets-list p')].find((p) => p.textContent.trim() === ${JSON.stringify(
       name
-    )} && p.getClientRects().length)?.parentElement.querySelector('.mdi-cog')`
+    )} && p.checkVisibility({ visibilityProperty: true }))?.parentElement.querySelector('.mdi-cog')`
   )
   if (!cog) throw new Error(`no cog for the widget "${name}"`)
   await page.click(cog, { settle: 1500 })
@@ -157,7 +157,7 @@ export async function addMiniWidget(page, label, bar, slot) {
   const before = new Set((await miniContainers(page)).flatMap((c) => c.widgets.map((w) => w.hash)))
   const handle = await centreOf(
     page,
-    `[...document.querySelectorAll('.palette-card')].find((e) => e.getClientRects().length &&
+    `[...document.querySelectorAll('.palette-card')].find((e) => e.checkVisibility({ visibilityProperty: true }) &&
       e.querySelector('.palette-card-label')?.innerText.trim().toLowerCase() === ${JSON.stringify(
         label.toLowerCase()
       )})?.querySelector('.palette-card-handle')`
@@ -187,7 +187,7 @@ export async function openMiniWidgetConfig(page, hash) {
     page,
     `[...document.querySelectorAll('span')].find((s) => s.textContent.trim() === ${JSON.stringify(
       where.container
-    )} && s.getClientRects().length)
+    )} && s.checkVisibility({ visibilityProperty: true }))
       ?.nextElementSibling?.querySelectorAll('.mdi-cog')[${where.index}]`
   )
   if (!cog) throw new Error(`no cog for the mini widget in "${where.container}"`)
@@ -214,7 +214,7 @@ export async function pickItem(page, label, match, search) {
     page,
     // Any open overlay: the topmost one can be a tooltip.
     `[...document.querySelectorAll('.v-overlay--active .v-field')]
-      .find((f) => f.getClientRects().length && f.querySelector('label')?.textContent.trim().startsWith(${JSON.stringify(
+      .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('label')?.textContent.trim().startsWith(${JSON.stringify(
         label
       )}))?.querySelector('input')`
   )
@@ -226,7 +226,7 @@ export async function pickItem(page, label, match, search) {
     typeof match === 'string'
       ? `(t) => t === ${JSON.stringify(match)}`
       : `(t) => t.startsWith(${JSON.stringify(match.prefix)})`
-  const item = `[...document.querySelectorAll('.v-overlay--active .v-list-item')].find((i) => i.getClientRects().length && (${test})(i.innerText.trim()))`
+  const item = `[...document.querySelectorAll('.v-overlay--active .v-list-item')].find((i) => i.checkVisibility({ visibilityProperty: true }) && (${test})(i.innerText.trim()))`
   const at = await centreOf(page, item)
   if (!at) throw new Error(`no item for "${label}"`)
   await page.click(at, { settle: 900 })
@@ -242,7 +242,7 @@ export async function dialogButton(page, text, settle = 1000) {
   const at = await centreOf(
     page,
     `[...document.querySelectorAll('.v-overlay--active button')]
-      .findLast((b) => b.getClientRects().length && b.innerText.trim().toUpperCase() === ${JSON.stringify(
+      .findLast((b) => b.checkVisibility({ visibilityProperty: true }) && b.innerText.trim().toUpperCase() === ${JSON.stringify(
         text.toUpperCase()
       )})`
   )
@@ -409,7 +409,7 @@ export const profileViews = (page) =>
 export const viewRow = (name) =>
   `[...document.querySelectorAll('p.text-sm')].find((p) => p.textContent.trim() === ${JSON.stringify(
     name
-  )} && p.getClientRects().length && p.parentElement.querySelector('.view-drag-handle'))?.parentElement`
+  )} && p.checkVisibility({ visibilityProperty: true }) && p.parentElement.querySelector('.view-drag-handle'))?.parentElement`
 
 /**
  * Edit mode → Views: + (new view), and name it in the dialog that opens.
@@ -421,7 +421,7 @@ export async function createView(page, name) {
   await page.click('.mdi-plus-circle', { settle: 1500 })
   const input = await centreOf(
     page,
-    `[...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'New view name' && p.getClientRects().length)
+    `[...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'New view name' && p.checkVisibility({ visibilityProperty: true }))
       ?.parentElement.querySelector('input')`
   )
   if (!input) throw new Error('no "New view name" field')

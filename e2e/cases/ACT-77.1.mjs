@@ -66,7 +66,7 @@ export default async function run({ page }) {
   await page.wait(1500)
   await page.check('The console shows the line twice (test and play)', async () => {
     const shown =
-      await page.eval(`[...document.querySelectorAll('span.truncate')].filter((s) => s.getClientRects().length)
+      await page.eval(`[...document.querySelectorAll('span.truncate')].filter((s) => s.checkVisibility({ visibilityProperty: true }))
       .map((s) => s.textContent.trim()).filter((t) => t.includes(${JSON.stringify(LINE)}))`)
     return { ok: shown.length === 2, detail: `${shown.length}: ${shown.join(' | ')}` }
   })

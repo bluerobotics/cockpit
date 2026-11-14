@@ -11,7 +11,7 @@ export const meta = {
 export const setup = quiet
 
 const PANEL = `[...document.querySelectorAll('*')].find((e) => e.childElementCount === 0
-  && e.textContent.trim() === 'Vehicle network connection (global address)' && e.getClientRects().length)`
+  && e.textContent.trim() === 'Vehicle network connection (global address)' && e.checkVisibility({ visibilityProperty: true }))`
 
 /**
  * Settings → General → the global address panel, where Standalone offers "Search for vehicles": the web

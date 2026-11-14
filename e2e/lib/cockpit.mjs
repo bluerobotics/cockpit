@@ -58,8 +58,8 @@ export const MAP_HOOK = `(() => {
 })()`
 
 const MAPS = {
-  planning: `(m) => m.getContainer().id === 'planningMap' && m.getContainer().getClientRects().length > 0`,
-  widget: `(m) => m.getContainer().id.startsWith('map-') && m.getContainer().getClientRects().length > 0`,
+  planning: `(m) => m.getContainer().id === 'planningMap' && m.getContainer().checkVisibility({ visibilityProperty: true })`,
+  widget: `(m) => m.getContainer().id.startsWith('map-') && m.getContainer().checkVisibility({ visibilityProperty: true })`,
 }
 // `which` is 'planning', 'widget' (the last visible Map widget), or a map container id.
 export const mapExpr = (which) =>
@@ -180,10 +180,10 @@ export async function fieldByLabel(page, label) {
   const p = await page.eval(`(() => {
     const scope = [...document.querySelectorAll('.v-overlay--active')].at(-1) ?? document
     const field = [...scope.querySelectorAll('.v-field')]
-      .find((f) => f.getClientRects().length && f.querySelector('label')?.textContent.trim().startsWith(${wanted}))
+      .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('label')?.textContent.trim().startsWith(${wanted}))
     // Data-lake expression fields (coordinates, heading) are Monaco editors under a legend.
     const expression = [...scope.querySelectorAll('fieldset.dl-expression-field')]
-      .find((f) => f.getClientRects().length && f.querySelector('legend')?.textContent.trim().startsWith(${wanted}))
+      .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('legend')?.textContent.trim().startsWith(${wanted}))
     const input = field?.querySelector('input, textarea') ?? expression?.querySelector('.monaco-editor .view-lines')
     if (!input) return null
     const r = input.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
@@ -277,7 +277,7 @@ export function mapPolylines(page, which) {
 // Visible waypoint markers on the planning map.
 export const waypointMarkerCount = (page) =>
   page.eval(
-    `[...document.querySelectorAll('#planningMap .waypoint-marker-icon')].filter((e) => e.getClientRects().length).length`
+    `[...document.querySelectorAll('#planningMap .waypoint-marker-icon')].filter((e) => e.checkVisibility({ visibilityProperty: true })).length`
   )
 
 /**
@@ -372,7 +372,7 @@ export async function dismissTutorial(page, within = 0) {
   do {
     const close = await page.eval(`(() => {
       const title = [...document.querySelectorAll('*')]
-        .find((el) => el.childElementCount === 0 && el.textContent.trim() === 'Welcome to Cockpit!' && el.getClientRects().length)
+        .find((el) => el.childElementCount === 0 && el.textContent.trim() === 'Welcome to Cockpit!' && el.checkVisibility({ visibilityProperty: true }))
       // The nearest ancestor holding a close button is the tour's own dialog, whatever it is styled with.
       let card = title
       while (card && !card.querySelector('button .mdi-close')) card = card.parentElement

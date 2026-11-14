@@ -46,7 +46,7 @@ const centre = (page, expr) =>
 
 // The row of the options panel whose label reads `label`.
 const row = (label) =>
-  `[...document.querySelectorAll('span')].find((s) => s.getClientRects().length && s.textContent.trim() === ${JSON.stringify(
+  `[...document.querySelectorAll('span')].find((s) => s.checkVisibility({ visibilityProperty: true }) && s.textContent.trim() === ${JSON.stringify(
     label
   )})?.parentElement`
 

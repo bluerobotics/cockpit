@@ -22,7 +22,7 @@ export const meta = {
 const BUTTON = 10
 
 const SUGGESTION_APPLY = `(() => { const card = [...document.querySelectorAll('.suggestion-item-compact')]
-    .find((c) => c.getClientRects().length && c.querySelector('h4')?.textContent.trim() === ${JSON.stringify(
+    .find((c) => c.checkVisibility({ visibilityProperty: true }) && c.querySelector('h4')?.textContent.trim() === ${JSON.stringify(
       ACTION_NAME
     )})
   return card && [...card.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Apply') })()`
@@ -69,7 +69,7 @@ export default async function run({ page }) {
   await page.click(`text=${SUGGESTION_GROUP}`, { settle: 2500 })
   await page.check('Each suggestion card holds its own joystick drawing', async () => {
     const spill =
-      await page.eval(`[...document.querySelectorAll('.suggestion-item-compact')].filter((c) => c.getClientRects().length)
+      await page.eval(`[...document.querySelectorAll('.suggestion-item-compact')].filter((c) => c.checkVisibility({ visibilityProperty: true }))
       .map((c) => { const r = c.getBoundingClientRect(); const d = c.querySelector('.joystick-svg-container-small').getBoundingClientRect()
         return Math.round(Math.max(r.left - d.left, d.right - r.right, d.bottom - r.bottom, 0)) })`)
     const worst = Math.max(0, ...spill)

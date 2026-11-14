@@ -45,7 +45,7 @@ export default async function run({ page, added }) {
       page,
       `[...document.querySelectorAll('#view-widgets-list p')].filter((p) => p.textContent.trim() === ${JSON.stringify(
         name
-      )} && p.getClientRects().length).at(-1)?.parentElement.parentElement.querySelector('.mdi-trash-can')`
+      )} && p.checkVisibility({ visibilityProperty: true })).at(-1)?.parentElement.parentElement.querySelector('.mdi-trash-can')`
     )
     if (!trash) throw new Error(`no trash icon for "${name}" under ${bar}`)
     await page.click(trash, { settle: 1500 })

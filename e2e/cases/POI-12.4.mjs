@@ -8,7 +8,7 @@ export const meta = {
 
 // Visible Map widgets, left to right, as `{ id, box }`.
 const mapWidgets = (page) =>
-  page.eval(`(window.__e2eMaps || []).filter((m) => m.getContainer().id.startsWith('map-') && m.getContainer().getClientRects().length)
+  page.eval(`(window.__e2eMaps || []).filter((m) => m.getContainer().id.startsWith('map-') && m.getContainer().checkVisibility({ visibilityProperty: true }))
     .map((m) => { const r = m.getContainer().getBoundingClientRect(); return { id: m.getContainer().id, box: { x: r.x, y: r.y, w: r.width, h: r.height } } })
     .sort((a, b) => a.box.x - b.box.x)`)
 

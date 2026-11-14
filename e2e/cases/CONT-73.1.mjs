@@ -10,7 +10,7 @@ export const meta = {
 
 export const setup = quietStart
 
-const BAR = `[...document.querySelectorAll('[class*="bg-slate-600/50"]')].find((e) => e.getClientRects().length)`
+const BAR = `[...document.querySelectorAll('[class*="bg-slate-600/50"]')].find((e) => e.checkVisibility({ visibilityProperty: true }))`
 
 const barWidgets = (page) =>
   page.store(
@@ -54,7 +54,8 @@ export default async function run({ page }) {
     const text = await batteryText()
     return { ok: /\d+(\.\d+)?\s*V/.test(text ?? ''), detail: text ?? 'not drawn' }
   })
-  const topBar = () => page.eval(`!!document.querySelector('#mainTopBar')?.getClientRects().length`)
+  const topBar = () =>
+    page.eval(`!!document.querySelector('#mainTopBar')?.checkVisibility({ visibilityProperty: true })`)
   await page.caption('Press "Top bar" twice')
   await page.click('text=Top bar', { settle: 1500 })
   const hidden = !(await topBar())

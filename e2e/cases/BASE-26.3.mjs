@@ -37,7 +37,7 @@ export default async function run({ page }) {
   })
   await page.check('Coverage drawn on the map', () =>
     page.eval(`[...document.querySelectorAll('.leaflet-overlay-pane canvas, .leaflet-overlay-pane path')]
-      .some((e) => e.getClientRects().length)`)
+      .some((e) => e.checkVisibility({ visibilityProperty: true }))`)
   )
   await page.wait(2500)
 }

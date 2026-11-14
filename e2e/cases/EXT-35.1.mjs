@@ -17,7 +17,7 @@ export const meta = {
 }
 
 const actionRow = (name) =>
-  `[...document.querySelectorAll('tr')].find((tr) => tr.getClientRects().length && tr.querySelector('td')?.textContent.trim() === ${JSON.stringify(
+  `[...document.querySelectorAll('tr')].find((tr) => tr.checkVisibility({ visibilityProperty: true }) && tr.querySelector('td')?.textContent.trim() === ${JSON.stringify(
     name
   )})`
 

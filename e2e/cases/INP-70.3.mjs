@@ -54,7 +54,7 @@ export default async function run({ page }) {
     await createElementVariable(page, `release-test/${name.toLowerCase()}`)
   }
   await page.caption('Dropdown options: a = 1, b = 2')
-  const add = `[...document.querySelectorAll('.fixed.right-0 button')].find((b) => b.innerText.trim().toLowerCase() === 'add' && b.getClientRects().length)`
+  const add = `[...document.querySelectorAll('.fixed.right-0 button')].find((b) => b.innerText.trim().toLowerCase() === 'add' && b.checkVisibility({ visibilityProperty: true }))`
   await page.click(await centreOf(page, add), { settle: 900 })
   await fillOption(page, 'a', '1')
   await page.click(await centreOf(page, menuButton('add another option')), { settle: 900 })

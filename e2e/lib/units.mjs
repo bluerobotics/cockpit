@@ -50,7 +50,7 @@ export async function placeDepthAndTemperature(page) {
  * @returns {Promise<{depth: string, temperature: string}>} Their text
  */
 export const readouts = (page) =>
-  page.eval(`(() => { const text = (label) => [...document.querySelectorAll('div')].filter((d) => d.getClientRects().length && d.childElementCount < 6)
+  page.eval(`(() => { const text = (label) => [...document.querySelectorAll('div')].filter((d) => d.checkVisibility({ visibilityProperty: true }) && d.childElementCount < 6)
       .map((d) => d.innerText.replace(/\\s+/g, ' ').trim()).find((t) => new RegExp('^-?[0-9.]+ [^ ]+ ' + label + '$').test(t))
     const value = (label) => text(label)?.replace(new RegExp(' ' + label + '$'), '') ?? ''
     return { depth: value('Depth'), temperature: value('Water temp') } })()`)

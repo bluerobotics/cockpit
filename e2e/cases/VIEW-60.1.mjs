@@ -18,7 +18,8 @@ export default async function run({ page }) {
   await page.caption('Main menu → Edit interface → Views: +, then name it')
   await createView(page, NAME)
   await page.check(`"${NAME}" heads the Views list, selected`, async () => {
-    const rows = await page.eval(`[...document.querySelectorAll('p.text-sm')].filter((p) => p.getClientRects().length
+    const rows =
+      await page.eval(`[...document.querySelectorAll('p.text-sm')].filter((p) => p.checkVisibility({ visibilityProperty: true })
       && p.parentElement.querySelector('.view-drag-handle')).map((p) => p.textContent.trim())`)
     const selected = await page.store('widget-manager', 's.currentView.name')
     return {
