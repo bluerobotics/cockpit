@@ -57,7 +57,17 @@ const row = (label) =>
  */
 export async function openTelemetryPanel(page, panel) {
   if (!(await page.exists('text=On screen telemetry data'))) await openMenuPage(page, 'settings-telemetry')
-  await page.click(`text=${panel}`, { settle: 1200 })
+  // Aimed at the title's own text: the box matched by its label reaches down onto the next panel's header.
+  const at = await page.eval(`(() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      if (n.textContent.trim() !== ${JSON.stringify(
+        panel
+      )} || !n.parentElement.checkVisibility({ visibilityProperty: true })) continue
+      const range = document.createRange(); range.selectNodeContents(n); const r = range.getBoundingClientRect()
+      if (r.width) return { x: r.x + r.width / 2, y: r.y + r.height / 2 } }
+    return null })()`)
+  if (!at) throw new Error(`no "${panel}" panel`)
+  await page.click(at, { settle: 1200 })
 }
 
 /**
