@@ -6,6 +6,9 @@ import { sleep } from './driver.mjs'
 /** Cockpit user the tests run as, so the operators' own synced settings on the vehicle are never touched. */
 export const TEST_USER = 'release-tests'
 
+// The dialog on top, ignoring tooltips and snackbars.
+export const TOP_DIALOG = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
+
 /**
  * localStorage entries for a fresh profile.
  * @param {string} vehicleHost - Vehicle (BlueOS) address
@@ -178,7 +181,7 @@ export async function wheelZoom(page, which, zoom, at) {
 export async function fieldByLabel(page, label) {
   const wanted = JSON.stringify(label)
   const p = await page.eval(`(() => {
-    const scope = [...document.querySelectorAll('.v-overlay--active')].at(-1) ?? document
+    const scope = ${TOP_DIALOG} ?? document
     const field = [...scope.querySelectorAll('.v-field')]
       .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('label')?.textContent.trim().startsWith(${wanted}))
     // Data-lake expression fields (coordinates, heading) are Monaco editors under a legend.
