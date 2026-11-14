@@ -1,6 +1,7 @@
 import { addLocale, useLocale } from 'ttag'
 
 import pt_BR from '@/i18n/pt_BR.po'
+import zh_CN from '@/i18n/zh_CN.po'
 import { createDataLakeVariable } from '@/libs/actions/data-lake'
 import { settingsManager } from '@/libs/settings-management'
 
@@ -9,6 +10,7 @@ export const languageKey = 'cockpit-language'
 // Each language is titled in itself, so it can be found from any interface language.
 const catalogs = {
   pt_BR: { strings: pt_BR, vuetifyLocale: 'pt', title: 'Português (Brasil)' },
+  zh_CN: { strings: zh_CN, vuetifyLocale: 'zhHans', title: '简体中文' },
 }
 
 export const availableLanguages = [
