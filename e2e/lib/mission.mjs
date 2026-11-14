@@ -527,10 +527,12 @@ export const lineThrough = (lines, points, tolerance = 2e-6) =>
  */
 export async function confirmSlider(page) {
   await page.waitFor('.slideunlock-handler', { timeout: 8000, label: 'the slide-to-confirm prompt' })
-  const { text, track } =
-    await page.eval(`(() => { const t = [...document.querySelectorAll('.slideunlock')].find((e) => e.checkVisibility({ visibilityProperty: true }))
-    const r = t.getBoundingClientRect(); return { text: t.innerText.trim(), track: { right: r.x + r.width, y: r.y + r.height / 2 } } })()`)
-  const handle = await page.box('.slideunlock-handler')
+  // The live prompt: an earlier one, already confirmed, can still be in the page, collapsed, with its handle at the end.
+  const { text, track, handle } =
+    await page.eval(`(() => { const t = [...document.querySelectorAll('.slideunlock')].find((e) => { const h = e.querySelector('.slideunlock-handler')
+      const r = e.getBoundingClientRect(); return h && r.width > 40 && e.checkVisibility({ visibilityProperty: true }) && h.getBoundingClientRect().x - r.x < 40 })
+    const r = t.getBoundingClientRect(); const h = t.querySelector('.slideunlock-handler').getBoundingClientRect()
+    return { text: t.innerText.trim(), track: { right: r.x + r.width, y: r.y + r.height / 2 }, handle: { x: h.x + h.width / 2, y: h.y + h.height / 2 } } })()`)
   await page.drag(handle, { x: track.right + 10, y: track.y }, { duration: 900, settle: 1200 })
   return text
 }

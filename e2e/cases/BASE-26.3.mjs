@@ -25,15 +25,35 @@ export default async function run({ page }) {
   await chooseInPanel(page, 'Comms', 'Mobile data (4G/5G)')
   await chooseInPanel(page, 'Coverage', 'OSM Overpass')
   await page.caption('Loading cell towers from OpenStreetMap')
-  await page
-    .waitFor(async () => (await towersCached(page)) > 0 || /returned no cellular data/.test(await snackbars(page)), {
-      timeout: 60000,
-      label: 'OpenStreetMap coverage',
-    })
-    .catch(() => undefined)
+  // OpenStreetMap's public server turns busy callers away, as a shared CI address often is; Cockpit then says to try
+  // again in a minute, which is what the case does, choosing the provider afresh.
+  let busy = false
+  for (let attempt = 0; attempt < 3; attempt++) {
+    busy = false
+    await page
+      .waitFor(
+        async () => {
+          const text = await snackbars(page)
+          busy ||= /server is busy/.test(text)
+          return busy || (await towersCached(page)) > 0 || /returned no cellular data/.test(text)
+        },
+        { timeout: 60000, label: 'OpenStreetMap coverage' }
+      )
+      .catch(() => undefined)
+    if (!busy) break
+    await page.caption('OpenStreetMap is busy: wait a minute and ask again')
+    await page.wait(60000)
+    await chooseInPanel(page, 'Coverage', 'Custom overlay')
+    await chooseInPanel(page, 'Coverage', 'OSM Overpass')
+  }
   await page.check('Cell towers loaded around the base station', async () => {
     const towers = await towersCached(page)
-    return { ok: towers > 0, detail: towers ? `${towers} towers` : (await snackbars(page)) || 'nothing loaded' }
+    return {
+      ok: towers > 0,
+      detail: towers
+        ? `${towers} towers`
+        : (await snackbars(page)) || (busy ? 'OpenStreetMap server busy on every attempt' : 'nothing loaded'),
+    }
   })
   await page.check('Coverage drawn on the map', () =>
     page.eval(`[...document.querySelectorAll('.leaflet-overlay-pane canvas, .leaflet-overlay-pane path')]
