@@ -1,12 +1,16 @@
-import { drawPath4, estimates, parseEstimate, sidebarInput } from '../lib/mission.mjs'
+import { drawPath4, estimates, parseEstimate, setCruiseSpeed, sidebarInput } from '../lib/mission.mjs'
 
 export const meta = { title: 'ETA reacts to cruise speed', route: '/mission-planning', needs: ['vehicle'] }
 
+// The field starts empty, meaning the vehicle's own speed, so the case sets one it can double.
+const SPEED = 2
+
 /**
- * The standard four-waypoint path, drawn before recording.
+ * The standard four-waypoint path, drawn before recording, at a known cruise speed.
  */
 export async function setup({ page }) {
   await drawPath4(page)
+  await setCruiseSpeed(page, SPEED)
 }
 
 /**
@@ -14,11 +18,7 @@ export async function setup({ page }) {
  */
 export default async function run({ page }) {
   const field = await sidebarInput(page, 'Cruise speed')
-  const speed = Number(
-    await page.eval(
-      `(() => { const p = [...document.querySelectorAll('p')].find((e) => e.textContent.trim() === 'Cruise speed'); return p?.nextElementSibling?.value })()`
-    )
-  )
+  const speed = SPEED
   const before = await estimates(page)
   await page.caption(`Cruise speed ${speed} m/s, ETA ${before.ETA}; double the speed`)
   await page.fill(field, speed * 2)
