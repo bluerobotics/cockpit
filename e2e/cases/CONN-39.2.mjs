@@ -13,5 +13,7 @@ export const meta = {
  * Point the main connection at BlueOS's GCS UDP server link and check the vehicle stays online over it.
  */
 export default async function run({ page, vehicleHost }) {
-  await switchAndCheck(page, vehicleHost, `udpout://${vehicleHost}:14550`, "BlueOS's GCS UDP server link")
+  // An operator types the vehicle's IP address here; Cockpit's UDP link does not resolve a hostname like localhost.
+  const host = vehicleHost === 'localhost' ? '127.0.0.1' : vehicleHost
+  await switchAndCheck(page, vehicleHost, `udpout://${host}:14550`, "BlueOS's GCS UDP server link")
 }
