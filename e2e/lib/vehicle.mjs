@@ -183,6 +183,36 @@ export function vehicle(host, { system = 1, component = 1 } = {}) {
     if (res.status !== 200) throw new Error(`could not write ${key} for ${user}: ${res.status} ${res.text}`)
   }
 
+  // Replace every synced Cockpit setting of a user with these, in one write, so nothing a previous run left behind
+  // survives. Returns the package as written, for seeding the browser's local copy to match.
+  const replaceSyncedSettings = async (user, settings) => {
+    const epochLastChangedLocally = Date.now()
+    const pack = Object.fromEntries(
+      Object.entries(settings).map(([k, value]) => [k, { epochLastChangedLocally, value }])
+    )
+    const res = await http(`http://${host}/bag/v1.0/set/cockpit/settings-v2/${user}`, pack)
+    if (res.status !== 200) throw new Error(`could not write the settings of ${user}: ${res.status} ${res.text}`)
+    return pack
+  }
+
+  // The id Cockpit files this vehicle's synced settings under, given one if it has none yet.
+  const settingsVehicleId = async () => {
+    const res = await http(`http://${host}/bag/v1.0/get/cockpit/cockpit-vehicle-id`)
+    if (res.status === 200) return JSON.parse(res.text)
+    const id = 'release-tests-vehicle'
+    const set = await http(`http://${host}/bag/v1.0/set/cockpit/cockpit-vehicle-id`, id)
+    if (set.status !== 200) throw new Error(`could not give the vehicle a settings id: ${set.status} ${set.text}`)
+    return id
+  }
+
+  // The vehicle's wired addresses, as BlueOS's beacon reports them: the video routes Cockpit prefers.
+  const wiredAddresses = async () => {
+    const res = await http(`http://${host}/beacon/v1.0/services`)
+    if (res.status !== 200) throw new Error(`could not read the vehicle's addresses: ${res.status} ${res.text}`)
+    const services = JSON.parse(res.text).filter((s) => s.service_type === '_http' && s.interface_type === 'WIRED')
+    return [...new Set(services.map((s) => s.ip))]
+  }
+
   const getSyncedSetting = async (user, key) => {
     const res = await http(`http://${host}/bag/v1.0/get/cockpit/settings-v2/${user}/${key}`)
     return res.status === 200 ? JSON.parse(res.text).value : undefined
@@ -215,6 +245,9 @@ export function vehicle(host, { system = 1, component = 1 } = {}) {
     readParam,
     setParam,
     setSyncedSetting,
+    replaceSyncedSettings,
+    settingsVehicleId,
+    wiredAddresses,
     getSyncedSetting,
     reset,
     heartbeat: () => read('HEARTBEAT'),

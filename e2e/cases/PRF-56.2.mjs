@@ -8,12 +8,11 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { [VARIABLES_KEYS[0]]: [], [VARIABLES_KEYS[1]]: {} },
-  restore: VARIABLES_KEYS,
 }
 
 const NAME = 'release-test/slider'
-const SLIDER = `[...document.querySelectorAll('.slider-container')].find((e) => e.getClientRects().length)`
-const SLIDER_CARD = `[...document.querySelectorAll('.palette-card')].find((e) => e.getClientRects().length
+const SLIDER = `[...document.querySelectorAll('.slider-container')].find((e) => e.checkVisibility({ visibilityProperty: true }))`
+const SLIDER_CARD = `[...document.querySelectorAll('.palette-card')].find((e) => e.checkVisibility({ visibilityProperty: true })
   && e.querySelector('.palette-card-label')?.innerText.trim().toLowerCase() === 'slider')?.querySelector('.palette-card-handle')`
 
 /**
@@ -37,7 +36,7 @@ export default async function run({ page }) {
   await page.caption(`Click the slider; Actions → Data-lake variable → create "${NAME}"`)
   await page.click(await centre(page, SLIDER), { settle: 1200 })
   await page.click('text=create', { settle: 800 })
-  const nameInput = `[...document.querySelectorAll('input[type=text]')].find((i) => i.getClientRects().length
+  const nameInput = `[...document.querySelectorAll('input[type=text]')].find((i) => i.checkVisibility({ visibilityProperty: true })
     && i.parentElement?.querySelector('p')?.textContent.trim() === 'Name')`
   await page.fill(await centre(page, nameInput), NAME)
   await page.wait(400)

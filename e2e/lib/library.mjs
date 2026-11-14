@@ -79,7 +79,7 @@ export async function groupButton(page, hash, icon) {
  * @returns {Promise<Array<{name: string, text: string}>>} File name and card text
  */
 export const processedCards = (page) =>
-  page.eval(`[...document.querySelectorAll('[id^="video-library-thumbnail-"]')].filter((e) => e.getClientRects().length)
+  page.eval(`[...document.querySelectorAll('[id^="video-library-thumbnail-"]')].filter((e) => e.checkVisibility({ visibilityProperty: true }))
     .map((e) => ({ name: e.id.slice('video-library-thumbnail-'.length), text: e.innerText.replace(/\\s+/g, ' ').trim() }))`)
 
 /**
@@ -163,14 +163,6 @@ export async function stubOpenDialog(port, paths) {
   ws.close()
   if (result.result?.result?.value !== true)
     throw new Error(`could not stub the open dialog: ${JSON.stringify(result)}`)
-}
-
-/**
- * Stop a Standalone-only case early in the web build.
- * @param {object} page - Driver page
- */
-export async function standaloneOnly(page) {
-  if (!(await page.eval('!!window.electronAPI'))) throw new Error('this case runs in Standalone only (--app)')
 }
 
 /**
@@ -269,7 +261,7 @@ export async function renameMission(page, name) {
   const at = await page.eval(
     `(() => { const el = [...document.querySelectorAll('p.text-ellipsis')].find((e) => e.textContent.trim() === ${JSON.stringify(
       current
-    )} && e.getClientRects().length); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`
+    )} && e.checkVisibility({ visibilityProperty: true })); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`
   )
   if (!at) throw new Error(`the mission name "${current}" is not in the top bar`)
   await page.click(at, { settle: 1200 })

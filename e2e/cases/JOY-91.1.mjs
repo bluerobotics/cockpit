@@ -12,9 +12,10 @@ export const setup = async (ctx) => {
   await ctx.page.waitFor(() => ctx.page.store('controller', 's.joysticks.size === 2'), { label: 'the second gamepad' })
 }
 
-const topBarShown = (page) => page.eval(`!!document.querySelector('#mainTopBar')?.getClientRects().length`)
+const topBarShown = (page) =>
+  page.eval(`!!document.querySelector('#mainTopBar')?.checkVisibility({ visibilityProperty: true })`)
 const enableSwitch = (model) =>
-  `[...document.querySelectorAll('p')].find((p) => p.textContent.trim() === '${model} controller')?.nextElementSibling?.querySelector('input')`
+  `[...document.querySelectorAll('p')].find((p) => p.textContent.trim() === '${model} controller')?.closest('.flex-column')?.querySelector('.v-switch input')`
 
 /**
  * Press button 4 of a gamepad and report whether the top bar is shown afterwards.

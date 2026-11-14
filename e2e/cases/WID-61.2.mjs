@@ -1,41 +1,58 @@
-import process from 'node:process'
-
+import { createFakeStream, deleteFakeStream } from '../lib/fake-streams.mjs'
+import { STREAM, STREAM_4K } from '../lib/video.mjs'
 import { closeDialog, openWidgetConfig, pickItem, placeVideoWidget, quietStart, widgetByHash } from '../lib/widgets.mjs'
 
-// Set these to the streams a RadCam vehicle offers; the CI vehicle has neither.
-const RADCAM = process.env.COCKPIT_E2E_RADCAM_STREAM ?? 'RadCam'
-const USBCAM = process.env.COCKPIT_E2E_USBCAM_STREAM ?? 'Stream /dev/video2'
-
 export const meta = {
-  title: 'A RadCam stream and a UsbCam stream play in the Video widget',
+  title: 'A 4K stream and a 1080p stream play in the Video widget',
   route: '/',
-  needs: ['vehicle', 'camera', 'radcam'],
+  needs: ['vehicle', 'camera'],
 }
 
-export const setup = quietStart
+// The 4K test stream is served for this case only: encoding it all run long starves everything else of CPU.
+export const setup = async (ctx) => {
+  await createFakeStream(ctx.vehicleHost, STREAM_4K)
+  await quietStart(ctx)
+}
 
 const playback = (page, hash) =>
   page.eval(`(() => { const v = document.querySelector('[data-e2e-widget="${hash}"] video')
     return v ? { width: v.videoWidth, time: v.currentTime } : null })()`)
 
 /**
- * Pick the RadCam stream, then the UsbCam one: both play.
+ * Pick the 4K stream, then the 1080p one: both play at their own resolution.
  */
-export default async function run({ page }) {
+export default async function run({ page, vehicleHost }) {
+  try {
+    await playBoth(page)
+  } finally {
+    await deleteFakeStream(vehicleHost, STREAM_4K)
+  }
+}
+
+const playBoth = async (page) => {
   await page.caption('Edit interface: add a Video Player and open its cog')
   const widget = await placeVideoWidget(page)
-  for (const [i, stream] of [RADCAM, USBCAM].entries()) {
+  for (const [i, [stream, width]] of [
+    [STREAM_4K, 3840],
+    [STREAM, 1920],
+  ].entries()) {
     if (i) await openWidgetConfig(page, widget.name)
-    await page.caption(`Stream: "${stream}", then 10 s`)
+    await page.caption(`Stream: "${stream}", then until it plays`)
     await pickItem(page, 'Stream', { prefix: stream })
     await closeDialog(page)
-    await page.wait(8000)
+    // A 4K stream's first keyframe can take a while to come through, and nothing plays until it does.
+    await page
+      .waitFor(async () => (await playback(page, widget.hash))?.width === width, {
+        label: `${stream} at ${width}`,
+        timeout: 40000,
+      })
+      .catch(() => undefined)
     const t0 = await playback(page, widget.hash)
     await page.wait(2000)
     const t1 = await playback(page, widget.hash)
     const stored = (await widgetByHash(page, widget.hash))?.options.internalStreamName
     await page.check(`"${stream}" plays`, () => ({
-      ok: stored === stream && t1?.width > 0 && t1.time > (t0?.time ?? Infinity),
+      ok: stored === stream && t1?.width === width && t1.time > (t0?.time ?? Infinity),
       detail: `option ${stored}; width ${t1?.width}, time ${t0?.time?.toFixed(1)} → ${t1?.time?.toFixed(1)} s`,
     }))
   }

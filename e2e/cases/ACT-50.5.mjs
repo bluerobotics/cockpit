@@ -1,5 +1,5 @@
 import { setUpActions } from '../lib/act-case.mjs'
-import { ACTION_KEYS, clickActionButton, listedActions, NO_ACTIONS } from '../lib/actions.mjs'
+import { clickActionButton, listedActions, NO_ACTIONS } from '../lib/actions.mjs'
 import {
   callsTo,
   createRequestAction,
@@ -9,7 +9,6 @@ import {
   reloadToActions,
   setTriggers,
   storedTriggers,
-  TRIGGER_KEYS,
 } from '../lib/triggers.mjs'
 
 const GONE = { name: 'Release deleted request', path: '/deleted' }
@@ -20,7 +19,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { ...NO_ACTIONS, ...NO_TRIGGERS },
-  restore: [...ACTION_KEYS, ...TRIGGER_KEYS],
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)

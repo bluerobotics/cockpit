@@ -59,7 +59,7 @@ export const coverageRadius = (page, which) =>
  * @returns {Promise<{x: number, y: number}|null>} Viewport point
  */
 export const baseStationMarker = (page) =>
-  page.eval(`(() => { const el = [...document.querySelectorAll('.base-station-marker-icon')].find((e) => e.getClientRects().length)
+  page.eval(`(() => { const el = [...document.querySelectorAll('.base-station-marker-icon')].find((e) => e.checkVisibility({ visibilityProperty: true }))
     const r = el?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null })()`)
 
 /**
@@ -87,7 +87,9 @@ export async function openBaseStationPanel(page) {
 }
 
 // JS expression for the visible panel row whose label starts with `label`.
-const panelRow = (label) => `[...document.querySelectorAll('.config-row')].find((r) => r.getClientRects().length
+const panelRow = (
+  label
+) => `[...document.querySelectorAll('.config-row')].find((r) => r.checkVisibility({ visibilityProperty: true })
   && r.querySelector('.config-label')?.textContent.trim().startsWith(${JSON.stringify(label)}))`
 
 /**

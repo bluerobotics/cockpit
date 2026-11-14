@@ -82,7 +82,7 @@ export async function clickCorners(page, corners, onCorner) {
 export async function sidebarInput(page, label) {
   const wanted = JSON.stringify(label)
   const p = await page.eval(`(() => {
-    const p = [...document.querySelectorAll('p')].find((e) => e.getClientRects().length && e.textContent.trim().startsWith(${wanted}))
+    const p = [...document.querySelectorAll('p')].find((e) => e.checkVisibility({ visibilityProperty: true }) && e.textContent.trim().startsWith(${wanted}))
     const input = p?.nextElementSibling
     if (input?.tagName !== 'INPUT') return null
     const r = input.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
@@ -96,25 +96,31 @@ export async function sidebarInput(page, label) {
  * @param {number} [index] - Which survey, in drawing order
  */
 export async function openSurveyMenu(page, index = 0) {
+  // A point where the polygon itself is on top: its centre can sit under its area label or a transit line.
   const at =
     await page.eval(`(() => { const p = [...document.querySelectorAll('#planningMap path.survey-polygon')][${index}];
-    if (!p) return null; const r = p.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+    if (!p) return null; const r = p.getBoundingClientRect()
+    for (const fy of [0.5, 0.3, 0.7, 0.2, 0.8]) for (const fx of [0.5, 0.3, 0.7, 0.2, 0.8]) {
+      const x = r.x + r.width * fx, y = r.y + r.height * fy
+      if (document.elementFromPoint(x, y) === p) return { x, y } }
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
   if (!at) throw new Error(`no survey polygon #${index}`)
   await page.rightClick(at, { settle: 1100 })
   await page.waitFor('.context-menu .orbit-container', { label: 'the survey menu' })
 }
 
 /**
- * Viewport point halfway along the path segment that leaves waypoint `i` (0-based).
+ * Viewport point along the path segment that leaves waypoint `i` (0-based), halfway by default.
  * @param {object} page - Driver page
  * @param {number} i - Index of the segment's first waypoint
+ * @param {number} [at] - Fraction of the way along the segment
  * @returns {Promise<{x: number, y: number}>} Viewport point
  */
-export async function segmentMidpoint(page, i) {
+export async function segmentMidpoint(page, i, at = 0.5) {
   const { waypoints } = await missionState(page)
   const a = await geoToPage(page, 'planning', waypoints[i])
   const b = await geoToPage(page, 'planning', waypoints[i + 1])
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+  return { x: a.x + (b.x - a.x) * at, y: a.y + (b.y - a.y) * at }
 }
 
 /**
@@ -152,7 +158,8 @@ export async function sawSnackbar(page, text, timeout = 8000) {
 // Rows of the "Mission estimates" card, as { label: text }.
 export const estimates = (page) =>
   page.eval(`(() => {
-    const title = [...document.querySelectorAll('*')].find((e) => e.childElementCount === 0 && e.textContent.trim() === 'Mission estimates' && e.getClientRects().length)
+    const title = [...document.querySelectorAll('*')].find((e) => e.childElementCount === 0
+      && e.textContent.trim() === 'Mission estimates' && e.checkVisibility({ visibilityProperty: true }))
     const lines = (title?.closest('.v-card, div[class*=rounded]')?.innerText ?? '').split('\\n').map((l) => l.trim()).filter(Boolean).slice(1)
     const out = {}; for (let i = 0; i + 1 < lines.length; i += 2) out[lines[i]] = lines[i + 1]
     return out })()`)
@@ -247,7 +254,7 @@ export async function homeMarker(page, which) {
   const id = which === 'planning' ? `'planningMap'` : null
   return page.eval(`(() => { const m = (window.__e2eMaps || []).filter((m) => ${
     id ? `m.getContainer().id === ${id}` : `m.getContainer().id.startsWith('map-')`
-  } && m.getContainer().getClientRects().length).at(-1)
+  } && m.getContainer().checkVisibility({ visibilityProperty: true })).at(-1)
     if (!m) return null; let found = null
     m.eachLayer((l) => { const el = l.getElement?.(); if (found || !l.getLatLng || !el || el.classList.contains('leaflet-tooltip')) return
       const tip = l.getTooltip?.()?.getElement?.()
@@ -306,7 +313,7 @@ export async function addWaypointCommand(page, index, command, params) {
   await page.click('text=APPEND NEW COMMAND', { settle: 1000 })
   // The panel's selects, top to bottom: MAV frame, then the new command's Type, then its Command.
   const selects = () =>
-    page.eval(`[...document.querySelectorAll('.v-select')].filter((e) => e.getClientRects().length && e.getBoundingClientRect().x > 1150)
+    page.eval(`[...document.querySelectorAll('.v-select')].filter((e) => e.checkVisibility({ visibilityProperty: true }) && e.getBoundingClientRect().x > 1150)
       .map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })`)
   await page.click((await selects()).at(-1), { settle: 800 })
   await page.click('text=MAVLink Non-Navigation Command', { settle: 900 })
@@ -314,7 +321,7 @@ export async function addWaypointCommand(page, index, command, params) {
   await pickFromMenu(page, command)
   for (const [n, value] of Object.entries(params)) {
     const at = await page.eval(`(() => {
-      const p = [...document.querySelectorAll('p')].find((e) => e.getClientRects().length && e.textContent.trim().startsWith('Param ${n}'))
+      const p = [...document.querySelectorAll('p')].find((e) => e.checkVisibility({ visibilityProperty: true }) && e.textContent.trim().startsWith('Param ${n}'))
       const input = p?.parentElement?.querySelector('input'); if (!input) return null
       const r = input.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
     if (!at) throw new Error(`no field for Param ${n}`)
@@ -381,7 +388,8 @@ export async function startUploadedMission(page, vehicle) {
 export async function missionPanelButton(page, icon) {
   const locate = () =>
     page.eval(`(() => {
-      const title = [...document.querySelectorAll('*')].find((e) => e.childElementCount === 0 && e.textContent.trim() === 'Mission control panel' && e.getClientRects().length)
+      const title = [...document.querySelectorAll('*')].find((e) => e.childElementCount === 0
+        && e.textContent.trim() === 'Mission control panel' && e.checkVisibility({ visibilityProperty: true }))
       let panel = title; while (panel && !panel.querySelector('button .${icon}')) panel = panel.parentElement
       const btn = panel?.querySelector('button:has(.${icon})'); if (!btn) return null
       const r = btn.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) } })()`)
@@ -519,10 +527,12 @@ export const lineThrough = (lines, points, tolerance = 2e-6) =>
  */
 export async function confirmSlider(page) {
   await page.waitFor('.slideunlock-handler', { timeout: 8000, label: 'the slide-to-confirm prompt' })
-  const { text, track } =
-    await page.eval(`(() => { const t = [...document.querySelectorAll('.slideunlock')].find((e) => e.getClientRects().length)
-    const r = t.getBoundingClientRect(); return { text: t.innerText.trim(), track: { right: r.x + r.width, y: r.y + r.height / 2 } } })()`)
-  const handle = await page.box('.slideunlock-handler')
+  // The live prompt: an earlier one, already confirmed, can still be in the page, collapsed, with its handle at the end.
+  const { text, track, handle } =
+    await page.eval(`(() => { const t = [...document.querySelectorAll('.slideunlock')].find((e) => { const h = e.querySelector('.slideunlock-handler')
+      const r = e.getBoundingClientRect(); return h && r.width > 40 && e.checkVisibility({ visibilityProperty: true }) && h.getBoundingClientRect().x - r.x < 40 })
+    const r = t.getBoundingClientRect(); const h = t.querySelector('.slideunlock-handler').getBoundingClientRect()
+    return { text: t.innerText.trim(), track: { right: r.x + r.width, y: r.y + r.height / 2 }, handle: { x: h.x + h.width / 2, y: h.y + h.height / 2 } } })()`)
   await page.drag(handle, { x: track.right + 10, y: track.y }, { duration: 900, settle: 1200 })
   return text
 }

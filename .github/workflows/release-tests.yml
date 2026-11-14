@@ -1,16 +1,22 @@
 name: Release tests
 
-# Drives the web build through the release checklist cases in e2e/, against a BlueOS running ArduRover SITL as a
-# boat in a container, and keeps each case's video as the proof.
+# Drives the web build, and the Linux Standalone build for the cases that only apply to it, through the release
+# checklist cases in e2e/, against a BlueOS running ArduRover SITL as a boat in a container, and keeps each case's
+# video as the proof.
 on:
   workflow_dispatch:
     inputs:
       cases:
         description: Case ids or group prefixes, space-separated; empty runs every group, one job each
         required: false
+      standalone:
+        description: Run the selected cases on the Standalone build instead of the web one
+        type: boolean
+        default: false
 
 env:
-  NODE_OPTIONS: --max-old-space-size=6144
+  # The checklist's hour-long recordings, shortened so their group fits the job: a few minutes proves the same path.
+  COCKPIT_E2E_RECORDING_MINUTES: 5
   # Pinned, so a BlueOS release cannot change a run's results.
   BLUEOS_IMAGE: bluerobotics/blueos-core:1.4.6
 
@@ -25,21 +31,26 @@ jobs:
         uses: actions/checkout@v4
 
       # Groups are read from e2e/cases rather than listed here, so a new group is not silently left out.
-      # The trailing dash keeps a prefix like MAP from also matching MAPSRC.
+      # The trailing dash keeps a prefix like MAP from also matching MAPSRC. Standalone-only cases are skipped by the
+      # web batches and run together in one Standalone batch.
       - name: Split the cases into batches
         id: batches
         env:
           CASES: ${{ inputs.cases }}
+          STANDALONE: ${{ inputs.standalone }}
         run: |
           if [ -n "${CASES//[[:space:]]}" ]; then
-            batches=$(jq -cn --arg cases "$CASES" '[{name: "selected", cases: $cases}]')
+            batches=$(jq -cn --arg cases "$CASES" --argjson app "${STANDALONE:-false}" '[{name: "selected", cases: $cases, app: $app}]')
           else
-            batches=$(cd e2e/cases && ls *.mjs | sed 's/-.*//' | sort -u | jq -R '{name: ., cases: (. + "-")}' | jq -sc .)
+            cd e2e/cases
+            web=$(ls *.mjs | sed 's/-.*//' | sort -u | jq -R '{name: ., cases: (. + "-"), app: false}' | jq -s .)
+            app=$(grep -l "platforms: \[[^]]*'electron'" *.mjs | sed 's/\.mjs$//' | paste -sd ' ' -)
+            batches=$(jq -cn --argjson web "$web" --arg app "$app" '$web + [{name: "standalone", cases: $app, app: true}]')
           fi
           echo "batches=$batches" >> "$GITHUB_OUTPUT"
 
   web:
-    name: Web (${{ matrix.batch.name }})
+    name: ${{ matrix.batch.app && 'Standalone' || 'Web' }} (${{ matrix.batch.name }})
     needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -57,11 +68,26 @@ jobs:
       # A bridge network rather than BlueOS's usual host one, so its network manager cannot touch the runner's.
       # Published on port 80, since Cockpit's vehicle address field takes a host without a port.
       # 6021 is mavlink-camera-manager's WebRTC signalling, which Cockpit reaches on the vehicle address directly.
+      # 5762 and 5763 are the autopilot's second and third serial ports, which the serial-connection cases bridge to;
+      # 14550/udp is BlueOS's GCS UDP server link, enabled below; 8554 is the RTSP stream's server.
       - name: Start BlueOS
-        run: docker run -d --name blueos --privileged -p 80:80 -p 6021:6021 "$BLUEOS_IMAGE"
+        run: |
+          docker run -d --name blueos --privileged -p 80:80 -p 6021:6021 -p 5762:5762 -p 5763:5763 -p 14550:14550/udp \
+            -p 8554:8554 "$BLUEOS_IMAGE"
 
+      # Vehicle discovery skips the computer's own address and Docker's interfaces, so the published BlueOS gets a
+      # second address of the runner's own, on a small network discovery scans.
+      - name: Give vehicle discovery a network with BlueOS on it
+        if: matrix.batch.app
+        run: |
+          sudo ip addr add 10.99.0.2/32 dev lo
+          sudo ip link add eno9 type dummy
+          sudo ip addr add 10.99.0.1/29 dev eno9
+          sudo ip link set eno9 up
+
+      # Electron has no headless mode, so the Standalone build runs on a virtual display.
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg ${{ matrix.batch.app && 'xvfb' || '' }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -73,6 +99,11 @@ jobs:
           yarn install --frozen-lockfile --network-timeout 600000
           yarn build
 
+      # Unpacked rather than an AppImage, so it runs without FUSE.
+      - name: Package the Standalone build
+        if: matrix.batch.app
+        run: yarn deploy:electron:dir --linux
+
       - name: Serve the build
         run: |
           yarn preview > preview.log 2>&1 &
@@ -81,28 +112,66 @@ jobs:
       - name: Make the vehicle an ArduRover SITL boat
         run: node e2e/ci/blueos-sitl.mjs localhost
 
-      # The container has no camera, so mavlink-camera-manager serves two test-pattern streams instead: one under the
-      # name BlueOS gives a UsbCam, which the VID cases use, and a second one to switch to.
-      - name: Serve two test-pattern camera streams
+      # Off by default in BlueOS; the UDP connection case reaches the vehicle through it. The link only exists once
+      # the autopilot runs, and enabling it restarts BlueOS's MAVLink routing, which the runner waits out.
+      - name: Enable BlueOS's GCS UDP server link
+        run: |
+          api=http://localhost/ardupilot-manager/v1.0/endpoints/
+          for _ in $(seq 100); do
+            links=$(curl -sfL $api | jq -c '[.[] | select(.name == "GCS Server Link") | .enabled = true]') && [ "$links" != "[]" ] && break
+            sleep 3
+          done
+          [ "$links" != "[]" ] && curl -sfL -X PUT -H 'Content-Type: application/json' -d "$links" $api
+
+      # The container has no camera, so mavlink-camera-manager serves H264 test-pattern streams instead.
+      - name: Serve test-pattern camera streams
         run: node e2e/ci/fake-streams.mjs localhost
+
+      # Run inside the container, where BlueOS's helper finds it and serves it under /extensionv2/e2e.
+      # 9876 is free in BlueOS 1.4.6; 9134, for one, is Kraken's.
+      - name: Serve a test extension with Cockpit extras
+        run: |
+          docker cp e2e/ci/fake-extension.py blueos:/tmp/fake-extension.py
+          docker exec -d blueos python3 /tmp/fake-extension.py 9876
+          # Only the EXT cases need it, so a miss is reported with what BlueOS saw and the other cases still run.
+          if ! timeout 240 bash -c 'until curl -sf -o /dev/null http://localhost/extensionv2/e2e/cockpit_extras.json; do sleep 3; done'; then
+            echo "::warning::BlueOS did not serve the test extension; the EXT cases will fail"
+            docker exec blueos sh -c 'ps aux | grep [f]ake-extension; curl -s localhost:9876/register_service'
+            curl -s http://localhost/helper/v1.0/web_services | head -c 3000
+          fi
 
       - name: Run the cases
         env:
           CASES: ${{ matrix.batch.cases }}
+          APP: ${{ matrix.batch.app }}
         # CASES is left unquoted on purpose: it is a list of ids.
-        run: node e2e/run.mjs $CASES --url http://localhost:5050 --vehicle localhost --build "${GITHUB_REF_NAME} ${GITHUB_SHA::10}" --out e2e/output
+        run: |
+          label="${GITHUB_REF_NAME} ${GITHUB_SHA::10}"
+          if [ "$APP" = true ]; then
+            # The cases that read a web build's recording export need one made first, in the same output folder.
+            web=0
+            node e2e/run.mjs VID-46.1 --url http://localhost:5050 --vehicle localhost --build "$label" --out e2e/output || web=$?
+            app=0
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+              node e2e/run.mjs $CASES --app dist/linux-unpacked --vehicle localhost --build "Standalone $label" --out e2e/output || app=$?
+            exit $(( web || app ))
+          else
+            node e2e/run.mjs $CASES --url http://localhost:5050 --vehicle localhost --build "$label" --out e2e/output
+          fi
 
       - name: Upload the videos and report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-tests-web-${{ matrix.batch.name }}
+          name: release-tests-${{ matrix.batch.app && 'standalone' || 'web' }}-${{ matrix.batch.name }}
           path: e2e/output
           if-no-files-found: ignore
 
       - name: BlueOS logs
         if: failure()
-        run: docker logs --tail 200 blueos
+        run: |
+          docker logs --tail 200 blueos
+          docker exec blueos sh -c 'tail -n 300 /var/logs/blueos/services/mavlink-camera-manager/*.log'
 
   # One artifact for the whole run, so a release sign-off does not mean opening a report per group.
   # Separate directories, since jobs that start in the same second write the same timestamped output folder.
@@ -115,6 +184,6 @@ jobs:
       - name: Merge the group reports
         uses: actions/upload-artifact/merge@v4
         with:
-          name: release-tests-web
-          pattern: release-tests-web-*
+          name: release-tests
+          pattern: release-tests-*-*
           separate-directories: true

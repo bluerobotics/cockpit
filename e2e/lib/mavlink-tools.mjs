@@ -3,17 +3,42 @@
 import { readFileSync } from 'node:fs'
 
 /**
- * Open a page of the main menu, e.g. ('Tools', 'MAVLink') or ('Settings', 'Alerts').
+ * Open a page of the main menu, e.g. 'tools-mavlink' or 'settings-alerts'.
  * @param {object} page - Driver page
- * @param {string} section - Main menu entry
- * @param {string} title - Page in that section
+ * @param {string} id - The page's id (`SubMenuComponentName` in src/types/general.ts), whose prefix names its section
  */
-export async function openMenuPage(page, section, title) {
+export async function openMenuPage(page, id) {
   // Another menu page is open: close it first, the way an operator would.
-  if (!(await page.exists('.mdi-menu-right'))) await closeMenu(page)
-  await page.click('.mdi-menu-right', { settle: 900 })
-  await page.click(`text=${section}`, { settle: 900 })
-  await page.click(`text=${title}`, { settle: 1500 })
+  if (!(await page.exists('#menu-trigger'))) await closeMenu(page)
+  await page.click('#menu-trigger', { settle: 900 })
+  await clickWhenStill(page, `#main-menu-${id.split('-')[0]}`, 900)
+  await clickWhenStill(page, `#menu-page-${id}`, 1500)
+  const opened = () =>
+    page.eval(`document.querySelector('#app').__vue_app__.config.globalProperties.$router
+      .currentRoute.value.meta.menuPage === ${JSON.stringify(id)}`)
+  await page.waitFor(opened, { label: `the ${id} menu page to open`, timeout: 5000 })
+}
+
+/**
+ * Click a main-menu entry once it has stopped moving: the menu animates its height between levels, moving its
+ * entries out from under a click aimed at where they were.
+ * @param {object} page - Driver page
+ * @param {string} selector - CSS selector of the entry
+ * @param {number} settle - ms to wait after the click
+ */
+export async function clickWhenStill(page, selector, settle) {
+  const rect = `JSON.stringify(document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect())`
+  let last
+  await page.waitFor(
+    async () => {
+      const now = await page.eval(rect)
+      const still = now !== undefined && now === last
+      last = now
+      return still
+    },
+    { label: `${selector} to stop moving`, timeout: 5000 }
+  )
+  await page.click(selector, { settle })
 }
 
 /**
@@ -21,7 +46,7 @@ export async function openMenuPage(page, section, title) {
  * @param {object} page - Driver page
  */
 export async function closeMenu(page) {
-  const close = '.flex.gap-x-2.absolute.top-0.right-0 button'
+  const close = '#menu-page-close'
   if (await page.exists(close)) await page.click(close, { settle: 800 })
   await page.click({ x: page.width * 0.85, y: page.height * 0.45 }, { settle: 800 })
 }
@@ -62,7 +87,7 @@ export const inspectorMessage = (page, type, direction) => {
  */
 export const inspectorListed = (page) =>
   page.eval(`[...document.querySelectorAll('.cursor-pointer.rounded')]
-    .filter((e) => e.getClientRects().length && /^[A-Z0-9_]+$/.test(e.textContent.trim())).map((e) => e.textContent.trim())`)
+    .filter((e) => e.checkVisibility({ visibilityProperty: true }) && /^[A-Z0-9_]+$/.test(e.textContent.trim())).map((e) => e.textContent.trim())`)
 
 /**
  * Text currently shown in the top alert bar.

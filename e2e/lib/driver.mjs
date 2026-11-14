@@ -47,7 +47,8 @@ const appsLeft = (result) => Number(result.stdout.match(/apps-left:(\d+)/)?.[1] 
  */
 async function connect(port) {
   let wsUrl
-  for (let i = 0; i < 150 && !wsUrl; i++) {
+  // Up to 90 s: a cold browser on a loaded CI runner can take over 30 s to open its first page.
+  for (let i = 0; i < 450 && !wsUrl; i++) {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
       wsUrl = targets.find((t) => t.type === 'page' && !t.url.startsWith('devtools://'))?.webSocketDebuggerUrl
@@ -153,7 +154,8 @@ const finder = (selector) =>
   selector.startsWith('text=')
     ? `(() => {
          const text = ${JSON.stringify(selector.slice(5))}.toLowerCase()
-         const visible = (el) => el.getClientRects().length > 0
+         // visibility: hidden keeps its boxes, as the Flight view parked under Mission planning does.
+         const visible = (el) => el.checkVisibility({ visibilityProperty: true })
          // Matches inside the viewport win over ones parked off-screen (hidden drawers, the widget picker).
          const inView = (el) => { const r = el.getBoundingClientRect(); return r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight }
          const all = (list) => {
@@ -164,7 +166,9 @@ const finder = (selector) =>
          return all('button, a, [role="button"], [role="menuitem"], [role="option"], .v-list-item, summary')[0]
            ?? all('div, span, li, th, td, p, label, h1, h2, h3, h4, h5, h6').pop() ?? null
        })()`
-    : `[...document.querySelectorAll(${JSON.stringify(selector)})].find((el) => el.getClientRects().length > 0) ?? null`
+    : `[...document.querySelectorAll(${JSON.stringify(
+        selector
+      )})].find((el) => el.checkVisibility({ visibilityProperty: true })) ?? null`
 
 const MODIFIERS = { Alt: 1, Control: 2, Meta: 4, Shift: 8 }
 const KEYS = {
@@ -287,7 +291,12 @@ export async function launch(options = {}) {
     if (options.app) {
       // Electron takes the same two switches; it has no headless mode, so the window opens in the background.
       const args = [`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, ...(options.args ?? [])]
-      const child = spawn('open', ['-n', '-g', '-W', '-a', options.app, '--args', ...args])
+      // Off macOS the app is electron-builder's unpacked folder; without the setuid sandbox helper a CI runner
+      // lacks, Electron only starts unsandboxed.
+      const child =
+        process.platform === 'darwin'
+          ? spawn('open', ['-n', '-g', '-W', '-a', options.app, '--args', ...args])
+          : spawn(join(options.app, 'cockpit'), [...args, '--no-sandbox'])
       child.stderr.on('data', ignore)
       return child
     }
@@ -422,14 +431,21 @@ export async function launch(options = {}) {
   // --- recording --------------------------------------------------------------------
   // Frames carry a virtual timestamp so time-lapse stretches can be squeezed; `offset` is how
   // much real time has been cut so far.
+  // Each frame is written to disk as it arrives, so a long case does not hold its whole video in memory.
   const frames = []
+  const frameDir = mkdtempSync(join(tmpdir(), 'cockpit-e2e-frames-'))
+  const keepFrame = (data, frame) => {
+    const file = join(frameDir, `f${String(frames.length).padStart(6, '0')}.jpg`)
+    writeFileSync(file, Buffer.from(data, 'base64'))
+    frames.push({ file, ...frame })
+  }
   let recording = false
   let offset = 0
   const now = () => Date.now() - offset
   // `ts` is when the frame was drawn, on the page's own clock (epoch seconds), which is what lines the
   // video up with timings measured inside the page.
   on('Page.screencastFrame', ({ data, sessionId, metadata }) => {
-    if (recording) frames.push({ data, at: now(), ts: metadata?.timestamp })
+    if (recording) keepFrame(data, { at: now(), ts: metadata?.timestamp })
     send('Page.screencastFrameAck', { sessionId }).catch(ignore)
   })
   // A smaller, rougher capture costs the page less: on a weak machine every captured frame is read
@@ -891,7 +907,7 @@ export async function launch(options = {}) {
         await sleep(Math.min(every, end - Date.now()))
         if (onTick) await onTick()
         const { data } = await send('Page.captureScreenshot', { format: 'jpeg', quality: 88 })
-        frames.push({ data, at: now() })
+        keepFrame(data, { at: now() })
         offset += Math.max(0, every - show)
       }
       await startScreencast()
@@ -909,36 +925,33 @@ export async function launch(options = {}) {
     encode: (out, fps = 30) => {
       if (options.hdmi) return encodeCapture(out)
       if (frames.length < 2) throw new Error(`captured only ${frames.length} frames`)
-      const dir = mkdtempSync(join(tmpdir(), 'cockpit-e2e-frames-'))
       const lines = []
       frames.forEach((frame, i) => {
-        const file = join(dir, `f${String(i).padStart(6, '0')}.jpg`)
-        writeFileSync(file, Buffer.from(frame.data, 'base64'))
         const next = frames[i + 1]?.at ?? frame.at + 1000
-        lines.push(`file '${file}'`, `duration ${Math.max(0.016, (next - frame.at) / 1000).toFixed(3)}`)
+        lines.push(`file '${frame.file}'`, `duration ${Math.max(0.016, (next - frame.at) / 1000).toFixed(3)}`)
       })
       // The concat demuxer ignores the final duration unless the last file is repeated.
-      lines.push(`file '${join(dir, `f${String(frames.length - 1).padStart(6, '0')}.jpg`)}'`)
-      writeFileSync(join(dir, 'list.txt'), lines.join('\n'))
-      // ponytail: every screencast frame of a case is held in memory until encode (a ~1 min case is a few
-      // hundred MB, hence the 6 GB heap in release-tests.yml); stream frames to disk if cases get much longer.
+      lines.push(`file '${frames.at(-1).file}'`)
+      writeFileSync(join(frameDir, 'list.txt'), lines.join('\n'))
       const filters = `fps=${fps},scale=trunc(iw/2)*2:trunc(ih/2)*2`
       const ff = spawnSync(
         'ffmpeg',
-        ['-y', '-f', 'concat', '-safe', '0', '-i', join(dir, 'list.txt'), '-vf', filters, '-c:v', 'libx264'].concat([
-          '-preset',
-          'medium',
-          '-crf',
-          '22',
-          '-pix_fmt',
-          'yuv420p',
-          '-movflags',
-          '+faststart',
-          out,
-        ]),
+        [
+          '-y',
+          '-f',
+          'concat',
+          '-safe',
+          '0',
+          '-i',
+          join(frameDir, 'list.txt'),
+          '-vf',
+          filters,
+          '-c:v',
+          'libx264',
+        ].concat(['-preset', 'medium', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]),
         { encoding: 'utf8' }
       )
-      rmSync(dir, { recursive: true, force: true })
+      rmSync(frameDir, { recursive: true, force: true })
       if (ff.status !== 0) throw new Error(ff.stderr?.slice(-2000) ?? 'ffmpeg failed')
       return { frames: frames.length, seconds: (frames.at(-1).at - frames[0].at) / 1000 }
     },
@@ -964,6 +977,7 @@ export async function launch(options = {}) {
     // Close the session; quits a browser this driver started and deletes throwaway profiles.
     close: async () => {
       await quit()
+      rmSync(frameDir, { recursive: true, force: true })
       if (remote) {
         for (const name of [profile, ...throwaway])
           remoteShell(remote, `Remove-Item -Recurse -Force ${remoteProfile(name)} -ErrorAction SilentlyContinue`)

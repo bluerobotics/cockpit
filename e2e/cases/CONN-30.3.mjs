@@ -10,7 +10,6 @@ export const meta = {
 }
 
 export const setup = async (ctx) => {
-  if (!(await ctx.page.eval('!!window.electronAPI'))) throw new Error('the startup offer is Standalone-only (--app)')
   await quiet(ctx)
 }
 

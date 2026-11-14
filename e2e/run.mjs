@@ -14,7 +14,7 @@
 // default to $COCKPIT_E2E_URL / $COCKPIT_E2E_VEHICLE.
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve, win32 } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -22,7 +22,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { BASE_STATION_DEFAULT } from './lib/base-station.mjs'
 import { attachBoxStats, startBoxStats, stopBoxStats } from './lib/box-stats.mjs'
 import { openCockpit, seedFor, TEST_USER } from './lib/cockpit.mjs'
-import { launch } from './lib/driver.mjs'
+import { launch, sleep } from './lib/driver.mjs'
+import { DECIDED } from './lib/extensions.mjs'
 import { burnOverlays } from './lib/overlay-burn.mjs'
 import { finishSampling, SAMPLER, startSampling } from './lib/perf.mjs'
 import { overlayFrameRate } from './lib/perf-video.mjs'
@@ -44,11 +45,14 @@ const bool = (name) => {
 }
 
 const app = flag('--app')
+// What a case's `meta.platforms` names: a Standalone build is 'electron', any build in a browser is 'web'.
+const platform = app ? 'electron' : 'web'
 const remote = flag('--remote')
 const remotePage = (exe) =>
   `file:///${win32.join(win32.dirname(exe), 'resources/app.asar/dist/index.html').replace(/\\/g, '/')}`
-const appPage =
-  app && (remote ? remotePage(app) : pathToFileURL(join(app, 'Contents/Resources/app.asar/dist/index.html')).href)
+// On macOS `--app` is the .app bundle; elsewhere it is the folder electron-builder unpacks to (`dist/linux-unpacked`).
+const resources = process.platform === 'darwin' ? 'Contents/Resources' : 'resources'
+const appPage = app && (remote ? remotePage(app) : pathToFileURL(join(app, resources, 'app.asar/dist/index.html')).href)
 const url = flag('--url', appPage ?? process.env.COCKPIT_E2E_URL ?? 'http://localhost:5050')
 // No default: every case force-disarms the vehicle and wipes its mission and fence, so the target is always named.
 const vehicleHost = flag('--vehicle', process.env.COCKPIT_E2E_VEHICLE)
@@ -74,9 +78,11 @@ const gitBuild = () => {
   }
 }
 const appBuild = () =>
-  `Standalone ${execFileSync('defaults', ['read', join(app, 'Contents/Info.plist'), 'CFBundleShortVersionString'], {
-    encoding: 'utf8',
-  }).trim()}`
+  process.platform === 'darwin'
+    ? `Standalone ${execFileSync('defaults', ['read', join(app, 'Contents/Info.plist'), 'CFBundleShortVersionString'], {
+        encoding: 'utf8',
+      }).trim()}`
+    : `Standalone ${gitBuild()}`
 // A remote build is labelled by the folder it was unpacked to (`Cockpit-builds\1.19.0-beta.18`).
 const remoteBuild = () => `Standalone ${win32.basename(win32.dirname(app))} on ${remote}`
 const build = flag('--build', remote ? remoteBuild() : app ? appBuild() : gitBuild())
@@ -100,8 +106,14 @@ if (!chosen.length) {
 }
 
 const vehicle = vehicleApi(vehicleHost)
-// SIM_* parameters exist only in SITL builds, so a real autopilot is refused before anything is sent to it.
-if ((await vehicle.readParam('SIM_SPEEDUP')) === undefined) {
+// SIM_* parameters exist only in SITL builds, so a real autopilot is refused before anything is sent to it. Asked for a
+// minute, since a vehicle whose link was just restarted takes a moment to answer.
+let speedup
+for (const until = Date.now() + 60000; speedup === undefined && Date.now() < until; ) {
+  speedup = await vehicle.readParam('SIM_SPEEDUP').catch(() => undefined)
+  if (speedup === undefined) await sleep(2000)
+}
+if (speedup === undefined) {
   console.error(`${vehicleHost} is not an ArduPilot SITL (no SIM_SPEEDUP parameter); refusing to run`)
   process.exit(2)
 }
@@ -110,7 +122,11 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 const outDir = join(outRoot, stamp)
 mkdirSync(outDir, { recursive: true })
 
-const LAYOUT_KEYS = ['cockpit-views-group-v1', 'cockpit-current-view-index-v1']
+// What a fresh install of Cockpit on a boat ends up with once it has imported the boat defaults. Written up front,
+// rather than left to that import, so every case starts from the same layout without waiting on Cockpit.
+const BOAT_DEFAULTS = JSON.parse(readFileSync(join(root, 'fixtures/boat-defaults.json'), 'utf8'))
+const settingsVehicleId = await vehicle.settingsVehicleId()
+const wiredAddresses = await vehicle.wiredAddresses()
 const results = []
 
 const escape = (s) =>
@@ -189,8 +205,9 @@ const caseSection = (r) => {
   const video = r.video
     ? `<video id="v-${escape(r.key ?? r.id)}" src="${escape(r.video)}" controls preload="metadata"></video>`
     : `<p>No video${r.arm === 'bare' ? ' (unrecorded arm)' : ''}.</p>`
-  const error = r.error ? `<p class="fail">Error: ${escape(r.error)}</p>` : ''
-  const mark = r.status === 'pass' ? '✓' : '✗'
+  const skipped = r.status === 'skip'
+  const error = r.error ? `<p class="${r.status}">${skipped ? 'Skipped' : 'Error'}: ${escape(r.error)}</p>` : ''
+  const mark = { pass: '✓', skip: '–' }[r.status] ?? '✗'
   const checks = r.checks.map((c) => checkItem(r, c)).join('')
   const perf = r.perf?.length
     ? perfTable(
@@ -251,6 +268,19 @@ for (const { id, arm, rep } of jobs) {
   })
   if (!mod) continue
   const meta = { id, needs: [], route: '/', synced: {}, ...mod.meta }
+  // A CI runner draws in software on shared cores, so what a case measures of the machine means nothing there.
+  const skipReason =
+    meta.platforms && !meta.platforms.includes(platform)
+      ? `${meta.platforms.join('/')} only`
+      : meta.hardware && process.env.CI
+      ? 'real hardware only'
+      : undefined
+  if (skipReason) {
+    results.push({ id, title: meta.title, status: 'skip', error: skipReason, checks: [], video: null })
+    console.log(`- ${id} — skipped: ${skipReason}`)
+    writeReport()
+    continue
+  }
   const needsVehicle = meta.needs.includes('vehicle')
   const started = Date.now()
   const jobKey = multi ? `${id}-${arm}-r${rep}` : id
@@ -258,7 +288,6 @@ for (const { id, arm, rep } of jobs) {
   let page
   let error
   let perf
-  let layout = {}
   let boxSampling = false
   // Where a case's wall time goes, phase by phase, so the cost around the test is visible next to it.
   const phases = {}
@@ -276,11 +305,19 @@ for (const { id, arm, rep } of jobs) {
     // Clean slate on the vehicle side: simulator parked, and the synced state cases depend on
     // emptied so a fresh profile does not inherit the previous case's mission or POIs.
     await vehicle.reset()
-    // Cases may rearrange the test user's views (adding a second Map widget, say), or change other
-    // synced state they list in `meta.restore`; whatever they do is put back afterwards.
-    for (const key of [...LAYOUT_KEYS, ...(meta.restore ?? [])])
-      layout[key] = await vehicle.getSyncedSetting(TEST_USER, key)
+    // Where an operator's maps were last left: over the boat, rather than Cockpit's default ~10 km away.
+    const boat = await vehicle.position()
     const synced = {
+      ...BOAT_DEFAULTS,
+      ...(boat && {
+        'cockpit-user-last-map-center': [boat.lat, boat.lon],
+        'cockpit-default-map-center': [boat.lat, boat.lon],
+      }),
+      // The video routes Cockpit would pick from BlueOS on first use, which it otherwise does mid-case: the streams
+      // reconnect and a notice covers the page.
+      'cockpit-allowed-stream-ips': wiredAddresses,
+      // Already run, as on any used profile: it would otherwise record every overlay variable in each case.
+      'cockpit-migrations': { 'recorded-variables-from-overlay': true },
       'cockpit-points-of-interest': [],
       'cockpit-draft-mission': {},
       'cockpit-last-uploaded-mission': {},
@@ -292,15 +329,18 @@ for (const { id, arm, rep } of jobs) {
       'cockpit-user-last-custom-map-provider-id': null,
       // The welcome tour only covers the map and costs a wait in every case; no case tests it.
       'cockpit-has-seen-tutorial': true,
+      ...DECIDED,
       // Synced, so a case that follows the vehicle would leave every later one following it too.
       'cockpit-map-follow-vehicle': false,
       ...meta.synced,
     }
-    // Written only where they differ, and one at a time like the reads: the vehicle's settings store serves one
-    // request at a time, so a dozen at once queue past the request timeout, and concurrent writes can lose each other.
-    for (const [key, value] of Object.entries(synced)) {
-      const current = await vehicle.getSyncedSetting(TEST_USER, key)
-      if (JSON.stringify(current) !== JSON.stringify(value)) await vehicle.setSyncedSetting(TEST_USER, key, value)
+    // The whole test user is replaced, so nothing an earlier case changed carries over, and the browser profile gets
+    // the same package: Cockpit opens on it and its first sync finds nothing to change.
+    const pack = await vehicle.replaceSyncedSettings(TEST_USER, synced)
+    const seed = {
+      ...seedFor(vehicleHost),
+      'cockpit-settings-v2': JSON.stringify({ [TEST_USER]: { [settingsVehicleId]: pack } }),
+      'cockpit-last-connected-vehicle-id': settingsVehicleId,
     }
     // Vehicle-side state the app should find already there when it starts, like a loaded mission.
     if (mod.beforeLaunch) await mod.beforeLaunch({ vehicle, meta })
@@ -310,7 +350,7 @@ for (const { id, arm, rep } of jobs) {
     const hdmi = hdmiDevice && !bare ? { device: hdmiDevice, mode: hdmiMode } : undefined
     const screen = Boolean(hdmiDevice)
     page = await launch({
-      seed: seedFor(vehicleHost),
+      seed,
       headed,
       app,
       remote,
@@ -323,15 +363,8 @@ for (const { id, arm, rep } of jobs) {
     lap('app start')
     const ctx = { page, vehicle, url, vehicleHost, meta, outDir, user: TEST_USER }
     if (meta.perf) await page.addScript(SAMPLER)
-    // The views the case runs on: its own profile when it brings one, otherwise the test user's.
-    const views = (synced['cockpit-views-group-v1'] ?? layout['cockpit-views-group-v1'])?.views?.map((v) => v.name)
-    await openCockpit(page, { url, route: meta.route, needsVehicle, views })
+    await openCockpit(page, { url, route: meta.route, needsVehicle })
     lap('app ready')
-    // A test user with no layout yet gets Cockpit's default from this start, which is what later cases go back to.
-    for (const key of LAYOUT_KEYS.filter((k) => layout[k] === undefined)) {
-      const arrived = async () => (layout[key] = await vehicle.getSyncedSetting(TEST_USER, key)) !== undefined
-      await page.waitFor(arrived, { label: `${key} to reach the vehicle`, timeout: 30000 }).catch(ignore)
-    }
     // The machine's load during a performance case: started once the app is up, since processes started later are not
     // sampled.
     if (remote && meta.perf && boxStats) {
@@ -394,9 +427,6 @@ for (const { id, arm, rep } of jobs) {
     if (boxSampling) stopBoxStats(remote)
     await page?.close().catch(ignore)
     await vehicle.reset().catch(ignore)
-    for (const [key, value] of Object.entries(layout)) {
-      if (value !== undefined) await vehicle.setSyncedSetting(TEST_USER, key, value).catch(ignore)
-    }
     lap('close and restore')
   }
 
@@ -452,6 +482,7 @@ for (const { id, arm, rep } of jobs) {
 await Promise.all(plots)
 writeReport()
 
-const failed = results.filter((r) => r.status !== 'pass')
-console.log(`\n${results.length - failed.length}/${results.length} passed — ${join(outDir, 'index.html')}`)
+const failed = results.filter((r) => r.status === 'fail')
+const ran = results.filter((r) => r.status !== 'skip')
+console.log(`\n${ran.length - failed.length}/${ran.length} passed — ${join(outDir, 'index.html')}`)
 process.exit(failed.length ? 1 : 0)

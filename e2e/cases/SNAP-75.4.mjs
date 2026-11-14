@@ -1,10 +1,8 @@
 import { fieldByLabel } from '../lib/cockpit.mjs'
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import {
-  BALL_STREAM,
   ensureSnapshotTool,
   fileSafe,
-  INPUT_KEYS,
   INPUT_SYNCED,
   openSnapshotSettings,
   quietStart,
@@ -12,17 +10,16 @@ import {
   snapshotToolButtons,
   storedSnapshots,
 } from '../lib/inputs.mjs'
-import { setUpRecording, STREAM } from '../lib/video.mjs'
+import { setUpRecording, STREAM, STREAM_720P } from '../lib/video.mjs'
 
 export const meta = {
   title: 'Timed multi-capture every 2 s',
   route: '/',
   needs: ['vehicle', 'camera'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
-const STREAMS = [STREAM, BALL_STREAM]
+const STREAMS = [STREAM, STREAM_720P]
 
 export const setup = async (ctx) => {
   await quietStart(ctx)
@@ -54,7 +51,14 @@ export default async function run({ page }) {
   await page.click((await snapshotToolButtons(page)).play, { settle: 0 })
   await page.wait(6500)
   await page.click((await snapshotToolButtons(page)).play, { settle: 1500 })
-  const atStop = await count()
+  // Encoding and storing each capture lags on a loaded machine, so the count settles a few seconds after the stop.
+  let atStop = await count()
+  for (let stable = 0, deadline = Date.now() + 20000; stable < 3 && Date.now() < deadline; ) {
+    await page.wait(1000)
+    const now = await count()
+    stable = JSON.stringify(now) === JSON.stringify(atStop) ? stable + 1 : 0
+    atStop = now
+  }
   await page.check('3 or 4 captures per stream', () => ({
     ok: STREAMS.every((s) => atStop[s] === 3 || atStop[s] === 4),
     detail: JSON.stringify(atStop),

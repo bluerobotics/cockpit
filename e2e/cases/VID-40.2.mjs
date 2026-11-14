@@ -5,7 +5,6 @@ import {
   keepRecordingsInRun,
   openTelemetryPanel,
   OVERLAY_DEFAULTS,
-  OVERLAY_KEYS,
   parseAss,
   recordAndReadAss,
 } from '../lib/subtitles.mjs'
@@ -16,7 +15,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle', 'camera'],
   synced: OVERLAY_DEFAULTS,
-  restore: OVERLAY_KEYS,
 }
 
 export const setup = async (ctx) => {
@@ -46,7 +44,8 @@ export default async function run({ page }) {
   await page.caption('Settings → Telemetry → Settings: Telemetry frequency 5 Hz')
   await openTelemetryPanel(page, 'Settings')
   const field =
-    await page.eval(`(() => { const i = [...document.querySelectorAll('input[type=number]')].find((e) => e.getClientRects().length)
+    await page.eval(`(() => { const i = [...document.querySelectorAll('p')].find((p) => p.textContent.trim().startsWith('Telemetry frequency')
+      && p.checkVisibility({ visibilityProperty: true }))?.nextElementSibling?.querySelector('input[type=number]')
     i.scrollIntoView({ block: 'center' }); const r = i.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
   await page.fill(field, 5)
   await page.key('Tab', { show: false })

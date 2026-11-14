@@ -58,8 +58,8 @@ export const MAP_HOOK = `(() => {
 })()`
 
 const MAPS = {
-  planning: `(m) => m.getContainer().id === 'planningMap' && m.getContainer().getClientRects().length > 0`,
-  widget: `(m) => m.getContainer().id.startsWith('map-') && m.getContainer().getClientRects().length > 0`,
+  planning: `(m) => m.getContainer().id === 'planningMap' && m.getContainer().checkVisibility({ visibilityProperty: true })`,
+  widget: `(m) => m.getContainer().id.startsWith('map-') && m.getContainer().checkVisibility({ visibilityProperty: true })`,
 }
 // `which` is 'planning', 'widget' (the last visible Map widget), or a map container id.
 export const mapExpr = (which) =>
@@ -178,12 +178,12 @@ export async function wheelZoom(page, which, zoom, at) {
 export async function fieldByLabel(page, label) {
   const wanted = JSON.stringify(label)
   const p = await page.eval(`(() => {
-    const scope = [...document.querySelectorAll('.v-overlay--active')].at(-1) ?? document
+    const scope = [...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1) ?? document
     const field = [...scope.querySelectorAll('.v-field')]
-      .find((f) => f.getClientRects().length && f.querySelector('label')?.textContent.trim().startsWith(${wanted}))
+      .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('label')?.textContent.trim().startsWith(${wanted}))
     // Data-lake expression fields (coordinates, heading) are Monaco editors under a legend.
     const expression = [...scope.querySelectorAll('fieldset.dl-expression-field')]
-      .find((f) => f.getClientRects().length && f.querySelector('legend')?.textContent.trim().startsWith(${wanted}))
+      .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('legend')?.textContent.trim().startsWith(${wanted}))
     const input = field?.querySelector('input, textarea') ?? expression?.querySelector('.monaco-editor .view-lines')
     if (!input) return null
     const r = input.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
@@ -277,7 +277,7 @@ export function mapPolylines(page, which) {
 // Visible waypoint markers on the planning map.
 export const waypointMarkerCount = (page) =>
   page.eval(
-    `[...document.querySelectorAll('#planningMap .waypoint-marker-icon')].filter((e) => e.getClientRects().length).length`
+    `[...document.querySelectorAll('#planningMap .waypoint-marker-icon')].filter((e) => e.checkVisibility({ visibilityProperty: true })).length`
   )
 
 /**
@@ -321,20 +321,23 @@ export const missionState = (page) =>
 
 export const vehicleOnline = (page) => page.store('main-vehicle', 's.isVehicleOnline').catch(() => false)
 
+// Set when Cockpit has finished syncing its settings with the vehicle it connected to.
+const SYNC_HOOK = `addEventListener('vehicle-sync-complete', () => { window.__e2eSynced = true })`
+
 /**
- * Load Cockpit on a route and get it to a quiet state: app mounted, vehicle online when the case
- * needs it, first-run tutorial closed.
+ * Load Cockpit on a route and get it to a quiet state: app mounted, vehicle online and its settings synced when the
+ * case needs it, first-run tutorial closed.
  * @param {object} page - Driver page
  * @param {object} options - Options
  * @param {string} options.url - Cockpit base URL
  * @param {string} [options.route] - Hash route, e.g. '/mission-planning'
  * @param {boolean} [options.needsVehicle] - Wait for the vehicle to come online
- * @param {string[]} [options.views] - The test user's view names on the vehicle; wait until they are loaded
  */
-export async function openCockpit(page, { url, route = '/', needsVehicle = true, views }) {
+export async function openCockpit(page, { url, route = '/', needsVehicle = true }) {
   let hookMissed = false
   if (!page.mapHooked) {
     await page.addScript(MAP_HOOK)
+    await page.addScript(SYNC_HOOK)
     page.mapHooked = true
     // Standalone is already running when the driver attaches, so its first document never got the hook.
     hookMissed = url.endsWith('.html')
@@ -346,15 +349,11 @@ export async function openCockpit(page, { url, route = '/', needsVehicle = true,
   await page.waitFor(mounted, { label: 'Cockpit to mount', timeout: 30000 })
   if (needsVehicle) {
     await page.waitFor(() => vehicleOnline(page), { label: 'the vehicle to come online', timeout: 45000 })
-  }
-  // The test user's layout arrives from the vehicle's settings sync, ~10 s after boot on a slow
-  // machine; until then the app shows its default empty view.
-  if (views?.length) {
-    const names = JSON.stringify(views)
-    const synced = () =>
-      page.eval(`JSON.stringify(document.querySelector('#app').__vue_app__.config.globalProperties.$pinia
-        ._s.get('widget-manager')?.currentProfile?.views?.map((v) => v.name)) === ${JSON.stringify(names)}`)
-    await page.waitFor(synced, { label: 'the layout to sync from the vehicle', timeout: 60000 })
+    // Its first settings sync can still replace what a case does before it lands, like a downloaded mission.
+    await page.waitFor(() => page.eval('window.__e2eSynced === true'), {
+      label: "Cockpit's first sync with the vehicle",
+      timeout: 45000,
+    })
   }
   // The tour opens 6 s after start unless the user has seen it; the runner marks it seen, so the wait is
   // only for profiles where that has not arrived. A tour that opened anyway is still closed.
@@ -373,7 +372,7 @@ export async function dismissTutorial(page, within = 0) {
   do {
     const close = await page.eval(`(() => {
       const title = [...document.querySelectorAll('*')]
-        .find((el) => el.childElementCount === 0 && el.textContent.trim() === 'Welcome to Cockpit!' && el.getClientRects().length)
+        .find((el) => el.childElementCount === 0 && el.textContent.trim() === 'Welcome to Cockpit!' && el.checkVisibility({ visibilityProperty: true }))
       // The nearest ancestor holding a close button is the tour's own dialog, whatever it is styled with.
       let card = title
       while (card && !card.querySelector('button .mdi-close')) card = card.parentElement

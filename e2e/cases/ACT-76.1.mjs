@@ -1,13 +1,12 @@
 import { setUpActions } from '../lib/act-case.mjs'
 import { createCommandAction, sentMessages, spyOutgoing } from '../lib/act-dl.mjs'
-import { ACTION_KEYS, clickActionButton, NO_ACTIONS } from '../lib/actions.mjs'
+import { clickActionButton, NO_ACTIONS } from '../lib/actions.mjs'
 
 export const meta = {
   title: 'MAVLink actions arm and disarm, with their fields sent as set',
   route: '/',
   needs: ['vehicle'],
   synced: NO_ACTIONS,
-  restore: ACTION_KEYS,
 }
 
 export const setup = (ctx) => setUpActions(ctx, false)
@@ -16,13 +15,13 @@ const ARM_DISARM = 'MAV_CMD_COMPONENT_ARM_DISARM'
 
 /**
  * Create "Arm (release)" from the dialog's COMMAND_LONG defaults and "Disarm (release)" with
- * Parameter 1 at 0, play one then the other, and check the vehicle and what Cockpit sent.
+ * Arm at 0, play one then the other, and check the vehicle and what Cockpit sent.
  */
 export default async function run({ page, vehicle }) {
   await page.caption('New MAVLink Message Action "Arm (release)": COMMAND_LONG, the arm defaults')
   await createCommandAction(page, 'Arm (release)')
-  await page.caption('Another, "Disarm (release)": the same with Parameter 1 at 0')
-  await createCommandAction(page, 'Disarm (release)', { 'Parameter 1': 0 })
+  await page.caption('Another, "Disarm (release)": the same with Arm at 0')
+  await createCommandAction(page, 'Disarm (release)', { Arm: 0 })
   await page.check('Both are listed as MAVLink Message actions', async () => {
     const rows = await page.eval(`[...document.querySelectorAll('.v-data-table tbody tr')]
       .map((r) => [...r.querySelectorAll('td p')].slice(0, 2).map((p) => p.textContent.trim()).join(': '))`)
@@ -47,7 +46,7 @@ export default async function run({ page, vehicle }) {
   await clickActionButton(page, 'Disarm (release)', 'play')
   await page.check('The vehicle disarms, and Cockpit shows it disarmed', () => armedIn(false))
 
-  await page.check('Cockpit sent COMMAND_LONG arm/disarm with Parameter 1 = 1, then 0', async () => {
+  await page.check('Cockpit sent COMMAND_LONG arm/disarm with Arm = 1, then 0', async () => {
     const sent = (await sentMessages(page)).filter((m) => m.command?.type === ARM_DISARM)
     const params = sent.map((m) => m.param1)
     const ok = params.length === 2 && params[0] === 1 && params[1] === 0 && sent.every((m) => m.target_system === 1)

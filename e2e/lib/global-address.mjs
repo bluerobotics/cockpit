@@ -7,7 +7,7 @@ import { openMenuPage } from './mavlink-tools.mjs'
 // Nothing answers there on the test network.
 export const NO_VEHICLE = '192.168.0.250'
 
-const panelInput = `[...document.querySelectorAll('form')].find((f) => f.getClientRects().length
+const panelInput = `[...document.querySelectorAll('form')].find((f) => f.checkVisibility({ visibilityProperty: true })
   && f.querySelector('.mdi-restore'))?.querySelector('input')`
 
 /**
@@ -18,7 +18,7 @@ const panelInput = `[...document.querySelectorAll('form')].find((f) => f.getClie
 export async function applyGlobalAddress(page, address) {
   // Standalone offers to search for vehicles when none is connected; that dialog covers the field.
   if (await page.exists('text=Vehicle Discovery')) await page.click('text=Close', { settle: 800 })
-  if (!(await page.eval(`!!(${panelInput})`))) await openMenuPage(page, 'Settings', 'General')
+  if (!(await page.eval(`!!(${panelInput})`))) await openMenuPage(page, 'settings-general')
   if (await page.exists('text=Vehicle Discovery')) await page.click('text=Close', { settle: 800 })
   const at =
     await page.eval(`(() => { const i = ${panelInput}; i.scrollIntoView({ block: 'center' }); const r = i.getBoundingClientRect()

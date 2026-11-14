@@ -20,7 +20,8 @@ export async function setup({ page }) {
 export default async function run({ page }) {
   const before = (await missionState(page)).waypoints
   await page.caption('⌘-click on the segment between waypoints 1 and 2')
-  await page.click(await segmentMidpoint(page, 0), { modifiers: ['Meta'], settle: 1000 })
+  // Off the middle, where hovering shows the segment's "+" knob, which would take the click instead.
+  await page.click(await segmentMidpoint(page, 0, 0.3), { modifiers: ['Meta'], settle: 1000 })
   await page.check('Five waypoints, the new one second', async () => {
     const { waypoints } = await missionState(page)
     const ids = waypoints.map((w) => w.id)

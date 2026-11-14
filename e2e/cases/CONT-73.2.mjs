@@ -3,7 +3,6 @@ import {
   addInputContainer,
   containerElements,
   dropCard,
-  INPUT_KEYS,
   INPUT_SYNCED,
   paletteMode,
   quietStart,
@@ -14,7 +13,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart
@@ -43,7 +41,7 @@ export default async function run({ page }) {
     page.eval(
       `${JSON.stringify(
         hashes
-      )}.filter((h) => document.querySelector('[data-widget-hash="' + h + '"]')?.getClientRects().length).length`
+      )}.filter((h) => document.querySelector('[data-widget-hash="' + h + '"]')?.checkVisibility({ visibilityProperty: true })).length`
     )
   const chevron = `[...document.querySelectorAll('button')].find((b) => b.querySelector('.mdi-chevron-left, .mdi-chevron-right')
     && b.closest('.rounded-lg.overflow-hidden')?.querySelector('[data-widget-hash="${hashes[0]}"]'))`

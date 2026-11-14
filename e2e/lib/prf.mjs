@@ -11,7 +11,6 @@ import { dismissFeaturesDialog, plugVirtualGamepad } from './extensions.mjs'
 import { closeMenu, openMenuPage } from './mavlink-tools.mjs'
 import { confirmSlider } from './mission.mjs'
 
-export const MAPPING_KEY = 'cockpit-joystick-functions-mapping-v1'
 export const VARIABLES_KEYS = ['cockpit-persistent-data-lake-variables', 'cockpit-persistent-data-lake-values']
 // A documentation address (RFC 5737): never routed, so nothing answers there.
 export const NO_VEHICLE = '203.0.113.7'
@@ -38,7 +37,7 @@ export async function centre(page, expr) {
   return at
 }
 
-const ARMER = `[...document.querySelectorAll('button')].find((b) => b.getClientRects().length
+const ARMER = `[...document.querySelectorAll('button')].find((b) => b.checkVisibility({ visibilityProperty: true })
   && /^(Armed|Disarmed|Offline|\\.\\.\\.)$/.test(b.innerText.trim()))`
 
 export const armerLabel = (page) => page.eval(`${ARMER}?.innerText.trim() ?? null`)
@@ -75,7 +74,7 @@ export async function confirmIfAsked(page) {
   // A slider confirmed earlier in the page can still be in the page with its handle at the far end, so only one
   // whose handle is back at the start counts.
   const fresh = `[...document.querySelectorAll('.slideunlock')].some((t) => { const h = t.querySelector('.slideunlock-handler')
-    if (!t.getClientRects().length || !h) return false; return h.getBoundingClientRect().x - t.getBoundingClientRect().x < 40 })`
+    if (!t.checkVisibility({ visibilityProperty: true }) || !h) return false; return h.getBoundingClientRect().x - t.getBoundingClientRect().x < 40 })`
   const asked = await page.waitFor(() => page.eval(fresh), { timeout: 3000 }).catch(() => false)
   if (!asked) return false
   // It slides in; a press while it still moves misses the handle.
@@ -100,7 +99,7 @@ export async function vehicleArmed(vehicle, armed, timeout = 8000) {
   return false
 }
 
-const MODE_SELECT = `[...document.querySelectorAll('select')].find((s) => s.getClientRects().length
+const MODE_SELECT = `[...document.querySelectorAll('select')].find((s) => s.checkVisibility({ visibilityProperty: true })
   && [...s.options].some((o) => o.value === 'HOLD'))`
 export const pickMode = (page, mode) => chooseOption(page, MODE_SELECT, mode)
 export const shownMode = (page) => page.eval(`${MODE_SELECT}?.value ?? null`)
@@ -124,10 +123,10 @@ export const viewState = (page) =>
  */
 export async function addViewNamed(page, name) {
   if (!(await page.store('widget-manager', 's.editingMode'))) await enterEditMode(page)
-  const plus = `[...document.querySelectorAll('.mdi-plus-circle')].find((e) => e.getClientRects().length
+  const plus = `[...document.querySelectorAll('.mdi-plus-circle')].find((e) => e.checkVisibility({ visibilityProperty: true })
     && e.parentElement?.querySelector('.mdi-upload'))`
   await page.click(await centre(page, plus), { settle: 1200 })
-  const input = `[...document.querySelectorAll('input')].find((i) => i.getClientRects().length
+  const input = `[...document.querySelectorAll('input')].find((i) => i.checkVisibility({ visibilityProperty: true })
     && i.closest('.v-card')?.innerText.includes('New view name'))`
   await page.fill(await centre(page, input), name)
   await page.wait(400)
@@ -160,11 +159,11 @@ export const setButton = (page, button, down) =>
  * @param {object} page - Driver page
  */
 export async function importDefaultMapping(page) {
-  await openMenuPage(page, 'Settings', 'Joystick')
+  await openMenuPage(page, 'settings-joystick')
   await page.click(
     await centre(
       page,
-      `[...document.querySelectorAll('.v-tabs .mdi-import')].find((i) => i.getClientRects().length)?.closest('button')`
+      `[...document.querySelectorAll('.v-tabs .mdi-import')].find((i) => i.checkVisibility({ visibilityProperty: true }))?.closest('button')`
     ),
     {
       settle: 1500,
@@ -175,7 +174,7 @@ export async function importDefaultMapping(page) {
     timeout: 5000,
   })
   await page.wait(1000)
-  const importButton = `[...document.querySelectorAll('button')].find((b) => b.getClientRects().length
+  const importButton = `[...document.querySelectorAll('button')].find((b) => b.checkVisibility({ visibilityProperty: true })
     && b.textContent.trim() === 'Import selected')`
   // Disabled when the mapping already holds every default binding.
   if (await page.eval(`!${importButton}?.disabled`))
@@ -189,11 +188,14 @@ export async function importDefaultMapping(page) {
  * @param {object} page - Driver page
  */
 export async function openJoystickTable(page) {
-  await openMenuPage(page, 'Settings', 'Joystick')
+  await openMenuPage(page, 'settings-joystick')
   await page.click('text=Table', { settle: 1200 })
 }
 
-const tableRow = (type, id) => `[...document.querySelectorAll('tr')].find((r) => r.getClientRects().length
+const tableRow = (
+  type,
+  id
+) => `[...document.querySelectorAll('tr')].find((r) => r.checkVisibility({ visibilityProperty: true })
   && r.querySelector('td')?.innerText.replace(/\\s+/g, ' ').trim() === '${type} ${id}')`
 
 /**
@@ -212,7 +214,7 @@ export async function mapButton(page, button, action) {
   await page.waitFor('text=Input mapping', { label: 'the Input mapping dialog' })
   await page.fill('input[placeholder="Search actions..."]', action)
   await page.wait(600)
-  const entry = `[...document.querySelectorAll('.v-overlay--active button')].find((b) => b.getClientRects().length
+  const entry = `[...document.querySelectorAll('.v-overlay--active button')].find((b) => b.checkVisibility({ visibilityProperty: true })
     && b.querySelector('p')?.textContent.trim() === ${JSON.stringify(action)})`
   await page.click(await centre(page, entry), { settle: 1000 })
   await clickDialogButton(page, 'Close')
@@ -250,6 +252,10 @@ export async function mapAxis(page, axis, { min, action, max }) {
     await page.eval(`(() => { const l = [...document.querySelectorAll('.v-overlay--active .v-list')].at(-1)
       if (l) l.scrollTop += l.clientHeight })()`)
   }
+  // Brought into view inside the menu only, and given a moment: the menu re-lays out after a scroll, moving the item
+  // from under a click aimed at where it was.
+  await page.eval(`${item}?.scrollIntoView({ block: 'nearest' })`)
+  await page.wait(400)
   await page.click(await centre(page, item), { settle: 800 })
   await retype(page, await centre(page, `${cell(5)}?.querySelector('input')`), max)
   await page.wait(500)
@@ -280,7 +286,7 @@ export const variable = (page, id) => page.eval(`window.cockpit.getDataLakeVaria
  * @param {string} search - Search text
  */
 export async function openDataLake(page, search) {
-  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'tools-datalake')
   await page.fill('input[placeholder="Search variables..."]', search)
   await page.wait(1200)
 }
@@ -316,9 +322,9 @@ export function pauseBlueOS(host, paused) {
  * @param {string} name - Username
  */
 export async function switchUser(page, name) {
-  if (!(await page.exists('#select-profile'))) await openMenuPage(page, 'Settings', 'General')
+  if (!(await page.exists('#select-profile'))) await openMenuPage(page, 'settings-general')
   await page.click('#select-profile', { settle: 1500 })
-  const dialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+  const dialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
   await page.waitFor(() => page.eval(`!${dialog}?.querySelector('.v-progress-circular')`), {
     label: 'the users to load',
   })

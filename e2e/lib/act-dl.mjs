@@ -9,13 +9,12 @@ import { sleep } from './driver.mjs'
 import { dismissFeaturesDialog } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
-// The user's own variables and compound variables, emptied before a case and restored after it.
+// The user's own variables and compound variables, emptied before a case.
 export const NO_USER_VARIABLES = {
   'cockpit-persistent-data-lake-variables': [],
   'cockpit-persistent-data-lake-values': {},
   'cockpit-transforming-functions': [],
 }
-export const USER_VARIABLE_KEYS = Object.keys(NO_USER_VARIABLES)
 
 export const HEADING = '/mavlink/1/1/VFR_HUD/heading'
 export const GROUNDSPEED = '/mavlink/1/1/VFR_HUD/groundspeed'
@@ -26,7 +25,7 @@ export const lake = (page, id) => page.eval(`window.cockpit.getDataLakeVariableD
 // Smallest difference between two headings, in degrees.
 export const angleDiff = (a, b) => Math.abs(((((a - b) % 360) + 540) % 360) - 180)
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' })
@@ -52,7 +51,7 @@ export async function clickInDialog(page, text) {
  * @param {string} [query] - Search text
  */
 export async function openDataLake(page, query) {
-  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'tools-datalake')
   if (query === undefined) return
   await page.fill('input[placeholder="Search variables..."]', query)
   await page.wait(1200)
@@ -167,7 +166,7 @@ export const editorText = (page) =>
  * with the fields given changed, then Create.
  * @param {object} page - Driver page
  * @param {string} name - Action Name
- * @param {Record<string, string|number>} [fields] - Field label → value, e.g. { 'Parameter 1': 0 }
+ * @param {Record<string, string|number>} [fields] - Field label → value, e.g. { Arm: 0 }
  */
 export async function createCommandAction(page, name, fields = {}) {
   await newAction(page, 'MAVLink Message Action')

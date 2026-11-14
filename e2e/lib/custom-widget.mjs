@@ -2,6 +2,7 @@
 // view in edit mode, and Button elements dropped into it, each set to run a Cockpit action.
 
 import { chooseOption } from './cockpit.mjs'
+import { clickWhenStill } from './mavlink-tools.mjs'
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; const r = el.getBoundingClientRect()
@@ -9,7 +10,7 @@ const centre = (page, expr) =>
 
 // Element palette cards are picked up by their handle and dragged with the mouse (SortableJS in fallback mode).
 export const elementHandle = (name) =>
-  `[...document.querySelectorAll('.palette-card')].find((e) => e.getClientRects().length &&
+  `[...document.querySelectorAll('.palette-card')].find((e) => e.checkVisibility({ visibilityProperty: true }) &&
     e.querySelector('.palette-card-label')?.innerText.trim().toLowerCase() === ${JSON.stringify(
       name.toLowerCase()
     )})?.querySelector('.palette-card-handle')`
@@ -19,8 +20,8 @@ export const elementHandle = (name) =>
  * @param {object} page - Driver page
  */
 export async function enterEditMode(page) {
-  await page.click('.mdi-menu-right', { settle: 900 })
-  await page.click('text=Edit Interface', { settle: 2500 })
+  await page.click('#menu-trigger', { settle: 900 })
+  await clickWhenStill(page, '#main-menu-edit', 2500)
 }
 
 /**
@@ -49,21 +50,21 @@ export async function addActionButton(page, at, label, action) {
   await page.click(
     await centre(
       page,
-      `[...document.querySelectorAll('button')].find((b) => b.getClientRects().length && /^click here$/i.test(b.innerText.trim()))`
+      `[...document.querySelectorAll('button')].find((b) => b.checkVisibility({ visibilityProperty: true }) && /^click here$/i.test(b.innerText.trim()))`
     ),
     { settle: 1500 }
   )
   await page.fill(
     await centre(
       page,
-      `[...document.querySelectorAll('input')].find((i) => i.getClientRects().length && i.value === 'Click Here')`
+      `[...document.querySelectorAll('input')].find((i) => i.checkVisibility({ visibilityProperty: true }) && i.value === 'Click Here')`
     ),
     label
   )
   await page.wait(500)
   await chooseOption(
     page,
-    `[...document.querySelectorAll('select')].find((s) => s.getClientRects().length && [...s.options].some((o) => o.text === 'Mavlink arm'))`,
+    `[...document.querySelectorAll('select')].find((s) => s.checkVisibility({ visibilityProperty: true }) && [...s.options].some((o) => o.text === 'Mavlink arm'))`,
     action
   )
 }

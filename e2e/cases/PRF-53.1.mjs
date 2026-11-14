@@ -5,7 +5,6 @@ import {
   addViewNamed,
   buttonAction,
   mapButton,
-  MAPPING_KEY,
   openJoystickTable,
   plugGamepad,
   setup as quiet,
@@ -16,7 +15,6 @@ export const meta = {
   title: 'A joystick button runs "Go to next view"',
   route: '/',
   needs: ['vehicle'],
-  restore: [MAPPING_KEY],
 }
 
 /**
@@ -56,7 +54,8 @@ export default async function run({ page }) {
     detail: `"${before.current}" (${before.index}) → "${after.current}" (${after.index}) of ${before.names.length}`,
   }))
   // The View selector is a native select listing the views; the one it shows is its selected option.
-  const shown = await page.eval(`[...document.querySelectorAll('select')].find((s) => s.getClientRects().length
+  const shown =
+    await page.eval(`[...document.querySelectorAll('select')].find((s) => s.checkVisibility({ visibilityProperty: true })
     && [...s.options].some((o) => o.text.trim() === ${JSON.stringify(
       before.current
     )}))?.selectedOptions[0]?.text.trim() ?? null`)

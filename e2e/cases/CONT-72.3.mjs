@@ -1,20 +1,10 @@
 import { enterEditMode } from '../lib/custom-widget.mjs'
-import {
-  barDropPoint,
-  centreOf,
-  dropCard,
-  INPUT_KEYS,
-  INPUT_SYNCED,
-  paletteMode,
-  placed,
-  quietStart,
-} from '../lib/inputs.mjs'
+import { barDropPoint, centreOf, dropCard, INPUT_SYNCED, paletteMode, placed, quietStart } from '../lib/inputs.mjs'
 
 export const meta = {
   title: 'Widgets removed from the top and bottom bars',
   route: '/',
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 // What CONT-72.1 and 72.2 leave: a mini widget in the top bar and an input element in the bottom bar.
@@ -55,7 +45,7 @@ export default async function run({ page, added }) {
       page,
       `[...document.querySelectorAll('#view-widgets-list p')].filter((p) => p.textContent.trim() === ${JSON.stringify(
         name
-      )} && p.getClientRects().length).at(-1)?.parentElement.parentElement.querySelector('.mdi-trash-can')`
+      )} && p.checkVisibility({ visibilityProperty: true })).at(-1)?.parentElement.parentElement.querySelector('.mdi-trash-can')`
     )
     if (!trash) throw new Error(`no trash icon for "${name}" under ${bar}`)
     await page.click(trash, { settle: 1500 })

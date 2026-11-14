@@ -2,7 +2,7 @@ import { clickDialogButton } from '../lib/actions.mjs'
 import { dismissTutorial, fieldByLabel } from '../lib/cockpit.mjs'
 import { dismissFeaturesDialog } from '../lib/extensions.mjs'
 import { openMenuPage } from '../lib/mavlink-tools.mjs'
-import { TEMPERATURE, UNITS_KEY } from '../lib/units.mjs'
+import { TEMPERATURE } from '../lib/units.mjs'
 
 const COMPOUND_KEY = 'cockpit-transforming-functions'
 
@@ -11,7 +11,6 @@ export const meta = {
   route: '/',
   needs: ['vehicle'],
   synced: { [COMPOUND_KEY]: [] },
-  restore: [COMPOUND_KEY, UNITS_KEY],
 }
 
 export const setup = async ({ page }) => {
@@ -40,7 +39,7 @@ async function addCompound(page, system, unit) {
 /** A unit suffix converts a variable inside an expression. */
 export default async function run({ page }) {
   await page.caption('Tools → Data-lake → Add compound variable: the temperature read as imperial')
-  await openMenuPage(page, 'Tools', 'Data-lake')
+  await openMenuPage(page, 'tools-datalake')
   await addCompound(page, 'imperial', 'degF')
   await page.caption('… and another read as metric')
   await addCompound(page, 'metric', 'degC')

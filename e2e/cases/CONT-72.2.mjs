@@ -5,7 +5,6 @@ import {
   createElementVariable,
   dropCard,
   elementAt,
-  INPUT_KEYS,
   INPUT_SYNCED,
   lakeValue,
   openElementPanel,
@@ -18,7 +17,6 @@ export const meta = {
   title: 'Input widgets added to the top and bottom bars',
   route: '/',
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart
@@ -60,7 +58,9 @@ export default async function run({ page }) {
   }))
 
   const bottomBar = () =>
-    page.eval(`[...document.querySelectorAll('.bottom-bar')].some((b) => b.getClientRects().length)`)
+    page.eval(
+      `[...document.querySelectorAll('.bottom-bar')].some((b) => b.checkVisibility({ visibilityProperty: true }))`
+    )
   await page.caption('Press "Bottom bar" twice')
   await page.click('text=Bottom bar', { settle: 1500 })
   const hidden = !(await bottomBar())

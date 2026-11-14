@@ -9,6 +9,7 @@ import { dismissTutorial, fieldByLabel } from './cockpit.mjs'
 import { elementHandle } from './custom-widget.mjs'
 import { dismissFeaturesDialog } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
+import { dismissRoutesDialog } from './widgets.mjs'
 
 // The user variables and widget values these cases create, emptied before a case and put back after it, so a
 // variable made by one case does not make the next one's "create" fail as already taken.
@@ -17,8 +18,6 @@ export const INPUT_SYNCED = {
   'cockpit-persistent-data-lake-values': {},
   'cockpit-mini-widget-last-values': {},
 }
-// The top bar lives in its own key, outside the views the runner restores.
-export const INPUT_KEYS = [...Object.keys(INPUT_SYNCED), 'cockpit-mini-widgets-profile-v4']
 
 /**
  * Close the start-up dialogs every case meets.
@@ -69,7 +68,7 @@ export async function dropCard(page, name, at) {
 export const barDropPoint = (page, bar) =>
   centreOf(
     page,
-    `[...document.querySelectorAll('.${bar}-bar')].find((b) => b.getClientRects().length)
+    `[...document.querySelectorAll('.${bar}-bar')].find((b) => b.checkVisibility({ visibilityProperty: true }))
       ?.querySelectorAll(':scope > ${bar === 'top' ? '.flex-1' : '.relative'}')[1]`
   )
 
@@ -96,7 +95,7 @@ export async function containerRows(page) {
   const rows = await page.eval(`(() => {
     const title = [...document.querySelectorAll('p')].find((p) => p.textContent.trim() === ${JSON.stringify(
       name
-    )} && p.getClientRects().length)
+    )} && p.checkVisibility({ visibilityProperty: true }))
     const column = title?.closest('.rounded-lg.overflow-hidden')?.querySelector('.border-dashed')
     return [...(column?.children ?? [])].map((row) => { const r = row.getBoundingClientRect()
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 } }) })()`)
@@ -152,7 +151,7 @@ export const elementAt = (page, hash, inner) =>
   )
 
 // The element side panel on the right (InputElementConfig).
-const PANEL = `[...document.querySelectorAll('.fixed.right-0')].find((e) => e.innerText.includes('Options') && e.getClientRects().length)`
+const PANEL = `[...document.querySelectorAll('.fixed.right-0')].find((e) => e.innerText.includes('Options') && e.checkVisibility({ visibilityProperty: true }))`
 
 /**
  * Click an element in edit mode to open its side panel.
@@ -167,7 +166,7 @@ export async function openElementPanel(page, hash) {
 const panelButton = (text) =>
   `[...(${PANEL})?.querySelectorAll('button') ?? []].find((b) => b.innerText.trim().toLowerCase() === ${JSON.stringify(
     text
-  )} && b.getClientRects().length)`
+  )} && b.checkVisibility({ visibilityProperty: true }))`
 
 /**
  * In the open side panel: Actions → Data-lake variable → "create", type the name, "save".
@@ -253,7 +252,7 @@ export const lakeValue = (page, id) => page.eval(`window.cockpit.getDataLakeVari
  * @returns {Promise<string|undefined>} The value cell's text
  */
 export async function showInDataLake(page, search) {
-  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('input[placeholder="Search variables..."]'))) await openMenuPage(page, 'tools-datalake')
   await page.fill('input[placeholder="Search variables..."]', search)
   await page.wait(1200)
   return page.eval(`document.querySelector('.v-data-table tbody tr td:nth-child(4)')?.innerText.trim()`)
@@ -268,7 +267,7 @@ export async function showInDataLake(page, search) {
  * @returns {Promise<string>} The id Cockpit gave it
  */
 export async function addUserVariable(page, name, type, initial) {
-  if (!(await page.exists('text=Add variable'))) await openMenuPage(page, 'Tools', 'Data-lake')
+  if (!(await page.exists('text=Add variable'))) await openMenuPage(page, 'tools-datalake')
   await page.click('text=Add variable', { settle: 1000 })
   await page.fill(await fieldByLabel(page, 'Variable Name'), name)
   await page.click(`text=${type}`, { settle: 400 })
@@ -346,15 +345,7 @@ export async function ensureSnapshotTool(page) {
       return true })()`
   )
   await page.wait(1000)
-  // Once the stream's routes are known Cockpit reports them in a dialog over the view; it is closed before the case.
-  const routes = ['Preferred video stream routes', 'Video being routed from multiple IPs']
-  const open = () =>
-    page.eval(
-      `[...document.querySelectorAll('.v-overlay--active')].some((o) => ${JSON.stringify(
-        routes
-      )}.some((t) => o.innerText.includes(t)))`
-    )
-  if (await page.waitFor(open, { timeout: 12000 }).catch(() => false)) await page.click('text=Close', { settle: 800 })
+  await dismissRoutesDialog(page)
 }
 
 /**
@@ -363,11 +354,11 @@ export async function ensureSnapshotTool(page) {
  * @returns {Promise<{camera: {x: number, y: number}, arrow: {x: number, y: number}, play: {x: number, y: number}|null}>} Points
  */
 export const snapshotToolButtons = async (page) => {
-  const tool = `[...document.querySelectorAll('.mdi-camera')].find((i) => i.getClientRects().length)?.parentElement`
+  const tool = `[...document.querySelectorAll('.mdi-camera')].find((i) => i.checkVisibility({ visibilityProperty: true }))?.parentElement`
   return {
     camera: await centreOf(
       page,
-      `[...document.querySelectorAll('.mdi-camera')].find((i) => i.getClientRects().length)`
+      `[...document.querySelectorAll('.mdi-camera')].find((i) => i.checkVisibility({ visibilityProperty: true }))`
     ),
     arrow: await centreOf(page, `(${tool})?.querySelector('.mdi-menu-up')`),
     play: await centreOf(page, `(${tool})?.querySelector('.mdi-play, .mdi-stop')`),
@@ -393,9 +384,6 @@ export const libraryPictures = (page) =>
   page.eval(`[...document.querySelectorAll('.v-overlay--active div.truncate')].map((d) => d.textContent.trim())
     .filter((t) => t.endsWith('.jpeg'))`)
 
-// The second stream the checklist captures beside STREAM (lib/video.mjs).
-export const BALL_STREAM = 'PRTest Ball'
-
 /**
  * A name as snapshotFilename writes it into a file name (sanitizeFilenameComponent in src/libs/utils.ts).
  * @param {string} name - Mission or stream name
@@ -415,7 +403,7 @@ export const fileSafe = (name) =>
 export async function openSnapshotSettings(page) {
   const cog = await centreOf(
     page,
-    `[...document.querySelectorAll('#view-widgets-list p')].find((p) => p.textContent.trim() === 'SnapshotTool' && p.getClientRects().length)
+    `[...document.querySelectorAll('#view-widgets-list p')].find((p) => p.textContent.trim() === 'SnapshotTool' && p.checkVisibility({ visibilityProperty: true }))
       ?.parentElement.parentElement.querySelector('.mdi-cog')`
   )
   if (!cog) throw new Error('no snapshot tool in the bottom bar list')

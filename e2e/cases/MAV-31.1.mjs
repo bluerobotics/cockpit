@@ -7,7 +7,7 @@ export const meta = { title: 'Inspector lists incoming messages with the right v
  */
 export default async function run({ page, vehicle }) {
   await page.caption('Main menu → Tools → MAVLink')
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   await page.caption('Inspector: track HEARTBEAT and ATTITUDE')
   await trackMessage(page, 'HEARTBEAT')
   await trackMessage(page, 'ATTITUDE')

@@ -112,7 +112,7 @@ export async function openWidgetConfig(page, name) {
     page,
     `[...document.querySelectorAll('#view-widgets-list p')].find((p) => p.textContent.trim() === ${JSON.stringify(
       name
-    )} && p.getClientRects().length)?.parentElement.querySelector('.mdi-cog')`
+    )} && p.checkVisibility({ visibilityProperty: true }))?.parentElement.querySelector('.mdi-cog')`
   )
   if (!cog) throw new Error(`no cog for the widget "${name}"`)
   await page.click(cog, { settle: 1500 })
@@ -157,7 +157,7 @@ export async function addMiniWidget(page, label, bar, slot) {
   const before = new Set((await miniContainers(page)).flatMap((c) => c.widgets.map((w) => w.hash)))
   const handle = await centreOf(
     page,
-    `[...document.querySelectorAll('.palette-card')].find((e) => e.getClientRects().length &&
+    `[...document.querySelectorAll('.palette-card')].find((e) => e.checkVisibility({ visibilityProperty: true }) &&
       e.querySelector('.palette-card-label')?.innerText.trim().toLowerCase() === ${JSON.stringify(
         label.toLowerCase()
       )})?.querySelector('.palette-card-handle')`
@@ -187,7 +187,7 @@ export async function openMiniWidgetConfig(page, hash) {
     page,
     `[...document.querySelectorAll('span')].find((s) => s.textContent.trim() === ${JSON.stringify(
       where.container
-    )} && s.getClientRects().length)
+    )} && s.checkVisibility({ visibilityProperty: true }))
       ?.nextElementSibling?.querySelectorAll('.mdi-cog')[${where.index}]`
   )
   if (!cog) throw new Error(`no cog for the mini widget in "${where.container}"`)
@@ -214,7 +214,7 @@ export async function pickItem(page, label, match, search) {
     page,
     // Any open overlay: the topmost one can be a tooltip.
     `[...document.querySelectorAll('.v-overlay--active .v-field')]
-      .find((f) => f.getClientRects().length && f.querySelector('label')?.textContent.trim().startsWith(${JSON.stringify(
+      .find((f) => f.checkVisibility({ visibilityProperty: true }) && f.querySelector('label')?.textContent.trim().startsWith(${JSON.stringify(
         label
       )}))?.querySelector('input')`
   )
@@ -226,7 +226,7 @@ export async function pickItem(page, label, match, search) {
     typeof match === 'string'
       ? `(t) => t === ${JSON.stringify(match)}`
       : `(t) => t.startsWith(${JSON.stringify(match.prefix)})`
-  const item = `[...document.querySelectorAll('.v-overlay--active .v-list-item')].find((i) => i.getClientRects().length && (${test})(i.innerText.trim()))`
+  const item = `[...document.querySelectorAll('.v-overlay--active .v-list-item')].find((i) => i.checkVisibility({ visibilityProperty: true }) && (${test})(i.innerText.trim()))`
   const at = await centreOf(page, item)
   if (!at) throw new Error(`no item for "${label}"`)
   await page.click(at, { settle: 900 })
@@ -242,7 +242,7 @@ export async function dialogButton(page, text, settle = 1000) {
   const at = await centreOf(
     page,
     `[...document.querySelectorAll('.v-overlay--active button')]
-      .findLast((b) => b.getClientRects().length && b.innerText.trim().toUpperCase() === ${JSON.stringify(
+      .findLast((b) => b.checkVisibility({ visibilityProperty: true }) && b.innerText.trim().toUpperCase() === ${JSON.stringify(
         text.toUpperCase()
       )})`
   )
@@ -319,7 +319,8 @@ export async function turnBy(vehicle, degrees, { timeout = 60000, onTick } = {})
   let turned = 0
   const end = Date.now() + timeout
   while (Math.abs(turned) < degrees && Date.now() < end) {
-    await override(vehicle, 1900, 1750)
+    // Gentler than full rudder: a tick with a slow onTick must not span half a turn, which would read as the wrong way.
+    await override(vehicle, 1600, 1750)
     await sleep(200)
     const now = await heading()
     if (now !== undefined && last !== undefined) turned += wrap180(now - last)
@@ -409,7 +410,7 @@ export const profileViews = (page) =>
 export const viewRow = (name) =>
   `[...document.querySelectorAll('p.text-sm')].find((p) => p.textContent.trim() === ${JSON.stringify(
     name
-  )} && p.getClientRects().length && p.parentElement.querySelector('.view-drag-handle'))?.parentElement`
+  )} && p.checkVisibility({ visibilityProperty: true }) && p.parentElement.querySelector('.view-drag-handle'))?.parentElement`
 
 /**
  * Edit mode → Views: + (new view), and name it in the dialog that opens.
@@ -421,7 +422,7 @@ export async function createView(page, name) {
   await page.click('.mdi-plus-circle', { settle: 1500 })
   const input = await centreOf(
     page,
-    `[...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'New view name' && p.getClientRects().length)
+    `[...document.querySelectorAll('p')].find((p) => p.textContent.trim() === 'New view name' && p.checkVisibility({ visibilityProperty: true }))
       ?.parentElement.querySelector('input')`
   )
   if (!input) throw new Error('no "New view name" field')
@@ -593,19 +594,32 @@ export async function addVgi(page, preset) {
   return hash
 }
 
-const ROUTES_NOTICE = 'text=Preferred video stream routes fetched from BlueOS.'
+const ROUTES_DIALOGS = ['Preferred video stream routes', 'Video being routed from multiple IPs']
 
 /**
- * Add a Video Player in edit mode and open its config, closing the notice the video store raises once it
- * fetched the vehicle's stream routes, which would otherwise sit over the config.
+ * Get the dialog the video store raises once it knows the vehicle's stream routes out of the way, if it shows up:
+ * the routes notice closes itself after 5 s, while the multiple-routes warning waits for its Close.
+ * @param {object} page - Driver page
+ * @param {number} [within] - How long to wait for it to show up, in ms
+ */
+export async function dismissRoutesDialog(page, within = 12000) {
+  const open = () =>
+    page.eval(`[...document.querySelectorAll('.v-overlay--active')]
+      .some((o) => ${JSON.stringify(ROUTES_DIALOGS)}.some((t) => o.innerText.includes(t)))`)
+  if (!(await page.waitFor(open, { timeout: within }).catch(() => false))) return
+  if (await page.waitFor(async () => !(await open()), { timeout: 8000 }).catch(() => false)) return
+  await dialogButton(page, 'Close', 1000)
+}
+
+/**
+ * Add a Video Player in edit mode and open its config, with the stream-routes dialog, which would otherwise sit over
+ * the config, out of the way.
  * @param {object} page - Driver page
  * @returns {Promise<{hash: string, name: string}>} The widget
  */
 export async function placeVideoWidget(page) {
   const widget = await placeWidget(page, 'Video Player')
-  if (await page.waitFor(() => page.exists(ROUTES_NOTICE), { timeout: 10000 }).catch(() => false)) {
-    await dialogButton(page, 'Close', 1000)
-  }
+  await dismissRoutesDialog(page, 10000)
   await openWidgetConfig(page, widget.name)
   return widget
 }

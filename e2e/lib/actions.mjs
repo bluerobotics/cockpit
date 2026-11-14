@@ -6,7 +6,7 @@ import { createServer } from 'node:http'
 import { fieldByLabel } from './cockpit.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
-// Every custom action the test user has, restored after a case and emptied before it.
+// Every custom action the test user has, emptied before a case.
 export const ACTION_KEYS = [
   'cockpit-http-request-actions',
   'cockpit-mavlink-message-actions',
@@ -50,7 +50,7 @@ export async function startEchoServer() {
   return { url: `http://127.0.0.1:${server.address().port}`, requests, close: () => server.close() }
 }
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
 
 const centreOf = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' })
@@ -99,7 +99,7 @@ export async function pickFromSelect(page, label, option) {
  */
 export async function openActions(page) {
   // After a reload Cockpit comes back on the page it was showing.
-  if (!(await page.exists('text=Cockpit actions configuration'))) await openMenuPage(page, 'Settings', 'Actions')
+  if (!(await page.exists('text=Cockpit actions configuration'))) await openMenuPage(page, 'settings-actions')
   // The panel opens collapsed when Cockpit started in a narrow window, as Standalone's does.
   // A collapsed panel clips the table rather than removing it, so look at what is on top of its middle.
   const tableShown = `(() => { const t = document.querySelector('.v-data-table'); if (!t) return false; const r = t.getBoundingClientRect()
@@ -107,7 +107,7 @@ export async function openActions(page) {
   if (await page.eval(tableShown)) return
   // The panel's own "Actions" title, right of the side menu entry of the same name.
   const title = `[...document.querySelectorAll('*')].find((e) => e.childElementCount === 0 && e.textContent.trim() === 'Actions'
-    && e.getClientRects().length && e.getBoundingClientRect().x > 150)`
+    && e.checkVisibility({ visibilityProperty: true }) && e.getBoundingClientRect().x > 150)`
   await page.click(await centreOf(page, title), { settle: 1000 })
 }
 

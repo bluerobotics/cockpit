@@ -11,7 +11,7 @@ export const meta = {
 export const setup = quiet
 
 const PANEL = `[...document.querySelectorAll('*')].find((e) => e.childElementCount === 0
-  && e.textContent.trim() === 'Vehicle network connection (global address)' && e.getClientRects().length)`
+  && e.textContent.trim() === 'Vehicle network connection (global address)' && e.checkVisibility({ visibilityProperty: true }))`
 
 /**
  * Settings → General → the global address panel, where Standalone offers "Search for vehicles": the web
@@ -19,7 +19,7 @@ const PANEL = `[...document.querySelectorAll('*')].find((e) => e.childElementCou
  */
 export default async function run({ page }) {
   await page.caption('Settings → General → Vehicle network connection: look for the vehicle search')
-  await openMenuPage(page, 'Settings', 'General')
+  await openMenuPage(page, 'settings-general')
   await page.eval(`${PANEL}?.scrollIntoView({ block: 'start' })`)
   await page.hover(
     await page.eval(

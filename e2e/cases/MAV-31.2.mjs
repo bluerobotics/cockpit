@@ -4,14 +4,15 @@ import { ROVER } from '../lib/mission.mjs'
 
 export const meta = { title: 'Inspector lists outgoing messages', route: '/', needs: ['vehicle'] }
 
-const MODE_SELECT = `[...document.querySelectorAll('.custom-select select')].find((s) => s.getClientRects().length && [...s.options].some((o) => o.text.trim() === 'Loiter'))`
+const MODE_SELECT = `[...document.querySelectorAll('.custom-select select')]
+  .find((s) => s.checkVisibility({ visibilityProperty: true }) && [...s.options].some((o) => o.text.trim() === 'Loiter'))`
 
 /**
  * Track COMMAND_LONG, change the flight mode from the bottom bar, and find the command in the inspector.
  */
 export default async function run({ page, vehicle }) {
   await page.caption('Main menu → Tools → MAVLink, track COMMAND_LONG')
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   await trackMessage(page, 'COMMAND_LONG')
   // Tracked messages live only while the inspector is open, and the mode selector stays reachable beside it.
   await page.caption('With the inspector open, switch the flight mode to Loiter')

@@ -1,19 +1,11 @@
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import { sleep } from '../lib/driver.mjs'
-import {
-  addMiniWidget,
-  closeDialog,
-  MINI_PROFILE_KEY,
-  miniWidgetEl,
-  miniWidgetsOfType,
-  quietStart,
-} from '../lib/widgets.mjs'
+import { addMiniWidget, closeDialog, miniWidgetEl, miniWidgetsOfType, quietStart } from '../lib/widgets.mjs'
 
 export const meta = {
   title: 'Battery indicator shows the vehicle voltage',
   route: '/',
   needs: ['vehicle'],
-  restore: [MINI_PROFILE_KEY],
 }
 
 // The SITL boat starts with no battery monitor, so SYS_STATUS reads 0 V. A simulated analog monitor is

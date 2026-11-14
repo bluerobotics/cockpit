@@ -16,9 +16,9 @@ import {
   zipEntries,
 } from '../lib/library.mjs'
 import { assFiles } from '../lib/subtitles.mjs'
-import { recordStreams, setUpRecording, STREAM } from '../lib/video.mjs'
+import { recordStreams, setUpRecording, STREAM, STREAM_720P } from '../lib/video.mjs'
 
-const STREAMS = [STREAM, 'PRTest Ball']
+const STREAMS = [STREAM, STREAM_720P]
 
 export const meta = {
   title: 'The web library lists a downloadable chunk group for every camera',

@@ -9,7 +9,6 @@ import { dismissTutorial, fieldByLabel } from './cockpit.mjs'
 import { dismissFeaturesDialog, plugVirtualGamepad } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
-export const MAPPING_KEY = 'cockpit-joystick-functions-mapping-v1'
 export const CALIBRATION_KEY = 'cockpit-joystick-calibration-options'
 export const DISABLED_KEY = 'cockpit-disabled-joystick-models'
 export const PAD_MODEL = 'Xbox controller (bluetooth)'
@@ -19,10 +18,9 @@ export const JOY_META = {
   route: '/',
   needs: ['vehicle'],
   synced: { [CALIBRATION_KEY]: {}, [DISABLED_KEY]: [] },
-  restore: [MAPPING_KEY, CALIBRATION_KEY, DISABLED_KEY],
 }
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = `[...document.querySelectorAll('.v-overlay--active:not(.v-tooltip, .v-snackbar)')].at(-1)`
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'center' })
@@ -128,7 +126,7 @@ export const lakeValue = (page, id) => page.eval(`window.cockpit.getDataLakeVari
  * @param {string} name - Variable Name, which is how the joystick page lists it
  */
 export async function createNumberVariable(page, id, name) {
-  await openMenuPage(page, 'Tools', 'Data-lake')
+  await openMenuPage(page, 'tools-datalake')
   await page.click('text=Add variable', { settle: 1200 })
   await page.fill(await fieldByLabel(page, 'Variable Name'), name)
   await clickExpr(page, `${topDialog}.querySelector('.mdi-pencil')?.closest('button')`, 'ID edit button', 400)
@@ -157,14 +155,14 @@ export const shownLakeValue = (page, name) =>
  * @param {'Table'|'Visual'} [tab] - Tab to show
  */
 export async function openJoystickPage(page, tab = 'Table') {
-  await openMenuPage(page, 'Settings', 'Joystick')
+  await openMenuPage(page, 'settings-joystick')
   await page.click(`text=${tab}`, { settle: 1000 })
 }
 
 // A row of the axes or buttons table, by its Name cell ("axis 1", "button 4").
 export const row = (kind, id) =>
   `[...document.querySelectorAll('tr')].find((r) => { const p = r.querySelectorAll('td:first-child p')
-    return r.getClientRects().length && p.length === 2 && p[0].textContent.trim() === '${kind}' && p[1].textContent.trim() === '${id}' })`
+    return r.checkVisibility({ visibilityProperty: true }) && p.length === 2 && p[0].textContent.trim() === '${kind}' && p[1].textContent.trim() === '${id}' })`
 
 /**
  * Pick the button layer (Regular or Shift) the table edits.
@@ -241,11 +239,20 @@ export async function editAxis(page, axis, { action, min, max }) {
     // The menu renders its items lazily: scroll it until the one wanted exists.
     for (let i = 0; i < 40 && !(await page.eval(`!!${item}`)); i++)
       await page.eval(`(() => { const l = ${topDialog}.querySelector('.v-list'); l.scrollTop += l.clientHeight })()`)
-    await clickExpr(page, item, `"${action}" for axis ${axis}`)
+    // Brought into view inside the menu only, and given a moment: the menu re-lays out after a scroll, moving the
+    // item from under a click aimed at where it was.
+    await page.eval(`${item}?.scrollIntoView({ block: 'nearest' })`)
+    await page.wait(400)
+    // Measured where it is now: centring it would scroll the lazy list again, and it would move once more.
+    const at = await page.eval(
+      `(() => { const r = ${item}?.getBoundingClientRect(); return r && { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`
+    )
+    if (!at) throw new Error(`no "${action}" for axis ${axis}`)
+    await page.click(at, { settle: 800 })
   }
   if (max !== undefined) await typeInto(page, await centre(page, `${cell(5)}?.querySelector('input')`), max)
   await page.wait(500)
-  const save = `[...document.querySelectorAll('button[aria-label="Save changes"]')].find((b) => !b.disabled && b.getClientRects().length)`
+  const save = `[...document.querySelectorAll('button[aria-label="Save changes"]')].find((b) => !b.disabled && b.checkVisibility({ visibilityProperty: true }))`
   for (let i = 0; i < 6 && (await page.eval(`!!${save}`)); i++) {
     await clickExpr(page, save, 'axis save button', 1000)
     if (await page.exists('text=Unusual axis range'))

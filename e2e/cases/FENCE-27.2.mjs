@@ -45,7 +45,7 @@ export default async function run({ page }) {
   await drawFencePolygon(page, SIDE_POLYGON)
   // Each fence in the editor list has an Inclusion/Exclusion chip; take the one on the "Polygon 2" row.
   const chip = await page.eval(`(() => {
-    const leaf = (text) => (e) => e.childElementCount === 0 && e.textContent.trim() === text && e.getClientRects().length
+    const leaf = (text) => (e) => e.childElementCount === 0 && e.textContent.trim() === text && e.checkVisibility({ visibilityProperty: true })
     let row = [...document.querySelectorAll('*')].find(leaf('Polygon 2'))
     while (row && ![...row.querySelectorAll('*')].some(leaf('Inclusion'))) row = row.parentElement
     const r = row && [...row.querySelectorAll('*')].find(leaf('Inclusion')).getBoundingClientRect()

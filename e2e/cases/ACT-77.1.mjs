@@ -1,6 +1,6 @@
 import { setUpActions } from '../lib/act-case.mjs'
 import { editorText, reloadCockpit } from '../lib/act-dl.mjs'
-import { ACTION_KEYS, clickActionButton, clickDialogButton, newAction, NO_ACTIONS } from '../lib/actions.mjs'
+import { clickActionButton, clickDialogButton, newAction, NO_ACTIONS } from '../lib/actions.mjs'
 import { fieldByLabel } from '../lib/cockpit.mjs'
 import { dismissFeaturesDialog } from '../lib/extensions.mjs'
 import { openMenuPage } from '../lib/mavlink-tools.mjs'
@@ -12,7 +12,6 @@ export const meta = {
   route: '/',
   needs: [],
   synced: { ...NO_ACTIONS, [LOGGING_KEY]: true },
-  restore: [...ACTION_KEYS, LOGGING_KEY],
 }
 
 const LINE = 'release-test JS ran'
@@ -61,13 +60,13 @@ export default async function run({ page }) {
   await clickActionButton(page, 'Log (release)', 'play')
 
   await page.caption('Settings → Dev → Open console, filtered on the line')
-  await openMenuPage(page, 'Settings', 'Dev')
+  await openMenuPage(page, 'settings-dev')
   await page.click('text=Open console', { settle: 1500 })
   await page.fill('input[placeholder="Filter…"]', LINE)
   await page.wait(1500)
   await page.check('The console shows the line twice (test and play)', async () => {
     const shown =
-      await page.eval(`[...document.querySelectorAll('span.truncate')].filter((s) => s.getClientRects().length)
+      await page.eval(`[...document.querySelectorAll('span.truncate')].filter((s) => s.checkVisibility({ visibilityProperty: true }))
       .map((s) => s.textContent.trim()).filter((t) => t.includes(${JSON.stringify(LINE)}))`)
     return { ok: shown.length === 2, detail: `${shown.length}: ${shown.join(' | ')}` }
   })

@@ -9,7 +9,7 @@ import { openMenuPage } from './mavlink-tools.mjs'
 
 // The main connection form: the one with an "Enable custom" switch whose field holds a vehicle link
 // (the WebRTC signalling form next to it has a switch too, but a signalling address).
-const formExpr = `(window.__mainConnectionForm ??= [...document.querySelectorAll('form')].find((f) => f.getClientRects().length
+const formExpr = `(window.__mainConnectionForm ??= [...document.querySelectorAll('form')].find((f) => f.checkVisibility({ visibilityProperty: true })
   && f.querySelector('input[type=checkbox]') && [...f.querySelectorAll('input')].some((i) => /mavlink2rest|tcp|udp|serial/.test(i.value))))`
 
 const centre = (page, expr) =>
@@ -25,7 +25,7 @@ export async function connectionSummary(page) {
   // The global-address panel above has a "Current address" line too, but no status.
   const text =
     await page.eval(`(() => { const t = [...document.querySelectorAll('*')].find((el) => el.childElementCount < 3
-    && /^Current address:[\\s\\S]*Status:/.test(el.textContent.trim()) && el.getClientRects().length); return t?.textContent ?? '' })()`)
+    && /^Current address:[\\s\\S]*Status:/.test(el.textContent.trim()) && el.checkVisibility({ visibilityProperty: true })); return t?.textContent ?? '' })()`)
   return {
     address: text.match(/Current address:\s*(\S+)/)?.[1] ?? '',
     status: text.match(/Status:\s*([a-z .]+)/i)?.[1]?.trim() ?? '',
@@ -38,7 +38,7 @@ export async function connectionSummary(page) {
  * @param {string} uri - Connection URI, e.g. tcpout://192.168.0.2:5762
  */
 export async function setMainConnection(page, uri) {
-  if (!(await page.eval(`!!${formExpr}`))) await openMenuPage(page, 'Settings', 'General')
+  if (!(await page.eval(`!!${formExpr}`))) await openMenuPage(page, 'settings-general')
   await page.waitFor(() => page.eval(`!!(${formExpr})`), { label: 'the main connection form' })
   const enabled = await page.eval(`(${formExpr}).querySelector('input[type=checkbox]').checked`)
   if (!enabled)

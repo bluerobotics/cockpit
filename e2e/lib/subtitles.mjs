@@ -39,7 +39,6 @@ export const OVERLAY_DEFAULTS = {
   },
   [INTERVAL_KEY]: 1000,
 }
-export const OVERLAY_KEYS = Object.keys(OVERLAY_DEFAULTS)
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' }); const r = el.getBoundingClientRect()
@@ -47,7 +46,7 @@ const centre = (page, expr) =>
 
 // The row of the options panel whose label reads `label`.
 const row = (label) =>
-  `[...document.querySelectorAll('span')].find((s) => s.getClientRects().length && s.textContent.trim() === ${JSON.stringify(
+  `[...document.querySelectorAll('span')].find((s) => s.checkVisibility({ visibilityProperty: true }) && s.textContent.trim() === ${JSON.stringify(
     label
   )})?.parentElement`
 
@@ -57,7 +56,7 @@ const row = (label) =>
  * @param {string} panel - Panel title, e.g. "Overlay Options"
  */
 export async function openTelemetryPanel(page, panel) {
-  if (!(await page.exists('text=On screen telemetry data'))) await openMenuPage(page, 'Settings', 'Telemetry')
+  if (!(await page.exists('text=On screen telemetry data'))) await openMenuPage(page, 'settings-telemetry')
   await page.click(`text=${panel}`, { settle: 1200 })
 }
 

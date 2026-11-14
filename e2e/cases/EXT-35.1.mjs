@@ -1,4 +1,5 @@
 import {
+  ACTION_ID,
   ACTION_NAME,
   ACTION_URL_PART,
   dialogOpensWithin,
@@ -16,12 +17,12 @@ export const meta = {
 }
 
 const actionRow = (name) =>
-  `[...document.querySelectorAll('tr')].find((tr) => tr.getClientRects().length && tr.querySelector('td')?.textContent.trim() === ${JSON.stringify(
+  `[...document.querySelectorAll('tr')].find((tr) => tr.checkVisibility({ visibilityProperty: true }) && tr.querySelector('td')?.textContent.trim() === ${JSON.stringify(
     name
   )})`
 
 /**
- * Accept the 4K Cam Manager action from the BlueOS Extension Features dialog, find it under Settings →
+ * Accept the test extension's action from the BlueOS Extension Features dialog, find it under Settings →
  * Actions, run it with its play button and check the extension got the request.
  */
 export default async function run({ page }) {
@@ -42,7 +43,7 @@ export default async function run({ page }) {
   if (await page.exists('text=Close anyway')) await page.click('text=Close anyway', { settle: 800 })
 
   await page.caption('Settings → Actions: it is there')
-  await openMenuPage(page, 'Settings', 'Actions')
+  await openMenuPage(page, 'settings-actions')
   await page.waitFor(() => page.eval(`!!${actionRow(ACTION_NAME)}`), { label: 'the action row' })
   await page.check('The action is listed as an HTTP request', async () => {
     const text = await page.eval(`${actionRow(ACTION_NAME)}.innerText.replace(/\\s+/g, ' ')`)
@@ -58,7 +59,7 @@ export default async function run({ page }) {
   await page.click(play, { settle: 2500 })
   await page.check('The extension received the request and answered it', () => {
     const post = requests.find((r) => r.method === 'POST')
-    const ok = post?.status === 200 && /onceAWB/.test(post.body ?? '')
+    const ok = post?.status === 200 && (post.body ?? '').includes(ACTION_ID)
     return { ok, detail: post ? `POST ${post.status ?? post.error} ${post.body}` : 'no request' }
   })
   await page.wait(1500)

@@ -11,13 +11,11 @@ import {
   uploadMission,
 } from '../lib/mission.mjs'
 import { LONG_PATH } from '../lib/speed.mjs'
-import { UNITS_KEY } from '../lib/units.mjs'
 
 export const meta = {
   title: 'Mission cruise speed is set and shown in the display speed unit',
   route: '/',
   needs: ['vehicle'],
-  restore: [UNITS_KEY],
 }
 
 export const setup = async ({ page }) => {
@@ -33,7 +31,7 @@ const MPH = 4.5
  */
 export default async function run({ page, vehicle }) {
   await page.caption('Settings → Interface → Display units → Speed: Miles per hour')
-  await openMenuPage(page, 'Settings', 'Interface')
+  await openMenuPage(page, 'settings-interface')
   await page.click('text=Miles per hour', { settle: 1500 })
   await closeMenu(page)
 

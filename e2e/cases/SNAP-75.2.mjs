@@ -1,9 +1,7 @@
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
 import {
-  BALL_STREAM,
   ensureSnapshotTool,
   fileSafe,
-  INPUT_KEYS,
   INPUT_SYNCED,
   openSnapshotSettings,
   quietStart,
@@ -11,19 +9,18 @@ import {
   snapshotToolButtons,
   standaloneSnapshots,
 } from '../lib/inputs.mjs'
-import { standaloneOnly } from '../lib/library.mjs'
 import { keepRecordingsInRun } from '../lib/subtitles.mjs'
-import { setUpRecording, STREAM } from '../lib/video.mjs'
+import { setUpRecording, STREAM, STREAM_720P } from '../lib/video.mjs'
 
 export const meta = {
   title: 'Snapshot all streams plus the work area in Standalone',
   route: '/',
-  needs: ['vehicle', 'camera', 'standalone'],
+  needs: ['vehicle', 'camera'],
+  platforms: ['electron'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
-const STREAMS = [STREAM, BALL_STREAM]
+const STREAMS = [STREAM, STREAM_720P]
 
 export const setup = async (ctx) => {
   await quietStart(ctx)
@@ -37,7 +34,6 @@ export const setup = async (ctx) => {
  */
 export default async function run(ctx) {
   const { page } = ctx
-  await standaloneOnly(page)
   await page.caption('Snapshot tool settings: all sources and the Cockpit work area')
   await enterEditMode(page)
   await openSnapshotSettings(page)

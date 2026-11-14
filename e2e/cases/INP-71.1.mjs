@@ -5,7 +5,6 @@ import {
   closeElementPanel,
   dropCard,
   editUserVariable,
-  INPUT_KEYS,
   INPUT_SYNCED,
   lakeValue,
   openElementPanel,
@@ -19,7 +18,6 @@ export const meta = {
   title: 'A Switch follows a variable changed outside the widget',
   route: '/',
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 const NAME = 'release-test/ext-bool'

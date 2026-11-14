@@ -12,12 +12,11 @@ export const meta = {
  * Move Cockpit to an address with no vehicle, outside the recording, so picking the found one is what connects.
  */
 export const setup = async (ctx) => {
-  if (!(await ctx.page.eval('!!window.electronAPI'))) throw new Error('vehicle discovery needs Standalone (--app)')
   await quiet(ctx)
   await applyGlobalAddress(ctx.page, NO_VEHICLE)
 }
 
-const FOUND = `[...document.querySelectorAll('.v-overlay--active button')].find((b) => b.getClientRects().length
+const FOUND = `[...document.querySelectorAll('.v-overlay--active button')].find((b) => b.checkVisibility({ visibilityProperty: true })
   && /\\(\\d+\\.\\d+\\.\\d+\\.\\d+\\)$/.test(b.innerText.trim()))`
 
 /**
@@ -32,7 +31,9 @@ export default async function run({ page }) {
   await page.click(
     await centre(
       page,
-      `[...document.querySelectorAll('.v-overlay--active button')].find((b) => /^(Search for vehicles|Search again)$/.test(b.innerText.trim()))`
+      `[...document.querySelectorAll('.v-overlay--active .v-dialog button')].find((b) => { const r = b.getBoundingClientRect()
+        return /^(Search for vehicles|Search again)$/.test(b.textContent.trim())
+          && b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) })`
     ),
     { settle: 1000 }
   )

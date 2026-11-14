@@ -1,9 +1,13 @@
-// Steps shared by the VID cases: a Video widget on the UsbCam stream and the mini recorder in the
+// Steps shared by the VID cases: a Video widget on the 1080p stream and the mini recorder in the
 // bottom bar, a long recording whose quiet middle is time-lapsed, and the video library afterwards.
 
 import process from 'node:process'
 
-export const STREAM = 'Stream /dev/video2'
+// The vehicle's test-pattern streams, all H264, which e2e/ci/fake-streams.mjs creates.
+export const STREAM_720P = 'Fake 720p'
+export const STREAM = 'Fake 1080p'
+export const STREAM_4K = 'Fake 4K'
+export const RTSP_STREAM = 'Fake RTSP'
 
 // How long the recording runs. The checklist asks for an hour; a few minutes proves the script.
 export const RECORDING_MINUTES = Number(process.env.COCKPIT_E2E_RECORDING_MINUTES ?? 60)
@@ -11,7 +15,7 @@ export const RECORDING_MINUTES = Number(process.env.COCKPIT_E2E_RECORDING_MINUTE
 const centre = (page, selector) =>
   page.eval(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(
     selector
-  )})].find((e) => e.getClientRects().length)
+  )})].find((e) => e.checkVisibility({ visibilityProperty: true }))
     if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
 
 export const recordButton = (page) => centre(page, '.bg-red-lighten-1')
@@ -23,14 +27,14 @@ export const isRecording = (page, stream = STREAM) =>
 
 // Frames shown by the Video widget: size and how far playback has got.
 export const videoPlayback = (page) =>
-  page.eval(`(() => { const v = [...document.querySelectorAll('video')].find((e) => e.getClientRects().length)
+  page.eval(`(() => { const v = [...document.querySelectorAll('video')].find((e) => e.checkVisibility({ visibilityProperty: true }))
     return v ? { width: v.videoWidth, height: v.videoHeight, time: v.currentTime } : null })()`)
 
 /**
  * Put a Video widget and a mini recorder in the bottom bar on each stream, through the widget
- * store. The runner restores the test user's layout afterwards.
+ * store. The next case starts from the test user's own layout again.
  * @param {object} page - Driver page
- * @param {string[]} [streams] - Streams to show and record, the UsbCam by default
+ * @param {string[]} [streams] - Streams to show and record, the 1080p one by default
  */
 export async function setUpRecording(page, streams = [STREAM]) {
   await page.store(
@@ -44,11 +48,17 @@ export async function setUpRecording(page, streams = [STREAM]) {
         w.position = { x: 0.55, y: 0.08 + i * 0.44 }; w.size = { width: 0.42, height: 0.42 } })
       return true })()`
   )
-  const playing = `[...document.querySelectorAll('video')].filter((v) => v.getClientRects().length && v.videoWidth > 0).length`
-  await page.waitFor(async () => (await page.eval(playing)) >= streams.length, {
-    timeout: 30000,
-    label: streams.length > 1 ? "every stream's video" : 'the UsbCam video',
-  })
+  const playing = `[...document.querySelectorAll('video')].filter((v) => v.checkVisibility({ visibilityProperty: true }) && v.videoWidth > 0).length`
+  const label = streams.length > 1 ? "every stream's video" : 'the 1080p video'
+  const started = await page
+    .waitFor(async () => (await page.eval(playing)) >= streams.length, { timeout: 30000, label })
+    .catch(() => false)
+  if (started) return
+  // What the players show instead, such as a connection status, says where the stream got stuck.
+  const shown =
+    await page.eval(`[...document.querySelectorAll('video')].filter((v) => v.checkVisibility({ visibilityProperty: true }))
+    .map((v) => (v.parentElement?.innerText.trim().replace(/\\s+/g, ' ') || 'nothing') + \` (\${v.videoWidth}px)\`).join('; ')`)
+  throw new Error(`timed out waiting for ${label}: ${shown || 'no player on screen'}`)
 }
 
 /**
@@ -60,7 +70,7 @@ export async function setUpRecording(page, streams = [STREAM]) {
 export const recordButtonFor = (page, stream) =>
   page.eval(`(() => { const name = [...document.querySelectorAll('.scroll-text')].find((e) => e.textContent.trim() === ${JSON.stringify(
     stream
-  )} && e.getClientRects().length)
+  )} && e.checkVisibility({ visibilityProperty: true }))
     const el = name?.closest('.w-40.h-9')?.querySelector('.bg-red-lighten-1'); if (!el) return null
     const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
 
@@ -70,6 +80,7 @@ const clock = (text) => text.split(':').reduce((s, part) => s * 60 + Number(part
  * Start recording with the mini recorder, let it run `minutes` (time-lapsed in the video), and stop it.
  * @param {object} page - Driver page
  * @param {number} minutes - Recording length
+ * @returns {Promise<number>} How long the recorder's timer said it had recorded when stopped, in seconds
  */
 export async function recordFor(page, minutes) {
   await page.caption(`Start recording "${STREAM}"`)
@@ -102,8 +113,10 @@ export async function recordFor(page, minutes) {
   }))
 
   await page.caption('Stop recording')
+  const recorded = clock(await recorderTimer(page))
   await page.click(await recordButton(page), { settle: 2500 })
   await page.check('Recording stopped', async () => !(await isRecording(page)))
+  return recorded
 }
 
 /**

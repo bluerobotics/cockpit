@@ -15,7 +15,7 @@ export const DEPTH_METRES = 12.5
  * @param {'metric'|'imperial'|'nautical'} system - Unit system
  */
 export async function chooseUnitSystem(page, system) {
-  if (!(await page.exists('text=Display units'))) await openMenuPage(page, 'Settings', 'Interface')
+  if (!(await page.exists('text=Display units'))) await openMenuPage(page, 'settings-interface')
   await page.click(`text=${system}`, { settle: 1500 })
 }
 
@@ -50,7 +50,7 @@ export async function placeDepthAndTemperature(page) {
  * @returns {Promise<{depth: string, temperature: string}>} Their text
  */
 export const readouts = (page) =>
-  page.eval(`(() => { const text = (label) => [...document.querySelectorAll('div')].filter((d) => d.getClientRects().length && d.childElementCount < 6)
+  page.eval(`(() => { const text = (label) => [...document.querySelectorAll('div')].filter((d) => d.checkVisibility({ visibilityProperty: true }) && d.childElementCount < 6)
       .map((d) => d.innerText.replace(/\\s+/g, ' ').trim()).find((t) => new RegExp('^-?[0-9.]+ [^ ]+ ' + label + '$').test(t))
     const value = (label) => text(label)?.replace(new RegExp(' ' + label + '$'), '') ?? ''
     return { depth: value('Depth'), temperature: value('Water temp') } })()`)

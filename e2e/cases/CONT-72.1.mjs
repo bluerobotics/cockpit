@@ -1,12 +1,11 @@
 import { enterEditMode, exitEditMode } from '../lib/custom-widget.mjs'
-import { barDropPoint, dropCard, INPUT_KEYS, INPUT_SYNCED, paletteMode, placed, quietStart } from '../lib/inputs.mjs'
+import { barDropPoint, dropCard, INPUT_SYNCED, paletteMode, placed, quietStart } from '../lib/inputs.mjs'
 
 export const meta = {
   title: 'Mini widgets added to the top and bottom bars',
   route: '/',
   needs: ['vehicle'],
   synced: INPUT_SYNCED,
-  restore: INPUT_KEYS,
 }
 
 export const setup = quietStart
@@ -30,7 +29,7 @@ export default async function run({ page }) {
 
   const shown = (hash) =>
     page.eval(`(() => { const el = document.querySelector('[data-widget-hash="${hash}"]')
-      return el?.getClientRects().length ? el.innerText.replace(/\\s+/g, ' ').trim() : null })()`)
+      return el?.checkVisibility({ visibilityProperty: true }) ? el.innerText.replace(/\\s+/g, ' ').trim() : null })()`)
   const now = () =>
     page.eval(
       `(() => { const d = new Date(); return [d.getHours(), d.getMinutes()].map((n) => String(n).padStart(2, '0')).join(':') })()`

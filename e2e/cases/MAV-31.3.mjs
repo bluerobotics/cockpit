@@ -7,7 +7,7 @@ export const meta = { title: 'Filtering messages in the inspector', route: '/', 
  */
 export default async function run({ page }) {
   await page.caption('Main menu → Tools → MAVLink')
-  await openMenuPage(page, 'Tools', 'MAVLink')
+  await openMenuPage(page, 'tools-mavlink')
   const before = await inspectorListed(page)
   await page.caption('Search "attitude"')
   await page.fill('input[placeholder="Search messages..."]', 'attitude')
