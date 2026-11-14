@@ -23,8 +23,9 @@ export default async function run({ page, vehicle }) {
         page.caption(`Curr. WP ${await currentWp(page)} · reached on the map: ${await reached(page)}`),
     })
     // The autopilot reports a waypoint reached inside its own radius, a moment after the vehicle is
-    // within 3 m, so give the map a few seconds to catch up before judging it.
-    await page.waitFor(async () => (await reached(page)) >= i + 1, { timeout: 8000 }).catch(() => undefined)
+    // within 3 m, so give the map a few seconds to catch up before judging it. The last one takes longest: the boat
+    // slows to stop on it.
+    await page.waitFor(async () => (await reached(page)) >= i + 1, { timeout: 30000 }).catch(() => undefined)
     seen.push({ wp: await currentWp(page), reached: await reached(page) })
     await page.check(
       `After waypoint ${i + 1}: ${seen.at(-1).reached} marked reached, Curr. WP ${seen.at(-1).wp}`,

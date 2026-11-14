@@ -74,6 +74,7 @@ const clock = (text) => text.split(':').reduce((s, part) => s * 60 + Number(part
  * Start recording with the mini recorder, let it run `minutes` (time-lapsed in the video), and stop it.
  * @param {object} page - Driver page
  * @param {number} minutes - Recording length
+ * @returns {Promise<number>} How long the recorder's timer said it had recorded when stopped, in seconds
  */
 export async function recordFor(page, minutes) {
   await page.caption(`Start recording "${STREAM}"`)
@@ -106,8 +107,10 @@ export async function recordFor(page, minutes) {
   }))
 
   await page.caption('Stop recording')
+  const recorded = clock(await recorderTimer(page))
   await page.click(await recordButton(page), { settle: 2500 })
   await page.check('Recording stopped', async () => !(await isRecording(page)))
+  return recorded
 }
 
 /**

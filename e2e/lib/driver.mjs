@@ -47,7 +47,8 @@ const appsLeft = (result) => Number(result.stdout.match(/apps-left:(\d+)/)?.[1] 
  */
 async function connect(port) {
   let wsUrl
-  for (let i = 0; i < 150 && !wsUrl; i++) {
+  // Up to 90 s: a cold browser on a loaded CI runner can take over 30 s to open its first page.
+  for (let i = 0; i < 450 && !wsUrl; i++) {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
       wsUrl = targets.find((t) => t.type === 'page' && !t.url.startsWith('devtools://'))?.webSocketDebuggerUrl

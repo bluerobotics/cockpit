@@ -50,21 +50,23 @@ export default async function run({ page, vehicle }) {
 
   // Mission item sequence on the vehicle: 0 home, 1 wp1, 2 speed change, 3 wp2, 4 servo, 5 wp3...
   const { waypoints } = await missionState(page)
-  let beforeWp2 = null
+  const beforeWp2 = []
   let afterWp2 = null
   const deadline = Date.now() + 90000
   await page.caption('Watching the vehicle reach waypoint 2')
   while (Date.now() < deadline && afterWp2 === null) {
     const current = (await vehicle.read('MISSION_CURRENT'))?.seq ?? 0
     const pwm = await servo5(vehicle)
-    if (current <= 3) beforeWp2 = pwm
+    if (current <= 3) beforeWp2.push(pwm)
     else afterWp2 = pwm
     await page.caption(`Heading for mission item ${current} · output 5: ${pwm} µs`)
     await page.wait(700)
   }
+  // MISSION_CURRENT and SERVO_OUTPUT_RAW arrive apart, so the last read before waypoint 2 can already show the servo set.
+  const onTheWay = beforeWp2.slice(0, -1)
   await page.check('Still 1100 µs on the way to waypoint 2', () => ({
-    ok: beforeWp2 === 1100,
-    detail: `${beforeWp2} µs`,
+    ok: onTheWay.length > 0 && onTheWay.every((pwm) => pwm === 1100),
+    detail: `${[...new Set(onTheWay)].join(', ')} µs over ${onTheWay.length} reads`,
   }))
   await page.check('1900 µs once waypoint 2 is reached', async () => {
     await page.wait(1500)
