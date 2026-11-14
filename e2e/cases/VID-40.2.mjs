@@ -43,12 +43,25 @@ export default async function run({ page }) {
   const first = await recordAndReadAss(page, 8)
   await page.caption('Settings → Telemetry → Settings: Telemetry frequency 5 Hz')
   await openTelemetryPanel(page, 'Settings')
-  const field =
-    await page.eval(`(() => { const i = [...document.querySelectorAll('input[type=number]')].find((e) => e.checkVisibility({ visibilityProperty: true }))
-    i.scrollIntoView({ block: 'center' }); const r = i.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+  const input = `[...document.querySelectorAll('p')].find((p) => p.textContent.trim().startsWith('Telemetry frequency')
+    && p.checkVisibility({ visibilityProperty: true }))?.nextElementSibling?.querySelector('input[type=number]')`
+  const measure = `(() => { const i = ${input}
+    i.scrollIntoView({ block: 'center' }); const r = i.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`
+  // The panel is still opening when it is first measured, so the field is aimed at once it has stopped moving.
+  let field = await page.eval(measure)
+  for (let i = 0; i < 10; i++) {
+    await page.wait(300)
+    const now = await page.eval(measure)
+    if (now.x === field.x && now.y === field.y) break
+    field = now
+  }
   await page.fill(field, 5)
   await page.key('Tab', { show: false })
   await page.wait(1000)
+  await page.check('The field reads 5 Hz', async () => {
+    const value = await page.eval(`${input}?.value`)
+    return { ok: value === '5', detail: `"${value}"` }
+  })
   await closeMenu(page)
   await page.caption('Record again at 5 Hz')
   const second = await recordAndReadAss(page, 8)
