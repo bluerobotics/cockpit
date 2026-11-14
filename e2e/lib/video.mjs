@@ -49,10 +49,16 @@ export async function setUpRecording(page, streams = [STREAM]) {
       return true })()`
   )
   const playing = `[...document.querySelectorAll('video')].filter((v) => v.checkVisibility({ visibilityProperty: true }) && v.videoWidth > 0).length`
-  await page.waitFor(async () => (await page.eval(playing)) >= streams.length, {
-    timeout: 30000,
-    label: streams.length > 1 ? "every stream's video" : 'the 1080p video',
-  })
+  const label = streams.length > 1 ? "every stream's video" : 'the 1080p video'
+  const started = await page
+    .waitFor(async () => (await page.eval(playing)) >= streams.length, { timeout: 30000, label })
+    .catch(() => false)
+  if (started) return
+  // What the players show instead, such as a connection status, says where the stream got stuck.
+  const shown =
+    await page.eval(`[...document.querySelectorAll('video')].filter((v) => v.checkVisibility({ visibilityProperty: true }))
+    .map((v) => (v.parentElement?.innerText.trim().replace(/\\s+/g, ' ') || 'nothing') + \` (\${v.videoWidth}px)\`).join('; ')`)
+  throw new Error(`timed out waiting for ${label}: ${shown || 'no player on screen'}`)
 }
 
 /**
