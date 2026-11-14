@@ -319,7 +319,8 @@ export async function turnBy(vehicle, degrees, { timeout = 60000, onTick } = {})
   let turned = 0
   const end = Date.now() + timeout
   while (Math.abs(turned) < degrees && Date.now() < end) {
-    await override(vehicle, 1900, 1750)
+    // Gentler than full rudder: a tick with a slow onTick must not span half a turn, which would read as the wrong way.
+    await override(vehicle, 1600, 1750)
     await sleep(200)
     const now = await heading()
     if (now !== undefined && last !== undefined) turned += wrap180(now - last)

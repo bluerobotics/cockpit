@@ -30,14 +30,18 @@ export default async function run({ page, vehicle }) {
   const seen = new Set()
   await circleFor(vehicle, 6000, async () => seen.add((await diyElement(page, widget.hash, 'r'))?.text))
   await page.wait(2000)
-  const shown = (await diyElement(page, widget.hash, 'r'))?.text
   await page.check('The number changed while turning', () => ({
     ok: seen.size >= 5 && /^\d+$/.test(start ?? ''),
     detail: `started at ${start}, ${seen.size} distinct values`,
   }))
-  const [cockpitHeading, hud] = await Promise.all([lake(page, HEADING), vehicle.read('VFR_HUD')])
+  // The boat still drifts a degree after stopping, and the widget samples every 500 ms, so one degree is let off.
+  const [shown, cockpitHeading, hud] = await Promise.all([
+    diyElement(page, widget.hash, 'r').then((e) => e?.text),
+    lake(page, HEADING),
+    vehicle.read('VFR_HUD'),
+  ])
   await page.check('Stopped: it shows the VFR_HUD heading', () => ({
-    ok: Number(shown) === cockpitHeading && Math.abs(Number(shown) - hud.heading) <= 1,
+    ok: Math.abs(Number(shown) - cockpitHeading) <= 1 && Math.abs(Number(shown) - hud.heading) <= 1,
     detail: `shows ${shown}; Cockpit ${cockpitHeading}, vehicle ${hud?.heading}`,
   }))
 }
