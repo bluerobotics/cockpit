@@ -2,7 +2,7 @@
 // measure them by: GET calls to the echo server, one path per action.
 
 import { clickActionButton, clickDialogButton, fillHttpAction, newAction, openActions } from './actions.mjs'
-import { dismissTutorial, fieldByLabel, TEST_USER, vehicleOnline } from './cockpit.mjs'
+import { dismissTutorial, fieldByLabel, TEST_USER, TOP_DIALOG, vehicleOnline } from './cockpit.mjs'
 import { dismissFeaturesDialog } from './extensions.mjs'
 
 export const TRIGGER_KEYS = ['cockpit-action-links', 'cockpit-actions-auto-run-options']
@@ -12,7 +12,7 @@ export const MODE_VARIABLE = '/mavlink/1/1/HEARTBEAT/custom_mode'
 export const MODES = { MANUAL: 0, STEERING: 3, HOLD: 4 }
 
 const TIME_LABELS = { none: 'No time trigger', once: 'On startup', interval: 'Repeatedly' }
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = TOP_DIALOG
 
 /**
  * Create an HTTP action that GETs `path` on the echo server, with no placeholders, so it can run

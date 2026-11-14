@@ -3,7 +3,7 @@
 
 import { createServer } from 'node:http'
 
-import { fieldByLabel } from './cockpit.mjs'
+import { fieldByLabel, TOP_DIALOG } from './cockpit.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
 // Every custom action the test user has, emptied before a case.
@@ -50,7 +50,7 @@ export async function startEchoServer() {
   return { url: `http://127.0.0.1:${server.address().port}`, requests, close: () => server.close() }
 }
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = TOP_DIALOG
 
 const centreOf = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' })

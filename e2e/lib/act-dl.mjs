@@ -4,7 +4,7 @@
 import { execFile } from 'node:child_process'
 
 import { clickDialogButton, newAction } from './actions.mjs'
-import { dismissTutorial, fieldByLabel, vehicleOnline } from './cockpit.mjs'
+import { dismissTutorial, fieldByLabel, TOP_DIALOG, vehicleOnline } from './cockpit.mjs'
 import { sleep } from './driver.mjs'
 import { dismissFeaturesDialog } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
@@ -25,7 +25,7 @@ export const lake = (page, id) => page.eval(`window.cockpit.getDataLakeVariableD
 // Smallest difference between two headings, in degrees.
 export const angleDiff = (a, b) => Math.abs(((((a - b) % 360) + 540) % 360) - 180)
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = TOP_DIALOG
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'nearest' })

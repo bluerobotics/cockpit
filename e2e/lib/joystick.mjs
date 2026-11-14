@@ -5,7 +5,7 @@
 import process from 'node:process'
 
 import { clickDialogButton } from './actions.mjs'
-import { dismissTutorial, fieldByLabel } from './cockpit.mjs'
+import { dismissTutorial, fieldByLabel, TOP_DIALOG } from './cockpit.mjs'
 import { dismissFeaturesDialog, plugVirtualGamepad } from './extensions.mjs'
 import { openMenuPage } from './mavlink-tools.mjs'
 
@@ -20,7 +20,7 @@ export const JOY_META = {
   synced: { [CALIBRATION_KEY]: {}, [DISABLED_KEY]: [] },
 }
 
-const topDialog = `[...document.querySelectorAll('.v-overlay--active')].at(-1)`
+const topDialog = TOP_DIALOG
 
 const centre = (page, expr) =>
   page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: 'center' })
