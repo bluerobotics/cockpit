@@ -22,15 +22,15 @@ export const setup = async (ctx) => {
 }
 
 /**
- * A set-mode COMMAND_LONG whose Parameter 2 is {{ release-test/mode }}: played with the variable at
+ * A set-mode COMMAND_LONG whose Custom Mode is {{ release-test/mode }}: played with the variable at
  * 0 the boat goes to Manual, played again at 4 it goes to Hold.
  */
 export default async function run({ page, vehicle }) {
-  await page.caption('New MAVLink action: set mode, Parameter 2 = {{ release-test/mode }}')
+  await page.caption('New MAVLink action: set mode, Custom Mode = {{ release-test/mode }}')
   await createCommandAction(page, NAME, {
     'Command ID': 'MAV_CMD_DO_SET_MODE',
-    'Parameter 1': 1,
-    'Parameter 2': `{{ ${VARIABLE.id} }}`,
+    'Mode': 1,
+    'Custom Mode': `{{ ${VARIABLE.id} }}`,
   })
   const inMode = async (custom, shown) => {
     await page
