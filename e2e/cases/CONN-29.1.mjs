@@ -28,13 +28,11 @@ export default async function run({ page }) {
   if (await page.exists('text=Close')) await page.click('text=Close', { settle: 600 })
   await page.click('text=Search for vehicles', { settle: 1500 })
   await page.caption('In the Vehicle Discovery dialog: "Search for vehicles"')
-  await page.click(
-    await centre(
-      page,
-      `[...document.querySelectorAll('.v-overlay--active button')].find((b) => /^(Search for vehicles|Search again)$/.test(b.innerText.trim()))`
-    ),
-    { settle: 1000 }
-  )
+  // Only the dialog's own button: the settings page behind it has one of the same name.
+  const search = `[...document.querySelectorAll('.v-dialog.v-overlay--active button')]
+    .find((b) => b.checkVisibility({ visibilityProperty: true }) && /^(Search for vehicles|Search again)$/.test(b.textContent.trim()))`
+  await page.waitFor(() => page.eval(`!!${search}`), { timeout: 10000, label: 'the dialog search button' })
+  await page.click(await centre(page, search), { settle: 1000 })
   const found = await page
     .waitFor(() => page.eval(`!!${FOUND}`), { timeout: 120000, label: 'a vehicle in the list' })
     .catch(() => false)
