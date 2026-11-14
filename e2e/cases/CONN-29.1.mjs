@@ -31,7 +31,7 @@ export default async function run({ page }) {
   await page.click(
     await centre(
       page,
-      `[...document.querySelectorAll('.v-overlay--active button')].find((b) => { const r = b.getBoundingClientRect()
+      `[...document.querySelectorAll('.v-overlay--active .v-dialog button')].find((b) => { const r = b.getBoundingClientRect()
         return /^(Search for vehicles|Search again)$/.test(b.textContent.trim())
           && b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) })`
     ),
