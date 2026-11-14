@@ -96,25 +96,31 @@ export async function sidebarInput(page, label) {
  * @param {number} [index] - Which survey, in drawing order
  */
 export async function openSurveyMenu(page, index = 0) {
+  // A point where the polygon itself is on top: its centre can sit under its area label or a transit line.
   const at =
     await page.eval(`(() => { const p = [...document.querySelectorAll('#planningMap path.survey-polygon')][${index}];
-    if (!p) return null; const r = p.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+    if (!p) return null; const r = p.getBoundingClientRect()
+    for (const fy of [0.5, 0.3, 0.7, 0.2, 0.8]) for (const fx of [0.5, 0.3, 0.7, 0.2, 0.8]) {
+      const x = r.x + r.width * fx, y = r.y + r.height * fy
+      if (document.elementFromPoint(x, y) === p) return { x, y } }
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
   if (!at) throw new Error(`no survey polygon #${index}`)
   await page.rightClick(at, { settle: 1100 })
   await page.waitFor('.context-menu .orbit-container', { label: 'the survey menu' })
 }
 
 /**
- * Viewport point halfway along the path segment that leaves waypoint `i` (0-based).
+ * Viewport point along the path segment that leaves waypoint `i` (0-based), halfway by default.
  * @param {object} page - Driver page
  * @param {number} i - Index of the segment's first waypoint
+ * @param {number} [at] - Fraction of the way along the segment
  * @returns {Promise<{x: number, y: number}>} Viewport point
  */
-export async function segmentMidpoint(page, i) {
+export async function segmentMidpoint(page, i, at = 0.5) {
   const { waypoints } = await missionState(page)
   const a = await geoToPage(page, 'planning', waypoints[i])
   const b = await geoToPage(page, 'planning', waypoints[i + 1])
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+  return { x: a.x + (b.x - a.x) * at, y: a.y + (b.y - a.y) * at }
 }
 
 /**
