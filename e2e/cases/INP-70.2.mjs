@@ -46,9 +46,10 @@ export default async function run({ page }) {
 
   const track = await page.box(`[data-widget-hash="${hash}"] .v-slider-track`)
   const values = {}
+  // Right first: the thumb starts at the left end, where a drag changes nothing and so writes nothing.
   for (const [label, x] of [
-    ['the left end', track.x - track.w / 2 - 30],
     ['the right end', track.x + track.w / 2 + 30],
+    ['the left end', track.x - track.w / 2 - 30],
     ['the middle', track.x],
   ]) {
     await page.caption(`Drag the slider to ${label}`)
@@ -57,6 +58,6 @@ export default async function run({ page }) {
   }
   await page.check('The variable reads -10, 10 and about 0', () => ({
     ok: values['the left end'] === -10 && values['the right end'] === 10 && Math.abs(values['the middle']) <= 1,
-    detail: Object.values(values).join(', '),
+    detail: ['the left end', 'the right end', 'the middle'].map((l) => values[l]).join(', '),
   }))
 }

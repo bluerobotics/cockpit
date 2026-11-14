@@ -29,7 +29,8 @@ export default async function run({ page, vehicle }) {
   let worst = 0
   await page.caption('Drive a 90° turn')
   await drive(vehicle, {
-    steering: 1900,
+    // A moderate turn: at full rudder the heading moves more between the two reads than the lake lags behind it.
+    steering: 1600,
     ms: 45000,
     until: async () => {
       const [shown, hud] = await Promise.all([lake(page, HEADING), vehicle.read('VFR_HUD')])

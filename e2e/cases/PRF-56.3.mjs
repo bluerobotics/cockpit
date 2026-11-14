@@ -64,18 +64,21 @@ export default async function run({ page, vehicle }) {
   const end = Date.now() + 10000
   while (Date.now() < end) {
     await vehicle.send(override(1900, 1800))
+    // The vehicle read on both sides of Cockpit's, so a value Cockpit got between the two is not taken for a wrong one.
     const truth = await vehicle.read('ATTITUDE')
     const shown = await page.store('main-vehicle', '({ roll: s.attitude.roll, pitch: s.attitude.pitch })')
-    if (truth) {
+    const next = await vehicle.read('ATTITUDE')
+    const gap = (t) => Math.max(Math.abs(degrees(t.roll - shown.roll)), Math.abs(degrees(t.pitch - shown.pitch)))
+    if (truth && next) {
       rolls.push(degrees(truth.roll))
-      fed.push(Math.max(Math.abs(degrees(truth.roll - shown.roll)), Math.abs(degrees(truth.pitch - shown.pitch))))
+      fed.push(Math.min(gap(truth), gap(next)))
     }
     for (const d of await page.eval(DRAWN)) sums.add(d.sum)
     await page.wait(250)
   }
   await vehicle.send(override(0, 0))
   const span = rolls.length ? Math.max(...rolls) - Math.min(...rolls) : 0
-  // Sampled a few hundred ms apart from two sources, so a degree of difference is timing, not a wrong value.
+  // Sampled from two sources, so a degree of difference is timing, not a wrong value.
   await page.check("The attitude the horizon draws tracks the vehicle's ATTITUDE", () => ({
     ok: fed.length > 10 && Math.max(...fed) < 1.5,
     detail: `${fed.length} samples, worst difference ${Math.max(0, ...fed).toFixed(2)}°`,

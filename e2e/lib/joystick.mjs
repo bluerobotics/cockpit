@@ -239,7 +239,16 @@ export async function editAxis(page, axis, { action, min, max }) {
     // The menu renders its items lazily: scroll it until the one wanted exists.
     for (let i = 0; i < 40 && !(await page.eval(`!!${item}`)); i++)
       await page.eval(`(() => { const l = ${topDialog}.querySelector('.v-list'); l.scrollTop += l.clientHeight })()`)
-    await clickExpr(page, item, `"${action}" for axis ${axis}`)
+    // Brought into view inside the menu only, and given a moment: the menu re-lays out after a scroll, moving the
+    // item from under a click aimed at where it was.
+    await page.eval(`${item}?.scrollIntoView({ block: 'nearest' })`)
+    await page.wait(400)
+    // Measured where it is now: centring it would scroll the lazy list again, and it would move once more.
+    const at = await page.eval(
+      `(() => { const r = ${item}?.getBoundingClientRect(); return r && { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`
+    )
+    if (!at) throw new Error(`no "${action}" for axis ${axis}`)
+    await page.click(at, { settle: 800 })
   }
   if (max !== undefined) await typeInto(page, await centre(page, `${cell(5)}?.querySelector('input')`), max)
   await page.wait(500)

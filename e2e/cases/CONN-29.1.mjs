@@ -31,7 +31,7 @@ export default async function run({ page }) {
   await page.click(
     await centre(
       page,
-      `[...document.querySelectorAll('.v-overlay--active button')].find((b) => /^(Search for vehicles|Search again)$/.test(b.innerText.trim()))`
+      `[...document.querySelectorAll('.v-overlay--active button')].find((b) => /^(Search for vehicles|Search again)$/.test(b.textContent.trim()))`
     ),
     { settle: 1000 }
   )

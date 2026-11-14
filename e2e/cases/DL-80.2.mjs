@@ -28,6 +28,9 @@ export default async function run({ page }) {
     window.cockpit.listenDataLakeVariable(${JSON.stringify(CPU)}, (v) => window.__cpu.push([Date.now(), v])) })()`)
   await closeMenu(page)
   await toPlanning(page)
+  // Mission planning keeps loading its map tiles for a while after it opens, which is not rest.
+  await page.caption('Let Mission planning finish loading')
+  await page.wait(10000)
   await page.caption('At rest for 8 s')
   const restFrom = await page.eval('Date.now()')
   await page.wait(8000)

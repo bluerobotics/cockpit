@@ -22,7 +22,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { BASE_STATION_DEFAULT } from './lib/base-station.mjs'
 import { attachBoxStats, startBoxStats, stopBoxStats } from './lib/box-stats.mjs'
 import { openCockpit, seedFor, TEST_USER } from './lib/cockpit.mjs'
-import { launch } from './lib/driver.mjs'
+import { launch, sleep } from './lib/driver.mjs'
 import { DECIDED } from './lib/extensions.mjs'
 import { burnOverlays } from './lib/overlay-burn.mjs'
 import { finishSampling, SAMPLER, startSampling } from './lib/perf.mjs'
@@ -106,8 +106,14 @@ if (!chosen.length) {
 }
 
 const vehicle = vehicleApi(vehicleHost)
-// SIM_* parameters exist only in SITL builds, so a real autopilot is refused before anything is sent to it.
-if ((await vehicle.readParam('SIM_SPEEDUP')) === undefined) {
+// SIM_* parameters exist only in SITL builds, so a real autopilot is refused before anything is sent to it. Asked for a
+// minute, since a vehicle whose link was just restarted takes a moment to answer.
+let speedup
+for (const until = Date.now() + 60000; speedup === undefined && Date.now() < until; ) {
+  speedup = await vehicle.readParam('SIM_SPEEDUP').catch(() => undefined)
+  if (speedup === undefined) await sleep(2000)
+}
+if (speedup === undefined) {
   console.error(`${vehicleHost} is not an ArduPilot SITL (no SIM_SPEEDUP parameter); refusing to run`)
   process.exit(2)
 }

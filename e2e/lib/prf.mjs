@@ -252,6 +252,10 @@ export async function mapAxis(page, axis, { min, action, max }) {
     await page.eval(`(() => { const l = [...document.querySelectorAll('.v-overlay--active .v-list')].at(-1)
       if (l) l.scrollTop += l.clientHeight })()`)
   }
+  // Brought into view inside the menu only, and given a moment: the menu re-lays out after a scroll, moving the item
+  // from under a click aimed at where it was.
+  await page.eval(`${item}?.scrollIntoView({ block: 'nearest' })`)
+  await page.wait(400)
   await page.click(await centre(page, item), { settle: 800 })
   await retype(page, await centre(page, `${cell(5)}?.querySelector('input')`), max)
   await page.wait(500)
