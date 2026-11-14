@@ -166,7 +166,7 @@ export const editorText = (page) =>
  * with the fields given changed, then Create.
  * @param {object} page - Driver page
  * @param {string} name - Action Name
- * @param {Record<string, string|number>} [fields] - Field label → value, e.g. { 'Parameter 1': 0 }
+ * @param {Record<string, string|number>} [fields] - Field label → value, e.g. { Arm: 0 }
  */
 export async function createCommandAction(page, name, fields = {}) {
   await newAction(page, 'MAVLink Message Action')
