@@ -159,7 +159,9 @@ jobs:
 
       - name: BlueOS logs
         if: failure()
-        run: docker logs --tail 200 blueos
+        run: |
+          docker logs --tail 200 blueos
+          docker exec blueos sh -c 'tail -n 300 /var/logs/blueos/services/mavlink-camera-manager/*.log'
 
   # One artifact for the whole run, so a release sign-off does not mean opening a report per group.
   # Separate directories, since jobs that start in the same second write the same timestamped output folder.
