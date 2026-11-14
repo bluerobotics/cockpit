@@ -25,8 +25,8 @@ export default async function run({ page, vehicle }) {
   await newAction(page, 'MAVLink Message Action')
   await page.fill(await fieldByLabel(page, 'Action Name'), 'Release manual mode')
   await page.fill(await fieldByLabel(page, 'Command ID'), 'MAV_CMD_DO_SET_MODE')
-  await page.fill(await fieldByLabel(page, 'Parameter 1'), '1')
-  await page.fill(await fieldByLabel(page, 'Parameter 2'), '0')
+  await page.fill(await fieldByLabel(page, 'Mode'), '1')
+  await page.fill(await fieldByLabel(page, 'Custom Mode'), '0')
   await page.click('text=Create', { settle: 1500 })
   await page.check('Both actions are listed', async () => {
     const names = await listedActions(page)
