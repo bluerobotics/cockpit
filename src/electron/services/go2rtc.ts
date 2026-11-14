@@ -5,14 +5,27 @@ import { promises as fs } from 'fs'
 import http from 'http'
 import { createServer } from 'net'
 import { tmpdir } from 'os'
-import { join } from 'path'
+import { delimiter, dirname, join } from 'path'
 
 import type { Go2RTCStreamInfo } from '@/types/video'
 
+import { getFFmpegPath } from './ffmpeg-path'
 import { getGo2RTCPath } from './go2rtc-path'
 
 let go2rtcProcess: ChildProcess | null = null
 let go2rtcPort: number | null = null
+
+// go2rtc (up to 1.9.15, at least) does not unpack RTP aggregation packets of H.265, so it loses every frame small
+// enough to share a packet with its access unit delimiter, which is how GStreamer and FFmpeg send them. One lost
+// frame freezes the picture for good, as Chromium has no software H.265 decoder to fall back to once the hardware
+// one fails on the missing reference. H.265 sources are thus read through the bundled FFmpeg with the delimiters
+// stripped, which leaves each frame alone in its packets on the way into go2rtc.
+// ponytail: costs one FFmpeg process per H.265 RTSP stream and one probe connection to every RTSP camera when its
+// stream is registered. Once go2rtc unpacks those packets, drop the probe, the `ffmpeg:` registration and
+// Go2RTCManager's moveHevcToFfmpeg, and let go2rtc read every camera itself again.
+const hevcVideoTemplateName = 'cockpit-hevc'
+const hevcVideoTemplate = '-c:v copy -bsf:v filter_units=remove_types=35'
+let canReadThroughFfmpeg = false
 
 /**
  * Find a free TCP port on localhost
@@ -95,12 +108,30 @@ const startGo2RTC = async (): Promise<number> => {
   await fs.mkdir(configDir, { recursive: true })
 
   const configPath = join(configDir, 'go2rtc.yaml')
-  const config = `api:\n  listen: "127.0.0.1:${port}"\n  origin: "*"\n`
+  const config = [
+    'api:',
+    `  listen: "127.0.0.1:${port}"`,
+    '  origin: "*"',
+    'ffmpeg:',
+    `  ${hevcVideoTemplateName}: '${hevcVideoTemplate}'`,
+    '',
+  ].join('\n')
   await fs.writeFile(configPath, config, 'utf-8')
+
+  let ffmpegDir: string | undefined
+  try {
+    ffmpegDir = dirname(getFFmpegPath())
+  } catch (error) {
+    console.warn('[go2rtc] Bundled FFmpeg not found, H.265 RTSP streams can freeze:', error)
+  }
+  canReadThroughFfmpeg = ffmpegDir !== undefined
 
   const binaryPath = getGo2RTCPath()
   const proc = spawn(binaryPath, ['-config', configPath], {
     stdio: ['ignore', 'pipe', 'pipe'],
+    // go2rtc resolves `ffmpeg` through PATH. Its `ffmpeg.bin` setting would do without this, but go2rtc splits the
+    // command it builds on whitespace, so a binary under "Program Files" is never found.
+    env: ffmpegDir ? { ...process.env, PATH: `${ffmpegDir}${delimiter}${process.env.PATH ?? ''}` } : process.env,
   })
 
   proc.stdout?.on('data', (data) => {
@@ -163,15 +194,50 @@ const stopGo2RTC = async (): Promise<void> => {
  * Register an RTSP stream with go2rtc so it can be consumed via WebRTC
  * @param {string} name - Unique stream name
  * @param {string} rtspUrl - Full RTSP URL
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} True if the stream is read through FFmpeg, which only an H.265 camera that answered
+ * is. Registering again drops nobody: go2rtc keeps whoever is already playing on the registration they came in by.
  */
-const addStream = async (name: string, rtspUrl: string): Promise<void> => {
+const addStream = async (name: string, rtspUrl: string): Promise<boolean> => {
   if (!go2rtcPort) throw new Error('go2rtc is not running')
-  const url = `http://127.0.0.1:${go2rtcPort}/api/streams?name=${encodeURIComponent(name)}&src=${encodeURIComponent(
-    rtspUrl
-  )}`
-  await httpRequest(url, 'PUT')
+  await registerSource(name, rtspUrl)
   console.log(`[go2rtc] Added stream '${name}' -> ${rtspUrl}`)
+
+  if (!canReadThroughFfmpeg || !(await sourceCarriesHevc(name))) return false
+  await registerSource(name, `ffmpeg:${rtspUrl}#video=${hevcVideoTemplateName}`)
+  console.log(`[go2rtc] Stream '${name}' is H.265, reading it through FFmpeg`)
+  return true
+}
+
+/**
+ * What go2rtc tells of a producer it was asked to probe
+ */
+interface Go2RTCProducerProbe {
+  /**
+   * Media the producer offers
+   */
+  medias?: string[]
+}
+
+const registerSource = async (name: string, source: string): Promise<void> => {
+  const query = `name=${encodeURIComponent(name)}&src=${encodeURIComponent(source)}`
+  await httpRequest(`http://127.0.0.1:${go2rtcPort}/api/streams?${query}`, 'PUT')
+}
+
+/**
+ * Asks go2rtc to connect to a stream's source and tell what it carries
+ * @param {string} name - Stream name
+ * @returns {Promise<boolean>} True if the source answered with H.265 video, false also when it did not answer
+ */
+const sourceCarriesHevc = async (name: string): Promise<boolean> => {
+  try {
+    const query = `src=${encodeURIComponent(name)}&video=all`
+    const probe = JSON.parse(await httpRequest(`http://127.0.0.1:${go2rtcPort}/api/streams?${query}`, 'GET'))
+    // Each producer lists what it offers as text, such as 'video, recvonly, H265'
+    const medias: string[] = (probe?.producers ?? []).flatMap((producer: Go2RTCProducerProbe) => producer.medias ?? [])
+    return medias.some((media) => media.startsWith('video') && media.includes('H265'))
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -411,7 +477,7 @@ const getPort = async (): Promise<number> => {
 export const setupGo2RTCService = (): void => {
   ipcMain.handle('go2rtc-add-stream', async (_, name: string, rtspUrl: string) => {
     try {
-      await addStream(name, rtspUrl)
+      return await addStream(name, rtspUrl)
     } catch (error) {
       console.error('[go2rtc] Error adding stream:', error)
       throw error
