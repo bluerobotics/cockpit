@@ -2,6 +2,7 @@ import { interfaceLanguage } from '@/libs/i18n'
 
 import * as EnglishWords from './words'
 import * as BrazilianPortugueseWords from './words-pt_BR'
+import * as ChineseWords from './words-zh_CN'
 
 type WordList = {
   /**
@@ -22,7 +23,7 @@ type WordList = {
   coolMissionNames: string[]
 }
 
-const wordsByLanguage: Record<string, WordList> = { pt_BR: BrazilianPortugueseWords }
+const wordsByLanguage: Record<string, WordList> = { pt_BR: BrazilianPortugueseWords, zh_CN: ChineseWords }
 
 export const Words: WordList = wordsByLanguage[interfaceLanguage] ?? EnglishWords
 

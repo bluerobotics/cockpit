@@ -149,12 +149,13 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { interfaceLanguage } from '@/libs/i18n'
 import { startupLightHeartedMessages as englishMessages } from '@/libs/startup-messages/messages'
 import { startupLightHeartedMessages as brazilianPortugueseMessages } from '@/libs/startup-messages/messages-pt_BR'
+import { startupLightHeartedMessages as chineseMessages } from '@/libs/startup-messages/messages-zh_CN'
 import { isElectron } from '@/libs/utils'
 
 const randomLightHeartedMessage = ref<string>('')
 let timerId: ReturnType<typeof setTimeout>
 
-const messagesByLanguage: Record<string, string[]> = { pt_BR: brazilianPortugueseMessages }
+const messagesByLanguage: Record<string, string[]> = { pt_BR: brazilianPortugueseMessages, zh_CN: chineseMessages }
 const startupLightHeartedMessages = messagesByLanguage[interfaceLanguage] ?? englishMessages
 
 const remainingMessages = ref<string[]>([...startupLightHeartedMessages])
