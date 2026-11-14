@@ -27,7 +27,9 @@ export const tooltipText = (page) =>
  */
 export async function placeEdgePoi(page, which) {
   await wheelZoom(page, which, 17)
-  return placePoi(page, which, await mapPoint(page, which, 0.75, 0.32), POI_NAME)
+  // On the widget, below the middle: an off-screen home gets its own edge pin higher up the right edge and covers
+  // one there. The planning map keeps it high, clear of the estimates card.
+  return placePoi(page, which, await mapPoint(page, which, 0.75, which === 'widget' ? 0.62 : 0.32), POI_NAME)
 }
 
 /**
