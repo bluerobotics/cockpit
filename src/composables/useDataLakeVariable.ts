@@ -17,8 +17,8 @@ type DataLakeValue = string | number | boolean
  * Subscribe to a data lake variable reactively.
  * Automatically resubscribes when the variable ID changes and cleans up on unmount.
  * @param {MaybeRefOrGetter<string | undefined>} variableId - The data lake variable ID (string, ref, or getter)
- * @returns {{ value: Ref<DataLakeValue | undefined>, displayValue: ComputedRef<number | undefined>, displayUnit: ComputedRef<string> }}
- * The latest value as it was received, plus that value and its unit in the units the user reads
+ * @returns {{ value: Ref<DataLakeValue | undefined>, unit: Ref<string | undefined>, displayValue: ComputedRef<number | undefined>, displayUnit: ComputedRef<string> }}
+ * The latest value and its unit as they were received, plus that value and its unit in the units the user reads
  * @example
  * // Static variable ID
  * const { value } = useDataLakeVariable('/mavlink/1/1/SYS_STATUS/voltage_battery')
@@ -29,6 +29,8 @@ type DataLakeValue = string | number | boolean
 export function useDataLakeVariable(variableId: MaybeRefOrGetter<string | undefined>): {
   /** @type {Ref<DataLakeValue | undefined>} */
   value: Ref<DataLakeValue | undefined>
+  /** @type {Ref<string | undefined>} */
+  unit: Ref<string | undefined>
   /** @type {ComputedRef<number | undefined>} */
   displayValue: ComputedRef<number | undefined>
   /** @type {ComputedRef<string>} */
@@ -89,5 +91,5 @@ export function useDataLakeVariable(variableId: MaybeRefOrGetter<string | undefi
   const displayValue = computed(() => converted.value?.value)
   const displayUnit = computed(() => converted.value?.unit ?? '')
 
-  return { value, displayValue, displayUnit }
+  return { value, unit: rawUnit, displayValue, displayUnit }
 }

@@ -6,6 +6,24 @@
     <v-card class="pa-4" :style="interfaceStore.globalGlassMenuStyles" style="border-radius: 15px">
       <v-card-title class="text-center">{{ t`Attitude widget config` }}</v-card-title>
       <v-card-text>
+        <div class="grid gap-x-4" :class="interfaceStore.isOnPhoneScreen ? 'grid-cols-1' : 'grid-cols-2'">
+          <div>
+            <DataSourceSelect
+              :config="rollSourceConfig"
+              :presets="rollSourceOptions"
+              :label="t`Roll source`"
+              :custom-hint="t`Any numeric data lake variable, read in degrees when it has no unit`"
+            />
+          </div>
+          <div>
+            <DataSourceSelect
+              :config="pitchSourceConfig"
+              :presets="pitchSourceOptions"
+              :label="t`Pitch source`"
+              :custom-hint="t`Any numeric data lake variable, read in degrees when it has no unit`"
+            />
+          </div>
+        </div>
         <div class="flex justify-center gap-x-8 mb-4">
           <v-switch
             class="ma-1"
@@ -72,10 +90,22 @@ import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
+import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
 import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
+import {
+  defaultPitchVariableId,
+  defaultRollVariableId,
+  pitchDataSource,
+  pitchSourceOptions,
+  rollDataSource,
+  rollSourceOptions,
+} from '@/libs/data-sources/attitude'
+import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { constrain, degrees, radians, resetCanvas, round } from '@/libs/utils'
+import { convertValueTo } from '@/libs/units'
+import { constrain, radians, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -146,14 +176,16 @@ const defaultOptions = {
   desiredAimRadius: 150,
   hudColor: colorSwatches.value[0][0],
   cameraFOV: 64,
-  rollVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/roll',
-  pitchVariableId: '/mavlink/{{autopilotSystemId}}/1/ATTITUDE/pitch',
+  rollVariableId: defaultRollVariableId,
+  useCustomRollVariable: false,
+  pitchVariableId: defaultPitchVariableId,
+  useCustomPitchVariable: false,
   cameraTiltVariableId: '/mavlink/{{autopilotSystemId}}/1/cameraTiltDeg',
 }
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  widget.value.options = { ...defaultOptions, ...widget.value.options }
+  widget.value.options = mergeDataSourceOptions(defaultOptions, widget.value.options, [rollDataSource, pitchDataSource])
 })
 
 onMounted(() => {
@@ -170,28 +202,44 @@ const canvasSize = computed(() => ({
 // Center aim radius, constrained from user's input
 const aimRadius = computed(() => constrain(widget.value.options.desiredAimRadius, 35, 0.2 * canvasSize.value.width))
 
+const isConfigMenuOpen = (): boolean => widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen
+
 /**
  * Deal with high frequency update and decrease cpu usage when drawing
  * low degrees changes
  */
-const resolvedRollVariableId = useResolvedDataLakeTemplate(() => widget.value.options.rollVariableId)
-const resolvedPitchVariableId = useResolvedDataLakeTemplate(() => widget.value.options.pitchVariableId)
-const { value: rawRoll } = useDataLakeVariable(resolvedRollVariableId)
-const { value: rawPitch } = useDataLakeVariable(resolvedPitchVariableId)
+const rollSourceConfig = useDataSourceConfig({
+  widget,
+  isConfigMenuOpen,
+  source: rollDataSource,
+  defaultVariableId: defaultRollVariableId,
+  sourceName: 'roll',
+})
+const pitchSourceConfig = useDataSourceConfig({
+  widget,
+  isConfigMenuOpen,
+  source: pitchDataSource,
+  defaultVariableId: defaultPitchVariableId,
+  sourceName: 'pitch',
+})
+const resolvedRollVariableId = rollSourceConfig.resolvedVariableId
+const resolvedPitchVariableId = pitchSourceConfig.resolvedVariableId
+const { value: rawRoll, unit: rollUnit } = useDataLakeVariable(resolvedRollVariableId)
+const { value: rawPitch, unit: pitchUnit } = useDataLakeVariable(resolvedPitchVariableId)
 const resolvedCameraTiltVariableId = useResolvedDataLakeTemplate(() => widget.value.options.cameraTiltVariableId)
 const { value: rawCameraTilt } = useDataLakeVariable(resolvedCameraTiltVariableId)
 
 watch(rawRoll, (newRoll) => {
-  if (newRoll === undefined) return
-  const deg = degrees(newRoll as number)
+  if (typeof newRoll !== 'number') return
+  const deg = convertValueTo(newRoll, rollUnit.value, 'deg')
   if (Math.abs(deg - rollAngleDeg.value) > 0.1) {
     rollAngleDeg.value = deg
   }
 })
 
 watch(rawPitch, (newPitch) => {
-  if (newPitch === undefined) return
-  const deg = degrees(newPitch as number)
+  if (typeof newPitch !== 'number') return
+  const deg = convertValueTo(newPitch, pitchUnit.value, 'deg')
   if (Math.abs(deg - pitchAngleDeg.value) > 0.1) {
     pitchAngleDeg.value = deg
   }

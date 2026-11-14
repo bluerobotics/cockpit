@@ -27,42 +27,11 @@
             <i class="mdi mdi-close"></i>
           </v-btn>
         </div>
-        <v-select
-          v-if="!configUseCustomAltitudeVariable"
-          v-model="configAltitudeVariableId"
+        <DataSourceSelect
+          :config="altitudeSourceConfig"
+          :presets="altitudeSourceOptions"
           :label="t`Altitude source`"
-          :items="altitudeSourceOptions"
-          item-title="title"
-          item-value="value"
-          :value-comparator="isSameDataLakeVariableId"
-          hide-details
-          theme="dark"
-          variant="outlined"
-          density="compact"
-          @update:model-value="onAltitudeSourceSelected"
-        />
-        <v-autocomplete
-          v-else
-          v-model="configAltitudeVariableId"
-          :items="availableDataLakeNumberVariables"
-          item-title="name"
-          item-value="id"
-          :value-comparator="isSameDataLakeVariableId"
-          :label="t`Data lake variable`"
-          :hint="t`Select any numeric data lake variable`"
-          persistent-hint
-          theme="dark"
-          variant="outlined"
-          density="compact"
-          clearable
-          prepend-inner-icon="mdi-magnify"
-          @update:model-value="onAltitudeSourceSelected"
-        />
-        <v-checkbox
-          v-model="configUseCustomAltitudeVariable"
-          :label="t`Use custom data lake variable`"
-          hide-details
-          @update:model-value="onUseCustomAltitudeVariableToggled"
+          :custom-hint="t`Any numeric data lake variable, read in meters when it has no unit`"
         />
       </v-card-text>
     </v-card>
@@ -72,16 +41,13 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, toRefs } from 'vue'
 
-import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
+import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
-import { isSameDataLakeVariableId } from '@/libs/actions/data-lake'
-import {
-  altitudeSourceOptions,
-  defaultDepthAltitudeVariableId,
-  rawAltitudeToMeters,
-} from '@/libs/data-sources/altitude'
+import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
+import { altitudeDataSource, altitudeSourceOptions, defaultDepthAltitudeVariableId } from '@/libs/data-sources/altitude'
+import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { convertValue, readingLengthsAs, unitAbbreviation } from '@/libs/units'
+import { convertValue, convertValueTo, readingLengthsAs, unitAbbreviation } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { MiniWidget } from '@/types/widgets'
@@ -104,27 +70,23 @@ const defaultOptions = {
 }
 
 onBeforeMount(() => {
-  miniWidget.value.options = mergeAltitudeVariableOptions(defaultOptions, miniWidget.value.options)
+  miniWidget.value.options = mergeDataSourceOptions(defaultOptions, miniWidget.value.options, [altitudeDataSource])
 })
 
-const {
-  resolvedAltitudeVariableId,
-  configAltitudeVariableId,
-  configUseCustomAltitudeVariable,
-  availableDataLakeNumberVariables,
-  onAltitudeSourceSelected,
-  onUseCustomAltitudeVariableToggled,
-} = useAltitudeSourceConfig({
+const altitudeSourceConfig = useDataSourceConfig({
   widget: miniWidget,
   isConfigMenuOpen: () => widgetStore.miniWidgetManagerVars(miniWidget.value.hash).configMenuOpen,
-  defaultAltitudeVariableId: defaultDepthAltitudeVariableId,
+  source: altitudeDataSource,
+  defaultVariableId: defaultDepthAltitudeVariableId,
+  sourceName: 'altitude',
 })
+const resolvedAltitudeVariableId = altitudeSourceConfig.resolvedVariableId
 
-const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
+const { value: rawAltitude, unit: rawAltitudeUnit } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 const currentDepth = computed<number | undefined>(() => {
-  if (resolvedAltitudeVariableId.value === undefined || typeof rawAltitude.value !== 'number') return undefined
-  const depthInMeters = -rawAltitudeToMeters(resolvedAltitudeVariableId.value, rawAltitude.value)
+  if (typeof rawAltitude.value !== 'number') return undefined
+  const depthInMeters = -convertValueTo(rawAltitude.value, rawAltitudeUnit.value, 'm')
   if (depthInMeters < 0.01) return 0
   return convertValue(depthInMeters, 'm', readingLengthsAs(interfaceStore.displayUnitPreferences, 'depth')).value
 })

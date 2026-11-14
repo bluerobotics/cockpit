@@ -24,3 +24,52 @@ export const findSourceOptionForVariableId = <T extends VariableIdOption>(
   if (!suffix) return undefined
   return options.find((option) => extractSuffix(option.value) === suffix)
 }
+
+/** Data source preset offered in widget config menus. */
+export type DataSourcePreset = VariableIdOption & {
+  /** User-facing source label. */
+  title: string
+}
+
+/** Where a widget stores one data source selection, and which presets it can pick from. */
+export type DataSourceOptionKeys = {
+  /** Option key holding the data lake variable ID (templated for presets, concrete for custom variables). */
+  variableIdKey: string
+  /** Option key flagging that the user picked a custom data lake variable. */
+  useCustomVariableKey: string
+  /** Preset sources offered in the config menu; any other variable is custom. */
+  presets: DataSourcePreset[]
+}
+
+/**
+ * Whether a data lake variable ID, templated or concrete, matches one of the given presets.
+ * @param {VariableIdOption[]} presets - Preset sources to match against
+ * @param {string} variableId - Data lake variable ID
+ * @returns {boolean} True if it matches a preset
+ */
+export const isPresetVariableId = (presets: VariableIdOption[], variableId: string): boolean =>
+  findSourceOptionForVariableId(presets, variableId) !== undefined
+
+/**
+ * Merge persisted widget options with defaults and flag each source holding a non-preset variable as custom.
+ * @param {T} defaultOptions - Default widget options
+ * @param {Partial<T>} persistedOptions - Persisted widget options
+ * @param {DataSourceOptionKeys[]} sources - Data sources stored in the options
+ * @returns {T} Merged widget options
+ */
+export const mergeDataSourceOptions = <T extends object>(
+  defaultOptions: T,
+  persistedOptions: Partial<T>,
+  sources: DataSourceOptionKeys[]
+): T => {
+  const merged = { ...defaultOptions, ...persistedOptions } as Record<string, unknown>
+
+  sources.forEach(({ variableIdKey, useCustomVariableKey, presets }) => {
+    const variableId = merged[variableIdKey]
+    if (typeof variableId === 'string' && variableId && !isPresetVariableId(presets, variableId)) {
+      merged[useCustomVariableKey] = true
+    }
+  })
+
+  return merged as T
+}

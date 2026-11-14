@@ -6,45 +6,11 @@
     <v-card class="pa-2" :style="interfaceStore.globalGlassMenuStyles">
       <v-card-title class="text-center">{{ t`Depth HUD config` }}</v-card-title>
       <v-card-text>
-        <v-select
-          v-if="!configUseCustomAltitudeVariable"
-          v-model="configAltitudeVariableId"
+        <DataSourceSelect
+          :config="altitudeSourceConfig"
+          :presets="altitudeSourceOptions"
           :label="t`Altitude source`"
-          :items="altitudeSourceOptions"
-          item-title="title"
-          item-value="value"
-          :value-comparator="isSameDataLakeVariableId"
-          hide-details
-          theme="dark"
-          variant="outlined"
-          density="compact"
-          class="mb-2"
-          @update:model-value="onAltitudeSourceSelected"
-        />
-        <v-autocomplete
-          v-else
-          v-model="configAltitudeVariableId"
-          :items="availableDataLakeNumberVariables"
-          item-title="name"
-          item-value="id"
-          :value-comparator="isSameDataLakeVariableId"
-          :label="t`Data lake variable`"
-          :hint="t`Select any numeric data lake variable`"
-          persistent-hint
-          theme="dark"
-          variant="outlined"
-          density="compact"
-          clearable
-          prepend-inner-icon="mdi-magnify"
-          class="mb-2"
-          @update:model-value="onAltitudeSourceSelected"
-        />
-        <v-checkbox
-          v-model="configUseCustomAltitudeVariable"
-          :label="t`Use custom data lake variable`"
-          hide-details
-          class="mb-2"
-          @update:model-value="onUseCustomAltitudeVariableToggled"
+          :custom-hint="t`Any numeric data lake variable, read in meters when it has no unit`"
         />
         <v-switch
           class="ma-1"
@@ -79,16 +45,13 @@ import { colord } from 'colord'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
-import { mergeAltitudeVariableOptions, useAltitudeSourceConfig } from '@/composables/useAltitudeSourceConfig'
+import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
-import { isSameDataLakeVariableId } from '@/libs/actions/data-lake'
-import {
-  altitudeSourceOptions,
-  defaultDepthAltitudeVariableId,
-  rawAltitudeToMeters,
-} from '@/libs/data-sources/altitude'
+import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
+import { altitudeDataSource, altitudeSourceOptions, defaultDepthAltitudeVariableId } from '@/libs/data-sources/altitude'
+import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
-import { convertValue, readingLengthsAs, unitAbbreviation } from '@/libs/units'
+import { convertValue, convertValueTo, readingLengthsAs, unitAbbreviation } from '@/libs/units'
 import { range, resetCanvas, round } from '@/libs/utils'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
@@ -117,18 +80,14 @@ const defaultOptions = {
   useCustomAltitudeVariable: false,
 }
 
-const {
-  resolvedAltitudeVariableId,
-  configAltitudeVariableId,
-  configUseCustomAltitudeVariable,
-  availableDataLakeNumberVariables,
-  onAltitudeSourceSelected,
-  onUseCustomAltitudeVariableToggled,
-} = useAltitudeSourceConfig({
+const altitudeSourceConfig = useDataSourceConfig({
   widget,
   isConfigMenuOpen: () => widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen,
-  defaultAltitudeVariableId: defaultDepthAltitudeVariableId,
+  source: altitudeDataSource,
+  defaultVariableId: defaultDepthAltitudeVariableId,
+  sourceName: 'altitude',
 })
+const resolvedAltitudeVariableId = altitudeSourceConfig.resolvedVariableId
 
 type RenderVariables = {
   /**
@@ -156,7 +115,7 @@ const currentUnit = computed(() => unitAbbreviation[interfaceStore.displayUnitPr
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  widget.value.options = mergeAltitudeVariableOptions(defaultOptions, widget.value.options)
+  widget.value.options = mergeDataSourceOptions(defaultOptions, widget.value.options, [altitudeDataSource])
 })
 onMounted(() => {
   depthGraphDistances.value.forEach((distance: number) => (renderVars.depthLinesY[distance] = distanceY(distance)))
@@ -172,7 +131,7 @@ const canvasSize = computed(() => ({
 
 // The implementation below makes sure we don't update the Depth value in the widget whenever
 // the system Depth (from vehicle) updates, preventing unnecessary performance bottlenecks.
-const { value: rawAltitude } = useDataLakeVariable(resolvedAltitudeVariableId)
+const { value: rawAltitude, unit: rawAltitudeUnit } = useDataLakeVariable(resolvedAltitudeVariableId)
 
 // Reset the depth history when the altitude source changes so the graph scale doesn't carry
 // over the previous source's range while new values are still flowing in.
@@ -180,9 +139,9 @@ watch(resolvedAltitudeVariableId, () => {
   passedDepths.value = Array(10).fill(0)
 })
 
-watch([rawAltitude, resolvedAltitudeVariableId], ([newAlt, resolvedId]) => {
-  if (resolvedId === undefined || typeof newAlt !== 'number') return
-  const depthInMeters = -rawAltitudeToMeters(resolvedId, newAlt)
+watch([rawAltitude, rawAltitudeUnit], ([newAlt, unit]) => {
+  if (typeof newAlt !== 'number') return
+  const depthInMeters = -convertValueTo(newAlt, unit, 'm')
 
   const depthDiff = Math.abs(depthInMeters - (depth.value || 0))
   if (depthDiff < 0.1) return

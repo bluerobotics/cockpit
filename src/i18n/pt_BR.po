@@ -1129,6 +1129,23 @@ msgstr "Altura da antena (${ 0 })"
 msgid "Any"
 msgstr "Qualquer"
 
+#: src/components/widgets/Attitude.vue
+#: src/components/widgets/Compass.vue
+#: src/components/widgets/CompassHUD.vue
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Any numeric data lake variable, read in degrees when it has no unit"
+msgstr ""
+"Qualquer variável numérica do data lake, lida em graus quando não tem "
+"unidade"
+
+#: src/components/mini-widgets/DepthIndicator.vue
+#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
+#: src/components/widgets/DepthHUD.vue
+msgid "Any numeric data lake variable, read in meters when it has no unit"
+msgstr ""
+"Qualquer variável numérica do data lake, lida em metros quando não tem "
+"unidade"
+
 #: src/components/widgets/Plotter.vue
 msgid "Appearance"
 msgstr "Aparência"
@@ -2198,6 +2215,7 @@ msgstr "Clonar widget para"
 #: src/components/widgets/MiniMap.vue
 #: src/components/widgets/Plotter.vue
 #: src/components/widgets/URLVideoPlayer.vue
+#: src/components/widgets/VirtualHorizon.vue
 #: src/stores/video.ts
 #: src/views/ConfigurationJoystickView.vue
 #: src/views/MissionPlanningView.vue
@@ -3293,12 +3311,6 @@ msgstr "Configurações de exportação de dados"
 #: src/components/recipes/RecipeDialog.vue
 msgid "Data lake"
 msgstr "Data lake"
-
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
-msgid "Data lake variable"
-msgstr "Variável do data lake"
 
 #: src/libs/menu-pages.ts
 msgid "Data-lake"
@@ -5279,6 +5291,11 @@ msgstr "Cabeçalhos"
 #: src/components/poi/PoiManager.vue
 msgid "Heading (optional)"
 msgstr "Rumo (opcional)"
+
+#: src/components/widgets/Compass.vue
+#: src/components/widgets/CompassHUD.vue
+msgid "Heading source"
+msgstr "Fonte de rumo"
 
 #: src/components/widgets/Compass.vue
 msgid "Heading style"
@@ -8178,6 +8195,11 @@ msgstr "Píer"
 msgid "Pirate mode"
 msgstr "Modo pirata"
 
+#: src/components/widgets/Attitude.vue
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Pitch source"
+msgstr "Fonte de arfagem"
+
 #: src/components/poi/PoiManager.vue
 #: src/components/widgets/Map.vue
 msgid "Place Point of Interest"
@@ -9086,6 +9108,11 @@ msgstr "Reverter alterações"
 msgid "Review"
 msgstr "Revisar"
 
+#: src/components/widgets/Attitude.vue
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Roll source"
+msgstr "Fonte de rolagem"
+
 #: src/views/MissionPlanningView.vue
 msgid "Rotate"
 msgstr "Girar"
@@ -9401,12 +9428,6 @@ msgstr ""
 "Selecione e processe os arquivos ZIP baixados (gravações grandes são "
 "divididas em vários zips de partes — escolha todos juntos, ou apenas um, e "
 "o restante será detectado automaticamente se estiver na mesma pasta)"
-
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
-msgid "Select any numeric data lake variable"
-msgstr "Selecione qualquer variável numérica do data lake"
 
 #: src/components/VideoLibraryModal.vue
 msgid "Select multiple files"
@@ -11679,9 +11700,7 @@ msgstr "Usar intervalo -180/+180"
 msgid "Use a serial/USB device"
 msgstr "Usar um dispositivo serial/USB"
 
-#: src/components/mini-widgets/DepthIndicator.vue
-#: src/components/mini-widgets/RelativeAltitudeIndicator.vue
-#: src/components/widgets/DepthHUD.vue
+#: src/components/DataSourceSelect.vue
 msgid "Use custom data lake variable"
 msgstr "Usar variável personalizada do data lake"
 
@@ -12277,6 +12296,10 @@ msgstr "Visualizações"
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "Views group preview"
 msgstr "Prévia do grupo de visualizações"
+
+#: src/components/widgets/VirtualHorizon.vue
+msgid "Virtual horizon config"
+msgstr "Configuração do horizonte virtual"
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Visible"
@@ -13319,3 +13342,9 @@ msgstr ""
 "— para lê-la nesse sistema de unidades, em vez do valor bruto que o veículo "
 "envia. Versões mais antigas do Cockpit não conseguem lê-lo, então deixe "
 "desativado se você compartilha este veículo com uma delas."
+
+#~ msgid "Data lake variable"
+#~ msgstr "Variável do data lake"
+
+#~ msgid "Select any numeric data lake variable"
+#~ msgstr "Selecione qualquer variável numérica do data lake"

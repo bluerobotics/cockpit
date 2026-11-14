@@ -11,9 +11,17 @@
     v-model:show="widgetStore.widgetManagerVars(widget.hash).configMenuOpen"
     class="flex pa-4 bg-[#ffffff10] text-white backdrop-blur-2xl border-[1px] border-[#FAFAFA12]"
   >
-    <div class="flex items-center">
-      <span class="mr-3 text-slate-100">{{ t`Heading style` }}</span>
-      <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
+    <div class="flex flex-col w-72">
+      <div class="flex items-center mb-4">
+        <span class="mr-3 text-slate-100">{{ t`Heading style` }}</span>
+        <div class="w-40"><Dropdown v-model="widget.options.headingStyle" :options="headingOptions" /></div>
+      </div>
+      <DataSourceSelect
+        :config="headingSourceConfig"
+        :presets="headingSourceOptions"
+        :label="t`Heading source`"
+        :custom-hint="t`Any numeric data lake variable, read in degrees when it has no unit`"
+      />
     </div>
   </Dialog>
 </template>
@@ -23,12 +31,15 @@ import { useWindowSize } from '@vueuse/core'
 import gsap from 'gsap'
 import { computed, nextTick, onBeforeMount, onMounted, reactive, ref, toRefs, watch } from 'vue'
 
+import DataSourceSelect from '@/components/DataSourceSelect.vue'
 import Dialog from '@/components/Dialog.vue'
 import Dropdown from '@/components/Dropdown.vue'
 import { useDataLakeVariable } from '@/composables/useDataLakeVariable'
-import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
-import { defaultHeadingVariableId, rawHeadingToDegrees } from '@/libs/data-sources/heading'
+import { useDataSourceConfig } from '@/composables/useDataSourceConfig'
+import { defaultHeadingVariableId, headingDataSource, headingSourceOptions } from '@/libs/data-sources/heading'
+import { mergeDataSourceOptions } from '@/libs/data-sources/source-options'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
+import { convertValueTo } from '@/libs/units'
 import { radians, resetCanvas, sequentialArray } from '@/libs/utils'
 import { useWidgetManagerStore } from '@/stores/widgetManager'
 import type { Widget } from '@/types/widgets'
@@ -74,11 +85,12 @@ const widget = toRefs(props).widget
 const defaultOptions = {
   headingStyle: headingOptions[0],
   yawVariableId: defaultHeadingVariableId,
+  useCustomYawVariable: false,
 }
 
 onBeforeMount(() => {
   // Set initial widget options if they don't exist
-  widget.value.options = { ...defaultOptions, ...widget.value.options }
+  widget.value.options = mergeDataSourceOptions(defaultOptions, widget.value.options, [headingDataSource])
 })
 
 onMounted(() => {
@@ -195,13 +207,20 @@ const renderCanvas = (): void => {
  * Deal with high frequency update and decrease cpu usage when drawing low degrees changes
  */
 
-const resolvedYawVariableId = useResolvedDataLakeTemplate(() => widget.value.options.yawVariableId)
-const { value: rawYaw } = useDataLakeVariable(resolvedYawVariableId)
+const headingSourceConfig = useDataSourceConfig({
+  widget,
+  isConfigMenuOpen: () => widgetStore.widgetManagerVars(widget.value.hash).configMenuOpen,
+  source: headingDataSource,
+  defaultVariableId: defaultHeadingVariableId,
+  sourceName: 'heading',
+})
+const resolvedYawVariableId = headingSourceConfig.resolvedVariableId
+const { value: rawYaw, unit: yawUnit } = useDataLakeVariable(resolvedYawVariableId)
 
 const yaw = ref(0.01)
 watch(rawYaw, (newYaw) => {
-  if (resolvedYawVariableId.value === undefined || typeof newYaw !== 'number') return
-  const deg = rawHeadingToDegrees(resolvedYawVariableId.value, newYaw)
+  if (typeof newYaw !== 'number') return
+  const deg = convertValueTo(newYaw, yawUnit.value, 'deg')
   if (Math.abs(deg - yaw.value) > 0.1) {
     yaw.value = deg
   }
