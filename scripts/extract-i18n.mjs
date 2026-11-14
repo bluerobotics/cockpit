@@ -12,7 +12,7 @@ import ts from 'typescript'
 const root = fileURLToPath(new URL('..', import.meta.url))
 const srcRoot = join(root, 'src')
 const i18nDir = join(srcRoot, 'i18n')
-const locales = ['pt_BR']
+const locales = ['pt_BR', 'zh_CN']
 const ttagEntry = join(root, 'node_modules', 'ttag-cli', 'bin', 'ttag')
 const ttagTags = ['t', 'gettext', 'ngettext', 'jt']
 const ignoredDirectories = new Set(['node_modules', 'electron', 'm2r', 'mavlink-json', 'ParameterRepository'])
