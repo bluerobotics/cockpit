@@ -68,7 +68,7 @@ export async function dropCard(page, name, at) {
 export const barDropPoint = (page, bar) =>
   centreOf(
     page,
-    `[...document.querySelectorAll('.${bar}-bar')].find((b) => b.getClientRects().length)
+    `[...document.querySelectorAll('.${bar}-bar')].find((b) => b.checkVisibility({ visibilityProperty: true }))
       ?.querySelectorAll(':scope > ${bar === 'top' ? '.flex-1' : '.relative'}')[1]`
   )
 
@@ -95,7 +95,7 @@ export async function containerRows(page) {
   const rows = await page.eval(`(() => {
     const title = [...document.querySelectorAll('p')].find((p) => p.textContent.trim() === ${JSON.stringify(
       name
-    )} && p.getClientRects().length)
+    )} && p.checkVisibility({ visibilityProperty: true }))
     const column = title?.closest('.rounded-lg.overflow-hidden')?.querySelector('.border-dashed')
     return [...(column?.children ?? [])].map((row) => { const r = row.getBoundingClientRect()
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 } }) })()`)
@@ -151,7 +151,7 @@ export const elementAt = (page, hash, inner) =>
   )
 
 // The element side panel on the right (InputElementConfig).
-const PANEL = `[...document.querySelectorAll('.fixed.right-0')].find((e) => e.innerText.includes('Options') && e.getClientRects().length)`
+const PANEL = `[...document.querySelectorAll('.fixed.right-0')].find((e) => e.innerText.includes('Options') && e.checkVisibility({ visibilityProperty: true }))`
 
 /**
  * Click an element in edit mode to open its side panel.
@@ -166,7 +166,7 @@ export async function openElementPanel(page, hash) {
 const panelButton = (text) =>
   `[...(${PANEL})?.querySelectorAll('button') ?? []].find((b) => b.innerText.trim().toLowerCase() === ${JSON.stringify(
     text
-  )} && b.getClientRects().length)`
+  )} && b.checkVisibility({ visibilityProperty: true }))`
 
 /**
  * In the open side panel: Actions → Data-lake variable → "create", type the name, "save".
@@ -354,11 +354,11 @@ export async function ensureSnapshotTool(page) {
  * @returns {Promise<{camera: {x: number, y: number}, arrow: {x: number, y: number}, play: {x: number, y: number}|null}>} Points
  */
 export const snapshotToolButtons = async (page) => {
-  const tool = `[...document.querySelectorAll('.mdi-camera')].find((i) => i.getClientRects().length)?.parentElement`
+  const tool = `[...document.querySelectorAll('.mdi-camera')].find((i) => i.checkVisibility({ visibilityProperty: true }))?.parentElement`
   return {
     camera: await centreOf(
       page,
-      `[...document.querySelectorAll('.mdi-camera')].find((i) => i.getClientRects().length)`
+      `[...document.querySelectorAll('.mdi-camera')].find((i) => i.checkVisibility({ visibilityProperty: true }))`
     ),
     arrow: await centreOf(page, `(${tool})?.querySelector('.mdi-menu-up')`),
     play: await centreOf(page, `(${tool})?.querySelector('.mdi-play, .mdi-stop')`),
@@ -403,7 +403,7 @@ export const fileSafe = (name) =>
 export async function openSnapshotSettings(page) {
   const cog = await centreOf(
     page,
-    `[...document.querySelectorAll('#view-widgets-list p')].find((p) => p.textContent.trim() === 'SnapshotTool' && p.getClientRects().length)
+    `[...document.querySelectorAll('#view-widgets-list p')].find((p) => p.textContent.trim() === 'SnapshotTool' && p.checkVisibility({ visibilityProperty: true }))
       ?.parentElement.parentElement.querySelector('.mdi-cog')`
   )
   if (!cog) throw new Error('no snapshot tool in the bottom bar list')

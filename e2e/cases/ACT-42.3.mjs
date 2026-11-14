@@ -41,7 +41,8 @@ export default async function run({ page, vehicle }) {
     ok: await until(async () => (await vehicle.heartbeat())?.custom_mode === 0),
     detail: `custom mode ${(await vehicle.heartbeat())?.custom_mode}`,
   }))
-  const topBar = () => page.eval(`!!document.querySelector('#mainTopBar')?.getClientRects().length`)
+  const topBar = () =>
+    page.eval(`!!document.querySelector('#mainTopBar')?.checkVisibility({ visibilityProperty: true })`)
   await page.caption('Press "Top bar" twice')
   await page.click('text=Top bar', { settle: 1500 })
   const hidden = !(await topBar())

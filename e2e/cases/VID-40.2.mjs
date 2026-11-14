@@ -44,7 +44,7 @@ export default async function run({ page }) {
   await page.caption('Settings → Telemetry → Settings: Telemetry frequency 5 Hz')
   await openTelemetryPanel(page, 'Settings')
   const field =
-    await page.eval(`(() => { const i = [...document.querySelectorAll('input[type=number]')].find((e) => e.getClientRects().length)
+    await page.eval(`(() => { const i = [...document.querySelectorAll('input[type=number]')].find((e) => e.checkVisibility({ visibilityProperty: true }))
     i.scrollIntoView({ block: 'center' }); const r = i.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
   await page.fill(field, 5)
   await page.key('Tab', { show: false })

@@ -4,7 +4,8 @@ import { ROVER } from '../lib/mission.mjs'
 
 export const meta = { title: 'Inspector lists outgoing messages', route: '/', needs: ['vehicle'] }
 
-const MODE_SELECT = `[...document.querySelectorAll('.custom-select select')].find((s) => s.getClientRects().length && [...s.options].some((o) => o.text.trim() === 'Loiter'))`
+const MODE_SELECT = `[...document.querySelectorAll('.custom-select select')]
+  .find((s) => s.checkVisibility({ visibilityProperty: true }) && [...s.options].some((o) => o.text.trim() === 'Loiter'))`
 
 /**
  * Track COMMAND_LONG, change the flight mode from the bottom bar, and find the command in the inspector.

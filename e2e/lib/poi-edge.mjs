@@ -9,14 +9,14 @@ export const POI_NAME = 'Edge beacon'
 // Edge pins for points of interest on screen. Vehicle, home and base-station pins share the class
 // and are told apart by their icon.
 export const edgePins = (page) =>
-  page.eval(`[...document.querySelectorAll('.poi-edge-pin')].filter((e) => e.getClientRects().length)
+  page.eval(`[...document.querySelectorAll('.poi-edge-pin')].filter((e) => e.checkVisibility({ visibilityProperty: true }))
     .filter((e) => !e.querySelector('.mdi-send-variant, .mdi-home, .mdi-radio-tower'))
     .map((e) => { const r = (e.querySelector('.poi-pin-shape')?.parentElement ?? e).getBoundingClientRect()
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })`)
 
 // Text of the edge-pin tooltip showing right now.
 export const tooltipText = (page) =>
-  page.eval(`[...document.querySelectorAll('.poi-arrow-tooltip')].filter((e) => e.getClientRects().length)
+  page.eval(`[...document.querySelectorAll('.poi-arrow-tooltip')].filter((e) => e.checkVisibility({ visibilityProperty: true }))
     .map((e) => e.innerText.trim()).join(' | ')`)
 
 /**

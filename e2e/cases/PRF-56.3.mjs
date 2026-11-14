@@ -12,7 +12,7 @@ export const meta = {
 
 const CARD = `[...document.querySelectorAll('[draggable=true]')].find((e) => e.innerText.trim() === 'Virtual Horizon')`
 // What each visible horizon draws: how many pixels are painted, and a checksum that moves when it tilts.
-const DRAWN = `[...document.querySelectorAll('.virtualHorizon canvas')].filter((c) => c.getClientRects().length && c.width)
+const DRAWN = `[...document.querySelectorAll('.virtualHorizon canvas')].filter((c) => c.checkVisibility({ visibilityProperty: true }) && c.width)
   .map((c) => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let painted = 0; let sum = 0
     for (let i = 0; i < d.length; i += 4) { if (d[i + 3]) painted++; sum = (sum * 31 + d[i] + d[i + 1] * 7 + d[i + 2] * 13) % 1000000007 }
     return { painted: painted / (d.length / 4), sum } })`

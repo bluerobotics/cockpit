@@ -16,7 +16,7 @@ export const setup = async (ctx) => {
   await applyGlobalAddress(ctx.page, NO_VEHICLE)
 }
 
-const FOUND = `[...document.querySelectorAll('.v-overlay--active button')].find((b) => b.getClientRects().length
+const FOUND = `[...document.querySelectorAll('.v-overlay--active button')].find((b) => b.checkVisibility({ visibilityProperty: true })
   && /\\(\\d+\\.\\d+\\.\\d+\\.\\d+\\)$/.test(b.innerText.trim()))`
 
 /**
