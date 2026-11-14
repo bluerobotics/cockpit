@@ -6,7 +6,8 @@ export const meta = { ...JOY_META, title: 'A button mapped to a Cockpit Action r
 
 export const setup = joystickSetup
 
-const topBarShown = (page) => page.eval(`!!document.querySelector('#mainTopBar')?.getClientRects().length`)
+const topBarShown = (page) =>
+  page.eval(`!!document.querySelector('#mainTopBar')?.checkVisibility({ visibilityProperty: true })`)
 
 /**
  * Map button 4 to "Toggle top bar" in the joystick table, leave the page and press it twice.

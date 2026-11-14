@@ -153,7 +153,8 @@ const finder = (selector) =>
   selector.startsWith('text=')
     ? `(() => {
          const text = ${JSON.stringify(selector.slice(5))}.toLowerCase()
-         const visible = (el) => el.getClientRects().length > 0
+         // visibility: hidden keeps its boxes, as the Flight view parked under Mission planning does.
+         const visible = (el) => el.checkVisibility({ visibilityProperty: true })
          // Matches inside the viewport win over ones parked off-screen (hidden drawers, the widget picker).
          const inView = (el) => { const r = el.getBoundingClientRect(); return r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight }
          const all = (list) => {
@@ -164,7 +165,9 @@ const finder = (selector) =>
          return all('button, a, [role="button"], [role="menuitem"], [role="option"], .v-list-item, summary')[0]
            ?? all('div, span, li, th, td, p, label, h1, h2, h3, h4, h5, h6').pop() ?? null
        })()`
-    : `[...document.querySelectorAll(${JSON.stringify(selector)})].find((el) => el.getClientRects().length > 0) ?? null`
+    : `[...document.querySelectorAll(${JSON.stringify(
+        selector
+      )})].find((el) => el.checkVisibility({ visibilityProperty: true })) ?? null`
 
 const MODIFIERS = { Alt: 1, Control: 2, Meta: 4, Shift: 8 }
 const KEYS = {

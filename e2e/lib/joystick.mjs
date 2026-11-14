@@ -162,7 +162,7 @@ export async function openJoystickPage(page, tab = 'Table') {
 // A row of the axes or buttons table, by its Name cell ("axis 1", "button 4").
 export const row = (kind, id) =>
   `[...document.querySelectorAll('tr')].find((r) => { const p = r.querySelectorAll('td:first-child p')
-    return r.getClientRects().length && p.length === 2 && p[0].textContent.trim() === '${kind}' && p[1].textContent.trim() === '${id}' })`
+    return r.checkVisibility({ visibilityProperty: true }) && p.length === 2 && p[0].textContent.trim() === '${kind}' && p[1].textContent.trim() === '${id}' })`
 
 /**
  * Pick the button layer (Regular or Shift) the table edits.
@@ -243,7 +243,7 @@ export async function editAxis(page, axis, { action, min, max }) {
   }
   if (max !== undefined) await typeInto(page, await centre(page, `${cell(5)}?.querySelector('input')`), max)
   await page.wait(500)
-  const save = `[...document.querySelectorAll('button[aria-label="Save changes"]')].find((b) => !b.disabled && b.getClientRects().length)`
+  const save = `[...document.querySelectorAll('button[aria-label="Save changes"]')].find((b) => !b.disabled && b.checkVisibility({ visibilityProperty: true }))`
   for (let i = 0; i < 6 && (await page.eval(`!!${save}`)); i++) {
     await clickExpr(page, save, 'axis save button', 1000)
     if (await page.exists('text=Unusual axis range'))

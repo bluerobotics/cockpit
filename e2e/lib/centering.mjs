@@ -38,7 +38,7 @@ export async function openCenterDial(page) {
 export const isTracking = (page, selector) =>
   page.eval(`(() => { const b = [...document.querySelectorAll(${JSON.stringify(
     selector
-  )})].find((e) => e.getClientRects().length)
+  )})].find((e) => e.checkVisibility({ visibilityProperty: true }))
     return Boolean(b && /(^|\\s)(bg|text)-red(\\s|$)/.test(b.className)) })()`)
 
 /**

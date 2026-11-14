@@ -25,12 +25,12 @@ const centre = (page, expr) =>
     const r = el.getBoundingClientRect()
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
 
-const sliderHandle = `[...document.querySelectorAll('.palette-card')].find((e) => e.getClientRects().length &&
+const sliderHandle = `[...document.querySelectorAll('.palette-card')].find((e) => e.checkVisibility({ visibilityProperty: true }) &&
   e.querySelector('.palette-card-label')?.innerText.trim().toLowerCase() === 'slider')?.querySelector('.palette-card-handle')`
 
 // The input of an option row in the element's configuration drawer.
 const optionInput = (label) =>
-  `[...document.querySelectorAll('p')].find((p) => p.getClientRects().length && p.textContent.trim() === '${label}')?.parentElement.querySelector('input')`
+  `[...document.querySelectorAll('p')].find((p) => p.checkVisibility({ visibilityProperty: true }) && p.textContent.trim() === '${label}')?.parentElement.querySelector('input')`
 
 /**
  * Unmap Axis X from the joystick, then drive inputs/mavlink/axis-x from a custom-widget slider: Cockpit
@@ -63,7 +63,10 @@ export default async function run({ page, sent }) {
     { duration: 1000, settle: 1500 }
   )
   await page.click(
-    await centre(page, `[...document.querySelectorAll('.slider-container')].find((e) => e.getClientRects().length)`),
+    await centre(
+      page,
+      `[...document.querySelectorAll('.slider-container')].find((e) => e.checkVisibility({ visibilityProperty: true }))`
+    ),
     {
       settle: 1500,
     }
@@ -73,14 +76,14 @@ export default async function run({ page, sent }) {
   await page.click('text=select', { settle: 1000 })
   await chooseOption(
     page,
-    `[...document.querySelectorAll('select')].find((s) => s.getClientRects().length && [...s.options].some((o) => o.text.trim() === 'Axis X'))`,
+    `[...document.querySelectorAll('select')].find((s) => s.checkVisibility({ visibilityProperty: true }) && [...s.options].some((o) => o.text.trim() === 'Axis X'))`,
     'Axis X'
   )
   await exitEditMode(page)
 
   await page.caption('Move the slider to 500')
   const track =
-    await page.eval(`(() => { const t = [...document.querySelectorAll('.slider-container .v-slider-track')].find((e) => e.getClientRects().length)
+    await page.eval(`(() => { const t = [...document.querySelectorAll('.slider-container .v-slider-track')].find((e) => e.checkVisibility({ visibilityProperty: true }))
     if (!t) return null; const r = t.getBoundingClientRect(); return { x: r.x + r.width * 0.75, y: r.y + r.height / 2 } })()`)
   if (!track) throw new Error('no slider on the view')
   await page.click(track, { settle: 2000 })

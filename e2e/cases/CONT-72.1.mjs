@@ -29,7 +29,7 @@ export default async function run({ page }) {
 
   const shown = (hash) =>
     page.eval(`(() => { const el = document.querySelector('[data-widget-hash="${hash}"]')
-      return el?.getClientRects().length ? el.innerText.replace(/\\s+/g, ' ').trim() : null })()`)
+      return el?.checkVisibility({ visibilityProperty: true }) ? el.innerText.replace(/\\s+/g, ' ').trim() : null })()`)
   const now = () =>
     page.eval(
       `(() => { const d = new Date(); return [d.getHours(), d.getMinutes()].map((n) => String(n).padStart(2, '0')).join(':') })()`

@@ -39,7 +39,7 @@ export default async function run({ page }) {
   await page.wait(800)
   const option = await page.eval(`(() => {
     const item = [...document.querySelectorAll('.v-overlay--active .v-list-item')]
-      .find((e) => e.getClientRects().length && /ATTITUDE\\/roll$/.test(e.textContent.trim()))
+      .find((e) => e.checkVisibility({ visibilityProperty: true }) && /ATTITUDE\\/roll$/.test(e.textContent.trim()))
     const r = item?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null })()`)
   if (!option) throw new Error('ATTITUDE/roll is not offered')
   await page.click(option, { settle: 600 })

@@ -58,7 +58,9 @@ export default async function run({ page }) {
   }))
 
   const bottomBar = () =>
-    page.eval(`[...document.querySelectorAll('.bottom-bar')].some((b) => b.getClientRects().length)`)
+    page.eval(
+      `[...document.querySelectorAll('.bottom-bar')].some((b) => b.checkVisibility({ visibilityProperty: true }))`
+    )
   await page.caption('Press "Bottom bar" twice')
   await page.click('text=Bottom bar', { settle: 1500 })
   const hidden = !(await bottomBar())

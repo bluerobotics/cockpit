@@ -10,7 +10,7 @@ export const meta = {
 // Filled shapes (the fence) drawn on a map.
 const filledShapes = (page) =>
   page.eval(
-    `[...document.querySelectorAll('.leaflet-container path[fill]:not([fill="none"])')].filter((e) => e.getClientRects().length).length`
+    `[...document.querySelectorAll('.leaflet-container path[fill]:not([fill="none"])')].filter((e) => e.checkVisibility({ visibilityProperty: true })).length`
   )
 
 /**
