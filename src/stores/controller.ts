@@ -11,6 +11,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openActionErrorSnackbar } from '@/composables/snackbar'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
 import {
+  hasTriggerAxes,
   joystickCalibrationOptionsKey,
   joystickManager,
   JoystickModel,
@@ -37,6 +38,7 @@ import {
   JoystickCalibration,
   JoystickCalibrationOptions,
   JoystickProtocol,
+  withShiftTriggerAxesReleased,
 } from '@/types/joystick'
 import { availableGamepadToCockpitMaps } from '@/types/joystick-model-defs'
 
@@ -321,6 +323,10 @@ export const useControllerStore = defineStore('controller', () => {
     } catch (error) {
       console.error('Error while processing joystick state event:', error)
       return
+    }
+
+    if (modifierKeyId === CockpitModifierKeyOption.shift && hasTriggerAxes(event.gamepad)) {
+      currentState.axes = withShiftTriggerAxesReleased(currentState.axes, protocolMapping.value)
     }
 
     for (const callback of updateCallbacks.value) {

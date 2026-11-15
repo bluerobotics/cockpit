@@ -540,6 +540,25 @@ export const withTriggerAxes = (axes: ReadonlyArray<number>, buttons: ReadonlyAr
 }
 
 /**
+ * Read a standard-layout gamepad's triggers as released on their axes while they carry a Shift action, so pulling one
+ * with Shift held runs that action without also driving what its axis is mapped to.
+ * @param {ReadonlyArray<number | undefined>} axes Calibrated axis values, with the triggers in place
+ * @param {JoystickProtocolActionsMapping} mapping Active protocol mapping
+ * @returns {(number | undefined)[]} The axis values with those triggers released
+ */
+export const withShiftTriggerAxesReleased = (
+  axes: ReadonlyArray<number | undefined>,
+  mapping: JoystickProtocolActionsMapping
+): (number | undefined)[] => {
+  const released = [...axes]
+  standardTriggerAxes.forEach(({ axis, button }) => {
+    const shiftAction = mapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift][button]?.action
+    if (shiftAction && shiftAction.protocol !== JoystickProtocol.Other) released[axis] = 0
+  })
+  return released
+}
+
+/**
  * Convert SDL controller state to Gamepad state, using the default mapping for both
  * @param {SDLControllerState} sdlState - SDL controller state
  * @returns {JoystickState} Gamepad state
