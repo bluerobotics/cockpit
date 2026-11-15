@@ -540,22 +540,28 @@ export const withTriggerAxes = (axes: ReadonlyArray<number>, buttons: ReadonlyAr
 }
 
 /**
- * Read a standard-layout gamepad's triggers as released on their axes while they carry a Shift action, so pulling one
- * with Shift held runs that action without also driving what its axis is mapped to.
+ * Track a standard-layout gamepad's pulled triggers, flagging a pull that started with Shift held on a trigger that has a
+ * Shift action. A flagged pull runs that action only, so its axis stays released until the trigger is let go.
+ * @param {ReadonlyMap<JoystickAxis, boolean>} previous Pulls tracked on the previous state
  * @param {ReadonlyArray<number | undefined>} axes Calibrated axis values, with the triggers in place
  * @param {JoystickProtocolActionsMapping} mapping Active protocol mapping
- * @returns {(number | undefined)[]} The axis values with those triggers released
+ * @param {boolean} shiftHeld Whether Shift is the active modifier
+ * @returns {Map<JoystickAxis, boolean>} Each pulled trigger's axis, and whether its pull belongs to Shift
  */
-export const withShiftTriggerAxesReleased = (
+export const trackTriggerPulls = (
+  previous: ReadonlyMap<JoystickAxis, boolean>,
   axes: ReadonlyArray<number | undefined>,
-  mapping: JoystickProtocolActionsMapping
-): (number | undefined)[] => {
-  const released = [...axes]
+  mapping: JoystickProtocolActionsMapping,
+  shiftHeld: boolean
+): Map<JoystickAxis, boolean> => {
+  const pulls = new Map<JoystickAxis, boolean>()
   standardTriggerAxes.forEach(({ axis, button }) => {
+    if (!axes[axis]) return
     const shiftAction = mapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift][button]?.action
-    if (shiftAction && shiftAction.protocol !== JoystickProtocol.Other) released[axis] = 0
+    const startsWithShift = shiftHeld && shiftAction !== undefined && shiftAction.protocol !== JoystickProtocol.Other
+    pulls.set(axis, previous.get(axis) ?? startsWithShift)
   })
-  return released
+  return pulls
 }
 
 /**

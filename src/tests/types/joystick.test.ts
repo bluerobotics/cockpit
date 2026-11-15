@@ -3,24 +3,40 @@ import { expect, test } from 'vitest'
 import {
   type JoystickProtocolActionsMapping,
   CockpitModifierKeyOption,
+  JoystickAxis,
   JoystickButton,
   JoystickProtocol,
-  withShiftTriggerAxesReleased,
+  trackTriggerPulls,
 } from '@/types/joystick'
 
-test('only a trigger with a Shift action reads as released on its axis', () => {
-  const mapping: JoystickProtocolActionsMapping = {
-    name: 'test',
-    hash: 'test',
-    axesCorrespondencies: {},
-    buttonsCorrespondencies: {
-      [CockpitModifierKeyOption.regular]: {},
-      [CockpitModifierKeyOption.shift]: {
-        [JoystickButton.B6]: { action: { protocol: JoystickProtocol.Other, id: 'no_function', name: 'No function' } },
-        [JoystickButton.B7]: { action: { protocol: JoystickProtocol.DataLakeVariable, id: 'focus', name: 'Focus' } },
-      },
+const mapping: JoystickProtocolActionsMapping = {
+  name: 'test',
+  hash: 'test',
+  axesCorrespondencies: {},
+  buttonsCorrespondencies: {
+    [CockpitModifierKeyOption.regular]: {},
+    [CockpitModifierKeyOption.shift]: {
+      [JoystickButton.B6]: { action: { protocol: JoystickProtocol.Other, id: 'no_function', name: 'No function' } },
+      [JoystickButton.B7]: { action: { protocol: JoystickProtocol.DataLakeVariable, id: 'focus', name: 'Focus' } },
     },
-  }
+  },
+}
 
-  expect(withShiftTriggerAxesReleased([0.1, 0.2, 0.3, 0.4, 0.8, 0.9], mapping)).toEqual([0.1, 0.2, 0.3, 0.4, 0.8, 0])
+test('a trigger pulled with Shift held belongs to Shift only if it has a Shift action', () => {
+  const pulls = trackTriggerPulls(new Map(), [0, 0, 0, 0, 0.8, 0.9], mapping, true)
+  expect(pulls).toEqual(
+    new Map([
+      [JoystickAxis.A4, false],
+      [JoystickAxis.A5, true],
+    ])
+  )
+})
+
+test('a pull keeps its owner until the trigger is let go, whatever Shift does', () => {
+  const shiftPull = trackTriggerPulls(new Map(), [0, 0, 0, 0, 0, 1], mapping, true)
+  expect(trackTriggerPulls(shiftPull, [0, 0, 0, 0, 0, 1], mapping, false).get(JoystickAxis.A5)).toBe(true)
+  expect(trackTriggerPulls(shiftPull, [0, 0, 0, 0, 0, 0], mapping, false).size).toBe(0)
+
+  const regularPull = trackTriggerPulls(new Map(), [0, 0, 0, 0, 0, 1], mapping, false)
+  expect(trackTriggerPulls(regularPull, [0, 0, 0, 0, 0, 1], mapping, true).get(JoystickAxis.A5)).toBe(false)
 })
