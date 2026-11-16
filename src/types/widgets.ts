@@ -81,7 +81,7 @@ export interface ExternalWidgetSetupInfo {
   /**
    *  Widget icon, this is the icon that will be displayed on the widget browser
    */
-  icon: string
+  icon?: string
   /**
    *  Default size for the widget when first added (optional)
    */
