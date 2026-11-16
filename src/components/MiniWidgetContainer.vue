@@ -152,7 +152,7 @@ const onDragStart = (event: SortableEvent.SortableEvent): void => {
   if (!(ghost?.firstElementChild instanceof HTMLElement) || barScale === 1) return
   const { left, top, width, height } = itemRect
   Object.assign(ghost.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` })
-  ghost.firstElementChild.style.zoom = String(barScale)
+  ghost.firstElementChild.style.setProperty('zoom', String(barScale))
 }
 
 const onDragEnd = (): void => {
