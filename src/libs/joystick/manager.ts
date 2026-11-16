@@ -391,10 +391,8 @@ class JoystickManager {
             value: value,
             touched: false,
           })),
-          vibrationActuator: {
-            playEffect: async () => 'complete' as const,
-            reset: async () => 'complete' as const,
-          },
+          vibrationActuator: null,
+          hapticActuators: [],
         },
         calibratedState: this.buildCalibratedState(rawAxes, rawButtons, gamepadModel, data.type === 'controller'),
       }
@@ -607,6 +605,7 @@ class JoystickManager {
       axes,
       buttons: gamepad.buttons,
       vibrationActuator: gamepad.vibrationActuator,
+      hapticActuators: gamepad.hapticActuators,
     }
   }
 
@@ -619,7 +618,8 @@ class JoystickManager {
 
     // Get the joystick model to check if it's disabled
     const model = this.getModel(joystickEvent.gamepad.id)
-    const disabledJoystickModels = settingsManager.getKeyValue('cockpit-disabled-joystick-models') ?? []
+    const disabledJoystickModels =
+      settingsManager.getKeyValue<JoystickModel[]>('cockpit-disabled-joystick-models') ?? []
     if (disabledJoystickModels.includes(model)) return
 
     // Emit state event to registered callbacks

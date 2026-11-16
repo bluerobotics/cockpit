@@ -249,7 +249,7 @@ export const getSoleDataLakeVariableIdInString = (input: string): string | null 
  */
 export const findDataLakeVariablesIdsInString = (input: string): string[] => {
   const inputs = findDataLakeInputsInString(input)
-  return inputs.map((i) => getDataLakeVariableIdFromInput(i)).filter((id) => id !== null)
+  return inputs.map((i) => getDataLakeVariableIdFromInput(i)).filter((id): id is string => id !== null)
 }
 
 /**
