@@ -23,7 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Full history without file contents, which git fetches on demand when a step reads them.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Fail on pending-rebase commits
         env:
@@ -83,6 +85,7 @@ jobs:
         with:
           # The script checks out both sides itself, so it needs the base and the head commit present.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -308,6 +311,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          filter: blob:none
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -556,6 +560,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          filter: blob:none
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
