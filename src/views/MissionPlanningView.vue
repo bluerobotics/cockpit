@@ -931,7 +931,7 @@ import { formatDistanceToNow } from 'date-fns'
 import L, { type LatLngTuple, LeafletMouseEvent, Map, Marker, Polygon } from 'leaflet'
 import { msgid, ngettext, t } from 'ttag'
 import { v4 as uuid } from 'uuid'
-import { type InstanceType, computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, watch } from 'vue'
 
 import GeoFenceDrawingActionButtons from '@/components/geofence/GeoFenceDrawingActionButtons.vue'
 import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
