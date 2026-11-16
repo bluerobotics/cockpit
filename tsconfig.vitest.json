@@ -4,7 +4,7 @@
   "compilerOptions": {
     "target": "es2021",
     "composite": true,
-    "lib": ["es2021"],
+    "lib": ["es2021", "DOM", "DOM.Iterable"],
     "types": ["node", "jsdom", "vite/client"],
     "strictPropertyInitialization": false,
   }
