@@ -21,7 +21,9 @@ vi.mock('vuetify/components/VSlider', () => ({ VSlider: { template: '<div />' } 
 vi.mock('vuetify/components/VBtn', () => ({ VBtn: { template: '<button />' } }))
 
 const originalLogUserAction = globalThis.logUserAction
-afterEach(() => vi.stubGlobal('logUserAction', originalLogUserAction))
+afterEach(() => {
+  vi.stubGlobal('logUserAction', originalLogUserAction)
+})
 
 test('unlocking closes hovered alerts immediately and lets a later hover reopen them', async () => {
   vi.stubGlobal('logUserAction', vi.fn())
