@@ -50,12 +50,12 @@ const isRtspStream = (): boolean => {
   return videoStore.getStreamProtocol(props.streamName) === 'rtsp'
 }
 
-const canvasRef = ref(null)
-const framerateData = ref([])
-const bitrateData = ref([])
-const packetLostData = ref([])
-let animationFrameId = null
-let intervalId = null
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const framerateData = ref<number[]>([])
+const bitrateData = ref<number[]>([])
+const packetLostData = ref<number[]>([])
+let animationFrameId = 0
+let intervalId: ReturnType<typeof setInterval> | undefined
 let bitrate = 0
 // cumulative values
 let packetsLost = 0
@@ -104,8 +104,10 @@ function normalizeValue(value: number, max: number): number {
  * Draw the line plots and stats
  */
 function draw(): void {
-  const canvas = canvasRef.value
-  const ctx = canvas.getContext('2d')
+  const context = canvasRef.value?.getContext('2d')
+  if (!context) return
+  // The hoisted `drawPlot` below does not see the narrowing on `context`
+  const ctx = context
   const { width, height } = props
 
   ctx.clearRect(0, 0, width, height)
