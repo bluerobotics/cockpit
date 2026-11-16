@@ -163,10 +163,19 @@ jobs:
       - name: Check the import cycle finder
         run: node scripts/import-cycles.mjs --self-check
 
+      # No rule reads another source file (no type-aware or import rules), so a file whose content is
+      # unchanged keeps its result. Plugins and the ESLint and Prettier configs are in the key.
+      - name: Restore the lint cache
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: eslint-${{ hashFiles('yarn.lock', '.eslintrc.cjs', 'package.json', '.prettierrc*') }}-${{ github.sha }}
+          restore-keys: eslint-${{ hashFiles('yarn.lock', '.eslintrc.cjs', 'package.json', '.prettierrc*') }}-
+
       - name: Install, lint, and typecheck
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
-          yarn lint
+          yarn lint --cache --cache-strategy content --cache-location .eslintcache
           yarn typecheck
 
       - name: Check the translation catalogs are up to date
