@@ -585,31 +585,34 @@ const props = defineProps<{
 /* eslint-enable jsdoc/require-jsdoc */
 
 const emit = defineEmits<{
-  (event: 'close'): void
-  (event: 'add-waypoint-at-cursor'): void
+  (
+    event:
+      | 'close'
+      | 'add-waypoint-at-cursor'
+      | 'toggleSurvey'
+      | 'toggleSimplePath'
+      | 'deleteSelectedSurvey'
+      | 'undoGeneratedWaypoints'
+      | 'toggleCrosshatch'
+      | 'rotateSurveyEntryPoint'
+      | 'removeWaypoint'
+      | 'placePointOfInterest'
+      | 'setHomePosition'
+      | 'clearVehiclePathHistory'
+      | 'openMapOverlays'
+      | 'placeBaseStation'
+      | 'configureBaseStation'
+      | 'removeBaseStation'
+      | 'toggleBaseStationSignalVisibility'
+      | 'addMissionFromLibrary'
+      | 'saveMissionToLibrary'
+      | 'openHazardRecord'
+  ): void
   (event: 'open-segment-radial-menu', segmentIndex: number): void
-  (event: 'toggleSurvey'): void
   (event: 'setSurveyShape', shape: SurveyDrawShape): void
-  (event: 'toggleSimplePath'): void
-  (event: 'deleteSelectedSurvey'): void
-  (event: 'undoGeneratedWaypoints'): void
   (event: 'surveyLinesAngle', angle: number): void
   (event: 'regenerateSurveyWaypoints', angle: number): void
-  (event: 'toggleCrosshatch'): void
-  (event: 'rotateSurveyEntryPoint'): void
-  (event: 'removeWaypoint'): void
-  (event: 'placePointOfInterest'): void
-  (event: 'setHomePosition'): void
-  (event: 'clearVehiclePathHistory'): void
-  (event: 'openMapOverlays'): void
-  (event: 'placeBaseStation'): void
-  (event: 'configureBaseStation'): void
-  (event: 'removeBaseStation'): void
-  (event: 'toggleBaseStationSignalVisibility'): void
-  (event: 'addMissionFromLibrary'): void
-  (event: 'saveMissionToLibrary'): void
   (event: 'createFenceExclusion', clearanceM?: number): void
-  (event: 'openHazardRecord'): void
 }>()
 
 const EXCLUSION_CLEARANCES_M = [2, 5, 10, 15, 30]
