@@ -91,6 +91,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: yarn
 
       # `--ignore-scripts` skips the ffmpeg, go2rtc, piper and SDL work that `postinstall` does, none
       # of which this job opens, and which is most of the install. It also keeps a fork's own
@@ -132,6 +133,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: yarn
 
       # `yarn lint` covers only the JS/TS globs, so the shell under `.github/scripts/` needs its own
       # check. The command parser fails silently when it regresses — a wrong id list still publishes.
@@ -245,6 +247,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: yarn
 
       - name: Install and build
         run: |
@@ -317,6 +320,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: yarn
 
       - name: Set version as environment variable (Windows)
         if: matrix.os == 'windows-latest'
@@ -513,6 +517,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: yarn
 
       # The merge only needs js-yaml, so the binary downloads in postinstall are skipped.
       - name: Install dependencies
@@ -566,6 +571,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: yarn
 
       - name: Install flatpak
         run: |
@@ -658,6 +664,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
+          cache: yarn
 
       - name: Build cockpit
         run: |
