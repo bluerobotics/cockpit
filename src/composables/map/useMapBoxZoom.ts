@@ -48,7 +48,7 @@ const LEAFLET_BOX_METHODS = [
 type BoxPhase = 'idle' | 'arming' | 'armed' | 'live'
 
 const canDriveLeafletBox = (map: LeafletMap): boolean => {
-  const handler = map.boxZoom as Record<string, unknown> | undefined
+  const handler = map.boxZoom as unknown as Record<string, unknown> | undefined
   return !!handler && LEAFLET_BOX_METHODS.every((name) => typeof handler[name] === 'function')
 }
 
