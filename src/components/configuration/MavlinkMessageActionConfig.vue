@@ -46,7 +46,7 @@
               <template v-for="(field, key) in messageFields" :key="key">
                 <v-text-field
                   v-if="showUnusedParams || !paramFieldInfo[key]?.unused"
-                  v-model.trim="newActionConfig.messageConfig[key].value"
+                  v-model.trim="messageConfigFields[key].value"
                   :label="paramFieldInfo[key]?.label ?? field.description + (field.units ? ` (${field.units})` : '')"
                   :placeholder="field.type"
                   variant="outlined"
@@ -152,6 +152,11 @@ const messageFields = computed(() => {
   return messageFieldDefinitions[selectedType] || ''
 })
 
+const messageConfigFields = computed(() => {
+  const config = newActionConfig.value.messageConfig
+  return typeof config === 'string' ? {} : config
+})
+
 const paramFieldInfo = computed(() => {
   const config = newActionConfig.value.messageConfig
   if (typeof config === 'string' || typeof config.command?.value !== 'string') return {}
@@ -171,9 +176,10 @@ const isFormValid = computed(() => {
   }
 
   // If the message config is a string, it must be a valid JSON string
-  if (typeof newActionConfig.value.messageConfig === 'string') {
+  const config = newActionConfig.value.messageConfig
+  if (typeof config === 'string') {
     try {
-      JSON.parse(newActionConfig.value.messageConfig)
+      JSON.parse(config)
       return true
     } catch (error) {
       return false
@@ -183,7 +189,7 @@ const isFormValid = computed(() => {
   // Check if all required fields are filled
   const fields = messageFieldDefinitions[newActionConfig.value.messageType] || {}
   return Object.entries(fields).every(([key, field]) => {
-    return !field.required || newActionConfig.value.messageConfig[key] !== undefined
+    return !field.required || config[key] !== undefined
   })
 })
 
