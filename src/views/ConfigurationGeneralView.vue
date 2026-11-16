@@ -862,9 +862,10 @@ const resetMainVehicleConnectionURI = async (): Promise<void> => {
 
 const webRTCSignallingForm = ref()
 const webRTCSignallingFormValid = ref(false)
-const webRTCSignallingURI = ref(mainVehicleStore.webRTCSignallingURI)
+// Starts as the store's URI, then holds whatever string the user types into the field
+const webRTCSignallingURI = ref<Connection.URI | string | undefined>(mainVehicleStore.webRTCSignallingURI)
 
-const addWebRTCConnection = async (conn: Connection.URI): Promise<void> => {
+const addWebRTCConnection = async (conn: Connection.URI | string): Promise<void> => {
   webRTCSignallingURI.value = conn
 
   // This works as a reset for the custom URI, and its not needed in MAVLink2RestWebsocketURI since on Add from
@@ -881,8 +882,8 @@ const addWebRTCConnection = async (conn: Connection.URI): Promise<void> => {
 
 watch(
   () => mainVehicleStore.webRTCSignallingURI,
-  (val: Connection.URI) => {
-    if (val.toString() === webRTCSignallingURI.value.toString()) {
+  (val) => {
+    if (val === undefined || val.toString() === webRTCSignallingURI.value?.toString()) {
       return
     }
 
@@ -893,17 +894,18 @@ watch(
 const setWebRTCSignallingURI = async (): Promise<void> => {
   const res = await webRTCSignallingForm.value.validate()
 
-  if (!res.valid) {
+  const uri = webRTCSignallingURI.value
+  if (!res.valid || uri === undefined) {
     return
   }
 
-  logUserAction(`Set custom WebRTC signalling URI to '${webRTCSignallingURI.value.toString()}'`)
+  logUserAction(`Set custom WebRTC signalling URI to '${uri.toString()}'`)
   mainVehicleStore.customWebRTCSignallingURI = {
-    data: webRTCSignallingURI.value.toString(),
+    data: uri.toString(),
     enabled: true,
   }
 
-  addWebRTCConnection(webRTCSignallingURI.value)
+  addWebRTCConnection(uri)
 }
 
 const resetWebRTCSignallingURI = (): void => {
