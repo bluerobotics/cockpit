@@ -14,6 +14,12 @@ declare module '*?url' {
   export default src
 }
 
+declare module '*.po' {
+  import type { LocaleData } from 'ttag'
+  const catalog: LocaleData
+  export default catalog
+}
+
 declare module '@vue-leaflet/vue-leaflet'
 declare module 'gamepad.js'
 declare module 'vuetify'
