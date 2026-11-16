@@ -105,7 +105,7 @@
                 density="compact"
                 hide-details
                 class="-my-2"
-                @update:model-value="(v) => logUserAction(`Set the indicator to use the variable's own unit: ${v}`)"
+                @update:model-value="onUseVariableUnitChange"
               />
 
               <div class="flex gap-4">
@@ -623,6 +623,10 @@ const iconDisplayName = computed(() => {
   const id = idFromCustomIconRef(iconName)
   return customIconsList.value.find((icon) => icon.id === id)?.name ?? iconName
 })
+
+const onUseVariableUnitChange = (useVariableUnit: boolean | null): void => {
+  logUserAction(`Set the indicator to use the variable's own unit: ${useVariableUnit}`)
+}
 
 const onIconCategoryChange = (category: 'stock' | 'custom'): void => {
   logUserAction(`Switched to '${category}' indicator icon category`)
