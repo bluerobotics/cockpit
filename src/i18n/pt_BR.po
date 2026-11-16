@@ -236,6 +236,16 @@ msgstr "${ 0 } blocos offline salvos!"
 msgid "${ 0 } placed on the map, tracking the live position."
 msgstr "${ 0 } posicionado no mapa, acompanhando a posição em tempo real."
 
+#: src/composables/useStreamStats.ts
+#, javascript-format
+msgid ""
+"${ 0 } recorded video stream statistic now follows its stream's name in "
+"Cockpit. Select it again in any widget that showed it."
+msgid_plural ""
+"${ 0 } recorded video stream statistics now follow their streams' names in "
+"Cockpit. Select them again in any widget that showed them."
+msgstr[0] ""
+
 #: src/stores/geoFence.ts
 #, javascript-format
 msgid "${ 0 } redundant point was removed to fit it."
@@ -3300,6 +3310,7 @@ msgstr "Data lake"
 msgid "Data lake variable"
 msgstr "Variável do data lake"
 
+#: src/composables/useStreamStats.ts
 #: src/libs/menu-pages.ts
 msgid "Data-lake"
 msgstr "Data lake"
@@ -10113,6 +10124,16 @@ msgstr "Parar gravação"
 #: src/components/development/MAVLinkInspectorItem.vue
 msgid "Stop tracking this message"
 msgstr "Parar de acompanhar esta mensagem"
+
+#: src/composables/useStreamStats.ts
+#, javascript-format
+msgid ""
+"Stopped recording ${ 0 } video stream statistic that is no longer "
+"available. You can select it again once its stream is back."
+msgid_plural ""
+"Stopped recording ${ 0 } video stream statistics that are no longer "
+"available. You can select them again once their streams are back."
+msgstr[0] ""
 
 #: src/stores/video.ts
 #, javascript-format
