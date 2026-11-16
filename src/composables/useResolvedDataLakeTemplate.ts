@@ -1,4 +1,4 @@
-import { type MaybeRefOrGetter, computed, onUnmounted, ref, toValue, watch } from 'vue'
+import { type ComputedRef, type MaybeRefOrGetter, computed, onUnmounted, ref, toValue, watch } from 'vue'
 
 import { listenDataLakeVariable, unlistenDataLakeVariable } from '@/libs/actions/data-lake'
 import { findDataLakeVariablesIdsInString, replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
@@ -9,11 +9,11 @@ import { findDataLakeVariablesIdsInString, replaceDataLakeInputsInString } from 
  * Re-resolves when the template itself changes or when any of the referenced
  * data lake variables update.
  * @param {MaybeRefOrGetter<string | undefined>} template - The template string
- * @returns {ReturnType<typeof computed<string | undefined>>} The resolved string
+ * @returns {ComputedRef<string | undefined>} The resolved string
  */
 export function useResolvedDataLakeTemplate(
   template: MaybeRefOrGetter<string | undefined>
-): ReturnType<typeof computed<string | undefined>> {
+): ComputedRef<string | undefined> {
   // Bumped by each referenced variable's listener to force re-resolution.
   const tick = ref(0)
   let subscriptions: {
