@@ -201,7 +201,7 @@ const saveConfig = (): void => {
   // Handle auto-run configuration
   removeAutoRunConfig(dialog.value.action.id)
 
-  if (['once', 'interval'].includes(dialog.value.autoRunType)) {
+  if (dialog.value.autoRunType !== 'none') {
     saveAutoRunConfig(dialog.value.action.id, {
       type: dialog.value.autoRunType,
       delayMs: parseInt(dialog.value.delayMs as unknown as string, 10),
