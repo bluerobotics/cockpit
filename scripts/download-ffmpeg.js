@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable no-undef */
 
-const https = require('https')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const { execSync } = require('child_process')
+
+const { downloadFile } = require('./lib/download')
 
 /**
  * Download FFmpeg 7.1 binary for the current platform
@@ -52,57 +53,6 @@ const PLATFORM_CONFIG = {
       targetFile: 'ffmpeg',
     },
   },
-}
-
-/**
- * Download a file from a URL
- * @param {string} url
- * @param {string} outputPath
- */
-function downloadFile(url, outputPath) {
-  return new Promise((resolve, reject) => {
-    console.log(`Downloading FFmpeg from: ${url}`)
-
-    const file = fs.createWriteStream(outputPath)
-
-    https
-      .get(url, (response) => {
-        // Handle redirects
-        if (response.statusCode === 302 || response.statusCode === 301) {
-          return downloadFile(response.headers.location, outputPath).then(resolve).catch(reject)
-        }
-
-        if (response.statusCode !== 200) {
-          reject(new Error(`Failed to download: ${response.statusCode}`))
-          return
-        }
-
-        const totalSize = parseInt(response.headers['content-length'] || '0', 10)
-        let downloadedSize = 0
-
-        response.on('data', (chunk) => {
-          downloadedSize += chunk.length
-          if (totalSize > 0) {
-            const percent = ((downloadedSize / totalSize) * 100).toFixed(1)
-            process.stdout.write(`\rDownloading... ${percent}%`)
-          }
-        })
-
-        response.pipe(file)
-
-        file.on('finish', () => {
-          file.close()
-          console.log('\nDownload completed!')
-          resolve()
-        })
-      })
-      .on('error', (err) => {
-        fs.unlink(outputPath, () => {
-          // Clean up
-        })
-        reject(err)
-      })
-  })
 }
 
 /**
