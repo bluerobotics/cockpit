@@ -129,7 +129,7 @@
                             variant="plain"
                             hide-details
                             :disabled="item.intervalType !== 'custom'"
-                            @update:model-value="updateMessageFrequency(item.name, $event)"
+                            @update:model-value="updateMessageFrequency(item.name, Number($event))"
                           />
                           <span
                             :class="{
@@ -277,8 +277,8 @@ const newIntervalType = ref<'default' | 'disabled' | 'custom' | 'dontTouch'>('de
 const newFrequency = ref(1)
 
 const headers = [
-  { title: t`Message`, key: 'name', align: 'start' },
-  { title: t`Configuration`, key: 'configuration', align: 'center' },
+  { title: t`Message`, key: 'name', align: 'start' as const },
+  { title: t`Configuration`, key: 'configuration', align: 'center' as const },
 ]
 
 // Convert message intervals to table items
@@ -300,7 +300,7 @@ const messageItems = computed(() => {
       name: messageType,
       type: messageType as MAVLinkType,
       intervalType: options.intervalType,
-      frequency: options.frequencyHz || null,
+      frequency: (options.intervalType === 'custom' && options.frequencyHz) || undefined,
     }
   })
 })
@@ -320,14 +320,12 @@ const filteredMessages = computed(() => {
  */
 const updateMessageIntervalType = async (messageType: string, intervalType: string): Promise<void> => {
   logUserAction(`Set message interval type for '${messageType}' to '${intervalType}'`)
-  const options: MessageIntervalOptions = {
-    intervalType: intervalType as 'default' | 'disabled' | 'custom' | 'dontTouch',
-  }
+  let options: MessageIntervalOptions = { intervalType: intervalType as 'default' | 'disabled' | 'dontTouch' }
 
   // If switching to custom, use the current frequency or default to 1
   if (intervalType === 'custom') {
     const currentItem = messageItems.value.find((item) => item.name === messageType)
-    options.frequencyHz = currentItem?.frequency ?? 1
+    options = { intervalType: 'custom', frequencyHz: currentItem?.frequency ?? 1 }
   }
 
   await mainVehicleStore.updateMessageInterval(messageType, options)
@@ -365,7 +363,7 @@ const getDisplayFrequency = (item: any): string => {
   if (item.intervalType === 'disabled') {
     return '0'
   } else if (item.intervalType === 'custom') {
-    return item.frequency === null ? '1' : item.frequency.toString()
+    return item.frequency === undefined ? '1' : item.frequency.toString()
   } else {
     return 'N/A'
   }
