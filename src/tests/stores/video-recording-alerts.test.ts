@@ -37,6 +37,7 @@ vi.mock('@/libs/videoStorage', () => ({
 import '@/libs/cosmos'
 
 import { WebRTCManager } from '@/composables/webRTC'
+import { URI } from '@/libs/connection/connection'
 import { cockpitActionsManager, unregisterActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { useVideoStore } from '@/stores/video'
@@ -96,7 +97,7 @@ test('stream configuration changes name the camera in the recording-stop dialog'
   store.activeStreams[externalId]!.mediaRecorder = recorder
   store.activeStreams[externalId]!.timeRecordingStart = new Date()
   store.activeStreams[externalId]!.stream = { ...availableStreams.value[0] }
-  store.activeStreams[externalId]!.webRtcManager = markRaw(new WebRTCManager('', {}))
+  store.activeStreams[externalId]!.webRtcManager = markRaw(new WebRTCManager(new URI('ws://localhost'), {}))
   availableStreams.value[0].width = 1280
 
   vi.advanceTimersByTime(300)
