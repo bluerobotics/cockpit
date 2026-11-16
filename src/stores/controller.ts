@@ -2,7 +2,7 @@ import { useDocumentVisibility } from '@vueuse/core'
 import { saveAs } from 'file-saver'
 import { defineStore } from 'pinia'
 import { t } from 'ttag'
-import { computed, onMounted, ref, toRaw, watch } from 'vue'
+import { type Ref, computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import { defaultJoystickCalibration } from '@/assets/defaults'
 import { blankMapping } from '@/assets/joystick-profiles'
@@ -55,7 +55,8 @@ const maxSupportedInputIndexes = 63
 
 export const useControllerStore = defineStore('controller', () => {
   const mainVehicleStore = useMainVehicleStore()
-  const joysticks = ref<Map<number, Joystick>>(new Map())
+  // A plain `ref` would unwrap `Joystick` into a shape without its private members
+  const joysticks = ref(new Map()) as Ref<Map<number, Joystick>>
   const updateCallbacks = ref<controllerUpdateCallback[]>([])
   const protocolMapping = useBlueOsStorage<JoystickProtocolActionsMapping>(
     joystickFunctionsMappingKey,

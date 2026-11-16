@@ -862,7 +862,7 @@ watch(
 const tabViewForModel = (model?: JoystickModel): string =>
   model === undefined || model === JoystickModel.Unknown ? 'table' : 'svg'
 
-const currentJoystick = ref<Joystick | undefined>(controllerStore.joysticks.values().next().value)
+const currentJoystick = ref(controllerStore.joysticks.values().next().value) as Ref<Joystick | undefined>
 const currentButtonInputs = ref<JoystickButtonInput[]>([])
 const currentAxisInputs = ref<JoystickAxisInput[]>([])
 const remappingAxisInput = ref<false | JoystickAxis>(false)
@@ -995,8 +995,8 @@ const filteredAndSortedJoystickActions = computed((): JoystickAction[] => {
     .sort((a: JoystickAction, b: JoystickAction) => a.name.localeCompare(b.name))
 })
 
-const filteredAndSortedAxisActions = computed((): JoystickAction[] => {
-  return controllerStore.availableAxesActions.filter((action: JoystickAction) => {
+const filteredAndSortedAxisActions = computed((): ProtocolAction[] => {
+  return controllerStore.availableAxesActions.filter((action: ProtocolAction) => {
     if (isCompoundDataLakeVariable(action.id)) return false
     const dataLakeVariableInfo = getDataLakeVariableInfo(action.id)
     if (!dataLakeVariableInfo) return true
@@ -1231,7 +1231,8 @@ const editAxisRange = (axis: JoystickAxis, endpoint: 'min' | 'max', value: unkno
   editAxis(axis, { [endpoint]: value === '' ? NaN : Number(value) })
 }
 
-const editAxisAction = (axis: JoystickAxis, action: ProtocolAction): void => {
+const editAxisAction = (axis: JoystickAxis, action: ProtocolAction | null): void => {
+  if (!action) return
   logUserAction(`Selected function '${action.name}' for axis ${axis}`)
   editAxis(axis, { action })
 }
