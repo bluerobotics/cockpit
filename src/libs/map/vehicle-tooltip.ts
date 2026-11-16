@@ -9,8 +9,8 @@ export interface VehicleTooltipState {
   groundVelocityInMetersPerSecond?: number
   /** Heading in degrees clockwise from north. */
   headingInDegrees: number
-  /** Whether the vehicle is armed. */
-  isArmed: boolean
+  /** Whether the vehicle is armed, undefined until its first heartbeat. */
+  isArmed: boolean | undefined
   /** How long ago the last heartbeat arrived, already written out. */
   timeAgoSeenText: string
 }
