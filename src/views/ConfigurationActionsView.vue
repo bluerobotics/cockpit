@@ -252,11 +252,11 @@ const allActionConfigs = computed<LinkedActionConfig[]>(() => {
 })
 
 const headers = [
-  { title: t`Name`, key: 'name', sortable: true, align: 'start' },
-  { title: t`Type`, key: 'type', sortable: true, align: 'center' },
-  { title: t`Min Interval`, key: 'minInterval', sortable: false, align: 'center' },
-  { title: t`Linked Variables`, key: 'linkedVariables', sortable: false, align: 'center' },
-  { title: t`Actions`, key: 'actions', sortable: false, align: 'end' },
+  { title: t`Name`, key: 'name', sortable: true, align: 'start' as const },
+  { title: t`Type`, key: 'type', sortable: true, align: 'center' as const },
+  { title: t`Min Interval`, key: 'minInterval', sortable: false, align: 'center' as const },
+  { title: t`Linked Variables`, key: 'linkedVariables', sortable: false, align: 'center' as const },
+  { title: t`Actions`, key: 'actions', sortable: false, align: 'end' as const },
 ]
 
 const loadAllActions = (): void => {
