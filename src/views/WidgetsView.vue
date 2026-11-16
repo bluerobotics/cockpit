@@ -69,7 +69,7 @@ provide(
 
 // TODO: Remove this non-migration implementation once we have a better solution that doesn't cause sync conflicts
 const mappedComponentType = (componentName: string): WidgetType => {
-  const mappingWidgetComponentName = {
+  const mappingWidgetComponentName: Record<string, string> = {
     CustomWidgetBase: 'CollapsibleContainer',
   }
   return (mappingWidgetComponentName[componentName] || componentName) as WidgetType
