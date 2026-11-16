@@ -376,13 +376,13 @@ const setViewMode = (mode: unknown): void => {
 
 // Values are stored as the vehicle sent them, so reading them in another unit is a display-time
 // conversion the table does on what it is about to show.
-const convertedValue = (item: DataLakeVariable): ConvertedValue | undefined => {
+const convertedValue = (item: Pick<DataLakeVariable, 'id' | 'unit'>): ConvertedValue | undefined => {
   const value = currentValues.value[item.id]
   if (viewMode.value === 'raw' || typeof value !== 'number') return undefined
   return convertValue(value, item.unit, unitSystems[viewMode.value])
 }
 
-const displayedValue = (item: DataLakeVariable): string => {
+const displayedValue = (item: Pick<DataLakeVariable, 'id' | 'unit'>): string => {
   const converted = convertedValue(item)
   // Conversion is lossless; rounding here is what turned a degE7 latitude into four decimals of a degree.
   const text =
@@ -393,7 +393,7 @@ const displayedValue = (item: DataLakeVariable): string => {
   return `${text.startsWith('-') ? '' : '\u2007'}${text}\u2007`
 }
 
-const displayedUnit = (item: DataLakeVariable): string => {
+const displayedUnit = (item: Pick<DataLakeVariable, 'id' | 'unit'>): string => {
   return convertedValue(item)?.unit ?? item.unit ?? ''
 }
 
