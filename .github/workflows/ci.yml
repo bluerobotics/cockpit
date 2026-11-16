@@ -116,18 +116,15 @@ jobs:
           # Read once, minutes after it is written, by the review workflow for this same head.
           retention-days: 3
 
-  test:
-    name: Test
+  # Split from `test` so the lint-side checks and the build run in parallel rather than back to back.
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Install system dependencies
-        run: |
-          sudo apt install -y xvfb
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -166,12 +163,11 @@ jobs:
       - name: Check the import cycle finder
         run: node scripts/import-cycles.mjs --self-check
 
-      - name: Install, lint, typecheck, and build
+      - name: Install, lint, and typecheck
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
           yarn lint
           yarn typecheck
-          yarn build
 
       - name: Check the translation catalogs are up to date
         run: |
@@ -182,6 +178,30 @@ jobs:
       # `eslint .` would drag in `node_modules`. So the scripts get the zero-warning bar of their own.
       - name: Lint the workflow scripts
         run: yarn eslint --no-ignore .github/scripts --ext .js --max-warnings=0
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt install -y xvfb
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: yarn
+
+      - name: Install and build
+        run: |
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn build
 
   # ArduSub SITL for the browser, served by the page under /sitl. ArduPilot is GPLv3, so the
   # licence and the exact source commit are published next to the binaries.
@@ -229,7 +249,7 @@ jobs:
           path: sitl
 
   deploy-page:
-    needs: [test, build-ardusub-wasm]
+    needs: [lint, test, build-ardusub-wasm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -262,7 +282,7 @@ jobs:
           folder: dist
 
   deploy-electron:
-    needs: test
+    needs: [lint, test]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -543,7 +563,7 @@ jobs:
           prerelease: true
 
   deploy-flatpak:
-    needs: test
+    needs: [lint, test]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -641,7 +661,7 @@ jobs:
           aws s3 cp dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.extension }} s3://bcloud-public/cockpit/releases/stable/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}.${{ matrix.extension }}
 
   deploy-blueos-extension:
-    needs: test
+    needs: [lint, test]
     runs-on: ubuntu-latest
     env:
       PLATFORMS: "linux/arm/v7,linux/arm64/v8,linux/amd64"
