@@ -557,7 +557,7 @@ export const trackTriggerPulls = (
   const pulls = new Map<JoystickAxis, boolean>()
   standardTriggerAxes.forEach(({ axis, button }) => {
     if (!axes[axis]) return
-    const shiftAction = mapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift][button]?.action
+    const shiftAction = mapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift]?.[button]?.action
     const startsWithShift = shiftHeld && shiftAction !== undefined && shiftAction.protocol !== JoystickProtocol.Other
     pulls.set(axis, previous.get(axis) ?? startsWithShift)
   })
