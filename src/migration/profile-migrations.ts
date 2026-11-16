@@ -1,7 +1,7 @@
 import { defaultProfileVehicleCorrespondency } from '@/assets/defaults'
 import { defaultProtocolMappingVehicleCorrespondency } from '@/assets/joystick-profiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
-import { settingsManager } from '@/libs/settings-management'
+import { type SettingValue, settingsManager } from '@/libs/settings-management'
 import { deserialize } from '@/libs/utils'
 import type { JoystickProtocolActionsMapping } from '@/types/joystick'
 import type { Profile } from '@/types/widgets'
@@ -21,7 +21,7 @@ const legacyMappingCorrespondencyKey = 'cockpit-default-vehicle-type-protocol-ma
  * @param {string} key - The legacy key to read
  * @returns {T | undefined} The stored value (parsed), or undefined if the key is not present anywhere
  */
-const readLegacy = <T>(key: string): T | undefined => {
+const readLegacy = <T extends SettingValue>(key: string): T | undefined => {
   const fromV2 = settingsManager.getKeyValue<T>(key)
   if (fromV2 !== undefined) return fromV2
   const raw = localStorage.getItem(key)

@@ -3,7 +3,7 @@ import { diff } from 'jest-diff'
 import { format as prettyFormat } from 'pretty-format'
 import { type MaybeRef, ref, unref, watch } from 'vue'
 
-import { settingsManager } from '@/libs/settings-management'
+import { type SettingValue, settingsManager } from '@/libs/settings-management'
 import { deserialize, isEqual } from '@/libs/utils'
 import type { CockpitSetting } from '@/types/settings-management'
 
@@ -72,7 +72,7 @@ export function useBlueOsStorage<T>(
       settingsManager.setKeyValue(key, deserialize(oldStyleValue), 0)
     } else {
       console.log(`[SettingsSyncer] Key ${key} not found on old style. Setting to default value.`)
-      settingsManager.setKeyValue(key, unrefedDefaultValue, 0)
+      settingsManager.setKeyValue(key, unrefedDefaultValue as SettingValue, 0)
     }
     valueToBeUsedOnStart = unrefedDefaultValue as T
   } else {
