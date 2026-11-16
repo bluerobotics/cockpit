@@ -108,7 +108,9 @@ const buttonPath: { [key in JoystickButton]: string } = {
   [JoystickButton.B17]: 'path_b17',
 }
 
-const axisPath = computed((): { [key in JoystickAxis]: string } => {
+type SvgAxis = JoystickAxis.A0 | JoystickAxis.A1 | JoystickAxis.A2 | JoystickAxis.A3
+
+const axisPath = computed((): Record<SvgAxis, string> => {
   switch (joystickSvgModel.value) {
     case SVGModel.LogitechExtreme3DPro:
       return {
@@ -226,7 +228,7 @@ const labelTransform = (textAnchor: string): string => {
  * @param {string} textAnchor The SVG text-anchor value ('start', 'middle', or 'end').
  * @returns {string} A CSS text-align value.
  */
-const labelTextAlign = (textAnchor: string): string => {
+const labelTextAlign = (textAnchor: string): 'left' | 'center' | 'right' => {
   switch (textAnchor) {
     case 'end':
       return 'right'
@@ -258,7 +260,7 @@ const computeOverlayPositions = (): void => {
 
   const objectRect = objectEl.getBoundingClientRect()
   const wrapperRect = wrapperRef.value.getBoundingClientRect()
-  const svgRoot = svg.documentElement as SVGSVGElement
+  const svgRoot = svg.documentElement as unknown as SVGSVGElement
   const viewBoxWidth = svgRoot?.viewBox?.baseVal?.width || DEFAULT_VIEWBOX_WIDTH
   labelFontSize.value = Math.max(9, Math.round((objectRect.width / viewBoxWidth) * 22))
 
