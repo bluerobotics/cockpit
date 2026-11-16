@@ -137,7 +137,7 @@ Vehicle support is currently focused on ArduPilot-based autopilots communicating
 
 Since Cockpit was created and is maintained by Blue Robotics, we actively test the application every day against ArduSub and ArduRover vehicles, which we sell, so you can expect the best experience with ROVs and boats.
 
-We currently consider the application to fully cover direct control for both _submarines_ and _boats_, and partially cover automated missions. Currently, Cockpit supports creating missions with basic waypoints and polygon-based surveys. Missions requiring advanced navigation commands and control structures, like loitering, geofencing, and servo control, are not yet supported.
+We currently consider the application to fully cover direct control for both _submarines_ and _boats_ (ground rovers run the same ArduRover firmware and behave like boats), and partially cover automated missions. Currently, Cockpit supports creating missions with basic waypoints and polygon-based surveys. Missions requiring advanced navigation commands and control structures, like loitering and servo control, are not yet supported.
 
 Aerial vehicles (including those running ArduCopter and ArduPlane autopilot firmware) have initial support, including dedicated widgets for _takeoff_ and _landing_.
 
@@ -193,6 +193,7 @@ ArduCopter support has been physically tested, but the primary development team 
 - **Interactive map interface** with drag-and-drop waypoints
 - **Survey generation** for automated area coverage
 - **Points of interest** management
+- **Geofencing** with drawing, editing and upload of inclusion and exclusion fences to the vehicle
 - **Mission import/export** for easy backup and reuse
 - **Real-time mission monitoring** and execution
 - **Custom map tile providers** via XYZ URLs or imported ZIP/MBTiles/PMTiles archives
@@ -236,11 +237,8 @@ While Cockpit is a powerful and feature-rich ground control station, there are s
 
 ### 🚁 **Vehicle Support Gaps**
 - [**PX4 autopilots**]: Cockpit's MAVLink functionality is mostly generic, so it is expected that most available features will also work with PX4 autopilot firmware. That said, the core development team does not actively test with PX4 vehicles, so please open a documenting issue (or ideally a solving pull request) for any problems you encounter.
-- **Aerial and Ground vehicles**: Although recognized by the application, those types of vehicles have limited support and testing
-- **Contributions welcome**: We're actively seeking community help to add support for PX4 vehicles as well as improve the support for Aerial and Ground vehicles on Ardupilot
-
-### 🗺️ **Mission Planning Limitations**
-- **Geofencing**: Not currently supported in mission planning
+- **Aerial vehicles**: Although recognized by the application, those vehicles require more care and are not tested daily by the core team, so use them at your own risk. In late 2026 we started an effort to improve their support
+- **Contributions welcome**: We're actively seeking community help to add support for PX4 vehicles as well as improve the support for Aerial vehicles on Ardupilot
 
 > 💡 **Help Us Improve**: Many of these limitations represent opportunities for community contributions. Check our [GitHub Issues](https://github.com/bluerobotics/cockpit/issues) for specific areas where help is needed!
 
