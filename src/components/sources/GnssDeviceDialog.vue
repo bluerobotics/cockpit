@@ -140,12 +140,12 @@
     <template #actions>
       <template v-if="create">
         <v-spacer></v-spacer>
-        <v-btn text :disabled="!device?.name" @click="onAdd">{{ t`Add device` }}</v-btn>
+        <v-btn :disabled="!device?.name" @click="onAdd">{{ t`Add device` }}</v-btn>
       </template>
       <template v-else>
-        <v-btn text @click="onDelete">{{ t`Delete device` }}</v-btn>
+        <v-btn @click="onDelete">{{ t`Delete device` }}</v-btn>
         <v-spacer></v-spacer>
-        <v-btn text @click="close">{{ t`Close` }}</v-btn>
+        <v-btn @click="close">{{ t`Close` }}</v-btn>
       </template>
     </template>
   </InteractionDialog>

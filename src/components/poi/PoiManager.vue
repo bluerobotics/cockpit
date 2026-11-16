@@ -156,9 +156,9 @@
       </div>
     </template>
     <template #actions>
-      <v-btn v-if="editingPoiId" text @click="deletePoi">{{ t`Delete` }}</v-btn>
+      <v-btn v-if="editingPoiId" @click="deletePoi">{{ t`Delete` }}</v-btn>
       <v-spacer></v-spacer>
-      <v-btn text @click="savePoi">{{ t`Save` }}</v-btn>
+      <v-btn @click="savePoi">{{ t`Save` }}</v-btn>
     </template>
   </InteractionDialog>
 </template>
