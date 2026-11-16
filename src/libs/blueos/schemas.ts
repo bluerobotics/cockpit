@@ -17,9 +17,9 @@ const toKebabCase = (str: string): string => {
 /**
  * Creates a preprocessing Zod schema that converts all keys to camelCase before validation
  * @param {z.ZodTypeAny} schema The Zod schema to convert
- * @returns {z.ZodTypeAny} The converted Zod schema
+ * @returns {z.ZodPipe<z.ZodTransform, T>} The converted Zod schema
  */
-const preprocessCamelCase = <T extends z.ZodTypeAny>(schema: T): z.ZodTypeAny => {
+const preprocessCamelCase = <T extends z.ZodTypeAny>(schema: T): z.ZodPipe<z.ZodTransform, T> => {
   return z.preprocess((val: Record<string, unknown>) => camelcaseKeys(val, { deep: true }), schema)
 }
 
