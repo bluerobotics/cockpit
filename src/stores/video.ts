@@ -95,7 +95,8 @@ export const useVideoStore = defineStore('video', () => {
   // Tracks which consumers (widgets, snapshot captures, etc.) currently need each external stream active, so it
   // can be torn down once nothing references it anymore. Intentionally not reactive/persisted, it's just bookkeeping.
   const streamConsumers = new Map<string, Set<string>>()
-  const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
+  // A malformed custom URI leaves this undefined; the signaller catches the failed connect and only logs it
+  const mainWebRTCManager = new WebRTCManager(webRTCSignallingURI!, rtcConfiguration)
   const availableIceIps = ref<string[]>([])
   const unprocessedVideos = useStorage<{ [key in string]: UnprocessedVideoInfo }>('cockpit-unprocessed-video-info', {})
   const lastRenamedStreamName = ref('')
@@ -617,7 +618,7 @@ export const useVideoStore = defineStore('video', () => {
     }
 
     const stream = ref()
-    const webRtcManager = new WebRTCManager(webRTCSignallingURI, rtcConfiguration)
+    const webRtcManager = new WebRTCManager(webRTCSignallingURI!, rtcConfiguration)
 
     webRtcManager.onUnreceivableVideo = (codecs: string[]): void => {
       // The camera keeps offering the same codec on every reconnection, so warn once per stream.
