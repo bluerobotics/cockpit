@@ -5,7 +5,11 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // ponytail: tied to conf's dist layout, since "Node" resolution ignores the "exports" its types ship under;
+      // drop it for "moduleResolution": "Bundler" once @j2only/slide-unlock, geotiff-epsg-code and
+      // @serialport/bindings-interface add a "types" export condition
+      "conf": ["./node_modules/conf/dist/source/index.d.ts"]
     },
     //// Modified from tsconfig, allowing using it with modern typescript
     "lib": [
