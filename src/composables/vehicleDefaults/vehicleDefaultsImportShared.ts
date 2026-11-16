@@ -75,7 +75,7 @@ export const buildJoystickImportRows = (
 ): JoystickImportRow[] => {
   const rows: JoystickImportRow[] = []
 
-  const pushAxisDiff = (axisKey: string, defaultCorr: (typeof defaultMapping.axesCorrespondencies)[string]): void => {
+  const pushAxisDiff = (axisKey: string, defaultCorr: (typeof defaultMapping.axesCorrespondencies)[number]): void => {
     const currentCorr =
       currentMapping.axesCorrespondencies[axisKey as unknown as keyof typeof currentMapping.axesCorrespondencies]
     const defaultId = defaultCorr.action.id

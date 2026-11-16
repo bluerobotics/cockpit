@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="showImportUi" class="space-y-3">
+    <div v-if="showImportUi && evaluation?.views.defaultProfile" class="space-y-3">
       <p class="text-sm opacity-80">
         {{
           t`Cockpit ships with the following default views for ${evaluation.vehicleTypeName}. Pick which ones to import, choose how to apply them, then check the preview below.`
