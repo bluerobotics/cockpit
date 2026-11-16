@@ -349,6 +349,7 @@ watch(rollAngleDeg, () => {
 })
 
 watch(cameraTiltDeg, () => {
+  if (cameraTiltDeg.value === undefined) return
   tweenTo(renderVars, 0.1, { cameraTiltDeg: cameraTiltDeg.value })
   pitchAngles.forEach((angle: number) => {
     const y = -round(angleY(angle + renderVars.cameraTiltDeg - pitchAngleDeg.value), 2)
