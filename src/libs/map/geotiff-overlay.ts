@@ -1,3 +1,4 @@
+import type { GeoExtent as GeoExtentInstance } from 'geo-extent'
 import type { GeoTIFFImage } from 'geotiff'
 
 import type { MapOverlayBounds, MapOverlayRenderMode } from '@/types/mission'
@@ -299,13 +300,16 @@ export const renderGeoTiffImage = async (
     throw new Error('GeoTIFF has no recognizable CRS (EPSG code); cannot place it on the map.')
   }
   const [xmin, ymin, xmax, ymax] = fullImage.getBoundingBox()
+  const extent = new GeoExtent([xmin, ymin, xmax, ymax], { srs: epsg })
+  // geo-extent types `reproj` as a union of its quiet and throwing overloads, which no call satisfies
+  const reprojThrowing = extent.reproj as (srs: number) => GeoExtentInstance
   const bounds: MapOverlayBounds =
     epsg === 4326
       ? [
           [ymin, xmin],
           [ymax, xmax],
         ]
-      : (new GeoExtent([xmin, ymin, xmax, ymax], { srs: epsg }).reproj(4326).leafletBounds as MapOverlayBounds)
+      : (reprojThrowing.call(extent, 4326).leafletBounds as MapOverlayBounds)
 
   return { dataUrl, bounds }
 }
