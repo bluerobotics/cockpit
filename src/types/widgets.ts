@@ -615,10 +615,6 @@ export type WidgetManagerVars = {
    */
   allowMoving: boolean
   /**
-   * If the widget should be allowed to resize
-   */
-  allowResizing: boolean
-  /**
    * Last widget X position when it wasn't maximized
    */
   lastNonMaximizedX: number

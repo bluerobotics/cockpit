@@ -287,7 +287,6 @@ const handleResetTotalDistance = (): void => {
 }
 
 onBeforeMount(() => {
-  widgetStore.widgetManagerVars(widget.value.hash).allowResizing = false
   widget.value.size = widgetSize
 })
 

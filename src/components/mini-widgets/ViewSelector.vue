@@ -62,7 +62,8 @@ const miniWidget = toRefs(props).miniWidget
 const widgetStore = useWidgetManagerStore()
 const interfaceStore = useAppInterfaceStore()
 
-const onSelectView = (view: View): void => {
+const onSelectView = (value: unknown): void => {
+  const view = value as View
   logUserAction(`Selected view '${view.name}'`)
   widgetStore.selectView(view)
 }
