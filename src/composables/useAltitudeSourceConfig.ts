@@ -1,4 +1,14 @@
-import { type MaybeRefOrGetter, type Ref, computed, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
+import {
+  type ComputedRef,
+  type MaybeRefOrGetter,
+  type Ref,
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  toValue,
+  watch,
+} from 'vue'
 
 import { useResolvedDataLakeTemplate } from '@/composables/useResolvedDataLakeTemplate'
 import {
@@ -64,13 +74,13 @@ export function useAltitudeSourceConfig(params: {
   defaultAltitudeVariableId: string
 }): {
   /** Concrete data lake variable ID for the active source, resolved at runtime. */
-  resolvedAltitudeVariableId: ReturnType<typeof computed<string | undefined>>
+  resolvedAltitudeVariableId: ComputedRef<string | undefined>
   /** Draft altitude variable ID bound to the config menu controls. */
   configAltitudeVariableId: Ref<string | undefined>
   /** Draft "custom data lake variable" toggle bound to the config menu. */
   configUseCustomAltitudeVariable: Ref<boolean>
   /** Numeric data lake variables available to pick as a custom altitude source. */
-  availableDataLakeNumberVariables: ReturnType<typeof computed<DataLakeVariable[]>>
+  availableDataLakeNumberVariables: ComputedRef<DataLakeVariable[]>
   /** Logs a user-driven altitude source selection; wire to the config control's `@update:model-value`. */
   onAltitudeSourceSelected: (variableId: string | undefined) => void
   /** Logs the custom-variable toggle; wire to the checkbox's `@update:model-value`. */
