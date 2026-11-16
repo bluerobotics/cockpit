@@ -4584,7 +4584,7 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
 
   newMarker.on('click', (event: LeafletMouseEvent) => {
     L.DomEvent.stopPropagation(event)
-    L.DomEvent.preventDefault(event)
+    L.DomEvent.preventDefault(event.originalEvent)
 
     const mouse = event.originalEvent as MouseEvent
     if (mouse.shiftKey) {
