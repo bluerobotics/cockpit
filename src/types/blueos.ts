@@ -130,7 +130,7 @@ export interface Service {
     /**
      * Works in relative paths
      */
-    worksInRelativePaths?: boolean
+    worksInRelativePaths?: boolean | null
     /**
      * Sanitized name of the service
      */
