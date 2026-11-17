@@ -108,6 +108,7 @@ import { type CSSProperties, computed, defineModel, ref, watch } from 'vue'
 
 import MeasureProfilePanel from '@/components/MeasureProfilePanel.vue'
 import { useMapContext } from '@/composables/map/useMapContext'
+import { useMapCursorTerrain } from '@/composables/map/useMapCursorTerrain'
 import {
   type MeasureColorScheme,
   type MeasureTool,
@@ -160,6 +161,7 @@ const interfaceStore = useAppInterfaceStore()
 const { map, mapReady } = useMapContext()
 
 const dialOpen = defineModel<boolean>('open', { default: false })
+const showCursorTerrain = ref(false)
 const colorsOpen = ref(false)
 const storedColorScheme = useStorage<string>('cockpit-map-measure-color-scheme', DEFAULT_COLOR_SCHEME)
 // The stored value can predate a scheme being removed, or be edited by hand.
@@ -177,10 +179,18 @@ const measure = useMapMeasure(map, mapReady, {
   isBlocked: () => props.blocked,
   colorScheme: () => colorScheme.value,
 })
+const cursorTerrain = useMapCursorTerrain(map, mapReady, {
+  enabled: () => showCursorTerrain.value,
+  vehiclePosition: () => props.vehiclePosition,
+  home: () => props.home,
+  waypoints: () => props.waypoints,
+  isBlocked: () => props.blocked,
+})
 
 const rulerVertices = computed(() => measure.profiled.value?.vertices ?? [])
 const showProfile = computed(() => measure.profiled.value !== null)
 const { profile, loading: profileLoading } = useMeasureProfile(rulerVertices, () => showProfile.value)
+const hasAnything = computed(() => measure.hasMeasurement.value || cursorTerrain.hasFlags.value)
 
 const profileStyle = computed<CSSProperties>(() => ({
   bottom: `calc(${props.activatorStyle?.bottom ?? '0px'} + 3.5rem)`,
@@ -189,7 +199,7 @@ const profileStyle = computed<CSSProperties>(() => ({
 
 const activeStyle = { backgroundColor: '#2563eb', color: '#FFFFFF' }
 
-const anyActive = computed(() => measure.tool.value !== null)
+const anyActive = computed(() => measure.tool.value !== null || showCursorTerrain.value)
 
 const onDialToggle = (open: boolean): void => {
   dialOpen.value = open
@@ -199,6 +209,11 @@ const onDialToggle = (open: boolean): void => {
 const toggleTool = (tool: MeasureTool): void => {
   measure.setTool(measure.tool.value === tool ? null : tool)
   if (measure.tool.value) dialOpen.value = false
+}
+
+const toggle = (shown: typeof showCursorTerrain, name: string): void => {
+  shown.value = !shown.value
+  logUserAction(`${shown.value ? 'Showed' : 'Hid'} the ${name} on the map`)
 }
 
 const colorSchemeLabels: Record<MeasureColorScheme, string> = {
@@ -237,7 +252,8 @@ watch(dialOpen, (open) => {
 
 const clearMeasurements = (): void => {
   measure.clear()
-  logUserAction('Cleared the measurements on the map')
+  cursorTerrain.clearFlags()
+  logUserAction('Cleared the measurements and terrain flags on the map')
 }
 
 const blockedReason = t`Finish the path, survey or fence being drawn first`
@@ -260,11 +276,19 @@ const items = computed<DialItem[]>(() => [
     onClick: () => toggleTool('area'),
   },
   {
+    id: 'terrain',
+    icon: 'mdi-image-filter-hdr',
+    tooltip: t`Terrain under the cursor, click the map to flag its height`,
+    active: showCursorTerrain.value,
+    disabled: false,
+    onClick: () => toggle(showCursorTerrain, 'terrain readout under the cursor'),
+  },
+  {
     id: 'clear',
     icon: 'mdi-eraser',
-    tooltip: measure.hasMeasurement.value ? t`Clear the measurements` : t`Nothing measured to clear`,
+    tooltip: hasAnything.value ? t`Clear the measurements and flags` : t`Nothing measured to clear`,
     active: false,
-    disabled: !measure.hasMeasurement.value,
+    disabled: !hasAnything.value,
     onClick: clearMeasurements,
   },
 ])
