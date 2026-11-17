@@ -110,6 +110,11 @@ msgstr ""
 msgid "${ 0 } already exist here and will be replaced."
 msgstr "${ 0 } já existem aqui e serão substituídos."
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } camera targets aimed at the ground"
@@ -685,6 +690,11 @@ msgstr "2x o uso de memória"
 #: src/components/ArchitectureWarning.vue
 msgid "3-4x slower application startup times"
 msgstr "Inicialização do aplicativo 3-4x mais lenta"
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "3D ${ 0 }"
+msgstr ""
 
 #: src/views/ConfigurationMissionView.vue
 msgid "3D model with attitude and altitude (copters and boats)"
@@ -1909,6 +1919,10 @@ msgstr "Entrada de eixo remapeada."
 msgid "Axis mapping"
 msgstr "Mapeamento de eixos"
 
+#: src/components/MapMeasureControl.vue
+msgid "Axolotl pink"
+msgstr ""
+
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/MainMenu.vue
 msgid "Back"
@@ -1958,6 +1972,7 @@ msgstr ""
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/terrain/TerrainSightPanel.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/composables/map/useMapMeasure.ts
 msgid "Base station"
 msgstr "Estação base"
 
@@ -2071,6 +2086,10 @@ msgstr "Binóculos"
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Bitrate"
 msgstr "Taxa de bits"
+
+#: src/components/MapMeasureControl.vue
+msgid "Blue"
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "BlueBoat antenna mast information"
@@ -2710,6 +2729,10 @@ msgstr "Limpar levantamento"
 
 #: src/components/terrain/TerrainVehiclePanel.vue
 msgid "Clear the measured terrain?"
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Clear the measurements"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -4477,6 +4500,10 @@ msgstr ""
 msgid "Delete the downloaded higher-quality voices and free up their disk space?"
 msgstr "Excluir as vozes de maior qualidade baixadas e liberar o espaço em disco?"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Delete this point"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Delete video"
 msgstr "Excluir vídeo"
@@ -4655,6 +4682,10 @@ msgstr "Desarmado"
 msgid "Discard polygon fence"
 msgstr "Descartar cerca virtual poligonal"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Discard the measurement"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Disconnect"
 msgstr "Desconectar"
@@ -4686,6 +4717,10 @@ msgstr "Largura de exibição"
 #: src/views/ConfigurationUIView.vue
 msgid "Distance"
 msgstr "Distância"
+
+#: src/components/MapMeasureControl.vue
+msgid "Distance and bearing: click points, then the check mark to keep it"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -5870,6 +5905,10 @@ msgstr ""
 msgid "Finish polygon fence"
 msgstr "Finalizar cerca virtual poligonal"
 
+#: src/components/MapMeasureControl.vue
+msgid "Finish the path, survey or fence being drawn first"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Finish the walkthrough first"
 msgstr "Termine o passo a passo primeiro"
@@ -6111,6 +6150,10 @@ msgstr "Fonte de GPS"
 #: src/components/BaseStationConfigPanel.vue
 msgid "Gain (dBi)"
 msgstr "Ganho (dBi)"
+
+#: src/components/MapMeasureControl.vue
+msgid "Garibaldi orange"
+msgstr ""
 
 #: src/components/poi/PoiManager.vue
 msgid "Gas Station"
@@ -6709,6 +6752,7 @@ msgstr ""
 #: src/components/poi/PoiManager.vue
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/composables/map/useMapMeasure.ts
 msgid "Home"
 msgstr "Home"
 
@@ -7493,6 +7537,10 @@ msgstr "Manter local original"
 msgid "Keep reviewing"
 msgstr "Continuar revisando"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Keep the measurement on the map"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Keep the terrain of the visible map for offline use"
 msgstr ""
@@ -8218,6 +8266,15 @@ msgstr ""
 msgid "Measured terrain saved as ${ 0 }."
 msgstr ""
 
+#: src/components/MapMeasureControl.vue
+#, javascript-format
+msgid "Measurement colors: ${ 0 }"
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Measurements"
+msgstr ""
+
 #: src/components/BaseStationConfigPanel.vue
 msgid "Med"
 msgstr "Média"
@@ -8596,6 +8653,10 @@ msgstr "Celular:"
 #: src/components/mini-widgets/ModeSelector.vue
 msgid "Mode names"
 msgstr "Nomes dos modos"
+
+#: src/components/MapMeasureControl.vue
+msgid "Moray green"
+msgstr ""
 
 #: src/components/InfoPopover.vue
 msgid "More information"
@@ -9345,6 +9406,10 @@ msgstr ""
 
 #: src/components/MissionLibraryModal.vue
 msgid "Nothing is planned on the map yet"
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Nothing measured to clear"
 msgstr ""
 
 #: src/components/terrain/TerrainVehiclePanel.vue
@@ -11129,6 +11194,11 @@ msgstr "Rotação (°)"
 msgid "Rotation degrees"
 msgstr "Graus de rotação"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Ruler ${ 0 }"
+msgstr ""
+
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "Run after"
 msgstr "Executar após"
@@ -11751,6 +11821,10 @@ msgstr ""
 #: src/components/poi/PoiManager.vue
 msgid "Shopping"
 msgstr "Compras"
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Shore"
+msgstr ""
 
 #: src/views/ToolsLogsView.vue
 msgid "Short variable ID"
@@ -14519,6 +14593,7 @@ msgstr "Variáveis:"
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainProfileChart.vue
 #: src/components/widgets/MiniMap.vue
+#: src/composables/map/useMapMeasure.ts
 #: src/views/MissionPlanningView.vue
 msgid "Vehicle"
 msgstr "Veículo"
@@ -15100,6 +15175,11 @@ msgstr ""
 #: src/components/mission-planning/ContextMenu.vue
 msgid "Waypoint"
 msgstr "Waypoint"
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Waypoint ${ 0 }"
+msgstr ""
 
 #: src/components/terrain/TerrainProfileChart.vue
 #, javascript-format

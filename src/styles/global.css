@@ -245,6 +245,30 @@ select:focus {
     border-right-color: var(--glass-background) !important;
 }
 
+.leaflet-tooltip-left.vehicle-tooltip::before {
+    border-right-color: transparent !important;
+    border-left-color: var(--glass-background) !important;
+}
+
+.leaflet-tooltip-top.vehicle-tooltip::before {
+    border-right-color: transparent !important;
+    border-top-color: var(--glass-background) !important;
+}
+
+.leaflet-tooltip-bottom.vehicle-tooltip::before {
+    border-right-color: transparent !important;
+    border-bottom-color: var(--glass-background) !important;
+}
+
+/* A ruler's readout moving to another side of its point: steady speed between very short ramps at each end. */
+.leaflet-tooltip.measure-tag-glide {
+    transition-property: transform, margin;
+    transition-duration: 420ms;
+    transition-timing-function: linear(
+        0, 0.004 3%, 0.017 6%, 0.038 9%, 0.068 12%, 0.932 88%, 0.962 91%, 0.983 94%, 0.996 97%, 1
+    );
+}
+
 /* Chip of the mission library cards, shared by its missions and its terrain datasets. */
 .info-pill {
     display: inline-flex;
