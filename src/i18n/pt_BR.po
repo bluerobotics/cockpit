@@ -69,6 +69,16 @@ msgid ""
 "observer."
 msgstr ""
 
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "${ 0 } ${ 1 } above the ground"
+msgstr ""
+
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "${ 0 } ${ 1 } above the seabed"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 #, javascript-format
 msgid ""
@@ -1980,6 +1990,11 @@ msgstr ""
 msgid "Base station"
 msgstr "Estação base"
 
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "Base station ${ 0 } of ${ 1 } tether"
+msgstr ""
+
 #: src/composables/baseStation/useBaseStation.ts
 #, javascript-format
 msgid "Base station GPS tracking failed: ${ 0 }. Disabling."
@@ -2736,7 +2751,7 @@ msgid "Clear the measured terrain?"
 msgstr ""
 
 #: src/components/MapMeasureControl.vue
-msgid "Clear the measurements"
+msgid "Clear the measurements and flags"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -4554,6 +4569,11 @@ msgstr "Todos os fragmentos temporários excluídos (${ 0 } liberados)"
 msgid "Depth"
 msgstr "Profundidade"
 
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "Depth ${ 0 }"
+msgstr ""
+
 #: src/components/widgets/DepthHUD.vue
 msgid "Depth HUD config"
 msgstr "Configuração do HUD de profundidade"
@@ -6084,6 +6104,11 @@ msgid ""
 "upload\" in the Vehicle tab."
 msgstr ""
 
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "From the vehicle ${ 0 } · ${ 1 }"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Full Screen Picture"
 msgstr "Imagem em tela cheia"
@@ -6393,6 +6418,21 @@ msgstr "Escala de cinza / RGB"
 #: src/components/terrain/TerrainLibrarySection.vue
 #: src/components/terrain/TerrainProfileChart.vue
 msgid "Ground"
+msgstr ""
+
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "Ground ${ 0 } above home"
+msgstr ""
+
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "Ground ${ 0 } above sea level"
+msgstr ""
+
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "Ground ${ 0 } below home"
 msgstr ""
 
 #: src/libs/mission/library.ts
@@ -9281,6 +9321,10 @@ msgstr "Nenhum levantamento selecionado para excluir."
 msgid "No survey selected."
 msgstr "Nenhum levantamento selecionado."
 
+#: src/composables/map/useMapCursorTerrain.ts
+msgid "No terrain data here"
+msgstr ""
+
 #: src/components/terrain/TerrainLibrarySection.vue
 msgid "No terrain saved"
 msgstr ""
@@ -10638,6 +10682,10 @@ msgstr ""
 "Standalone. Navegadores não podem acessar dispositivos seriais fora de um "
 "contexto seguro, por isso este recurso está desativado aqui."
 
+#: src/composables/map/useMapCursorTerrain.ts
+msgid "Reading the terrain…"
+msgstr ""
+
 #: src/components/terrain/TerrainTidePanel.vue
 msgid "Reading the tide..."
 msgstr ""
@@ -10936,6 +10984,10 @@ msgstr ""
 #: src/composables/baseStation/useBaseStation.ts
 msgid "Remove the base station? This will clear its position and configuration."
 msgstr "Remover a estação base? Isso vai apagar a posição e a configuração dela."
+
+#: src/composables/map/useMapCursorTerrain.ts
+msgid "Remove this flag"
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "Remove vehicle"
@@ -11455,6 +11507,16 @@ msgstr "Escaneando ${ 0 } (${ 1 })"
 #: src/components/poi/PoiManager.vue
 msgid "School"
 msgstr "Escola"
+
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "Seabed ${ 0 } above home"
+msgstr ""
+
+#: src/composables/map/useMapCursorTerrain.ts
+#, javascript-format
+msgid "Seabed ${ 0 } below home"
+msgstr ""
 
 #: src/views/ConfigurationJoystickView.vue
 msgid "Search actions..."
@@ -12740,6 +12802,10 @@ msgstr ""
 msgid ""
 "Terrain tiles kept on this computer. Keep an area for offline use from the "
 "terrain panel in mission planning."
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Terrain under the cursor, click the map to flag its height"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -14656,6 +14722,7 @@ msgstr "Variáveis:"
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainProfileChart.vue
 #: src/components/widgets/MiniMap.vue
+#: src/composables/map/useMapCursorTerrain.ts
 #: src/composables/map/useMapMeasure.ts
 #: src/views/MissionPlanningView.vue
 msgid "Vehicle"
@@ -15239,6 +15306,7 @@ msgstr ""
 msgid "Waypoint"
 msgstr "Waypoint"
 
+#: src/composables/map/useMapCursorTerrain.ts
 #: src/composables/map/useMapMeasure.ts
 #, javascript-format
 msgid "Waypoint ${ 0 }"
