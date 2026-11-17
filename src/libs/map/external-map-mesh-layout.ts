@@ -109,3 +109,27 @@ export const pageLayout = (mesh: MeshLayout, index: number): PageLayout => {
   const height = Math.ceil(slotCount / mesh.stripsPerRow) * mesh.stripHeight
   return { index, firstSlot, slotCount, width, height }
 }
+
+const pageBytes = (mesh: MeshLayout, index: number): number => {
+  const { slotCount, width, height } = pageLayout(mesh, index)
+  return slotCount * meshInstanceBytes + width * height * mesh.bytesPerTexel
+}
+
+// What a mesh holds on the CPU once every page is written. Every page but the last is the same size as the first.
+export const meshReservedBytes = (mesh: MeshLayout): number => {
+  const pages = Math.ceil(mesh.capacity / mesh.slotsPerPage)
+  return paletteBytes + (pages - 1) * pageBytes(mesh, 0) + pageBytes(mesh, pages - 1)
+}
+
+/**
+ * Bytes a mesh reserves against the budget when defined, for mesh commands version 1: 1024 for the palette + Σ per
+ * page (68 x slots + page width x page height x bytes per texel). Pages are at most 2048x2048 texels, packed with
+ * floor(2048 / width) x floor(2048 / height) whole strips (a Ping360 page is 1200x2048); the last is only as large as
+ * its slots need. This is buffer accounting, not physical memory, and the inputs are not validated: an invalid mesh
+ * gives a meaningless figure.
+ * @param {number} capacity - Slots of the mesh
+ * @param {MeshTexels} texels - Format, width and height of each slot's strip
+ * @returns {number} Bytes the mesh reserves
+ */
+export const mapMeshReservedBytes = (capacity: number, texels: MeshTexels): number =>
+  meshReservedBytes(meshLayout(capacity, texels))

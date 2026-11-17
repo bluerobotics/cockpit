@@ -26,6 +26,9 @@ const mesh = (id: string, capacity = 4): Record<string, unknown> => ({
   texels: { format: 'r8', width: 1, height: 1 },
 })
 
+const budgetKey = 'cockpit-map-mesh-budget-bytes'
+const defaultBudgetBytes = 218 * 1024 * 1024
+
 const send = (...messages: Record<string, unknown>[]): ExternalMapMeshResult[] => {
   const answers: (ExternalMapMeshResult | ExternalMapCapabilities)[] = []
   messages.forEach((message) => handleExternalMapMeshMessage(message, (answer) => answers.push(answer)))
@@ -51,9 +54,34 @@ describe('cockpit:getMapCapabilities', () => {
         maxMessageBytes: 2 * 1024 * 1024,
         maxTexelSide: 2048,
         maxStripBytes: 2 * 1024 * 1024 - 96,
+        budgetBytes: defaultBudgetBytes,
+        usedBytes: meshes.reservedBytes(),
         formats: ['r8', 'rgba8'],
       },
     })
+  })
+
+  test('tells what all meshes reserve for their full capacity, not the bytes written so far', () => {
+    const sonar = { ...mesh('capabilities-used', 11264), texels: { format: 'r8', width: 1200, height: 1 } }
+    const [created, written, used] = send(
+      { type: 'cockpit:setMapMesh', requestId: 'set', mesh: sonar },
+      {
+        type: 'cockpit:setMapMeshQuads',
+        requestId: 'write',
+        id: 'capabilities-used',
+        ...quads(1),
+        texels: new Uint8Array(1200),
+      },
+      { type: 'cockpit:getMapCapabilities', requestId: 'caps' }
+    ) as unknown as [ExternalMapMeshResult, ExternalMapMeshResult, ExternalMapCapabilities]
+    expect([created, written]).toMatchObject([{ ok: true }, { ok: true }])
+    // Only the first of its 6 pages is allocated.
+    expect(meshes.meshes.get('capabilities-used')?.pages.filter(Boolean)).toHaveLength(1)
+    const [, freed] = send(
+      { type: 'cockpit:removeMapMesh', requestId: 'remove', id: 'capabilities-used' },
+      { type: 'cockpit:getMapCapabilities', requestId: 'caps' }
+    ) as unknown as [ExternalMapMeshResult, ExternalMapCapabilities]
+    expect(used.meshes.usedBytes - freed.meshes.usedBytes).toBe(14_283_776)
   })
 
   test('says meshes are not drawn without WebGL2, while mesh commands are still applied', () => {
@@ -147,6 +175,10 @@ describe('mesh command answers', () => {
       { type: 'cockpit:removeMapMeshQuads', id: 'answers-rejected', first: 4, count: 1 },
       { type: 'cockpit:setMapMeshQuads', requestId: '4', id: 'answers-rejected', ...quads(1) }
     )
+    localStorage.setItem(budgetKey, String(meshes.reservedBytes()))
+    const grow = { type: 'cockpit:setMapMesh', mesh: mesh('answers-rejected', 8) }
+    send(grow, grow)
+    localStorage.removeItem(budgetKey)
     expect(answers.map(({ requestId, ok }) => [requestId, ok])).toEqual([
       ['1', true],
       ['2', false],
@@ -160,6 +192,7 @@ describe('mesh command answers', () => {
     expect(warn.mock.calls.map(([warning]) => warning)).toEqual([
       expect.stringContaining("mesh 'answers-rejected'. Invalid command. uv"),
       expect.stringContaining("mesh 'answers-rejected'. Slots 3 to 4 do not fit"),
+      expect.stringContaining("mesh 'answers-rejected'. Mesh 'answers-rejected' needs 1576 bytes"),
     ])
   })
 
@@ -275,6 +308,99 @@ describe('strip sizes', () => {
     expect(refused).toMatchObject({ ok: false, id: 'strips-refused' })
     expect(refused.error).toContain('mesh.texels')
     expect(meshes.meshes.get('strips-refused')).toMatchObject({ stripWidth: 1, stripHeight: 1, capacity: 4, head: 1 })
+  })
+})
+
+describe('memory budget', () => {
+  const ping360Bytes = 14_283_776
+  const sonarMesh = (id: string): Record<string, unknown> => ({
+    ...mesh(id, 11264),
+    texels: { format: 'r8', width: 1200, height: 1 },
+  })
+  const capabilities = (): ExternalMapCapabilities['meshes'] => {
+    const [answer] = send({ type: 'cockpit:getMapCapabilities', requestId: 'caps' }) as unknown[]
+    return (answer as ExternalMapCapabilities).meshes
+  }
+
+  afterEach(() => localStorage.removeItem(budgetKey))
+
+  test('refuses a definition or a redefinition past the budget, telling the sender why in numbers', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const usedBytes = meshes.reservedBytes()
+    localStorage.setItem(budgetKey, String(usedBytes + ping360Bytes - 1))
+    const [refused, written] = send(
+      { type: 'cockpit:setMapMesh', requestId: 'set', mesh: sonarMesh('budget-refused') },
+      {
+        type: 'cockpit:setMapMeshQuads',
+        requestId: 'write',
+        id: 'budget-refused',
+        ...quads(1),
+        texels: new Uint8Array(1200),
+      }
+    )
+    expect(refused).toEqual({
+      type: 'cockpit:mapMeshResult',
+      requestId: 'set',
+      id: 'budget-refused',
+      ok: false,
+      error: expect.stringContaining(`${ping360Bytes} bytes`),
+      code: 'budget',
+      usedBytes,
+      previousBytes: 0,
+      budgetBytes: usedBytes + ping360Bytes - 1,
+      requestedBytes: ping360Bytes,
+    })
+    expect(written).toMatchObject({ ok: false, error: "Mesh 'budget-refused' does not exist." })
+
+    // 4 slots of 68 bytes and 1 texel, plus the palette.
+    const smallBytes = 1024 + 4 * 69
+    send(
+      { type: 'cockpit:setMapMesh', mesh: mesh('budget-refused') },
+      { type: 'cockpit:setMapMeshQuads', id: 'budget-refused', ...quads(1) }
+    )
+    const [grown] = send({ type: 'cockpit:setMapMesh', requestId: 'grow', mesh: sonarMesh('budget-refused') })
+    expect(grown).toMatchObject({
+      ok: false,
+      code: 'budget',
+      usedBytes: usedBytes + smallBytes,
+      previousBytes: smallBytes,
+      requestedBytes: ping360Bytes,
+    })
+    expect(capabilities().usedBytes).toBe(usedBytes + smallBytes)
+    expect(meshes.meshes.get('budget-refused')).toMatchObject({ capacity: 4, stripWidth: 1, head: 1, highWater: 1 })
+
+    localStorage.setItem(budgetKey, String(usedBytes + ping360Bytes))
+    const [created] = send({ type: 'cockpit:setMapMesh', requestId: 'set', mesh: sonarMesh('budget-refused') })
+    expect(created).toMatchObject({ ok: true })
+    send({ type: 'cockpit:removeMapMesh', id: 'budget-refused' })
+  })
+
+  test('is a setting of this computer, falling back to the default when the stored value is not a positive whole number', () => {
+    expect(capabilities().budgetBytes).toBe(defaultBudgetBytes)
+    localStorage.setItem(budgetKey, '104857600')
+    expect(capabilities().budgetBytes).toBe(104_857_600)
+    localStorage.setItem(budgetKey, '1.5')
+    expect(capabilities().budgetBytes).toBe(defaultBudgetBytes)
+  })
+
+  test('cannot be changed by a sender', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const budgetBytes = meshes.reservedBytes()
+    localStorage.setItem(budgetKey, String(budgetBytes))
+    const answers = send(
+      { type: 'cockpit:setMapMeshBudget', requestId: 'raise', budgetBytes: 1e12 },
+      {
+        type: 'cockpit:setMapMesh',
+        requestId: 'set',
+        budgetBytes: 1e12,
+        mesh: { ...mesh('budget-raise'), budgetBytes: 1e12 },
+      }
+    )
+    expect(answers).toEqual([expect.objectContaining({ requestId: 'set', ok: false, code: 'budget', budgetBytes })])
+    capabilities().budgetBytes = 1e12
+    expect(capabilities().budgetBytes).toBe(budgetBytes)
+    expect(localStorage.getItem(budgetKey)).toBe(String(budgetBytes))
+    expect(meshes.meshes.has('budget-raise')).toBe(false)
   })
 })
 

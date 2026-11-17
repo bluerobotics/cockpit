@@ -286,6 +286,29 @@ export interface ExternalMapMeshResult {
    */
   error?: string
   /**
+   * Machine-readable reason for the rejection: `budget` when a `cockpit:setMapMesh` would push the total reserved by
+   * all meshes past `budgetBytes`
+   */
+  code?: 'budget'
+  /**
+   * On a budget refusal, the bytes all meshes reserve now, the refused mesh's current definition included (the
+   * capabilities' `usedBytes`). The mesh can reserve at most the larger of `previousBytes` and
+   * `budgetBytes - usedBytes + previousBytes`.
+   */
+  usedBytes?: number
+  /**
+   * Bytes the refused mesh's current definition reserves, 0 for a new id
+   */
+  previousBytes?: number
+  /**
+   * Bytes the refused mesh would reserve for its full capacity, replacing `previousBytes`
+   */
+  requestedBytes?: number
+  /**
+   * Most bytes all meshes together can reserve; sent with budget refusals
+   */
+  budgetBytes?: number
+  /**
    * First slot a `cockpit:setMapMeshQuads` wrote
    */
   first?: number
@@ -329,6 +352,15 @@ export interface ExternalMapCapabilities {
      */
     drawn: boolean
     /**
+     * Most bytes all meshes together can reserve for their full capacity, past which `cockpit:setMapMesh` is refused
+     */
+    budgetBytes: number
+    /**
+     * Bytes all meshes together reserve for their full capacity now, however much of it is written. A snapshot: other
+     * senders can reserve more before your next `cockpit:setMapMesh`.
+     */
+    usedBytes: number
+    /**
      * Texel formats a mesh's strips can have
      */
     formats: (typeof externalMapMeshTexelFormats)[number][]
@@ -344,15 +376,22 @@ export type ExternalMapReply = (message: ExternalMapMeshResult | ExternalMapCapa
  * Answers a `cockpit:getMapCapabilities`
  * @param {ExternalMapRequestId} queryId - The query's `requestId`
  * @param {boolean} drawn - Whether this computer draws meshes
+ * @param {Pick<ExternalMapCapabilities['meshes'], 'budgetBytes' | 'usedBytes'>} budget - What all meshes together
+ * can reserve, and reserve now
  * @returns {ExternalMapCapabilities} The answer
  */
-export const externalMapCapabilities = (queryId: ExternalMapRequestId, drawn: boolean): ExternalMapCapabilities => ({
+export const externalMapCapabilities = (
+  queryId: ExternalMapRequestId,
+  drawn: boolean,
+  budget: Pick<ExternalMapCapabilities['meshes'], 'budgetBytes' | 'usedBytes'>
+): ExternalMapCapabilities => ({
   type: 'cockpit:mapCapabilities',
   requestId: queryId,
   meshes: {
     version: externalMapMeshApiVersion,
     drawn,
     ...externalMapMeshLimits,
+    ...budget,
     formats: [...externalMapMeshTexelFormats],
   },
 })

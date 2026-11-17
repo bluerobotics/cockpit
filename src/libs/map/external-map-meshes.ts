@@ -1,8 +1,10 @@
 import type { ValidatedMapMesh, ValidatedMapMeshQuads } from '@/libs/map/external-map-mesh-api'
+import { mapMeshBudgetBytes, MapMeshBudgetError } from '@/libs/map/external-map-mesh-budget'
 import {
   earthRadius,
   meshInstanceBytes,
   meshLayout,
+  meshReservedBytes,
   pageLayout,
   paletteBytes,
 } from '@/libs/map/external-map-mesh-layout'
@@ -373,12 +375,21 @@ export const meshDrawRanges = (mesh: MapMesh): MapMeshDrawRange[] => {
 /**
  * The meshes external software sent, kept on the CPU as the source of truth every map draws from, and that the
  * GPU copy is rebuilt from when the WebGL context is lost. Not reactive: maps subscribe to its changes instead.
+ * A mesh reserves its full capacity when defined, so only definitions are refused by the budget; pages are allocated
+ * on their first write, and a renderer drawing them holds about as much again on the GPU.
  */
 export class MapMeshStore {
   readonly meshes = new Map<string, MapMesh>()
   private readonly listeners = new Set<(change: MapMeshChange) => void>()
   // Ids of the meshes whose settings or pages changed since the last flush (every per-mesh draw calls flush).
   private readonly dirty = new Set<string>()
+  // Kept as meshes are set and removed rather than summed, so a sender defining many meshes costs O(1) for each.
+  private reserved = 0
+
+  /**
+   * @param {() => string | null} storedBudget - Reads the budget this computer is set to, in bytes, as stored
+   */
+  constructor(private readonly storedBudget: () => string | null = () => null) {}
 
   /**
    * Calls a listener on every change
@@ -392,7 +403,8 @@ export class MapMeshStore {
 
   /**
    * Creates or redefines a mesh. One with the same capacity and texel layout keeps its quads; a changed capacity,
-   * format or strip size starts empty.
+   * format or strip size starts empty. Throws a {@link MapMeshBudgetError}, changing nothing and so keeping the old
+   * quads, if its full capacity would take the reservations past the budget.
    * @param {ValidatedMapMesh} definition - The mesh as the sender defined it
    */
   set(definition: ValidatedMapMesh): void {
@@ -411,6 +423,16 @@ export class MapMeshStore {
       return
     }
     const layout = meshLayout(capacity, texels)
+    const requestedBytes = meshReservedBytes(layout)
+    const previousBytes = previous ? meshReservedBytes(previous) : 0
+    const usedBytes = this.reservedBytes()
+    const resultingBytes = usedBytes - previousBytes + requestedBytes
+    const budgetBytes = this.budgetBytes()
+    // A lowered budget evicts nothing: only a definition reserving more than the one it replaces is held to it.
+    if (requestedBytes > previousBytes && resultingBytes > budgetBytes) {
+      throw new MapMeshBudgetError(id, usedBytes, previousBytes, requestedBytes, budgetBytes)
+    }
+    this.reserved = resultingBytes
     this.meshes.set(id, {
       id,
       name,
@@ -511,7 +533,7 @@ export class MapMeshStore {
    * @param {string} id - Id of the mesh
    */
   remove(id: string): void {
-    this.existing(id)
+    this.reserved -= meshReservedBytes(this.existing(id))
     this.meshes.delete(id)
     // Retired here rather than on the next flush, which never comes once no mesh is left to draw.
     this.dirty.delete(id)
@@ -545,6 +567,23 @@ export class MapMeshStore {
       this.dirty.add(mesh.id)
       this.emit({ id: mesh.id })
     }
+  }
+
+  /**
+   * Bytes all meshes reserve for their full capacity, which {@link set} keeps within the budget. A cleared mesh keeps
+   * its reservation, so its sender can write it full again.
+   * @returns {number} The bytes
+   */
+  reservedBytes(): number {
+    return this.reserved
+  }
+
+  /**
+   * Most bytes all meshes together can reserve, as {@link mapMeshBudgetBytes} reads the budget this computer is set to
+   * @returns {number} The bytes
+   */
+  budgetBytes(): number {
+    return mapMeshBudgetBytes(this.storedBudget())
   }
 
   /* eslint-disable jsdoc/require-jsdoc -- private helpers, commented where they need it. */
