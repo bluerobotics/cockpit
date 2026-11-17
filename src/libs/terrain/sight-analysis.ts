@@ -99,6 +99,13 @@ const MAX_LINK_STATIONS = 120
 const MAX_GRID_CELLS = 6400
 
 /**
+ * Height of the vehicle's radio antenna over its deck or the ground.
+ * @param {boolean} hasMast Whether the vehicle mounts the BlueBoat accessory mast.
+ * @returns {number} The height, in meters.
+ */
+export const vehicleAntennaHeightM = (hasMast: boolean): number => (hasMast ? 1.2 : 0.4)
+
+/**
  * Height of the vehicle's antenna, or of the vehicle itself, above sea level at a profile station.
  * @param {TerrainProfileSample} sample Profile station.
  * @param {TerrainVehicleClass} vehicleClass How the vehicle meets the terrain.
