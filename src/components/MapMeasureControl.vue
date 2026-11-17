@@ -115,6 +115,8 @@ import {
   MEASURE_SCHEME_COLORS,
   useMapMeasure,
 } from '@/composables/map/useMapMeasure'
+import { useMapTetherReach } from '@/composables/map/useMapTetherReach'
+import { useMapVehicleRange } from '@/composables/map/useMapVehicleRange'
 import { useMeasureProfile } from '@/composables/map/useMeasureProfile'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
@@ -162,6 +164,8 @@ const { map, mapReady } = useMapContext()
 
 const dialOpen = defineModel<boolean>('open', { default: false })
 const showCursorTerrain = ref(false)
+const showVehicleRange = ref(false)
+const showTetherReach = ref(false)
 const colorsOpen = ref(false)
 const storedColorScheme = useStorage<string>('cockpit-map-measure-color-scheme', DEFAULT_COLOR_SCHEME)
 // The stored value can predate a scheme being removed, or be edited by hand.
@@ -186,6 +190,18 @@ const cursorTerrain = useMapCursorTerrain(map, mapReady, {
   waypoints: () => props.waypoints,
   isBlocked: () => props.blocked,
 })
+useMapVehicleRange(map, mapReady, {
+  enabled: () => showVehicleRange.value,
+  vehiclePosition: () => props.vehiclePosition,
+  home: () => props.home,
+  colorScheme: () => colorScheme.value,
+})
+const tether = useMapTetherReach(map, mapReady, {
+  enabled: () => showTetherReach.value,
+  vehiclePosition: () => props.vehiclePosition,
+  waypoints: () => props.waypoints,
+  colorScheme: () => colorScheme.value,
+})
 
 const rulerVertices = computed(() => measure.profiled.value?.vertices ?? [])
 const showProfile = computed(() => measure.profiled.value !== null)
@@ -199,7 +215,9 @@ const profileStyle = computed<CSSProperties>(() => ({
 
 const activeStyle = { backgroundColor: '#2563eb', color: '#FFFFFF' }
 
-const anyActive = computed(() => measure.tool.value !== null || showCursorTerrain.value)
+const anyActive = computed(
+  () => measure.tool.value !== null || showCursorTerrain.value || showVehicleRange.value || showTetherReach.value
+)
 
 const onDialToggle = (open: boolean): void => {
   dialOpen.value = open
@@ -258,38 +276,61 @@ const clearMeasurements = (): void => {
 
 const blockedReason = t`Finish the path, survey or fence being drawn first`
 
-const items = computed<DialItem[]>(() => [
-  {
-    id: 'distance',
-    icon: 'mdi-tape-measure',
-    tooltip: props.blocked ? blockedReason : t`Distance and bearing: click points, then the check mark to keep it`,
-    active: measure.tool.value === 'distance',
-    disabled: props.blocked,
-    onClick: () => toggleTool('distance'),
-  },
-  {
-    id: 'area',
-    icon: 'mdi-vector-polygon-variant',
-    tooltip: props.blocked ? blockedReason : t`Area and perimeter: click corners, then the check mark to keep it`,
-    active: measure.tool.value === 'area',
-    disabled: props.blocked,
-    onClick: () => toggleTool('area'),
-  },
-  {
-    id: 'terrain',
-    icon: 'mdi-image-filter-hdr',
-    tooltip: t`Terrain under the cursor, click the map to flag its height`,
-    active: showCursorTerrain.value,
-    disabled: false,
-    onClick: () => toggle(showCursorTerrain, 'terrain readout under the cursor'),
-  },
-  {
+const items = computed<DialItem[]>(() => {
+  const list: DialItem[] = [
+    {
+      id: 'distance',
+      icon: 'mdi-tape-measure',
+      tooltip: props.blocked ? blockedReason : t`Distance and bearing: click points, then the check mark to keep it`,
+      active: measure.tool.value === 'distance',
+      disabled: props.blocked,
+      onClick: () => toggleTool('distance'),
+    },
+    {
+      id: 'area',
+      icon: 'mdi-vector-polygon-variant',
+      tooltip: props.blocked ? blockedReason : t`Area and perimeter: click corners, then the check mark to keep it`,
+      active: measure.tool.value === 'area',
+      disabled: props.blocked,
+      onClick: () => toggleTool('area'),
+    },
+    {
+      id: 'terrain',
+      icon: 'mdi-image-filter-hdr',
+      tooltip: t`Terrain under the cursor, click the map to flag its height`,
+      active: showCursorTerrain.value,
+      disabled: false,
+      onClick: () => toggle(showCursorTerrain, 'terrain readout under the cursor'),
+    },
+    {
+      id: 'vehicle-range',
+      icon: 'mdi-navigation-variant',
+      tooltip: props.vehiclePosition
+        ? t`Range and bearing from the vehicle to home and the next waypoint`
+        : t`Vehicle position unknown`,
+      active: showVehicleRange.value,
+      disabled: !props.vehiclePosition && !showVehicleRange.value,
+      onClick: () => toggle(showVehicleRange, 'vehicle range and bearing'),
+    },
+  ]
+  if (tether.available.value) {
+    list.push({
+      id: 'tether',
+      icon: 'mdi-cable-data',
+      tooltip: t`Tether reach from the base station, counting depth`,
+      active: showTetherReach.value,
+      disabled: false,
+      onClick: () => toggle(showTetherReach, 'tether reach'),
+    })
+  }
+  list.push({
     id: 'clear',
     icon: 'mdi-eraser',
     tooltip: hasAnything.value ? t`Clear the measurements and flags` : t`Nothing measured to clear`,
     active: false,
     disabled: !hasAnything.value,
     onClick: clearMeasurements,
-  },
-])
+  })
+  return list
+})
 </script>
