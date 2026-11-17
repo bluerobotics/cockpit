@@ -228,6 +228,9 @@ export const useMapOverlays = (): UseMapOverlaysReturn => {
     controlRef = layerControl
     ensurePane()
     await scheduleReconcile()
+    // The registry may have been destroyed, or bound again, while the overlays were loading.
+    if (mapRef !== map) return
+    stopWatch?.()
     stopWatch = watch(
       () => missionStore.mapOverlays,
       () => scheduleReconcile(),
