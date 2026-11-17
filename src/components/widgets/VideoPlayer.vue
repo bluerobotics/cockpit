@@ -404,7 +404,7 @@ const streamStatus = computed(() => {
   if (externalStreamId.value === undefined) return t`Unknown.`
 
   const availableSources = videoStore.availableIceIps
-  if (!availableSources.isEmpty() && !availableSources.find((ip) => videoStore.allowedIceIps.includes(ip))) {
+  if (!availableSources.isEmpty() && !availableSources.find((ip) => videoStore.streamIceIps.includes(ip))) {
     const sources = availableSources.join(', ')
     const allowedSources = videoStore.allowedIceIps.join(', ')
     return t`Stream is coming from IPs [${sources}], which are not in the list of allowed sources [${allowedSources}].\\n Please check your configuration.`
