@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full select-none">
+  <div class="relative w-full select-none" :class="{ 'pl-10': heightsBeside }">
     <div ref="scrollEl" :class="{ 'overflow-x-auto overflow-y-hidden': widthScale > 1 }" @wheel="onWheel">
       <div
         ref="chartEl"
@@ -223,8 +223,18 @@
       class="absolute inset-x-0 top-0 pointer-events-none transition-[height] duration-300 ease-out"
       :style="{ height: `${heightPx}px` }"
     >
-      <span class="absolute left-1 top-5 text-[10px] opacity-60">{{ Math.round(geometry.maxM) }} m</span>
-      <span class="absolute left-1 bottom-1 text-[10px] opacity-60">{{ Math.round(geometry.minM) }} m</span>
+      <span
+        class="absolute text-[10px] opacity-60"
+        :class="heightsBeside ? 'left-0 top-0 w-9 text-right' : ['left-1', hasWaypointNumbers ? 'top-5' : 'top-1']"
+      >
+        {{ Math.round(geometry.maxM) }} m
+      </span>
+      <span
+        class="absolute text-[10px] opacity-60"
+        :class="heightsBeside ? 'left-0 bottom-0 w-9 text-right' : 'left-1 bottom-1'"
+      >
+        {{ Math.round(geometry.minM) }} m
+      </span>
       <span
         v-if="tideLabel"
         class="absolute right-1 px-1 rounded-sm text-[10px] leading-4 text-[#B3E5FC] bg-[#000000AA] whitespace-nowrap"
@@ -341,6 +351,10 @@ const props = defineProps<{
    * The path an upload sends, drawn over the planned one when it differs; empty for none.
    */
   uploadPath: UploadPathPoint[]
+  /**
+   * Whether the height scale sits in a gutter left of the profile instead of over it.
+   */
+  heightsBeside?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -403,6 +417,8 @@ const hoveredOverWater = computed(
   () => !!hovered.value && stationsOverWater.value[props.samples.indexOf(toRaw(hovered.value))] === true
 )
 
+const hasWaypointNumbers = computed(() => props.points.some(({ waypointIndex }) => waypointIndex !== null))
+
 const chartOptions = computed<ProfileChartOptions>(() => ({
   vehicleClass: props.vehicleClass,
   uncertaintyM: props.uncertaintyM,
@@ -413,6 +429,7 @@ const chartOptions = computed<ProfileChartOptions>(() => ({
   modelGroundM: props.modelGroundM,
   overWater: stationsOverWater.value,
   uploadPath: props.uploadPath,
+  labelRow: hasWaypointNumbers.value,
 }))
 
 const baseGeometry = computed(() => profileChartGeometry(props.samples, chartOptions.value))
