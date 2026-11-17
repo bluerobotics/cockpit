@@ -1,0 +1,1 @@
+const a=[{title:"attitude.yaw",value:"/mavlink/{{autopilotSystemId}}/1/ATTITUDE/yaw"},{title:"global_position_int.hdg",value:"/mavlink/{{autopilotSystemId}}/1/GLOBAL_POSITION_INT/hdg"}],e=a[0].value,t={variableIdKey:"yawVariableId",useCustomVariableKey:"useCustomYawVariable",presets:a};export{t as a,e as d,a as h};
