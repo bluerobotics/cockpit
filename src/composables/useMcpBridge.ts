@@ -37,12 +37,12 @@ const widgetsWithProtectedOptions = [
 ]
 const viewHashInput = z.string().min(1).optional().describe('View to act on. Defaults to the current one')
 const scriptDescription =
-  "Runs when the widget mounts, in its own scope, with two arguments. root is this widget's element: find " +
-  'the markup with root.querySelector, never document.getElementById, since the widget may be copied. ' +
-  'cockpit is the data-lake API: register with cockpit.listenDataLakeVariable(id, callback), ' +
-  'cockpit.setInterval and cockpit.setTimeout so they are undone with the widget, and pass any other ' +
-  'teardown to cockpit.onCleanup(fn). Top-level functions are not global, so attach event listeners from ' +
-  'the script rather than with inline onclick attributes.'
+  "Runs when the widget mounts, in a sandboxed frame holding only this widget's HTML and CSS, so document " +
+  "and root (the frame's body) are the widget's own and nothing else of Cockpit is reachable. cockpit is the " +
+  'data-lake API: cockpit.listenDataLakeVariable(id, callback), setDataLakeVariableData(id, value), ' +
+  'createDataLakeVariable(variable, initialValue) and executeActionCallback(actionId); ' +
+  'getDataLakeVariableData(id), getDataLakeVariableInfo(id), getAllDataLakeVariablesInfo() and ' +
+  'getDataLakeVariableLastUpdateTimestamp(id) return the latest value synchronously. Everything the script starts stops when the widget is removed or its code changes.'
 
 const diyCode = z.object({
   name: z.string().min(1).default('Do it yourself'),
@@ -156,10 +156,8 @@ const widgetTools = (): McpTool[] => {
       name: 'update_diy_widget',
       title: 'Update DIY widget',
       description:
-        'Change the code or name of a DIY widget, keeping its place, style and script mode. Fields left out ' +
-        'stay as they are. The widget remounts so its script runs again, which gives it a new hash. Check ' +
-        'options.scopedScript with get_widget first: a widget the operator made may run its script globally, ' +
-        'where root and the tracked cockpit helpers do not exist.',
+        'Change the code or name of a DIY widget, keeping its place and style. Fields left out stay as they ' +
+        'are. The widget remounts so its script runs again, which gives it a new hash.',
       readOnly: false,
       runsCode: true,
       input: z.object({
