@@ -95,7 +95,16 @@
         v-if="showButtons"
         v-model:open="layerSelectorOpen"
         :control="layerControl"
-        :activator-style="{ right: '382px', bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+        :activator-style="{ right: '432px', bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+      />
+      <MapMeasureControl
+        v-model:open="measureDialOpen"
+        :show-activator="showButtons"
+        :waypoints="mapWaypoints"
+        :home="home"
+        :vehicle-position="vehiclePosition"
+        :cruise-speed="missionStore.cruiseSpeed"
+        :activator-style="{ bottom: bottomButtonsDisplacement, right: '382px', zIndex: 1002 }"
       />
       <MapNorthIndicator v-if="showButtons" class="north-indicator" />
       <PoiMapArrows
@@ -277,6 +286,7 @@ import MapLayerSelector from '@/components/map/MapLayerSelector.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
+import MapMeasureControl from '@/components/MapMeasureControl.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -396,6 +406,7 @@ const mapId = computed(() => `map-${widget.value.hash}`)
 const centerDialOpen = ref(false)
 const fenceDialOpen = ref(false)
 const layerSelectorOpen = ref(false)
+const measureDialOpen = ref(false)
 const showButtons = computed(
   () =>
     isMouseOver.value ||
@@ -403,6 +414,7 @@ const showButtons = computed(
     centerDialOpen.value ||
     fenceDialOpen.value ||
     layerSelectorOpen.value ||
+    measureDialOpen.value ||
     widgetStore.isFullScreen(widget.value)
 )
 const mapReady = ref(false)
@@ -1737,6 +1749,7 @@ const pauseMapWhileHidden = (): void => {
   showGlobalOriginDialog.value = false
   centerDialOpen.value = false
   fenceDialOpen.value = false
+  measureDialOpen.value = false
   hideContextMenuAndMarker()
   poiPopupRef.value?.close()
   poiManagerMapWidgetRef.value?.closeDialog(false)
@@ -2160,7 +2173,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 432px; /* Position to the left of the buttons */
+  right: 482px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;

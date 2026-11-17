@@ -26,6 +26,9 @@ export const defaultDepthAltitudeVariableId = altitudeSourceOptions[0].value
 /** Default altitude source for altitude indicators (global_position_int.relative_alt). */
 export const defaultAltitudeIndicatorVariableId = altitudeSourceOptions[3].value
 
+/** Altitude above sea level (global_position_int.alt). */
+export const amslAltitudeVariableId = altitudeSourceOptions[2].value
+
 /** Where the altitude widgets store their altitude source. */
 export const altitudeDataSource: DataSourceOptionKeys = {
   variableIdKey: 'altitudeVariableId',

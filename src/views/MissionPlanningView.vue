@@ -766,7 +766,22 @@
     <MapLayerSelector
       v-if="layerSelectorControl"
       :control="layerSelectorControl"
-      :activator-style="{ right: '337px', bottom: '3rem' }"
+      :activator-style="{ right: '388px', bottom: '3rem' }"
+    />
+    <MapMeasureControl
+      :waypoints="missionStore.currentPlanningWaypoints"
+      :home="home"
+      :vehicle-position="vehiclePosition"
+      :blocked="
+        isCreatingSimplePath ||
+        isCreatingSurvey ||
+        isPlacingMission ||
+        isSettingHomeWaypoint ||
+        fenceDraft.isDrawingPolygon ||
+        fenceDraft.isDrawingCircle
+      "
+      :cruise-speed="missionStore.plannedCruiseSpeed"
+      :activator-style="{ bottom: '3rem', right: '337px' }"
     />
     <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
@@ -953,6 +968,7 @@ import MapLayerSelector from '@/components/map/MapLayerSelector.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
+import MapMeasureControl from '@/components/MapMeasureControl.vue'
 import ContextMenu from '@/components/mission-planning/ContextMenu.vue'
 import HomePositionSettingHelp from '@/components/mission-planning/HomePositionSettingHelp.vue'
 import MeasureExtentInput from '@/components/mission-planning/MeasureExtentInput.vue'
@@ -5928,7 +5944,7 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 388px; /* Position to the left of the buttons */
+  right: 440px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
