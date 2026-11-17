@@ -5532,6 +5532,11 @@ msgstr "更新设置失败：${ 0 }"
 msgid "Failed to write ${ 0 }: ${ 1 }"
 msgstr "写入 ${ 0 } 失败：${ 1 }"
 
+#: src/composables/map/useMapTetherReach.ts
+#, javascript-format
+msgid "Farthest point ${ 0 } of ${ 1 } tether"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEnforcementControl.vue
 msgid "Fence enforcement can only be toggled on ArduPilot vehicles"
 msgstr "围栏强制功能只能在 ArduPilot 设备上切换"
@@ -6441,6 +6446,7 @@ msgstr ""
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/widgets/CompassHUD.vue
 #: src/composables/map/useMapMeasure.ts
+#: src/composables/map/useMapVehicleRange.ts
 msgid "Home"
 msgstr "起点"
 
@@ -10008,6 +10014,10 @@ msgstr ""
 msgid "Range (${ 0 })"
 msgstr "范围（${ 0 }）"
 
+#: src/components/MapMeasureControl.vue
+msgid "Range and bearing from the vehicle to home and the next waypoint"
+msgstr ""
+
 #: src/components/joysticks/AxisDraftActions.vue
 #, javascript-format
 msgid "Range differs from the default. ${ 0 }"
@@ -12194,6 +12204,15 @@ msgstr "BlueBoat 测试速度："
 msgid "Tether"
 msgstr "系绳"
 
+#: src/composables/map/useMapTetherReach.ts
+#, javascript-format
+msgid "Tether ${ 0 } of ${ 1 } (${ 2 }%)"
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Tether reach from the base station, counting depth"
+msgstr ""
+
 #: src/components/Tutorial.vue
 msgid ""
 "Thank you for trying our control station software - we hope you make it "
@@ -14031,6 +14050,10 @@ msgstr ""
 msgid "Vehicle picture with heading arrow"
 msgstr ""
 
+#: src/components/MapMeasureControl.vue
+msgid "Vehicle position unknown"
+msgstr ""
+
 #: src/components/widgets/Map.vue
 msgid "Vehicle position updated."
 msgstr "设备位置已更新。"
@@ -14422,6 +14445,7 @@ msgstr "航点"
 
 #: src/composables/map/useMapCursorTerrain.ts
 #: src/composables/map/useMapMeasure.ts
+#: src/composables/map/useMapVehicleRange.ts
 #, javascript-format
 msgid "Waypoint ${ 0 }"
 msgstr ""

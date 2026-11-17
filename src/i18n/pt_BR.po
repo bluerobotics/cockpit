@@ -5842,6 +5842,11 @@ msgstr "Falha ao atualizar a configuração: ${ 0 }"
 msgid "Failed to write ${ 0 }: ${ 1 }"
 msgstr "Falha ao gravar ${ 0 }: ${ 1 }"
 
+#: src/composables/map/useMapTetherReach.ts
+#, javascript-format
+msgid "Farthest point ${ 0 } of ${ 1 } tether"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEnforcementControl.vue
 msgid "Fence enforcement can only be toggled on ArduPilot vehicles"
 msgstr "A aplicação da cerca virtual só pode ser alternada em veículos ArduPilot"
@@ -6805,6 +6810,7 @@ msgstr ""
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/widgets/CompassHUD.vue
 #: src/composables/map/useMapMeasure.ts
+#: src/composables/map/useMapVehicleRange.ts
 msgid "Home"
 msgstr "Home"
 
@@ -10545,6 +10551,10 @@ msgstr ""
 msgid "Range (${ 0 })"
 msgstr "Alcance (${ 0 })"
 
+#: src/components/MapMeasureControl.vue
+msgid "Range and bearing from the vehicle to home and the next waypoint"
+msgstr ""
+
 #: src/components/joysticks/AxisDraftActions.vue
 #, javascript-format
 msgid "Range differs from the default. ${ 0 }"
@@ -12828,6 +12838,15 @@ msgstr "Velocidades testadas do BlueBoat:"
 msgid "Tether"
 msgstr "Cabo"
 
+#: src/composables/map/useMapTetherReach.ts
+#, javascript-format
+msgid "Tether ${ 0 } of ${ 1 } (${ 2 }%)"
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Tether reach from the base station, counting depth"
+msgstr ""
+
 #: src/components/Tutorial.vue
 msgid ""
 "Thank you for trying our control station software - we hope you make it "
@@ -14882,6 +14901,10 @@ msgstr "Imagem do veículo"
 msgid "Vehicle picture with heading arrow"
 msgstr "Imagem do veículo com seta de direção"
 
+#: src/components/MapMeasureControl.vue
+msgid "Vehicle position unknown"
+msgstr ""
+
 #: src/components/widgets/Map.vue
 msgid "Vehicle position updated."
 msgstr "Posição do veículo atualizada."
@@ -15308,6 +15331,7 @@ msgstr "Waypoint"
 
 #: src/composables/map/useMapCursorTerrain.ts
 #: src/composables/map/useMapMeasure.ts
+#: src/composables/map/useMapVehicleRange.ts
 #, javascript-format
 msgid "Waypoint ${ 0 }"
 msgstr ""
