@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { useStorage, useThrottleFn } from '@vueuse/core'
 import { t } from 'ttag'
 import { type Component, computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
@@ -199,6 +199,7 @@ import { useSnackbar } from './composables/snackbar'
 import { useMcpBridge } from './composables/useMcpBridge'
 import { useOffCenterAxisWarning } from './composables/useOffCenterAxisWarning'
 import { usePointsOfInterest } from './composables/usePointsOfInterest'
+import { useVoiceRecorder } from './composables/useVoiceRecorder'
 import { useVehicleDefaultsAutoImport } from './composables/vehicleDefaults/vehicleDefaultsAutoImport'
 import { checkBlueOsUserDataSimilarity } from './libs/blueos'
 import { useAppInterfaceStore } from './stores/appInterface'
@@ -412,9 +413,15 @@ const topBarToggleCallbackId = registerActionCallback(availableCockpitActions.to
   showTopBarNow.value = !showTopBarNow.value
   logUserAction(`Toggled top bar visibility to ${showTopBarNow.value}`)
 })
+// Registered here rather than by the widget, so the binding works on views without one.
+const voiceRecordingToggleCallbackId = registerActionCallback(
+  availableCockpitActions.toggle_voice_recording,
+  useThrottleFn(useVoiceRecorder().toggleRecording, 1000)
+)
 onBeforeUnmount(() => {
   unregisterActionCallback(bottomBarToggleCallbackId)
   unregisterActionCallback(topBarToggleCallbackId)
+  unregisterActionCallback(voiceRecordingToggleCallbackId)
 })
 
 // Dynamic styles

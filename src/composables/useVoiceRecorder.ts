@@ -77,6 +77,8 @@ export const useVoiceRecorder = (): {
       isStarting = false
     }
     activeRecording.value = recording
+    // The joystick can start a recording on a view without the widget, whose pulsing button is the only other cue.
+    openSnackbar({ message: t`Voice recording started.`, variant: 'info', duration: 3000 })
 
     // Electron cancels the close silently on preventDefault, so the dialog is what tells the user why.
     const warnBeforeUnload = (event: BeforeUnloadEvent): void => {
