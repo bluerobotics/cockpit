@@ -298,8 +298,9 @@ describe('MapMeshGlRenderer releasing meshes', () => {
     expect({
       maxDirty,
       held: heldIds(store),
+      reserved: store.reservedBytes(),
       gpuMeshes: gpuMeshes(renderer).size,
-    }).toEqual({ maxDirty: 0, held: 0, gpuMeshes: 0 })
+    }).toEqual({ maxDirty: 0, held: 0, reserved: 0, gpuMeshes: 0 })
   })
 
   const churn = (store: MapMeshStore): void => {
@@ -312,7 +313,7 @@ describe('MapMeshGlRenderer releasing meshes', () => {
   test('keeps nothing of 10,000 meshes defined and removed with no renderer, as without WebGL2', () => {
     const store = new MapMeshStore()
     churn(store)
-    expect(heldIds(store)).toBe(0)
+    expect({ held: heldIds(store), reserved: store.reservedBytes() }).toEqual({ held: 0, reserved: 0 })
   })
 
   test('gives a renderer created after that churn nothing to free, and draws and frees a mesh defined before it', () => {

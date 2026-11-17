@@ -10,6 +10,7 @@ import {
   externalMapRequestIdSchema,
   isExternalMapMeshCommand,
 } from '@/libs/map/external-map-mesh-api'
+import { MapMeshBudgetError } from '@/libs/map/external-map-mesh-budget'
 import { type MapMeshWrittenSlots, MapMeshStore } from '@/libs/map/external-map-meshes'
 import { mapMeshGlRenderer } from '@/libs/map/external-map-meshes-gl'
 import { messageFromError } from '@/libs/utils'
@@ -35,6 +36,12 @@ export interface ExternalMapMeshesState {
 
 type MeshCommandOutcome = Omit<ExternalMapMeshResult, 'type' | 'requestId'>
 
+/**
+ * Local storage key holding how many bytes all map meshes together may reserve on this computer, as a positive whole
+ * number. Machine-local, never synced with the vehicle: what memory the meshes can take depends on this computer.
+ */
+export const mapMeshBudgetKey = 'cockpit-map-mesh-budget-bytes'
+
 // The mesh a command names, read before validation, so even a malformed command can be reported against it.
 const sentMeshId = (message: Record<string, unknown>): string => {
   const id = message.id ?? (message.mesh as Record<string, unknown> | null | undefined)?.id
@@ -44,7 +51,7 @@ const sentMeshId = (message: Record<string, unknown>): string => {
 let state: ExternalMapMeshesState | undefined
 
 const createState = (): ExternalMapMeshesState => {
-  const meshes = new MapMeshStore()
+  const meshes = new MapMeshStore(() => localStorage.getItem(mapMeshBudgetKey))
   // Runs on every quad write, but only a changed count reaches the components reading it.
   const meshCount = ref(0)
   meshes.subscribe(() => (meshCount.value = meshes.meshes.size))
@@ -82,7 +89,9 @@ const createState = (): ExternalMapMeshesState => {
     try {
       written = applyCommand(command)
     } catch (error) {
-      return { id, ok: false, error: messageFromError(error) }
+      if (!(error instanceof MapMeshBudgetError)) return { id, ok: false, error: messageFromError(error) }
+      const { code, usedBytes, previousBytes, requestedBytes, budgetBytes } = error
+      return { id, ok: false, error: error.message, code, usedBytes, previousBytes, requestedBytes, budgetBytes }
     }
     const mesh = meshes.meshes.get(id)
     const slots = mesh ? { head: mesh.head % mesh.capacity, capacity: mesh.capacity } : {}
@@ -110,7 +119,8 @@ const createState = (): ExternalMapMeshesState => {
       outcome = { id: sentMeshId(sent), ok: false, error: `Invalid command. ${problem}` }
     } else if (parsed.data.type === 'cockpit:getMapCapabilities') {
       // This creates the renderer every map shares, which a sender asking for capabilities is about to need anyway.
-      reply?.(externalMapCapabilities(parsed.data.requestId, mapMeshGlRenderer(meshes) !== undefined))
+      const budget = { budgetBytes: meshes.budgetBytes(), usedBytes: meshes.reservedBytes() }
+      reply?.(externalMapCapabilities(parsed.data.requestId, mapMeshGlRenderer(meshes) !== undefined, budget))
       return
     } else {
       outcome = applyMeshCommand(parsed.data, sentMeshId(sent))

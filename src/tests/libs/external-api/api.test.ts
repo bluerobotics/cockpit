@@ -117,6 +117,13 @@ describe('map mesh helpers that wait for an answer', () => {
     expect(error).toMatchObject({ message: refusal.error, name: 'MapMeshCommandError', result: refusal })
   })
 
+  test('reject a budget refusal with its code and byte counts', async () => {
+    const set = api.setMapMesh(mesh)
+    const budget = { code: 'budget', usedBytes: 6, previousBytes: 0, requestedBytes: 8, budgetBytes: 10 } as const
+    answer(result(lastRequestId(), { ok: false, error: 'Over budget.', ...budget }))
+    await expect(set).rejects.toMatchObject({ message: 'Over budget.', result: budget })
+  })
+
   test('reject after the timeout, saying why Cockpit may not have answered, and ignore a late answer', async () => {
     vi.useFakeTimers()
     const set = api.setMapMesh(mesh)

@@ -2,7 +2,8 @@ import L from 'leaflet'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ValidatedMapMesh, ValidatedMapMeshQuads } from '@/libs/map/external-map-mesh-api'
-import { meshInstanceBytes } from '@/libs/map/external-map-mesh-layout'
+import { defaultMapMeshBudgetBytes, MapMeshBudgetError } from '@/libs/map/external-map-mesh-budget'
+import { mapMeshReservedBytes, meshInstanceBytes } from '@/libs/map/external-map-mesh-layout'
 import {
   type MapMesh,
   type MapMeshChange,
@@ -417,5 +418,323 @@ describe('MapMeshStore flush', () => {
     expect(() => store.flush(failing)).toThrow('lost')
     store.flush(renderer)
     expect(calls).toEqual(['page mesh-3:0:1,2'])
+  })
+})
+
+describe('MapMeshStore memory budget', () => {
+  // ping-viewer's Ping360 map: 1200-sample pings, about 225 s of them at 50 Hz. The default budget holds 16 of them.
+  const ping360 = (id: string, capacity = 11264): ValidatedMapMesh =>
+    definition({ id, capacity, texels: { format: 'r8', width: 1200, height: 1 } })
+  const ping360Bytes = 14_283_776
+  // Writing one 112-byte quad to any of its slots allocates a whole 2048x2048 page: 16 MiB of texels and 68 MiB of
+  // instances.
+  const attack = (id: string): ValidatedMapMesh =>
+    definition({ id, capacity: 1 << 20, texels: { format: 'rgba8', width: 2, height: 2 } })
+  const attackBytes = 88_081_408
+  const small = (id: string, capacity = 8): ValidatedMapMesh => definition({ id, capacity })
+  const reservation = (mesh: ValidatedMapMesh): number => {
+    const store = new MapMeshStore()
+    store.set(mesh)
+    return store.reservedBytes()
+  }
+  const refusal = (action: () => void): MapMeshBudgetError => {
+    try {
+      action()
+    } catch (error) {
+      if (error instanceof MapMeshBudgetError) return error
+      throw error
+    }
+    throw new Error('Expected the budget to refuse it.')
+  }
+  const budgeted = (bytes: number): MapMeshStore => new MapMeshStore(() => String(bytes))
+
+  it('reserves at definition exactly what a production Ping360 mesh holds once every slot is written', () => {
+    const store = new MapMeshStore()
+    store.set(ping360('test-mesh'))
+    expect(allocatedBytes(store)).toBe(1024)
+    expect(store.reservedBytes()).toBe(ping360Bytes)
+
+    store.writeQuads('test-mesh', quads(11264, 0, 0, 1200))
+    // Five pages of 2048 slots and one of 1024, each slot 68 bytes of instance and 1200 texels, plus the palette.
+    expect(meshOf(store).pages.map((page) => page?.slotCount)).toEqual([2048, 2048, 2048, 2048, 2048, 1024])
+    expect(1024 + 11264 * (68 + 1200)).toBe(ping360Bytes)
+    expect(allocatedBytes(store)).toBe(ping360Bytes)
+    expect(store.reservedBytes()).toBe(ping360Bytes)
+  })
+
+  it('reserves what every page takes once written, for a last page only partly filled', () => {
+    // 10 strips to a row and 1024 rows to a page: the last of 5 pages holds 9043, in 905 rows of which the last has 3.
+    const store = new MapMeshStore()
+    store.set(definition({ capacity: 50_003, texels: { format: 'rgba8', width: 200, height: 2 } }))
+    for (const first of [0, 10240, 20480, 30720, 50_002]) store.writeQuads('test-mesh', quads(1, first, 0, 1600))
+    expect(meshOf(store).pages.map((page) => page && [page.slotCount, page.width, page.height])).toEqual([
+      ...Array(4).fill([10240, 2000, 2048]),
+      [9043, 2000, 1810],
+    ])
+    expect(store.reservedBytes()).toBe(allocatedBytes(store))
+  })
+
+  it('defaults to 16 production Ping360 meshes, defining 16 without allocating them and refusing a 17th', () => {
+    expect(reservation(ping360('sonar'))).toBe(ping360Bytes)
+    expect(defaultMapMeshBudgetBytes).toBe(228_589_568)
+    const store = new MapMeshStore()
+    expect(store.budgetBytes()).toBe(defaultMapMeshBudgetBytes)
+    for (let i = 0; i < 16; i++) store.set(ping360(`sonar-${i}`))
+    store.writeQuads('sonar-0', quads(1, 0, 7, 1200))
+    const allocated = allocatedBytes(store)
+    expect(allocated).toBe(16 * 1024 + 2048 * (68 + 1200))
+
+    const refused = refusal(() => store.set(ping360('sonar-16')))
+    expect(refused).toMatchObject({
+      code: 'budget',
+      usedBytes: 16 * ping360Bytes,
+      previousBytes: 0,
+      requestedBytes: ping360Bytes,
+      budgetBytes: defaultMapMeshBudgetBytes,
+    })
+    expect(refused.message).toContain(`${ping360Bytes} bytes`)
+    expect(store.meshes.has('sonar-16')).toBe(false)
+    expect(store.reservedBytes()).toBe(16 * ping360Bytes)
+    expect(allocatedBytes(store)).toBe(allocated)
+    const kept = store.meshes.get('sonar-0') as MapMesh
+    expect(kept).toMatchObject({ head: 1, highWater: 1 })
+    expect(slotTexels(kept, 0)).toEqual(Array(1200).fill(7))
+  })
+
+  it('refuses an 84 MiB definition before allocating anything: a third of them, or one past 12 Ping360 meshes', () => {
+    const store = new MapMeshStore()
+    store.set(attack('attack-0'))
+    store.set(attack('attack-1'))
+    expect(store.reservedBytes()).toBe(2 * attackBytes)
+    const changes: MapMeshChange[] = []
+    store.subscribe((change) => changes.push(change))
+    expect(refusal(() => store.set(attack('attack-2')))).toMatchObject({ usedBytes: 2 * attackBytes })
+    expect(3 * attackBytes).toBeGreaterThan(defaultMapMeshBudgetBytes)
+    expect(allocatedBytes(store)).toBe(2 * 1024)
+    expect(changes).toEqual([])
+    ;['attack-0', 'attack-1'].forEach((id) => store.remove(id))
+    for (let i = 0; i < 12; i++) store.set(ping360(`sonar-${i}`))
+    changes.length = 0
+    const refused = refusal(() => store.set(attack('attack')))
+    expect(refused).toMatchObject({ usedBytes: 12 * ping360Bytes, requestedBytes: attackBytes })
+    expect(defaultMapMeshBudgetBytes - 12 * ping360Bytes).toBeLessThan(attackBytes)
+    expect(store.meshes.has('attack')).toBe(false)
+    expect(allocatedBytes(store)).toBe(12 * 1024)
+    expect(changes).toEqual([])
+  })
+
+  it('refuses a redefinition over the budget, leaving the mesh, its quads and its reservation as they were', () => {
+    const store = budgeted(reservation(small('test-mesh')) + reservation(small('other')))
+    store.set(small('test-mesh'))
+    store.set(small('other'))
+    store.writeQuads('test-mesh', quads(3, 2, 40))
+    const renderer: MapMeshRenderer = {
+      uploadSettings: () => undefined,
+      uploadPage: () => undefined,
+    }
+    store.flush(renderer)
+    const before = { ...meshOf(store), anchor: { ...(meshOf(store).anchor as MercatorPoint) } }
+    const pages = [...meshOf(store).pages]
+    const reserved = store.reservedBytes()
+    const changes: MapMeshChange[] = []
+    store.subscribe((change) => changes.push(change))
+
+    const refused = refusal(() => store.set(small('test-mesh', 4096)))
+    expect(refused).toMatchObject({
+      usedBytes: reserved,
+      previousBytes: reservation(small('test-mesh')),
+      requestedBytes: reservation(small('x', 4096)),
+      budgetBytes: reserved,
+    })
+    expect(meshOf(store)).toEqual(before)
+    expect(meshOf(store).pages).toEqual(pages)
+    expect(meshOf(store).pages[0]).toBe(pages[0])
+    expect([2, 3, 4].map((slot) => slotTexels(meshOf(store), slot))).toEqual([
+      [40, 40],
+      [41, 41],
+      [42, 42],
+    ])
+    expect(store.reservedBytes()).toBe(reserved)
+    expect(changes).toEqual([])
+  })
+
+  it('costs nothing to redefine a mesh with the same layout, even with the budget full', () => {
+    const store = budgeted(reservation(small('test-mesh')))
+    store.set(small('test-mesh'))
+    store.writeQuads('test-mesh', quads(2))
+    store.set({ ...small('test-mesh'), name: 'Renamed', opacity: 0.5 })
+    expect(meshOf(store)).toMatchObject({ name: 'Renamed', opacity: 0.5, highWater: 2 })
+    expect(store.reservedBytes()).toBe(reservation(small('test-mesh')))
+  })
+
+  it('keeps what the meshes reserve in step with every definition, refusal, clear and removal', () => {
+    const store = budgeted(3 * ping360Bytes)
+    const summed = (): number =>
+      [...store.meshes.values()].reduce((bytes, { capacity, format, stripWidth, stripHeight }) => {
+        return bytes + reservation(definition({ capacity, texels: { format, width: stripWidth, height: stripHeight } }))
+      }, 0)
+    const refused: string[] = []
+    const steps: (() => void)[] = [
+      () => store.set(ping360('sonar-a')),
+      () => store.set(small('test-mesh')),
+      () => store.set({ ...ping360('sonar-a'), name: 'Renamed' }),
+      () => store.set(ping360('sonar-a', 4096)),
+      () => store.set(ping360('sonar-b')),
+      () => store.set(ping360('sonar-c')),
+      () => store.set(small('test-mesh', 4096)),
+      () => store.set(ping360('sonar-d')),
+      () => store.clear('sonar-b'),
+      () => store.remove('sonar-a'),
+      () => store.set(ping360('test-mesh', 11264)),
+      () => store.remove('test-mesh'),
+    ]
+    steps.forEach((step, i) => {
+      try {
+        step()
+      } catch (error) {
+        if (!(error instanceof MapMeshBudgetError)) throw error
+        refused.push(`step ${i}`)
+      }
+      expect(store.reservedBytes(), `after step ${i}`).toBe(summed())
+    })
+    expect(refused).toEqual(['step 7'])
+    expect(store.reservedBytes()).toBe(2 * ping360Bytes)
+  })
+
+  it('frees the reservation when a mesh is removed, but not when it is only cleared', () => {
+    const store = budgeted(reservation(small('test-mesh')))
+    store.set(small('test-mesh'))
+    expect(refusal(() => store.set(small('other')))).toBeInstanceOf(MapMeshBudgetError)
+    store.writeQuads('test-mesh', quads(2))
+    store.clear('test-mesh')
+    expect(allocatedBytes(store)).toBe(1024)
+    expect(store.reservedBytes()).toBe(reservation(small('test-mesh')))
+    expect(refusal(() => store.set(small('other')))).toBeInstanceOf(MapMeshBudgetError)
+    store.remove('test-mesh')
+    expect(store.reservedBytes()).toBe(0)
+    store.set(small('other'))
+    expect(store.meshes.has('other')).toBe(true)
+  })
+
+  it('never evicts on a lowered budget, refusing only what would take more, while updates and reductions apply', () => {
+    let configured: string | null = null
+    const store = new MapMeshStore(() => configured)
+    store.set(ping360('sonar-a'))
+    store.set(ping360('sonar-b'))
+    store.writeQuads('sonar-a', quads(3, 0, 9, 1200))
+    const allocated = allocatedBytes(store)
+
+    configured = String(ping360Bytes)
+    expect(store.budgetBytes()).toBe(ping360Bytes)
+    expect([store.meshes.has('sonar-a'), store.meshes.has('sonar-b'), allocatedBytes(store)]).toEqual([
+      true,
+      true,
+      allocated,
+    ])
+    expect(refusal(() => store.set(small('other')))).toMatchObject({ budgetBytes: ping360Bytes })
+    expect(refusal(() => store.set(ping360('sonar-b', 12288)))).toMatchObject({
+      usedBytes: 2 * ping360Bytes,
+      previousBytes: ping360Bytes,
+      requestedBytes: reservation(ping360('x', 12288)),
+    })
+
+    store.set({ ...ping360('sonar-a'), name: 'Renamed' })
+    expect(store.meshes.get('sonar-a')).toMatchObject({ name: 'Renamed', highWater: 3 })
+    expect(slotTexels(store.meshes.get('sonar-a') as MapMesh, 2)).toEqual(Array(1200).fill(11))
+    store.set(ping360('sonar-b', 1024))
+    expect(store.meshes.get('sonar-b')).toMatchObject({ capacity: 1024 })
+    expect(store.reservedBytes()).toBe(ping360Bytes + reservation(ping360('x', 1024)))
+    expect(store.reservedBytes()).toBeGreaterThan(store.budgetBytes())
+  })
+
+  it('uses the default budget for a stored one that is not a positive whole number of bytes', () => {
+    const malformed = ['', 'abc', 'NaN', 'Infinity', '-1', '0', '1.5', '1e9', ' 5', '"5"', '0x10', '9007199254740992']
+    for (const configured of [null, ...malformed]) {
+      expect(new MapMeshStore(() => configured).budgetBytes(), String(configured)).toBe(defaultMapMeshBudgetBytes)
+    }
+    for (const bytes of [1, 104_857_600, Number.MAX_SAFE_INTEGER]) expect(budgeted(bytes).budgetBytes()).toBe(bytes)
+    const store = new MapMeshStore(() => '-1')
+    for (let i = 0; i < 16; i++) store.set(ping360(`sonar-${i}`))
+    expect(refusal(() => store.set(ping360('sonar-16')))).toMatchObject({ budgetBytes: defaultMapMeshBudgetBytes })
+  })
+
+  const r8 = (width: number, height: number): ValidatedMapMesh['texels'] => ({ format: 'r8', width, height })
+  const rgba8 = (width: number, height: number): ValidatedMapMesh['texels'] => ({ format: 'rgba8', width, height })
+  // Sensor shapes a sender would declare: what, strip, slots, bytes reserved, and how many fit the default budget.
+  const useCases: [string, ValidatedMapMesh['texels'], number, number, number][] = [
+    ['a Ping360 scan', r8(1200, 1), 11264, 14_283_776, 16],
+    ['an echosounder waterfall, 200 at 10 Hz for 10 min', r8(200, 1), 6000, 1_609_024, 142],
+    ['camera frames 256x144 at 1 Hz for 10 min', rgba8(256, 144), 600, 88_515_424, 2],
+    ['a 1 h Ping360 replay kept whole', r8(1200, 1), 180_000, 228_241_024, 1],
+    ['an open-ended Ping360 ring of the most slots', r8(1200, 1), 1 << 20, 1_329_595_392, 0],
+  ]
+
+  it.each(useCases)('reserves for %s, %j x %i, %i bytes and fits %i in the default budget', (...useCase) => {
+    const [, texels, capacity, bytes, fit] = useCase
+    const store = new MapMeshStore()
+    for (let i = 0; i < fit; i++) store.set(definition({ id: `mesh-${i}`, capacity, texels }))
+    expect(refusal(() => store.set(definition({ id: 'one-more', capacity, texels })))).toMatchObject({
+      usedBytes: fit * bytes,
+      requestedBytes: bytes,
+    })
+    expect(allocatedBytes(store)).toBe(fit * 1024)
+  })
+
+  it('computes what a definition reserves exactly as the store charges it', () => {
+    expect(mapMeshReservedBytes(11264, r8(1200, 1))).toBe(ping360Bytes)
+    expect(mapMeshReservedBytes(4, r8(1, 1))).toBe(1024 + 4 * 69)
+    let seed = 229
+    const random = (below: number): number => (seed = (seed * 1103515245 + 12345) % 2 ** 31) % below
+    const store = new MapMeshStore(() => String(Number.MAX_SAFE_INTEGER))
+    for (let i = 0; i < 300; i++) {
+      const format = random(2) ? 'r8' : 'rgba8'
+      const width = 1 + random(2048)
+      const height = 1 + random(Math.min(2048, Math.floor(2_097_056 / (width * (format === 'r8' ? 1 : 4)))))
+      const capacity = 1 + random(1 << 20)
+      const before = store.reservedBytes()
+      store.set(definition({ id: `mesh-${i}`, capacity, texels: { format, width, height } }))
+      expect(store.reservedBytes() - before, `${capacity} x ${format} ${width}x${height}`).toBe(
+        mapMeshReservedBytes(capacity, { format, width, height })
+      )
+    }
+  })
+
+  it('overwrites the oldest of a full ring without allocating past what it reserved', () => {
+    const store = new MapMeshStore()
+    store.set(definition({ capacity: 6000, texels: { format: 'r8', width: 200, height: 1 } }))
+    store.writeQuads('test-mesh', quads(1, 5998, 1, 200))
+    store.writeQuads('test-mesh', quads(3, undefined, 10, 200))
+    const mesh = meshOf(store)
+    expect([5999, 0, 1].map((slot) => slotTexels(mesh, slot)[0])).toEqual([10, 11, 12])
+    expect(mesh).toMatchObject({ head: 2, highWater: 6000 })
+    expect(meshDrawRanges(mesh).map(({ first, count }) => [first, count])).toEqual([
+      [2, 5998],
+      [0, 2],
+    ])
+    expect(allocatedBytes(store)).toBe(store.reservedBytes())
+    store.writeQuads('test-mesh', quads(3, undefined, 20, 200))
+    expect(slotTexels(mesh, 2)[0]).toBe(20)
+    expect(allocatedBytes(store)).toBe(store.reservedBytes())
+  })
+
+  it('empties a mesh redefined with more slots, checked against the budget net of its old reservation, so its sender must replay', () => {
+    const store = new MapMeshStore()
+    for (let i = 0; i < 15; i++) store.set(ping360(`sonar-${i}`))
+    store.set(ping360('test-mesh'))
+    store.writeQuads('test-mesh', quads(2, 0, 3, 1200))
+
+    // 6 full pages of 2048 slots: 1,249,280 bytes more than the budget has left.
+    expect(refusal(() => store.set(ping360('test-mesh', 12288)))).toMatchObject({
+      usedBytes: 16 * ping360Bytes,
+      previousBytes: ping360Bytes,
+      requestedBytes: 15_582_208,
+    })
+    expect(meshOf(store)).toMatchObject({ capacity: 11264, head: 2, highWater: 2 })
+    expect(slotTexels(meshOf(store), 1)).toEqual(Array(1200).fill(4))
+
+    store.remove('sonar-14')
+    store.set(ping360('test-mesh', 12288))
+    expect(meshOf(store)).toMatchObject({ capacity: 12288, head: 0, highWater: 0 })
+    expect(meshOf(store).pages.filter(Boolean)).toHaveLength(0)
   })
 })
