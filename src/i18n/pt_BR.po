@@ -12449,6 +12449,10 @@ msgstr "Alertas por voz:"
 msgid "Voice recording not saved"
 msgstr ""
 
+#: src/composables/useVoiceRecorder.ts
+msgid "Voice recording started."
+msgstr ""
+
 #: src/components/VoiceRecordingsLibrary.vue
 msgid "Voice recordings deleted."
 msgstr ""
