@@ -110,6 +110,11 @@ msgstr ""
 msgid "${ 0 } already exist here and will be replaced."
 msgstr "${ 0 } já existem aqui e serão substituídos."
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } camera targets aimed at the ground"
@@ -679,6 +684,11 @@ msgstr "2x o uso de memória"
 #: src/components/ArchitectureWarning.vue
 msgid "3-4x slower application startup times"
 msgstr "Inicialização do aplicativo 3-4x mais lenta"
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "3D ${ 0 }"
+msgstr ""
 
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
@@ -1650,6 +1660,10 @@ msgstr "Tem certeza de que deseja enviar o veículo para o Home?"
 msgid "Area"
 msgstr "Área"
 
+#: src/components/MapMeasureControl.vue
+msgid "Area and perimeter: click corners, then the check mark to keep it"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Areas under 1 nmi²"
 msgstr "Áreas abaixo de 1 nmi²"
@@ -1877,6 +1891,10 @@ msgstr "Entrada de eixo remapeada."
 msgid "Axis mapping"
 msgstr "Mapeamento de eixos"
 
+#: src/components/MapMeasureControl.vue
+msgid "Axolotl pink"
+msgstr ""
+
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/MainMenu.vue
 msgid "Back"
@@ -1922,6 +1940,7 @@ msgstr "Cor base"
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/terrain/TerrainSightPanel.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/composables/map/useMapMeasure.ts
 msgid "Base station"
 msgstr "Estação base"
 
@@ -2035,6 +2054,10 @@ msgstr "Binóculos"
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Bitrate"
 msgstr "Taxa de bits"
+
+#: src/components/MapMeasureControl.vue
+msgid "Blue"
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "BlueBoat antenna mast information"
@@ -2675,6 +2698,10 @@ msgstr "Limpar levantamento"
 msgid "Clear the measured terrain?"
 msgstr ""
 
+#: src/components/MapMeasureControl.vue
+msgid "Clear the measurements"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Clear the stored terrain?"
 msgstr ""
@@ -2891,6 +2918,10 @@ msgstr ""
 #: src/components/widgets/MiniMap.vue
 msgid "Close the MiniMap settings"
 msgstr "Fechar as configurações do minimapa"
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Close the profile"
+msgstr ""
 
 #: src/composables/go2rtc.ts
 msgid "Closed"
@@ -4440,6 +4471,10 @@ msgstr ""
 msgid "Delete the downloaded higher-quality voices and free up their disk space?"
 msgstr "Excluir as vozes de maior qualidade baixadas e liberar o espaço em disco?"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Delete this point"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Delete video"
 msgstr "Excluir vídeo"
@@ -4618,6 +4653,10 @@ msgstr "Desarmado"
 msgid "Discard polygon fence"
 msgstr "Descartar cerca virtual poligonal"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Discard the measurement"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Disconnect"
 msgstr "Desconectar"
@@ -4649,6 +4688,10 @@ msgstr "Largura de exibição"
 #: src/views/ConfigurationUIView.vue
 msgid "Distance"
 msgstr "Distância"
+
+#: src/components/MapMeasureControl.vue
+msgid "Distance and bearing: click points, then the check mark to keep it"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -5833,6 +5876,10 @@ msgstr ""
 msgid "Finish polygon fence"
 msgstr "Finalizar cerca virtual poligonal"
 
+#: src/components/MapMeasureControl.vue
+msgid "Finish the path, survey or fence being drawn first"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Finish the walkthrough first"
 msgstr "Termine o passo a passo primeiro"
@@ -6065,6 +6112,10 @@ msgstr "Fonte de GPS"
 #: src/components/BaseStationConfigPanel.vue
 msgid "Gain (dBi)"
 msgstr "Ganho (dBi)"
+
+#: src/components/MapMeasureControl.vue
+msgid "Garibaldi orange"
+msgstr ""
 
 #: src/components/poi/PoiManager.vue
 msgid "Gas Station"
@@ -6402,6 +6453,10 @@ msgstr "Intensidade do mapa de calor"
 msgid "Height above home"
 msgstr ""
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Height difference"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "Height of the water above the terrain model sea level, for lakes, rivers or "
@@ -6663,6 +6718,7 @@ msgstr ""
 #: src/components/poi/PoiManager.vue
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/composables/map/useMapMeasure.ts
 msgid "Home"
 msgstr "Home"
 
@@ -7447,6 +7503,14 @@ msgstr "Manter local original"
 msgid "Keep reviewing"
 msgstr "Continuar revisando"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Keep the measurement on the map"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Keep the ruler"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Keep the terrain of the visible map for offline use"
 msgstr ""
@@ -8118,6 +8182,14 @@ msgstr ""
 "Distância vertical máxima (metros) que o veículo pode percorrer acima da "
 "posição Home. Valor numérico. 0 → sem limite vertical."
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the area"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the enclosed area?"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Measured"
 msgstr ""
@@ -8166,6 +8238,15 @@ msgstr ""
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "Measured terrain saved as ${ 0 }."
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+#, javascript-format
+msgid "Measurement colors: ${ 0 }"
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Measurements"
 msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
@@ -8546,6 +8627,10 @@ msgstr "Celular:"
 #: src/components/mini-widgets/ModeSelector.vue
 msgid "Mode names"
 msgstr "Nomes dos modos"
+
+#: src/components/MapMeasureControl.vue
+msgid "Moray green"
+msgstr ""
 
 #: src/components/InfoPopover.vue
 msgid "More information"
@@ -9297,6 +9382,10 @@ msgstr ""
 msgid "Nothing is planned on the map yet"
 msgstr ""
 
+#: src/components/MapMeasureControl.vue
+msgid "Nothing measured to clear"
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "Nothing measured within ${ 0 } m of the mission"
@@ -9865,6 +9954,11 @@ msgstr "Desempenho"
 msgid "Performance Warning"
 msgstr "Aviso de desempenho"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Perimeter ${ 0 }"
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "Persist variable between boots"
 msgstr "Manter a variável entre inicializações"
@@ -10307,6 +10401,15 @@ msgstr ""
 #: src/components/BaseStationConfigPanel.vue
 msgid "Radio model"
 msgstr "Modelo do rádio"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Radio signal likely lost, about ${ 0 } dBm"
+msgstr ""
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Radio signal unknown, no terrain data"
+msgstr ""
 
 #: src/components/terrain/TerrainSafeAltitude.vue
 #, javascript-format
@@ -11071,6 +11174,18 @@ msgstr "Rotação (°)"
 msgid "Rotation degrees"
 msgstr "Graus de rotação"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Ruler ${ 0 }"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid ""
+"Ruler ${ 0 } ends where it started. Turn it into an area to read the area "
+"and perimeter it encloses."
+msgstr ""
+
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "Run after"
 msgstr "Executar após"
@@ -11679,6 +11794,10 @@ msgstr ""
 msgid "Shopping"
 msgstr "Compras"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Shore"
+msgstr ""
+
 #: src/views/ToolsLogsView.vue
 msgid "Short variable ID"
 msgstr "ID curto da variável"
@@ -11849,6 +11968,10 @@ msgstr "Mostrar sinal no mapa"
 #: src/views/ConfigurationDevelopmentView.vue
 msgid "Show splashscreen on startup"
 msgstr "Mostrar tela de abertura ao iniciar"
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Show the terrain along the ruler"
+msgstr ""
 
 #: src/components/widgets/Plotter.vue
 msgid "Show title"
@@ -12178,6 +12301,10 @@ msgstr "Desvio padrão"
 msgid "Std Dev: ${ 0 }"
 msgstr "Desvio padrão: ${ 0 }"
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Steepest ground"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 #, javascript-format
 msgid "Step ${ 0 } of 4"
@@ -12355,6 +12482,11 @@ msgstr "Tachado"
 msgid "String"
 msgstr "String"
 
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Strong radio signal, about ${ 0 } dBm"
+msgstr ""
+
 #: src/libs/mission/library.ts
 msgid "Submarine"
 msgstr "Submarino"
@@ -12487,6 +12619,11 @@ msgstr "Temperatura"
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr "Terreno"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Terrain along ruler ${ 0 }"
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Terrain and mission profile"
@@ -14439,6 +14576,7 @@ msgstr "Variáveis:"
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainProfileChart.vue
 #: src/components/widgets/MiniMap.vue
+#: src/composables/map/useMapMeasure.ts
 #: src/views/MissionPlanningView.vue
 msgid "Vehicle"
 msgstr "Veículo"
@@ -15021,6 +15159,11 @@ msgstr ""
 msgid "Waypoint"
 msgstr "Waypoint"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Waypoint ${ 0 }"
+msgstr ""
+
 #: src/components/terrain/TerrainProfileChart.vue
 #, javascript-format
 msgid "Waypoint ${ 0 } height, drag up or down or use the arrow keys"
@@ -15077,6 +15220,11 @@ msgstr ""
 "que o Cockpit sincronize as configurações dele com veículos BlueOS. O "
 "compartilhamento de telemetria é configurado em 'Configurações' > 'Geral' > "
 "'Dados compartilhados'."
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Weak radio signal, about ${ 0 } dBm"
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "WebSocket address"

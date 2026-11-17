@@ -104,6 +104,11 @@ msgstr ""
 msgid "${ 0 } already exist here and will be replaced."
 msgstr "此处已存在 ${ 0 } 个，将被替换。"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "${ 0 } at ${ 1 }"
+msgstr ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 #, javascript-format
 msgid "${ 0 } camera targets aimed at the ground"
@@ -634,6 +639,11 @@ msgstr "内存使用量增加 2 倍"
 #: src/components/ArchitectureWarning.vue
 msgid "3-4x slower application startup times"
 msgstr "应用程序启动时间慢 3-4 倍"
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "3D ${ 0 }"
+msgstr ""
 
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
@@ -1548,6 +1558,10 @@ msgstr "确定要让飞行器返航吗？"
 msgid "Area"
 msgstr "面积"
 
+#: src/components/MapMeasureControl.vue
+msgid "Area and perimeter: click corners, then the check mark to keep it"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Areas under 1 nmi²"
 msgstr "小于 1 平方海里的区域"
@@ -1773,6 +1787,10 @@ msgstr "轴输入已重新映射。"
 msgid "Axis mapping"
 msgstr "轴映射"
 
+#: src/components/MapMeasureControl.vue
+msgid "Axolotl pink"
+msgstr ""
+
 #: src/components/BaseStationGnssSetupDialog.vue
 #: src/components/MainMenu.vue
 msgid "Back"
@@ -1818,6 +1836,7 @@ msgstr "基础颜色"
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/terrain/TerrainSightPanel.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/composables/map/useMapMeasure.ts
 msgid "Base station"
 msgstr "基站"
 
@@ -1931,6 +1950,10 @@ msgstr "望远镜"
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Bitrate"
 msgstr "比特率"
+
+#: src/components/MapMeasureControl.vue
+msgid "Blue"
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 msgid "BlueBoat antenna mast information"
@@ -2545,6 +2568,10 @@ msgstr "清除调查区域"
 msgid "Clear the measured terrain?"
 msgstr ""
 
+#: src/components/MapMeasureControl.vue
+msgid "Clear the measurements"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Clear the stored terrain?"
 msgstr ""
@@ -2751,6 +2778,10 @@ msgstr ""
 #: src/components/widgets/MiniMap.vue
 msgid "Close the MiniMap settings"
 msgstr "关闭 MiniMap 设置"
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Close the profile"
+msgstr ""
 
 #: src/composables/go2rtc.ts
 msgid "Closed"
@@ -4194,6 +4225,10 @@ msgstr "删除自定义图标“${ 0 }”？使用该图标的指示器将改为
 msgid "Delete the downloaded higher-quality voices and free up their disk space?"
 msgstr "删除已下载的高质量语音并释放其磁盘空间？"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Delete this point"
+msgstr ""
+
 #: src/components/VideoLibraryModal.vue
 msgid "Delete video"
 msgstr "删除视频"
@@ -4367,6 +4402,10 @@ msgstr "已上锁"
 msgid "Discard polygon fence"
 msgstr "放弃多边形围栏"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Discard the measurement"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Disconnect"
 msgstr "断开连接"
@@ -4398,6 +4437,10 @@ msgstr "显示宽度"
 #: src/views/ConfigurationUIView.vue
 msgid "Distance"
 msgstr "距离"
+
+#: src/components/MapMeasureControl.vue
+msgid "Distance and bearing: click points, then the check mark to keep it"
+msgstr ""
 
 #: src/views/MissionPlanningView.vue
 #, javascript-format
@@ -5510,6 +5553,10 @@ msgstr ""
 msgid "Finish polygon fence"
 msgstr "完成多边形围栏"
 
+#: src/components/MapMeasureControl.vue
+msgid "Finish the path, survey or fence being drawn first"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Finish the walkthrough first"
 msgstr "请先完成引导"
@@ -5727,6 +5774,10 @@ msgstr "GPS 来源"
 #: src/components/BaseStationConfigPanel.vue
 msgid "Gain (dBi)"
 msgstr "增益（dBi）"
+
+#: src/components/MapMeasureControl.vue
+msgid "Garibaldi orange"
+msgstr ""
 
 #: src/components/poi/PoiManager.vue
 msgid "Gas Station"
@@ -6051,6 +6102,10 @@ msgstr "热力图强度"
 msgid "Height above home"
 msgstr ""
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Height difference"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid ""
 "Height of the water above the terrain model sea level, for lakes, rivers or "
@@ -6299,6 +6354,7 @@ msgstr ""
 #: src/components/poi/PoiManager.vue
 #: src/components/poi/PoiMapArrows.vue
 #: src/components/widgets/CompassHUD.vue
+#: src/composables/map/useMapMeasure.ts
 msgid "Home"
 msgstr "起点"
 
@@ -7034,6 +7090,14 @@ msgstr "保留原始位置"
 msgid "Keep reviewing"
 msgstr "继续审核"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Keep the measurement on the map"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Keep the ruler"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Keep the terrain of the visible map for offline use"
 msgstr ""
@@ -7682,6 +7746,14 @@ msgid ""
 "position. Numeric value. 0 → no vertical limit."
 msgstr "设备可上升至起始位置以上的最大垂直距离（米）。数值。0 → 无垂直限制。"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the area"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the enclosed area?"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Measured"
 msgstr ""
@@ -7730,6 +7802,15 @@ msgstr ""
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "Measured terrain saved as ${ 0 }."
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+#, javascript-format
+msgid "Measurement colors: ${ 0 }"
+msgstr ""
+
+#: src/components/MapMeasureControl.vue
+msgid "Measurements"
 msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
@@ -8100,6 +8181,10 @@ msgstr "移动端："
 #: src/components/mini-widgets/ModeSelector.vue
 msgid "Mode names"
 msgstr "模式名称"
+
+#: src/components/MapMeasureControl.vue
+msgid "Moray green"
+msgstr ""
 
 #: src/components/InfoPopover.vue
 msgid "More information"
@@ -8823,6 +8908,10 @@ msgstr ""
 msgid "Nothing is planned on the map yet"
 msgstr ""
 
+#: src/components/MapMeasureControl.vue
+msgid "Nothing measured to clear"
+msgstr ""
+
 #: src/components/terrain/TerrainVehiclePanel.vue
 #, javascript-format
 msgid "Nothing measured within ${ 0 } m of the mission"
@@ -9344,6 +9433,11 @@ msgstr "性能"
 msgid "Performance Warning"
 msgstr "性能警告"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Perimeter ${ 0 }"
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "Persist variable between boots"
 msgstr "变量在重启后保持"
@@ -9770,6 +9864,15 @@ msgstr ""
 #: src/components/BaseStationConfigPanel.vue
 msgid "Radio model"
 msgstr "无线电型号"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Radio signal likely lost, about ${ 0 } dBm"
+msgstr ""
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Radio signal unknown, no terrain data"
+msgstr ""
 
 #: src/components/terrain/TerrainSafeAltitude.vue
 #, javascript-format
@@ -10496,6 +10599,18 @@ msgstr "旋转（°）"
 msgid "Rotation degrees"
 msgstr "旋转角度"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Ruler ${ 0 }"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid ""
+"Ruler ${ 0 } ends where it started. Turn it into an area to read the area "
+"and perimeter it encloses."
+msgstr ""
+
 #: src/components/configuration/ActionLinkConfig.vue
 msgid "Run after"
 msgstr "运行延迟"
@@ -11069,6 +11184,10 @@ msgstr ""
 msgid "Shopping"
 msgstr "购物"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Shore"
+msgstr ""
+
 #: src/views/ToolsLogsView.vue
 msgid "Short variable ID"
 msgstr "短变量 ID"
@@ -11237,6 +11356,10 @@ msgstr "在地图上显示信号"
 #: src/views/ConfigurationDevelopmentView.vue
 msgid "Show splashscreen on startup"
 msgstr "启动时显示启动画面"
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Show the terrain along the ruler"
+msgstr ""
 
 #: src/components/widgets/Plotter.vue
 msgid "Show title"
@@ -11555,6 +11678,10 @@ msgstr "标准差"
 msgid "Std Dev: ${ 0 }"
 msgstr "标准差：${ 0 }"
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Steepest ground"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 #, javascript-format
 msgid "Step ${ 0 } of 4"
@@ -11728,6 +11855,11 @@ msgstr "删除线"
 msgid "String"
 msgstr "字符串"
 
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Strong radio signal, about ${ 0 } dBm"
+msgstr ""
+
 #: src/libs/mission/library.ts
 msgid "Submarine"
 msgstr "潜水器"
@@ -11853,6 +11985,11 @@ msgstr "温度"
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr "地形"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Terrain along ruler ${ 0 }"
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Terrain and mission profile"
@@ -13594,6 +13731,7 @@ msgstr "变量："
 #: src/components/terrain/TerrainPlanningDock.vue
 #: src/components/terrain/TerrainProfileChart.vue
 #: src/components/widgets/MiniMap.vue
+#: src/composables/map/useMapMeasure.ts
 #: src/views/MissionPlanningView.vue
 msgid "Vehicle"
 msgstr "设备"
@@ -14135,6 +14273,11 @@ msgstr ""
 msgid "Waypoint"
 msgstr "航点"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Waypoint ${ 0 }"
+msgstr ""
+
 #: src/components/terrain/TerrainProfileChart.vue
 #, javascript-format
 msgid "Waypoint ${ 0 } height, drag up or down or use the arrow keys"
@@ -14184,6 +14327,11 @@ msgid ""
 "Cockpit from synchronizing its settings with BlueOS vehicles. Telemetry "
 "sharing is configured from 'Settings' > 'General' > 'Shared Data'."
 msgstr "建议保留默认值，如需停止 Cockpit 与 BlueOS 设备的设置同步，可通过「设置」>「通用」>「共享数据」配置遥测共享。"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Weak radio signal, about ${ 0 } dBm"
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "WebSocket address"
