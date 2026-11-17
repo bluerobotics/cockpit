@@ -161,6 +161,10 @@ export interface ProfileChartOptions {
    * The path an upload sends, when it differs from the planned one.
    */
   uploadPath?: Pick<UploadPathPoint, 'distanceM' | 'amslM'>[]
+  /**
+   * Whether room is kept above the profile for waypoint numbers, true by default.
+   */
+  labelRow?: boolean
 }
 
 export const PROFILE_CHART_WIDTH = 1000
@@ -180,14 +184,14 @@ const WATER_SURFACE_SHARE = 0.06
 // Share of the chart width a shore takes to slope down to the deepest water drawn.
 const WATER_SHORE_SHARE = 0.02
 
-const heightRange = (values: number[], floorM?: number): [number, number] => {
+const heightRange = (values: number[], labelRowShare: number, floorM?: number): [number, number] => {
   const known = values.filter(Number.isFinite)
   if (known.length === 0) return [0, 1]
   const min = Math.min(...known)
   const max = Math.max(...known)
   const padding = Math.max(2, (max - min) * 0.08)
   const low = floorM !== undefined && min >= floorM ? Math.max(floorM, min - padding) : min - padding
-  const labelRowM = ((max - low) * LABEL_ROW_SHARE) / (1 - LABEL_ROW_SHARE)
+  const labelRowM = ((max - low) * labelRowShare) / (1 - labelRowShare)
   return [low, max + Math.max(padding, labelRowM)]
 }
 
@@ -240,11 +244,13 @@ const chartRange = (
     ...water,
     ...(options.uploadPath ?? []).map(({ amslM }) => amslM),
   ]
-  if (marine) return heightRange(values)
+  const labelRowShare = options.labelRow === false ? 0 : LABEL_ROW_SHARE
+  if (marine) return heightRange(values, labelRowShare)
   // Aircraft and ground vehicles never go deep, so a deep model pit, often missing data, does not squash their chart.
   const deepestM = waterLevelM - LAND_CHART_MAX_DEPTH_M
   return heightRange(
     values.map((value) => Math.max(value, deepestM)),
+    labelRowShare,
     deepestM
   )
 }
