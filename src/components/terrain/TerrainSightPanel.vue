@@ -208,13 +208,10 @@ import {
   pathSight,
   radioLinkAlongPath,
   sampleHeightGrid,
+  vehicleAntennaHeightM,
   vehicleSightHeightM,
 } from '@/libs/terrain/sight-analysis'
 import { useTerrainStore } from '@/stores/terrain'
-
-// Antenna height over the deck, with and without the BlueBoat accessory mast.
-const MAST_ANTENNA_M = 1.2
-const DECK_ANTENNA_M = 0.4
 
 const terrainStore = useTerrainStore()
 const baseStation = useBaseStation()
@@ -292,7 +289,7 @@ const onCheckLink = async (): Promise<void> => {
     checkLineOfSightOnce()
     const waterLevelM = terrainStore.waterLevelNowM()
     const baseAmslM = (await groundAt(base)) + baseStation.config.baseStationAntennaHeightMeters
-    const antennaM = baseStation.config.vehicleHasBlueBoatAntennaMast ? MAST_ANTENNA_M : DECK_ANTENNA_M
+    const antennaM = vehicleAntennaHeightM(baseStation.config.vehicleHasBlueBoatAntennaMast)
     const vehicleClass = dock.terrain.vehicleClass.value
     const stations = await radioLinkAlongPath(
       { coordinates: base, heightAmslM: baseAmslM },
