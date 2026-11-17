@@ -421,7 +421,8 @@ msgid ""
 ": the version (1), whether meshes are drawn (they need WebGL2), the limits "
 "and the formats. Meshes are kept in memory only: a reloaded Cockpit has "
 "none and a dropped connection keeps them, so set them again on every "
-"connection."
+"connection. A mesh reserves its whole capacity when set, and one past the "
+"map mesh memory limit below is refused with"
 msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
@@ -6766,6 +6767,15 @@ msgstr "Marcador de mapa"
 msgid "Map function to button"
 msgstr "Mapear função para o botão"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid "Map mesh memory limit"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+#, javascript-format
+msgid "Map mesh memory limit set to ${ 0 } MiB. Existing meshes are kept."
+msgstr ""
+
 #: src/views/ConfigurationMissionView.vue
 msgid "Map options"
 msgstr "Opções do mapa"
@@ -7291,14 +7301,27 @@ msgstr "Deve ser um número válido"
 msgid "Must be a valid number."
 msgstr "Deve ser um número válido."
 
+#: src/libs/map/external-map-mesh-budget.ts
+msgid "Must be a whole number of MiB."
+msgstr ""
+
 #: src/components/mini-widgets/SnapshotTool.vue
 #, javascript-format
 msgid "Must be at least ${ 0 } seconds."
 msgstr "Deve ser de pelo menos ${ 0 } segundos."
 
+#: src/libs/map/external-map-mesh-budget.ts
+#, javascript-format
+msgid "Must be at most ${ 0 } MiB."
+msgstr ""
+
 #: src/components/widgets/Plotter.vue
 msgid "Must be greater than 0"
 msgstr "Deve ser maior que 0"
+
+#: src/libs/map/external-map-mesh-budget.ts
+msgid "Must be more than zero."
+msgstr ""
 
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Muted"
@@ -10788,6 +10811,18 @@ msgstr ""
 "O botão de vínculo pode ser usado para vincular ações a variáveis do data "
 "lake, de modo que mudanças no valor da variável disparem automaticamente a "
 "ação vinculada."
+
+#: src/views/ConfigurationGeneralView.vue
+#, javascript-format
+msgid ""
+"The maximum memory that map meshes sent by external software may reserve, "
+"together, on this computer. A mesh reserves its whole capacity when it is "
+"created, and one that would go past this limit is refused. Drawn meshes "
+"take about as much again on the graphics card. Lowering the limit removes "
+"no mesh: it only refuses new or larger ones. The default, ${ 0 } MiB, holds "
+"16 Ping360 sonar meshes with at least 225 s of history each. This setting "
+"stays on this computer and is not synced with the vehicle."
+msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "The mission in it is kept and restored if you export it again."
