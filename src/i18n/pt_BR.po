@@ -15579,6 +15579,21 @@ msgstr "Afastar"
 msgid "a point of interest"
 msgstr "um ponto de interesse"
 
+#: src/libs/map/measure.ts
+#, javascript-format
+msgid "about ${ 0 } h"
+msgstr ""
+
+#: src/libs/map/measure.ts
+#, javascript-format
+msgid "about ${ 0 } h ${ 1 } min"
+msgstr ""
+
+#: src/libs/map/measure.ts
+#, javascript-format
+msgid "about ${ 0 } min"
+msgstr ""
+
 #: src/components/mission-planning/MissionEstimates.vue
 msgid "about the estimates"
 msgstr "sobre as estimativas"
@@ -16148,6 +16163,10 @@ msgstr "não atribuído"
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
 msgid "under ${ 0 } m"
+msgstr ""
+
+#: src/libs/map/measure.ts
+msgid "under a minute"
 msgstr ""
 
 #: src/components/terrain/TerrainTideChart.vue
