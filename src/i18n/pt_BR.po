@@ -448,6 +448,13 @@ msgstr ""
 msgid "A recording stopped unexpectedly. ${ 0 }"
 msgstr "Uma gravação parou inesperadamente. ${ 0 }"
 
+#: src/components/widgets/DoItYourself.vue
+msgid ""
+"A script run in its own scope gets root (the page body) and cockpit as "
+"arguments, and its top-level names stay local, so inline handlers in the "
+"HTML cannot call its functions"
+msgstr ""
+
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 msgid "A short verification code will be displayed."
 msgstr "Um código de verificação curto será exibido."
@@ -10597,6 +10604,10 @@ msgstr ""
 "A receita foi feita para ser lida como um todo. Deixar itens de fora pode "
 "impedir que o restante funcione."
 
+#: src/components/widgets/DoItYourself.vue
+msgid "The script reaches Cockpit through"
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 #, javascript-format
 msgid ""
@@ -12589,10 +12600,6 @@ msgstr "Porcentagem da escala de largura"
 msgid "Window material"
 msgstr "Material da janela"
 
-#: src/components/widgets/DoItYourself.vue
-msgid "With \"Run script in its own scope\" on, the script gets"
-msgstr "Com \"Executar o script em seu próprio escopo\" ativado, o script recebe"
-
 #: src/components/UpdateNotification.vue
 msgid "You are running the latest version of the application."
 msgstr "Você está usando a versão mais recente do aplicativo."
@@ -12727,8 +12734,11 @@ msgid "Your browser does not support the video tag."
 msgstr "Seu navegador não suporta a tag de vídeo."
 
 #: src/components/widgets/DoItYourself.vue
-msgid "Your code runs in the widget's context and has access to the DOM"
-msgstr "Seu código é executado no contexto do widget e tem acesso ao DOM"
+msgid ""
+"Your code runs isolated in its own frame, with its own page, so it cannot "
+"reach the rest of Cockpit's interface. Applying the code again, or removing "
+"the widget, stops everything it started"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #, javascript-format
@@ -12889,17 +12899,6 @@ msgstr ""
 msgid "and the fields to change, or remove with"
 msgstr "e os campos a alterar, ou remova com"
 
-#: src/components/widgets/DoItYourself.vue
-msgid ""
-"and these helpers do not exist, so the widget's script fails there. "
-"Switching an existing widget to this mode takes effect at once, but what "
-"its old global script started keeps running until Cockpit is reloaded"
-msgstr ""
-"e esses auxiliares não existem, então o script do widget falha lá. Mudar um "
-"widget existente para este modo tem efeito imediato, mas o que o antigo "
-"script global dele iniciou continua em execução até o Cockpit ser "
-"recarregado"
-
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "and use the import button on the mapping toolbar"
 msgstr "e use o botão de importar na barra de ferramentas do mapeamento"
@@ -12914,24 +12913,10 @@ msgstr ""
 "padrões de antena, potência de transmissão e premissas típicas de operação "
 "para nossos rádios e equipamentos relacionados."
 
-#: src/components/widgets/DoItYourself.vue
-msgid "are undone when the widget is removed or the script is applied again. Use"
-msgstr ""
-"são desfeitos quando o widget é removido ou o script é aplicado novamente. "
-"Use"
-
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
 msgid "at ${ 0 } baud."
 msgstr "a ${ 0 } baud."
-
-#: src/components/widgets/DoItYourself.vue
-msgid ""
-"attributes. Cockpit versions older than this one ignore the setting and run "
-"the script globally, where"
-msgstr ""
-"inline. Versões do Cockpit anteriores a esta ignoram a configuração e "
-"executam o script globalmente, onde"
 
 #: src/views/ConfigurationVideoView.vue
 msgid "auto"
@@ -13024,14 +13009,6 @@ msgstr "falha ao conectar"
 #: src/components/BaseStationGnssSetupDialog.vue
 msgid "for GNSS data..."
 msgstr "em busca de dados GNSS..."
-
-#: src/components/widgets/DoItYourself.vue
-msgid ""
-"for anything else. Top-level functions are not global then, so attach event "
-"listeners from the script instead of using inline"
-msgstr ""
-"para todo o resto. Nesse modo, funções de nível superior não são globais, "
-"então adicione os event listeners pelo script em vez de usar atributos"
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 #, javascript-format
@@ -13144,6 +13121,10 @@ msgstr "a remove. As sobreposições são salvas neste computador, a menos que"
 msgid "reset"
 msgstr "redefinir"
 
+#: src/components/widgets/DoItYourself.vue
+msgid "return the latest value Cockpit has sent to the frame"
+msgstr ""
+
 #: src/components/recipes/ReadRecipeDialog.vue
 msgid "run actions by themselves on a timer"
 msgstr "executar ações sozinhas com um temporizador"
@@ -13192,10 +13173,6 @@ msgstr "deste computador"
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "this vehicle"
 msgstr "este veículo"
-
-#: src/components/widgets/DoItYourself.vue
-msgid "this widget's element, and"
-msgstr "o elemento deste widget, e"
 
 #: src/components/VehicleDiscoveryDialog.vue
 #, javascript-format
@@ -13267,10 +13244,6 @@ msgstr "valor"
 #: src/components/mission-planning/CruiseSpeedControl.vue
 msgid "vehicle default"
 msgstr "padrão do veículo"
-
-#: src/components/widgets/DoItYourself.vue
-msgid "whose"
-msgstr "cujos"
 
 #: src/components/MavlinkDumpViewer.vue
 msgid "window:"
@@ -13361,3 +13334,44 @@ msgstr ""
 
 #~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
 #~ msgstr "URI de um MAVLink2REST, ou sitl://ardusub para o simulador"
+
+#~ msgid "With \"Run script in its own scope\" on, the script gets"
+#~ msgstr "Com \"Executar o script em seu próprio escopo\" ativado, o script recebe"
+
+#~ msgid "Your code runs in the widget's context and has access to the DOM"
+#~ msgstr "Seu código é executado no contexto do widget e tem acesso ao DOM"
+
+#~ msgid ""
+#~ "and these helpers do not exist, so the widget's script fails there. "
+#~ "Switching an existing widget to this mode takes effect at once, but what "
+#~ "its old global script started keeps running until Cockpit is reloaded"
+#~ msgstr ""
+#~ "e esses auxiliares não existem, então o script do widget falha lá. Mudar um "
+#~ "widget existente para este modo tem efeito imediato, mas o que o antigo "
+#~ "script global dele iniciou continua em execução até o Cockpit ser "
+#~ "recarregado"
+
+#~ msgid "are undone when the widget is removed or the script is applied again. Use"
+#~ msgstr ""
+#~ "são desfeitos quando o widget é removido ou o script é aplicado novamente. "
+#~ "Use"
+
+#~ msgid ""
+#~ "attributes. Cockpit versions older than this one ignore the setting and run "
+#~ "the script globally, where"
+#~ msgstr ""
+#~ "inline. Versões do Cockpit anteriores a esta ignoram a configuração e "
+#~ "executam o script globalmente, onde"
+
+#~ msgid ""
+#~ "for anything else. Top-level functions are not global then, so attach event "
+#~ "listeners from the script instead of using inline"
+#~ msgstr ""
+#~ "para todo o resto. Nesse modo, funções de nível superior não são globais, "
+#~ "então adicione os event listeners pelo script em vez de usar atributos"
+
+#~ msgid "this widget's element, and"
+#~ msgstr "o elemento deste widget, e"
+
+#~ msgid "whose"
+#~ msgstr "cujos"
