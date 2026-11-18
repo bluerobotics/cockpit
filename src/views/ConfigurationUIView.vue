@@ -296,7 +296,7 @@ const updateOpacity = (value: number): void => {
 
 const resetColorsToDefault = (): void => {
   logUserAction('Reset UI glass colors to default')
-  interfaceStore.UIGlassEffect = defaultUIGlassColor
+  interfaceStore.UIGlassEffect = { ...defaultUIGlassColor }
 }
 
 const setMainMenuTrigger = (value: unknown): void => {
