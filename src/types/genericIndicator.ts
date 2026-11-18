@@ -142,4 +142,14 @@ export const veryGenericIndicatorPresets: VeryGenericIndicatorPreset[] = [
     useVariableUnit: true,
     minWidgetWidth: 180,
   },
+  {
+    displayName: 'BlueOS CPU Temp',
+    variableName: 'blueos/cpu/tempC',
+    iconName: 'mdi-thermometer',
+    variableUnit: '°C',
+    variableMultiplier: 1,
+    decimalPlaces: 1,
+    useVariableUnit: true,
+    minWidgetWidth: 180,
+  },
 ]
