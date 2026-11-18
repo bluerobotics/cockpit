@@ -1326,6 +1326,9 @@ export class SettingsManager {
       this.currentUsername = username
     }
 
+    // Update last connected user to the current one
+    this.saveLastConnectedUser(this.currentUsername)
+
     let toBeUsedUser: string | undefined | undefined = undefined
     let toBeUsedVehicle: string | undefined | undefined = undefined
 
@@ -1382,9 +1385,6 @@ export class SettingsManager {
 
     // Set the local settings to the best settings between local and vehicle for the current user and vehicle
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, bestSettingsForCurrentUserAndVehicle)
-
-    // Update last connected user to the current one
-    this.saveLastConnectedUser(this.currentUsername)
 
     // Apply side effect of setting local settings
     this.notifyAllListenersAboutSettingsChange()
