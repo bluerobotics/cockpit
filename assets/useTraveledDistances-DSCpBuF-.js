@@ -1,1 +1,0 @@
-import{bp as i,a as c,h as s,au as m}from"./index-C1CFk_xD.js";const f=()=>{const e=i(),a=c(),t=n=>e.areOdometersAvailable?m(n,a.displayUnitPreferences):"--",o=s(()=>t(e.totalTraveledDistanceMeters)),r=s(()=>t(e.missionTraveledDistanceMeters));return{formattedTotalDistance:o,formattedMissionDistance:r}};export{f as u};
