@@ -149,6 +149,33 @@ select:focus {
     border-left-color: var(--glass-background) !important;
 }
 
+/* Waypoint numbers ride inside the marker icon, not a permanent tooltip, which Leaflet re-measures on every zoom
+   step. Both maps draw them. */
+/* Its own layer per marker, so the number's text is not repainted whenever anything else on the map changes. */
+.waypoint-marker-icon {
+    will-change: transform;
+}
+.waypoint-number {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    pointer-events: none;
+    /* Over the mission planner's marker fill (100), under its command-count badge (200). */
+    z-index: 101;
+}
+.marker-icon--reached + .waypoint-number {
+    color: black;
+    font-weight: bold;
+}
+.marker-icon-active + .waypoint-number {
+    background-color: #925801;
+    border: 1px solid #ffffffaa;
+    border-radius: 50%;
+}
+
 /* Speed-dial content is teleported to <body>, so no component's scoped styles reach it. Shared by every
    map speed dial, which is why it cannot live in whichever one happens to be mounted. */
 .speed-dial-glow {

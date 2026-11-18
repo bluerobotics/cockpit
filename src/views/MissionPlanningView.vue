@@ -3465,14 +3465,6 @@ const addWaypoint = (
     iconAnchor: iconDimensions.iconAnchor,
   })
   newMarker.setIcon(markerIcon)
-  const markerTooltip = L.tooltip({
-    content: '',
-    permanent: true,
-    direction: 'center',
-    className: 'waypoint-tooltip',
-    opacity: currentMarkerSize === 'md' ? 1 : 0,
-  })
-  newMarker.bindTooltip(markerTooltip)
   planningMap.value.addLayer(newMarker)
   waypointMarkers.value[waypointId] = newMarker
 
@@ -4215,6 +4207,17 @@ const generateWaypointsFromSurvey = (): void => {
   openSnackbar({ variant: 'success', message: t`Waypoints generated from survey path.`, duration: 1000 })
 }
 
+// A waypoint is numbered by its first command, so one carrying several commands advances the next number by that many.
+const waypointNumbers = computed(() => {
+  const numbers: Record<string, number> = {}
+  let next = 1
+  missionStore.currentPlanningWaypoints.forEach((wp) => {
+    numbers[wp.id] = next
+    next += wp.commands.length
+  })
+  return numbers
+})
+
 // Helper function to create waypoint marker HTML with command count indicator
 const createWaypointMarkerHtml = (
   commandCount: number,
@@ -4235,10 +4238,12 @@ const createWaypointMarkerHtml = (
   // A marker is a Leaflet divIcon rather than a component, so the reason rides on the native
   // `title`, which the browser shows at every zoom without a second tooltip fighting the number.
   const breachAttribute = breachTitle ? ` title="${escapeHtml(breachTitle)}"` : ''
+  const number = size === 'md' ? waypointNumbers.value[waypointId] : undefined
 
   return `
     <div class="${markerSizeClass}">
       <div class="${baseClass} waypoint-main-marker${entryExitClass}${endpointClass}${breachClass}"${breachAttribute}></div>
+      ${number === undefined ? '' : `<span class="waypoint-number">${number}</span>`}
       ${showCommandCount ? `<div class="command-count-indicator">${commandCount}</div>` : ''}
       ${showSmallCommandCount ? `<div class="command-count-indicator small">${commandCount}</div>` : ''}
     </div>
@@ -4252,7 +4257,6 @@ const isEndpointWaypoint = (waypointId: string): boolean => {
 }
 
 const updateWaypointMarkers = (): void => {
-  let cumulativeCommandCount = 1 // Start numbering from 1
   if (!planningMap.value) return
 
   const currentZoom = zoom.value
@@ -4281,16 +4285,6 @@ const updateWaypointMarkers = (): void => {
           iconAnchor: dimensions.iconAnchor,
         })
       )
-
-      // Update tooltip visibility and content based on size
-      const tooltip = marker.getTooltip()
-      if (tooltip) {
-        const showNumber = markerSize === 'md'
-        tooltip.setContent(showNumber ? `${cumulativeCommandCount}` : '')
-        tooltip.setOpacity(showNumber ? 1 : 0)
-      }
-
-      cumulativeCommandCount += wp.commands.length
     }
   })
 }
@@ -4611,16 +4605,6 @@ const addWaypointMarker = (waypoint: Waypoint): void => {
     iconAnchor: dimensions.iconAnchor,
   })
   newMarker.setIcon(markerIcon)
-
-  const currentMarkerSizeForTooltip = getEffectiveMarkerSize(zoom.value)
-  const markerTooltip = L.tooltip({
-    content: '',
-    permanent: true,
-    direction: 'center',
-    className: 'waypoint-tooltip',
-    opacity: currentMarkerSizeForTooltip === 'md' ? 1 : 0,
-  })
-  newMarker.bindTooltip(markerTooltip)
 
   newMarker.addTo(planningMap.value)
   waypointMarkers.value[waypoint.id] = newMarker
