@@ -237,7 +237,7 @@ export const useSurveyArrowOverlay = (sources: SurveyArrowSources): UseSurveyArr
     mapRef = map
     if (!map.getPane(ARROW_PANE)) {
       const pane = map.createPane(ARROW_PANE)
-      // Above the mission path (overlay pane, 400) but below the waypoint-number tooltips (650).
+      // Above the mission path (overlay pane, 400) and the waypoint markers with their numbers (600).
       pane.style.zIndex = '620'
       pane.style.pointerEvents = 'none'
     }
