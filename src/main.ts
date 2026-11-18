@@ -66,9 +66,9 @@ getSystemInfoForTelemetry().then((systemInfo) => {
 
 // Initialize Sentry for error tracking in production builds. Error reporting is part of the
 // basic telemetry baseline and cannot be opted out of, so it is enabled whenever the app is
-// not running in development mode.
+// not running in development mode, nor built for automated tests (which fail on purpose).
 // @ts-ignore: import.meta.env does not exist in the types
-if (!import.meta.env.DEV) {
+if (!import.meta.env.DEV && import.meta.env.VITE_DISABLE_TELEMETRY !== 'true') {
   console.log('Initializing Sentry telemetry...')
   Sentry.init({
     app,

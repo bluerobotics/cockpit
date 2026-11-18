@@ -19,6 +19,8 @@ env:
   COCKPIT_E2E_RECORDING_MINUTES: 5
   # Pinned, so a BlueOS release cannot change a run's results.
   BLUEOS_IMAGE: bluerobotics/blueos-core:1.4.6
+  # Read by `yarn build` to keep PostHog and Sentry off: each case would count as a new user, and its failures as errors.
+  VITE_DISABLE_TELEMETRY: 'true'
 
 jobs:
   plan:

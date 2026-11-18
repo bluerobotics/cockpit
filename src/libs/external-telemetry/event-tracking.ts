@@ -55,8 +55,9 @@ class EventTracker {
    */
   constructor() {
     // The basic telemetry baseline cannot be opted out of, so the tracker is enabled in every
-    // production build. Detailed hardware specifications are gated separately at the call site.
-    EventTracker.enableEventTracking = import.meta.env.PROD
+    // production build except those made for automated tests, whose runs would otherwise count as
+    // users. Detailed hardware specifications are gated separately at the call site.
+    EventTracker.enableEventTracking = import.meta.env.PROD && import.meta.env.VITE_DISABLE_TELEMETRY !== 'true'
 
     if (!EventTracker.enableEventTracking) {
       console.info('Event tracking is disabled. Not initializing event tracker.')
