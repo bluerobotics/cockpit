@@ -4,7 +4,7 @@
     v-contextmenu="handleContextMenu"
     class="page-base"
     :class="widgetStore.editingMode ? 'pointer-events-none' : 'pointer-events-auto'"
-    :style="glassMenuCssVars"
+    :style="interfaceStore.glassMenuCssVars"
   >
     <div :id="mapId" ref="map" class="map">
       <v-menu v-model="downloadMenuOpen" :close-on-content-click="false" location="top end">
@@ -423,14 +423,6 @@ const missionSeqToMarkerSeq = shallowRef<Record<number, number>>({})
 const home = computed(() => missionStore.homeMarkerPosition)
 
 const { isConfirmedByVehicle: isHomeConfirmedByVehicle } = useVehicleHomePosition()
-
-const glassMenuCssVars = computed(() => ({
-  '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
-  '--glass-filter': interfaceStore.globalGlassMenuStyles.backdropFilter,
-  '--glass-border': interfaceStore.globalGlassMenuStyles.border,
-  '--glass-color': interfaceStore.globalGlassMenuStyles.color,
-  '--glass-box-shadow': interfaceStore.globalGlassMenuStyles.boxShadow,
-}))
 
 const saveEsri = (): void => {
   logUserAction('Saved visible Esri map tiles for offline use')

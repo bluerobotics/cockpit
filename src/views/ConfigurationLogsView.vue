@@ -341,7 +341,8 @@
                         />
                       </template>
                       <div
-                        class="frosted-button backdrop-blur-md rounded-lg overflow-visible w-[400px] flex flex-col px-4 pt-2 pb-3 elevation-2"
+                        class="rounded-lg overflow-visible w-[400px] flex flex-col px-4 pt-2 pb-3"
+                        :style="interfaceStore.globalGlassMenuStyles"
                       >
                         <span class="text-sm font-bold text-white text-center w-full">{{ t`Enter message` }}</span>
                         <span class="text-[10px] text-slate-400 text-center w-full mt-1">{{

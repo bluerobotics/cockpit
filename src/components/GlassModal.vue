@@ -13,7 +13,10 @@
     @mousedown="startDragging"
   >
     <teleport v-if="frostedBackdrop" to="body">
-      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" :style="{ zIndex: modalZIndex - 1 }" />
+      <div
+        class="fixed inset-0 bg-black/60 [backdrop-filter:var(--glass-filter)]"
+        :style="[interfaceStore.dialogBackdropStyles, { zIndex: modalZIndex - 1 }]"
+      />
     </teleport>
     <slot></slot>
   </div>

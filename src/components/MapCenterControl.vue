@@ -4,6 +4,7 @@
     location="top center"
     transition="slide-y-reverse-transition"
     content-class="speed-dial-glow"
+    :content-props="{ style: interfaceStore.glassMenuCssVars }"
     @update:model-value="onSpeedDialToggle"
   >
     <template #activator="{ props: activatorProps }">

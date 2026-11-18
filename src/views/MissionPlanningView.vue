@@ -2,7 +2,7 @@
   <div
     class="mission-planning"
     :class="{ 'mission-planning--fence-mode': planningMode === 'geofence' }"
-    :style="glassMenuCssVars"
+    :style="interfaceStore.glassMenuCssVars"
   >
     <div id="planningMap" class="relative" />
     <MeasureExtentInput
@@ -1676,14 +1676,6 @@ const home = computed({
     missionStore.plannedHomePosition = value
   },
 })
-
-const glassMenuCssVars = computed(() => ({
-  '--glass-background': interfaceStore.globalGlassMenuStyles.backgroundColor,
-  '--glass-filter': interfaceStore.globalGlassMenuStyles.backdropFilter,
-  '--glass-border': interfaceStore.globalGlassMenuStyles.border,
-  '--glass-color': interfaceStore.globalGlassMenuStyles.color,
-  '--glass-box-shadow': interfaceStore.globalGlassMenuStyles.boxShadow,
-}))
 
 const {
   initLiveMeasure,
@@ -5594,12 +5586,14 @@ watch(
   display: inline-block;
   padding: 6px 10px;
   border-radius: 16px;
-  background: #00000011;
-  color: #fff;
+  background: var(--glass-background);
+  color: var(--glass-color);
   font-size: 14px;
   line-height: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  border: var(--glass-border);
+  box-shadow: var(--glass-box-shadow);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
   white-space: nowrap;
   transform: translate(0, -50%);
 }
@@ -5652,12 +5646,14 @@ watch(
   transform: translate(-50%, -50%);
   padding: 3px 8px;
   border-radius: 16px;
-  background: #00000022;
-  color: #fff;
+  background: var(--glass-background);
+  color: var(--glass-color);
   font-size: 12px;
   line-height: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  border: var(--glass-border);
+  box-shadow: var(--glass-box-shadow);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
   white-space: nowrap;
 }
 .measure-area-pill {
@@ -5665,12 +5661,14 @@ watch(
   display: inline-block;
   padding: 4px 8px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+  background: var(--glass-background);
+  color: var(--glass-color);
   font-size: 12px;
   line-height: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(6px);
+  border: var(--glass-border);
+  box-shadow: var(--glass-box-shadow);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
   white-space: nowrap;
 }
 .set-home-cursor {
