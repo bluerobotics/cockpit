@@ -74,11 +74,10 @@ if (!import.meta.env.DEV) {
     app,
     dsn: 'https://d7329dcf760fa1cc9fa6c7a5f16f60a1@o4507696465707008.ingest.us.sentry.io/4507762984222720',
     release: app_version.version,
-    integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
+    integrations: [Sentry.browserTracingIntegration()],
     sampleRate: 1.0, // Capture all errors
     tracesSampleRate: 1.0, // Capture all traces
     tracePropagationTargets: [],
-    replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
     transport: Sentry.makeBrowserOfflineTransport(Sentry.makeFetchTransport), // Cache events and send them when the user comes back online
   })
   Sentry.getCurrentScope().setLevel('info')
