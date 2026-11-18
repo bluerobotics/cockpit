@@ -144,7 +144,15 @@ export const defaultCustomWidgetContainers = [
 const hostname = window.location.hostname
 export const defaultBlueOsAddress = 'blueos-avahi.local'
 export const defaultGlobalAddress = !hostname || hostname == 'localhost' ? defaultBlueOsAddress : hostname
-export const defaultUIGlassColor = { opacity: 0.9, bgColor: '#63636354', fontColor: '#FFFFFF', blur: 25 }
+export const defaultUIGlassColor = {
+  opacity: 0.9,
+  bgColor: '#63636354',
+  fontColor: '#FFFFFF',
+  blur: 25,
+  adaptiveColors: true,
+  adaptiveLevel: 0.6,
+  adaptiveSensitivity: 0.5,
+}
 export const widgetProfiles: Profile[] = [
   {
     name: 'ROV default',

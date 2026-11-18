@@ -1,6 +1,7 @@
 <template>
   <v-app>
     <v-main>
+      <GlassToneFilter />
       <div
         v-if="
           !widgetStore.editingMode &&
@@ -137,6 +138,7 @@ import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import FloatingWrapper from '@/components/FloatingWrapper.vue'
 import GlassModal from '@/components/GlassModal.vue'
+import GlassToneFilter from '@/components/GlassToneFilter.vue'
 import StickModeSelector from '@/components/joysticks/StickModeSelector.vue'
 import OtherControlStationWarningDialog from '@/components/OtherControlStationWarningDialog.vue'
 import SkullAnimation from '@/components/SkullAnimation.vue'

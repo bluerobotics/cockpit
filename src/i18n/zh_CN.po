@@ -545,6 +545,14 @@ msgstr "操作"
 msgid "Actions can also be tested/run manually, using the play button."
 msgstr "操作也可以使用播放按钮手动测试/运行。"
 
+#: src/views/ConfigurationUIView.vue
+msgid "Adaptive window colors"
+msgstr "自适应窗口颜色"
+
+#: src/views/ConfigurationUIView.vue
+msgid "Adaptive window colors sets the tint while it is on."
+msgstr "开启自适应窗口颜色时，由其决定色调。"
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 #: src/components/map/CustomTileProvidersManager.vue
 #: src/components/mission-planning/CommandInputForm.vue
@@ -5877,6 +5885,13 @@ msgstr "继续审核"
 msgid "Keep the vehicle this far from \"${ 0 }\"."
 msgstr "使设备与 \"${ 0 }\" 保持此距离。"
 
+#: src/views/ConfigurationUIView.vue
+msgid ""
+"Keeps windows and menus see-through over dark scenery and darkens them over "
+"bright scenery, such as the surface seen from below, sand, or a light map, "
+"so their text stays readable."
+msgstr "在深色景物上方保持窗口和菜单透明，在明亮景物（如从水下看到的水面、沙滩或浅色地图）上方将其调暗，使文字保持清晰可读。"
+
 #: src/components/custom-widget-elements/Label.vue
 msgid "Label"
 msgstr "标签"
@@ -5981,6 +5996,10 @@ msgid ""
 msgstr ""
 "允许在此计算机上运行的 AI 代理（如 Claude Code 或 Cursor）通过模型上下文协议（MCP）为您创建数据湖变量、转换函数、操作和 "
 "DIY 小部件。代理所做的每项更改都会在屏幕上提示。这些设置仅保存在此计算机上，不会与设备同步。"
+
+#: src/views/ConfigurationUIView.vue
+msgid "Level"
+msgstr "级别"
 
 #: src/components/About.vue
 msgid "Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom"
@@ -6816,6 +6835,10 @@ msgstr "${ 0 } 需要此项"
 #, javascript-format
 msgid "Needs ${ 0 }"
 msgstr "需要 ${ 0 }"
+
+#: src/views/ConfigurationUIView.vue
+msgid "Needs Cockpit Standalone or a Chromium-based browser such as Chrome or Edge."
+msgstr "需要 Cockpit Standalone 或基于 Chromium 的浏览器，例如 Chrome 或 Edge。"
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid "New Actions"
@@ -9033,6 +9056,10 @@ msgstr "无检测发送"
 #: src/stores/mainVehicle.ts
 msgid "Sending the new position to the vehicle..."
 msgstr "正在将新位置发送到设备..."
+
+#: src/views/ConfigurationUIView.vue
+msgid "Sensitivity"
+msgstr "灵敏度"
 
 #: src/components/development/MAVLinkInspectorItem.vue
 #, javascript-format

@@ -601,6 +601,14 @@ msgstr ""
 "As ações também podem ser testadas/executadas manualmente, usando o botão "
 "de reproduzir."
 
+#: src/views/ConfigurationUIView.vue
+msgid "Adaptive window colors"
+msgstr "Cores de janela adaptativas"
+
+#: src/views/ConfigurationUIView.vue
+msgid "Adaptive window colors sets the tint while it is on."
+msgstr "As cores de janela adaptativas definem a tonalidade enquanto estão ativas."
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 #: src/components/map/CustomTileProvidersManager.vue
 #: src/components/mission-planning/CommandInputForm.vue
@@ -6290,6 +6298,16 @@ msgstr "Continuar revisando"
 msgid "Keep the vehicle this far from \"${ 0 }\"."
 msgstr "Mantenha o veículo a esta distância de \"${ 0 }\"."
 
+#: src/views/ConfigurationUIView.vue
+msgid ""
+"Keeps windows and menus see-through over dark scenery and darkens them over "
+"bright scenery, such as the surface seen from below, sand, or a light map, "
+"so their text stays readable."
+msgstr ""
+"Mantém janelas e menus translúcidos sobre cenários escuros e os escurece "
+"sobre cenários claros, como a superfície vista de baixo, areia ou um mapa "
+"claro, para que o texto continue legível."
+
 #: src/components/custom-widget-elements/Label.vue
 msgid "Label"
 msgstr "Rótulo"
@@ -6402,6 +6420,10 @@ msgstr ""
 "widgets DIY para você, por meio do Model Context Protocol (MCP). Toda "
 "alteração feita por um agente é anunciada na tela. Estas configurações "
 "ficam neste computador e não são sincronizadas com o veículo."
+
+#: src/views/ConfigurationUIView.vue
+msgid "Level"
+msgstr "Nível"
 
 #: src/components/About.vue
 msgid "Licensed under AGPL-3.0-only or LicenseRef-Cockpit-Custom"
@@ -7259,6 +7281,12 @@ msgstr "Necessário para ${ 0 }"
 #, javascript-format
 msgid "Needs ${ 0 }"
 msgstr "Requer ${ 0 }"
+
+#: src/views/ConfigurationUIView.vue
+msgid "Needs Cockpit Standalone or a Chromium-based browser such as Chrome or Edge."
+msgstr ""
+"Requer o Cockpit Standalone ou um navegador baseado em Chromium, como "
+"Chrome ou Edge."
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 msgid "New Actions"
@@ -9629,6 +9657,10 @@ msgstr "Enviar sem detecção"
 #: src/stores/mainVehicle.ts
 msgid "Sending the new position to the vehicle..."
 msgstr "Enviando a nova posição ao veículo..."
+
+#: src/views/ConfigurationUIView.vue
+msgid "Sensitivity"
+msgstr "Sensibilidade"
 
 #: src/components/development/MAVLinkInspectorItem.vue
 #, javascript-format
