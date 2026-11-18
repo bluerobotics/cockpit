@@ -8,6 +8,20 @@
     :max-width="700"
   >
     <template #content>
+      <div class="flex absolute top-0 right-0 py-2 pr-3">
+        <v-btn
+          icon
+          :width="34"
+          :height="34"
+          variant="text"
+          :aria-label="t`Close`"
+          :disabled="isSeeding"
+          class="bg-transparent"
+          @click="closeFromCornerButton"
+        >
+          <v-icon :size="22">mdi-close</v-icon>
+        </v-btn>
+      </div>
       <div v-if="isLoading" class="flex justify-center items-center w-full">
         <v-progress-circular color="white" indeterminate class="mb-10" />
       </div>
@@ -373,4 +387,10 @@ const regularDialogActions = [
 const currentDialogActions = computed(() =>
   showNewUsernamePrompt.value || isUsernamesEmpty.value ? inputDialogActions.value : regularDialogActions
 )
+
+const closeFromCornerButton = (): void => {
+  if (isSeeding.value) return
+  logUserAction('Closed user management with the close button')
+  currentDialogActions.value[0].action()
+}
 </script>
