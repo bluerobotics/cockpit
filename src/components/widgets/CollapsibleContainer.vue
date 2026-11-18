@@ -13,7 +13,7 @@
       interfaceStore.globalGlassMenuStyles,
       {
         backgroundColor: `${widget.options.backgroundColor + convertedBackgroundOpacity}`,
-        backdropFilter: `blur(${widget.options.backgroundBlur}px)`,
+        backdropFilter: interfaceStore.glassBackdropFilterWithBlur(widget.options.backgroundBlur),
       },
     ]"
   >

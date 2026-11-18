@@ -117,6 +117,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **System Monitoring** | Memory usage only | ✅ CPU and Memory tracking |
 | **Workspace Capture** | ❌ Not available | ✅ Full interface screenshots |
 | **AI Agent Access (MCP)** | ❌ Not available (a browser tab cannot accept connections) | ✅ Local agents can create variables, actions and DIY widgets, arrange widgets and mini-widgets and manage views |
+| **Adaptive Window Colors** | Chromium-based browsers only (Chrome, Edge); other browsers keep the fixed glass tint | ✅ Always available |
 | **Voice Alerts** | Uses the browser/OS speech voices, which vary per system | ✅ Built-in offline voice on every platform (no setup), so alerts sound the same everywhere |
 | **Performance** | Standard | ✅ Optimized build for each system |
 | **Installation** | No install needed; an "Install app" menu entry appears when the browser offers PWA installation. Installing does not add Desktop-only features | Requires download |

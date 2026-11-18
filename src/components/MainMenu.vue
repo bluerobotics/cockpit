@@ -363,9 +363,9 @@ const mainMenuButtonProps = computed(() => ({
 }))
 
 const glassMenuStyles = computed(() => ({
-  backgroundColor: interfaceStore.UIGlassEffect.bgColor,
+  backgroundColor: interfaceStore.globalGlassMenuStyles.backgroundColor,
   color: interfaceStore.UIGlassEffect.fontColor,
-  backdropFilter: `blur(${interfaceStore.UIGlassEffect.blur}px)`,
+  backdropFilter: interfaceStore.globalGlassMenuStyles.backdropFilter,
 }))
 
 const handleScroll = (): void => {

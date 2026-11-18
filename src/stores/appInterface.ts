@@ -2,9 +2,10 @@ import { useWindowSize } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { watch } from 'vue'
 
-import { defaultDisplayUnitPreferences } from '@/assets/defaults'
+import { defaultDisplayUnitPreferences, defaultUIGlassColor } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { createDataLakeVariable, getDataLakeVariableInfo, setDataLakeVariableData } from '@/libs/actions/data-lake'
+import { glassToneFilterId, glassToneTable } from '@/libs/glass-tone'
 import { setupPostPiniaConnection } from '@/libs/post-pinia-connections'
 import {
   type DisplayUnitPreferences,
@@ -14,6 +15,35 @@ import {
 } from '@/libs/units'
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
+
+// Chromium is the only engine that renders an SVG reference filter inside `backdrop-filter`
+const adaptiveGlassSupported = /Chrome\//.test(navigator.userAgent)
+
+// Settings stored before a glass field existed lack it, so every read goes through this merge
+const withGlassDefaults = (effect: Partial<typeof defaultUIGlassColor>): typeof defaultUIGlassColor => ({
+  ...defaultUIGlassColor,
+  ...effect,
+})
+
+const isAdaptiveGlassActive = (effect: typeof defaultUIGlassColor): boolean =>
+  adaptiveGlassSupported && effect.adaptiveColors
+
+/**
+ * Backdrop filter for glass surfaces. Adaptive glass caps how bright the scenery behind can show, per pixel and every
+ * frame, so dark scenery stays see-through while bright scenery reads as a dark panel.
+ * @param {typeof defaultUIGlassColor} effect The stored glass effect settings
+ * @param {number} blurPx Blur radius, for surfaces that blur more or less than the glass setting
+ * @returns {string} The CSS `backdrop-filter` value
+ */
+const glassBackdropFilter = (effect: typeof defaultUIGlassColor, blurPx = effect.blur): string => {
+  const blur = `blur(${blurPx}px)`
+  if (!isAdaptiveGlassActive(effect)) return blur
+  return `${blur} url(#${glassToneFilterId(effect.adaptiveLevel, effect.adaptiveSensitivity)})`
+}
+
+// Adaptive glass does the darkening itself, so the tint drops to a light veil of the glass color
+const glassBackground = (effect: typeof defaultUIGlassColor): string =>
+  isAdaptiveGlassActive(effect) ? `${effect.bgColor.substring(0, 7)}14` : effect.bgColor
 
 export const useAppInterfaceStore = defineStore('responsive', {
   state: () => ({
@@ -29,6 +59,9 @@ export const useAppInterfaceStore = defineStore('responsive', {
       bgColor: '#63636354',
       fontColor: '#FFFFFF',
       blur: 25,
+      adaptiveColors: true,
+      adaptiveLevel: 0.6,
+      adaptiveSensitivity: 0.5,
     }),
     releasedDisplayUnitPreferences: useBlueOsStorage('cockpit-display-unit-preferences', {
       distance: defaultDisplayUnitPreferences.distance,
@@ -120,14 +153,16 @@ export const useAppInterfaceStore = defineStore('responsive', {
     getUIGlassEffect: (state) => {
       state.UIGlassEffect
     },
+    isAdaptiveGlassSupported: () => adaptiveGlassSupported,
+    glassEffect: (state) => withGlassDefaults(state.UIGlassEffect),
+    isAdaptiveGlassActive: (state) => isAdaptiveGlassActive(withGlassDefaults(state.UIGlassEffect)),
     globalGlassMenuStyles: (state) => ({
-      backgroundColor: state.UIGlassEffect.bgColor,
+      backgroundColor: glassBackground(withGlassDefaults(state.UIGlassEffect)),
       color: state.UIGlassEffect.fontColor,
-      backdropFilter: `blur(${state.UIGlassEffect.blur}px)`,
+      backdropFilter: glassBackdropFilter(withGlassDefaults(state.UIGlassEffect)),
       border: '1px solid rgba(255, 255, 255, 0.08)',
       boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
     }),
-    // Softer than a menu's own blur, so a dialog scrim still reads as the page behind it rather than as frosted glass
     // For surfaces styled from CSS, such as Leaflet markers and pseudo-elements, which cannot take a style binding
     glassMenuCssVars(): Record<string, string> {
       const styles = this.globalGlassMenuStyles
@@ -139,12 +174,22 @@ export const useAppInterfaceStore = defineStore('responsive', {
         '--glass-box-shadow': styles.boxShadow,
       }
     },
-    dialogBackdropStyles: (state) => ({ '--glass-filter': `blur(${state.UIGlassEffect.blur * 0.315}px)` }),
+    glassToneFilter: (state) => {
+      const { adaptiveLevel: level, adaptiveSensitivity: sensitivity } = withGlassDefaults(state.UIGlassEffect)
+      return { id: glassToneFilterId(level, sensitivity), table: glassToneTable(level, sensitivity) }
+    },
+    // Softer than a menu's own blur, so a dialog scrim still reads as the page behind it rather than as frosted glass
+    dialogBackdropStyles: (state) => {
+      const effect = withGlassDefaults(state.UIGlassEffect)
+      return { '--glass-filter': glassBackdropFilter(effect, effect.blur * 0.315) }
+    },
+    glassBackdropFilterWithBlur: (state) => (blurPx: number) =>
+      glassBackdropFilter(withGlassDefaults(state.UIGlassEffect), blurPx),
     highlightedComponent: (state) => state.componentToHighlight,
     globalGlassMenuHighlightStyles: (state) => ({
-      backgroundColor: state.UIGlassEffect.bgColor,
+      backgroundColor: glassBackground(withGlassDefaults(state.UIGlassEffect)),
       color: state.UIGlassEffect.fontColor,
-      backdropFilter: `blur(${state.UIGlassEffect.blur}px)`,
+      backdropFilter: glassBackdropFilter(withGlassDefaults(state.UIGlassEffect)),
       border: '1px solid rgba(255, 255, 255, 0.08)',
       boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
       animation: 'highlightBackground 0.5s alternate 20',

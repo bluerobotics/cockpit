@@ -8,62 +8,127 @@
           <template #content>
             <div class="flex w-full">
               <div class="flex flex-col w-full px-4 pt-3">
-                <div class="flex flex-row items-center w-full mb-3">
-                  <div class="flex w-56 shrink-0">{{ t`Glass color` }}</div>
-                  <v-menu
-                    :close-on-content-click="false"
-                    location="top start"
-                    origin="top start"
-                    transition="scale-transition"
-                    class="overflow-hidden"
-                  >
-                    <template #activator="{ props }">
-                      <div
-                        v-bind="props"
-                        class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg cursor-pointer"
-                        :style="{ backgroundColor: interfaceStore.UIGlassEffect.bgColor }"
-                      ></div>
-                    </template>
-                    <v-card class="overflow-hidden"
-                      ><v-color-picker
-                        v-model="interfaceStore.UIGlassEffect.bgColor"
-                        width="400px"
-                        mode="rgba"
-                        theme="dark"
-                    /></v-card>
-                  </v-menu>
+                <div class="flex w-full" :class="interfaceStore.isOnPhoneScreen ? 'flex-col' : 'flex-row gap-8'">
+                  <div class="flex flex-col flex-1">
+                    <div class="flex flex-row items-center w-full mb-3">
+                      <div class="flex w-56 shrink-0">{{ t`Glass color` }}</div>
+                      <v-menu
+                        :close-on-content-click="false"
+                        location="top start"
+                        origin="top start"
+                        transition="scale-transition"
+                        class="overflow-hidden"
+                      >
+                        <template #activator="{ props }">
+                          <div
+                            v-bind="props"
+                            class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg cursor-pointer"
+                            :style="{ backgroundColor: interfaceStore.UIGlassEffect.bgColor }"
+                          ></div>
+                        </template>
+                        <v-card class="overflow-hidden"
+                          ><v-color-picker
+                            v-model="interfaceStore.UIGlassEffect.bgColor"
+                            width="400px"
+                            mode="rgba"
+                            theme="dark"
+                        /></v-card>
+                      </v-menu>
+                    </div>
+                    <div class="flex flex-row items-center w-full mb-3 opacity-40">
+                      <div class="flex w-56 shrink-0">{{ t`Font color` }}</div>
+                      <v-menu
+                        :close-on-content-click="false"
+                        location="top start"
+                        origin="top start"
+                        transition="scale-transition"
+                        class="overflow-hidden"
+                        disabled
+                      >
+                        <template #activator="{ props }">
+                          <div
+                            v-bind="props"
+                            class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg"
+                            :style="{ backgroundColor: interfaceStore.UIGlassEffect.fontColor }"
+                          ></div>
+                        </template>
+                        <v-card class="overflow-hidden"
+                          ><v-color-picker
+                            v-model="interfaceStore.UIGlassEffect.fontColor"
+                            width="400px"
+                            mode="rgba"
+                            theme="dark"
+                        /></v-card>
+                      </v-menu>
+                    </div>
+                  </div>
+                  <div class="flex flex-col w-[320px] max-w-full mb-3">
+                    <div class="flex flex-row items-center h-[30px]">
+                      <span>{{ t`Adaptive window colors` }}</span>
+                      <InfoPopover
+                        class="ml-3 mr-1"
+                        :text="
+                          t`Keeps windows and menus see-through over dark scenery and darkens them over bright scenery, such as the surface seen from below, sand, or a light map, so their text stays readable.`
+                        "
+                      />
+                      <v-switch
+                        :model-value="interfaceStore.glassEffect.adaptiveColors"
+                        :disabled="!interfaceStore.isAdaptiveGlassSupported"
+                        color="white"
+                        base-color="#FFFFFF33"
+                        density="compact"
+                        hide-details
+                        class="flex-none ml-auto mr-4"
+                        @update:model-value="setAdaptiveColors"
+                      />
+                    </div>
+                    <div v-if="!interfaceStore.isAdaptiveGlassSupported" class="text-sm opacity-60">
+                      {{ t`Needs Cockpit Standalone or a Chromium-based browser such as Chrome or Edge.` }}
+                    </div>
+                    <div
+                      class="flex flex-row items-center mt-3"
+                      :class="{ 'opacity-40': !interfaceStore.isAdaptiveGlassActive }"
+                    >
+                      <div class="flex w-24 shrink-0">{{ t`Level` }}</div>
+                      <v-slider
+                        :model-value="interfaceStore.glassEffect.adaptiveLevel"
+                        :disabled="!interfaceStore.isAdaptiveGlassActive"
+                        color="white"
+                        min="0.05"
+                        max="1"
+                        step="0.05"
+                        thumb-label
+                        hide-details
+                        @update:model-value="interfaceStore.UIGlassEffect.adaptiveLevel = $event"
+                        @end="logAdaptiveLevel"
+                      />
+                    </div>
+                    <div
+                      class="flex flex-row items-center mt-3"
+                      :class="{ 'opacity-40': !interfaceStore.isAdaptiveGlassActive }"
+                    >
+                      <div class="flex w-24 shrink-0">{{ t`Sensitivity` }}</div>
+                      <v-slider
+                        :model-value="interfaceStore.glassEffect.adaptiveSensitivity"
+                        :disabled="!interfaceStore.isAdaptiveGlassActive"
+                        color="white"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        thumb-label
+                        hide-details
+                        @update:model-value="interfaceStore.UIGlassEffect.adaptiveSensitivity = $event"
+                        @end="logAdaptiveSensitivity"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div class="flex flex-row items-center w-full mb-3 opacity-40">
-                  <div class="flex w-56 shrink-0">{{ t`Font color` }}</div>
-                  <v-menu
-                    :close-on-content-click="false"
-                    location="top start"
-                    origin="top start"
-                    transition="scale-transition"
-                    class="overflow-hidden"
-                    disabled
-                  >
-                    <template #activator="{ props }">
-                      <div
-                        v-bind="props"
-                        class="w-[30px] h-[30px] border-2 border-slate-600 rounded-lg"
-                        :style="{ backgroundColor: interfaceStore.UIGlassEffect.fontColor }"
-                      ></div>
-                    </template>
-                    <v-card class="overflow-hidden"
-                      ><v-color-picker
-                        v-model="interfaceStore.UIGlassEffect.fontColor"
-                        width="400px"
-                        mode="rgba"
-                        theme="dark"
-                    /></v-card>
-                  </v-menu>
-                </div>
-                <div class="flex w-full mb-3">
+                <div class="flex w-full mb-3" :class="{ 'opacity-40': interfaceStore.isAdaptiveGlassActive }">
                   <div class="flex w-56 shrink-0 mt-[2px]">{{ t`Opacity` }}</div>
                   <div class="flex flex-1">
                     <v-slider
                       :model-value="parseInt(interfaceStore.UIGlassEffect.bgColor.slice(-2), 16) / 255"
+                      :disabled="interfaceStore.isAdaptiveGlassActive"
                       color="white"
                       min="0"
                       max="1"
@@ -74,6 +139,9 @@
                     />
                   </div>
                 </div>
+                <p v-if="interfaceStore.isAdaptiveGlassActive" class="text-sm opacity-60 ml-56 -mt-2 mb-3">
+                  {{ t`Adaptive window colors sets the tint while it is on.` }}
+                </p>
                 <div class="flex w-full mb-2">
                   <div class="flex w-56 shrink-0 mt-[2px]">{{ t`Blur` }}</div>
                   <div class="flex flex-1">
@@ -234,6 +302,7 @@ import { computed, ref } from 'vue'
 
 import { defaultUIGlassColor } from '@/assets/defaults'
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
+import InfoPopover from '@/components/InfoPopover.vue'
 import { availableLanguages, interfaceLanguage, languageKey, translatedIn } from '@/libs/i18n'
 import { settingsManager } from '@/libs/settings-management'
 import {
@@ -292,6 +361,19 @@ const currentUnitSystem = computed(() => unitSystemFromPreferences(interfaceStor
 const updateOpacity = (value: number): void => {
   logUserAction(`Set glass effect opacity to ${value}`)
   interfaceStore.setBgOpacity(value)
+}
+
+const logAdaptiveLevel = (value: number): void => {
+  logUserAction(`Set adaptive window colors level to ${value}`)
+}
+
+const logAdaptiveSensitivity = (value: number): void => {
+  logUserAction(`Set adaptive window colors sensitivity to ${value}`)
+}
+
+const setAdaptiveColors = (value: boolean | null): void => {
+  logUserAction(`${value ? 'Enabled' : 'Disabled'} adaptive window colors`)
+  interfaceStore.UIGlassEffect.adaptiveColors = !!value
 }
 
 const resetColorsToDefault = (): void => {
