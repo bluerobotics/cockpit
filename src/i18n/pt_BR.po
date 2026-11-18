@@ -7147,6 +7147,10 @@ msgstr "Celular:"
 msgid "Mode names"
 msgstr "Nomes dos modos"
 
+#: src/components/InfoPopover.vue
+msgid "More information"
+msgstr "Mais informações"
+
 #: src/views/ConfigurationGeneralView.vue
 msgid "More than one vehicle is using system ID"
 msgstr "Mais de um veículo está usando o ID de sistema"
