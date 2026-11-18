@@ -6631,6 +6631,10 @@ msgstr "移动端："
 msgid "Mode names"
 msgstr "模式名称"
 
+#: src/components/InfoPopover.vue
+msgid "More information"
+msgstr "更多信息"
+
 #: src/views/ConfigurationGeneralView.vue
 msgid "More than one vehicle is using system ID"
 msgstr "多个设备正在使用同一系统 ID"
