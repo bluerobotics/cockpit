@@ -1,4 +1,4 @@
-import { type RemovableRef } from '@vueuse/core'
+import { type RemovableRef, useEventListener } from '@vueuse/core'
 import { diff } from 'jest-diff'
 import { format as prettyFormat } from 'pretty-format'
 import { type MaybeRef, ref, unref, watch } from 'vue'
@@ -32,6 +32,20 @@ type BlueOsStorageOptions = {
 }
 
 /**
+ * The user and vehicle a pending settings change was made under.
+ */
+type PendingChangeOwner = {
+  /**
+   * User the change belongs to
+   */
+  userId: string
+  /**
+   * Vehicle the change belongs to
+   */
+  vehicleId: string
+}
+
+/**
  * This composable will keep a setting in sync between the browser's local storage and BlueOS.
  *
  * When initialized, it will try to get the value from BlueOS. While BlueOS does not connect, it will use the local
@@ -60,6 +74,7 @@ export function useBlueOsStorage<T>(
   const valueOnLocalStorage = settingsManager.getKeyValue(key)
   let watchUpdaterTimeout: ReturnType<typeof setTimeout> | undefined = undefined
   let firstPendingChangeEpoch: number | undefined = undefined
+  let pendingChangeOwner: PendingChangeOwner | undefined = undefined
   let valueToBeUsedOnStart: T | undefined = undefined
 
   if (valueOnLocalStorage === undefined) {
@@ -83,6 +98,31 @@ export function useBlueOsStorage<T>(
     valueToBeUsedOnStart !== undefined ? JSON.parse(JSON.stringify(valueToBeUsedOnStart)) : undefined
   const refedValue = ref<T | undefined>(valueToBeUsedOnStart)
 
+  const writePendingChange = (newValue: T | undefined): void => {
+    const diffInValue = diff(oldRefedValue, newValue, {
+      expand: false,
+      contextLines: 3,
+      includeChangeCounts: true,
+    })
+    let diffToPrint = diffInValue
+    if (diffInValue && diffInValue.split('\n').length > 15) {
+      const diffLines = diffInValue.split('\n')
+      const truncatedDiff = diffLines.slice(0, 14).join('\n') + '\n...'
+      diffToPrint = truncatedDiff
+    }
+    console.log(`[SettingsSyncer] Key ${key} changed on watch:\n${diffToPrint}.`)
+    settingsManager.setKeyValue(
+      key,
+      newValue as SettingValue,
+      undefined,
+      pendingChangeOwner?.userId,
+      pendingChangeOwner?.vehicleId
+    )
+    oldRefedValue = deserialize(JSON.stringify(newValue)) as T
+    firstPendingChangeEpoch = undefined
+    pendingChangeOwner = undefined
+  }
+
   watch(
     refedValue,
     (newValue) => {
@@ -99,6 +139,8 @@ export function useBlueOsStorage<T>(
 
       if (firstPendingChangeEpoch === undefined) {
         firstPendingChangeEpoch = Date.now()
+        // The write is debounced, so it must land on the user and vehicle the change was made under.
+        pendingChangeOwner = { userId: settingsManager.currentUsername, vehicleId: settingsManager.currentVehicleId }
       }
 
       // Clamp the debounce so a value that keeps changing is still forced out once it has been
@@ -106,23 +148,7 @@ export function useBlueOsStorage<T>(
       const remainingMaxWait = Math.max(0, maxWaitMs - (Date.now() - firstPendingChangeEpoch))
       const writeDelay = Math.min(debounceMs, remainingMaxWait)
 
-      watchUpdaterTimeout = setTimeout(() => {
-        const diffInValue = diff(oldRefedValue, newValue, {
-          expand: false,
-          contextLines: 3,
-          includeChangeCounts: true,
-        })
-        let diffToPrint = diffInValue
-        if (diffInValue && diffInValue.split('\n').length > 15) {
-          const diffLines = diffInValue.split('\n')
-          const truncatedDiff = diffLines.slice(0, 14).join('\n') + '\n...'
-          diffToPrint = truncatedDiff
-        }
-        console.log(`[SettingsSyncer] Key ${key} changed on watch:\n${diffToPrint}.`)
-        settingsManager.setKeyValue(key, newValue)
-        oldRefedValue = deserialize(JSON.stringify(newValue)) as T
-        firstPendingChangeEpoch = undefined
-      }, writeDelay)
+      watchUpdaterTimeout = setTimeout(() => writePendingChange(newValue), writeDelay)
     },
     { deep: true }
   )
@@ -145,6 +171,17 @@ export function useBlueOsStorage<T>(
 
     refedValue.value = newValue as T
     oldRefedValue = deserialize(JSON.stringify(refedValue.value)) as T
+  })
+
+  // The settings manager handles the event first and has already switched to the new user's package by now.
+  useEventListener(window, 'user-changed', () => {
+    if (firstPendingChangeEpoch === undefined) return
+    clearTimeout(watchUpdaterTimeout)
+    writePendingChange(refedValue.value)
+    const newUserValue = settingsManager.getKeyValue(key)
+    if (newUserValue === undefined || isEqual(newUserValue, refedValue.value)) return
+    oldRefedValue = deserialize(JSON.stringify(newUserValue)) as T
+    refedValue.value = newUserValue as T
   })
 
   return refedValue as RemovableRef<T>
