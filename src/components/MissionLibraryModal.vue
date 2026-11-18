@@ -1,7 +1,7 @@
 <template>
   <v-dialog v-model="isVisible" class="dialog">
     <div class="flex">
-      <div class="mission-modal" :style="interfaceStore.globalGlassMenuStyles">
+      <div class="mission-modal" :style="[interfaceStore.globalGlassMenuStyles, interfaceStore.glassMenuCssVars]">
         <div class="modal-content">
           <!-- Left Vertical Menu -->
           <div class="flex flex-col justify-between h-full px-5 py-3 align-center">
@@ -150,7 +150,7 @@
 
   <!-- Mission detail dialog -->
   <v-dialog v-if="detailMission" v-model="showDetail" max-width="640px">
-    <v-card :style="interfaceStore.globalGlassMenuStyles" class="text-white">
+    <v-card :style="[interfaceStore.globalGlassMenuStyles, interfaceStore.glassMenuCssVars]" class="text-white">
       <v-icon icon="mdi-close" class="absolute top-3 right-3 cursor-pointer z-10" @click="showDetail = false" />
       <div class="flex flex-col md:flex-row">
         <div class="md:w-1/2 w-full p-4 flex items-center justify-center bg-[#1f2a37]">
@@ -649,10 +649,12 @@ const onImportFileSelected = (event: Event): void => {
 .info-pill {
   display: inline-flex;
   align-items: center;
-  background: #00000066;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #fff;
+  background: var(--glass-background);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+  border: var(--glass-border);
+  box-shadow: var(--glass-box-shadow);
+  color: var(--glass-color);
   font-size: 10px;
   border-radius: 999px;
   padding: 2px 8px;

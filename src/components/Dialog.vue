@@ -1,11 +1,7 @@
 <template>
   <teleport to="body">
-    <dialog ref="dialogRef" class="modal">
-      <div
-        ref="dialogContentRef"
-        v-bind="$attrs"
-        class="flex flex-col items-center justify-center w-full h-full p-5 backdrop-blur-sm"
-      >
+    <dialog ref="dialogRef" class="modal" :style="interfaceStore.globalGlassMenuStyles">
+      <div ref="dialogContentRef" v-bind="$attrs" class="flex flex-col items-center justify-center w-full h-full p-5">
         <slot></slot>
       </div>
     </dialog>
@@ -15,10 +11,14 @@
 <script setup lang="ts">
 import { onMounted, ref, toRefs, watch } from 'vue'
 
+import { useAppInterfaceStore } from '@/stores/appInterface'
+
 const props = defineProps({
   show: Boolean,
 })
 const emit = defineEmits(['update:show'])
+
+const interfaceStore = useAppInterfaceStore()
 
 const showProp = toRefs(props).show
 const show = ref(showProp.value)

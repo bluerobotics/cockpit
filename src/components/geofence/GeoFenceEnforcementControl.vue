@@ -4,6 +4,7 @@
     location="top center"
     transition="slide-y-reverse-transition"
     content-class="speed-dial-glow"
+    :content-props="{ style: interfaceStore.glassMenuCssVars }"
     @update:model-value="onFenceSpeedDialToggle"
   >
     <template #activator="{ props: activatorProps }">
@@ -54,6 +55,7 @@
       :close-on-content-click="false"
       transition="slide-x-reverse-transition"
       content-class="speed-dial-glow"
+      :content-props="{ style: interfaceStore.glassMenuCssVars }"
       @update:model-value="onLayersMenuToggle"
     >
       <template #activator="{ props: menuProps }">

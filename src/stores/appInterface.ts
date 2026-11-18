@@ -128,6 +128,17 @@ export const useAppInterfaceStore = defineStore('responsive', {
       boxShadow: '0px 4px 4px 0px #00000033, 0px 8px 12px 6px #00000016',
     }),
     // Softer than a menu's own blur, so a dialog scrim still reads as the page behind it rather than as frosted glass
+    // For surfaces styled from CSS, such as Leaflet markers and pseudo-elements, which cannot take a style binding
+    glassMenuCssVars(): Record<string, string> {
+      const styles = this.globalGlassMenuStyles
+      return {
+        '--glass-background': styles.backgroundColor,
+        '--glass-filter': styles.backdropFilter,
+        '--glass-border': styles.border,
+        '--glass-color': styles.color,
+        '--glass-box-shadow': styles.boxShadow,
+      }
+    },
     dialogBackdropStyles: (state) => ({ '--glass-filter': `blur(${state.UIGlassEffect.blur * 0.315}px)` }),
     highlightedComponent: (state) => state.componentToHighlight,
     globalGlassMenuHighlightStyles: (state) => ({

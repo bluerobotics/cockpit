@@ -1,7 +1,8 @@
 <template>
   <div
     v-if="editMode"
-    class="flex fixed top-[5vh] 2xl:left-[22.5vw] xl:left-[21.5vw] left-[20.7vw] bg-[#334a5755] border-[1px] border-[#ffffff25] text-[#FFFFFF] backdrop-blur-lg elevation-5 pr-4 rounded-full cursor-pointer hover:brightness-125 2xl:scale-90 xl:scale-75 scale-[60%]"
+    class="flex fixed top-[5vh] 2xl:left-[22.5vw] xl:left-[21.5vw] left-[20.7vw] pr-4 rounded-full cursor-pointer hover:brightness-125 2xl:scale-90 xl:scale-75 scale-[60%]"
+    :style="interfaceStore.globalGlassMenuStyles"
     @click="exitEditMode"
   >
     <v-btn icon="mdi-close" size="54" class="bg-[#334a5755] text-[#FFFFFFCC] text-[28px] rounded-full elevation-5" />

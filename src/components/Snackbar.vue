@@ -4,9 +4,8 @@
     attach="#snackbar-container"
     class="stacked-snackbar"
     rounded="lg"
-    :color="selectedVariantColor"
     :timeout="messageDuration"
-    content-class="bg-[#4f4f4f44] backdrop-filter backdrop-blur-lg text-white"
+    :content-props="{ style: contentStyle }"
     @pointerenter="id !== undefined && pauseSnackbar(id)"
     @pointerleave="id !== undefined && resumeSnackbar(id)"
   >
@@ -34,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, PropType, ref, watch } from 'vue'
+import { computed, onMounted, PropType, ref, watch } from 'vue'
 
 import {
   closeSnackbar as removeSnackbar,
@@ -43,6 +42,7 @@ import {
   SnackbarAction,
   SnackbarSuppression,
 } from '@/composables/snackbar'
+import { useAppInterfaceStore } from '@/stores/appInterface'
 
 const props = defineProps({
   id: { type: Number, default: undefined },
@@ -77,10 +77,21 @@ const setVariantColor = (variant: string): void => {
       selectedVariantColor.value = '#2196F344'
       break
     default:
-      selectedVariantColor.value = '#FFFFFF33'
+      selectedVariantColor.value = ''
       break
   }
 }
+
+const interfaceStore = useAppInterfaceStore()
+
+// The variant tint is layered over the glass rather than replacing it, so the glass keeps its adaptive darkening
+const contentStyle = computed(() => {
+  const tint = selectedVariantColor.value
+  return {
+    ...interfaceStore.globalGlassMenuStyles,
+    backgroundImage: tint ? `linear-gradient(${tint}, ${tint})` : undefined,
+  }
+})
 
 setVariantColor(props.variant)
 
