@@ -966,7 +966,7 @@ export const useMainVehicleStore = defineStore('main-vehicle', () => {
 
     // Register BlueOS variables in the data lake
     const blueOsVariables = {
-      cpuTemp: { id: 'blueos/cpu/tempC', name: 'CPU Temperature', type: 'number' },
+      cpuTemp: { id: 'blueos/cpu/tempC', name: 'CPU Temperature', type: 'number', unit: 'degC' },
       cpuUsageAverage: { id: 'blueos/cpu/usageAverage', name: 'BlueOS CPU Usage (average)', type: 'number' },
       cpuFrequencyAverage: {
         id: 'blueos/cpu/frequencyAverage',
