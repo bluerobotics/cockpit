@@ -934,12 +934,18 @@ interface VertexAngle {
   labelAt: WaypointCoordinates | null
 }
 
+const ANGLE_ARC_RADIUS_PX = 28
+// Share of the shorter side an arc spans, so it stays a small mark on short sides.
+const ANGLE_ARC_SIDE_SHARE = 0.35
+// Below this the arc and its label would only cover the vertex, so the angle is left undrawn.
+const MIN_ANGLE_ARC_RADIUS_PX = 12
+
 /**
  * Interior angle at `curr` between segments `prev`→`curr` and `curr`→`next`, plus a small arc that visualizes it.
  * @param {WaypointCoordinates} prev - Vertex before the angle vertex.
  * @param {WaypointCoordinates} curr - Vertex where the angle is measured.
  * @param {WaypointCoordinates} next - Vertex after the angle vertex.
- * @param {number} mapZoom - Current map zoom, used to scale the arc radius.
+ * @param {number} mapZoom - Current map zoom, which the arc keeps a constant on-screen size at.
  * @returns {VertexAngle} The angle in degrees, the arc points, and the arc midpoint to anchor a label.
  */
 export const computeVertexAngle = (
@@ -953,9 +959,12 @@ export const computeVertexAngle = (
   const reverseIncomingBearing = (incomingBearing + 180) % 360
   const angleDeg = deltaBearing(reverseIncomingBearing, outgoingBearing)
 
-  const radiusMeters = Math.max(15, Math.min(50, 1000 / mapZoom))
-  const longerSegment = Math.max(calculateHaversineDistance(prev, curr), calculateHaversineDistance(curr, next))
-  const arcRadius = Math.min(radiusMeters, longerSegment * 0.3) * 0.5
+  const pixelM = metersPerPixel(curr[0], mapZoom)
+  const shorterSidePx =
+    Math.min(calculateHaversineDistance(prev, curr), calculateHaversineDistance(curr, next)) / pixelM
+  const radiusPx = Math.min(ANGLE_ARC_RADIUS_PX, shorterSidePx * ANGLE_ARC_SIDE_SHARE)
+  if (radiusPx < MIN_ANGLE_ARC_RADIUS_PX) return { angleDeg, arc: [], labelAt: null }
+  const arcRadius = radiusPx * pixelM
 
   const normalizedDiff = ((outgoingBearing - reverseIncomingBearing + 540) % 360) - 180
   const startBearing = normalizedDiff >= 0 ? reverseIncomingBearing : reverseIncomingBearing - angleDeg
@@ -972,6 +981,21 @@ export const computeVertexAngle = (
   }
 
   return { angleDeg, arc, labelAt: arc[Math.floor(arc.length / 2)] ?? null }
+}
+
+/**
+ * CSS transform that moves a pill centered on a point out along an on-screen direction, until its nearest edge is a
+ * gap away from the point, so it never covers what it is pinned beside.
+ * @param {number} dx - Horizontal part of the direction, in pixels.
+ * @param {number} dy - Vertical part of the direction, in pixels, positive downward.
+ * @param {number} gapPx - Room kept between the point and the pill, in pixels.
+ * @returns {string} The transform, replacing the pill's own centering one.
+ */
+export const outwardPillTransform = (dx: number, dy: number, gapPx: number): string => {
+  const reach = Math.max(Math.abs(dx), Math.abs(dy))
+  if (reach === 0) return 'translate(-50%, -50%)'
+  const [x, y] = [dx / reach, dy / reach]
+  return `translate(calc(${(x - 1) * 50}% + ${x * gapPx}px), calc(${(y - 1) * 50}% + ${y * gapPx}px))`
 }
 
 /**
