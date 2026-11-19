@@ -202,9 +202,9 @@ export const checkTerrainElevation = (
 
   return [
     {
-      id: 'terrain:clearance',
+      id: 'terrain:high-ground',
       sourceId: 'terrain',
-      kind: 'terrain-clearance',
+      kind: 'high-ground',
       message: `${plural(marked.length, 'waypoint')} over ground higher than ${thresholdM} m.`,
       waypointIndices: marked,
     },
