@@ -59,7 +59,7 @@ const fakeCanvasContext = {
   },
 }
 
-const inboundVideoSample = (bitrate: number): Record<string, number> => ({
+const inboundVideoSample = (bitrate: number, framesPerSecond: number): Record<string, number> => ({
   bitrate,
   packetsLost: 0,
   packetsReceived: 100,
@@ -73,7 +73,7 @@ const inboundVideoSample = (bitrate: number): Record<string, number> => ({
   framesDropped: 0,
   jitterBufferDelay: 0,
   jitterBufferEmittedCount: 0,
-  framesPerSecond: 5,
+  framesPerSecond,
   frameHeight: 720,
 })
 
@@ -87,11 +87,14 @@ interface MockedWebRTCStats {
   lastInstance: Record<'listeners', Record<string, (event: unknown) => void>>
 }
 
-const emitStatsAndDraw = async (bitrate: number): Promise<void> => {
+const emitStatsAndDraw = async (bitrate: number, framesPerSecond = 5): Promise<void> => {
   const { WebRTCStats } = await import('@peermetrics/webrtc-stats')
   const stats = (WebRTCStats as unknown as MockedWebRTCStats).lastInstance
   vi.advanceTimersByTime(statsIntervalMs)
-  stats.listeners.stats({ peerId: 'peer', data: { video: { inbound: [inboundVideoSample(bitrate)] } } })
+  stats.listeners.stats({
+    peerId: 'peer',
+    data: { video: { inbound: [inboundVideoSample(bitrate, framesPerSecond)] } },
+  })
   drawNextFrame?.(performance.now())
 }
 
@@ -124,15 +127,44 @@ test('A 5 FPS stream, with no packet in every other stats sample, is not shown a
   wrapper.unmount()
 })
 
-test('A stream that stops arriving is shown as a lost connection after 2 seconds', async () => {
+test('A 5 FPS stream that stops arriving is shown as a lost connection after 3 frame intervals', async () => {
   const wrapper = mount(VideoPlayerStatsForNerds, { props: { streamName: 'Main' } })
-  await emitStatsAndDraw(400_000)
+  await emitStatsAndDraw(400_000, 5)
 
-  for (let sample = 0; sample < 20; sample++) {
-    await emitStatsAndDraw(0)
+  // The reported framerate drops to 0 once frames stop, so the last non-zero one sets the timeout
+  for (let sample = 0; sample < 6; sample++) {
+    await emitStatsAndDraw(0, 0)
     expect(textColors['Stream']).toBe('white')
   }
-  await emitStatsAndDraw(0)
+  await emitStatsAndDraw(0, 0)
+  expect(textColors['Stream']).toBe('red')
+
+  wrapper.unmount()
+})
+
+test('A 30 FPS stream that stops arriving is shown as a lost connection after 500 ms', async () => {
+  const wrapper = mount(VideoPlayerStatsForNerds, { props: { streamName: 'Main' } })
+  await emitStatsAndDraw(4_000_000, 30)
+
+  for (let sample = 0; sample < 5; sample++) {
+    await emitStatsAndDraw(0, 0)
+    expect(textColors['Stream']).toBe('white')
+  }
+  await emitStatsAndDraw(0, 0)
+  expect(textColors['Stream']).toBe('red')
+
+  wrapper.unmount()
+})
+
+test('A stream that has not reported a framerate is shown as a lost connection after 2 seconds', async () => {
+  const wrapper = mount(VideoPlayerStatsForNerds, { props: { streamName: 'Main' } })
+  await emitStatsAndDraw(400_000, 0)
+
+  for (let sample = 0; sample < 20; sample++) {
+    await emitStatsAndDraw(0, 0)
+    expect(textColors['Stream']).toBe('white')
+  }
+  await emitStatsAndDraw(0, 0)
   expect(textColors['Stream']).toBe('red')
 
   wrapper.unmount()
