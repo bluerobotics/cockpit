@@ -701,7 +701,7 @@
       <template #activator="{ props: tooltipProps }">
         <v-btn
           v-bind="tooltipProps"
-          class="absolute right-[180px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
+          class="absolute right-[176px] w-[140px] m-3 mb-[13px] bottom-12 bg-slate-50 text-[12px] font-bold"
           elevation="8"
           :text="t`Flight mode`"
           append-icon="mdi-send"
@@ -766,7 +766,7 @@
     <MapLayerSelector
       v-if="layerSelectorControl"
       :control="layerSelectorControl"
-      :activator-style="{ right: '388px', bottom: '3rem' }"
+      :activator-style="{ right: '376px', bottom: '3rem' }"
     />
     <MapMeasureControl
       :waypoints="missionStore.currentPlanningWaypoints"
@@ -781,7 +781,7 @@
         fenceDraft.isDrawingCircle
       "
       :cruise-speed="missionStore.plannedCruiseSpeed"
-      :activator-style="{ bottom: '3rem', right: '337px' }"
+      :activator-style="{ bottom: '3rem', right: '328px' }"
     />
     <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
@@ -5944,7 +5944,7 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 440px; /* Position to the left of the buttons */
+  right: 424px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
