@@ -452,6 +452,10 @@ msgstr "Uma gravação parou inesperadamente. ${ 0 }"
 msgid "A short verification code will be displayed."
 msgstr "Um código de verificação curto será exibido."
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid "A user with this name already exists."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "A variable with this ID already exists"
 msgstr "Já existe uma variável com este ID"
@@ -3026,6 +3030,12 @@ msgstr ""
 "Não foi possível carregar os usuários do veículo. Mostrando apenas os "
 "usuários em cache local - os usuários salvos no veículo continuam existindo."
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid ""
+"Couldn't reach the vehicle to copy the default user's settings. Check the "
+"connection and try again."
+msgstr ""
+
 #: src/components/UserNameInputDialog.vue
 #, javascript-format
 msgid ""
@@ -3418,6 +3428,11 @@ msgstr "Provedor de tiles padrão do mapa"
 
 #: src/libs/username.ts
 msgid "Default user"
+msgstr ""
+
+#: src/components/DefaultUserRenameDialog.vue
+#, javascript-format
+msgid "Default user renamed to '${ 0 }'."
 msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
@@ -6277,6 +6292,7 @@ msgstr ""
 msgid "Lat.:"
 msgstr "Lat.:"
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UpdateNotification.vue
 msgid "Later"
 msgstr "Mais tarde"
@@ -7571,6 +7587,10 @@ msgstr "Nenhuma configuração disponível para a seleção atual."
 msgid ""
 "No settings of '${ 0 }' were found for this vehicle. Pick another user or "
 "start from Cockpit's defaults."
+msgstr ""
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid "No settings of the default user were found for this vehicle."
 msgstr ""
 
 #: src/components/mini-widgets/SnapshotTool.vue
@@ -8896,9 +8916,17 @@ msgstr "Remover veículo"
 msgid "Removed \"${ 0 }\" from the library."
 msgstr "\"${ 0 }\" removido da biblioteca."
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename"
+msgstr ""
+
 #: src/components/mini-widgets/MissionIdentifier.vue
 msgid "Rename current mission"
 msgstr "Renomear missão atual"
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename the default user"
+msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Render mode"
@@ -11788,6 +11816,7 @@ msgstr ""
 msgid "User settings"
 msgstr "Configurações do usuário"
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UserNameInputDialog.vue
 msgid "Username"
 msgstr "Nome de usuário"
@@ -12630,6 +12659,12 @@ msgid ""
 msgstr ""
 "Você está executando a versão x64 do Cockpit em um Mac com Apple Silicon "
 "(série M), o que causa desempenho gravemente degradado, incluindo:"
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid ""
+"You are using Cockpit's default user. Give it a name to keep your settings "
+"easy to manage under your own user."
+msgstr ""
 
 #: src/views/ConfigurationVideoView.vue
 msgid ""

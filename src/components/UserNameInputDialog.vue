@@ -53,7 +53,7 @@
             <div class="flex align-center justify-center w-full flex-wrap mb-6" :class="{ 'mb-12': isOnEditMode }">
               <div>
                 <v-btn
-                  v-for="username in usernamesStoredOnBlueOS"
+                  v-for="username in visibleUsernames"
                   :key="username"
                   variant="flat"
                   class="relative bg-[#FFFFFF18] m-2"
@@ -324,9 +324,16 @@ const isSettingsSourceSelectable = computed(() => {
   const typedUsername = slugify(newUsername.value, { lower: true })
   return !isUsernamesEmpty.value && !usernamesStoredOnBlueOS.value?.includes(typedUsername)
 })
+// A renamed default user stays stored, as other computers on the vehicle may still use it, but leaves the lists.
+const visibleUsernames = computed(() =>
+  (usernamesStoredOnBlueOS.value ?? []).filter(
+    (username) =>
+      username !== fallbackUsername || !missionStore.isDefaultUserRenamed || isDefaultUsername(missionStore.username)
+  )
+)
 const settingsSourceOptions = computed(() => [
   { title: t`Cockpit's defaults`, value: startFromDefaults },
-  ...(usernamesStoredOnBlueOS.value ?? []).map((username) => ({ title: usernameLabel(username), value: username })),
+  ...visibleUsernames.value.map((username) => ({ title: usernameLabel(username), value: username })),
 ])
 
 const onSettingsSourceSelected = (source: string): void => {
