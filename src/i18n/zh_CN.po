@@ -10934,25 +10934,25 @@ msgstr "用户设置"
 msgid "Username"
 msgstr "用户名"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid ""
 "Username can only contain letters, numbers, and the following characters: _ "
 "- ."
 msgstr "用户名只能包含字母、数字和以下字符：_ - ."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"cockpit\" as it is reserved for internal use."
 msgstr "用户名不能包含“cockpit”，因为它保留供内部使用。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"fallback\" as it is reserved for internal use."
 msgstr "用户名不能包含“fallback”，因为它保留供内部使用。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain spaces."
 msgstr "用户名不能包含空格。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at least 3 characters long."
 msgstr "用户名至少需要3个字符。"
 
@@ -10962,11 +10962,11 @@ msgid ""
 "disabled."
 msgstr "用户名长度至少为 3 个字符。未设置用户名。自动同步已禁用。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at most 16 characters long."
 msgstr "用户名最多16个字符。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be lowercase."
 msgstr "用户名必须是小写。"
 

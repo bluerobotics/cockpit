@@ -11766,7 +11766,7 @@ msgstr "Configurações do usuário"
 msgid "Username"
 msgstr "Nome de usuário"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid ""
 "Username can only contain letters, numbers, and the following characters: _ "
 "- ."
@@ -11774,23 +11774,23 @@ msgstr ""
 "O nome de usuário só pode conter letras, números e os seguintes caracteres: "
 "_ - ."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"cockpit\" as it is reserved for internal use."
 msgstr ""
 "O nome de usuário não pode conter \"cockpit\", pois é reservado para uso "
 "interno."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"fallback\" as it is reserved for internal use."
 msgstr ""
 "O nome de usuário não pode conter \"fallback\", pois é reservado para uso "
 "interno."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain spaces."
 msgstr "O nome de usuário não pode conter espaços."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at least 3 characters long."
 msgstr "O nome de usuário deve ter pelo menos 3 caracteres."
 
@@ -11802,11 +11802,11 @@ msgstr ""
 "O nome de usuário deve ter pelo menos 3 caracteres. Nenhum nome de usuário "
 "foi definido. Sincronização automática desativada."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at most 16 characters long."
 msgstr "O nome de usuário deve ter no máximo 16 caracteres."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be lowercase."
 msgstr "O nome de usuário deve estar em letras minúsculas."
 
