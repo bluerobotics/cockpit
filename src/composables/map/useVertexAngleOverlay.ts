@@ -1,9 +1,10 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 
-import { computeVertexAngle } from '@/libs/map/utils-map'
+import { computeVertexAngle, outwardPillTransform } from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
 
 const ANGLE_PANE = 'measureAnglePane'
+const TAG_GAP_PX = 3
 
 /** A `[prev, curr, next]` vertex triple whose interior angle at `curr` should be drawn. */
 export type VertexAngleTriple = [WaypointCoordinates, WaypointCoordinates, WaypointCoordinates]
@@ -50,7 +51,7 @@ export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
     const map = mapRef
     const mapZoom = map.getZoom()
     const angles = triples
-      .map(([prev, curr, next]) => computeVertexAngle(prev, curr, next, mapZoom))
+      .map(([prev, curr, next]) => ({ ...computeVertexAngle(prev, curr, next, mapZoom), vertex: curr }))
       .filter((angle) => angle.labelAt !== null)
 
     while (arcLayers.length > angles.length) {
@@ -85,6 +86,10 @@ export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
         tagLayers[i] = tag
         tagPillEls[i] = tag.getElement()?.querySelector('.measure-angle-pill') ?? null
       }
+      const from = map.latLngToContainerPoint(angle.vertex)
+      const to = map.latLngToContainerPoint(labelAt)
+      const pill = tagPillEls[i]
+      if (pill) pill.style.transform = outwardPillTransform(to.x - from.x, to.y - from.y, TAG_GAP_PX)
     })
   }
 
