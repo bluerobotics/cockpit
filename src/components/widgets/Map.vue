@@ -60,7 +60,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
-            class="absolute right-[193px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
+            class="absolute right-[191px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
             :text="t`Edit mission`"
             append-icon="mdi-map-marker-radius-outline"
@@ -90,6 +90,15 @@
         :has-mission-waypoints="hasMissionWaypoints"
         :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
         @center-on-mission="centerOnMission"
+      />
+      <MapMeasureControl
+        v-model:open="measureDialOpen"
+        :show-activator="showButtons"
+        :waypoints="mapWaypoints"
+        :home="home"
+        :vehicle-position="vehiclePosition"
+        :cruise-speed="missionStore.cruiseSpeed"
+        :activator-style="{ bottom: bottomButtonsDisplacement, right: '377px', zIndex: 1002 }"
       />
       <MapNorthIndicator v-if="showButtons" class="north-indicator" />
       <PoiMapArrows
@@ -270,6 +279,7 @@ import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
+import MapMeasureControl from '@/components/MapMeasureControl.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
 import PoiManager from '@/components/poi/PoiManager.vue'
@@ -316,6 +326,7 @@ import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
   applyFollowZoomMode,
+  applyMapCenterRequest,
   createGridOverlay,
   fitMapToWaypoints,
   metersPerPixel,
@@ -387,12 +398,14 @@ const mapId = computed(() => `map-${widget.value.hash}`)
 // dial has to keep the buttons mounted without also opening its neighbour.
 const centerDialOpen = ref(false)
 const fenceDialOpen = ref(false)
+const measureDialOpen = ref(false)
 const showButtons = computed(
   () =>
     isMouseOver.value ||
     downloadMenuOpen.value ||
     centerDialOpen.value ||
     fenceDialOpen.value ||
+    measureDialOpen.value ||
     widgetStore.isFullScreen(widget.value)
 )
 const mapReady = ref(false)
@@ -958,7 +971,7 @@ watch(
   () => missionStore.mapCenterOnRequest,
   (request) => {
     if (!request || !map.value || !isFlightVisible.value) return
-    map.value.setView(request.coordinates as LatLngTuple, map.value.getZoom(), { animate: true })
+    applyMapCenterRequest(map.value, request)
   }
 )
 
@@ -1802,6 +1815,7 @@ const pauseMapWhileHidden = (): void => {
   showGlobalOriginDialog.value = false
   centerDialOpen.value = false
   fenceDialOpen.value = false
+  measureDialOpen.value = false
   hideContextMenuAndMarker()
   poiPopupRef.value?.close()
   poiManagerMapWidgetRef.value?.closeDialog(false)
@@ -1968,9 +1982,6 @@ const bottomButtonsDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).bottom, 0)}px`
 })
 
-// The fence control only mounts on ArduPilot, so the scale control clears its slot only when it is there.
-const scaleControlRightDisplacement = computed(() => (fenceStore.isArduPilot ? '383px' : '338px'))
-
 const topProgressBarDisplacement = computed(() => {
   return `${Math.max(-widgetStore.widgetClearanceForVisibleArea(widget.value).top, 0)}px`
 })
@@ -2076,21 +2087,6 @@ const centerOnMission = (): void => {
 :global(.leaflet-container.cockpit-drag-active .waypoint-tooltip:not(.waypoint-tooltip--icon)),
 :global(.leaflet-container.cockpit-drag-active .waypoint-marker-icon) {
   display: none !important;
-}
-
-:deep(.vehicle-tooltip) {
-  background-color: var(--glass-background) !important;
-  backdrop-filter: var(--glass-filter);
-  border: var(--glass-border) !important;
-  box-shadow: var(--glass-box-shadow);
-  color: var(--glass-color);
-  padding: 0.75rem;
-  border-radius: 8px;
-  z-index: 100;
-}
-
-:deep(.vehicle-tooltip::before) {
-  border-right-color: var(--glass-background) !important;
 }
 
 :deep(.history-polyline-tooltip) {
@@ -2265,7 +2261,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: v-bind('scaleControlRightDisplacement'); /* Position to the left of the buttons */
+  right: 424px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;

@@ -1,9 +1,10 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 
-import { computeVertexAngle } from '@/libs/map/utils-map'
+import { computeVertexAngle, outwardPillTransform } from '@/libs/map/utils-map'
 import type { WaypointCoordinates } from '@/types/mission'
 
 const ANGLE_PANE = 'measureAnglePane'
+const TAG_GAP_PX = 3
 
 /** A `[prev, curr, next]` vertex triple whose interior angle at `curr` should be drawn. */
 export type VertexAngleTriple = [WaypointCoordinates, WaypointCoordinates, WaypointCoordinates]
@@ -20,6 +21,8 @@ export interface UseVertexAngleOverlayReturn {
   renderVertexAngle: (prev: WaypointCoordinates, curr: WaypointCoordinates, next: WaypointCoordinates) => void
   /** Removes every angle arc and tag currently on the map. */
   clearVertexAngles: () => void
+  /** The degree tags currently drawn, for keeping other readouts clear of them. */
+  tagElements: () => HTMLElement[]
   /** Clears the overlay and unbinds the map. */
   destroyAngleOverlay: () => void
 }
@@ -28,9 +31,10 @@ export interface UseVertexAngleOverlayReturn {
  * Draws interior-angle arcs with degree labels at path vertices on a Leaflet map, recycling layers across ticks
  * so it stays cheap on pointer-frequency updates. Shared by the live measure while drawing and by the
  * drag-measure overlay, and reusable by any map surface that needs to visualize turn angles.
+ * @param {() => string} color Color of the arcs, read when each one is created.
  * @returns {UseVertexAngleOverlayReturn} Methods to initialize, render, clear, and tear down the angle overlay.
  */
-export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
+export const useVertexAngleOverlay = (color = (): string => '#2563eb'): UseVertexAngleOverlayReturn => {
   let mapRef: LeafletMap | undefined
   let arcLayers: L.Polyline[] = []
   let tagLayers: L.Marker[] = []
@@ -50,7 +54,7 @@ export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
     const map = mapRef
     const mapZoom = map.getZoom()
     const angles = triples
-      .map(([prev, curr, next]) => computeVertexAngle(prev, curr, next, mapZoom))
+      .map(([prev, curr, next]) => ({ ...computeVertexAngle(prev, curr, next, mapZoom), vertex: curr }))
       .filter((angle) => angle.labelAt !== null)
 
     while (arcLayers.length > angles.length) {
@@ -70,7 +74,7 @@ export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
         if (pill) pill.textContent = label
       } else {
         arcLayers[i] = L.polyline(arcLatLngs, {
-          color: '#2563eb',
+          color: color(),
           weight: 2,
           opacity: 0.9,
           interactive: false,
@@ -85,6 +89,10 @@ export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
         tagLayers[i] = tag
         tagPillEls[i] = tag.getElement()?.querySelector('.measure-angle-pill') ?? null
       }
+      const from = map.latLngToContainerPoint(angle.vertex)
+      const to = map.latLngToContainerPoint(labelAt)
+      const pill = tagPillEls[i]
+      if (pill) pill.style.transform = outwardPillTransform(to.x - from.x, to.y - from.y, TAG_GAP_PX)
     })
   }
 
@@ -105,5 +113,14 @@ export const useVertexAngleOverlay = (): UseVertexAngleOverlayReturn => {
     mapRef = undefined
   }
 
-  return { initAngleOverlay, renderVertexAngles, renderVertexAngle, clearVertexAngles, destroyAngleOverlay }
+  const tagElements = (): HTMLElement[] => tagPillEls.filter((pill): pill is HTMLElement => pill !== null)
+
+  return {
+    initAngleOverlay,
+    renderVertexAngles,
+    renderVertexAngle,
+    clearVertexAngles,
+    tagElements,
+    destroyAngleOverlay,
+  }
 }

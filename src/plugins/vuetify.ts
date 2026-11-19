@@ -7,4 +7,7 @@ import { pt, zhHans } from 'vuetify/locale'
 
 import { vuetifyLocale } from '@/libs/i18n'
 
-export default createVuetify({ locale: { locale: vuetifyLocale, messages: { pt, zhHans } } })
+export default createVuetify({
+  locale: { locale: vuetifyLocale, messages: { pt, zhHans } },
+  defaults: { VTooltip: { openDelay: 500 } },
+})
