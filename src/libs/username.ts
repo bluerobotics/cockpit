@@ -1,5 +1,25 @@
 import { t } from 'ttag'
 
+import { fallbackUsername } from '@/types/settings-management'
+
+/**
+ * Whether a username resolves to the default user, which the settings manager stores under `fallbackUsername`
+ * @param {string | null | undefined} username - The username to check
+ * @returns {boolean} True for the default user or an unset username
+ */
+export const isDefaultUsername = (username: string | null | undefined): boolean => {
+  return !username || username === fallbackUsername || username === 'null'
+}
+
+/**
+ * The name shown to the operator for a username, so the default user never surfaces its internal id
+ * @param {string | null | undefined} username - The stored username
+ * @returns {string} The label to display
+ */
+export const usernameLabel = (username: string | null | undefined): string => {
+  return isDefaultUsername(username) ? t`Default user` : (username as string)
+}
+
 /**
  * Checks a username against the rules every Cockpit user must follow
  * @param {string} username - The username to validate

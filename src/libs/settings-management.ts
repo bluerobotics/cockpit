@@ -50,6 +50,8 @@ export const isBlueOsSettingsSyncEnabled = (): boolean => localStorage.getItem(b
 // No `undefined`: a cleared setting is spelled `null`, so writing one with no value at all is a type error.
 export type SettingValue = string | number | boolean | object | null
 
+export type SeedUserOutcome = 'seeded' | 'exists' | 'no-source'
+
 /**
  * Error thrown when the vehicle ID does not match the expected ID
  */
@@ -210,6 +212,7 @@ export class SettingsManager {
   public currentUsername: string = fallbackUsername
   public currentVehicleId: string = fallbackVehicleId
   private listeners: SettingsListeners = {}
+  private defaultValues: Record<string, SettingValue> = {}
   private keyValueUpdateTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
   private pendingKeyValues: Record<
     string,
@@ -361,6 +364,56 @@ export class SettingsManager {
     }
     this.listeners[key].push({ id: listenerId, callback })
     return listenerId
+  }
+
+  /**
+   * Records the default value of a setting, used when a new user starts from the defaults
+   * @param {string} key - The key of the setting
+   * @param {SettingValue} value - The default value of the setting
+   */
+  public registerDefaultValue = (key: string, value: SettingValue): void => {
+    // Snapshot it, since the caller keeps mutating the same object as its live value.
+    this.defaultValues[key] = deserialize(JSON.stringify(value))
+  }
+
+  /**
+   * Gives a new user settings, so switching to it applies them. Defaults are written for the current vehicle, while a
+   * copy takes every vehicle's settings the source user has on this computer, plus the current vehicle's own copy
+   * @param {string} username - The new user
+   * @param {string | null} sourceUser - The user whose settings are copied, or null to start from the defaults
+   * @returns {Promise<SeedUserOutcome>} 'exists' when the user already has settings here or on the vehicle, and
+   * 'no-source' when the source user has none to copy; nothing is written in either case. Rejects when the vehicle
+   * could not be reached
+   */
+  public seedNewUserSettings = async (username: string, sourceUser: string | null): Promise<SeedUserOutcome> => {
+    // ponytail: with no vehicle connected, users stored only on a vehicle are invisible here, so seeding can still
+    // land on one of them and merge into it on the next connection.
+    const vehicleSettings = await this.getValidSettingsFromVehicle(this.currentVehicleAddress)
+    if (this.getLocalSettings()[username] || vehicleSettings[username]) return 'exists'
+
+    const packages: Record<string, SettingsPackage> = {}
+    if (sourceUser === null) {
+      packages[this.currentVehicleId] = {}
+      Object.entries(this.defaultValues).forEach(([key, value]) => {
+        packages[this.currentVehicleId][key] = { epochLastChangedLocally: 0, value: deserialize(JSON.stringify(value)) }
+      })
+    } else {
+      Object.assign(packages, this.getLocalSettings()[sourceUser])
+      if (Object.keys(packages[this.currentVehicleId] ?? {}).length === 0 && vehicleSettings[sourceUser]) {
+        packages[this.currentVehicleId] = vehicleSettings[sourceUser]
+      }
+      Object.keys(packages).forEach((vehicleId) => {
+        if (Object.keys(packages[vehicleId]).length === 0) delete packages[vehicleId]
+      })
+      if (Object.keys(packages).length === 0) return 'no-source'
+    }
+
+    console.log('[SettingsManager]', `Seeding settings of new user '${username}' from '${sourceUser ?? 'defaults'}'.`)
+    Object.entries(packages).forEach(([vehicleId, settings]) => {
+      const seededSettings = this.getSettingsWithEpochZeroed(deserialize(JSON.stringify(settings)))
+      this.setLocalSettingsForUserAndVehicle(username, vehicleId, seededSettings)
+    })
+    return 'seeded'
   }
 
   /**

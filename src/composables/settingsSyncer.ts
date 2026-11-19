@@ -71,6 +71,7 @@ export function useBlueOsStorage<T>(
   const debounceMs = options.debounceMs ?? defaultSettingsSyncDebounceMs
   const maxWaitMs = options.maxWaitMs ?? defaultSettingsSyncMaxWaitMs
   const unrefedDefaultValue = unref(defaultValue)
+  if (unrefedDefaultValue !== undefined) settingsManager.registerDefaultValue(key, unrefedDefaultValue as SettingValue)
   const valueOnLocalStorage = settingsManager.getKeyValue(key)
   let watchUpdaterTimeout: ReturnType<typeof setTimeout> | undefined = undefined
   let firstPendingChangeEpoch: number | undefined = undefined

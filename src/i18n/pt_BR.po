@@ -452,6 +452,11 @@ msgstr "Uma gravação parou inesperadamente. ${ 0 }"
 msgid "A short verification code will be displayed."
 msgstr "Um código de verificação curto será exibido."
 
+#: src/composables/useNewUserSeeding.ts
+#, javascript-format
+msgid "A user named '${ 0 }' already exists."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "A variable with this ID already exists"
 msgstr "Já existe uma variável com este ID"
@@ -2478,6 +2483,10 @@ msgstr ""
 "O padrão do Cockpit é zero milissegundos, mas você pode definir um valor "
 "personalizado ou deixar o campo vazio para usar o padrão do navegador."
 
+#: src/components/UserNameInputDialog.vue
+msgid "Cockpit's defaults"
+msgstr ""
+
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Codec"
 msgstr "Codec"
@@ -2781,6 +2790,10 @@ msgstr "Copiar comando"
 msgid "Copy coordinates"
 msgstr "Copiar coordenadas"
 
+#: src/components/UserNameInputDialog.vue
+msgid "Copy from"
+msgstr ""
+
 #: src/components/BaseStationContextPopup.vue
 #: src/components/poi/PoiActionPopup.vue
 msgid "Copy latitude to clipboard"
@@ -3017,6 +3030,12 @@ msgid ""
 msgstr ""
 "Não foi possível carregar os usuários do veículo. Mostrando apenas os "
 "usuários em cache local - os usuários salvos no veículo continuam existindo."
+
+#: src/composables/useNewUserSeeding.ts
+msgid ""
+"Couldn't reach the vehicle to create the user. Check the connection and try "
+"again."
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 msgid "Counting chunks and calculating sizes..."
@@ -3400,6 +3419,10 @@ msgstr "Posição padrão do mapa:"
 #: src/views/ConfigurationMissionView.vue
 msgid "Default map tile provider"
 msgstr "Provedor de tiles padrão do mapa"
+
+#: src/libs/username.ts
+msgid "Default user"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Default views"
@@ -7546,6 +7569,13 @@ msgstr "Nenhuma porta serial encontrada"
 #: src/components/configuration/CockpitSettingsManager.vue
 msgid "No settings available for current selection."
 msgstr "Nenhuma configuração disponível para a seleção atual."
+
+#: src/composables/useNewUserSeeding.ts
+#, javascript-format
+msgid ""
+"No settings of '${ 0 }' were found to copy. Pick another user or start from "
+"Cockpit's defaults."
+msgstr ""
 
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid ""
@@ -12744,10 +12774,6 @@ msgstr ""
 msgid "Your current mapping is missing ${ 0 } default axis function(s)."
 msgstr "Seu mapeamento atual não tem ${ 0 } função(ões) de eixo padrão."
 
-#: src/components/UserNameInputDialog.vue
-msgid "Your identification username."
-msgstr "Seu nome de usuário de identificação."
-
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #, javascript-format
 msgid "Your joystick mapping already matches the default for ${ 0 }."
@@ -13361,3 +13387,6 @@ msgstr ""
 
 #~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
 #~ msgstr "URI de um MAVLink2REST, ou sitl://ardusub para o simulador"
+
+#~ msgid "Your identification username."
+#~ msgstr "Seu nome de usuário de identificação."
