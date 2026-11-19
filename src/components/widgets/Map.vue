@@ -60,7 +60,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
-            class="absolute right-[193px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
+            class="absolute right-[191px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
             :text="t`Edit mission`"
             append-icon="mdi-map-marker-radius-outline"
@@ -98,7 +98,7 @@
         :home="home"
         :vehicle-position="vehiclePosition"
         :cruise-speed="missionStore.cruiseSpeed"
-        :activator-style="{ bottom: bottomButtonsDisplacement, right: '383px', zIndex: 1002 }"
+        :activator-style="{ bottom: bottomButtonsDisplacement, right: '377px', zIndex: 1002 }"
       />
       <MapNorthIndicator v-if="showButtons" class="north-indicator" />
       <PoiMapArrows
@@ -2261,7 +2261,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 440px; /* Position to the left of the buttons */
+  right: 424px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
