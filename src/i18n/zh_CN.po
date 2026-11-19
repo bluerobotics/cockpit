@@ -407,6 +407,10 @@ msgstr "将显示一个短验证码。"
 msgid "A user named '${ 0 }' already exists."
 msgstr ""
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid "A user with this name already exists."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "A variable with this ID already exists"
 msgstr "已存在使用此 ID 的变量"
@@ -3183,6 +3187,11 @@ msgstr "默认地图瓦片提供商"
 msgid "Default user"
 msgstr ""
 
+#: src/components/DefaultUserRenameDialog.vue
+#, javascript-format
+msgid "Default user renamed to '${ 0 }'."
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Default views"
 msgstr "默认视图"
@@ -5865,6 +5874,7 @@ msgstr "大型缓冲区（${ 0 } 条消息）。随着新消息到达，所选�
 msgid "Lat.:"
 msgstr "纬度："
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UpdateNotification.vue
 msgid "Later"
 msgstr "稍后"
@@ -8333,9 +8343,17 @@ msgstr "移除设备"
 msgid "Removed \"${ 0 }\" from the library."
 msgstr "已从库中移除“${ 0 }”。"
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename"
+msgstr ""
+
 #: src/components/mini-widgets/MissionIdentifier.vue
 msgid "Rename current mission"
 msgstr "重命名当前任务"
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename the default user"
+msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Render mode"
@@ -10960,6 +10978,7 @@ msgstr "用户相关配置。您可以设置当前设备的用户以及创建新
 msgid "User settings"
 msgstr "用户设置"
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UserNameInputDialog.vue
 msgid "Username"
 msgstr "用户名"
@@ -11725,6 +11744,12 @@ msgid ""
 "You are running the x64 version of Cockpit on an Apple Silicon Mac (M "
 "series), which causes severely degraded performance, including:"
 msgstr "您正在 Apple Silicon Mac（M 系列）上运行 x64 版本的 Cockpit，这会导致性能严重下降，包括："
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid ""
+"You are using Cockpit's default user. Give it a name to keep your settings "
+"easy to manage under your own user."
+msgstr ""
 
 #: src/views/ConfigurationVideoView.vue
 msgid ""

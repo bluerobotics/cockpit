@@ -94,6 +94,7 @@
   <VehicleDiscoveryDialog v-model="showDiscoveryDialog" show-auto-search-option />
   <CameraReplacementDialog />
   <OtherControlStationWarningDialog />
+  <DefaultUserRenameDialog />
   <ExternalFeaturesDiscoveryModal auto-check-on-mount />
   <VehicleDefaultsAutoImportModal />
   <VehicleDefaultsViewsImportModal />
@@ -134,6 +135,7 @@ import BaseStationContextPopup from '@/components/BaseStationContextPopup.vue'
 import CameraReplacementDialog from '@/components/CameraReplacementDialog.vue'
 import ConsoleViewer from '@/components/ConsoleViewer.vue'
 import DataPrivacyModal from '@/components/DataPrivacyModal.vue'
+import DefaultUserRenameDialog from '@/components/DefaultUserRenameDialog.vue'
 import ExternalFeaturesDiscoveryModal from '@/components/ExternalFeaturesDiscoveryModal.vue'
 import FloatingWrapper from '@/components/FloatingWrapper.vue'
 import GlassModal from '@/components/GlassModal.vue'
