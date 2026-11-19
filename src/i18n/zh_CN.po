@@ -2301,6 +2301,10 @@ msgid ""
 "leave the field empty to use your browser's default."
 msgstr "Cockpit 的默认值为 0 毫秒，但您可以设置自定义值，或留空以使用浏览器默认值。"
 
+#: src/components/UserNameInputDialog.vue
+msgid "Cockpit's defaults"
+msgstr ""
+
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Codec"
 msgstr "编解码器"
@@ -2581,6 +2585,10 @@ msgstr "复制命令"
 msgid "Copy coordinates"
 msgstr "复制坐标"
 
+#: src/components/UserNameInputDialog.vue
+msgid "Copy from"
+msgstr ""
+
 #: src/components/BaseStationContextPopup.vue
 #: src/components/poi/PoiActionPopup.vue
 msgid "Copy latitude to clipboard"
@@ -2784,6 +2792,13 @@ msgid ""
 "Couldn't load users from the vehicle. Showing locally cached users only - "
 "any users saved on the vehicle still exist."
 msgstr "无法从设备加载用户。仅显示本地缓存的用户，保存在设备上的用户仍然存在。"
+
+#: src/components/UserNameInputDialog.vue
+#, javascript-format
+msgid ""
+"Couldn't reach the vehicle to copy the settings of '${ 0 }'. Check the "
+"connection and try again."
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 msgid "Counting chunks and calculating sizes..."
@@ -3159,6 +3174,10 @@ msgstr "默认地图位置："
 #: src/views/ConfigurationMissionView.vue
 msgid "Default map tile provider"
 msgstr "默认地图瓦片提供商"
+
+#: src/libs/username.ts
+msgid "Default user"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Default views"
@@ -7085,6 +7104,13 @@ msgstr "未找到串口"
 #: src/components/configuration/CockpitSettingsManager.vue
 msgid "No settings available for current selection."
 msgstr "当前选项无可用设置。"
+
+#: src/components/UserNameInputDialog.vue
+#, javascript-format
+msgid ""
+"No settings of '${ 0 }' were found for this vehicle. Pick another user or "
+"start from Cockpit's defaults."
+msgstr ""
 
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid ""
@@ -11814,10 +11840,6 @@ msgstr "您当前的映射中有 ${ 0 } 个轴函数的范围与默认值相差�
 msgid "Your current mapping is missing ${ 0 } default axis function(s)."
 msgstr "您当前的映射缺少 ${ 0 } 个默认轴函数。"
 
-#: src/components/UserNameInputDialog.vue
-msgid "Your identification username."
-msgstr "您的身份识别用户名。"
-
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #, javascript-format
 msgid "Your joystick mapping already matches the default for ${ 0 }."
@@ -12389,3 +12411,6 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
 #~ msgstr "Mavlink2Rest 的 URI，或模拟器使用的 sitl://ardusub"
+
+#~ msgid "Your identification username."
+#~ msgstr "您的身份识别用户名。"
