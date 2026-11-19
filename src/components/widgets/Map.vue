@@ -60,7 +60,7 @@
         <template #activator="{ props: tooltipProps }">
           <v-btn
             v-bind="tooltipProps"
-            class="absolute right-[193px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
+            class="absolute right-[191px] w-[140px] mb-[13px] bottom-button bg-slate-50 text-[12px] font-bold"
             elevation="4"
             :text="t`Edit mission`"
             append-icon="mdi-map-marker-radius-outline"
@@ -95,7 +95,7 @@
         v-if="showButtons"
         v-model:open="layerSelectorOpen"
         :control="layerControl"
-        :activator-style="{ right: '432px', bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+        :activator-style="{ right: '423px', bottom: bottomButtonsDisplacement, zIndex: 1002 }"
       />
       <MapMeasureControl
         v-model:open="measureDialOpen"
@@ -104,7 +104,7 @@
         :home="home"
         :vehicle-position="vehiclePosition"
         :cruise-speed="missionStore.cruiseSpeed"
-        :activator-style="{ bottom: bottomButtonsDisplacement, right: '382px', zIndex: 1002 }"
+        :activator-style="{ bottom: bottomButtonsDisplacement, right: '377px', zIndex: 1002 }"
       />
       <MapNorthIndicator v-if="showButtons" class="north-indicator" />
       <PoiMapArrows
@@ -2173,7 +2173,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 482px; /* Position to the left of the buttons */
+  right: 470px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;

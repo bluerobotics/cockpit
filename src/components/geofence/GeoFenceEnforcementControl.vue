@@ -14,7 +14,7 @@
             v-bind="{ ...activatorProps, ...tooltipProps }"
             :class="[
               enforcementActive ? 'text-white' : 'bg-slate-50',
-              'absolute right-[338px] m-3 text-[14px]',
+              'absolute right-[332px] m-3 text-[14px]',
               { 'opacity-60': !hasVehicleFence },
             ]"
             :style="[
