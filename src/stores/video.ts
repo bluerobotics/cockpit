@@ -87,7 +87,13 @@ export const useVideoStore = defineStore('video', () => {
 
   const streamsCorrespondency = useBlueOsStorage<VideoStreamCorrespondency[]>('cockpit-streams-correspondency', [])
   const persistedIgnoredStreamExternalIds = useBlueOsStorage<string[]>('cockpit-ignored-stream-external-ids', [])
-  const allowedIceIps = useBlueOsStorage<string[]>('cockpit-allowed-stream-ips', [])
+  const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips-v2', [])
+  // The address Cockpit reached the vehicle through is the one route known to work from this computer
+  // ponytail: only an IP matches a candidate, so a hostname address adds no route here; a session that retries
+  // without the filter when it fails to connect would also cover that case.
+  const streamIceIps = computed(() =>
+    allowedIceIps.value.isEmpty() ? [] : [...new Set([...allowedIceIps.value, mainVehicleStore.globalAddress])]
+  )
   const enableAutoIceIpFetch = useBlueOsStorage('cockpit-enable-auto-ice-ip-fetch', true)
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
   const jitterBufferTarget = useBlueOsStorage<number>('cockpit-jitter-buffer-target', 0)
@@ -638,7 +644,7 @@ export const useVideoStore = defineStore('video', () => {
 
     const { mediaStream, connected } = webRtcManager.startStream(
       stream,
-      allowedIceIps,
+      streamIceIps,
       allowedIceProtocols,
       jitterBufferTarget
     )
@@ -1669,7 +1675,7 @@ export const useVideoStore = defineStore('video', () => {
       if (!allowedIceIps.value.isEmpty()) {
         // If the user has selected IPs, but none of them are available, warn about it, since no video will be streamed.
         // Otherwise, if IPs are selected and available, clear the check routine.
-        const availableSelectedIps = availableIceIps.value.filter((ip) => allowedIceIps.value.includes(ip))
+        const availableSelectedIps = availableIceIps.value.filter((ip) => streamIceIps.value.includes(ip))
         if (availableSelectedIps.isEmpty() && !selectedIpNotAvailableWarningIssued) {
           console.warn('Selected ICE IPs are not available. Warning user.')
           issueSelectedIpNotAvailableWarning()
@@ -1953,6 +1959,7 @@ export const useVideoStore = defineStore('video', () => {
   return {
     availableIceIps,
     allowedIceIps,
+    streamIceIps,
     enableAutoIceIpFetch,
     allowedIceProtocols,
     jitterBufferTarget,
