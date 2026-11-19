@@ -495,7 +495,7 @@ const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
   return { iconSize: [26, 26], iconAnchor: [13, 13] } // md size
 }
 
-const createWaypointMarkerHtml = (isReached: boolean, isCurrent = false): string => {
+const createWaypointMarkerHtml = (isReached: boolean, isCurrent: boolean, seq: number): string => {
   let baseClass = 'marker-icon'
   if (isReached) {
     baseClass = 'marker-icon marker-icon--reached'
@@ -504,20 +504,22 @@ const createWaypointMarkerHtml = (isReached: boolean, isCurrent = false): string
   }
   const size = getEffectiveMarkerSize(zoom.value)
   const markerSizeClass = `wp-marker-${size}`
+  const number = size === 'md' ? `<span class="waypoint-number">${seq}</span>` : ''
 
   return `
     <div class="${markerSizeClass}">
       <div class="${baseClass} waypoint-main-marker"></div>
+      ${number}
     </div>
   `
 }
 
-const createWaypointMarkerIcon = (isReached: boolean, isCurrent = false): L.DivIcon => {
+const createWaypointMarkerIcon = (isReached: boolean, isCurrent: boolean, seq: number): L.DivIcon => {
   const markerSize = getEffectiveMarkerSize(zoom.value)
   const dimensions = getIconDimensionsFromMarkerSize(markerSize)
 
   return L.divIcon({
-    html: createWaypointMarkerHtml(isReached, isCurrent),
+    html: createWaypointMarkerHtml(isReached, isCurrent, seq),
     className: 'waypoint-marker-icon',
     iconSize: dimensions.iconSize,
     iconAnchor: dimensions.iconAnchor,
@@ -530,33 +532,7 @@ const applyWaypointMarkerStyle = (seq: number): void => {
   const isReached = getReachedWaypointIndices.value.has(seq)
   const idx = seq - 1
   const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
-  const markerSize = getEffectiveMarkerSize(zoom.value)
-  const dimensions = getIconDimensionsFromMarkerSize(markerSize)
-
-  marker.setIcon(
-    L.divIcon({
-      html: createWaypointMarkerHtml(isReached, isCurrent),
-      className: 'waypoint-marker-icon',
-      iconSize: dimensions.iconSize,
-      iconAnchor: dimensions.iconAnchor,
-    })
-  )
-
-  // Updates the tooltip class for reached/current waypoints and visibility based on size
-  const tooltip = marker.getTooltip()
-  if (tooltip) {
-    tooltip.setOpacity(markerSize === 'md' ? 1 : 0)
-
-    const tooltipElement = tooltip.getElement()
-    if (tooltipElement) {
-      tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
-      if (isReached) {
-        tooltipElement.classList.add('waypoint-tooltip--reached')
-      } else if (isCurrent) {
-        tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
-      }
-    }
-  }
+  marker.setIcon(createWaypointMarkerIcon(isReached, isCurrent, seq))
 }
 
 const refreshReachedWaypointMarkerStyles = (): void => {
@@ -853,7 +829,7 @@ onMounted(async () => {
 
   map.value.on('dragstart', () => {
     isDragging.value = true
-    // While the user drags the map, suppress the permanent waypoint tooltips and the waypoint marker DOM elements via CSS.
+    // While the user drags the map, suppress the waypoint marker DOM elements, numbers included, via CSS.
     map.value?.getContainer().classList.add('cockpit-drag-active')
   })
 
@@ -871,15 +847,7 @@ onMounted(async () => {
 
   // Refreshes the marker positions when the map is ready
   map.value.whenReady(() => {
-    nextTick(() => {
-      Object.entries(reachedWaypoints.value).forEach(([seq, marker]) => {
-        const seqNum = Number(seq)
-        const idx = seqNum - 1
-        const isReached = getReachedWaypointIndices.value.has(seqNum)
-        const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
-        marker.setIcon(createWaypointMarkerIcon(isReached, isCurrent))
-      })
-    })
+    nextTick(refreshReachedWaypointMarkerStyles)
   })
 
   map.value.on('contextmenu', (event: LeafletMouseEvent) => {
@@ -1330,24 +1298,10 @@ watch(mapWaypoints, (newWaypoints) => {
     if (!marker) {
       const isReached = getReachedWaypointIndices.value.has(seq)
       const isCurrent = idx === currentMapWpIndex.value
-      const markerIcon = createWaypointMarkerIcon(isReached, isCurrent)
+      const markerIcon = createWaypointMarkerIcon(isReached, isCurrent, seq)
       marker = L.marker(waypoint.coordinates, { icon: markerIcon })
       reachedWaypoints.value[seq] = marker
 
-      const markerSizeForTooltip = getEffectiveMarkerSize(zoom.value)
-      const markerTooltip = L.tooltip({
-        content: seq.toString(),
-        permanent: true,
-        direction: 'center',
-        className: isReached
-          ? 'waypoint-tooltip waypoint-tooltip--reached'
-          : isCurrent
-          ? 'waypoint-tooltip waypoint-tooltip--current-waypoint'
-          : 'waypoint-tooltip',
-        opacity: markerSizeForTooltip === 'md' ? 1 : 0,
-      })
-
-      marker.bindTooltip(markerTooltip)
       marker.on('contextmenu', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e)
         e.originalEvent.stopPropagation()
@@ -1357,43 +1311,13 @@ watch(mapWaypoints, (newWaypoints) => {
       map.value?.addLayer(marker)
     } else {
       marker.setLatLng(waypoint.coordinates as LatLngTuple)
-      const markerSizeForUpdate = getEffectiveMarkerSize(zoom.value)
-      const tooltip = marker.getTooltip()
-      if (tooltip) {
-        const showNumber = markerSizeForUpdate === 'md'
-        if (showNumber) tooltip.setContent(seq.toString())
-        tooltip.setOpacity(showNumber ? 1 : 0)
-      }
       applyWaypointMarkerStyle(seq)
     }
   })
 })
 
 // Keep an eye on the current mission status and update the waypoint markers accordingly
-watch([getReachedWaypointIndices, currentMapWpIndex], () => {
-  Object.entries(reachedWaypoints.value).forEach(([seqStr, marker]) => {
-    const seq = Number(seqStr)
-    const idx = seq - 1
-    const isCurrent = currentMapWpIndex.value >= 0 && idx === currentMapWpIndex.value
-    const isReached = getReachedWaypointIndices.value.has(seq)
-
-    applyWaypointMarkerStyle(seq)
-
-    const tooltip = marker.getTooltip()
-    if (tooltip) {
-      const tooltipElement = tooltip.getElement()
-      if (tooltipElement) {
-        tooltipElement.classList.remove('waypoint-tooltip--reached', 'waypoint-tooltip--current-waypoint')
-        if (isReached) {
-          tooltipElement.classList.add('waypoint-tooltip--reached')
-        } else if (isCurrent) {
-          tooltipElement.classList.add('waypoint-tooltip--current-waypoint')
-        }
-      }
-      tooltip.update()
-    }
-  })
-})
+watch([getReachedWaypointIndices, currentMapWpIndex], refreshReachedWaypointMarkerStyles)
 
 useMapMissionLayer(map, {
   waypoints: () => mapWaypoints.value,
@@ -2070,10 +1994,8 @@ const centerOnMission = (): void => {
   z-index: 100;
 }
 
-/* While the user is actively dragging the map, hide the numbered waypoint tooltips and
- * the waypoint marker DOM elements. Singular icon tooltips (home, goto, global origin,
- * default-position) are kept visible. */
-:global(.leaflet-container.cockpit-drag-active .waypoint-tooltip:not(.waypoint-tooltip--icon)),
+/* While the user is actively dragging the map, hide the waypoint marker DOM elements, numbers
+ * included. Singular icon tooltips (home, goto, global origin, default-position) are kept visible. */
 :global(.leaflet-container.cockpit-drag-active .waypoint-marker-icon) {
   display: none !important;
 }
@@ -2155,26 +2077,6 @@ const centerOnMission = (): void => {
 :deep(.history-tooltip-reset:hover) {
   opacity: 1;
   background-color: theme('colors.odometer / 15%');
-}
-
-:deep(.waypoint-tooltip--current-waypoint) {
-  background-color: #925801;
-  border: 1px solid #ffffffaa;
-  border-radius: 50%;
-  box-shadow: 2px 3px 1px rgba(0, 0, 0, 0.3);
-  color: white;
-  padding: 0;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-:deep(.waypoint-tooltip--reached) {
-  color: #000000;
-  font-weight: bold;
 }
 
 .vehicle-marker {
