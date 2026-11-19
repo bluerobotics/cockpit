@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from 'ttag'
 import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'

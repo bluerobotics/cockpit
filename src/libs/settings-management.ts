@@ -210,6 +210,7 @@ export class SettingsManager {
   public currentUsername: string = fallbackUsername
   public currentVehicleId: string = fallbackVehicleId
   private listeners: SettingsListeners = {}
+  private defaultValues: Record<string, SettingValue> = {}
   private keyValueUpdateTimeouts: Record<string, ReturnType<typeof setTimeout>> = {}
   private pendingKeyValues: Record<
     string,
@@ -361,6 +362,43 @@ export class SettingsManager {
     }
     this.listeners[key].push({ id: listenerId, callback })
     return listenerId
+  }
+
+  /**
+   * Records the default value of a setting, used when a new user starts from the defaults
+   * @param {string} key - The key of the setting
+   * @param {SettingValue} value - The default value of the setting
+   */
+  public registerDefaultValue = (key: string, value: SettingValue): void => {
+    // Snapshot it, since the caller keeps mutating the same object as its live value.
+    this.defaultValues[key] = deserialize(JSON.stringify(value))
+  }
+
+  /**
+   * Gives a user with no settings yet a package for the current vehicle, so switching to it applies that package
+   * @param {string} username - The new user
+   * @param {string | null} sourceUser - The user whose settings are copied, or null to start from the defaults
+   * @returns {Promise<boolean>} False when the source user has no settings to copy, in which case nothing is written.
+   * Rejects when those settings had to be read from a vehicle that could not be reached
+   */
+  public seedNewUserSettings = async (username: string, sourceUser: string | null): Promise<boolean> => {
+    let settings: SettingsPackage = {}
+    if (sourceUser === null) {
+      Object.entries(this.defaultValues).forEach(([key, value]) => {
+        settings[key] = { epochLastChangedLocally: 0, value: deserialize(JSON.stringify(value)) }
+      })
+    } else {
+      settings = this.getSettingsForUserAndVehicle(sourceUser, this.currentVehicleId)
+      if (Object.keys(settings).length === 0 && this.hasVehicleAddress()) {
+        settings = (await this.getValidSettingsFromVehicle(this.currentVehicleAddress))[sourceUser] ?? {}
+      }
+      if (Object.keys(settings).length === 0) return false
+      settings = this.getSettingsWithEpochZeroed(deserialize(JSON.stringify(settings)))
+    }
+
+    console.log('[SettingsManager]', `Seeding settings of new user '${username}' from '${sourceUser ?? 'defaults'}'.`)
+    this.setLocalSettingsForUserAndVehicle(username, this.currentVehicleId, settings)
+    return true
   }
 
   /**
@@ -1326,6 +1364,9 @@ export class SettingsManager {
       this.currentUsername = username
     }
 
+    // Update last connected user to the current one
+    this.saveLastConnectedUser(this.currentUsername)
+
     let toBeUsedUser: string | undefined | undefined = undefined
     let toBeUsedVehicle: string | undefined | undefined = undefined
 
@@ -1382,9 +1423,6 @@ export class SettingsManager {
 
     // Set the local settings to the best settings between local and vehicle for the current user and vehicle
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, bestSettingsForCurrentUserAndVehicle)
-
-    // Update last connected user to the current one
-    this.saveLastConnectedUser(this.currentUsername)
 
     // Apply side effect of setting local settings
     this.notifyAllListenersAboutSettingsChange()
