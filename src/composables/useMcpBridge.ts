@@ -37,12 +37,14 @@ const widgetsWithProtectedOptions = [
 ]
 const viewHashInput = z.string().min(1).optional().describe('View to act on. Defaults to the current one')
 const scriptDescription =
-  "Runs when the widget mounts, in its own scope, with two arguments. root is this widget's element: find " +
-  'the markup with root.querySelector, never document.getElementById, since the widget may be copied. ' +
-  'cockpit is the data-lake API: register with cockpit.listenDataLakeVariable(id, callback), ' +
-  'cockpit.setInterval and cockpit.setTimeout so they are undone with the widget, and pass any other ' +
-  'teardown to cockpit.onCleanup(fn). Top-level functions are not global, so attach event listeners from ' +
-  'the script rather than with inline onclick attributes.'
+  "Runs when the widget mounts, in a sandboxed frame holding this widget's HTML and CSS over Cockpit's own " +
+  "stylesheets, so document is the widget's own and nothing else of Cockpit is reachable. It runs in its own " +
+  "scope with root (the frame's body) and cockpit as arguments. cockpit is the data-lake API: " +
+  'listenDataLakeVariable, getDataLakeVariableData, getDataLakeVariableInfo, getAllDataLakeVariablesInfo, ' +
+  'getDataLakeVariableLastUpdateTimestamp, setDataLakeVariableData, createDataLakeVariable and ' +
+  'executeActionCallback; reads answer synchronously with the latest values Cockpit sent. ' +
+  'fetch reaches only servers that accept other origins, as BlueOS does. Everything the script starts stops ' +
+  'when the widget is removed or its code changes.'
 
 const diyCode = z.object({
   name: z.string().min(1).default('Do it yourself'),
@@ -159,7 +161,7 @@ const widgetTools = (): McpTool[] => {
         'Change the code or name of a DIY widget, keeping its place, style and script mode. Fields left out ' +
         'stay as they are. The widget remounts so its script runs again, which gives it a new hash. Check ' +
         'options.scopedScript with get_widget first: a widget the operator made may run its script globally, ' +
-        'where root and the tracked cockpit helpers do not exist.',
+        'where root does not exist.',
       readOnly: false,
       runsCode: true,
       input: z.object({
