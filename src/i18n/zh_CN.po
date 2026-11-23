@@ -398,6 +398,13 @@ msgstr "配置方案将您的数据湖变量、操作、WebSocket 连接和 DIY 
 msgid "A recording stopped unexpectedly. ${ 0 }"
 msgstr "录制意外停止。${ 0 }"
 
+#: src/components/widgets/DoItYourself.vue
+msgid ""
+"A script run in its own scope gets root (the page body) and cockpit as "
+"arguments, and its top-level names stay local, so inline handlers in the "
+"HTML cannot call its functions"
+msgstr ""
+
 #: src/components/blueos-cloud/BlueOsCloudLoginDialog.vue
 msgid "A short verification code will be displayed."
 msgstr "将显示一个短验证码。"
@@ -10078,6 +10085,14 @@ msgstr "配方应整体阅读。遗漏其中的项目可能导致其余部分无
 msgid "The recording has no audio data."
 msgstr ""
 
+#: src/components/widgets/DoItYourself.vue
+msgid ""
+"The script reaches Cockpit through the cockpit object to listen to, read, "
+"set and create data-lake variables and to run actions. Reads answer "
+"synchronously with the latest values Cockpit has sent to the frame, and a "
+"refused write is reported in a notification"
+msgstr ""
+
 #: src/views/ConfigurationGeneralView.vue
 #, javascript-format
 msgid ""
@@ -11855,10 +11870,6 @@ msgstr "宽度比例百分比"
 msgid "Window material"
 msgstr "窗口材质"
 
-#: src/components/widgets/DoItYourself.vue
-msgid "With \"Run script in its own scope\" on, the script gets"
-msgstr "开启“在自身作用域中运行脚本”后，脚本会获得"
-
 #: src/components/UpdateNotification.vue
 msgid "You are running the latest version of the application."
 msgstr "您正在运行最新版本的应用程序。"
@@ -11972,8 +11983,11 @@ msgid "Your browser does not support the video tag."
 msgstr "您的浏览器不支持 video 标签。"
 
 #: src/components/widgets/DoItYourself.vue
-msgid "Your code runs in the widget's context and has access to the DOM"
-msgstr "您的代码在小部件上下文中运行，可以访问 DOM"
+msgid ""
+"Your code runs isolated in its own frame, with its own page, so it cannot "
+"reach the rest of Cockpit's interface. Applying the code again, or removing "
+"the widget, stops everything it started"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #, javascript-format
@@ -12096,7 +12110,6 @@ msgid ""
 msgstr "允许 Cockpit 开放高级功能，例如设置 MAVLink 消息的频率。启用此模式时请谨慎。"
 
 #: src/components/configuration/JavascriptActionConfig.vue
-#: src/components/widgets/DoItYourself.vue
 #: src/views/ConfigurationAlertsView.vue
 msgid "and"
 msgstr "和"
@@ -12120,15 +12133,6 @@ msgstr "并将其替换为 ${ 0 } 的选定默认视图。此操作无法撤销�
 msgid "and the fields to change, or remove with"
 msgstr "以及要更改的字段，或使用以下消息移除"
 
-#: src/components/widgets/DoItYourself.vue
-msgid ""
-"and these helpers do not exist, so the widget's script fails there. "
-"Switching an existing widget to this mode takes effect at once, but what "
-"its old global script started keeps running until Cockpit is reloaded"
-msgstr ""
-"而这些辅助函数并不存在，因此小部件的脚本会在那里失败。将现有小部件切换到此模式会立即生效，但旧全局脚本已启动的内容会继续运行，直到重新加载 "
-"Cockpit"
-
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "and use the import button on the mapping toolbar"
 msgstr "并使用映射工具栏上的导入按钮"
@@ -12140,20 +12144,10 @@ msgid ""
 "related gear."
 msgstr "依据 Blue Robotics 产品规格建模——天线方向图、发射功率，以及我们的电台及相关设备的典型运行假设。"
 
-#: src/components/widgets/DoItYourself.vue
-msgid "are undone when the widget is removed or the script is applied again. Use"
-msgstr "会在删除小部件或再次应用脚本时撤销。请使用"
-
 #: src/components/BaseStationGnssSetupDialog.vue
 #, javascript-format
 msgid "at ${ 0 } baud."
 msgstr "，波特率 ${ 0 }。"
-
-#: src/components/widgets/DoItYourself.vue
-msgid ""
-"attributes. Cockpit versions older than this one ignore the setting and run "
-"the script globally, where"
-msgstr "属性。比此版本更旧的 Cockpit 会忽略该设置并全局运行脚本，此时"
 
 #: src/views/ConfigurationVideoView.vue
 msgid "auto"
@@ -12243,12 +12237,6 @@ msgstr "连接失败"
 #: src/components/BaseStationGnssSetupDialog.vue
 msgid "for GNSS data..."
 msgstr "以获取 GNSS 数据……"
-
-#: src/components/widgets/DoItYourself.vue
-msgid ""
-"for anything else. Top-level functions are not global then, so attach event "
-"listeners from the script instead of using inline"
-msgstr "处理其他事项。此时顶层函数不再是全局的，因此请从脚本中挂载事件监听器，而不要使用内联"
 
 #: src/components/ExternalFeaturesDiscoveryModal.vue
 #, javascript-format
@@ -12404,10 +12392,6 @@ msgstr "此计算机的"
 msgid "this vehicle"
 msgstr "此设备"
 
-#: src/components/widgets/DoItYourself.vue
-msgid "this widget's element, and"
-msgstr "此小部件的元素，以及"
-
 #: src/components/VehicleDiscoveryDialog.vue
 #, javascript-format
 msgid "tier ${ 0 }"
@@ -12473,10 +12457,6 @@ msgstr "值"
 #: src/components/mission-planning/CruiseSpeedControl.vue
 msgid "vehicle default"
 msgstr "设备默认值"
-
-#: src/components/widgets/DoItYourself.vue
-msgid "whose"
-msgstr "其中的"
 
 #: src/components/MavlinkDumpViewer.vue
 msgid "window:"
@@ -12562,3 +12542,36 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
 #~ msgstr "Mavlink2Rest 的 URI，或模拟器使用的 sitl://ardusub"
+
+#~ msgid "With \"Run script in its own scope\" on, the script gets"
+#~ msgstr "开启“在自身作用域中运行脚本”后，脚本会获得"
+
+#~ msgid "Your code runs in the widget's context and has access to the DOM"
+#~ msgstr "您的代码在小部件上下文中运行，可以访问 DOM"
+
+#~ msgid ""
+#~ "and these helpers do not exist, so the widget's script fails there. "
+#~ "Switching an existing widget to this mode takes effect at once, but what "
+#~ "its old global script started keeps running until Cockpit is reloaded"
+#~ msgstr ""
+#~ "而这些辅助函数并不存在，因此小部件的脚本会在那里失败。将现有小部件切换到此模式会立即生效，但旧全局脚本已启动的内容会继续运行，直到重新加载 "
+#~ "Cockpit"
+
+#~ msgid "are undone when the widget is removed or the script is applied again. Use"
+#~ msgstr "会在删除小部件或再次应用脚本时撤销。请使用"
+
+#~ msgid ""
+#~ "attributes. Cockpit versions older than this one ignore the setting and run "
+#~ "the script globally, where"
+#~ msgstr "属性。比此版本更旧的 Cockpit 会忽略该设置并全局运行脚本，此时"
+
+#~ msgid ""
+#~ "for anything else. Top-level functions are not global then, so attach event "
+#~ "listeners from the script instead of using inline"
+#~ msgstr "处理其他事项。此时顶层函数不再是全局的，因此请从脚本中挂载事件监听器，而不要使用内联"
+
+#~ msgid "this widget's element, and"
+#~ msgstr "此小部件的元素，以及"
+
+#~ msgid "whose"
+#~ msgstr "其中的"

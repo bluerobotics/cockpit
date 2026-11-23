@@ -109,7 +109,8 @@ function createWindow(): void {
       shell.openExternal(url)
       return { action: 'deny' }
     }
-    return { action: 'allow' }
+    // A new window would inherit the preload, so a sandboxed DIY widget's popup must never become one.
+    return { action: 'deny' }
   })
 
   // Keep in-app navigation inside Cockpit, but hand external links off to the OS browser
