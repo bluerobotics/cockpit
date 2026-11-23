@@ -1,6 +1,4 @@
 import {
-  type Material,
-  type Object3D,
   Box3,
   DirectionalLight,
   GridHelper,
@@ -9,21 +7,24 @@ import {
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
-  PMREMGenerator,
   Quaternion,
   Scene,
   ShadowMaterial,
-  Texture,
   Vector3,
   WebGLRenderer,
 } from 'three'
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import dracoWasmUrl from 'three/examples/jsm/libs/draco/gltf/draco_decoder.wasm?url'
-import dracoWrapperUrl from 'three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js?url'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import type { VehicleMotion } from '@/libs/joystick/stick-modes'
+import { idleFrameIntervalMs, idlePropellerSpeed } from '@/libs/vehicle/propeller-spin'
+import {
+  bodyBounds,
+  disposeObject,
+  loadModel,
+  materialsOf,
+  prepareMaterials,
+  propellersOf,
+  roomEnvironment,
+} from '@/libs/vehicle/vehicle-model'
 
 /**
  * A rendered vehicle that acts out the motions a stick commands.
@@ -60,9 +61,7 @@ interface MotionAnimation {
 const rotationAmplitude = Math.PI / 6
 const motionDurationMs = 1600
 const framingMargin = 1.1
-const idlePropellerSpeed = (390 * 2 * Math.PI) / 60
 const commandedPropellerSpeedFactor = 1.5
-const idleFrameIntervalMs = 1000 / 30
 
 // glTF models face +Z with +Y up, which leaves their right side towards -X. Turning right is clockwise seen from above,
 // so a negative turn about +Y.
@@ -76,81 +75,6 @@ const motionAxes: Record<VehicleMotion, Vector3> = {
 // Looking from above the vehicle's left front quarter, so its nose faces the viewer: forward reads down and to the left
 // on screen, and right reads up and to the left.
 const isometricDirection = new Vector3(1, 1, 1).normalize()
-
-const materialsOf = (object: Object3D): Material[] =>
-  ([] as Material[]).concat((object as Partial<Mesh>).material ?? [])
-
-const disposeObject = (root: Object3D): void => {
-  root.traverse((object) => {
-    ;(object as Partial<Mesh>).geometry?.dispose()
-    materialsOf(object).forEach((material) => {
-      Object.values(material).forEach((value) => value instanceof Texture && value.dispose())
-      material.dispose()
-    })
-  })
-}
-
-const enclosureOpacity = 0.35
-
-// Only the acrylic of the enclosure and the light lenses reads as see-through, so every other part is drawn solid.
-const prepareMaterials = (model: Object3D): void => {
-  model.traverse((object) => {
-    materialsOf(object).forEach((material) => {
-      const acrylic = material.name.toLowerCase().includes('acrilic')
-      material.transparent = acrylic
-      material.opacity = acrylic ? enclosureOpacity : 1
-      material.depthWrite = !acrylic
-    })
-  })
-}
-
-// The BlueROV2 tether trails well behind the frame, so it is left out of the body the motions are scaled by.
-const tetherNodeName = 'BezierCurve012'
-
-const bodyBounds = (model: Object3D): Box3 => {
-  const bounds = new Box3()
-  const visit = (object: Object3D): void => {
-    if (object.name === tetherNodeName) return
-    if ((object as Partial<Mesh>).isMesh) bounds.expandByObject(object)
-    object.children.forEach(visit)
-  }
-  model.updateWorldMatrix(true, true)
-  visit(model)
-  return bounds
-}
-
-/**
- * A propeller of the model, turning about its hub.
- */
-interface Propeller {
-  /**
-   * Node holding the propeller, with its origin on the hub and its Y axis along the shaft.
-   */
-  node: Object3D
-  /**
-   * 1 when it turns counter-clockwise seen from above, -1 when clockwise.
-   */
-  spin: number
-}
-
-// Models mark their propellers with nodes named `propeller-cw-*` or `propeller-ccw-*`, for the rotation seen from above.
-const propellersOf = (model: Object3D): Propeller[] => {
-  const propellers: Propeller[] = []
-  model.traverse((node) => {
-    const rotation = /^propeller-(cw|ccw)-/.exec(node.name)?.[1]
-    if (rotation !== undefined) propellers.push({ node, spin: rotation === 'ccw' ? 1 : -1 })
-  })
-  return propellers
-}
-
-const loadModel = async (url: string): Promise<Object3D> => {
-  const draco = new DRACOLoader().setDecoderPath({ js: dracoWrapperUrl, wasm: dracoWasmUrl })
-  try {
-    return (await new GLTFLoader().setDRACOLoader(draco).loadAsync(url)).scene
-  } finally {
-    draco.dispose()
-  }
-}
 
 type MotionOffsets = Partial<Record<VehicleMotion, number>>
 
@@ -254,11 +178,7 @@ export const createVehicleMotionPreview = async (
   renderer.shadowMap.enabled = true
   host.appendChild(renderer.domElement)
 
-  const pmrem = new PMREMGenerator(renderer)
-  const room = new RoomEnvironment()
-  scene.environment = pmrem.fromScene(room, 0.04).texture
-  room.dispose()
-  pmrem.dispose()
+  scene.environment = roomEnvironment(renderer)
 
   const distance = reach * 10
   const camera = new OrthographicCamera()
