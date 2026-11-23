@@ -392,6 +392,17 @@ export class SettingsManager {
   }
 
   /**
+   * Removes every setting a user has on this computer
+   * @param {string} username - The user to remove
+   */
+  public deleteLocalUser = (username: string): void => {
+    const localSettings = this.getLocalSettings()
+    if (!(username in localSettings)) return
+    delete localSettings[username]
+    this.setLocalSettings(localSettings)
+  }
+
+  /**
    * Sets the local settings
    * @param {LocalSyncedSettings} newSettings - The new local settings
    */

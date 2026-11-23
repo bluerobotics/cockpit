@@ -880,8 +880,10 @@ msgstr "一切就绪"
 
 #: src/components/UserNameInputDialog.vue
 #, javascript-format
-msgid "All settings for '${ 0 }' will be permanently removed from ${ 1 }."
-msgstr "“${ 0 }”的所有设置将从 ${ 1 } 中永久移除。"
+msgid ""
+"All settings for '${ 0 }' will be permanently removed from ${ 1 } and from "
+"this computer, including its settings for other vehicles."
+msgstr "“${ 0 }”的所有设置将从 ${ 1 } 和本计算机中永久移除，包括其在其他设备上的设置。"
 
 #: src/components/configuration/CockpitSettingsManager.vue
 msgid "All settings have been reset to default values."

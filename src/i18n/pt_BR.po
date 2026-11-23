@@ -949,10 +949,12 @@ msgstr "Tudo pronto"
 
 #: src/components/UserNameInputDialog.vue
 #, javascript-format
-msgid "All settings for '${ 0 }' will be permanently removed from ${ 1 }."
+msgid ""
+"All settings for '${ 0 }' will be permanently removed from ${ 1 } and from "
+"this computer, including its settings for other vehicles."
 msgstr ""
 "Todas as configurações de '${ 0 }' serão removidas permanentemente de ${ 1 "
-"}."
+"} e deste computador, incluindo as configurações para outros veículos."
 
 #: src/components/configuration/CockpitSettingsManager.vue
 msgid "All settings have been reset to default values."
