@@ -45,8 +45,33 @@
     transform: translate(-50%, -50%);
 }
 
-[data-icon-style='arrow'] > img {
+[data-icon-style='arrow'] > img,
+[data-icon-style='3d-model']:has(> .vehicle-attitude-model[data-drawn]) > img {
     visibility: hidden;
+}
+
+.vehicle-attitude-model {
+    display: none;
+    position: absolute;
+    inset: -5%;
+    width: 110%;
+    height: 110%;
+    transition: transform 0.8s ease-in-out;
+    pointer-events: none;
+}
+
+[data-icon-style='3d-model'] > .vehicle-attitude-model {
+    display: block;
+}
+
+/* Drawn inside a Leaflet marker on both maps, so it takes the glass from the variables the map root sets. */
+.vehicle-altitude-tag {
+    background-color: var(--glass-background);
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+    border: var(--glass-border);
+    box-shadow: var(--glass-box-shadow);
+    color: var(--glass-color);
 }
 
 @supports(padding:max(0px)) {

@@ -4,6 +4,8 @@ import copterMarkerImage from '@/assets/copter-marker.avif'
 import genericVehicleMarkerImage from '@/assets/generic-vehicle-marker.avif'
 import planeMarkerImage from '@/assets/plane-marker.avif'
 import roverMarkerImage from '@/assets/rover-marker.avif'
+import blueBoatModelUrl from '@/assets/vehicles/models/blueboat.glb?url'
+import quadcopterModelUrl from '@/assets/vehicles/models/quadcopter.glb?url'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { getVehicleTypeFromMavType } from '@/libs/vehicle/ardupilot/common'
 import { Type as VehicleType } from '@/libs/vehicle/vehicle'
@@ -29,6 +31,33 @@ export const vehicleMarkerImageUrl = (vehicleType: MavType | undefined): string 
   return (vehicleClass && markerImageByVehicleType[vehicleClass]) ?? genericVehicleMarkerImage
 }
 
+// Only copters and boats are drawn as a 3D model on the map for now; every other vehicle keeps its picture.
+const modelUrlByVehicleType: Partial<Record<VehicleType, string>> = {
+  [VehicleType.Copter]: quadcopterModelUrl,
+}
+
+/**
+ * Resolves the 3D model that represents a vehicle type on the map.
+ * @param {MavType | undefined} vehicleType - The vehicle's MAVLink type, or undefined when still unknown.
+ * @returns {string | undefined} The URL of the glTF model, or undefined when no model fits the vehicle.
+ */
+export const vehicleModelUrl = (vehicleType: MavType | undefined): string | undefined => {
+  // Boats share the Rover class with ground rovers, which have no model, so they are told apart first.
+  if (vehicleType === MavType.MAV_TYPE_SURFACE_BOAT) return blueBoatModelUrl
+  const vehicleClass = vehicleType === undefined ? undefined : getVehicleTypeFromMavType(vehicleType)
+  return vehicleClass && modelUrlByVehicleType[vehicleClass]
+}
+
+/**
+ * Whether a vehicle type flies.
+ * @param {MavType | undefined} vehicleType - The vehicle's MAVLink type, or undefined when still unknown.
+ * @returns {boolean} True for copters and planes.
+ */
+export const isAerialVehicle = (vehicleType: MavType | undefined): boolean => {
+  const vehicleClass = vehicleType === undefined ? undefined : getVehicleTypeFromMavType(vehicleType)
+  return vehicleClass === VehicleType.Copter || vehicleClass === VehicleType.Plane
+}
+
 /**
  * Attributes that make the shared `.vehicle-heading-arrow` styles draw a vehicle icon in the chosen appearance.
  * They go on the element holding both the arrow and the vehicle's picture.
@@ -44,7 +73,8 @@ export const vehicleIconAttributes = (
   /** CSS custom properties carrying the arrow colors. */
   cssVariables: Record<string, string>
 } => ({
-  iconStyle: appearance.style,
+  // The 3D model is drawn only where a map attaches one, so anywhere else the style falls back to the picture.
+  iconStyle: appearance.style === '3d-model' ? 'picture' : appearance.style,
   cssVariables: {
     '--vehicle-arrow-color': appearance.arrowColor,
     '--vehicle-arrow-outline-color': appearance.arrowOutlineColor,

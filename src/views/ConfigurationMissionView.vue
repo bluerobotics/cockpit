@@ -279,7 +279,10 @@
                   @update:model-value="setVehicleIconStyle"
                 />
               </div>
-              <div v-if="missionStore.vehicleIconAppearance.style !== 'picture'" class="flex items-center gap-x-8">
+              <div
+                v-if="['picture-with-arrow', 'arrow'].includes(missionStore.vehicleIconAppearance.style)"
+                class="flex items-center gap-x-8"
+              >
                 <label class="flex items-center gap-x-2 text-white text-sm whitespace-nowrap">
                   {{ t`Arrow color` }}
                   <input
@@ -333,6 +336,7 @@ const vehicleIconStyleOptions: {
   { title: t`Vehicle picture`, value: 'picture' },
   { title: t`Vehicle picture with heading arrow`, value: 'picture-with-arrow' },
   { title: t`Arrow only`, value: 'arrow' },
+  { title: t`3D model with attitude and altitude (copters and boats)`, value: '3d-model' },
 ]
 
 const mapTileProviderOptions = [
