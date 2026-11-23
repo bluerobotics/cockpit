@@ -143,7 +143,7 @@ const deleteUser = async (username: string): Promise<void> => {
 
   showDialog({
     title: t`Warning!`,
-    message: t`All settings for '${username}' will be permanently removed from ${vehicleName}.`,
+    message: t`All settings for '${username}' will be permanently removed from ${vehicleName} and from this computer, including its settings for other vehicles.`,
     maxWidth: '700px',
     variant: 'warning',
     actions: [
@@ -161,6 +161,7 @@ const deleteUser = async (username: string): Promise<void> => {
           try {
             const vehicleAddress = await mainVehicleStore.getVehicleAddress()
             await deleteUsernameOnBlueOS(vehicleAddress, username)
+            settingsManager.deleteLocalUser(username)
             openSnackbar({ message: t`User '${username}' deleted`, variant: 'success' })
 
             if (missionStore.username === username) {
