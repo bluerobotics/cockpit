@@ -132,6 +132,7 @@ jobs:
             Inputs in the working directory:
             - `pr.json` — PR metadata (title, body, author, files, additions, deletions, labels, url, isDraft, headRefOid, commits). Read the commit list from here; you have no network access.
             - `pr.diff` — the full textual diff of the PR.
+            - `dropped-commits.txt` — the leading `[drop]` commits left out of `pr.diff`, one `sha<TAB>subject` per line; EMPTY when none were. The guidelines say how to treat them.
             - `pr-diff/` — the same diff as one numbered file per changed file, with `pr-diff/INDEX.tsv` listing each piece, its path and its added and deleted line counts. A large `pr.diff` does not fit in one read: go through the index and read the pieces instead, keeping `pr.diff` for searches. Every changed file is still in scope.
             - `complexity-report.json` — the measured cyclomatic complexity and nesting depth of every function this PR adds or changes, at the head and the base revision, with the thresholds already applied. It is the only source of those numbers: you cannot run ESLint, and you must not count them yourself. The file is absent when the report is unavailable — CI had not finished in time, the measurement failed, or none was produced for this head — which the guidelines tell you how to handle. Do not assert which.
             Environment variables: `PR_NUMBER`, `REPO`, `HEAD_SHA` (the PR head commit you are reviewing).
