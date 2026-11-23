@@ -331,7 +331,7 @@ import { missionControlPanelSetupInfo } from '@/libs/mission-control-panel'
 import { datalogger, DatalogVariable } from '@/libs/sensors-logging'
 import { copyToClipboard, degrees, messageFromError } from '@/libs/utils'
 import type { MAVLinkVehicle } from '@/libs/vehicle/mavlink/vehicle'
-import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
+import { isAerialVehicle, vehicleMarkerImageUrl, vehicleModelUrl } from '@/libs/vehicle/vehicle-marker'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
@@ -1209,6 +1209,9 @@ const vehicleMarker = useMapVehicleMarker(map, {
   tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
   headingInDegrees: () => vehicleHeading.value,
   iconAppearance: () => missionStore.vehicleIconAppearance,
+  modelUrl: () => vehicleModelUrl(vehicleStore.vehicleType),
+  isArmed: () => vehicleStore.isArmed,
+  isAerial: () => isAerialVehicle(vehicleStore.vehicleType),
   tooltipClassName: 'vehicle-tooltip',
   paneName: 'vehiclePane',
   paneZIndex: '650',

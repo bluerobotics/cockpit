@@ -664,8 +664,11 @@ export type MapTileProviderPreference = MapTileProvider | 'Use last selected'
  * How the vehicle is drawn on the maps.
  */
 export interface VehicleIconAppearance {
-  /** The vehicle's picture, the picture with a heading arrow ahead of it, or an arrow in place of the picture. */
-  style: 'picture' | 'picture-with-arrow' | 'arrow'
+  /**
+   * The vehicle's picture, the picture with a heading arrow ahead of it, an arrow in place of the picture, or a 3D
+   * model tilted to the vehicle's attitude and tagged with its altitude.
+   */
+  style: 'picture' | 'picture-with-arrow' | 'arrow' | '3d-model'
   /** Fill color of the arrow. */
   arrowColor: string
   /** Outline color of the arrow. */

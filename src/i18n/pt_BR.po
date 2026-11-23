@@ -406,6 +406,10 @@ msgstr "2x o uso de memória"
 msgid "3-4x slower application startup times"
 msgstr "Inicialização do aplicativo 3-4x mais lenta"
 
+#: src/views/ConfigurationMissionView.vue
+msgid "3D model with attitude and altitude (copters and boats)"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
 msgstr "@ cursor:"

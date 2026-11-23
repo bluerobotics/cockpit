@@ -361,6 +361,10 @@ msgstr "内存使用量增加 2 倍"
 msgid "3-4x slower application startup times"
 msgstr "应用程序启动时间慢 3-4 倍"
 
+#: src/views/ConfigurationMissionView.vue
+msgid "3D model with attitude and altitude (copters and boats)"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
 msgstr "@ 光标："

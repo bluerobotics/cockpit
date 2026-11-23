@@ -1042,7 +1042,7 @@ import { PLANNABLE_VEHICLE_TYPES, vehicleTypeLabel } from '@/libs/mission/librar
 import { endpointSplicePosition } from '@/libs/mission/planning-endpoints'
 import { hasLivePlanningMission } from '@/libs/mission/planning-state'
 import { degrees, escapeHtml, isTouchDevice, messageFromError, round, toPlain } from '@/libs/utils'
-import { vehicleMarkerImageUrl } from '@/libs/vehicle/vehicle-marker'
+import { isAerialVehicle, vehicleMarkerImageUrl, vehicleModelUrl } from '@/libs/vehicle/vehicle-marker'
 import router from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useGeoFenceStore } from '@/stores/geoFence'
@@ -5195,6 +5195,9 @@ const vehicleMarker = useMapVehicleMarker(planningMap, {
   tooltipContent: () => vehicleTooltipContent(vehicleTooltipState.value, interfaceStore.displayUnitPreferences),
   headingInDegrees: () => vehicleHeading.value,
   iconAppearance: () => missionStore.vehicleIconAppearance,
+  modelUrl: () => vehicleModelUrl(vehicleStore.vehicleType),
+  isArmed: () => vehicleStore.isArmed,
+  isAerial: () => isAerialVehicle(vehicleStore.vehicleType),
   tooltipClassName: 'waypoint-tooltip',
 })
 
