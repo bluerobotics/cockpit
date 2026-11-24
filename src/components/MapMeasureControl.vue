@@ -90,6 +90,15 @@
       </div>
     </v-menu>
   </v-speed-dial>
+  <MeasureProfilePanel
+    v-if="showProfile"
+    class="absolute left-1/2 -translate-x-1/2"
+    :style="profileStyle"
+    :profile="profile"
+    :loading="profileLoading"
+    :ruler-number="measure.profiled.value?.number ?? 0"
+    @close="measure.closeProfile"
+  />
 </template>
 
 <script setup lang="ts">
@@ -97,8 +106,10 @@ import { useStorage } from '@vueuse/core'
 import { t } from 'ttag'
 import { type CSSProperties, computed, defineModel, ref, watch } from 'vue'
 
+import MeasureProfilePanel from '@/components/MeasureProfilePanel.vue'
 import { useMapContext } from '@/composables/map/useMapContext'
 import { type MeasureTool, useMapMeasure } from '@/composables/map/useMapMeasure'
+import { useMeasureProfile } from '@/composables/map/useMeasureProfile'
 import { type MeasureColorScheme, MEASURE_SCHEME_COLORS } from '@/libs/map/measure-layers'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
@@ -115,7 +126,7 @@ const props = withDefaults(
     blocked?: boolean
     /** Speed distances are timed at, in m/s, null for the default */
     cruiseSpeed: number | null
-    /** Inline style positioning the activator button */
+    /** Inline style positioning the activator button; the profile panel sits above its bottom offset */
     activatorStyle?: CSSProperties
     /** Whether the activator is shown; the readouts stay on the map while it is hidden */
     showActivator?: boolean
@@ -162,6 +173,15 @@ const measure = useMapMeasure(map, mapReady, {
   isBlocked: () => props.blocked,
   colorScheme: () => colorScheme.value,
 })
+
+const rulerVertices = computed(() => measure.profiled.value?.vertices ?? [])
+const showProfile = computed(() => measure.profiled.value !== null)
+const { profile, loading: profileLoading } = useMeasureProfile(rulerVertices, () => showProfile.value)
+
+const profileStyle = computed<CSSProperties>(() => ({
+  bottom: `calc(${props.activatorStyle?.bottom ?? '0px'} + 3.5rem)`,
+  zIndex: props.activatorStyle?.zIndex,
+}))
 
 const activeStyle = { backgroundColor: '#2563eb', color: '#FFFFFF' }
 

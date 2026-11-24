@@ -2956,6 +2956,10 @@ msgstr ""
 msgid "Close the MiniMap settings"
 msgstr "Fechar as configurações do minimapa"
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Close the profile"
+msgstr ""
+
 #: src/composables/go2rtc.ts
 msgid "Closed"
 msgstr "Fechado"
@@ -6493,6 +6497,10 @@ msgstr "Intensidade do mapa de calor"
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Height above home"
+msgstr ""
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Height difference"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -12025,6 +12033,10 @@ msgstr "Mostrar sinal no mapa"
 msgid "Show splashscreen on startup"
 msgstr "Mostrar tela de abertura ao iniciar"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Show the terrain along the ruler"
+msgstr ""
+
 #: src/components/widgets/Plotter.vue
 msgid "Show title"
 msgstr "Mostrar título"
@@ -12353,6 +12365,10 @@ msgstr "Desvio padrão"
 msgid "Std Dev: ${ 0 }"
 msgstr "Desvio padrão: ${ 0 }"
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Steepest ground"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 #, javascript-format
 msgid "Step ${ 0 } of 4"
@@ -12662,6 +12678,11 @@ msgstr "Temperatura"
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr "Terreno"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Terrain along ruler ${ 0 }"
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Terrain and mission profile"

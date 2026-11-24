@@ -2816,6 +2816,10 @@ msgstr ""
 msgid "Close the MiniMap settings"
 msgstr "关闭 MiniMap 设置"
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Close the profile"
+msgstr ""
+
 #: src/composables/go2rtc.ts
 msgid "Closed"
 msgstr "已关闭"
@@ -6142,6 +6146,10 @@ msgstr "热力图强度"
 
 #: src/components/terrain/TerrainQuickActionsPanel.vue
 msgid "Height above home"
+msgstr ""
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Height difference"
 msgstr ""
 
 #: src/components/terrain/TerrainSettingsPanel.vue
@@ -11413,6 +11421,10 @@ msgstr "在地图上显示信号"
 msgid "Show splashscreen on startup"
 msgstr "启动时显示启动画面"
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Show the terrain along the ruler"
+msgstr ""
+
 #: src/components/widgets/Plotter.vue
 msgid "Show title"
 msgstr "显示标题"
@@ -11730,6 +11742,10 @@ msgstr "标准差"
 msgid "Std Dev: ${ 0 }"
 msgstr "标准差：${ 0 }"
 
+#: src/components/MeasureProfilePanel.vue
+msgid "Steepest ground"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 #, javascript-format
 msgid "Step ${ 0 } of 4"
@@ -12028,6 +12044,11 @@ msgstr "温度"
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Terrain"
 msgstr "地形"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Terrain along ruler ${ 0 }"
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Terrain and mission profile"
