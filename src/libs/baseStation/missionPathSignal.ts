@@ -1,7 +1,7 @@
 import { bearingBetween, effectiveAntennaRangeMeters, normalizeBearing } from '@/libs/baseStation/coverage'
 import { bboxContains, kmToLatDegrees, kmToLngDegrees } from '@/libs/baseStation/coverageBbox'
 import { calculateHaversineDistance } from '@/libs/mission/general-estimates'
-import { type BaseStationConfig, BaseStationCommsType } from '@/types/baseStation'
+import { type AntennaSpec, type BaseStationConfig, BaseStationCommsType } from '@/types/baseStation'
 import type { WaypointCoordinates } from '@/types/mission'
 
 import type { MobileCoverageCircle } from './mobileCoverage'
@@ -116,6 +116,14 @@ const circlesRelevantToPath = (
   })
 }
 
+const outsideBeam = (antenna: AntennaSpec, from: WaypointCoordinates, to: WaypointCoordinates): boolean => {
+  if (antenna.beamwidth >= 360) return false
+  const offBoresightDeg = Math.abs(
+    ((normalizeBearing(bearingBetween(from, to)) - normalizeBearing(antenna.bearing) + 540) % 360) - 180
+  )
+  return offBoresightDeg > antenna.beamwidth / 2
+}
+
 const distanceToNearestRingBorderMeters = (point: WaypointCoordinates, circles: MobileCoverageCircle[]): number => {
   let best = Number.POSITIVE_INFINITY
   for (const circle of circles) {
@@ -151,13 +159,7 @@ export const classifyCoverageAtPoint = (
 
     // A directional antenna only reaches where it is aimed, so the coloring has to honor the same
     // sector the overlay draws instead of promising coverage behind the station.
-    const { bearing, beamwidth } = config.antenna
-    if (beamwidth < 360) {
-      const offBoresightDeg = Math.abs(
-        ((normalizeBearing(bearingBetween(config.position, point)) - normalizeBearing(bearing) + 540) % 360) - 180
-      )
-      if (offBoresightDeg > beamwidth / 2) return MissionCoverageRisk.LikelyLost
-    }
+    if (outsideBeam(config.antenna, config.position, point)) return MissionCoverageRisk.LikelyLost
 
     if (distanceFromBaseMeters > rangeMeters * GOOD_RANGE_FRACTION) return MissionCoverageRisk.Marginal
     return MissionCoverageRisk.Good
@@ -172,6 +174,63 @@ export const classifyCoverageAtPoint = (
   }
 
   return MissionCoverageRisk.Unknown
+}
+
+/** Expected strength of a radio link from the base station's radio. */
+export type RadioLinkSignal = {
+  /**
+   * Received power in dBm, null when the terrain between the antennas is unknown.
+   */
+  powerDbm: number | null
+  /**
+   * How the link fares, on the scale the mission path is colored with.
+   */
+  risk: MissionCoverageRisk
+}
+
+// The vehicle's radio is not configured, so a plain dipole stands in for its antenna.
+const VEHICLE_ANTENNA_GAIN_DBI = 2.15
+const GOOD_MARGIN_DB = -20 * Math.log10(GOOD_RANGE_FRACTION)
+
+const freeSpaceLossDb = (distanceM: number, frequencyMhz: number): number =>
+  20 * Math.log10(distanceM / 1000) + 20 * Math.log10(frequencyMhz) + 32.44
+
+// ITU-R P.526 single knife-edge loss, from the clearance as a share of the first Fresnel zone.
+const knifeEdgeLossDb = (fresnelRatio: number): number => {
+  const v = -Math.SQRT2 * fresnelRatio
+  return v <= -0.78 ? 0 : 6.9 + 20 * Math.log10(Math.sqrt((v - 0.1) ** 2 + 1) + v - 0.1)
+}
+
+/**
+ * Expected signal of the base station's radio at another radio, over the terrain between them. The practical range
+ * the base station is configured with is where the link gives out in the open, so the margin over the signal there
+ * decides the risk, the way the coverage overlay draws it.
+ * @param {BaseStationConfig} config Base-station configuration.
+ * @param {WaypointCoordinates} from Where the base station's antenna stands.
+ * @param {WaypointCoordinates} to Where the other radio is.
+ * @param {number | null} fresnelRatio Clearance of the line between the antennas, as a share of the first Fresnel
+ * zone; null when the terrain is unknown.
+ * @param {number} frequencyMhz Link frequency.
+ * @returns {RadioLinkSignal} The expected signal.
+ */
+export const radioLinkSignal = (
+  config: BaseStationConfig,
+  from: WaypointCoordinates,
+  to: WaypointCoordinates,
+  fresnelRatio: number | null,
+  frequencyMhz: number
+): RadioLinkSignal => {
+  if (fresnelRatio === null) return { powerDbm: null, risk: MissionCoverageRisk.Unknown }
+  // ponytail: free-space loss plus one knife edge, so several ridges in a row read better than they are; a
+  // terrain-aware propagation model such as Longley-Rice is the upgrade.
+  const distanceM = Math.max(1, calculateHaversineDistance(from, to))
+  const terrainLossDb = knifeEdgeLossDb(fresnelRatio)
+  const transmittedDbm = 10 * Math.log10(Math.max(config.txPowerMilliwatts, 0.001))
+  const gainsDb = config.antenna.gain + VEHICLE_ANTENNA_GAIN_DBI
+  const powerDbm = transmittedDbm + gainsDb - freeSpaceLossDb(distanceM, frequencyMhz) - terrainLossDb
+  const marginDb = 20 * Math.log10(effectiveAntennaRangeMeters(config) / distanceM) - terrainLossDb
+  if (marginDb < 0 || outsideBeam(config.antenna, from, to)) return { powerDbm, risk: MissionCoverageRisk.LikelyLost }
+  return { powerDbm, risk: marginDb < GOOD_MARGIN_DB ? MissionCoverageRisk.Marginal : MissionCoverageRisk.Good }
 }
 
 /**

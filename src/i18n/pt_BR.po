@@ -10456,6 +10456,15 @@ msgstr ""
 msgid "Radio model"
 msgstr "Modelo do rádio"
 
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Radio signal likely lost, about ${ 0 } dBm"
+msgstr ""
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Radio signal unknown, no terrain data"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Raise new waypoints clear of the terrain"
 msgstr ""
@@ -12545,6 +12554,11 @@ msgstr "Tachado"
 #: src/components/TransformingFunctionDialog.vue
 msgid "String"
 msgstr "String"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Strong radio signal, about ${ 0 } dBm"
+msgstr ""
 
 #: src/libs/mission/library.ts
 msgid "Submarine"
@@ -15286,6 +15300,11 @@ msgstr ""
 "que o Cockpit sincronize as configurações dele com veículos BlueOS. O "
 "compartilhamento de telemetria é configurado em 'Configurações' > 'Geral' > "
 "'Dados compartilhados'."
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Weak radio signal, about ${ 0 } dBm"
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "WebSocket address"

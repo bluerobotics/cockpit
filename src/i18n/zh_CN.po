@@ -9919,6 +9919,15 @@ msgstr ""
 msgid "Radio model"
 msgstr "无线电型号"
 
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Radio signal likely lost, about ${ 0 } dBm"
+msgstr ""
+
+#: src/components/MeasureProfilePanel.vue
+msgid "Radio signal unknown, no terrain data"
+msgstr ""
+
 #: src/components/terrain/TerrainSettingsPanel.vue
 msgid "Raise new waypoints clear of the terrain"
 msgstr ""
@@ -11918,6 +11927,11 @@ msgstr "删除线"
 #: src/components/TransformingFunctionDialog.vue
 msgid "String"
 msgstr "字符串"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Strong radio signal, about ${ 0 } dBm"
+msgstr ""
 
 #: src/libs/mission/library.ts
 msgid "Submarine"
@@ -14393,6 +14407,11 @@ msgid ""
 "Cockpit from synchronizing its settings with BlueOS vehicles. Telemetry "
 "sharing is configured from 'Settings' > 'General' > 'Shared Data'."
 msgstr "建议保留默认值，如需停止 Cockpit 与 BlueOS 设备的设置同步，可通过「设置」>「通用」>「共享数据」配置遥测共享。"
+
+#: src/components/MeasureProfilePanel.vue
+#, javascript-format
+msgid "Weak radio signal, about ${ 0 } dBm"
+msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue
 msgid "WebSocket address"
