@@ -54,6 +54,14 @@
       <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs">
         <p v-if="profile.endHeightDifferenceM !== null">{{ t`Height difference` }} {{ endHeightDifference }}</p>
         <p v-if="profile.slope">{{ t`Steepest ground` }} {{ steepest }}</p>
+        <p v-if="profile.signal" class="flex items-center gap-x-1">
+          <v-icon
+            :icon="signalIcons[profile.signal.risk]"
+            :color="MISSION_COVERAGE_RISK_COLORS[profile.signal.risk]"
+            size="14"
+          />
+          {{ signalLabel }}
+        </p>
       </div>
     </template>
   </div>
@@ -65,6 +73,7 @@ import { computed, ref } from 'vue'
 
 import TerrainProfileChart from '@/components/terrain/TerrainProfileChart.vue'
 import type { MeasureProfile } from '@/composables/map/useMeasureProfile'
+import { MISSION_COVERAGE_RISK_COLORS, MissionCoverageRisk } from '@/libs/baseStation/missionPathSignal'
 import { terrainVehicleClass } from '@/libs/terrain/mission-profile'
 import { formatValueWithUnit } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -123,4 +132,23 @@ const steepest = computed(() => {
   if (!slope) return ''
   return `${slope.maxSlopeDeg.toFixed(1)}° (${Math.round(slope.maxGradePercent)}%)`
 })
+
+const signalLabel = computed(() => {
+  const signal = props.profile?.signal
+  if (!signal || signal.powerDbm === null) return t`Radio signal unknown, no terrain data`
+  const power = Math.round(signal.powerDbm)
+  const labels: Record<MissionCoverageRisk, string> = {
+    [MissionCoverageRisk.Good]: t`Strong radio signal, about ${power} dBm`,
+    [MissionCoverageRisk.Marginal]: t`Weak radio signal, about ${power} dBm`,
+    [MissionCoverageRisk.LikelyLost]: t`Radio signal likely lost, about ${power} dBm`,
+    [MissionCoverageRisk.Unknown]: t`Radio signal unknown, no terrain data`,
+  }
+  return labels[signal.risk]
+})
+const signalIcons: Record<MissionCoverageRisk, string> = {
+  [MissionCoverageRisk.Good]: 'mdi-check-circle-outline',
+  [MissionCoverageRisk.Marginal]: 'mdi-alert-outline',
+  [MissionCoverageRisk.LikelyLost]: 'mdi-close-circle-outline',
+  [MissionCoverageRisk.Unknown]: 'mdi-help-circle-outline',
+}
 </script>
