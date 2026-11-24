@@ -1692,6 +1692,10 @@ msgstr "Tem certeza de que deseja enviar o veículo para o Home?"
 msgid "Area"
 msgstr "Área"
 
+#: src/components/MapMeasureControl.vue
+msgid "Area and perimeter: click corners, then the check mark to keep it"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Areas under 1 nmi²"
 msgstr "Áreas abaixo de 1 nmi²"
@@ -7541,6 +7545,10 @@ msgstr "Continuar revisando"
 msgid "Keep the measurement on the map"
 msgstr ""
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Keep the ruler"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Keep the terrain of the visible map for offline use"
 msgstr ""
@@ -8215,6 +8223,14 @@ msgid ""
 msgstr ""
 "Distância vertical máxima (metros) que o veículo pode percorrer acima da "
 "posição Home. Valor numérico. 0 → sem limite vertical."
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the area"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the enclosed area?"
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Measured"
@@ -9984,6 +10000,11 @@ msgstr "Desempenho"
 msgid "Performance Warning"
 msgstr "Aviso de desempenho"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Perimeter ${ 0 }"
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "Persist variable between boots"
 msgstr "Manter a variável entre inicializações"
@@ -11197,6 +11218,13 @@ msgstr "Graus de rotação"
 #: src/composables/map/useMapMeasure.ts
 #, javascript-format
 msgid "Ruler ${ 0 }"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid ""
+"Ruler ${ 0 } ends where it started. Turn it into an area to read the area "
+"and perimeter it encloses."
 msgstr ""
 
 #: src/components/configuration/ActionLinkConfig.vue

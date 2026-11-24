@@ -228,6 +228,14 @@ const items = computed<DialItem[]>(() => [
     onClick: () => toggleTool('distance'),
   },
   {
+    id: 'area',
+    icon: 'mdi-vector-polygon-variant',
+    tooltip: props.blocked ? blockedReason : t`Area and perimeter: click corners, then the check mark to keep it`,
+    active: measure.tool.value === 'area',
+    disabled: props.blocked,
+    onClick: () => toggleTool('area'),
+  },
+  {
     id: 'clear',
     icon: 'mdi-eraser',
     tooltip: measure.hasMeasurement.value ? t`Clear the measurements` : t`Nothing measured to clear`,

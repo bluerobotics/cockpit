@@ -1590,6 +1590,10 @@ msgstr "确定要让飞行器返航吗？"
 msgid "Area"
 msgstr "面积"
 
+#: src/components/MapMeasureControl.vue
+msgid "Area and perimeter: click corners, then the check mark to keep it"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Areas under 1 nmi²"
 msgstr "小于 1 平方海里的区域"
@@ -7128,6 +7132,10 @@ msgstr "继续审核"
 msgid "Keep the measurement on the map"
 msgstr ""
 
+#: src/composables/map/useMapMeasure.ts
+msgid "Keep the ruler"
+msgstr ""
+
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Keep the terrain of the visible map for offline use"
 msgstr ""
@@ -7779,6 +7787,14 @@ msgid ""
 "Maximum vertical distance (meters) the vehicle may travel above the home "
 "position. Numeric value. 0 → no vertical limit."
 msgstr "设备可上升至起始位置以上的最大垂直距离（米）。数值。0 → 无垂直限制。"
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the area"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+msgid "Measure the enclosed area?"
+msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
 msgid "Measured"
@@ -9463,6 +9479,11 @@ msgstr "性能"
 msgid "Performance Warning"
 msgstr "性能警告"
 
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid "Perimeter ${ 0 }"
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "Persist variable between boots"
 msgstr "变量在重启后保持"
@@ -10622,6 +10643,13 @@ msgstr "旋转角度"
 #: src/composables/map/useMapMeasure.ts
 #, javascript-format
 msgid "Ruler ${ 0 }"
+msgstr ""
+
+#: src/composables/map/useMapMeasure.ts
+#, javascript-format
+msgid ""
+"Ruler ${ 0 } ends where it started. Turn it into an area to read the area "
+"and perimeter it encloses."
 msgstr ""
 
 #: src/components/configuration/ActionLinkConfig.vue
