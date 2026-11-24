@@ -452,6 +452,15 @@ msgstr "Uma gravação parou inesperadamente. ${ 0 }"
 msgid "A short verification code will be displayed."
 msgstr "Um código de verificação curto será exibido."
 
+#: src/composables/useNewUserSeeding.ts
+#, javascript-format
+msgid "A user named '${ 0 }' already exists."
+msgstr ""
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid "A user with this name already exists."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "A variable with this ID already exists"
 msgstr "Já existe uma variável com este ID"
@@ -2508,6 +2517,10 @@ msgstr ""
 "O padrão do Cockpit é zero milissegundos, mas você pode definir um valor "
 "personalizado ou deixar o campo vazio para usar o padrão do navegador."
 
+#: src/components/UserNameInputDialog.vue
+msgid "Cockpit's defaults"
+msgstr ""
+
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Codec"
 msgstr "Codec"
@@ -2811,6 +2824,10 @@ msgstr "Copiar comando"
 msgid "Copy coordinates"
 msgstr "Copiar coordenadas"
 
+#: src/components/UserNameInputDialog.vue
+msgid "Copy from"
+msgstr ""
+
 #: src/components/BaseStationContextPopup.vue
 #: src/components/poi/PoiActionPopup.vue
 msgid "Copy latitude to clipboard"
@@ -3083,6 +3100,12 @@ msgid ""
 msgstr ""
 "Não foi possível carregar os usuários do veículo. Mostrando apenas os "
 "usuários em cache local - os usuários salvos no veículo continuam existindo."
+
+#: src/composables/useNewUserSeeding.ts
+msgid ""
+"Couldn't reach the vehicle to create the user. Check the connection and try "
+"again."
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 msgid "Counting chunks and calculating sizes..."
@@ -3466,6 +3489,15 @@ msgstr "Posição padrão do mapa:"
 #: src/views/ConfigurationMissionView.vue
 msgid "Default map tile provider"
 msgstr "Provedor de tiles padrão do mapa"
+
+#: src/libs/username.ts
+msgid "Default user"
+msgstr ""
+
+#: src/components/DefaultUserRenameDialog.vue
+#, javascript-format
+msgid "Default user renamed to '${ 0 }'."
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Default views"
@@ -6342,6 +6374,7 @@ msgstr ""
 msgid "Lat.:"
 msgstr "Lat.:"
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UpdateNotification.vue
 msgid "Later"
 msgstr "Mais tarde"
@@ -7651,6 +7684,13 @@ msgstr "Nenhuma porta serial encontrada"
 #: src/components/configuration/CockpitSettingsManager.vue
 msgid "No settings available for current selection."
 msgstr "Nenhuma configuração disponível para a seleção atual."
+
+#: src/composables/useNewUserSeeding.ts
+#, javascript-format
+msgid ""
+"No settings of '${ 0 }' were found to copy. Pick another user or start from "
+"Cockpit's defaults."
+msgstr ""
 
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid ""
@@ -9006,9 +9046,17 @@ msgstr "Remover veículo"
 msgid "Removed \"${ 0 }\" from the library."
 msgstr "\"${ 0 }\" removido da biblioteca."
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename"
+msgstr ""
+
 #: src/components/mini-widgets/MissionIdentifier.vue
 msgid "Rename current mission"
 msgstr "Renomear missão atual"
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename the default user"
+msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Render mode"
@@ -11924,11 +11972,12 @@ msgstr ""
 msgid "User settings"
 msgstr "Configurações do usuário"
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UserNameInputDialog.vue
 msgid "Username"
 msgstr "Nome de usuário"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid ""
 "Username can only contain letters, numbers, and the following characters: _ "
 "- ."
@@ -11936,23 +11985,23 @@ msgstr ""
 "O nome de usuário só pode conter letras, números e os seguintes caracteres: "
 "_ - ."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"cockpit\" as it is reserved for internal use."
 msgstr ""
 "O nome de usuário não pode conter \"cockpit\", pois é reservado para uso "
 "interno."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"fallback\" as it is reserved for internal use."
 msgstr ""
 "O nome de usuário não pode conter \"fallback\", pois é reservado para uso "
 "interno."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain spaces."
 msgstr "O nome de usuário não pode conter espaços."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at least 3 characters long."
 msgstr "O nome de usuário deve ter pelo menos 3 caracteres."
 
@@ -11964,11 +12013,11 @@ msgstr ""
 "O nome de usuário deve ter pelo menos 3 caracteres. Nenhum nome de usuário "
 "foi definido. Sincronização automática desativada."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at most 16 characters long."
 msgstr "O nome de usuário deve ter no máximo 16 caracteres."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be lowercase."
 msgstr "O nome de usuário deve estar em letras minúsculas."
 
@@ -12783,6 +12832,12 @@ msgstr ""
 "Você está executando a versão x64 do Cockpit em um Mac com Apple Silicon "
 "(série M), o que causa desempenho gravemente degradado, incluindo:"
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid ""
+"You are using Cockpit's default user. Give it a name to keep your settings "
+"easy to manage under your own user."
+msgstr ""
+
 #: src/views/ConfigurationVideoView.vue
 msgid ""
 "You can always manually clean up backup chunks later using the "
@@ -12921,10 +12976,6 @@ msgstr ""
 #, javascript-format
 msgid "Your current mapping is missing ${ 0 } default axis function(s)."
 msgstr "Seu mapeamento atual não tem ${ 0 } função(ões) de eixo padrão."
-
-#: src/components/UserNameInputDialog.vue
-msgid "Your identification username."
-msgstr "Seu nome de usuário de identificação."
 
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #, javascript-format
@@ -13539,3 +13590,6 @@ msgstr ""
 
 #~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
 #~ msgstr "URI de um MAVLink2REST, ou sitl://ardusub para o simulador"
+
+#~ msgid "Your identification username."
+#~ msgstr "Seu nome de usuário de identificação."

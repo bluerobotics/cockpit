@@ -78,6 +78,8 @@ const minOdometerSegmentMeters = 1
 
 export const useMissionStore = defineStore('mission', () => {
   const username = useStorage<string>('cockpit-username', fallbackUsername)
+  // Machine-local, since the default user is this computer's own unnamed profile.
+  const isDefaultUserRenamed = useStorage('cockpit-default-user-renamed', false)
   const lastConnectedUser = localStorage.getItem(cockpitLastConnectedUserKey) || undefined
   const missionName = useStorage('cockpit-mission-name', '')
   const missionNameIsAutomatic = useStorage('cockpit-mission-name-is-automatic', true)
@@ -1194,6 +1196,7 @@ export const useMissionStore = defineStore('mission', () => {
 
   return {
     username,
+    isDefaultUserRenamed,
     lastConnectedUser,
     changeUsername,
     missionName,

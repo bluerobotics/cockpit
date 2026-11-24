@@ -4,10 +4,24 @@
     persistent
     :show-dialog="showUserDialog"
     :title="dialogTitle"
-    :actions="showNewUsernamePrompt || isUsernamesEmpty ? inputDialogActions : regularDialogActions"
+    :actions="currentDialogActions"
     :max-width="700"
   >
     <template #content>
+      <div class="flex absolute top-0 right-0 py-2 pr-3">
+        <v-btn
+          icon
+          :width="34"
+          :height="34"
+          variant="text"
+          :aria-label="t`Close`"
+          :disabled="isSeeding"
+          class="bg-transparent"
+          @click="closeFromCornerButton"
+        >
+          <v-icon :size="22">mdi-close</v-icon>
+        </v-btn>
+      </div>
       <div v-if="isLoading" class="flex justify-center items-center w-full">
         <v-progress-circular color="white" indeterminate class="mb-10" />
       </div>
@@ -39,7 +53,7 @@
             <div class="flex align-center justify-center w-full flex-wrap mb-6" :class="{ 'mb-12': isOnEditMode }">
               <div>
                 <v-btn
-                  v-for="username in usernamesStoredOnBlueOS"
+                  v-for="username in visibleUsernames"
                   :key="username"
                   variant="flat"
                   class="relative bg-[#FFFFFF18] m-2"
@@ -49,7 +63,7 @@
                   ]"
                   @click="!isOnEditMode && setNewUsername(username)"
                 >
-                  {{ username }}
+                  {{ usernameLabel(username) }}
 
                   <template v-if="isOnEditMode && username !== missionStore.username">
                     <div
@@ -79,19 +93,35 @@
             <p>{{ t`This username will be used to store your settings in the vehicle.` }}</p>
             <br />
             <p>{{ t`If you don't set your username, auto-sync with the vehicle won't work.` }}</p>
-            <p>{{ t`The user can be set or changed later in the General menu.` }}</p>
+            <p class="mt-[15px]">{{ t`The user can be set or changed later in the General menu.` }}</p>
             <br />
-            <v-text-field
-              v-model="newUsername"
-              variant="filled"
-              :placeholder="t`Username`"
-              type="input"
-              density="compact"
-              :hint="t`Your identification username.`"
-              class="w-[50%] m-4"
-              :error-messages="validationError"
-              @keyup.enter="saveUserName"
-            />
+            <div class="flex items-start gap-6 w-[90%] mt-[10px] mb-[15px]">
+              <v-text-field
+                v-model="newUsername"
+                variant="outlined"
+                :placeholder="t`Username`"
+                type="input"
+                density="compact"
+                hide-details="auto"
+                class="flex-1"
+                :error-messages="validationError"
+                @keyup.enter="saveUserName"
+              />
+              <span v-if="isSettingsSourceSelectable" class="h-10 flex items-center whitespace-nowrap">{{
+                t`Copy from`
+              }}</span>
+              <v-select
+                v-if="isSettingsSourceSelectable"
+                v-model="settingsSource"
+                :items="settingsSourceOptions"
+                variant="outlined"
+                density="compact"
+                theme="dark"
+                hide-details
+                class="flex-1"
+                @update:model-value="onSettingsSourceSelected"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -106,10 +136,14 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { openSnackbar } from '@/composables/snackbar'
+import { useNewUserSeeding } from '@/composables/useNewUserSeeding'
 import { deleteUsernameOnBlueOS, getSettingsUsernamesFromBlueOS } from '@/libs/blueos'
 import { settingsManager } from '@/libs/settings-management'
+import { isDefaultUsername, usernameLabel, validateUsername } from '@/libs/username'
+import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import { useMissionStore } from '@/stores/mission'
+import { fallbackUsername } from '@/types/settings-management'
 
 import InteractionDialog from './InteractionDialog.vue'
 
@@ -130,6 +164,9 @@ const isLoading = ref(true)
 const isOnEditMode = ref(false)
 const currentVehicleName = ref<string | undefined>(undefined)
 const blueOsLoadState = ref<BlueOsLoadState>('idle')
+// Holds "cockpit" and a space, both rejected by `validateUsername`, so it can never clash with a real user.
+const startFromDefaults = 'cockpit defaults'
+const settingsSource = ref(isDefaultUsername(missionStore.username) ? fallbackUsername : missionStore.username)
 
 const deleteUser = async (username: string): Promise<void> => {
   if (username === missionStore.username) {
@@ -284,26 +321,30 @@ const localOnlyNotice = computed(() => {
   return ''
 })
 
-const validateUsername = (username: string): true | string => {
-  if (username.includes(' ')) {
-    return t`Username cannot contain spaces.`
-  } else if (username.toLowerCase().includes('cockpit')) {
-    return t`Username cannot contain "cockpit" as it is reserved for internal use.`
-  } else if (username.toLowerCase().includes('fallback')) {
-    return t`Username cannot contain "fallback" as it is reserved for internal use.`
-  } else if (username.length < 3) {
-    return t`Username must be at least 3 characters long.`
-  } else if (username.length > 16) {
-    return t`Username must be at most 16 characters long.`
-  } else if (!username.match(/^[a-zA-Z0-9_.-]+$/)) {
-    return t`Username can only contain letters, numbers, and the following characters: _ - .`
-  } else if (username.toLowerCase() !== username) {
-    return t`Username must be lowercase.`
-  }
-  return true
+const isSettingsSourceSelectable = computed(() => {
+  const typedUsername = slugify(newUsername.value, { lower: true })
+  return !isUsernamesEmpty.value && !usernamesStoredOnBlueOS.value?.includes(typedUsername)
+})
+// A renamed default user stays stored, as other computers on the vehicle may still use it, but leaves the lists.
+const visibleUsernames = computed(() =>
+  (usernamesStoredOnBlueOS.value ?? []).filter(
+    (username) =>
+      username !== fallbackUsername || !missionStore.isDefaultUserRenamed || isDefaultUsername(missionStore.username)
+  )
+)
+const settingsSourceOptions = computed(() => [
+  { title: t`Cockpit's defaults`, value: startFromDefaults },
+  ...visibleUsernames.value.map((username) => ({ title: usernameLabel(username), value: username })),
+])
+
+const onSettingsSourceSelected = (source: string): void => {
+  logUserAction(`Selected '${source}' as the settings source of the new user`)
 }
 
-const saveUserName = (): void => {
+const { isSeeding, seedNewUser } = useNewUserSeeding()
+
+const saveUserName = async (): Promise<void> => {
+  if (isSeeding.value) return
   const slugifiedUsername = slugify(newUsername.value, { lower: true })
   const usernameValidation = validateUsername(slugifiedUsername)
   if (usernameValidation !== true) {
@@ -311,15 +352,24 @@ const saveUserName = (): void => {
     openSnackbar({ message: usernameValidation, variant: 'error', duration: 5000 })
     return
   }
+  let source: string | null | undefined = undefined
+  if (isSettingsSourceSelectable.value) {
+    source = settingsSource.value === startFromDefaults ? null : settingsSource.value
+    if (!(await seedNewUser(slugifiedUsername, source))) return
+  }
   newUsername.value = slugifiedUsername
-  logUserAction(`Created and selected new user '${slugifiedUsername}'`)
+  const sourceLabel = source === undefined ? '' : ` from '${source ?? 'Cockpit defaults'}'`
+  logUserAction(`Created and selected new user '${slugifiedUsername}'${sourceLabel}`)
   closeDialog()
   emit('confirmed', newUsername.value)
+  // Raw defaults lack the options mounted widgets fill in on creation, so they only apply cleanly on a fresh start.
+  if (source === null) reloadCockpitAndWarnUser()
 }
 
-const inputDialogActions = [
+const inputDialogActions = computed(() => [
   {
     text: t`Cancel`,
+    disabled: isSeeding.value,
     action: () => {
       showUserDialog.value = false
       emit('dismissed')
@@ -327,9 +377,10 @@ const inputDialogActions = [
   },
   {
     text: t`Save`,
+    disabled: isSeeding.value,
     action: saveUserName,
   },
-]
+])
 
 const regularDialogActions = [
   {
@@ -339,4 +390,14 @@ const regularDialogActions = [
     },
   },
 ]
+
+const currentDialogActions = computed(() =>
+  showNewUsernamePrompt.value || isUsernamesEmpty.value ? inputDialogActions.value : regularDialogActions
+)
+
+const closeFromCornerButton = (): void => {
+  if (isSeeding.value) return
+  logUserAction('Closed user management with the close button')
+  currentDialogActions.value[0].action()
+}
 </script>

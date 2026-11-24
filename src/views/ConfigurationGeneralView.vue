@@ -27,7 +27,7 @@
                 <div>
                   <span class="mr-2">{{ t`Current user:` }}</span>
                   <span class="font-semibold text-2xl cursor-pointer" @click="manageUsers">{{
-                    missionStore.username
+                    usernameLabel(missionStore.username)
                   }}</span>
                 </div>
                 <div class="flex justify-end">
@@ -565,6 +565,7 @@ import {
   listenToGenericWebSocketConnections,
   removeGenericWebSocketConnection,
 } from '@/libs/generic-websocket'
+import { usernameLabel } from '@/libs/username'
 import { isElectron, isValidNetworkAddress } from '@/libs/utils'
 import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'

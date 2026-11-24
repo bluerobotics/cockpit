@@ -402,6 +402,15 @@ msgstr "录制意外停止。${ 0 }"
 msgid "A short verification code will be displayed."
 msgstr "将显示一个短验证码。"
 
+#: src/composables/useNewUserSeeding.ts
+#, javascript-format
+msgid "A user named '${ 0 }' already exists."
+msgstr ""
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid "A user with this name already exists."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 msgid "A variable with this ID already exists"
 msgstr "已存在使用此 ID 的变量"
@@ -2331,6 +2340,10 @@ msgid ""
 "leave the field empty to use your browser's default."
 msgstr "Cockpit 的默认值为 0 毫秒，但您可以设置自定义值，或留空以使用浏览器默认值。"
 
+#: src/components/UserNameInputDialog.vue
+msgid "Cockpit's defaults"
+msgstr ""
+
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Codec"
 msgstr "编解码器"
@@ -2611,6 +2624,10 @@ msgstr "复制命令"
 msgid "Copy coordinates"
 msgstr "复制坐标"
 
+#: src/components/UserNameInputDialog.vue
+msgid "Copy from"
+msgstr ""
+
 #: src/components/BaseStationContextPopup.vue
 #: src/components/poi/PoiActionPopup.vue
 msgid "Copy latitude to clipboard"
@@ -2850,6 +2867,12 @@ msgid ""
 "Couldn't load users from the vehicle. Showing locally cached users only - "
 "any users saved on the vehicle still exist."
 msgstr "无法从设备加载用户。仅显示本地缓存的用户，保存在设备上的用户仍然存在。"
+
+#: src/composables/useNewUserSeeding.ts
+msgid ""
+"Couldn't reach the vehicle to create the user. Check the connection and try "
+"again."
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 msgid "Counting chunks and calculating sizes..."
@@ -3225,6 +3248,15 @@ msgstr "默认地图位置："
 #: src/views/ConfigurationMissionView.vue
 msgid "Default map tile provider"
 msgstr "默认地图瓦片提供商"
+
+#: src/libs/username.ts
+msgid "Default user"
+msgstr ""
+
+#: src/components/DefaultUserRenameDialog.vue
+#, javascript-format
+msgid "Default user renamed to '${ 0 }'."
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsAutoImportModal.vue
 msgid "Default views"
@@ -5923,6 +5955,7 @@ msgstr "大型缓冲区（${ 0 } 条消息）。随着新消息到达，所选�
 msgid "Lat.:"
 msgstr "纬度："
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UpdateNotification.vue
 msgid "Later"
 msgstr "稍后"
@@ -7186,6 +7219,13 @@ msgstr "未找到串口"
 msgid "No settings available for current selection."
 msgstr "当前选项无可用设置。"
 
+#: src/composables/useNewUserSeeding.ts
+#, javascript-format
+msgid ""
+"No settings of '${ 0 }' were found to copy. Pick another user or start from "
+"Cockpit's defaults."
+msgstr ""
+
 #: src/components/mini-widgets/SnapshotTool.vue
 msgid ""
 "No sources available for capture. Make sure streams are connected or select "
@@ -8434,9 +8474,17 @@ msgstr "移除设备"
 msgid "Removed \"${ 0 }\" from the library."
 msgstr "已从库中移除“${ 0 }”。"
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename"
+msgstr ""
+
 #: src/components/mini-widgets/MissionIdentifier.vue
 msgid "Rename current mission"
 msgstr "重命名当前任务"
+
+#: src/components/DefaultUserRenameDialog.vue
+msgid "Rename the default user"
+msgstr ""
 
 #: src/components/map/MapOverlaysDialog.vue
 msgid "Render mode"
@@ -11087,29 +11135,30 @@ msgstr "用户相关配置。您可以设置当前设备的用户以及创建新
 msgid "User settings"
 msgstr "用户设置"
 
+#: src/components/DefaultUserRenameDialog.vue
 #: src/components/UserNameInputDialog.vue
 msgid "Username"
 msgstr "用户名"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid ""
 "Username can only contain letters, numbers, and the following characters: _ "
 "- ."
 msgstr "用户名只能包含字母、数字和以下字符：_ - ."
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"cockpit\" as it is reserved for internal use."
 msgstr "用户名不能包含“cockpit”，因为它保留供内部使用。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain \"fallback\" as it is reserved for internal use."
 msgstr "用户名不能包含“fallback”，因为它保留供内部使用。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username cannot contain spaces."
 msgstr "用户名不能包含空格。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at least 3 characters long."
 msgstr "用户名至少需要3个字符。"
 
@@ -11119,11 +11168,11 @@ msgid ""
 "disabled."
 msgstr "用户名长度至少为 3 个字符。未设置用户名。自动同步已禁用。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be at most 16 characters long."
 msgstr "用户名最多16个字符。"
 
-#: src/components/UserNameInputDialog.vue
+#: src/libs/username.ts
 msgid "Username must be lowercase."
 msgstr "用户名必须是小写。"
 
@@ -11869,6 +11918,12 @@ msgid ""
 "series), which causes severely degraded performance, including:"
 msgstr "您正在 Apple Silicon Mac（M 系列）上运行 x64 版本的 Cockpit，这会导致性能严重下降，包括："
 
+#: src/components/DefaultUserRenameDialog.vue
+msgid ""
+"You are using Cockpit's default user. Give it a name to keep your settings "
+"easy to manage under your own user."
+msgstr ""
+
 #: src/views/ConfigurationVideoView.vue
 msgid ""
 "You can always manually clean up backup chunks later using the "
@@ -11986,10 +12041,6 @@ msgstr "您当前的映射中有 ${ 0 } 个轴函数的范围与默认值相差�
 #, javascript-format
 msgid "Your current mapping is missing ${ 0 } default axis function(s)."
 msgstr "您当前的映射缺少 ${ 0 } 个默认轴函数。"
-
-#: src/components/UserNameInputDialog.vue
-msgid "Your identification username."
-msgstr "您的身份识别用户名。"
 
 #: src/components/vehicle-defaults/VehicleDefaultsJoystickMappingContent.vue
 #, javascript-format
@@ -12562,3 +12613,6 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "URI of a Mavlink2Rest, or sitl://ardusub for the simulator"
 #~ msgstr "Mavlink2Rest 的 URI，或模拟器使用的 sitl://ardusub"
+
+#~ msgid "Your identification username."
+#~ msgstr "您的身份识别用户名。"
