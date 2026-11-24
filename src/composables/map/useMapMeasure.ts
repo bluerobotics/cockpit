@@ -4,6 +4,7 @@ import { t } from 'ttag'
 import { type ComputedRef, type Ref, type ShallowRef, computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 
 import { useBaseStation } from '@/composables/baseStation/useBaseStation'
+import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useMapPointHeights } from '@/composables/map/useMapPointHeights'
 import { useMissionTerrain } from '@/composables/terrain/useMissionTerrain'
 import { usePointsOfInterest } from '@/composables/usePointsOfInterest'
@@ -15,6 +16,7 @@ import {
   formatTravelTime,
   nearestPointOnLines,
   nearestSnapTarget,
+  polygonStats,
   polylineStats,
   segmentCrossesBox,
 } from '@/libs/map/measure'
@@ -34,10 +36,15 @@ import {
   showDeleteOnHover,
 } from '@/libs/map/measure-layers'
 import { metersPerPixel, outwardPillTransform } from '@/libs/map/utils-map'
-import { bearingBetween, calculateHaversineDistance, formatBearing } from '@/libs/mission/general-estimates'
+import {
+  bearingBetween,
+  calculateHaversineDistance,
+  centroidLatLng,
+  formatBearing,
+} from '@/libs/mission/general-estimates'
 import { sampleTerrain } from '@/libs/terrain/elevation-service'
 import { surfaceHeight } from '@/libs/terrain/mission-profile'
-import { formatDistance, formatValueWithUnit } from '@/libs/units'
+import { formatArea, formatDistance, formatValueWithUnit } from '@/libs/units'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useHazardStore } from '@/stores/hazards'
 import type { Waypoint, WaypointCoordinates } from '@/types/mission'
@@ -45,7 +52,7 @@ import type { Waypoint, WaypointCoordinates } from '@/types/mission'
 import { type VertexAngleTriple, useVertexAngleOverlay } from './useVertexAngleOverlay'
 
 /** Which measurement the map is taking. */
-export type MeasureTool = 'distance'
+export type MeasureTool = 'distance' | 'area'
 
 /** What a measured point was snapped to, which is what its height is read from. */
 type MeasureVertexKind = 'point' | 'vehicle' | 'home' | 'base-station' | 'waypoint' | 'poi' | 'hazard'
@@ -123,6 +130,8 @@ const HANDLE_PANE = 'measureHandlePane'
 const VERTEX_CLEARANCE_PX = 8
 /** Readouts in the order they are kept when two would overlap, the rest hidden. */
 type PillsByRank = {
+  /** An area's surface and perimeter. */
+  area: L.Marker[]
   /** Length and bearing of a side. */
   segment: L.Marker[]
   /** Running length at a ruler's corner, kept after the angle tags. */
@@ -162,7 +171,7 @@ const SNAP_TOLERANCE_PX = 14
 const isOverHandle = (target: EventTarget | null): boolean =>
   !!(target as HTMLElement | null)?.closest?.(`.${HANDLE_CLASS}`)
 
-const MIN_RULER_VERTICES = 2
+const minimumVertices = (tool: MeasureTool): number => (tool === 'area' ? 3 : 2)
 
 const vertexIcon = (scheme: MeasureColorScheme): L.DivIcon =>
   L.divIcon({
@@ -208,10 +217,11 @@ const actionButton = (
 }
 
 /**
- * Takes distance measurements on a Leaflet map: clicks or taps place points, snapping to the vehicle, home, the base
- * station, waypoints, points of interest, hazard areas and the shore, and the map reads back each segment's length
- * and bearing, running totals, the time at the planned speed, and the slant range where heights are known. A
- * confirmed measurement stays on the map, and its points can still be dragged or deleted.
+ * Takes distance and area measurements on a Leaflet map: clicks or taps place points, snapping to the vehicle, home,
+ * the base station, waypoints, points of interest, hazard areas and the shore, and the map reads back each segment's
+ * length and bearing, running totals, the time at the planned speed, the slant range where heights are known, and
+ * the area and perimeter of a closed shape. A confirmed measurement stays on the map, and its points can still be
+ * dragged or deleted.
  * @param {ShallowRef<LeafletMap | undefined>} map The map to measure on.
  * @param {Ref<boolean>} mapReady Whether the map is ready.
  * @param {UseMapMeasureOptions} options What the map draws.
@@ -229,6 +239,7 @@ export const useMapMeasure = (
   const terrain = useMissionTerrain()
   const angleOverlay = useVertexAngleOverlay(() => MEASURE_SCHEME_COLORS[options.colorScheme()])
   const rubberAngle = useVertexAngleOverlay(() => MEASURE_SCHEME_COLORS[options.colorScheme()])
+  const { confirmAction } = useInteractionDialog()
 
   const { vehicleAltitudeAmslM, waypointAltitudeAmslM } = useMapPointHeights()
 
@@ -248,8 +259,9 @@ export const useMapMeasure = (
   const vertexMarkers = new Map<string, L.Marker>()
   const summaryTags = new Map<number, SummaryTag>()
   let actionsMarker: L.Marker | undefined
-  let pills: PillsByRank = { segment: [], total: [] }
+  let pills: PillsByRank = { area: [], segment: [], total: [] }
   let resumedFrom: MapMeasurement | undefined
+  let offeringArea = false
   let confirmButton: HTMLButtonElement | undefined
 
   const snapTargets = (): MeasureSnapTarget[] => {
@@ -346,7 +358,7 @@ export const useMapMeasure = (
   // ranked before it, is the one hidden.
   // ponytail: checks each pill against every one kept, fine for the few dozen a map holds; a grid index past that.
   const declutterPills = (shownOn: LeafletMap): void => {
-    const ranked = [...pills.segment]
+    const ranked = [...pills.area, ...pills.segment]
       .map(pillElement)
       .concat(angleOverlay.tagElements(), pills.total.map(pillElement))
       .filter((element): element is HTMLElement => element !== null)
@@ -384,6 +396,26 @@ export const useMapMeasure = (
     return lines
   }
 
+  const renderArea = (group: L.LayerGroup, corners: WaypointCoordinates[], pinned: boolean): void => {
+    group.addLayer(
+      L.polygon(corners, {
+        stroke: false,
+        fillColor: MEASURE_SCHEME_COLORS[options.colorScheme()],
+        fillOpacity: 0.12,
+        interactive: false,
+      })
+    )
+    const color = MEASURE_SCHEME_COLORS[options.colorScheme()]
+    const outline = { color, weight: 2, dashArray: pinned ? undefined : '6 6', interactive: false }
+    group.addLayer(measureLine([...corners, corners[0]], outline))
+    if (corners.length < 3) return
+    const { areaM2, perimeterM } = polygonStats(corners)
+    const preferences = interfaceStore.displayUnitPreferences
+    const perimeter = formatDistance(perimeterM, preferences)
+    const lines = [formatArea(areaM2, preferences), t`Perimeter ${perimeter}`]
+    addPill(group, 'area', measurePill(centroidLatLng(corners), lines, 'measure-angle-pill !rounded-lg'))
+  }
+
   // On-screen direction leaving a corner away from both of its sides, the side its angle arc is not drawn on.
   const awayFromSides = (shownOn: LeafletMap, corner: WaypointCoordinates, sides: WaypointCoordinates[]): L.Point => {
     const at = shownOn.latLngToContainerPoint(corner)
@@ -414,19 +446,40 @@ export const useMapMeasure = (
     corners.slice(1, -1).forEach((corner, index) => triples.push([corners[index], corner, corners[index + 2]]))
   }
 
+  // An area being drawn reads its newest corner as selected until another one of it is picked.
+  const selectedCorner = (area: MapMeasurement): number | null => {
+    if (selectedVertex.value?.[0] === area.id) return selectedVertex.value[1]
+    return area.pinned ? null : area.vertices.length - 1
+  }
+
   const renderMeasurement = (group: L.LayerGroup, measurement: MapMeasurement, triples: VertexAngleTriple[]): void => {
     const corners = measurement.vertices.map((vertex) => vertex.coordinates)
     if (corners.length === 0) return
-    corners.slice(1).forEach((to, index) => {
-      const from = corners[index]
-      if (calculateHaversineDistance(from, to) < 1) return
+    const closed = measurement.tool === 'area' && measurement.pinned
+    const edges = closed ? [...corners, corners[0]] : corners
+    // Areas only label the two sides of their selected corner, so a detailed outline stays readable.
+    const corner = measurement.tool === 'area' ? selectedCorner(measurement) : undefined
+    edges.slice(1).forEach((to, index) => {
+      const from = edges[index]
+      const touchesCorner = corner === undefined || corner === index || corner === (index + 1) % corners.length
+      if (!touchesCorner || calculateHaversineDistance(from, to) < 1) return
       addPill(group, 'segment', measurePill(midpoint(from, to), [segmentLabel(from, to)], 'measure-angle-pill'))
     })
-    renderDistance(group, measurement.vertices, triples)
+    if (closed && typeof corner === 'number' && corners.length >= 3) {
+      const n = corners.length
+      triples.push([corners[(corner - 1 + n) % n], corners[corner], corners[(corner + 1) % n]])
+    }
+    if (measurement.tool === 'area') renderArea(group, corners, measurement.pinned)
+    else renderDistance(group, measurement.vertices, triples)
   }
 
   const logFinished = (measurement: MapMeasurement): void => {
     const preferences = interfaceStore.displayUnitPreferences
+    if (measurement.tool === 'area') {
+      const { areaM2 } = polygonStats(measurement.vertices.map((vertex) => vertex.coordinates))
+      logUserAction(`Measured an area of ${formatArea(areaM2, preferences)} on the map`)
+      return
+    }
     const { totalM } = polylineStats(measurement.vertices)
     const segments = measurement.vertices.length - 1
     logUserAction(`Measured ${formatDistance(totalM, preferences)} over ${segments} segments on the map`)
@@ -450,10 +503,10 @@ export const useMapMeasure = (
     const measurement = measurements.value.find((current) => current.id === id)
     if (!measurement) return
     const remaining = measurement.vertices.filter((_, current) => current !== index)
-    const keeps = remaining.length >= (measurement.pinned ? MIN_RULER_VERTICES : 1)
+    const keeps = remaining.length >= (measurement.pinned ? minimumVertices(measurement.tool) : 1)
     if (keeps) updateVertices(id, remaining)
     else measurements.value = measurements.value.filter((current) => current.id !== id)
-    if (selectedVertex.value?.[0] === id && !keeps) selectedVertex.value = null
+    if (selectedVertex.value?.[0] === id && (!keeps || measurement.tool === 'area')) selectedVertex.value = null
     removeRubberBand()
     logUserAction(keeps ? 'Deleted a point of a measurement on the map' : 'Deleted a measurement from the map')
   }
@@ -474,12 +527,12 @@ export const useMapMeasure = (
 
   const pin = (): void => {
     const current = draft.value
-    if (!current || current.vertices.length < MIN_RULER_VERTICES) return
+    if (!current || current.vertices.length < minimumVertices(current.tool)) return
     measurements.value = measurements.value.map((measurement) =>
       measurement === current ? { ...measurement, pinned: true } : measurement
     )
     resumedFrom = undefined
-    selectedVertex.value = [current.id, current.vertices.length - 1]
+    if (current.tool === 'distance') selectedVertex.value = [current.id, current.vertices.length - 1]
     logFinished(current)
     setTool(null)
   }
@@ -487,6 +540,35 @@ export const useMapMeasure = (
   const discardFromButton = (): void => {
     logUserAction('Discarded the measurement being taken on the map')
     setTool(null)
+  }
+
+  const closeIntoArea = (ruler: MapMeasurement, confirmed: boolean): void => {
+    const current = draft.value
+    if (!confirmed || current?.id !== ruler.id) {
+      logUserAction('Kept the closed ruler on the map as a ruler')
+      return
+    }
+    const area: MapMeasurement = { ...current, tool: 'area', number: nextNumber('area'), pinned: true }
+    measurements.value = measurements.value.map((measurement) => (measurement === current ? area : measurement))
+    resumedFrom = undefined
+    logUserAction(`Turned ruler ${ruler.number} into area ${area.number} on the map`)
+    setTool(null)
+  }
+
+  const offerArea = (ruler: MapMeasurement): void => {
+    if (offeringArea) return
+    offeringArea = true
+    logUserAction('Closed a ruler on its first point on the map')
+    confirmAction(
+      t`Measure the enclosed area?`,
+      t`Ruler ${ruler.number} ends where it started. Turn it into an area to read the area and perimeter it encloses.`,
+      t`Measure the area`,
+      '480px',
+      t`Keep the ruler`
+    )
+      .then((confirmed) => closeIntoArea(ruler, confirmed))
+      .catch((error) => console.error('Could not offer to close the ruler into an area:', error))
+      .finally(() => (offeringArea = false))
   }
 
   // With the ruler tool on and nothing being taken, pressing either end of a ruler carries on from that end.
@@ -508,7 +590,10 @@ export const useMapMeasure = (
     const [selectedId, selectedIndex] = selectedVertex.value ?? []
     if (!measurement || (selectedId === id && selectedIndex === index)) return
     selectedVertex.value = [id, index]
-    logUserAction(`Selected ruler ${measurement.number} on the map`)
+    const { tool: kind, number } = measurement
+    logUserAction(
+      kind === 'area' ? `Selected a corner of area ${number} on the map` : `Selected ruler ${number} on the map`
+    )
   }
 
   const deselectVertex = (): void => {
@@ -522,8 +607,11 @@ export const useMapMeasure = (
     selectVertex(id, index)
     const current = draft.value
     if (!current) return resumeRuler(id, index)
-    if (current.id !== id || current.vertices.length < MIN_RULER_VERTICES) return
-    if (index === current.vertices.length - 1) pin()
+    if (current.id !== id || current.vertices.length < minimumVertices(current.tool)) return
+    if (current.tool === 'distance' && index === 0 && current.vertices.length >= 3) return offerArea(current)
+    const isLast = index === current.vertices.length - 1
+    const closesArea = current.tool === 'area' && index === 0
+    if (isLast || closesArea) pin()
   }
 
   const createVertexMarker = (id: number, index: number, at: WaypointCoordinates): L.Marker =>
@@ -627,9 +715,10 @@ export const useMapMeasure = (
     const at = onPage(last)
     const { left, top, right, bottom } = DELETE_BUTTON_BOX
     boxes.push({ left: at.x + left, top: at.y + top, right: at.x + right, bottom: at.y + bottom })
-    const lines: L.LatLngExpression[][] = measurements.value.map(({ vertices }) =>
-      vertices.map((vertex) => vertex.coordinates)
-    )
+    const lines: L.LatLngExpression[][] = measurements.value.map(({ tool: kind, vertices }) => {
+      const corners = vertices.map((vertex) => vertex.coordinates)
+      return kind === 'area' ? [...corners, corners[0]] : corners
+    })
     if (withLiveLine && rubberLine) lines.push(rubberLine.getLatLngs() as L.LatLng[])
     const sides = lines.flatMap((line) =>
       line.slice(1).map((to, index): [ScreenPoint, ScreenPoint] => [onPage(line[index]), onPage(to)])
@@ -766,7 +855,7 @@ export const useMapMeasure = (
     actionsMarker ??= createActionsMarker(last.coordinates)
     actionsMarker.setLatLng(last.coordinates)
     if (confirmButton) {
-      confirmButton.style.display = current.vertices.length < MIN_RULER_VERTICES ? 'none' : ''
+      confirmButton.style.display = current.vertices.length < minimumVertices(current.tool) ? 'none' : ''
     }
     if (!boundMap.hasLayer(actionsMarker)) actionsMarker.addTo(boundMap)
   }
@@ -774,7 +863,7 @@ export const useMapMeasure = (
   const render = (): void => {
     if (!layers || !boundMap) return
     layers.clearLayers()
-    pills = { segment: [], total: [] }
+    pills = { area: [], segment: [], total: [] }
     const triples: VertexAngleTriple[] = []
     measurements.value.forEach((measurement) => renderMeasurement(layers!, measurement, triples))
     angleOverlay.renderVertexAngles(triples)
@@ -832,6 +921,8 @@ export const useMapMeasure = (
     const placed = current?.vertices ?? []
     const last = placed.at(-1)
     if (last && placed.length >= 2 && pixelsBetween(last.coordinates, point) <= SNAP_TOLERANCE_PX) return pin()
+    const closesPath = placed.length >= 3 && pixelsBetween(placed[0].coordinates, point) <= SNAP_TOLERANCE_PX
+    if (closesPath && current) return measuring === 'area' ? pin() : offerArea(current)
     const vertex = snap(latlng)
     if (current) updateVertices(current.id, [...placed, vertex])
     else {
@@ -873,6 +964,7 @@ export const useMapMeasure = (
 
   const onKeyDown = (event: KeyboardEvent): void => {
     const target = event.target as HTMLElement | null
+    if (offeringArea) return
     if (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return
     const container = boundMap?.getContainer()
     if (!container || getComputedStyle(container).visibility !== 'visible') return
@@ -915,6 +1007,7 @@ export const useMapMeasure = (
     tool.value = next
     if (next) bindInput()
     if (next === 'distance') logUserAction('Started measuring distances on the map')
+    else if (next === 'area') logUserAction('Started measuring an area on the map')
     else logUserAction('Stopped measuring on the map')
   }
 
