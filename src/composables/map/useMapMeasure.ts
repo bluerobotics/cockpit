@@ -103,12 +103,16 @@ export interface UseMapMeasureReturn {
   tool: Ref<MeasureTool | null>
   /** Measurements on the map, the confirmed ones and the one being taken. */
   measurements: ShallowRef<MapMeasurement[]>
+  /** Ruler whose terrain profile was asked for from its readout, null for none. */
+  profiled: ComputedRef<MapMeasurement | null>
   /** Whether anything is measured on the map. */
   hasMeasurement: ComputedRef<boolean>
   /** Starts taking a measurement, or stops with null, discarding the one not yet confirmed. */
   setTool: (tool: MeasureTool | null) => void
   /** Takes every measurement off the map, keeping the tool. */
   clear: () => void
+  /** Closes the terrain profile of the {@link UseMapMeasureReturn.profiled} ruler. */
+  closeProfile: () => void
 }
 
 type SummaryTag = {
@@ -245,8 +249,15 @@ export const useMapMeasure = (
 
   const tool = ref<MeasureTool | null>(null)
   const measurements = shallowRef<MapMeasurement[]>([])
+  const profiledId = ref<number | null>(null)
   const selectedVertex = ref<[id: number, index: number] | null>(null)
   const draft = computed(() => measurements.value.find((measurement) => !measurement.pinned))
+  const profiled = computed(
+    () =>
+      measurements.value.find(
+        (measurement) => measurement.id === profiledId.value && measurement.tool === 'distance'
+      ) ?? null
+  )
   const hasMeasurement = computed(() => measurements.value.length > 0)
 
   let nextId = 1
@@ -668,7 +679,19 @@ export const useMapMeasure = (
     return L.marker(at, { icon, keyboard: false, pane: HANDLE_PANE })
   }
 
-  const createSummaryTag = (): SummaryTag => {
+  const toggleProfile = (id: number): void => {
+    const opening = profiledId.value !== id
+    profiledId.value = opening ? id : null
+    logUserAction(`${opening ? 'Opened' : 'Closed'} the terrain profile of a ruler on the map`)
+  }
+
+  const closeProfile = (): void => {
+    if (profiledId.value === null) return
+    profiledId.value = null
+    logUserAction('Closed the terrain profile of a ruler on the map')
+  }
+
+  const createSummaryTag = (id: number): SummaryTag => {
     const lines = document.createElement('div')
     const draftActions = document.createElement('div')
     draftActions.className = 'flex gap-1'
@@ -678,7 +701,11 @@ export const useMapMeasure = (
     )
     const buttons = document.createElement('div')
     buttons.className = 'flex gap-1'
-    buttons.append(draftActions)
+    const terrainLabel = t`Show the terrain along the ruler`
+    buttons.append(
+      draftActions,
+      actionButton('mdi-image-filter-hdr', terrainLabel, () => toggleProfile(id), TAG_BUTTON_CLASS)
+    )
     const content = document.createElement('div')
     content.className = 'flex items-end gap-x-3'
     content.append(lines, buttons)
@@ -838,7 +865,7 @@ export const useMapMeasure = (
       summaryTags.delete(id)
     })
     rulers.forEach((ruler) => {
-      const tag = summaryTags.get(ruler.id) ?? createSummaryTag()
+      const tag = summaryTags.get(ruler.id) ?? createSummaryTag(ruler.id)
       summaryTags.set(ruler.id, tag)
       placeSummaryTag(shownOn, tag, ruler)
     })
@@ -904,6 +931,7 @@ export const useMapMeasure = (
 
   const clear = (): void => {
     measurements.value = []
+    profiledId.value = null
     selectedVertex.value = null
     removeRubberBand()
   }
@@ -1083,5 +1111,5 @@ export const useMapMeasure = (
 
   onBeforeUnmount(unbindMap)
 
-  return { tool, measurements, hasMeasurement, setTool, clear }
+  return { tool, measurements, profiled, hasMeasurement, setTool, clear, closeProfile }
 }
