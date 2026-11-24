@@ -489,9 +489,7 @@ const getReachedWaypointIndices = computed(() => {
   return waypointIndices
 })
 
-const { getEffectiveMarkerSize } = useWaypointMarkerSize(() => {
-  if (map.value) refreshReachedWaypointMarkerStyles()
-})
+const { getEffectiveMarkerSize } = useWaypointMarkerSize()
 
 const getIconDimensionsFromMarkerSize = (size: MarkerSizes): IconDimensions => {
   if (size === 'xs') {
@@ -1157,11 +1155,14 @@ watch(zoom, (newZoom, oldZoom) => {
 })
 
 // Watch for zoom level changes to update waypoint marker sizes
-watch(zoom, () => {
-  if (map.value) {
-    refreshReachedWaypointMarkerStyles()
+watch(
+  () => getEffectiveMarkerSize(zoom.value),
+  () => {
+    if (map.value) {
+      refreshReachedWaypointMarkerStyles()
+    }
   }
-})
+)
 
 // Allow following a given target
 const followerTarget = ref<string | undefined>(undefined)

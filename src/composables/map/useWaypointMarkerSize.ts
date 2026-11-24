@@ -20,17 +20,18 @@ export interface UseWaypointMarkerSizeReturn {
 /**
  * Shared waypoint-marker sizing for the map widget and the mission-planning view. The effective size honors the
  * user's always-show-numbers toggle, and flipping that toggle re-renders the caller's markers.
- * @param {() => void} refreshMarkers - Re-renders the caller's waypoint markers when the toggle changes.
+ * @param {() => void} [refreshMarkers] - Re-renders the caller's waypoint markers when the toggle changes. Omit it when
+ * the caller already re-renders on every change of the effective size.
  * @returns {UseWaypointMarkerSizeReturn} Resolver for the effective marker size.
  */
-export const useWaypointMarkerSize = (refreshMarkers: () => void): UseWaypointMarkerSizeReturn => {
+export const useWaypointMarkerSize = (refreshMarkers?: () => void): UseWaypointMarkerSizeReturn => {
   const missionStore = useMissionStore()
 
   // Forces the full-size numbered marker when the user opts to always show waypoint numbers, regardless of zoom.
   const getEffectiveMarkerSize = (zoomLevel: number): MarkerSizes =>
     missionStore.alwaysShowWaypointNumbers ? 'md' : getMarkerSizeFromZoom(zoomLevel)
 
-  watch(() => missionStore.alwaysShowWaypointNumbers, refreshMarkers)
+  if (refreshMarkers) watch(() => missionStore.alwaysShowWaypointNumbers, refreshMarkers)
 
   return { getEffectiveMarkerSize }
 }
