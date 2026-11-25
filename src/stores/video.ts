@@ -29,7 +29,7 @@ import {
 } from '@/libs/live-video-processor'
 import { datalogger } from '@/libs/sensors-logging'
 import { StreamActivationBackoff } from '@/libs/stream-activation-backoff'
-import { isElectron, isEqual, sanitizeFilenameComponent, sleep } from '@/libs/utils'
+import { isElectron, isEqual, isValidIpv4Address, sanitizeFilenameComponent, sleep } from '@/libs/utils'
 import { telemetryOverlayWindowCandidates } from '@/libs/video-telemetry'
 import { tempVideoStorage, videoStorage } from '@/libs/videoStorage'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
@@ -87,7 +87,13 @@ export const useVideoStore = defineStore('video', () => {
 
   const streamsCorrespondency = useBlueOsStorage<VideoStreamCorrespondency[]>('cockpit-streams-correspondency', [])
   const persistedIgnoredStreamExternalIds = useBlueOsStorage<string[]>('cockpit-ignored-stream-external-ids', [])
-  const allowedIceIps = useBlueOsStorage<string[]>('cockpit-allowed-stream-ips', [])
+  const allowedIceIps = useStorage<string[]>('cockpit-allowed-stream-ips-v2', [])
+  // The address Cockpit reached the vehicle through, tried only when none of the allowed IPs connects
+  // ponytail: a hostname address cannot match a candidate, so it gets no fallback; resolving it would need the vehicle
+  // to report which of its interfaces carries that name.
+  const fallbackIceIps = computed(() =>
+    isValidIpv4Address(mainVehicleStore.globalAddress) ? [mainVehicleStore.globalAddress] : []
+  )
   const enableAutoIceIpFetch = useBlueOsStorage('cockpit-enable-auto-ice-ip-fetch', true)
   const allowedIceProtocols = useBlueOsStorage<string[]>('cockpit-allowed-stream-protocols', [])
   const jitterBufferTarget = useBlueOsStorage<number>('cockpit-jitter-buffer-target', 0)
@@ -640,7 +646,8 @@ export const useVideoStore = defineStore('video', () => {
       stream,
       allowedIceIps,
       allowedIceProtocols,
-      jitterBufferTarget
+      jitterBufferTarget,
+      fallbackIceIps
     )
     activeStreams.value[streamName] = {
       // @ts-ignore: This is actually not reactive
@@ -1669,7 +1676,9 @@ export const useVideoStore = defineStore('video', () => {
       if (!allowedIceIps.value.isEmpty()) {
         // If the user has selected IPs, but none of them are available, warn about it, since no video will be streamed.
         // Otherwise, if IPs are selected and available, clear the check routine.
-        const availableSelectedIps = availableIceIps.value.filter((ip) => allowedIceIps.value.includes(ip))
+        const availableSelectedIps = availableIceIps.value.filter(
+          (ip) => allowedIceIps.value.includes(ip) || fallbackIceIps.value.includes(ip)
+        )
         if (availableSelectedIps.isEmpty() && !selectedIpNotAvailableWarningIssued) {
           console.warn('Selected ICE IPs are not available. Warning user.')
           issueSelectedIpNotAvailableWarning()
@@ -1953,6 +1962,7 @@ export const useVideoStore = defineStore('video', () => {
   return {
     availableIceIps,
     allowedIceIps,
+    fallbackIceIps,
     enableAutoIceIpFetch,
     allowedIceProtocols,
     jitterBufferTarget,

@@ -3,6 +3,8 @@ import type { Signaller } from '@/libs/webrtc/signaller'
 import type { Stream } from '@/libs/webrtc/signalling_protocol'
 import { unreceivableVideoCodecs } from '@/libs/webrtc/video-codec-support'
 
+const fallbackICECandidateDelayMs = 3000
+
 type OnCloseCallback = (sessionId: string, reason: string) => void
 type OnTrackAddedCallback = (event: RTCTrackEvent) => void
 type onNewIceRemoteAddressCallback = (availableICEIPs: string[]) => void
@@ -31,6 +33,10 @@ export class Session {
   public onClose?: OnCloseCallback
   public onStatusChange?: OnStatusChangeCallback
   public onUnreceivableVideo?: OnUnreceivableVideoCallback
+  // Candidates outside the selected IPs that are still let in when none of the selected ones connects
+  public fallbackICEIPs: string[] = []
+  private heldBackCandidates: RTCIceCandidateInit[] = []
+  private fallbackTimeout: ReturnType<typeof setTimeout> | undefined
 
   /**
    * Creates a new Session instance, connecting with a given Stream
@@ -221,11 +227,12 @@ export class Session {
     }
 
     // Ignores unwanted routes, useful, for example, to prevent WebRTC to chose the wrong route, like when the OS default is WiFi but you want to receive the video via tether because of reliability
-    if (
+    const isOutsideSelectedIps =
       Array.isArray(this.selectedICEIPs) &&
       !this.selectedICEIPs.isEmpty() &&
       !(ipAddress && this.selectedICEIPs.includes(ipAddress))
-    ) {
+    const isFallback = isOutsideSelectedIps && !!ipAddress && this.fallbackICEIPs.includes(ipAddress)
+    if (isOutsideSelectedIps && !isFallback) {
       this.onStatusChange?.(`Ignoring ICE candidate ${candidate.candidate} by IP filter`)
       console.debug(`[WebRTC] [Session] ICE candidate ignored by IP filter: ${JSON.stringify(candidate, null, 4)}`)
       return
@@ -243,6 +250,13 @@ export class Session {
       return
     }
 
+    if (isFallback) {
+      this.onStatusChange?.(`Holding back ICE candidate ${candidate.candidate} as a fallback`)
+      console.debug(`[WebRTC] [Session] ICE candidate held back as a fallback: ${JSON.stringify(candidate, null, 4)}`)
+      this.holdBackCandidate(candidate)
+      return
+    }
+
     this.peerConnection
       .addIceCandidate(candidate)
       .then(() => {
@@ -254,6 +268,35 @@ export class Session {
         console.error(`[WebRTC] [Session] Failed adding ICE candidate ${candidate}. Reason: ${reason}`)
         this.onStatusChange?.(`Failed adding ICE candidate ${candidate}. Reason: ${reason}`)
       })
+  }
+
+  /**
+   * Keeps a fallback candidate aside, to be added only if the session has not connected after a while
+   * @param {RTCIceCandidateInit} candidate - The fallback ICE candidate received from the signalling server
+   */
+  private holdBackCandidate(candidate: RTCIceCandidateInit): void {
+    this.heldBackCandidates.push(candidate)
+    // ponytail: a fixed delay, so an allowed route slower than this to connect has to compete with the fallback;
+    // releasing on the ICE 'failed' state together with an ICE restart would avoid that.
+    this.fallbackTimeout ??= setTimeout(() => this.releaseHeldBackCandidates(), fallbackICECandidateDelayMs)
+  }
+
+  /**
+   * Adds the held back fallback candidates when no allowed route has connected
+   */
+  private releaseHeldBackCandidates(): void {
+    this.fallbackTimeout = undefined
+    if (this.ended || this.isConnected() || this.heldBackCandidates.isEmpty()) return
+
+    const candidates = this.heldBackCandidates.splice(0)
+    const msg = `No connection through the selected IPs, also trying ${this.fallbackICEIPs.join(', ')}`
+    console.debug(`[WebRTC] [Session] ${msg}`)
+    this.onStatusChange?.(msg)
+    candidates.forEach((candidate) => {
+      this.peerConnection.addIceCandidate(candidate).catch((reason) => {
+        console.error(`[WebRTC] [Session] Failed adding fallback ICE candidate ${candidate}. Reason: ${reason}`)
+      })
+    })
   }
 
   /**
@@ -377,6 +420,7 @@ export class Session {
 
     // Before closing the peer connection, whose own 'closed' report would otherwise be taken for a lost session
     this.ended = true
+    clearTimeout(this.fallbackTimeout)
 
     this.endPeerConnection()
 
