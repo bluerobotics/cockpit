@@ -253,6 +253,12 @@ msgstr "${ 0 } não retornou dados de celular ao redor do alvo posicionado."
 msgid "${ 0 } sats"
 msgstr "${ 0 } satélites"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "${ 0 } selected"
+msgid_plural "${ 0 } selected"
+msgstr[0] ""
+
 #: src/components/recipes/RecipeDialog.vue
 #, javascript-format
 msgid ""
@@ -9375,6 +9381,12 @@ msgstr "Salvar missão na biblioteca"
 msgid "Save recipe"
 msgstr "Salvar receita"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "Save the ${ 0 } selected setting to a config file"
+msgid_plural "Save the ${ 0 } selected settings to a config file"
+msgstr[0] ""
+
 #: src/views/ConfigurationVideoView.vue
 msgid ""
 "Save the raw video chunks alongside the final video file for backup "
@@ -9537,6 +9549,11 @@ msgstr "Ver atualização"
 msgid "Select ${ 0 }"
 msgstr ""
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "Select ${ 0 } for export"
+msgstr ""
+
 #: src/views/ConfigurationActionsView.vue
 msgid "Select Action Type"
 msgstr "Selecionar tipo de ação"
@@ -9568,6 +9585,10 @@ msgstr ""
 #: src/components/VideoLibraryModal.vue
 msgid "Select all files"
 msgstr "Selecionar todos os arquivos"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Select all shown settings for export"
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 msgid "Select and Process ZIP File(s)"
