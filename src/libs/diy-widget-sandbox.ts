@@ -14,6 +14,7 @@ import {
   updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import type { DiyWidgetTemplate } from '@/libs/diy-widget-library'
+import { diyWidgetStorage, diyWidgetStorageLimit, saveDiyWidgetStorage } from '@/libs/diy-widget-storage'
 import {
   type CockpitActionsFunction,
   availableCockpitActions,
@@ -49,6 +50,10 @@ export interface DiyWidgetFrameState {
    * Every Cockpit action's id and name, by id
    */
   actions: Record<string, Pick<CockpitAction, 'id' | 'name'>>
+  /**
+   * The widget's own localStorage items
+   */
+  storage: Record<string, string>
 }
 
 /**
@@ -149,6 +154,20 @@ export type DiyWidgetFrameMessage =
     }
   | {
       /**
+       * Cockpit could not keep a localStorage write, so the frame's item goes back to what Cockpit holds
+       */
+      type: 'storageRestore'
+      /**
+       * The item
+       */
+      key: string
+      /**
+       * What Cockpit holds for it, or null when nothing
+       */
+      value: string | null
+    }
+  | {
+      /**
        * One of the frame's actions was triggered, so the frame runs its callback
        */
       type: 'runAction'
@@ -177,6 +196,9 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
   let infos = {}
   const actions = {}
   const actionCallbacks = new Map()
+  const storageItems = new Map()
+  // Keys this document wrote are its own, so a refresh from Cockpit that raced the write does not undo it.
+  const storageWrites = new Set()
   // Cockpit sends times since the epoch, which this frame turns back into its own performance.now() clock.
   const frameClock = (timestamp) => (timestamp === undefined ? undefined : timestamp - performance.timeOrigin)
   const applyValues = (state) => {
@@ -191,6 +213,8 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
     applyValues(state)
     Object.keys(actions).forEach((id) => delete actions[id])
     Object.assign(actions, state.actions)
+    ;[...storageItems.keys()].filter((key) => !storageWrites.has(key) && !(key in state.storage)).forEach((key) => storageItems.delete(key))
+    Object.entries(state.storage).forEach(([key, value]) => storageWrites.has(key) || storageItems.set(key, value))
   }
   applyState(${JSON.stringify(state).replace(/</g, '\\u003c')})
   const watched = new Map()
@@ -215,6 +239,10 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
     const message = event.data
     if (message.type === 'value') listeners.get(message.listenerId)?.(message.value, message.timestamp)
     if (message.type === 'restore') values.set(canonical(message.variableId), message.value)
+    if (message.type === 'storageRestore') {
+      if (message.value === null) storageItems.delete(message.key)
+      else storageItems.set(message.key, message.value)
+    }
     if (message.type === 'infos') infos = message.infos
     if (message.type === 'actions') {
       Object.keys(actions).forEach((id) => delete actions[id])
@@ -280,6 +308,62 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
         : undefined
     },
   })
+  const storageSize = () => [...storageItems].reduce((size, [key, value]) => size + key.length + value.length, 0)
+  const makeStorage = (items, persist) => {
+    const api = {
+      getItem: (key) => items.get(String(key)) ?? null,
+      setItem: (key, value) => {
+        key = String(key)
+        value = String(value)
+        const previous = items.get(key)
+        items.set(key, value)
+        if (persist && storageSize() > ${diyWidgetStorageLimit}) {
+          if (previous === undefined) items.delete(key)
+          else items.set(key, previous)
+          throw new DOMException('The widget storage is full', 'QuotaExceededError')
+        }
+        if (persist) {
+          storageWrites.add(key)
+          post({ type: 'storageSet', key, value })
+        }
+      },
+      removeItem: (key) => {
+        key = String(key)
+        items.delete(key)
+        if (persist) {
+          storageWrites.add(key)
+          post({ type: 'storageRemove', key })
+        }
+      },
+      clear: () => {
+        items.forEach((_value, key) => persist && storageWrites.add(key))
+        items.clear()
+        if (persist) post({ type: 'storageClear' })
+      },
+      key: (index) => [...items.keys()][index] ?? null,
+      get length() {
+        return items.size
+      },
+    }
+    return new Proxy(api, {
+      get: (target, key) => (key in target ? target[key] : typeof key === 'string' ? items.get(key) : undefined),
+      set: (target, key, value) => {
+        if (typeof key === 'string' && !(key in target)) target.setItem(key, value)
+        return true
+      },
+      deleteProperty: (target, key) => {
+        if (typeof key === 'string') target.removeItem(key)
+        return true
+      },
+      has: (target, key) => key in target || items.has(key),
+      ownKeys: () => [...items.keys()],
+      getOwnPropertyDescriptor: (_target, key) =>
+        items.has(key) ? { value: items.get(key), enumerable: true, configurable: true, writable: true } : undefined,
+    })
+  }
+  // An opaque-origin frame has no storage of its own, so the widget's localStorage lives in Cockpit, per widget.
+  Object.defineProperty(window, 'localStorage', { value: makeStorage(storageItems, true), configurable: true })
+  Object.defineProperty(window, 'sessionStorage', { value: makeStorage(new Map(), false), configurable: true })
   window.cockpit = {
     dataLakeVariableData,
     listenDataLakeVariable: (variableId, callback, options) => {
@@ -448,12 +532,14 @@ const valuesState = (): Pick<DiyWidgetFrameState, 'values' | 'timestamps'> => ({
 
 /**
  * What a DIY widget frame answers its synchronous reads from, as it is now
+ * @param {string} widgetId - The widget, whose own localStorage items are included
  * @returns {DiyWidgetFrameState} The state
  */
-export const diyWidgetFrameState = (): DiyWidgetFrameState => ({
+export const diyWidgetFrameState = (widgetId: string): DiyWidgetFrameState => ({
   ...valuesState(),
   infos: getAllDataLakeVariablesInfo(),
   actions: actionsSnapshot(),
+  storage: diyWidgetStorage(widgetId),
 })
 
 /**
@@ -572,12 +658,14 @@ export interface DiyWidgetBridge {
 /**
  * Serve the `cockpit` API of one load of a DIY widget frame, checking every request since the frame runs shared code
  * @param {string} frameId - Id the frame's messages must carry, so a reloaded frame's late messages are ignored
+ * @param {string} widgetId - The widget, whose own localStorage the frame reads and writes
  * @param {(message: DiyWidgetFrameMessage) => void} reply - Posts a message to the frame
  * @param {(message: string) => void} onError - Called with the first error or refused request of each frame load
  * @returns {DiyWidgetBridge} The bridge
  */
 export const createDiyWidgetBridge = (
   frameId: string,
+  widgetId: string,
   reply: (message: DiyWidgetFrameMessage) => void,
   onError: (message: string) => void
 ): DiyWidgetBridge => {
@@ -634,6 +722,19 @@ export const createDiyWidgetBridge = (
     }
   }
 
+  // Each write applies to what is stored now, so another document showing the widget keeps its own writes, and one
+  // that cannot be kept is undone in the frame too, so it never shows an item Cockpit lost.
+  const changeStorage = (change: (items: Map<string, string>) => void): void => {
+    const before = new Map(Object.entries(diyWidgetStorage(widgetId)))
+    const items = new Map(before)
+    change(items)
+    if (saveDiyWidgetStorage(widgetId, Object.fromEntries(items))) return
+    new Set([...before.keys(), ...items.keys()]).forEach((key) => {
+      if (before.get(key) !== items.get(key)) reply({ type: 'storageRestore', key, value: before.get(key) ?? null })
+    })
+    report('The storage DIY widgets share on this computer is full')
+  }
+
   const handleMessage = (data: unknown): void => {
     if (disposed || typeof data !== 'object' || data === null) return
     const message = data as Record<string, unknown>
@@ -646,7 +747,7 @@ export const createDiyWidgetBridge = (
         removeFrameActions()
         reportedError = false
         infoListenerId ??= listenToDataLakeVariablesInfoChanges((infos) => reply({ type: 'infos', infos }))
-        reply({ type: 'snapshot', ...diyWidgetFrameState() })
+        reply({ type: 'snapshot', ...diyWidgetFrameState(widgetId) })
         void cockpitFonts().then((fonts) => {
           if (!disposed && fonts.length > 0) reply({ type: 'fonts', fonts })
         })
@@ -755,6 +856,20 @@ export const createDiyWidgetBridge = (
       }
       case 'action':
         if (isText(message.actionId)) executeActionCallback(message.actionId)
+        return
+      case 'storageSet': {
+        const { key, value } = message
+        if (typeof key !== 'string' || typeof value !== 'string') return
+        changeStorage((items) => items.set(key, value))
+        return
+      }
+      case 'storageRemove': {
+        const { key } = message
+        if (typeof key === 'string') changeStorage((items) => items.delete(key))
+        return
+      }
+      case 'storageClear':
+        changeStorage((items) => items.clear())
         return
       case 'error':
         report(String(message.message))

@@ -17,6 +17,7 @@ import {
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openSnackbar } from '@/composables/snackbar'
+import { copyDiyWidgetStorage, keepOnlyDiyWidgetStorage } from '@/libs/diy-widget-storage'
 import { Words } from '@/libs/funny-name/funny-name'
 import {
   availableCockpitActions,
@@ -80,6 +81,22 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     const migrated = migrateLegacyViewsGroup(vehicleType)
     if (migrated) viewsGroup.value = migrated
   })
+
+  const diyWidgetHashes = (group: Profile | undefined): string[] =>
+    (Array.isArray(group?.views) ? group.views : [])
+      .flatMap((view) => (Array.isArray(view?.widgets) ? view.widgets : []))
+      .flatMap((widget) => (widget?.component === WidgetType.DoItYourself ? [widget.hash] : []))
+
+  // Copies of a layout for other vehicles and users share widget hashes, so a widget's localStorage items go only once
+  // no layout on this computer holds the widget, whichever way it left the current one.
+  const pruneDiyWidgetStorage = (): void => {
+    const storedLayouts = Object.values(settingsManager.getLocalSettings())
+      .flatMap((vehicles) => Object.values(vehicles ?? {}))
+      .map((settings) => settings?.[viewsGroupKey]?.value as Profile | undefined)
+    keepOnlyDiyWidgetStorage(new Set([viewsGroup.value, ...storedLayouts].flatMap(diyWidgetHashes)))
+  }
+  pruneDiyWidgetStorage()
+  settingsManager.registerListener(viewsGroupKey, pruneDiyWidgetStorage)
 
   // Both bars are rendered with three containers, but a profile migrated or imported from an older version can
   // carry fewer, and the stored value can still be replaced after boot by a vehicle sync or by the migration above.
@@ -897,6 +914,7 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
     }
     const newWidget = JSON.parse(JSON.stringify(widget))
     newWidget.hash = uuid4()
+    copyDiyWidgetStorage(widget.hash, newWidget.hash)
     targetView.widgets.unshift(newWidget)
   }
 

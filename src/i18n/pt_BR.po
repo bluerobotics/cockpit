@@ -13228,6 +13228,14 @@ msgstr "seja true. Para um GeoTIFF, envie"
 msgid "local network"
 msgstr "rede local"
 
+#: src/components/widgets/DoItYourself.vue
+msgid ""
+"localStorage keeps its items per widget, on this computer; sessionStorage "
+"lasts until the widget reloads; indexedDB and cookies are not available. "
+"Requests with fetch reach only servers that accept other origins, as BlueOS "
+"does"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
 "marker to fine-tune the location and edit the altitude (relative to home) "
