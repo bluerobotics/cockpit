@@ -49,6 +49,11 @@
                 </li>
                 <li>
                   {{
+                    t`localStorage keeps its items per widget, on this computer; sessionStorage lasts until the widget reloads; indexedDB and cookies are not available. Requests with fetch reach only servers that accept other origins, as BlueOS does`
+                  }}
+                </li>
+                <li>
+                  {{
                     t`A script run in its own scope gets root (the page body) and cockpit as arguments, and its top-level names stay local, so inline handlers in the HTML cannot call its functions`
                   }}
                 </li>
@@ -224,7 +229,12 @@ const frameDocument = computed(() => {
   if (key !== builtFrame.key) {
     builtFrame = {
       key,
-      document: buildDiyWidgetDocument(code, frameId.value, cockpitStylesheets(), diyWidgetFrameState()),
+      document: buildDiyWidgetDocument(
+        code,
+        frameId.value,
+        cockpitStylesheets(),
+        diyWidgetFrameState(widget.value.hash)
+      ),
     }
   }
   return builtFrame.document
@@ -325,6 +335,7 @@ const reloadFrame = (): void => {
   frameId.value = uuid()
   bridge = createDiyWidgetBridge(
     frameId.value,
+    widget.value.hash,
     (message) => frame.value?.contentWindow?.postMessage(message, '*'),
     (message) => {
       openActionErrorSnackbar(new Error(`Error running the DIY widget "${widget.value.name}" script: ${message}`))

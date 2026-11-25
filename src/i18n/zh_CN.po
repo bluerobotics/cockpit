@@ -12279,6 +12279,14 @@ msgstr "为 true，叠加层会保存在此计算机上。对于 GeoTIFF，请�
 msgid "local network"
 msgstr "本地网络"
 
+#: src/components/widgets/DoItYourself.vue
+msgid ""
+"localStorage keeps its items per widget, on this computer; sessionStorage "
+"lasts until the widget reloads; indexedDB and cookies are not available. "
+"Requests with fetch reach only servers that accept other origins, as BlueOS "
+"does"
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid ""
 "marker to fine-tune the location and edit the altitude (relative to home) "

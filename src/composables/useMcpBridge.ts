@@ -2,6 +2,7 @@ import { v4 as uuid4 } from 'uuid'
 import { onBeforeUnmount } from 'vue'
 import { z } from 'zod'
 
+import { copyDiyWidgetStorage } from '@/libs/diy-widget-storage'
 import { type McpTool, defineMcpTool, libMcpTools, mcpToolDefinition } from '@/libs/mcp/tools'
 import { externalPoiIdSchema, externalPoiSchema, externalPoiUpdateSchema } from '@/libs/poi/external-api'
 import { isElectron } from '@/libs/utils'
@@ -42,6 +43,7 @@ const scriptDescription =
   "scope with root (the frame's body) and cockpit as arguments. cockpit is the data-lake and actions API, as in " +
   "Cockpit's page: reads answer synchronously with the latest values Cockpit sent; a widget changes or deletes " +
   'only its own variables and those the user may change, and registers callbacks only for actions it added. ' +
+  'localStorage is kept per widget, sessionStorage until the widget reloads; indexedDB is not available, and ' +
   'fetch reaches only servers that accept other origins, as BlueOS does. Everything the script starts stops ' +
   'when the widget is removed or its code changes.'
 
@@ -177,6 +179,7 @@ const widgetTools = (): McpTool[] => {
         // Widgets are keyed by hash, so a new one remounts this widget where it is, running its script again.
         const newHash = uuid4()
         Object.assign(widgetStore.widgetManagerVars(newHash), widgetStore.widgetManagerVars(hash))
+        copyDiyWidgetStorage(hash, newHash)
         widget.hash = newHash
         return { hash: newHash }
       },
