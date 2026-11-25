@@ -19,7 +19,7 @@ vi.mock('@/libs/actions/data-lake', () => ({
   dataLakeVariableData: {},
   getAllDataLakeVariablesInfo: () => ({}),
 }))
-vi.mock('@/libs/joystick/protocols/cockpit-actions', () => ({}))
+vi.mock('@/libs/joystick/protocols/cockpit-actions', () => ({ availableCockpitActions: {} }))
 vi.mock('@/libs/monaco-manager', () => ({ createMonacoEditor: vi.fn(), monaco: {} }))
 vi.mock('@/stores/appInterface', () => ({
   useAppInterfaceStore: () => ({ globalGlassMenuStyles: {}, isOnSmallScreen: false }),

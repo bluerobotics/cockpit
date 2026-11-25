@@ -39,7 +39,12 @@
                 </li>
                 <li>
                   {{
-                    t`The script reaches Cockpit through the cockpit object to listen to, read, set and create data-lake variables and to run actions. Reads answer synchronously with the latest values Cockpit has sent to the frame, and a refused write is reported in a notification`
+                    t`The script reaches Cockpit through the cockpit object, with the same data-lake and action functions as before, answering reads synchronously with the latest values Cockpit has sent to the frame`
+                  }}
+                </li>
+                <li>
+                  {{
+                    t`A widget can change and delete only its own data-lake variables and those the user may change, and can register callbacks only for actions it added. Refused requests are reported in a notification`
                   }}
                 </li>
                 <li>

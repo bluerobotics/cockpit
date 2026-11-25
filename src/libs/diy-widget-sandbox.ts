@@ -1,6 +1,7 @@
 import {
   createDataLakeVariable,
   dataLakeVariableData,
+  deleteDataLakeVariable,
   getAllDataLakeVariablesInfo,
   getDataLakeVariableData,
   getDataLakeVariableInfo,
@@ -10,10 +11,20 @@ import {
   setDataLakeVariableData,
   unlistenDataLakeVariable,
   unlistenToDataLakeVariablesInfoChanges,
+  updateDataLakeVariableInfo,
 } from '@/libs/actions/data-lake'
 import type { DiyWidgetTemplate } from '@/libs/diy-widget-library'
-import { executeActionCallback } from '@/libs/joystick/protocols/cockpit-actions'
-import { canUserChangeDataLakeVariable } from '@/libs/utils-data-lake'
+import {
+  type CockpitActionsFunction,
+  availableCockpitActions,
+  CockpitAction,
+  deleteAction,
+  executeActionCallback,
+  registerActionCallback,
+  registerNewAction,
+  unregisterActionCallback,
+} from '@/libs/joystick/protocols/cockpit-actions'
+import { canUserChangeDataLakeVariable, canUserDeleteDataLakeVariable } from '@/libs/utils-data-lake'
 import type { DataLakeVariable } from '@/types/data-lake'
 
 type DataLakeValue = string | number | boolean
@@ -34,6 +45,10 @@ export interface DiyWidgetFrameState {
    * Every variable's description, by id
    */
   infos: Record<string, DataLakeVariable>
+  /**
+   * Every Cockpit action's id and name, by id
+   */
+  actions: Record<string, Pick<CockpitAction, 'id' | 'name'>>
 }
 
 /**
@@ -96,6 +111,12 @@ export type DiyWidgetFrameMessage =
        */
       type: 'snapshot'
     } & DiyWidgetFrameState)
+  | ({
+      /**
+       * The data lake's values as they are now, after the frame listed its variables
+       */
+      type: 'values'
+    } & Pick<DiyWidgetFrameState, 'values' | 'timestamps'>)
   | {
       /**
        * Cockpit's fonts, for the frame to add to its document
@@ -116,6 +137,26 @@ export type DiyWidgetFrameMessage =
        */
       infos: Record<string, DataLakeVariable>
     }
+  | {
+      /**
+       * Cockpit's actions changed, after the frame added or removed one or was refused
+       */
+      type: 'actions'
+      /**
+       * Every action's id and name, by id
+       */
+      actions: DiyWidgetFrameState['actions']
+    }
+  | {
+      /**
+       * One of the frame's actions was triggered, so the frame runs its callback
+       */
+      type: 'runAction'
+      /**
+       * The action
+       */
+      actionId: string
+    }
 
 const channel = 'cockpit-diy-widget'
 
@@ -131,17 +172,30 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
   // Cockpit's reads are synchronous, so the frame answers them from a cache Cockpit fills on load and keeps current.
   const canonical = (id) => String(id).replace(/^\\/+/, '')
   const values = new Map()
+  const writtenIds = new Map()
   const timestamps = new Map()
   let infos = {}
+  const actions = {}
+  const actionCallbacks = new Map()
   // Cockpit sends times since the epoch, which this frame turns back into its own performance.now() clock.
   const frameClock = (timestamp) => (timestamp === undefined ? undefined : timestamp - performance.timeOrigin)
+  const applyValues = (state) => {
+    Object.entries(state.values).forEach(([id, value]) => {
+      values.set(canonical(id), value)
+      writtenIds.set(canonical(id), id)
+    })
+    Object.entries(state.timestamps).forEach(([id, timestamp]) => timestamps.set(canonical(id), frameClock(timestamp)))
+  }
   const applyState = (state) => {
     infos = state.infos
-    Object.entries(state.values).forEach(([id, value]) => values.set(canonical(id), value))
-    Object.entries(state.timestamps).forEach(([id, timestamp]) => timestamps.set(canonical(id), frameClock(timestamp)))
+    applyValues(state)
+    Object.keys(actions).forEach((id) => delete actions[id])
+    Object.assign(actions, state.actions)
   }
   applyState(${JSON.stringify(state).replace(/</g, '\\u003c')})
   const watched = new Map()
+  let listing = false
+  let refreshing = false
   const watch = (variableId, withTimestamp) => {
     const id = canonical(variableId)
     const current = watched.get(id)
@@ -162,9 +216,19 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
     if (message.type === 'value') listeners.get(message.listenerId)?.(message.value, message.timestamp)
     if (message.type === 'restore') values.set(canonical(message.variableId), message.value)
     if (message.type === 'infos') infos = message.infos
+    if (message.type === 'actions') {
+      Object.keys(actions).forEach((id) => delete actions[id])
+      Object.assign(actions, message.actions)
+    }
+    if (message.type === 'snapshot' || message.type === 'values') refreshing = false
     if (message.type === 'snapshot') applyState(message)
+    if (message.type === 'values') applyValues(message)
     if (message.type === 'fonts') {
       message.fonts.forEach(({ family, source, descriptors }) => document.fonts.add(new FontFace(family, source, descriptors)))
+    }
+    if (message.type === 'runAction') {
+      const callback = actionCallbacks.get(message.actionId)
+      if (callback) Promise.resolve().then(callback).catch(reportError)
     }
   })
   window.addEventListener('error', (event) => reportError(event.error ?? event.message))
@@ -179,7 +243,45 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
     values.set(canonical(variableId), value)
     post({ type: 'set', variableId, value })
   }
+  // ponytail: listing answers from the cache, refreshed once per listing, rather than watching every variable, which
+  // would post each MAVLink update to the frame until it reloads; reads made in the same turn as the listing are one
+  // refresh behind, and listing every frame sends the whole lake each time, bounded to one refresh in flight.
+  const listVariables = () => {
+    if (!listing) {
+      listing = true
+      queueMicrotask(() => {
+        listing = false
+      })
+    }
+    if (!refreshing) {
+      refreshing = true
+      post({ type: 'refresh' })
+    }
+    return [...values.keys()].map((id) => writtenIds.get(id) ?? id)
+  }
+  const variableKey = (key) => (typeof key === 'string' ? writtenIds.get(canonical(key)) ?? key : undefined)
+  // Cockpit's own dataLakeVariableData is a live object, which this one stands in for over the frame's cache.
+  const dataLakeVariableData = new Proxy({}, {
+    get: (_target, key) => {
+      // JSON.stringify and await probe these on any object, which is no reason to watch a variable by that name.
+      if (typeof key !== 'string' || key === 'toJSON' || key === 'then') return undefined
+      return listing ? values.get(canonical(key)) : getDataLakeVariableData(key)
+    },
+    set: (_target, key, value) => {
+      if (typeof key === 'string') setDataLakeVariableData(key, value)
+      return true
+    },
+    has: (_target, key) => typeof key === 'string' && values.has(canonical(key)),
+    ownKeys: listVariables,
+    getOwnPropertyDescriptor: (_target, key) => {
+      const id = variableKey(key)
+      return id !== undefined && values.has(canonical(id))
+        ? { value: values.get(canonical(id)), enumerable: true, configurable: true, writable: true }
+        : undefined
+    },
+  })
   window.cockpit = {
+    dataLakeVariableData,
     listenDataLakeVariable: (variableId, callback, options) => {
       const listenerId = String(++lastId)
       listeners.set(listenerId, (value) => callback(value))
@@ -199,6 +301,27 @@ const bridgeScript = (frameId: string, state: DiyWidgetFrameState): string => `
     },
     setDataLakeVariableData,
     createDataLakeVariable: (variable, initialValue) => post({ type: 'create', variable, initialValue }),
+    updateDataLakeVariableInfo: (variable) => post({ type: 'updateInfo', variable }),
+    deleteDataLakeVariable: (variableId) => post({ type: 'delete', variableId }),
+    availableCockpitActions: actions,
+    registerNewAction: (action) => {
+      actions[action.id] = { id: action.id, name: action.name }
+      post({ type: 'registerAction', actionId: action.id, name: action.name })
+    },
+    deleteAction: (actionId) => {
+      delete actions[actionId]
+      actionCallbacks.delete(actionId)
+      post({ type: 'deleteAction', actionId })
+    },
+    registerActionCallback: (action, callback) => {
+      actionCallbacks.set(action.id, callback)
+      post({ type: 'registerCallback', actionId: action.id })
+      return action.id
+    },
+    unregisterActionCallback: (actionId) => {
+      actionCallbacks.delete(actionId)
+      post({ type: 'unregisterCallback', actionId })
+    },
     executeActionCallback: (actionId) => post({ type: 'action', actionId }),
     onCleanup: () => undefined,
     setInterval: window.setInterval.bind(window),
@@ -304,20 +427,33 @@ export const cockpitFonts = (): Promise<DiyWidgetFont[]> => {
   return pageFonts[1]
 }
 
+const actionsSnapshot = (): DiyWidgetFrameState['actions'] =>
+  Object.fromEntries(
+    Object.values(availableCockpitActions).map(({ id, name }): [string, Pick<CockpitAction, 'id' | 'name'>] => [
+      id,
+      { id, name },
+    ])
+  )
+
 // In ms since the epoch, which the frame turns into its own clock.
 const lastUpdate = (variableId: string): number | undefined => {
   const timestamp = getDataLakeVariableLastUpdateTimestamp(variableId)
   return timestamp === undefined ? undefined : timestamp + performance.timeOrigin
 }
 
+const valuesState = (): Pick<DiyWidgetFrameState, 'values' | 'timestamps'> => ({
+  values: dataLakeVariableData,
+  timestamps: Object.fromEntries(Object.keys(dataLakeVariableData).map((id) => [id, lastUpdate(id)])),
+})
+
 /**
  * What a DIY widget frame answers its synchronous reads from, as it is now
  * @returns {DiyWidgetFrameState} The state
  */
 export const diyWidgetFrameState = (): DiyWidgetFrameState => ({
-  values: dataLakeVariableData,
-  timestamps: Object.fromEntries(Object.keys(dataLakeVariableData).map((id) => [id, lastUpdate(id)])),
+  ...valuesState(),
   infos: getAllDataLakeVariablesInfo(),
+  actions: actionsSnapshot(),
 })
 
 /**
@@ -357,12 +493,65 @@ const isText = (value: unknown): value is string => typeof value === 'string' &&
 
 const optionalText = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
 
-// Only the fields describing the variable cross over, so a frame cannot make a variable persistent or Cockpit's own.
+const optionalFlag = (value: unknown): boolean | undefined => (typeof value === 'boolean' ? value : undefined)
+
+// ponytail: a frame's persisted values count against no cap, as when widgets ran in Cockpit's page, so one widget
+// storing large strings in many such variables can still fill the origin's storage; capping them would mean counting a
+// frame's persisted values against diyWidgetStorageLimit.
+
+// Only the fields describing the variable and whether it persists cross over, so a frame cannot make one Cockpit's own.
 const parseVariable = (raw: unknown): DataLakeVariable | undefined => {
   if (typeof raw !== 'object' || raw === null) return undefined
-  const { id, name, type, description, unit } = raw as Record<string, unknown>
+  const { id, name, type, description, unit, persistent, persistValue } = raw as Record<string, unknown>
   if (!isText(id) || !isText(name) || (type !== 'string' && type !== 'number' && type !== 'boolean')) return undefined
-  return { id, name, type, description: optionalText(description), unit: optionalText(unit), systemOwned: false }
+  return {
+    id,
+    name,
+    type,
+    description: optionalText(description),
+    unit: optionalText(unit),
+    persistent: optionalFlag(persistent),
+    persistValue: optionalFlag(persistValue),
+    systemOwned: false,
+  }
+}
+
+/**
+ * A DIY widget frame holding an action it registered
+ */
+interface DiyActionHolder {
+  /**
+   * The frame's bridge
+   */
+  bridge: object
+  /**
+   * The name the frame gave the action
+   */
+  name: string
+  /**
+   * Runs the frame's callback for the action, once it registered one
+   */
+  callback?: () => void
+}
+
+// Copies of a widget register the same actions, so the actions DIY widgets add are held by all of them together.
+const diyActions = new Map<string, DiyActionHolder[]>()
+
+// The newest holder names the action and, among those with a callback, runs it, as registering did in Cockpit's page.
+const applyDiyAction = (actionId: string): void => {
+  const holders = diyActions.get(actionId) ?? []
+  const newest = holders[holders.length - 1]
+  if (newest === undefined) {
+    diyActions.delete(actionId)
+    unregisterActionCallback(actionId)
+    deleteAction(actionId as CockpitActionsFunction)
+    return
+  }
+  const action = new CockpitAction(actionId as CockpitActionsFunction, newest.name)
+  registerNewAction(action)
+  const callback = [...holders].reverse().find((holder) => holder.callback !== undefined)?.callback
+  if (callback === undefined) unregisterActionCallback(actionId)
+  else registerActionCallback(action, callback)
 }
 
 /**
@@ -375,7 +564,7 @@ export interface DiyWidgetBridge {
    */
   handleMessage: (data: unknown) => void
   /**
-   * Stop every data-lake listener the frame registered
+   * Stop every data-lake listener and remove every action the frame registered
    */
   dispose: () => void
 }
@@ -393,6 +582,8 @@ export const createDiyWidgetBridge = (
   onError: (message: string) => void
 ): DiyWidgetBridge => {
   const listeners = new Map<string, [variableId: string, dataLakeListenerId: string]>()
+  const bridge = {}
+  const heldActions = new Set<string>()
   let reportedError = false
   let disposed = false
 
@@ -409,6 +600,40 @@ export const createDiyWidgetBridge = (
     listeners.clear()
   }
 
+  const heldAction = (actionId: string): DiyActionHolder | undefined =>
+    diyActions.get(actionId)?.find((holder) => holder.bridge === bridge)
+
+  const releaseAction = (actionId: string): void => {
+    diyActions.set(actionId, diyActions.get(actionId)?.filter((holder) => holder.bridge !== bridge) ?? [])
+    heldActions.delete(actionId)
+    applyDiyAction(actionId)
+  }
+
+  const removeFrameActions = (): void => [...heldActions].forEach(releaseAction)
+
+  // A frame redefines only the operator's own variables, keeping whether they persist unless it says, as on the Data
+  // Lake page.
+  const redefine = (raw: unknown, request: string): DataLakeVariable | undefined => {
+    const variable = parseVariable(raw)
+    if (variable === undefined) return undefined
+    const existing = getDataLakeVariableInfo(variable.id)
+    if (existing === undefined) return variable
+    if (!canUserDeleteDataLakeVariable(variable.id)) {
+      report(`cockpit.${request} cannot change "${variable.id}", which belongs to Cockpit`)
+      return undefined
+    }
+    const { name, type, description, unit, persistent, persistValue } = variable
+    return {
+      ...existing,
+      name,
+      type,
+      description,
+      unit,
+      persistent: persistent ?? existing.persistent,
+      persistValue: persistValue ?? existing.persistValue,
+    }
+  }
+
   const handleMessage = (data: unknown): void => {
     if (disposed || typeof data !== 'object' || data === null) return
     const message = data as Record<string, unknown>
@@ -418,12 +643,16 @@ export const createDiyWidgetBridge = (
       // The frame loaded a new document, which may happen without a new id when its element moves in the page.
       case 'hello':
         unlistenAll()
+        removeFrameActions()
         reportedError = false
         infoListenerId ??= listenToDataLakeVariablesInfoChanges((infos) => reply({ type: 'infos', infos }))
         reply({ type: 'snapshot', ...diyWidgetFrameState() })
         void cockpitFonts().then((fonts) => {
           if (!disposed && fonts.length > 0) reply({ type: 'fonts', fonts })
         })
+        return
+      case 'refresh':
+        reply({ type: 'values', ...valuesState() })
         return
       case 'listen': {
         const { variableId, listenerId } = message
@@ -458,11 +687,70 @@ export const createDiyWidgetBridge = (
         return
       }
       case 'create': {
+        const variable = redefine(message.variable, 'createDataLakeVariable')
+        if (variable !== undefined) {
+          createDataLakeVariable(variable, isValue(message.initialValue) ? message.initialValue : undefined)
+        }
+        return
+      }
+      case 'updateInfo': {
         const variable = parseVariable(message.variable)
-        if (variable === undefined) return
-        // An existing variable, Cockpit's or the operator's, is not the frame's to redefine.
-        if (getDataLakeVariableInfo(variable.id) !== undefined) return
-        createDataLakeVariable(variable, isValue(message.initialValue) ? message.initialValue : undefined)
+        if (variable === undefined || getDataLakeVariableInfo(variable.id) === undefined) return
+        const updated = redefine(variable, 'updateDataLakeVariableInfo')
+        if (updated !== undefined) updateDataLakeVariableInfo(updated)
+        return
+      }
+      case 'delete': {
+        const { variableId } = message
+        if (!isText(variableId) || getDataLakeVariableInfo(variableId) === undefined) return
+        if (!canUserDeleteDataLakeVariable(variableId)) {
+          report(`cockpit.deleteDataLakeVariable cannot delete "${variableId}", which belongs to Cockpit`)
+          return
+        }
+        deleteDataLakeVariable(variableId)
+        return
+      }
+      // A frame shares only actions DIY widgets added, so it cannot take over one Cockpit runs, such as arming.
+      case 'registerAction': {
+        const { actionId, name } = message
+        if (!isText(actionId) || !isText(name)) return
+        if (actionId in availableCockpitActions && !diyActions.has(actionId)) {
+          report(`cockpit.registerNewAction cannot replace the existing action "${actionId}"`)
+          reply({ type: 'actions', actions: actionsSnapshot() })
+          return
+        }
+        const holder = heldAction(actionId) ?? { bridge, name }
+        holder.name = name
+        diyActions.set(actionId, [...(diyActions.get(actionId) ?? []).filter((other) => other !== holder), holder])
+        heldActions.add(actionId)
+        applyDiyAction(actionId)
+        reply({ type: 'actions', actions: actionsSnapshot() })
+        return
+      }
+      case 'deleteAction': {
+        const { actionId } = message
+        if (isText(actionId) && heldActions.has(actionId)) releaseAction(actionId)
+        reply({ type: 'actions', actions: actionsSnapshot() })
+        return
+      }
+      case 'registerCallback': {
+        const { actionId } = message
+        if (!isText(actionId)) return
+        const holder = heldAction(actionId)
+        if (holder === undefined) {
+          report(`cockpit.registerActionCallback only takes actions the widget added, not "${actionId}"`)
+          return
+        }
+        holder.callback = () => reply({ type: 'runAction', actionId })
+        applyDiyAction(actionId)
+        return
+      }
+      case 'unregisterCallback': {
+        const { actionId } = message
+        const holder = isText(actionId) ? heldAction(actionId) : undefined
+        if (holder === undefined) return
+        holder.callback = undefined
+        applyDiyAction(actionId as string)
         return
       }
       case 'action':
@@ -476,6 +764,7 @@ export const createDiyWidgetBridge = (
   const dispose = (): void => {
     disposed = true
     unlistenAll()
+    removeFrameActions()
     if (infoListenerId !== undefined) unlistenToDataLakeVariablesInfoChanges(infoListenerId)
   }
 
