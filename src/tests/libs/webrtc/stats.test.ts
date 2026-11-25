@@ -1,6 +1,6 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
-import { monitorStreamPeerConnection } from '@/libs/webrtc/stats'
+import { monitorStreamPeerConnection, noteStreamBytesReceived, trackVideoArrival } from '@/libs/webrtc/stats'
 
 test('Registers the new peer connection before dropping the previous one', () => {
   const calls: string[] = []
@@ -25,6 +25,36 @@ test('Registers the new peer connection before dropping the previous one', () =>
 
   expect(calls).toEqual(['add:new', 'remove:old'])
   expect(Object.keys(peersToMonitor)).toEqual(['new'])
+})
+
+test('Follows the video of a stream by its external id, whether or not it has a correspondency entry', () => {
+  const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  const streamName = 'rtsp://user:secret@10.0.0.1/unmapped-cam'
+
+  try {
+    const secondsWithoutVideo = trackVideoArrival(streamName, 'a stream whose source is lost will not reconnect')
+    expect(secondsWithoutVideo()).toBeUndefined()
+    expect(secondsWithoutVideo()).toBeUndefined()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0][0]).includes(streamName)).toBe(false)
+
+    noteStreamBytesReceived(streamName, 1000)
+    expect(secondsWithoutVideo()).toBe(0)
+
+    now.mockReturnValue(2500)
+    noteStreamBytesReceived(streamName, 1000)
+    expect(secondsWithoutVideo()).toBe(1.5)
+
+    noteStreamBytesReceived(streamName, 2000)
+    expect(secondsWithoutVideo()).toBe(0)
+
+    now.mockReturnValue(5000)
+    expect(secondsWithoutVideo()).toBeUndefined()
+  } finally {
+    warn.mockRestore()
+    now.mockRestore()
+  }
 })
 
 test('Keeps the peer monitored when the same connection is registered again', () => {
