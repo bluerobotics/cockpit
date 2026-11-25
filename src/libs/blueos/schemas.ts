@@ -43,6 +43,8 @@ export const ServiceSchema = preprocessCamelCase(
   })
 )
 
+// The extras manifest, from here to ExtrasJsonSchema, is specified for extension authors at
+// https://blueos.cloud/cockpit/docs/latest/development/external-integrations/, so update it with these schemas.
 const ExternalWidgetSetupInfoSchema = z
   .object({
     name: z.string(),
