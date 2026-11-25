@@ -120,6 +120,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restoreUserAgent: () => ipcRenderer.invoke('restore-user-agent'),
   getCurrentUserAgent: () => ipcRenderer.invoke('get-current-user-agent'),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
+  isBlockedByFirewall: () => ipcRenderer.invoke('firewall-is-blocked'),
+  allowThroughFirewall: () => ipcRenderer.invoke('firewall-allow'),
   getHardwareTelemetryInfo: () => ipcRenderer.invoke('get-hardware-telemetry-info'),
   ttsAvailable: () => ipcRenderer.invoke('tts-available'),
   ttsListVoices: () => ipcRenderer.invoke('tts-list-voices'),

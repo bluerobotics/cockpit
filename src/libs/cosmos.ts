@@ -504,6 +504,17 @@ declare global {
        */
       getCurrentUserAgent: () => string
       /**
+       * Tell whether Windows Firewall holds a rule that blocks what is sent to Cockpit
+       * @returns Promise of true if blocked, always false outside Windows
+       */
+      isBlockedByFirewall: () => Promise<boolean>
+      /**
+       * Replace the Windows Firewall rules blocking Cockpit with one allowing it, after the user confirms it as an
+       * administrator
+       * @returns Promise of true if Cockpit is let through
+       */
+      allowThroughFirewall: () => Promise<boolean>
+      /**
        * Get system information including platform and architecture
        * @returns Promise containing system information
        */

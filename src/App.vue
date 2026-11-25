@@ -199,6 +199,7 @@ import {
   useMenuRouteSync,
 } from './composables/menuRouting'
 import { useSnackbar } from './composables/snackbar'
+import { useFirewallWarning } from './composables/useFirewallWarning'
 import { useMcpBridge } from './composables/useMcpBridge'
 import { useOffCenterAxisWarning } from './composables/useOffCenterAxisWarning'
 import { usePointsOfInterest } from './composables/usePointsOfInterest'
@@ -273,6 +274,8 @@ useOffCenterAxisWarning()
 useCustomTileProviderVehicleSync()
 
 useMcpBridge()
+
+useFirewallWarning()
 
 // Created at boot so external software can manage points of interest before any map is mounted.
 usePointsOfInterest()
