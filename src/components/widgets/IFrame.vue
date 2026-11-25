@@ -694,13 +694,18 @@ const apiListenerIds = new Map<string, string>()
 const { handleExternalPoiMessage } = usePointsOfInterest()
 const { handleExternalMapOverlayMessage } = useExternalMapOverlays()
 
+// ponytail: a link followed inside the frame keeps the same window, so its new page inherits these subscriptions.
+const stopApiListeners = (): void => {
+  apiListenerIds.forEach((listenerId, variable) => unlistenDataLakeVariable(variable, listenerId))
+  apiListenerIds.clear()
+}
+
 const apiEventCallback = (event: MessageEvent): void => {
   // Every iframe widget hears every message, so only the one embedding the sender applies a command.
-  if (event.source === iframe.value?.contentWindow) {
-    handleExternalPoiMessage(event.data)
-    handleExternalMapOverlayMessage(event.data)
-  }
-  if (event.data.type !== 'cockpit:listenToDatalakeVariables') {
+  if (event.source !== iframe.value?.contentWindow) return
+  handleExternalPoiMessage(event.data)
+  handleExternalMapOverlayMessage(event.data)
+  if (event.data?.type !== 'cockpit:listenToDatalakeVariables') {
     return
   }
   const { variable } = event.data
@@ -709,7 +714,7 @@ const apiEventCallback = (event: MessageEvent): void => {
   }
   // Listeners only fire on change, so a variable that is set once (like the display units) would never reach the page.
   const currentValue = getDataLakeVariableData(variable)
-  if (event.source === iframe.value?.contentWindow && currentValue !== undefined) postVariable(currentValue)
+  if (currentValue !== undefined) postVariable(currentValue)
   if (apiListenerIds.has(variable)) return
   apiListenerIds.set(variable, listenDataLakeVariable(variable, postVariable))
 }
@@ -718,6 +723,7 @@ const apiEventCallback = (event: MessageEvent): void => {
 // address change, or toggling the "use vehicle address as base" option). The iframe is kept
 // hidden until the new URL passes the check and finishes loading.
 watch(toBeUsedURL, () => {
+  stopApiListeners()
   iframe_loaded.value = false
   urlCheckStatus.value = 'checking'
   checkUrlStatus()
@@ -771,8 +777,7 @@ onBeforeMount((): void => {
 
 onBeforeUnmount((): void => {
   window.removeEventListener('message', apiEventCallback, true)
-  apiListenerIds.forEach((listenerId, variable) => unlistenDataLakeVariable(variable, listenerId))
-  apiListenerIds.clear()
+  stopApiListeners()
   if (vehicleAddressListenerId) {
     unlistenDataLakeVariable('vehicle-address', vehicleAddressListenerId)
   }
