@@ -224,7 +224,7 @@ export class Session {
     if (
       Array.isArray(this.selectedICEIPs) &&
       !this.selectedICEIPs.isEmpty() &&
-      !this.selectedICEIPs.some((address) => candidate.candidate!.includes(address))
+      !(ipAddress && this.selectedICEIPs.includes(ipAddress))
     ) {
       this.onStatusChange?.(`Ignoring ICE candidate ${candidate.candidate} by IP filter`)
       console.debug(`[WebRTC] [Session] ICE candidate ignored by IP filter: ${JSON.stringify(candidate, null, 4)}`)
