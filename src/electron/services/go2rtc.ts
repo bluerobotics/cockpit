@@ -105,8 +105,8 @@ const startGo2RTC = async (): Promise<number> => {
     return go2rtcPort
   }
 
-  // Both asked for at once, so that they cannot be given the same port
-  const [port, rtspPort] = await Promise.all([getFreeTcpPort(), getFreeTcpPort()])
+  // All asked for at once, so that no two of them can be given the same port
+  const [port, rtspPort, webrtcPort] = await Promise.all([getFreeTcpPort(), getFreeTcpPort(), getFreeTcpPort()])
   const configDir = join(tmpdir(), 'cockpit-go2rtc')
   await fs.mkdir(configDir, { recursive: true })
 
@@ -119,6 +119,16 @@ const startGo2RTC = async (): Promise<number> => {
     // software to hold, and without the port every H.265 RTSP stream fails to start.
     'rtsp:',
     `  listen: "127.0.0.1:${rtspPort}"`,
+    // Only this computer's Cockpit watches the video, so it is served on the loopback alone, where no firewall
+    // asks the user about go2rtc. The filter makes go2rtc offer that address, which it leaves out by default, and
+    // with no ICE servers it never asks the internet for a way in.
+    // ponytail: the port carries UDP too but is picked by probing TCP, so one free on TCP and taken on UDP would
+    // leave the stream on TCP. Probe both once anything reports it in the wild.
+    'webrtc:',
+    `  listen: "127.0.0.1:${webrtcPort}"`,
+    '  ice_servers: []',
+    '  filters:',
+    '    loopback: true',
     'ffmpeg:',
     `  ${hevcVideoTemplateName}: '${hevcVideoTemplate}'`,
     '',
