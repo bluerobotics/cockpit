@@ -707,7 +707,9 @@ window.cockpit = {
   getAllDataLakeVariablesInfo: getAllDataLakeVariablesInfo,
   getDataLakeVariableInfo: getDataLakeVariableInfo,
   setDataLakeVariableData: setDataLakeVariableData,
-  createDataLakeVariable: createDataLakeVariable,
+  // Only user scripts reach this API, so the variables they create are the user's, which DIY widgets may then change.
+  createDataLakeVariable: (variable, initialValue) =>
+    createDataLakeVariable({ systemOwned: false, ...variable }, initialValue),
   updateDataLakeVariableInfo: updateDataLakeVariableInfo,
   deleteDataLakeVariable: deleteDataLakeVariable,
   getDataLakeVariableLastUpdateTimestamp: getDataLakeVariableLastUpdateTimestamp,
