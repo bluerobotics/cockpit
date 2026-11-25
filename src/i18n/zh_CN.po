@@ -223,6 +223,12 @@ msgstr "${ 0 } 未返回投放目标周边的蜂窝网络数据。"
 msgid "${ 0 } sats"
 msgstr "${ 0 } 颗卫星"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "${ 0 } selected"
+msgid_plural "${ 0 } selected"
+msgstr[0] ""
+
 #: src/components/recipes/RecipeDialog.vue
 #, javascript-format
 msgid ""
@@ -8800,6 +8806,12 @@ msgstr "保存任务到库"
 msgid "Save recipe"
 msgstr "保存配方"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "Save the ${ 0 } selected setting to a config file"
+msgid_plural "Save the ${ 0 } selected settings to a config file"
+msgstr[0] ""
+
 #: src/views/ConfigurationVideoView.vue
 msgid ""
 "Save the raw video chunks alongside the final video file for backup "
@@ -8956,6 +8968,11 @@ msgstr "查看更新"
 msgid "Select ${ 0 }"
 msgstr ""
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "Select ${ 0 } for export"
+msgstr ""
+
 #: src/views/ConfigurationActionsView.vue
 msgid "Select Action Type"
 msgstr "选择操作类型"
@@ -8984,6 +9001,10 @@ msgstr ""
 #: src/components/VideoLibraryModal.vue
 msgid "Select all files"
 msgstr "选择所有文件"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Select all shown settings for export"
+msgstr ""
 
 #: src/components/VideoLibraryModal.vue
 msgid "Select and Process ZIP File(s)"

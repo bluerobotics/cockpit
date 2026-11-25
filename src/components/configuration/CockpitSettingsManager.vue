@@ -57,6 +57,15 @@
             <table class="w-full table-fixed border-collapse">
               <thead>
                 <tr class="bg-[#00000022]">
+                  <th class="w-12 pl-2 border-b border-b-[rgba(255,255,255,0.3)]">
+                    <v-checkbox-btn
+                      :model-value="areAllVisibleSelectedForExport"
+                      :indeterminate="!areAllVisibleSelectedForExport && isAnyVisibleSelectedForExport"
+                      :aria-label="t`Select all shown settings for export`"
+                      density="compact"
+                      @update:model-value="toggleAllVisibleForExport"
+                    />
+                  </th>
                   <th class="text-center w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">{{ t`Setting` }}</th>
                   <th class="text-center py-2 pr-4 border-b border-b-[rgba(255,255,255,0.3)]">{{ t`Value` }}</th>
                 </tr>
@@ -80,6 +89,15 @@
               <table class="w-full table-fixed border-collapse">
                 <tbody>
                   <tr v-for="item in filteredSettings" :key="item.originalKey">
+                    <td class="w-12 pl-2 border-b border-b-[rgba(255,255,255,0.3)]">
+                      <v-checkbox-btn
+                        v-model="selectedForExport"
+                        :value="item.originalKey"
+                        :aria-label="t`Select ${displaySettingName(item)} for export`"
+                        density="compact"
+                        @update:model-value="(selection: unknown) => logExportSelectionToggle(item, selection)"
+                      />
+                    </td>
                     <td class="text-start align-top p-2 pl-4 w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">
                       {{ displaySettingName(item) }}
                     </td>
@@ -281,7 +299,10 @@
                 </v-btn>
               </template>
             </v-tooltip>
-            <v-tooltip location="top" :text="t`Save config file`">
+            <span v-if="rowsSelectedForExport.length > 0" class="self-center text-sm opacity-70 mx-2 whitespace-nowrap">
+              {{ selectedForExportLabel }}
+            </span>
+            <v-tooltip location="top" :text="exportTooltip">
               <template #activator="{ props: tooltipProps }">
                 <v-btn icon variant="text" class="bg-transparent" v-bind="tooltipProps" @click="downloadConfigFile">
                   <v-icon>mdi-download</v-icon>
@@ -303,7 +324,7 @@
 </template>
 
 <script setup lang="ts">
-import { t } from 'ttag'
+import { msgid, ngettext, t } from 'ttag'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 
 import { useInteractionDialog } from '@/composables/interactionDialog'
@@ -462,11 +483,55 @@ const filteredSettings = computed<SettingsRow[]>(() => {
     .sort((a, b) => displaySettingName(a).localeCompare(displaySettingName(b)))
 })
 
+const selectedForExport = ref<string[]>([])
+const rowsSelectedForExport = computed<SettingsRow[]>(() =>
+  settingsArray.value.filter((row) => selectedForExport.value.includes(row.originalKey))
+)
+const areAllVisibleSelectedForExport = computed<boolean>(
+  () =>
+    filteredSettings.value.length > 0 &&
+    filteredSettings.value.every((row) => selectedForExport.value.includes(row.originalKey))
+)
+const isAnyVisibleSelectedForExport = computed<boolean>(() =>
+  filteredSettings.value.some((row) => selectedForExport.value.includes(row.originalKey))
+)
+const selectedForExportLabel = computed<string>(() => {
+  const count = rowsSelectedForExport.value.length
+  return ngettext(msgid`${count} selected`, `${count} selected`, count)
+})
+const exportTooltip = computed<string>(() => {
+  const count = rowsSelectedForExport.value.length
+  if (count === 0) return t`Save config file`
+  return ngettext(
+    msgid`Save the ${count} selected setting to a config file`,
+    `Save the ${count} selected settings to a config file`,
+    count
+  )
+})
+
+const logExportSelectionToggle = (item: SettingsRow, selection: unknown): void => {
+  const name = displaySettingName(item)
+  const isSelected = Array.isArray(selection) && selection.includes(item.originalKey)
+  logUserAction(isSelected ? `Selected '${name}' for export` : `Removed '${name}' from the export selection`)
+}
+
+const toggleAllVisibleForExport = (): void => {
+  const visibleKeys = filteredSettings.value.map((row) => row.originalKey)
+  if (areAllVisibleSelectedForExport.value) {
+    selectedForExport.value = selectedForExport.value.filter((key) => !visibleKeys.includes(key))
+    logUserAction('Cleared the export selection of the shown settings')
+    return
+  }
+  selectedForExport.value = [...new Set([...selectedForExport.value, ...visibleKeys])]
+  logUserAction('Selected all shown settings for export')
+}
+
 watch(
   () => props.openConfigDialog,
   (value) => {
     openConfigDialog.value = value
     if (value) {
+      selectedForExport.value = []
       loadUserSettings()
     }
   }
@@ -657,9 +722,10 @@ const cancelJsonEditing = (): void => {
 }
 
 const downloadConfigFile = (): void => {
-  logUserAction('Exported Cockpit settings to file')
+  const rowsToExport = rowsSelectedForExport.value.length > 0 ? rowsSelectedForExport.value : settingsArray.value
+  logUserAction(`Exported ${rowsToExport.length} Cockpit settings to file`)
   const exportedData: Settings = {}
-  settingsArray.value.forEach((row) => {
+  rowsToExport.forEach((row) => {
     exportedData[row.setting] = editedValues[row.originalKey]
   })
   const dataStr = JSON.stringify(exportedData, null, 2)
