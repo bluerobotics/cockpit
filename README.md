@@ -338,6 +338,9 @@ docker-compose -f sim.yml --profile ardusub up
 # Other profiles: arducopter, ardurover, arduplane
 ```
 
+### External Integrations
+BlueOS extensions can add widgets, actions, joystick mapping suggestions and WebSocket connections to Cockpit. See the [External Integrations](https://blueos.cloud/cockpit/docs/latest/development/external-integrations/) docs for the format.
+
 ---
 
 ## 📄 License
