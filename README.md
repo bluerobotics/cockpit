@@ -107,6 +107,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Joystick Support** | Only when tab and window are in focus  | ✅ Window can be unfocused and in the background |
 | **Video** | Needs to be downloaded and merged into a working video using the Desktop app | ✅ Final MP4 file saved directly to your folders |
 | **H.265 (HEVC) cameras** | Only on browsers that can receive H.265 (recent Chromium) | ✅ Plays wherever the system can decode H.265 in hardware |
+| **Direct Video Sources** | ❌ Not available (browsers can't open RTSP or raw UDP video) | ✅ Add RTSP cameras, and UDP H.264/H.265 streams as sent by ArduPilot/PX4 companion computers |
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Voice Recording** | Needs to be downloaded; requires HTTPS/localhost for microphone access | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|

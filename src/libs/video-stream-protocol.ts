@@ -1,5 +1,7 @@
 import type { VideoStreamProtocol } from '@/types/video'
 
+import { parseRtpUrl } from './rtp-source'
+
 /**
  * How a protocol is shown wherever a stream is listed
  */
@@ -17,6 +19,7 @@ interface StreamProtocolChip {
 export const streamProtocolChips: Record<VideoStreamProtocol, StreamProtocolChip> = {
   webrtc: { label: 'WebRTC', color: '#3498db' },
   rtsp: { label: 'RTSP', color: '#e67e22' },
+  rtp: { label: 'UDP', color: '#16a085' },
 }
 
 /**
@@ -28,5 +31,6 @@ export const streamProtocolChips: Record<VideoStreamProtocol, StreamProtocolChip
  */
 export const protocolFromExternalId = (externalId: string): VideoStreamProtocol => {
   if (externalId.startsWith('rtsp://') || externalId.startsWith('rtsps://')) return 'rtsp'
+  if (parseRtpUrl(externalId) !== undefined) return 'rtp'
   return 'webrtc'
 }
