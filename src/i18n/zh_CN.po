@@ -439,6 +439,13 @@ msgstr ""
 msgid "A waypoint must keep a MAV_CMD_NAV_WAYPOINT command"
 msgstr "航点必须保留 MAV_CMD_NAV_WAYPOINT 命令"
 
+#: src/components/widgets/DoItYourself.vue
+msgid ""
+"A widget can change and delete only its own data-lake variables and those "
+"the user may change, and can register callbacks only for actions it added. "
+"Refused requests are reported in a notification"
+msgstr ""
+
 #: src/components/configuration/McpSettings.vue
 msgid "AI agent access"
 msgstr "AI 代理访问"
@@ -10087,10 +10094,9 @@ msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
 msgid ""
-"The script reaches Cockpit through the cockpit object to listen to, read, "
-"set and create data-lake variables and to run actions. Reads answer "
-"synchronously with the latest values Cockpit has sent to the frame, and a "
-"refused write is reported in a notification"
+"The script reaches Cockpit through the cockpit object, with the same "
+"data-lake and action functions as before, answering reads synchronously "
+"with the latest values Cockpit has sent to the frame"
 msgstr ""
 
 #: src/views/ConfigurationGeneralView.vue

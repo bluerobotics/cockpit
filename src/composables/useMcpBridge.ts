@@ -39,10 +39,9 @@ const viewHashInput = z.string().min(1).optional().describe('View to act on. Def
 const scriptDescription =
   "Runs when the widget mounts, in a sandboxed frame holding this widget's HTML and CSS over Cockpit's own " +
   "stylesheets, so document is the widget's own and nothing else of Cockpit is reachable. It runs in its own " +
-  "scope with root (the frame's body) and cockpit as arguments. cockpit is the data-lake API: " +
-  'listenDataLakeVariable, getDataLakeVariableData, getDataLakeVariableInfo, getAllDataLakeVariablesInfo, ' +
-  'getDataLakeVariableLastUpdateTimestamp, setDataLakeVariableData, createDataLakeVariable and ' +
-  'executeActionCallback; reads answer synchronously with the latest values Cockpit sent. ' +
+  "scope with root (the frame's body) and cockpit as arguments. cockpit is the data-lake and actions API, as in " +
+  "Cockpit's page: reads answer synchronously with the latest values Cockpit sent; a widget changes or deletes " +
+  'only its own variables and those the user may change, and registers callbacks only for actions it added. ' +
   'fetch reaches only servers that accept other origins, as BlueOS does. Everything the script starts stops ' +
   'when the widget is removed or its code changes.'
 
