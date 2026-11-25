@@ -1338,6 +1338,10 @@ msgstr "Todas as configurações foram redefinidas para os valores padrão."
 msgid "All streams are already being recorded."
 msgstr "Todos os streams já estão sendo gravados."
 
+#: src/composables/useFirewallWarning.ts
+msgid "Allow Cockpit"
+msgstr "Liberar o Cockpit"
+
 #: src/components/configuration/McpSettings.vue
 msgid "Allow agents to connect"
 msgstr "Permitir que agentes se conectem"
@@ -4785,6 +4789,10 @@ msgstr "Não oferecer o tour novamente"
 msgid "Do not offer to replace this camera again"
 msgstr "Não oferecer substituir esta câmera novamente"
 
+#: src/composables/useFirewallWarning.ts
+msgid "Do not warn about the firewall again on this computer"
+msgstr "Não avisar mais sobre o firewall neste computador"
+
 #: src/composables/useOffCenterAxisWarning.ts
 msgid "Do not warn about these ranges again on this vehicle"
 msgstr "Não avisar novamente sobre estas faixas neste veículo"
@@ -7791,6 +7799,14 @@ msgstr ""
 "widgets DIY para você, por meio do Model Context Protocol (MCP). Toda "
 "alteração feita por um agente é anunciada na tela. Estas configurações "
 "ficam neste computador e não são sincronizadas com o veículo."
+
+#: src/composables/useFirewallWarning.ts
+msgid ""
+"Letting Cockpit through Windows Firewall. Confirm it when Windows asks, and "
+"wait for the result."
+msgstr ""
+"Liberando o Cockpit no Firewall do Windows. Confirme quando o Windows "
+"perguntar e aguarde o resultado."
 
 #: src/views/ConfigurationUIView.vue
 msgid "Level"
@@ -15563,6 +15579,26 @@ msgstr "Porcentagem da escala de largura"
 #: src/views/ConfigurationUIView.vue
 msgid "Window material"
 msgstr "Material da janela"
+
+#: src/composables/useFirewallWarning.ts
+msgid ""
+"Windows Firewall is blocking Cockpit, so video and vehicle connections sent "
+"to this computer may not arrive."
+msgstr ""
+"O Firewall do Windows está bloqueando o Cockpit, então vídeo e conexões de "
+"veículos enviados para este computador podem não chegar."
+
+#: src/composables/useFirewallWarning.ts
+msgid "Windows Firewall no longer blocks Cockpit."
+msgstr "O Firewall do Windows não bloqueia mais o Cockpit."
+
+#: src/composables/useFirewallWarning.ts
+msgid ""
+"Windows Firewall still blocks Cockpit. Allow it in the Windows Firewall "
+"settings of this computer."
+msgstr ""
+"O Firewall do Windows ainda bloqueia o Cockpit. Libere-o nas configurações "
+"do Firewall do Windows deste computador."
 
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format

@@ -1267,6 +1267,10 @@ msgstr "所有设置已重置为默认值。"
 msgid "All streams are already being recorded."
 msgstr "所有流均已在录制。"
 
+#: src/composables/useFirewallWarning.ts
+msgid "Allow Cockpit"
+msgstr "允许 Cockpit"
+
 #: src/components/configuration/McpSettings.vue
 msgid "Allow agents to connect"
 msgstr "允许代理连接"
@@ -4534,6 +4538,10 @@ msgstr "不再提供引导"
 msgid "Do not offer to replace this camera again"
 msgstr "不再提示替换此相机"
 
+#: src/composables/useFirewallWarning.ts
+msgid "Do not warn about the firewall again on this computer"
+msgstr "不再在此计算机上提示防火墙问题"
+
 #: src/composables/useOffCenterAxisWarning.ts
 msgid "Do not warn about these ranges again on this vehicle"
 msgstr "不再对此设备上的这些范围发出警告"
@@ -7367,6 +7375,12 @@ msgid ""
 msgstr ""
 "允许在此计算机上运行的 AI 代理（如 Claude Code 或 Cursor）通过模型上下文协议（MCP）为您创建数据湖变量、转换函数、操作和 "
 "DIY 小部件。代理所做的每项更改都会在屏幕上提示。这些设置仅保存在此计算机上，不会与设备同步。"
+
+#: src/composables/useFirewallWarning.ts
+msgid ""
+"Letting Cockpit through Windows Firewall. Confirm it when Windows asks, and "
+"wait for the result."
+msgstr "正在让 Cockpit 通过 Windows 防火墙。请在 Windows 询问时确认，并等待结果。"
 
 #: src/views/ConfigurationUIView.vue
 msgid "Level"
@@ -14651,6 +14665,22 @@ msgstr "宽度比例百分比"
 #: src/views/ConfigurationUIView.vue
 msgid "Window material"
 msgstr "窗口材质"
+
+#: src/composables/useFirewallWarning.ts
+msgid ""
+"Windows Firewall is blocking Cockpit, so video and vehicle connections sent "
+"to this computer may not arrive."
+msgstr "Windows 防火墙正在阻止 Cockpit，因此发送到此计算机的视频和载具连接可能无法到达。"
+
+#: src/composables/useFirewallWarning.ts
+msgid "Windows Firewall no longer blocks Cockpit."
+msgstr "Windows 防火墙不再阻止 Cockpit。"
+
+#: src/composables/useFirewallWarning.ts
+msgid ""
+"Windows Firewall still blocks Cockpit. Allow it in the Windows Firewall "
+"settings of this computer."
+msgstr "Windows 防火墙仍在阻止 Cockpit。请在此计算机的 Windows 防火墙设置中允许它。"
 
 #: src/libs/terrain/mission-terrain.ts
 #, javascript-format
