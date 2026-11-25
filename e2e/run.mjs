@@ -313,9 +313,6 @@ for (const { id, arm, rep } of jobs) {
         'cockpit-user-last-map-center': [boat.lat, boat.lon],
         'cockpit-default-map-center': [boat.lat, boat.lon],
       }),
-      // The video routes Cockpit would pick from BlueOS on first use, which it otherwise does mid-case: the streams
-      // reconnect and a notice covers the page.
-      'cockpit-allowed-stream-ips': wiredAddresses,
       // Already run, as on any used profile: it would otherwise record every overlay variable in each case.
       'cockpit-migrations': { 'recorded-variables-from-overlay': true },
       'cockpit-points-of-interest': [],
@@ -341,6 +338,9 @@ for (const { id, arm, rep } of jobs) {
       ...seedFor(vehicleHost),
       'cockpit-settings-v2': JSON.stringify({ [TEST_USER]: { [settingsVehicleId]: pack } }),
       'cockpit-last-connected-vehicle-id': settingsVehicleId,
+      // The video routes Cockpit would pick from BlueOS on first use, which it otherwise does mid-case: the streams
+      // reconnect and a notice covers the page.
+      'cockpit-allowed-stream-ips-v2': JSON.stringify(wiredAddresses),
     }
     // Vehicle-side state the app should find already there when it starts, like a loaded mission.
     if (mod.beforeLaunch) await mod.beforeLaunch({ vehicle, meta })

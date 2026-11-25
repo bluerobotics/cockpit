@@ -213,7 +213,7 @@
           <template #title>{{ t`Allowed WebRTC remote IP Addresses` }}</template>
           <template #info>
             {{
-              t`Select the IP addresses to allow connecting to for WebRTC video streaming. For best performance it is recommended to only use the most reliable interfaces - e.g. avoid wireless interfaces if there is a tethered/wired interface available. If no value is specified, all available routes are allowed.`
+              t`Select the IP addresses to allow connecting to for WebRTC video streaming. For best performance it is recommended to only use the most reliable interfaces - e.g. avoid wireless interfaces if there is a tethered/wired interface available. If no value is specified, all available routes are allowed. This list is kept on this computer and not synced with the vehicle.`
             }}
           </template>
           <template #content>

@@ -9034,10 +9034,10 @@ msgid ""
 "For best performance it is recommended to only use the most reliable "
 "interfaces - e.g. avoid wireless interfaces if there is a tethered/wired "
 "interface available. If no value is specified, all available routes are "
-"allowed."
+"allowed. This list is kept on this computer and not synced with the vehicle."
 msgstr ""
 "选择允许连接的 IP 地址以进行 WebRTC 视频流传输。为获得最佳性能，建议仅使用最可靠的接口 - "
-"例如，如果有有线接口可用，请避免使用无线接口。如果未指定值，则允许所有可用路由。"
+"例如，如果有有线接口可用，请避免使用无线接口。如果未指定值，则允许所有可用路由。此列表保存在本计算机上，不会与载具同步。"
 
 #: src/views/ConfigurationVideoView.vue
 msgid ""
@@ -12595,3 +12595,13 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "whose"
 #~ msgstr "其中的"
+
+#~ msgid ""
+#~ "Select the IP addresses to allow connecting to for WebRTC video streaming. "
+#~ "For best performance it is recommended to only use the most reliable "
+#~ "interfaces - e.g. avoid wireless interfaces if there is a tethered/wired "
+#~ "interface available. If no value is specified, all available routes are "
+#~ "allowed."
+#~ msgstr ""
+#~ "选择允许连接的 IP 地址以进行 WebRTC 视频流传输。为获得最佳性能，建议仅使用最可靠的接口 - "
+#~ "例如，如果有有线接口可用，请避免使用无线接口。如果未指定值，则允许所有可用路由。"

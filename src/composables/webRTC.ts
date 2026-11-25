@@ -49,6 +49,7 @@ export class WebRTCManager {
   public onUnreceivableVideo?: (codecs: string[]) => void
   private rtcConfiguration: RTCConfiguration
   private selectedICEIPs: string[] = []
+  private fallbackICEIPs: Ref<string[]> = ref([])
   private selectedICEProtocols: string[] = []
   private JitterBufferTarget = 0
 
@@ -93,14 +94,17 @@ export class WebRTCManager {
    * @param { Ref<string[]> } selectedICEIPs - ICE IPs allowed to be used in the connection
    * @param { Ref<string[]> } selectedICEProtocols - ICE protocols allowed to be used in the connection
    * @param { Ref<number | null> } jitterBufferTarget - RTP receiver jitter buffer target in milliseconds
+   * @param { Ref<string[]> } fallbackICEIPs - ICE IPs tried only when none of the selected ones connects
    * @returns { startStreamReturn }
    */
   public startStream(
     selectedStream: Ref<Stream | undefined>,
     selectedICEIPs: Ref<string[]>,
     selectedICEProtocols: Ref<string[]>,
-    jitterBufferTarget: Ref<number>
+    jitterBufferTarget: Ref<number>,
+    fallbackICEIPs: Ref<string[]>
   ): startStreamReturn {
+    this.fallbackICEIPs = fallbackICEIPs
     this.selectedICEIPs = selectedICEIPs.value
     this.selectedICEProtocols = selectedICEProtocols.value
     this.JitterBufferTarget = jitterBufferTarget.value
@@ -405,6 +409,7 @@ export class WebRTCManager {
     )
 
     this.session.onUnreceivableVideo = (codecs: string[]): void => this.onUnreceivableVideo?.(codecs)
+    this.session.fallbackICEIPs = this.fallbackICEIPs.value
 
     // Registers Session callback for the Signaller endSession parser
     this.signaller.parseEndSessionQuestion(this.consumerId!, producerId, this.session.id, (sessionId, reason) => {
