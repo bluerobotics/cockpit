@@ -1,6 +1,6 @@
 import { type MockInstance, afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { SettingsManager } from '@/libs/settings-management'
+import { type VehicleAdapter, SettingsManager } from '@/libs/settings-management'
 import {
   localSharedSettingsBackupKey,
   LocalSyncedSettings,
@@ -11,6 +11,7 @@ import {
 vi.mock('@/libs/blueos', () => ({
   getKeyDataFromCockpitVehicleStorage: vi.fn(),
   setKeyDataOnCockpitVehicleStorage: vi.fn(),
+  getStatus: vi.fn(async () => true),
 }))
 
 let manager: SettingsManager
@@ -222,4 +223,89 @@ test('keeps settings per vehicle for the session when the backup cannot be store
 
   expect(storedValue(manager.currentVehicleId, overlaysKey)).toEqual([{ id: 'a' }])
   expect(storedValue('boat', overlaysKey)).toEqual([{ id: 'b' }])
+})
+
+const missionsKey = 'cockpit-mission-library'
+
+const fakeVehicle = (
+  vehicleId: string,
+  settings: SettingsPackage
+): [VehicleAdapter, Record<string, SettingsPackage>] => {
+  const settingsByUser: Record<string, SettingsPackage> = { [manager.currentUsername]: settings }
+  const storage: Record<string, unknown> = {
+    'cockpit-vehicle-id': vehicleId,
+    'settings-v1-backup': {},
+    'settings-v2': settingsByUser,
+  }
+  const adapter: VehicleAdapter = {
+    getKeyData: async (_address: string, key: string) => structuredClone(storage[key]),
+    setKeyData: async (_address: string, key: string, data: unknown) => {
+      const [, userId, settingKey] = key.split('/')
+      settingsByUser[userId] = { ...settingsByUser[userId], [settingKey]: data as SettingsPackage[string] }
+    },
+  }
+  return [adapter, settingsByUser]
+}
+
+const editOffline = async (key: string, value: SettingsPackage[string]['value']): Promise<void> => {
+  manager = new SettingsManager()
+  await manager.setKeyValue(key, value)
+  await new Promise((resolve) => setTimeout(resolve, 150))
+}
+
+const connect = async (vehicle: VehicleAdapter): Promise<SettingsManager> => {
+  const dispatch = vi.spyOn(window, 'dispatchEvent').mockReturnValue(true)
+  const connected = new SettingsManager(undefined, vehicle)
+  await connected.handleVehicleGettingOnline('192.168.2.2')
+  dispatch.mockRestore()
+  return connected
+}
+
+test('keeps the shared entries of a vehicle this computer never synced with when connecting to it', async () => {
+  vi.useRealTimers()
+  seedVehiclePackages({
+    [manager.currentVehicleId]: { [missionsKey]: { epochLastChangedLocally: 100, value: [{ id: 'local' }] } },
+  })
+  const [vehicle, onVehicle] = fakeVehicle('towfish', {
+    [missionsKey]: { epochLastChangedLocally: 50, value: [{ id: 'on-vehicle' }] },
+  })
+
+  manager = await connect(vehicle)
+
+  const both = [{ id: 'local' }, { id: 'on-vehicle' }]
+  expect(storedValue('towfish', missionsKey)).toEqual(both)
+  expect(onVehicle[manager.currentUsername][missionsKey].value).toEqual(both)
+})
+
+test('drops on the vehicle a shared entry deleted here after both agreed on it', async () => {
+  vi.useRealTimers()
+  const [vehicle, onVehicle] = fakeVehicle('towfish', {
+    [missionsKey]: { epochLastChangedLocally: 50, value: [{ id: 'kept' }, { id: 'deleted' }] },
+  })
+  manager = await connect(vehicle)
+  await editOffline(missionsKey, [{ id: 'kept' }])
+
+  manager = await connect(vehicle)
+
+  expect(storedValue('towfish', missionsKey)).toEqual([{ id: 'kept' }])
+  expect(onVehicle[manager.currentUsername][missionsKey].value).toEqual([{ id: 'kept' }])
+})
+
+test('keeps a shared entry another computer added on the vehicle after the last agreement', async () => {
+  vi.useRealTimers()
+  const [vehicle, onVehicle] = fakeVehicle('towfish', {
+    [missionsKey]: { epochLastChangedLocally: 50, value: [{ id: 'agreed' }] },
+  })
+  manager = await connect(vehicle)
+  await editOffline(missionsKey, [{ id: 'agreed' }, { id: 'added-here' }])
+  onVehicle[manager.currentUsername][missionsKey] = {
+    epochLastChangedLocally: 60,
+    value: [{ id: 'agreed' }, { id: 'added-elsewhere' }],
+  }
+
+  manager = await connect(vehicle)
+
+  const all = [{ id: 'agreed' }, { id: 'added-here' }, { id: 'added-elsewhere' }]
+  expect(storedValue('towfish', missionsKey)).toEqual(all)
+  expect(onVehicle[manager.currentUsername][missionsKey].value).toEqual(all)
 })

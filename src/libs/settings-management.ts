@@ -10,6 +10,7 @@ import {
   fallbackVehicleId,
   KeyValueVehicleUpdateQueue,
   localOldStyleSettingsKey,
+  localSharedListAgreementsKey,
   localSharedSettingsBackupKey,
   LocalSyncedSettings,
   localSyncedSettingsKey,
@@ -30,8 +31,12 @@ import {
 
 import { getKeyDataFromCockpitVehicleStorage, getStatus, setKeyDataOnCockpitVehicleStorage } from './blueos'
 import {
+  type SharedListAgreements,
   backupSettingCopies,
   hasDivergedUserScopedSettings,
+  mergeUserScopedListsWithVehicle,
+  seedAgreementFromBackup,
+  sharedListEntryIds,
   spreadUserScopedSettings,
   unionDivergedUserScopedSettings,
   userScopedSettings,
@@ -249,6 +254,7 @@ export class SettingsManager {
    * Whether shared settings held different values on different vehicles at startup and were combined
    */
   public sharedDivergedSettingsOnStart = false
+  private pendingSharedListAgreements: SharedListAgreements = {}
   private storage: StorageAdapter
   private vehicle: VehicleAdapter
 
@@ -422,7 +428,7 @@ export class SettingsManager {
    * @param {string} username - The user to drop
    */
   private dropUserFromSharedSettingRecords = (username: string): void => {
-    ;[localSharedSettingsBackupKey].forEach((key) => {
+    ;[localSharedSettingsBackupKey, localSharedListAgreementsKey].forEach((key) => {
       const stored = this.readStoredObject<Record<string, unknown>>(key)
       if (stored === undefined || !(username in stored)) return
       delete stored[username]
@@ -443,6 +449,35 @@ export class SettingsManager {
       console.warn('[SettingsManager]', `Ignoring unreadable stored value of '${key}'.`, error)
       return undefined
     }
+  }
+
+  /**
+   * Records which entries of the shared lists this computer and some vehicles both hold, so the next merge with each
+   * vehicle can tell an entry one side deleted from an entry the other side added. Failing to record only makes the
+   * next merge combine the lists, which keeps every entry.
+   * @param {SharedListAgreements} agreements - The agreed ids per user, vehicle and key
+   */
+  private recordSharedListAgreements = (agreements: SharedListAgreements): void => {
+    try {
+      const stored = this.readStoredObject<SharedListAgreements>(localSharedListAgreementsKey) ?? {}
+      Object.entries(agreements).forEach(([userId, agreementsByVehicle]) => {
+        stored[userId] ??= {}
+        Object.entries(agreementsByVehicle).forEach(([vehicleId, agreement]) => {
+          stored[userId][vehicleId] = { ...stored[userId][vehicleId], ...agreement }
+        })
+      })
+      this.storage.setItem(localSharedListAgreementsKey, JSON.stringify(stored))
+    } catch (error) {
+      console.error('[SettingsManager]', 'Could not record the shared lists agreed with the vehicle.', error)
+    }
+  }
+
+  /**
+   * Records the agreements found by the last merge with the vehicle, once its result is stored on this computer
+   */
+  private commitSharedListAgreements = (): void => {
+    this.recordSharedListAgreements(this.pendingSharedListAgreements)
+    this.pendingSharedListAgreements = {}
   }
 
   /**
@@ -867,6 +902,7 @@ export class SettingsManager {
           }
           await this.vehicle.setKeyData(vehicleAddress, `${vehicleNewStyleSettingsKey}/${userId}/${key}`, setting)
           delete this.keyValueVehicleUpdateQueue[vehicleId][userId][key]
+          this.recordSentSharedList(userId, vehicleId, key, update.value)
         } catch (error) {
           const msg = `Error sending key '${key}' for user '${userId}' to vehicle '${vehicleId}'.`
           console.error('[SettingsManager]', msg, error)
@@ -1050,6 +1086,7 @@ export class SettingsManager {
     console.debug(`[SettingsManager] Users to sync: ${usersToSync.join(', ')}.`)
 
     const mergedSettings: LocalSyncedSettings = {}
+    this.pendingSharedListAgreements = {}
 
     for (const user of usersToSync) {
       console.debug(`[SettingsManager] Syncing user '${user}' and vehicle '${vehicleId}'.`)
@@ -1123,9 +1160,53 @@ export class SettingsManager {
             break
         }
       })
+
+      // Only the current user's merge is stored locally, so only its agreement can be trusted.
+      if (user === this.currentUsername && this.shareUserScopedSettings) {
+        this.mergeSharedListsWithVehicle(mergedSettings[user][vehicleId], localUserVehicleSettings, vehicleUserSettings, user, vehicleId)
+      }
     }
 
     return mergedSettings
+  }
+
+  /**
+   * Merges the shared lists of a user with a vehicle's copies, keeping the result per vehicle when the merge fails
+   * @param {SettingsPackage} merged - The merged package for the vehicle, updated in place
+   * @param {SettingsPackage} local - This computer's package for the vehicle
+   * @param {SettingsPackage} vehicle - The vehicle's package
+   * @param {string} userId - The ID of the user
+   * @param {string} vehicleId - The ID of the vehicle
+   */
+  private mergeSharedListsWithVehicle = (
+    merged: SettingsPackage,
+    local: SettingsPackage,
+    vehicle: SettingsPackage,
+    userId: string,
+    vehicleId: string
+  ): void => {
+    try {
+      const agreement = this.readStoredObject<SharedListAgreements>(localSharedListAgreementsKey)?.[userId]?.[vehicleId]
+      const backedUp = this.readStoredObject<LocalSyncedSettings>(localSharedSettingsBackupKey)?.[userId]?.[vehicleId]
+      const seeded = seedAgreementFromBackup(agreement ?? {}, backedUp, vehicle)
+      const agreed = mergeUserScopedListsWithVehicle(merged, local, vehicle, seeded, Date.now())
+      this.pendingSharedListAgreements = { [userId]: { [vehicleId]: agreed } }
+    } catch (error) {
+      console.error('[SettingsManager]', 'Could not merge the shared lists with the vehicle.', error)
+    }
+  }
+
+  /**
+   * Records a shared list the vehicle now holds, since this computer held it too when it was sent
+   * @param {string} userId - The ID of the user
+   * @param {string} vehicleId - The ID of the vehicle
+   * @param {string} key - The key of the setting sent
+   * @param {unknown} value - The value sent
+   */
+  private recordSentSharedList = (userId: string, vehicleId: string, key: string, value: unknown): void => {
+    if (!this.shareUserScopedSettings || userScopedSettings[key] !== 'union') return
+    const ids = sharedListEntryIds(value)
+    if (ids !== undefined) this.recordSharedListAgreements({ [userId]: { [vehicleId]: { [key]: ids } } })
   }
 
   /**
@@ -1181,6 +1262,7 @@ export class SettingsManager {
       localSyncedSettingsKey,
       localOldStyleSettingsKey,
       localSharedSettingsBackupKey,
+      localSharedListAgreementsKey,
       cockpitLastConnectedUserKey,
       cockpitLastConnectedVehicleKey,
     ]
@@ -1429,6 +1511,7 @@ export class SettingsManager {
 
     // Set the local settings to the best settings between local and vehicle for the current user and vehicle
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, bestSettingsForCurrentUserAndVehicle)
+    this.commitSharedListAgreements()
 
     // Update last connected vehicle to the current one
     this.saveLastConnectedVehicle(this.currentVehicleId)
@@ -1519,6 +1602,7 @@ export class SettingsManager {
 
     // Set the local settings to the best settings between local and vehicle for the current user and vehicle
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, bestSettingsForCurrentUserAndVehicle)
+    this.commitSharedListAgreements()
 
     // Update last connected user to the current one
     this.saveLastConnectedUser(this.currentUsername)
