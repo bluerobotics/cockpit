@@ -6743,6 +6743,14 @@ msgstr "Sobreposições do mapa"
 msgid "Map overlays (GeoTIFF)"
 msgstr "Sobreposições do mapa (GeoTIFF)"
 
+#: src/App.vue
+msgid ""
+"Map overlays, saved missions, points of interest, DIY widgets and some "
+"preferences (units, alerts, interface look) now follow you across all your "
+"vehicles. Lists that differed between your vehicles were combined, and for "
+"preferences the most recently changed value is now used everywhere."
+msgstr ""
+
 #: src/components/widgets/MiniMap.vue
 msgid "Map provider"
 msgstr "Provedor de mapa"

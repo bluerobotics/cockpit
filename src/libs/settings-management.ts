@@ -31,7 +31,9 @@ import {
 import { getKeyDataFromCockpitVehicleStorage, getStatus, setKeyDataOnCockpitVehicleStorage } from './blueos'
 import {
   backupSettingCopies,
+  hasDivergedUserScopedSettings,
   spreadUserScopedSettings,
+  unionDivergedUserScopedSettings,
   userScopedSettings,
 } from './settings-scope'
 import { deserialize, isEqual, sleep, tryACoupleOfTimes } from './utils'
@@ -243,6 +245,10 @@ export class SettingsManager {
   private initialLoadingComplete = false
   private cachedSettings: LocalSyncedSettings | null = null
   private shareUserScopedSettings = true
+  /**
+   * Whether shared settings held different values on different vehicles at startup and were combined
+   */
+  public sharedDivergedSettingsOnStart = false
   private storage: StorageAdapter
   private vehicle: VehicleAdapter
 
@@ -465,8 +471,8 @@ export class SettingsManager {
   }
 
   /**
-   * Backs up every copy of the shared settings once. Sharing stays off for the session when the backup fails, so no
-   * copy is overwritten without a backup to restore it from.
+   * Backs up every copy of the shared settings once, then combines the copies that diverged across vehicles. Sharing
+   * stays off for the session when either step fails, so no copy is overwritten without a backup to restore it from.
    */
   private reconcileUserScopedSettings = (): void => {
     try {
@@ -481,6 +487,12 @@ export class SettingsManager {
           return
         }
       }
+      this.sharedDivergedSettingsOnStart = hasDivergedUserScopedSettings(localSettings)
+      if (!this.sharedDivergedSettingsOnStart) return
+      unionDivergedUserScopedSettings(localSettings, Date.now())
+      // The current vehicle is not loaded yet, so ties go to the last connected one, whose values were last on screen.
+      const lastConnectedVehicleId = this.retrieveLastConnectedVehicle()
+      this.setLocalSettings(localSettings, this.isNullValue(lastConnectedVehicleId) ? fallbackVehicleId : lastConnectedVehicleId!)
     } catch (error) {
       this.shareUserScopedSettings = false
       // Drops whatever was changed in place, so startup goes on from the settings as stored.
@@ -492,8 +504,9 @@ export class SettingsManager {
   /**
    * Sets the local settings
    * @param {LocalSyncedSettings} newSettings - The new local settings
+   * @param {string} preferredVehicleId - Vehicle whose copy of a shared setting wins when epochs tie
    */
-  private setLocalSettings = (newSettings: LocalSyncedSettings): void => {
+  private setLocalSettings = (newSettings: LocalSyncedSettings, preferredVehicleId = this.currentVehicleId): void => {
     console.log('[SettingsManager]', 'Setting/saving local settings.')
     // Shared settings are written into every vehicle package, which can outgrow the storage quota, so a failed write
     // falls back to storing the settings per vehicle instead of losing them.
@@ -506,7 +519,7 @@ export class SettingsManager {
             Object.fromEntries(Object.entries(userSettings).map(([vehicleId, settings]) => [vehicleId, { ...settings }])),
           ])
         )
-        spreadUserScopedSettings(sharedSettings, this.currentVehicleId)
+        spreadUserScopedSettings(sharedSettings, preferredVehicleId)
         this.storage.setItem(localSyncedSettingsKey, JSON.stringify(sharedSettings))
         this.cachedSettings = sharedSettings
         return

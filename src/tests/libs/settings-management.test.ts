@@ -141,6 +141,36 @@ test('spreads a shared setting written on one vehicle to the other vehicles of t
   expect(storedValue('boat', 'cockpit-scale')).toBeUndefined()
 })
 
+test('combines diverged shared lists by id on load, keeping the newest version of each entry', () => {
+  seedVehiclePackages({
+    [manager.currentVehicleId]: {
+      [overlaysKey]: { epochLastChangedLocally: 5, value: [{ id: 'a', name: 'old' }, { id: 'b' }] },
+    },
+    boat: { [overlaysKey]: { epochLastChangedLocally: 7, value: [{ id: 'a', name: 'new' }, { id: 'c' }] } },
+  })
+
+  manager = new SettingsManager()
+
+  const combined = [{ id: 'a', name: 'new' }, { id: 'c' }, { id: 'b' }]
+  expect(storedValue(manager.currentVehicleId, overlaysKey)).toEqual(combined)
+  expect(storedValue('boat', overlaysKey)).toEqual(combined)
+})
+
+test('propagates a deletion of a shared entry instead of bringing it back on the next load', async () => {
+  seedVehiclePackages({
+    [manager.currentVehicleId]: { [overlaysKey]: { epochLastChangedLocally: 5, value: [{ id: 'a' }] } },
+    boat: { [overlaysKey]: { epochLastChangedLocally: 7, value: [{ id: 'b' }] } },
+  })
+  manager = new SettingsManager()
+
+  await manager.setKeyValue(overlaysKey, [{ id: 'b' }])
+  vi.advanceTimersByTime(100)
+  manager = new SettingsManager()
+
+  expect(storedValue(manager.currentVehicleId, overlaysKey)).toEqual([{ id: 'b' }])
+  expect(storedValue('boat', overlaysKey)).toEqual([{ id: 'b' }])
+})
+
 test('keeps the newest copy of a shared setting that is not combined', () => {
   const unitsKey = 'cockpit-display-unit-preferences-v2'
   seedVehiclePackages({
@@ -153,6 +183,11 @@ test('keeps the newest copy of a shared setting that is not combined', () => {
   expect(storedValue(manager.currentVehicleId, unitsKey)).toEqual({ depth: 'feet' })
 })
 
+const backedUpValue = (vehicleId: string, key: string): unknown => {
+  const backup: LocalSyncedSettings = JSON.parse(localStorage.getItem(localSharedSettingsBackupKey)!)
+  return backup[manager.currentUsername][vehicleId][key]?.value
+}
+
 const failBackupWrites = (): MockInstance => {
   const setItem = Storage.prototype.setItem
   return vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
@@ -160,6 +195,20 @@ const failBackupWrites = (): MockInstance => {
     setItem.call(this, key, value)
   })
 }
+
+test('backs up every copy of the shared settings before combining them on the first load', () => {
+  localStorage.removeItem(localSharedSettingsBackupKey)
+  seedVehiclePackages({
+    [manager.currentVehicleId]: { [overlaysKey]: { epochLastChangedLocally: 5, value: [{ id: 'a' }] } },
+    boat: { [overlaysKey]: { epochLastChangedLocally: 7, value: [{ id: 'b' }] } },
+  })
+
+  manager = new SettingsManager()
+
+  expect(storedValue('boat', overlaysKey)).toEqual([{ id: 'b' }, { id: 'a' }])
+  expect(backedUpValue(manager.currentVehicleId, overlaysKey)).toEqual([{ id: 'a' }])
+  expect(backedUpValue('boat', overlaysKey)).toEqual([{ id: 'b' }])
+})
 
 test('keeps settings per vehicle for the session when the backup cannot be stored', async () => {
   localStorage.removeItem(localSharedSettingsBackupKey)

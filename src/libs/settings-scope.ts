@@ -1,5 +1,7 @@
 import type { CockpitSetting, LocalSyncedSettings, UserSettings } from '@/types/settings-management'
 
+import { isEqual } from './utils'
+
 /**
  * How a shared key reconciles copies that diverged across vehicles before it was shared: `union` combines lists of
  * records by `id` (and plain records by key), `newest` keeps the most recently changed copy.
@@ -30,6 +32,8 @@ export const userScopedSettings: Record<string, SharedSettingMerge> = {
   'cockpit-pirate-mode': 'newest',
 }
 
+const unionSettingKeys = Object.keys(userScopedSettings).filter((key) => userScopedSettings[key] === 'union')
+
 /**
  * @param {string} key - Setting key
  * @returns {boolean} Whether the key is shared across all vehicles of a user
@@ -52,6 +56,20 @@ const spreadNewestCopy = (userSettings: UserSettings, key: string, preferredVehi
 }
 
 /**
+ * @param {LocalSyncedSettings} settings - Local synced settings
+ * @returns {boolean} Whether any shared setting holds different values on different vehicles of the same user
+ */
+export const hasDivergedUserScopedSettings = (settings: LocalSyncedSettings): boolean =>
+  Object.values(settings).some((userSettings) =>
+    Object.keys(userScopedSettings).some((key) => {
+      const copies = Object.values(userSettings)
+        .map((vehicleSettings) => vehicleSettings[key]?.value)
+        .filter((value) => value !== undefined)
+      return copies.some((copy) => !isEqual(copy, copies[0]))
+    })
+  )
+
+/**
  * Writes the newest copy of every shared setting into all vehicle packages of its user, in place.
  *
  * ponytail: every vehicle package holds its own copy, so a shared list costs its size once per vehicle in the
@@ -64,6 +82,61 @@ export const spreadUserScopedSettings = (settings: LocalSyncedSettings, preferre
   Object.values(settings).forEach((userSettings) => {
     Object.keys(userScopedSettings).forEach((key) => spreadNewestCopy(userSettings, key, preferredVehicleId))
   })
+}
+
+/**
+ * A list entry identified by a string `id`.
+ */
+type IdRecord = {
+  /**
+   * Entry identifier
+   */
+  id: string
+}
+
+const isIdRecord = (item: unknown): item is IdRecord => typeof (item as Partial<IdRecord> | null)?.id === 'string'
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+// Copies come newest first, so an entry present in several copies keeps its newest version.
+const unionOfCopies = (copies: unknown[]): unknown => {
+  if (copies.every((copy) => Array.isArray(copy) && copy.every(isIdRecord))) {
+    const byId = new Map<string, unknown>()
+    ;(copies as IdRecord[][]).flat().forEach((item) => byId.has(item.id) || byId.set(item.id, item))
+    return [...byId.values()]
+  }
+  if (copies.every(isPlainRecord)) return Object.assign({}, ...[...copies].reverse())
+  return undefined
+}
+
+/**
+ * Combines the copies of `union` settings that diverged across a user's vehicles, so making a key shared drops none
+ * of the entries any vehicle had. Settings already in agreement are left untouched, so this is idempotent.
+ * @param {LocalSyncedSettings} settings - Local synced settings, combined in place
+ * @param {number} now - Epoch stamped on combined settings, so they beat stale vehicle copies at the next connect
+ * @returns {boolean} Whether any setting was combined
+ */
+export const unionDivergedUserScopedSettings = (settings: LocalSyncedSettings, now: number): boolean => {
+  let changed = false
+  Object.values(settings).forEach((userSettings) => {
+    unionSettingKeys.forEach((key) => {
+      const copies = Object.values(userSettings)
+        .map((vehicleSettings) => vehicleSettings[key])
+        .filter((setting) => setting?.value !== undefined)
+        .sort((a, b) => b.epochLastChangedLocally - a.epochLastChangedLocally)
+        .map((setting) => setting.value)
+      if (copies.every((copy) => isEqual(copy, copies[0]))) return
+      // Copies that cannot be combined are left to the newest-wins spread.
+      const combined = unionOfCopies(copies)
+      if (combined === undefined) return
+      Object.values(userSettings).forEach((vehicleSettings) => {
+        vehicleSettings[key] = { epochLastChangedLocally: now, value: combined }
+      })
+      changed = true
+    })
+  })
+  return changed
 }
 
 /**
