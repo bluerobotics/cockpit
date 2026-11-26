@@ -1,0 +1,1 @@
+"use strict";Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"});const r=require("./pako.esm-DNdhnE2T.js"),t=require("./basedecoder-D1GaLJ92.js");class o extends t.BaseDecoder{decodeBlock(e){return r.inflate_1(new Uint8Array(e)).buffer}}exports.default=o;
