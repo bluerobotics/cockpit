@@ -167,7 +167,9 @@
   },
   "build": {
     "files": [
-      "dist"
+      "dist",
+      "!dist/{mac,mac-*,mas,mas-*,*-unpacked}{,/**/*}",
+      "!dist/*.{AppImage,blockmap,dmg,exe,flatpak,yaml,yml,zip}"
     ],
     "extraResources": [
       {
