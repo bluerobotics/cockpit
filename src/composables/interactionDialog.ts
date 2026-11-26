@@ -182,7 +182,7 @@ export function useInteractionDialog(): {
     // forever. Resolve (rather than reject) to avoid unhandled rejections for the many callers that don't await.
     resolveFn?.({ isConfirmed: false })
     openDialogKey = key
-    openDialogPromise = new Promise<DialogResult>((resolve, reject) => {
+    const dialogPromise = new Promise<DialogResult>((resolve, reject) => {
       // Merge over a fresh set of defaults so options the caller omits (notably `actions`) never leak from the
       // previous dialog, which would otherwise leave a stale destructive button on an unrelated dialog.
       Object.assign(dialogProps, resolvedOptions, { showDialog: true })
@@ -194,9 +194,16 @@ export function useInteractionDialog(): {
         openDialogPromise = undefined
         reject(reason)
       }
-      mountDialog()
     })
-    return openDialogPromise
+    openDialogPromise = dialogPromise
+    // Mounting flushes pending watchers synchronously, so one may call back in here; it must find this dialog pending.
+    try {
+      mountDialog()
+    } catch (error) {
+      console.error('Failed to mount the interaction dialog.', error)
+      rejectFn?.({ isConfirmed: false })
+    }
+    return dialogPromise
   }
 
   const closeDialog = (): void => {
