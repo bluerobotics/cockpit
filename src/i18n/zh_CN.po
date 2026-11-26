@@ -315,6 +315,12 @@ msgstr "（共 ${ 0 } 项）"
 msgid "(Drag card to add)"
 msgstr "(拖动卡片添加)"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"(an integer, or a string of 1 to 256 characters) is answered on the same "
+"connection, in order, with a"
+msgstr ""
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 msgid "(empty)"
 msgstr "（空）"
@@ -371,6 +377,19 @@ msgstr "应用程序启动时间慢 3-4 倍"
 msgid "3D model with attitude and altitude (copters and boats)"
 msgstr ""
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+": the version (1), whether meshes are drawn (they need WebGL2), the limits "
+"and the formats. Meshes are kept in memory only: a reloaded Cockpit has "
+"none and a dropped connection keeps them, so set them again on every "
+"connection. A mesh reserves its whole capacity when set, and one past the "
+"map mesh memory limit below is refused with"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "; one with any other"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
 msgstr "@ 光标："
@@ -389,6 +408,10 @@ msgid ""
 "through the cabled network should give you better video quality and less "
 "delay."
 msgstr "大量数据正通过设备的 Wi-Fi 连接传输。改用有线网络连接可以获得更好的视频质量和更低的延迟。"
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "A mesh command with a"
+msgstr ""
 
 #: src/components/UpdateNotification.vue
 msgid ""
@@ -1799,6 +1822,11 @@ msgstr "无法将地图居中到设备（设备位置未定义）。"
 #: src/views/ToolsLogsView.vue
 msgid "Cannot delete the current active session"
 msgstr "无法删除当前活动会话"
+
+#: src/composables/map/useExternalMapMeshLayers.ts
+#, javascript-format
+msgid "Cannot draw the map mesh \"${ 0 }\": ${ 1 }"
+msgstr ""
 
 #: src/composables/map/useMissionInsertion.ts
 msgid "Cannot insert mission: invalid segment."
@@ -4741,6 +4769,12 @@ msgstr ""
 msgid "For additional Help, refer to documentation or contact us."
 msgstr "如需更多帮助，请参阅文档或联系我们。"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"For georeferenced imagery sent many times a second, they can draw meshes of "
+"textured quads:"
+msgstr ""
+
 #: src/components/OtherControlStationWarningDialog.vue
 msgid "Force forwarding"
 msgstr "强制转发"
@@ -5134,6 +5168,10 @@ msgstr "隐藏已应用的操作"
 msgid "Hide applied mappings"
 msgstr "隐藏已应用的映射"
 
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Hide below"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Hide console"
 msgstr "隐藏控制台"
@@ -5157,6 +5195,10 @@ msgstr "隐藏已忽略的映射"
 #: src/components/widgets/MiniMap.vue
 msgid "Hide map overlays"
 msgstr "隐藏地图叠加层"
+
+#: src/components/widgets/MiniMap.vue
+msgid "Hide mesh layers"
+msgstr ""
 
 #: src/components/widgets/MiniMap.vue
 msgid "Hide mission"
@@ -6301,6 +6343,15 @@ msgstr "地图标记"
 msgid "Map function to button"
 msgstr "映射功能到按钮"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid "Map mesh memory limit"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+#, javascript-format
+msgid "Map mesh memory limit set to ${ 0 } MiB. Existing meshes are kept."
+msgstr ""
+
 #: src/views/ConfigurationMissionView.vue
 msgid "Map options"
 msgstr "地图选项"
@@ -6434,6 +6485,11 @@ msgstr "中阈值（V）"
 #: src/views/ConfigurationUIView.vue
 msgid "Menu"
 msgstr "菜单"
+
+#: src/components/widgets/Map.vue
+#: src/components/widgets/MiniMap.vue
+msgid "Mesh layers"
+msgstr ""
 
 #: src/views/ConfigurationMAVLinkView.vue
 msgid "Message"
@@ -6805,14 +6861,27 @@ msgstr "必须为有效数字"
 msgid "Must be a valid number."
 msgstr "必须为有效数字。"
 
+#: src/libs/map/external-map-mesh-budget.ts
+msgid "Must be a whole number of MiB."
+msgstr ""
+
 #: src/components/mini-widgets/SnapshotTool.vue
 #, javascript-format
 msgid "Must be at least ${ 0 } seconds."
 msgstr "必须至少为 ${ 0 } 秒。"
 
+#: src/libs/map/external-map-mesh-budget.ts
+#, javascript-format
+msgid "Must be at most ${ 0 } MiB."
+msgstr ""
+
 #: src/components/widgets/Plotter.vue
 msgid "Must be greater than 0"
 msgstr "必须大于 0"
+
+#: src/libs/map/external-map-mesh-budget.ts
+msgid "Must be more than zero."
+msgstr ""
 
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Muted"
@@ -7516,6 +7585,10 @@ msgstr "抱歉，似乎是某个视频分片无法保存。正在重试……"
 #: src/views/ConfigurationUIView.vue
 msgid "Opacity"
 msgstr "不透明度"
+
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Opaque above"
+msgstr ""
 
 #: src/composables/appUpdater.ts
 msgid "Open"
@@ -9346,6 +9419,10 @@ msgid "Show map overlays"
 msgstr "显示地图叠加层"
 
 #: src/components/widgets/MiniMap.vue
+msgid "Show mesh layers"
+msgstr ""
+
+#: src/components/widgets/MiniMap.vue
 msgid "Show mission"
 msgstr "显示任务"
 
@@ -10081,6 +10158,18 @@ msgid ""
 "changes to the variable value will automatically trigger the linked action."
 msgstr "链接按钮可用于将操作链接到 Data Lake 变量，以便变量值的变化会自动触发链接的操作。"
 
+#: src/views/ConfigurationGeneralView.vue
+#, javascript-format
+msgid ""
+"The maximum memory that map meshes sent by external software may reserve, "
+"together, on this computer. A mesh reserves its whole capacity when it is "
+"created, and one that would go past this limit is refused. Drawn meshes "
+"take about as much again on the graphics card. Lowering the limit removes "
+"no mesh: it only refuses new or larger ones. The default, ${ 0 } MiB, holds "
+"16 Ping360 sonar meshes with at least 225 s of history each. This setting "
+"stays on this computer and is not synced with the vehicle."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "The mission in it is kept and restored if you export it again."
 msgstr "其中的任务会被保留，并在您再次导出时恢复。"
@@ -10720,6 +10809,10 @@ msgid ""
 "Transforming functions, DIY widgets, and saving or running actions, which "
 "may command the vehicle"
 msgstr "转换函数、DIY 小部件，以及保存或运行操作，这些操作可能会控制设备"
+
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Transparency"
+msgstr ""
 
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Transport"
@@ -12144,6 +12237,7 @@ msgstr "允许 Cockpit 开放高级功能，例如设置 MAVLink 消息的频率
 
 #: src/components/configuration/JavascriptActionConfig.vue
 #: src/views/ConfigurationAlertsView.vue
+#: src/views/ConfigurationGeneralView.vue
 msgid "and"
 msgstr "和"
 
@@ -12247,6 +12341,13 @@ msgstr "创建"
 msgid "current vehicle"
 msgstr "当前设备"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"defines one (id, name, capacity, and the r8 or rgba8 format and size of "
+"every quad's strip of texels), keeping its quads when sent again with the "
+"same layout and emptying it otherwise;"
+msgstr ""
+
 #: src/components/InputElementConfig.vue
 msgid "delete"
 msgstr "删除"
@@ -12293,6 +12394,14 @@ msgid "in:"
 msgstr "输入："
 
 #: src/views/ConfigurationGeneralView.vue
+msgid "is answered with"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "is neither applied nor answered."
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
 msgid "is true. For a GeoTIFF, send"
 msgstr "为 true，叠加层会保存在此计算机上。对于 GeoTIFF，请发送"
 
@@ -12306,6 +12415,16 @@ msgid ""
 "lasts until the widget reloads; indexedDB and cookies are not available. "
 "Requests with fetch reach only servers that accept other origins, as BlueOS "
 "does"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"manage it. Arrays are the base64 of their little-endian bytes. Each map's "
+"transparency range hides low-alpha texels and draws high-alpha ones opaque, "
+"so give low alphas to faint readings and high alphas to whatever should "
+"always show. The fields, how quads are drawn and how to replay a mesh are "
+"documented on the matching helpers of the Cockpit widget API. Every sender "
+"shares the same ids, so prefix them with your software's name."
 msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
@@ -12424,6 +12543,12 @@ msgstr "因此保存或删除该操作会停止它们。"
 msgid "starts with"
 msgstr "以以下内容开头："
 
+#: src/composables/map/useExternalMapMeshLayers.ts
+msgid ""
+"this browser or graphics driver does not support WebGL2. Try enabling "
+"hardware acceleration."
+msgstr ""
+
 #: src/views/ConfigurationAlertsView.vue
 msgid "this computer's"
 msgstr "此计算机的"
@@ -12512,6 +12637,10 @@ msgid ""
 "with its URL instead, and Cockpit downloads it once. Every sender shares "
 "the same ids, so prefix them with your software's name."
 msgstr "改为其 URL，Cockpit 会下载一次。所有发送方共用相同的 id，因此请为其加上您软件名称的前缀。"
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "writes quads into its slots;"
+msgstr ""
 
 #: src/views/ConfigurationVideoView.vue
 msgid "you're trying to restore is not available anymore."

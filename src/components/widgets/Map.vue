@@ -191,7 +191,23 @@
                   hide-details
                 />
               </v-col>
+              <v-col cols="4">
+                <v-switch
+                  v-model="widget.options.showMeshLayers"
+                  class="my-1"
+                  :label="t`Mesh layers`"
+                  :color="widget.options.showMeshLayers ? 'white' : undefined"
+                  hide-details
+                  @update:model-value="onShowMeshLayersToggled"
+                />
+              </v-col>
             </v-row>
+            <MeshTransparencyRange
+              v-if="widget.options.showMeshLayers"
+              v-model="widget.options.meshAlphaCurve"
+              class="mt-2"
+              @end="onMeshAlphaCurveCommitted"
+            />
           </template>
         </ExpansiblePanel>
       </v-card-text>
@@ -269,6 +285,7 @@ import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
+import MeshTransparencyRange from '@/components/map/MeshTransparencyRange.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
 import MissionChecklist from '@/components/MissionChecklist.vue'
 import PoiActionPopup from '@/components/poi/PoiActionPopup.vue'
@@ -278,6 +295,7 @@ import { confirmRemoveBaseStation, useBaseStation } from '@/composables/baseStat
 import { useBaseStationOverlay } from '@/composables/baseStation/useBaseStationOverlay'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useCustomTileProviders } from '@/composables/map/useCustomTileProviders'
+import { defaultMeshAlphaCurve, useExternalMapMeshLayers } from '@/composables/map/useExternalMapMeshLayers'
 import { useExternalMapOverlayLayers } from '@/composables/map/useExternalMapOverlayLayers'
 import { useHasAnyMapOverlay } from '@/composables/map/useExternalMapOverlays'
 import { useHazardOverlay } from '@/composables/map/useHazardOverlay'
@@ -312,6 +330,7 @@ import {
   removeBaseStationMenuLabel,
 } from '@/libs/baseStation/menu'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import { normalizeMeshAlphaCurve } from '@/libs/map/external-map-meshes-layer'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import {
@@ -619,8 +638,11 @@ onBeforeMount(() => {
     showVehicleArrow: true,
     showBaseStationArrow: true,
     shownHazardSources: [] as HazardSourceId[],
+    showMeshLayers: true,
+    meshAlphaCurve: [...defaultMeshAlphaCurve],
   }
   widget.value.options = { ...defaultOptions, ...widget.value.options }
+  widget.value.options.meshAlphaCurve = normalizeMeshAlphaCurve(widget.value.options.meshAlphaCurve)
   if (isFlightVisible.value) targetFollower.enableAutoUpdate()
 })
 
@@ -640,6 +662,23 @@ const overlaysDialogOpen = ref(false)
 // Draws the overlays external software (BlueOS extensions, embedded pages) sent onto this map
 const { init: initExternalOverlayLayers, destroy: destroyExternalOverlayLayers } = useExternalMapOverlayLayers()
 const hasAnyMapOverlay = useHasAnyMapOverlay()
+
+// Draws the meshes external software (BlueOS extensions, embedded pages) sent onto this map
+const {
+  init: initExternalMeshLayers,
+  setMeshAlphaCurve,
+  setMeshesShown,
+  destroy: destroyExternalMeshLayers,
+} = useExternalMapMeshLayers()
+watch(() => widget.value.options.meshAlphaCurve, setMeshAlphaCurve, { immediate: true, deep: true })
+watch(() => widget.value.options.showMeshLayers, setMeshesShown, { immediate: true })
+const onMeshAlphaCurveCommitted = ([hideBelow, opaqueAbove]: [number, number]): void => {
+  const range = `${Math.round(hideBelow * 100)}%–${Math.round(opaqueAbove * 100)}%`
+  logUserAction(`Set the map widget mesh transparency range to ${range}`)
+}
+const onShowMeshLayersToggled = (value: boolean | null): void => {
+  logUserAction(`${value ? 'Showed' : 'Hid'} the mesh layers on the map widget`)
+}
 
 // Draws the coastline, restricted-area and airspace advisories the operator has loaded
 // Chosen per widget, so hiding a layer here leaves Mission Planning's hazard checks alone.
@@ -889,6 +928,7 @@ onMounted(async () => {
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   if (map.value) await mapOverlays.initOverlays(map.value, layerControl)
   if (map.value) initExternalOverlayLayers(map.value, layerControl)
+  if (map.value) initExternalMeshLayers(map.value, () => widgetStore.isWidgetVisible(widget.value))
 
   if (map.value) initHazardOverlay(map.value, layerControl)
 
@@ -1107,6 +1147,7 @@ onBeforeUnmount(() => {
   detachTileFallbacks.forEach((detach) => detach())
   mapOverlays.destroyOverlays()
   destroyExternalOverlayLayers()
+  destroyExternalMeshLayers()
   destroyHazardOverlay()
   destroyCustomTileProviders()
 

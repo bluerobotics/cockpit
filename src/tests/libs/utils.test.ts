@@ -1,6 +1,17 @@
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
-import { isElectron, serializeForLogging, uniqueString } from '@/libs/utils'
+import { isElectron, replyToMessageSender, serializeForLogging, uniqueString } from '@/libs/utils'
+
+test('replyToMessageSender posts back to the sending window, restricted to its origin unless that origin is opaque', () => {
+  const postMessage = vi.fn()
+  const event = (origin: string): MessageEvent => ({ origin, source: { postMessage } } as unknown as MessageEvent)
+  replyToMessageSender(event('http://blueos.local:9000'))({ ok: true })
+  replyToMessageSender(event('null'))({ ok: false })
+  expect(postMessage.mock.calls).toEqual([
+    [{ ok: true }, 'http://blueos.local:9000'],
+    [{ ok: false }, '*'],
+  ])
+})
 
 test('serializeForLogging', () => {
   // The regression this guards: `JSON.stringify(new Error('boom'))` is `'{}'`, which is what the log used to keep.

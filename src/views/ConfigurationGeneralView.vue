@@ -406,6 +406,34 @@
                   }}
                 </li>
                 <li>
+                  {{ t`For georeferenced imagery sent many times a second, they can draw meshes of textured quads:` }}
+                  <span class="font-mono">cockpit:setMapMesh</span>
+                  {{
+                    t`defines one (id, name, capacity, and the r8 or rgba8 format and size of every quad's strip of texels), keeping its quads when sent again with the same layout and emptying it otherwise;`
+                  }}
+                  <span class="font-mono">cockpit:setMapMeshQuads</span> {{ t`writes quads into its slots;` }}
+                  <span class="font-mono">cockpit:removeMapMeshQuads</span>,
+                  <span class="font-mono">cockpit:clearMapMesh</span> {{ t`and` }}
+                  <span class="font-mono">cockpit:removeMapMesh</span>
+                  {{
+                    t`manage it. Arrays are the base64 of their little-endian bytes. Each map's transparency range hides low-alpha texels and draws high-alpha ones opaque, so give low alphas to faint readings and high alphas to whatever should always show. The fields, how quads are drawn and how to replay a mesh are documented on the matching helpers of the Cockpit widget API. Every sender shares the same ids, so prefix them with your software's name.`
+                  }}
+                </li>
+                <li>
+                  {{ t`A mesh command with a` }} <span class="font-mono">requestId</span>
+                  {{
+                    t`(an integer, or a string of 1 to 256 characters) is answered on the same connection, in order, with a`
+                  }}
+                  <span class="font-mono">cockpit:mapMeshResult</span>{{ t`; one with any other` }}
+                  <span class="font-mono">requestId</span> {{ t`is neither applied nor answered.` }}
+                  <span class="font-mono">{{ exampleMapCapabilitiesWebSocketMessage }}</span> {{ t`is answered with` }}
+                  <span class="font-mono">cockpit:mapCapabilities</span
+                  >{{
+                    t`: the version (1), whether meshes are drawn (they need WebGL2), the limits and the formats. Meshes are kept in memory only: a reloaded Cockpit has none and a dropped connection keeps them, so set them again on every connection. A mesh reserves its whole capacity when set, and one past the map mesh memory limit below is refused with`
+                  }}
+                  <span class="font-mono">code: 'budget'</span>.
+                </li>
+                <li>
                   {{ t`You can use data-lake variables to compose the URL, for example:` }}
                   <span class="font-mono">{{ exampleGenericWebSocketUrl }}</span>
                 </li>
@@ -424,6 +452,57 @@
               @add="addGenericWebSocket"
               @remove="removeGenericWebSocket"
             />
+          </template>
+        </ExpansiblePanel>
+        <ExpansiblePanel :is-expanded="!interfaceStore.isOnPhoneScreen">
+          <template #title>{{ t`Map mesh memory limit` }}</template>
+          <template #info>
+            <p class="w-full">
+              {{
+                t`The maximum memory that map meshes sent by external software may reserve, together, on this computer. A mesh reserves its whole capacity when it is created, and one that would go past this limit is refused. Drawn meshes take about as much again on the graphics card. Lowering the limit removes no mesh: it only refuses new or larger ones. The default, ${defaultMapMeshBudgetMiB} MiB, holds 16 Ping360 sonar meshes with at least 225 s of history each. This setting stays on this computer and is not synced with the vehicle.`
+              }}
+            </p>
+          </template>
+          <template #content>
+            <v-form
+              ref="mapMeshBudgetForm"
+              v-model="mapMeshBudgetFormValid"
+              class="w-full mt-2 pb-2"
+              @submit.prevent="setMapMeshBudget"
+            >
+              <div class="flex items-start gap-2">
+                <v-text-field
+                  v-model.number="newMapMeshBudgetMiB"
+                  variant="filled"
+                  type="number"
+                  density="compact"
+                  theme="dark"
+                  class="flex-1"
+                  suffix="MiB"
+                  :rules="[isValidMapMeshBudget]"
+                >
+                  <template #append-inner>
+                    <v-btn
+                      v-tooltip.bottom="t`Reset to default`"
+                      icon="mdi-restore"
+                      variant="text"
+                      size="x-small"
+                      :aria-label="t`Reset to default`"
+                      @click="resetMapMeshBudget"
+                    />
+                  </template>
+                </v-text-field>
+                <v-btn
+                  :size="interfaceStore.isOnSmallScreen ? 'small' : 'default'"
+                  :disabled="!mapMeshBudgetFormValid"
+                  class="bg-transparent mt-1"
+                  variant="text"
+                  type="submit"
+                >
+                  {{ t`Apply` }}
+                </v-btn>
+              </div>
+            </v-form>
           </template>
         </ExpansiblePanel>
         <McpSettings />
@@ -532,7 +611,7 @@
 </template>
 
 <script setup lang="ts">
-import { useIntervalFn } from '@vueuse/core'
+import { useIntervalFn, useStorage } from '@vueuse/core'
 import { t } from 'ttag'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -544,6 +623,7 @@ import VehicleConnectionForm from '@/components/configuration/VehicleConnectionF
 import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import VehicleDiscoveryDialog from '@/components/VehicleDiscoveryDialog.vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
+import { mapMeshBudgetKey } from '@/composables/map/useExternalMapMeshes'
 import {
   addSecondaryVehicle,
   canPlaceSecondaryVehiclesOnMap,
@@ -565,6 +645,12 @@ import {
   listenToGenericWebSocketConnections,
   removeGenericWebSocketConnection,
 } from '@/libs/generic-websocket'
+import {
+  bytesPerMiB,
+  defaultMapMeshBudgetBytes,
+  mapMeshBudgetBytes,
+  mapMeshBudgetFromMiB,
+} from '@/libs/map/external-map-mesh-budget'
 import { isElectron, isValidNetworkAddress } from '@/libs/utils'
 import { replaceDataLakeInputsInString } from '@/libs/utils-data-lake'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
@@ -935,6 +1021,41 @@ const resetWatchdogTimeout = (): void => {
   mainVehicleStore.vehicleConnectionWatchdogTimeoutMs = defaultVehicleConnectionWatchdogTimeoutSeconds * 1000
 }
 
+/** Map mesh memory limit */
+
+const defaultMapMeshBudgetMiB = defaultMapMeshBudgetBytes / bytesPerMiB
+const storedMapMeshBudget = useStorage<string | null>(mapMeshBudgetKey, null)
+const mapMeshBudgetMiB = computed(() => mapMeshBudgetBytes(storedMapMeshBudget.value) / bytesPerMiB)
+
+const mapMeshBudgetForm = ref()
+const mapMeshBudgetFormValid = ref(true)
+const newMapMeshBudgetMiB = ref<number>(mapMeshBudgetMiB.value)
+
+watch(mapMeshBudgetMiB, (value) => (newMapMeshBudgetMiB.value = value))
+
+const isValidMapMeshBudget = (value: number | string): boolean | string => {
+  const bytes = mapMeshBudgetFromMiB(value)
+  return typeof bytes === 'number' || bytes
+}
+
+const setMapMeshBudget = async (): Promise<void> => {
+  const validation = await mapMeshBudgetForm.value.validate()
+  const bytes = mapMeshBudgetFromMiB(newMapMeshBudgetMiB.value)
+  if (!validation.valid || typeof bytes === 'string') return
+
+  logUserAction(`Set the map mesh memory limit to ${bytes} bytes`)
+  // The default is stored as no override, so the setting follows a later default.
+  storedMapMeshBudget.value = bytes === defaultMapMeshBudgetBytes ? null : String(bytes)
+  const message = t`Map mesh memory limit set to ${bytes / bytesPerMiB} MiB. Existing meshes are kept.`
+  openSnackbar({ message, variant: 'success' })
+}
+
+const resetMapMeshBudget = (): void => {
+  logUserAction('Reset the map mesh memory limit to default')
+  storedMapMeshBudget.value = null
+  newMapMeshBudgetMiB.value = defaultMapMeshBudgetMiB
+}
+
 const isValidHostAddress = (value: string): boolean | string => {
   return isValidNetworkAddress(value) ?? t`Invalid host address. Should be an IP address or a hostname`
 }
@@ -1127,6 +1248,7 @@ const exampleMapOverlayWebSocketMessage = JSON.stringify({
     },
   },
 })
+const exampleMapCapabilitiesWebSocketMessage = JSON.stringify({ type: 'cockpit:getMapCapabilities', requestId: '1' })
 const exampleJsonWebSocketMessage = JSON.stringify({
   WaterTemp: 23.5,
   Payload: { Temp: 21.2, Locked: true },

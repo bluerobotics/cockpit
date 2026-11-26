@@ -352,6 +352,12 @@ msgstr "(${ 0 } do total)"
 msgid "(Drag card to add)"
 msgstr "(Arraste o cartão para adicionar)"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"(an integer, or a string of 1 to 256 characters) is answered on the same "
+"connection, in order, with a"
+msgstr ""
+
 #: src/components/configuration/HttpRequestActionConfig.vue
 msgid "(empty)"
 msgstr "(vazio)"
@@ -416,6 +422,19 @@ msgstr "Inicialização do aplicativo 3-4x mais lenta"
 msgid "3D model with attitude and altitude (copters and boats)"
 msgstr ""
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+": the version (1), whether meshes are drawn (they need WebGL2), the limits "
+"and the formats. Meshes are kept in memory only: a reloaded Cockpit has "
+"none and a dropped connection keeps them, so set them again on every "
+"connection. A mesh reserves its whole capacity when set, and one past the "
+"map mesh memory limit below is refused with"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "; one with any other"
+msgstr ""
+
 #: src/components/MavlinkDumpViewer.vue
 msgid "@ cursor:"
 msgstr "@ cursor:"
@@ -436,6 +455,10 @@ msgid ""
 msgstr ""
 "Muitos dados estão passando pela conexão WiFi do veículo. Conectar pela "
 "rede cabeada deve dar melhor qualidade de vídeo e menos atraso."
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "A mesh command with a"
+msgstr ""
 
 #: src/components/UpdateNotification.vue
 msgid ""
@@ -1916,6 +1939,11 @@ msgstr ""
 #: src/views/ToolsLogsView.vue
 msgid "Cannot delete the current active session"
 msgstr "Não é possível excluir a sessão ativa atual"
+
+#: src/composables/map/useExternalMapMeshLayers.ts
+#, javascript-format
+msgid "Cannot draw the map mesh \"${ 0 }\": ${ 1 }"
+msgstr ""
 
 #: src/composables/map/useMissionInsertion.ts
 msgid "Cannot insert mission: invalid segment."
@@ -5071,6 +5099,12 @@ msgstr ""
 msgid "For additional Help, refer to documentation or contact us."
 msgstr "Para mais ajuda, consulte a documentação ou entre em contato conosco."
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"For georeferenced imagery sent many times a second, they can draw meshes of "
+"textured quads:"
+msgstr ""
+
 #: src/components/OtherControlStationWarningDialog.vue
 msgid "Force forwarding"
 msgstr "Forçar repasse"
@@ -5494,6 +5528,10 @@ msgstr "Ocultar ações aplicadas"
 msgid "Hide applied mappings"
 msgstr "Ocultar mapeamentos aplicados"
 
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Hide below"
+msgstr ""
+
 #: src/components/sources/GnssDeviceDialog.vue
 msgid "Hide console"
 msgstr "Ocultar console"
@@ -5517,6 +5555,10 @@ msgstr "Ocultar mapeamentos ignorados"
 #: src/components/widgets/MiniMap.vue
 msgid "Hide map overlays"
 msgstr "Ocultar sobreposições do mapa"
+
+#: src/components/widgets/MiniMap.vue
+msgid "Hide mesh layers"
+msgstr ""
 
 #: src/components/widgets/MiniMap.vue
 msgid "Hide mission"
@@ -6731,6 +6773,15 @@ msgstr "Marcador de mapa"
 msgid "Map function to button"
 msgstr "Mapear função para o botão"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid "Map mesh memory limit"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+#, javascript-format
+msgid "Map mesh memory limit set to ${ 0 } MiB. Existing meshes are kept."
+msgstr ""
+
 #: src/views/ConfigurationMissionView.vue
 msgid "Map options"
 msgstr "Opções do mapa"
@@ -6870,6 +6921,11 @@ msgstr "Limite médio (V)"
 #: src/views/ConfigurationUIView.vue
 msgid "Menu"
 msgstr "Menu"
+
+#: src/components/widgets/Map.vue
+#: src/components/widgets/MiniMap.vue
+msgid "Mesh layers"
+msgstr ""
 
 #: src/views/ConfigurationMAVLinkView.vue
 msgid "Message"
@@ -7251,14 +7307,27 @@ msgstr "Deve ser um número válido"
 msgid "Must be a valid number."
 msgstr "Deve ser um número válido."
 
+#: src/libs/map/external-map-mesh-budget.ts
+msgid "Must be a whole number of MiB."
+msgstr ""
+
 #: src/components/mini-widgets/SnapshotTool.vue
 #, javascript-format
 msgid "Must be at least ${ 0 } seconds."
 msgstr "Deve ser de pelo menos ${ 0 } segundos."
 
+#: src/libs/map/external-map-mesh-budget.ts
+#, javascript-format
+msgid "Must be at most ${ 0 } MiB."
+msgstr ""
+
 #: src/components/widgets/Plotter.vue
 msgid "Must be greater than 0"
 msgstr "Deve ser maior que 0"
+
+#: src/libs/map/external-map-mesh-budget.ts
+msgid "Must be more than zero."
+msgstr ""
 
 #: src/components/widgets/URLVideoPlayer.vue
 msgid "Muted"
@@ -8014,6 +8083,10 @@ msgstr "Ops, parece que um trecho do vídeo não pôde ser salvo. Tentando novam
 #: src/views/ConfigurationUIView.vue
 msgid "Opacity"
 msgstr "Opacidade"
+
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Opaque above"
+msgstr ""
 
 #: src/composables/appUpdater.ts
 msgid "Open"
@@ -9958,6 +10031,10 @@ msgid "Show map overlays"
 msgstr "Mostrar sobreposições do mapa"
 
 #: src/components/widgets/MiniMap.vue
+msgid "Show mesh layers"
+msgstr ""
+
+#: src/components/widgets/MiniMap.vue
 msgid "Show mission"
 msgstr "Mostrar missão"
 
@@ -10756,6 +10833,18 @@ msgstr ""
 "lake, de modo que mudanças no valor da variável disparem automaticamente a "
 "ação vinculada."
 
+#: src/views/ConfigurationGeneralView.vue
+#, javascript-format
+msgid ""
+"The maximum memory that map meshes sent by external software may reserve, "
+"together, on this computer. A mesh reserves its whole capacity when it is "
+"created, and one that would go past this limit is refused. Drawn meshes "
+"take about as much again on the graphics card. Lowering the limit removes "
+"no mesh: it only refuses new or larger ones. The default, ${ 0 } MiB, holds "
+"16 Ping360 sonar meshes with at least 225 s of history each. This setting "
+"stays on this computer and is not synced with the vehicle."
+msgstr ""
+
 #: src/components/geofence/GeoFenceEditor.vue
 msgid "The mission in it is kept and restored if you export it again."
 msgstr "A missão contida nele é mantida e restaurada se você exportá-lo novamente."
@@ -11537,6 +11626,10 @@ msgid ""
 msgstr ""
 "Funções de transformação, widgets DIY e salvar ou executar ações, o que "
 "pode comandar o veículo"
+
+#: src/components/map/MeshTransparencyRange.vue
+msgid "Transparency"
+msgstr ""
 
 #: src/components/VideoPlayerStatsForNerds.vue
 msgid "Transport"
@@ -13089,6 +13182,7 @@ msgstr ""
 
 #: src/components/configuration/JavascriptActionConfig.vue
 #: src/views/ConfigurationAlertsView.vue
+#: src/views/ConfigurationGeneralView.vue
 msgid "and"
 msgstr "e"
 
@@ -13200,6 +13294,13 @@ msgstr "criar"
 msgid "current vehicle"
 msgstr "veículo atual"
 
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"defines one (id, name, capacity, and the r8 or rgba8 format and size of "
+"every quad's strip of texels), keeping its quads when sent again with the "
+"same layout and emptying it otherwise;"
+msgstr ""
+
 #: src/components/InputElementConfig.vue
 msgid "delete"
 msgstr "excluir"
@@ -13248,6 +13349,14 @@ msgid "in:"
 msgstr "entrada:"
 
 #: src/views/ConfigurationGeneralView.vue
+msgid "is answered with"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "is neither applied nor answered."
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
 msgid "is true. For a GeoTIFF, send"
 msgstr "seja true. Para um GeoTIFF, envie"
 
@@ -13261,6 +13370,16 @@ msgid ""
 "lasts until the widget reloads; indexedDB and cookies are not available. "
 "Requests with fetch reach only servers that accept other origins, as BlueOS "
 "does"
+msgstr ""
+
+#: src/views/ConfigurationGeneralView.vue
+msgid ""
+"manage it. Arrays are the base64 of their little-endian bytes. Each map's "
+"transparency range hides low-alpha texels and draws high-alpha ones opaque, "
+"so give low alphas to faint readings and high alphas to whatever should "
+"always show. The fields, how quads are drawn and how to replay a mesh are "
+"documented on the matching helpers of the Cockpit widget API. Every sender "
+"shares the same ids, so prefix them with your software's name."
 msgstr ""
 
 #: src/components/geofence/GeoFenceEditor.vue
@@ -13383,6 +13502,12 @@ msgstr "para que salvar ou excluir a ação os interrompa."
 msgid "starts with"
 msgstr "começa com"
 
+#: src/composables/map/useExternalMapMeshLayers.ts
+msgid ""
+"this browser or graphics driver does not support WebGL2. Try enabling "
+"hardware acceleration."
+msgstr ""
+
 #: src/views/ConfigurationAlertsView.vue
 msgid "this computer's"
 msgstr "deste computador"
@@ -13478,6 +13603,10 @@ msgid ""
 msgstr ""
 "com a URL dele, e o Cockpit o baixa uma vez. Todos os remetentes "
 "compartilham os mesmos IDs, então prefixe-os com o nome do seu software."
+
+#: src/views/ConfigurationGeneralView.vue
+msgid "writes quads into its slots;"
+msgstr ""
 
 #: src/views/ConfigurationVideoView.vue
 msgid "you're trying to restore is not available anymore."
