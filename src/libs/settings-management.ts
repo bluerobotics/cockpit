@@ -33,6 +33,7 @@ import { getKeyDataFromCockpitVehicleStorage, getStatus, setKeyDataOnCockpitVehi
 import {
   type SharedListAgreements,
   backupSettingCopies,
+  copySettingToOtherVehicles,
   hasDivergedUserScopedSettings,
   mergeUserScopedListsWithVehicle,
   seedAgreementFromBackup,
@@ -366,6 +367,37 @@ export class SettingsManager {
     }
 
     return localSettings[userId][vehicleId][key].value
+  }
+
+  /**
+   * Copies a user's setting from one vehicle to all of that user's other vehicles. Vehicles that are not connected
+   * receive it at their next connection, where its newer epoch wins.
+   * @param {string} key - The key of the setting to copy
+   * @param {string} userId - The ID of the user to which the setting belongs
+   * @param {string} fromVehicleId - The ID of the vehicle holding the setting to copy
+   * @returns {string[]} The IDs of the vehicles that received the setting
+   * @throws {Error} When the values the copy would replace cannot be backed up first
+   */
+  public copyKeyToOtherVehicles = (key: string, userId: string, fromVehicleId: string): string[] => {
+    const localSettings = this.getLocalSettings()
+    const otherVehicleIds = Object.keys(localSettings[userId] ?? {}).filter((vehicleId) => vehicleId !== fromVehicleId)
+    if (!this.storeSettingCopiesBackup(localSettings, userId, otherVehicleIds, [key])) {
+      throw new Error(`Could not back up the values of '${key}' that the copy would replace.`)
+    }
+    const epoch = Date.now()
+    const targets = copySettingToOtherVehicles(localSettings, key, userId, fromVehicleId, epoch)
+    if (targets.length === 0) return targets
+
+    this.setLocalSettings(localSettings)
+    this.notifyAllListenersAboutSettingsChange()
+    const value = localSettings[userId][fromVehicleId][key].value
+    targets.forEach((vehicleId) => this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId, userId, key, value, epoch))
+    if (targets.includes(this.currentVehicleId)) {
+      this.sendKeyValueUpdatesToVehicle(userId, this.currentVehicleId, this.currentVehicleAddress).catch((error) => {
+        console.error('[SettingsManager]', `Could not send copied key '${key}' to the connected vehicle.`, error)
+      })
+    }
+    return targets
   }
 
   /**

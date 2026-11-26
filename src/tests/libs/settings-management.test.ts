@@ -184,6 +184,16 @@ test('keeps the newest copy of a shared setting that is not combined', () => {
   expect(storedValue(manager.currentVehicleId, unitsKey)).toEqual({ depth: 'feet' })
 })
 
+test('copies a per-vehicle setting to the other vehicles of the user', () => {
+  seedVehiclePackages({ boat: { 'cockpit-scale': { epochLastChangedLocally: 9, value: { zoom: 4 } } } })
+  manager = new SettingsManager()
+
+  const targets = manager.copyKeyToOtherVehicles('cockpit-scale', manager.currentUsername, manager.currentVehicleId)
+
+  expect(targets).toEqual(['boat'])
+  expect(storedValue('boat', 'cockpit-scale')).toEqual({ zoom: 1 })
+})
+
 const backedUpValue = (vehicleId: string, key: string): unknown => {
   const backup: LocalSyncedSettings = JSON.parse(localStorage.getItem(localSharedSettingsBackupKey)!)
   return backup[manager.currentUsername][vehicleId][key]?.value
@@ -223,6 +233,22 @@ test('keeps settings per vehicle for the session when the backup cannot be store
 
   expect(storedValue(manager.currentVehicleId, overlaysKey)).toEqual([{ id: 'a' }])
   expect(storedValue('boat', overlaysKey)).toEqual([{ id: 'b' }])
+})
+
+test('backs up the values a copy replaces, and refuses to copy when it cannot', () => {
+  seedVehiclePackages({ boat: { 'cockpit-scale': { epochLastChangedLocally: 9, value: { zoom: 4 } } } })
+  manager = new SettingsManager()
+  const spy = failBackupWrites()
+
+  expect(() =>
+    manager.copyKeyToOtherVehicles('cockpit-scale', manager.currentUsername, manager.currentVehicleId)
+  ).toThrow()
+  expect(storedValue('boat', 'cockpit-scale')).toEqual({ zoom: 4 })
+  spy.mockRestore()
+
+  manager.copyKeyToOtherVehicles('cockpit-scale', manager.currentUsername, manager.currentVehicleId)
+  expect(storedValue('boat', 'cockpit-scale')).toEqual({ zoom: 1 })
+  expect(backedUpValue('boat', 'cockpit-scale')).toEqual({ zoom: 4 })
 })
 
 const missionsKey = 'cockpit-mission-library'
@@ -308,4 +334,15 @@ test('keeps a shared entry another computer added on the vehicle after the last 
   const all = [{ id: 'agreed' }, { id: 'added-here' }, { id: 'added-elsewhere' }]
   expect(storedValue('towfish', missionsKey)).toEqual(all)
   expect(onVehicle[manager.currentUsername][missionsKey].value).toEqual(all)
+})
+
+test('copies to the other vehicles when the stored backup cannot be read', () => {
+  localStorage.setItem(localSharedSettingsBackupKey, '{"truncated')
+  seedVehiclePackages({ boat: { 'cockpit-scale': { epochLastChangedLocally: 9, value: { zoom: 4 } } } })
+  manager = new SettingsManager()
+
+  manager.copyKeyToOtherVehicles('cockpit-scale', manager.currentUsername, manager.currentVehicleId)
+
+  expect(storedValue('boat', 'cockpit-scale')).toEqual({ zoom: 1 })
+  expect(backedUpValue('boat', 'cockpit-scale')).toEqual({ zoom: 4 })
 })

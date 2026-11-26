@@ -2825,6 +2825,15 @@ msgstr "Coordenadas copiadas: ${ 0 }"
 msgid "Coordinates unknown"
 msgstr "Coordenadas desconhecidas"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "Copied '${ 0 }' to the other vehicles."
+msgstr ""
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Copy"
+msgstr ""
+
 #: src/views/ToolsDataLakeView.vue
 msgid "Copy ID"
 msgstr "Copiar ID"
@@ -2846,6 +2855,10 @@ msgstr "Copiar latitude para a área de transferência"
 #: src/components/poi/PoiActionPopup.vue
 msgid "Copy longitude to clipboard"
 msgstr "Copiar longitude para a área de transferência"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Copy to the other vehicles"
+msgstr ""
 
 #: src/components/ConsoleViewer.vue
 msgid "Copy visible logs"
@@ -7840,6 +7853,13 @@ msgstr "Observação:"
 msgid "Nothing to undo."
 msgstr "Nada para desfazer."
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid ""
+"Nothing was copied for '${ 0 }', because the values it would replace could "
+"not be backed up."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 #: src/components/TransformingFunctionDialog.vue
 msgid "Number"
@@ -9072,6 +9092,13 @@ msgstr "Repetidamente"
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "Replace"
 msgstr "Substituir"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid ""
+"Replace '${ 0 }' on every other vehicle of user '${ 1 }' with the value "
+"from the selected vehicle?"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsReplaceConfirmationDialog.vue
 msgid "Replace existing configuration?"
@@ -10969,6 +10996,11 @@ msgstr ""
 "Não há espaço suficiente no veículo para armazenar esta cerca: ela tem ${ 0 "
 "} pontos, e o veículo tem espaço para cerca de ${ 1 }."
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "There was no value to copy for '${ 0 }'."
+msgstr ""
+
 #: src/components/WidgetBar.vue
 msgid ""
 "There's no available space for all widgets, so some elements are cut off. "
@@ -12294,6 +12326,10 @@ msgstr "Tipo de veículo"
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "Vehicles found!"
 msgstr "Veículos encontrados!"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Vehicles that are not connected receive it the next time they connect."
+msgstr ""
 
 #: src/components/mini-widgets/EkfStateIndicator.vue
 msgid "Velocity"

@@ -2625,6 +2625,15 @@ msgstr "坐标已复制：${ 0 }"
 msgid "Coordinates unknown"
 msgstr "坐标未知"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "Copied '${ 0 }' to the other vehicles."
+msgstr ""
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Copy"
+msgstr ""
+
 #: src/views/ToolsDataLakeView.vue
 msgid "Copy ID"
 msgstr "复制 ID"
@@ -2646,6 +2655,10 @@ msgstr "复制纬度到剪贴板"
 #: src/components/poi/PoiActionPopup.vue
 msgid "Copy longitude to clipboard"
 msgstr "复制经度到剪贴板"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Copy to the other vehicles"
+msgstr ""
 
 #: src/components/ConsoleViewer.vue
 msgid "Copy visible logs"
@@ -7366,6 +7379,13 @@ msgstr "注意："
 msgid "Nothing to undo."
 msgstr "没有可撤销的操作。"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid ""
+"Nothing was copied for '${ 0 }', because the values it would replace could "
+"not be backed up."
+msgstr ""
+
 #: src/components/DataLakeVariableDialog.vue
 #: src/components/TransformingFunctionDialog.vue
 msgid "Number"
@@ -8500,6 +8520,13 @@ msgstr "重复"
 #: src/components/vehicle-defaults/VehicleDefaultsViewsGroupContent.vue
 msgid "Replace"
 msgstr "替换"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid ""
+"Replace '${ 0 }' on every other vehicle of user '${ 1 }' with the value "
+"from the selected vehicle?"
+msgstr ""
 
 #: src/components/vehicle-defaults/VehicleDefaultsReplaceConfirmationDialog.vue
 msgid "Replace existing configuration?"
@@ -10254,6 +10281,11 @@ msgid ""
 "points, and the vehicle has room for about ${ 1 }."
 msgstr "设备上没有足够空间存储此围栏：它有 ${ 0 } 个点，而设备大约只能容纳 ${ 1 } 个。"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "There was no value to copy for '${ 0 }'."
+msgstr ""
+
 #: src/components/WidgetBar.vue
 msgid ""
 "There's no available space for all widgets, so some elements are cut off. "
@@ -11443,6 +11475,10 @@ msgstr "设备类型"
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "Vehicles found!"
 msgstr "找到设备！"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Vehicles that are not connected receive it the next time they connect."
+msgstr ""
 
 #: src/components/mini-widgets/EkfStateIndicator.vue
 msgid "Velocity"

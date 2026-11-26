@@ -252,6 +252,30 @@ export const unionDivergedUserScopedSettings = (settings: LocalSyncedSettings, n
 }
 
 /**
+ * Writes one user's copy of a setting from one vehicle into all of that user's other vehicle packages, in place.
+ * @param {LocalSyncedSettings} settings - Local synced settings to update
+ * @param {string} key - Setting key to copy
+ * @param {string} userId - User whose vehicles receive the copy
+ * @param {string} fromVehicleId - Vehicle holding the copy to spread
+ * @param {number} now - Epoch stamped on the copies, so they win at each vehicle's next connect
+ * @returns {string[]} Ids of the vehicles that received the copy
+ */
+export const copySettingToOtherVehicles = (
+  settings: LocalSyncedSettings,
+  key: string,
+  userId: string,
+  fromVehicleId: string,
+  now: number
+): string[] => {
+  const userSettings = settings[userId] ?? {}
+  const source = userSettings[fromVehicleId]?.[key]
+  if (source?.value === undefined) return []
+  const targets = Object.keys(userSettings).filter((vehicleId) => vehicleId !== fromVehicleId)
+  targets.forEach((vehicleId) => (userSettings[vehicleId][key] = { epochLastChangedLocally: now, value: source.value }))
+  return targets
+}
+
+/**
  * Records the current copies of some keys in some of a user's vehicle packages into a backup, in place, replacing what
  * the backup held for them. Copies that do not exist are skipped.
  * @param {LocalSyncedSettings} backup - Backup to record into
