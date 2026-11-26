@@ -12,6 +12,7 @@ import {
 } from 'vue'
 
 import InteractionDialogComponent from '@/components/InteractionDialog.vue'
+import i18n from '@/plugins/i18n'
 import vuetify from '@/plugins/vuetify'
 import router from '@/router'
 import { DialogActions } from '@/types/general'
@@ -162,6 +163,7 @@ export function useInteractionDialog(): {
         if (rejectFn) rejectFn({ isConfirmed: false })
       },
     })
+    dialogApp.use(i18n)
     dialogApp.use(vuetify)
     dialogApp.use(router)
     dialogApp.mount(mountPoint)
