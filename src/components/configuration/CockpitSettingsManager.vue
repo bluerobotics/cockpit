@@ -99,7 +99,28 @@
                       />
                     </td>
                     <td class="text-start align-top p-2 pl-4 w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">
-                      {{ displaySettingName(item) }}
+                      <div class="flex flex-wrap items-center gap-1">
+                        {{ displaySettingName(item) }}
+                        <v-chip v-if="isSharedAcrossVehicles(item)" size="x-small" variant="tonal">
+                          {{ t`Shared across vehicles` }}
+                        </v-chip>
+                        <v-tooltip
+                          v-else-if="canCopyToOtherVehicles(item)"
+                          location="top"
+                          :text="t`Copy to the other vehicles`"
+                        >
+                          <template #activator="{ props: tooltipProps }">
+                            <v-btn
+                              v-bind="tooltipProps"
+                              size="x-small"
+                              icon="mdi-content-copy"
+                              variant="text"
+                              :aria-label="t`Copy to the other vehicles`"
+                              @click="copyToOtherVehicles(item)"
+                            />
+                          </template>
+                        </v-tooltip>
+                      </div>
                     </td>
                     <td class="text-center border-b border-b-[rgba(255,255,255,0.3)] pr-4">
                       <template v-if="saving[item.originalKey]">
@@ -330,6 +351,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { settingsManager } from '@/libs/settings-management'
+import { isUserScopedSetting } from '@/libs/settings-scope'
 import { isEqual } from '@/libs/utils'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -787,6 +809,54 @@ const uploadConfigFile = (): void => {
     reader.readAsText(file)
   }
   input.click()
+}
+
+const isSharedAcrossVehicles = (item: SettingsRow): boolean =>
+  item.source === 'v2' && item.v2SettingKey !== undefined && isUserScopedSetting(item.v2SettingKey)
+
+const canCopyToOtherVehicles = (item: SettingsRow): boolean =>
+  item.source === 'v2' && item.v2SettingKey !== undefined && availableVehicles.value.length > 1
+
+const copyToOtherVehicles = (item: SettingsRow): void => {
+  const key = item.v2SettingKey!
+  const name = displaySettingName(item)
+  const userId = selectedUserId.value
+  const fromVehicleId = selectedVehicleId.value
+  showDialog({
+    message: [
+      t`Replace '${name}' on every other vehicle of user '${userId}' with the value from the selected vehicle?`,
+      t`Vehicles that are not connected receive it the next time they connect.`,
+    ].join(' '),
+    variant: 'warning',
+    maxWidth: 800,
+    actions: [
+      {
+        text: t`Cancel`,
+        action: () => closeDialog(),
+      },
+      {
+        text: t`Copy`,
+        action: () => {
+          closeDialog()
+          let targets: string[]
+          try {
+            targets = settingsManager.copyKeyToOtherVehicles(key, userId, fromVehicleId)
+          } catch {
+            const message = t`Nothing was copied for '${name}', because the values it would replace could not be backed up.`
+            openSnackbar({ message, variant: 'error' })
+            return
+          }
+          loadUserSettings()
+          if (targets.length === 0) {
+            openSnackbar({ message: t`There was no value to copy for '${name}'.`, variant: 'warning' })
+            return
+          }
+          logUserAction(`Copied setting '${name}' to the other vehicles of user '${userId}'`)
+          openSnackbar({ message: t`Copied '${name}' to the other vehicles.`, variant: 'success' })
+        },
+      },
+    ],
+  })
 }
 
 const resetAllCockpitSettings = (): void => {

@@ -155,6 +155,7 @@ import {
   registerActionCallback,
   unregisterActionCallback,
 } from '@/libs/joystick/protocols/cockpit-actions'
+import { settingsManager } from '@/libs/settings-management'
 import { isElectron, sleep } from '@/libs/utils'
 import { useGeoFenceStore } from '@/stores/geoFence'
 import { useMissionStore } from '@/stores/mission'
@@ -351,6 +352,15 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEscKey)
+})
+
+onMounted(() => {
+  if (!settingsManager.sharedDivergedSettingsOnStart) return
+  openSnackbar({
+    message: t`Map overlays, saved missions, points of interest, DIY widgets and some preferences (units, alerts, interface look) now follow you across all your vehicles. Lists that differed between your vehicles were combined, and for preferences the most recently changed value is now used everywhere.`,
+    variant: 'info',
+    persistent: true,
+  })
 })
 
 /* eslint-disable jsdoc/require-jsdoc  */

@@ -544,9 +544,9 @@ const archiveRemovalNote = (provider: CustomTileProviderMeta): string => {
     return ` ${t`The copy stored on the vehicle is kept, since BlueOS settings sync is off on this computer.`}`
   }
   if (!vehicleStorageAddress.value) {
-    return ` ${t`The copy stored on the vehicle is kept, since no vehicle is connected to delete it from.`}`
+    return ` ${t`The copies stored on your vehicles are deleted the next time each of them connects to this computer.`}`
   }
-  return ` ${t`This also deletes the archive stored on the vehicle, which cannot be undone.`}`
+  return ` ${t`This also deletes the archive stored on this vehicle, and on your other vehicles the next time each of them connects to this computer, which cannot be undone.`}`
 }
 
 const removeProvider = (provider: CustomTileProviderMeta): void => {

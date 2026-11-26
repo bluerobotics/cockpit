@@ -202,9 +202,36 @@ export const syncTileProviderToVehicle = async (
   return true
 }
 
+const removedTileArchivesKey = 'cockpit-removed-tile-archives'
+
+/**
+ * Vehicle file names of the archives removed on this computer, kept so every vehicle that holds a copy can have it
+ * deleted when it next connects. Kept on this computer only.
+ * @returns {string[]} The remembered file names
+ */
+export const removedTileArchiveFileNames = (): string[] => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(removedTileArchivesKey) ?? '[]')
+    return Array.isArray(stored) ? stored.filter((name): name is string => typeof name === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+// ponytail: names are never forgotten, since this computer cannot tell when the last vehicle holding a copy was
+// cleaned; each is a few dozen bytes, and an expiry per name is the upgrade path if the list ever grows large.
+const rememberRemovedTileArchive = (fileName: string): void => {
+  try {
+    const names = new Set([...removedTileArchiveFileNames(), fileName])
+    localStorage.setItem(removedTileArchivesKey, JSON.stringify([...names]))
+  } catch (error) {
+    console.warn(`Could not remember removed tile archive ${fileName}:`, error)
+  }
+}
+
 /**
  * Removes a provider's stored data: the local archive cache always, and the vehicle copy when a vehicle address
- * is available.
+ * is available. Copies on other vehicles are deleted when each of them next connects.
  * @param {CustomTileProviderMeta} provider - The provider being removed.
  * @param {string} [vehicleAddress] - Address of the connected vehicle, if any.
  * @returns {Promise<void>}
@@ -216,6 +243,8 @@ export const deleteStoredTileProvider = async (
 ): Promise<void> => {
   await removeCachedTileArchive(provider.id)
   // A provider still pending sync was never uploaded, so there is nothing on the vehicle to delete.
-  if (provider.type !== 'file' || !provider.format || !vehicleAddress || provider.pendingVehicleSync) return
+  if (provider.type !== 'file' || !provider.format || provider.pendingVehicleSync) return
+  rememberRemovedTileArchive(tileArchiveFileName(provider))
+  if (!vehicleAddress) return
   await deleteFileFromVehicle(vehicleAddress, tileProviderSubfolder, tileArchiveFileName(provider))
 }

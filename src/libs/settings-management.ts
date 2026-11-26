@@ -10,6 +10,8 @@ import {
   fallbackVehicleId,
   KeyValueVehicleUpdateQueue,
   localOldStyleSettingsKey,
+  localSharedListAgreementsKey,
+  localSharedSettingsBackupKey,
   LocalSyncedSettings,
   localSyncedSettingsKey,
   NoVehicleIdErrorName,
@@ -28,6 +30,18 @@ import {
 } from '@/types/settings-management'
 
 import { getKeyDataFromCockpitVehicleStorage, getStatus, setKeyDataOnCockpitVehicleStorage } from './blueos'
+import {
+  type SharedListAgreements,
+  backupSettingCopies,
+  copySettingToOtherVehicles,
+  hasDivergedUserScopedSettings,
+  mergeUserScopedListsWithVehicle,
+  seedAgreementFromBackup,
+  sharedListEntryIds,
+  spreadUserScopedSettings,
+  unionDivergedUserScopedSettings,
+  userScopedSettings,
+} from './settings-scope'
 import { deserialize, isEqual, sleep, tryACoupleOfTimes } from './utils'
 
 const nullValue = 'null'
@@ -236,6 +250,12 @@ export class SettingsManager {
   private keyValueVehicleUpdateQueue: KeyValueVehicleUpdateQueue = {}
   private initialLoadingComplete = false
   private cachedSettings: LocalSyncedSettings | null = null
+  private shareUserScopedSettings = true
+  /**
+   * Whether shared settings held different values on different vehicles at startup and were combined
+   */
+  public sharedDivergedSettingsOnStart = false
+  private pendingSharedListAgreements: SharedListAgreements = {}
   private storage: StorageAdapter
   private vehicle: VehicleAdapter
 
@@ -248,6 +268,7 @@ export class SettingsManager {
     this.storage = storage || new LocalStorageAdapter()
     this.vehicle = vehicle || new BlueOSVehicleAdapter()
     console.log('[SettingsManager]', 'Initializing settings manager.')
+    this.reconcileUserScopedSettings()
     this.initLocalSettings()
     this.lastLocalUserVehicleSettings = { ...this.getSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId) }
     this.initialLoadingComplete = true
@@ -349,6 +370,37 @@ export class SettingsManager {
   }
 
   /**
+   * Copies a user's setting from one vehicle to all of that user's other vehicles. Vehicles that are not connected
+   * receive it at their next connection, where its newer epoch wins.
+   * @param {string} key - The key of the setting to copy
+   * @param {string} userId - The ID of the user to which the setting belongs
+   * @param {string} fromVehicleId - The ID of the vehicle holding the setting to copy
+   * @returns {string[]} The IDs of the vehicles that received the setting
+   * @throws {Error} When the values the copy would replace cannot be backed up first
+   */
+  public copyKeyToOtherVehicles = (key: string, userId: string, fromVehicleId: string): string[] => {
+    const localSettings = this.getLocalSettings()
+    const otherVehicleIds = Object.keys(localSettings[userId] ?? {}).filter((vehicleId) => vehicleId !== fromVehicleId)
+    if (!this.storeSettingCopiesBackup(localSettings, userId, otherVehicleIds, [key])) {
+      throw new Error(`Could not back up the values of '${key}' that the copy would replace.`)
+    }
+    const epoch = Date.now()
+    const targets = copySettingToOtherVehicles(localSettings, key, userId, fromVehicleId, epoch)
+    if (targets.length === 0) return targets
+
+    this.setLocalSettings(localSettings)
+    this.notifyAllListenersAboutSettingsChange()
+    const value = localSettings[userId][fromVehicleId][key].value
+    targets.forEach((vehicleId) => this.pushKeyValueUpdateToVehicleUpdateQueue(vehicleId, userId, key, value, epoch))
+    if (targets.includes(this.currentVehicleId)) {
+      this.sendKeyValueUpdatesToVehicle(userId, this.currentVehicleId, this.currentVehicleAddress).catch((error) => {
+        console.error('[SettingsManager]', `Could not send copied key '${key}' to the connected vehicle.`, error)
+      })
+    }
+    return targets
+  }
+
+  /**
    * Registers a listener for local settings changes
    * @param {string} key - The key of the setting to listen for
    * @param {SettingsListener} callback - The callback to call when the setting changes
@@ -400,14 +452,149 @@ export class SettingsManager {
     if (!(username in localSettings)) return
     delete localSettings[username]
     this.setLocalSettings(localSettings)
+    this.dropUserFromSharedSettingRecords(username)
+  }
+
+  /**
+   * Drops a user from the records of shared settings kept on this computer
+   * @param {string} username - The user to drop
+   */
+  private dropUserFromSharedSettingRecords = (username: string): void => {
+    ;[localSharedSettingsBackupKey, localSharedListAgreementsKey].forEach((key) => {
+      const stored = this.readStoredObject<Record<string, unknown>>(key)
+      if (stored === undefined || !(username in stored)) return
+      delete stored[username]
+      this.storage.setItem(key, JSON.stringify(stored))
+    })
+  }
+
+  /**
+   * Reads a JSON object kept on this computer only
+   * @param {string} key - The storage key to read
+   * @returns {T | undefined} The stored object, or undefined when it is missing or cannot be read
+   */
+  private readStoredObject = <T extends object>(key: string): T | undefined => {
+    try {
+      const parsed = JSON.parse(this.storage.getItem(key) ?? 'null')
+      return typeof parsed === 'object' && parsed !== null ? (parsed as T) : undefined
+    } catch (error) {
+      console.warn('[SettingsManager]', `Ignoring unreadable stored value of '${key}'.`, error)
+      return undefined
+    }
+  }
+
+  /**
+   * Records which entries of the shared lists this computer and some vehicles both hold, so the next merge with each
+   * vehicle can tell an entry one side deleted from an entry the other side added. Failing to record only makes the
+   * next merge combine the lists, which keeps every entry.
+   * @param {SharedListAgreements} agreements - The agreed ids per user, vehicle and key
+   */
+  private recordSharedListAgreements = (agreements: SharedListAgreements): void => {
+    try {
+      const stored = this.readStoredObject<SharedListAgreements>(localSharedListAgreementsKey) ?? {}
+      Object.entries(agreements).forEach(([userId, agreementsByVehicle]) => {
+        stored[userId] ??= {}
+        Object.entries(agreementsByVehicle).forEach(([vehicleId, agreement]) => {
+          stored[userId][vehicleId] = { ...stored[userId][vehicleId], ...agreement }
+        })
+      })
+      this.storage.setItem(localSharedListAgreementsKey, JSON.stringify(stored))
+    } catch (error) {
+      console.error('[SettingsManager]', 'Could not record the shared lists agreed with the vehicle.', error)
+    }
+  }
+
+  /**
+   * Records the agreements found by the last merge with the vehicle, once its result is stored on this computer
+   */
+  private commitSharedListAgreements = (): void => {
+    this.recordSharedListAgreements(this.pendingSharedListAgreements)
+    this.pendingSharedListAgreements = {}
+  }
+
+  /**
+   * Records copies of some keys into the local backup of settings shared across vehicles
+   * @param {LocalSyncedSettings} settings - The local settings holding the copies
+   * @param {string} userId - The ID of the user whose copies are recorded
+   * @param {string[]} vehicleIds - The IDs of the vehicles whose copies are recorded
+   * @param {string[]} keys - The keys to record
+   * @returns {boolean} Whether the backup was stored
+   */
+  private storeSettingCopiesBackup = (
+    settings: LocalSyncedSettings,
+    userId: string,
+    vehicleIds: string[],
+    keys: string[]
+  ): boolean => {
+    try {
+      const backup = this.readStoredObject<LocalSyncedSettings>(localSharedSettingsBackupKey) ?? {}
+      backupSettingCopies(backup, settings, userId, vehicleIds, keys)
+      this.storage.setItem(localSharedSettingsBackupKey, JSON.stringify(backup))
+      return true
+    } catch (error) {
+      console.error('[SettingsManager]', 'Could not back up settings shared across vehicles.', error)
+      return false
+    }
+  }
+
+  /**
+   * Backs up every copy of the shared settings once, then combines the copies that diverged across vehicles. Sharing
+   * stays off for the session when either step fails, so no copy is overwritten without a backup to restore it from.
+   */
+  private reconcileUserScopedSettings = (): void => {
+    try {
+      const localSettings = this.getLocalSettings()
+      if (this.readStoredObject(localSharedSettingsBackupKey) === undefined) {
+        const sharedKeys = Object.keys(userScopedSettings)
+        const backedUp = Object.entries(localSettings).every(([userId, userSettings]) =>
+          this.storeSettingCopiesBackup(localSettings, userId, Object.keys(userSettings), sharedKeys)
+        )
+        if (!backedUp) {
+          this.shareUserScopedSettings = false
+          return
+        }
+      }
+      this.sharedDivergedSettingsOnStart = hasDivergedUserScopedSettings(localSettings)
+      if (!this.sharedDivergedSettingsOnStart) return
+      unionDivergedUserScopedSettings(localSettings, Date.now())
+      // The current vehicle is not loaded yet, so ties go to the last connected one, whose values were last on screen.
+      const lastConnectedVehicleId = this.retrieveLastConnectedVehicle()
+      this.setLocalSettings(localSettings, this.isNullValue(lastConnectedVehicleId) ? fallbackVehicleId : lastConnectedVehicleId!)
+    } catch (error) {
+      this.shareUserScopedSettings = false
+      // Drops whatever was changed in place, so startup goes on from the settings as stored.
+      this.cachedSettings = null
+      console.error('[SettingsManager]', 'Could not prepare settings shared across vehicles. Keeping them per vehicle.', error)
+    }
   }
 
   /**
    * Sets the local settings
    * @param {LocalSyncedSettings} newSettings - The new local settings
+   * @param {string} preferredVehicleId - Vehicle whose copy of a shared setting wins when epochs tie
    */
-  private setLocalSettings = (newSettings: LocalSyncedSettings): void => {
+  private setLocalSettings = (newSettings: LocalSyncedSettings, preferredVehicleId = this.currentVehicleId): void => {
     console.log('[SettingsManager]', 'Setting/saving local settings.')
+    // Shared settings are written into every vehicle package, which can outgrow the storage quota, so a failed write
+    // falls back to storing the settings per vehicle instead of losing them.
+    if (this.shareUserScopedSettings) {
+      try {
+        // Copies only the two container levels the spread reassigns, since values can be reactive proxies that cannot be cloned.
+        const sharedSettings: LocalSyncedSettings = Object.fromEntries(
+          Object.entries(newSettings).map(([userId, userSettings]) => [
+            userId,
+            Object.fromEntries(Object.entries(userSettings).map(([vehicleId, settings]) => [vehicleId, { ...settings }])),
+          ])
+        )
+        spreadUserScopedSettings(sharedSettings, preferredVehicleId)
+        this.storage.setItem(localSyncedSettingsKey, JSON.stringify(sharedSettings))
+        this.cachedSettings = sharedSettings
+        return
+      } catch (error) {
+        this.shareUserScopedSettings = false
+        console.error('[SettingsManager]', 'Could not share settings across vehicles. Keeping them per vehicle.', error)
+      }
+    }
     this.cachedSettings = newSettings
     this.storage.setItem(localSyncedSettingsKey, JSON.stringify(newSettings))
   }
@@ -747,6 +934,7 @@ export class SettingsManager {
           }
           await this.vehicle.setKeyData(vehicleAddress, `${vehicleNewStyleSettingsKey}/${userId}/${key}`, setting)
           delete this.keyValueVehicleUpdateQueue[vehicleId][userId][key]
+          this.recordSentSharedList(userId, vehicleId, key, update.value)
         } catch (error) {
           const msg = `Error sending key '${key}' for user '${userId}' to vehicle '${vehicleId}'.`
           console.error('[SettingsManager]', msg, error)
@@ -930,6 +1118,7 @@ export class SettingsManager {
     console.debug(`[SettingsManager] Users to sync: ${usersToSync.join(', ')}.`)
 
     const mergedSettings: LocalSyncedSettings = {}
+    this.pendingSharedListAgreements = {}
 
     for (const user of usersToSync) {
       console.debug(`[SettingsManager] Syncing user '${user}' and vehicle '${vehicleId}'.`)
@@ -1003,9 +1192,53 @@ export class SettingsManager {
             break
         }
       })
+
+      // Only the current user's merge is stored locally, so only its agreement can be trusted.
+      if (user === this.currentUsername && this.shareUserScopedSettings) {
+        this.mergeSharedListsWithVehicle(mergedSettings[user][vehicleId], localUserVehicleSettings, vehicleUserSettings, user, vehicleId)
+      }
     }
 
     return mergedSettings
+  }
+
+  /**
+   * Merges the shared lists of a user with a vehicle's copies, keeping the result per vehicle when the merge fails
+   * @param {SettingsPackage} merged - The merged package for the vehicle, updated in place
+   * @param {SettingsPackage} local - This computer's package for the vehicle
+   * @param {SettingsPackage} vehicle - The vehicle's package
+   * @param {string} userId - The ID of the user
+   * @param {string} vehicleId - The ID of the vehicle
+   */
+  private mergeSharedListsWithVehicle = (
+    merged: SettingsPackage,
+    local: SettingsPackage,
+    vehicle: SettingsPackage,
+    userId: string,
+    vehicleId: string
+  ): void => {
+    try {
+      const agreement = this.readStoredObject<SharedListAgreements>(localSharedListAgreementsKey)?.[userId]?.[vehicleId]
+      const backedUp = this.readStoredObject<LocalSyncedSettings>(localSharedSettingsBackupKey)?.[userId]?.[vehicleId]
+      const seeded = seedAgreementFromBackup(agreement ?? {}, backedUp, vehicle)
+      const agreed = mergeUserScopedListsWithVehicle(merged, local, vehicle, seeded, Date.now())
+      this.pendingSharedListAgreements = { [userId]: { [vehicleId]: agreed } }
+    } catch (error) {
+      console.error('[SettingsManager]', 'Could not merge the shared lists with the vehicle.', error)
+    }
+  }
+
+  /**
+   * Records a shared list the vehicle now holds, since this computer held it too when it was sent
+   * @param {string} userId - The ID of the user
+   * @param {string} vehicleId - The ID of the vehicle
+   * @param {string} key - The key of the setting sent
+   * @param {unknown} value - The value sent
+   */
+  private recordSentSharedList = (userId: string, vehicleId: string, key: string, value: unknown): void => {
+    if (!this.shareUserScopedSettings || userScopedSettings[key] !== 'union') return
+    const ids = sharedListEntryIds(value)
+    if (ids !== undefined) this.recordSharedListAgreements({ [userId]: { [vehicleId]: { [key]: ids } } })
   }
 
   /**
@@ -1057,7 +1290,14 @@ export class SettingsManager {
    */
   private backupCurrentOldStyleSettings = (): void => {
     const oldStyleSettings: OldCockpitSettingsPackage = {}
-    const keysToIgnore = [localSyncedSettingsKey, localOldStyleSettingsKey, cockpitLastConnectedUserKey, cockpitLastConnectedVehicleKey]
+    const keysToIgnore = [
+      localSyncedSettingsKey,
+      localOldStyleSettingsKey,
+      localSharedSettingsBackupKey,
+      localSharedListAgreementsKey,
+      cockpitLastConnectedUserKey,
+      cockpitLastConnectedVehicleKey,
+    ]
     const keysToBackup = this.storage.getAllKeys().filter((k) => !keysToIgnore.includes(k))
     for (const key of keysToBackup) {
       const value = this.storage.getItem(key)
@@ -1303,6 +1543,7 @@ export class SettingsManager {
 
     // Set the local settings to the best settings between local and vehicle for the current user and vehicle
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, bestSettingsForCurrentUserAndVehicle)
+    this.commitSharedListAgreements()
 
     // Update last connected vehicle to the current one
     this.saveLastConnectedVehicle(this.currentVehicleId)
@@ -1393,6 +1634,7 @@ export class SettingsManager {
 
     // Set the local settings to the best settings between local and vehicle for the current user and vehicle
     this.setLocalSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId, bestSettingsForCurrentUserAndVehicle)
+    this.commitSharedListAgreements()
 
     // Update last connected user to the current one
     this.saveLastConnectedUser(this.currentUsername)

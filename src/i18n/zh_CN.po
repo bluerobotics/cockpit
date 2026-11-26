@@ -2625,6 +2625,15 @@ msgstr "坐标已复制：${ 0 }"
 msgid "Coordinates unknown"
 msgstr "坐标未知"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "Copied '${ 0 }' to the other vehicles."
+msgstr ""
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Copy"
+msgstr ""
+
 #: src/views/ToolsDataLakeView.vue
 msgid "Copy ID"
 msgstr "复制 ID"
@@ -2646,6 +2655,10 @@ msgstr "复制纬度到剪贴板"
 #: src/components/poi/PoiActionPopup.vue
 msgid "Copy longitude to clipboard"
 msgstr "复制经度到剪贴板"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Copy to the other vehicles"
+msgstr ""
 
 #: src/components/ConsoleViewer.vue
 msgid "Copy visible logs"
@@ -6313,6 +6326,14 @@ msgstr "地图叠加层"
 msgid "Map overlays (GeoTIFF)"
 msgstr "地图叠加层（GeoTIFF）"
 
+#: src/App.vue
+msgid ""
+"Map overlays, saved missions, points of interest, DIY widgets and some "
+"preferences (units, alerts, interface look) now follow you across all your "
+"vehicles. Lists that differed between your vehicles were combined, and for "
+"preferences the most recently changed value is now used everywhere."
+msgstr ""
+
 #: src/components/widgets/MiniMap.vue
 msgid "Map provider"
 msgstr "地图提供方"
@@ -7357,6 +7378,13 @@ msgstr "注意："
 #: src/views/MissionPlanningView.vue
 msgid "Nothing to undo."
 msgstr "没有可撤销的操作。"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid ""
+"Nothing was copied for '${ 0 }', because the values it would replace could "
+"not be backed up."
+msgstr ""
 
 #: src/components/DataLakeVariableDialog.vue
 #: src/components/TransformingFunctionDialog.vue
@@ -8493,6 +8521,13 @@ msgstr "重复"
 msgid "Replace"
 msgstr "替换"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid ""
+"Replace '${ 0 }' on every other vehicle of user '${ 1 }' with the value "
+"from the selected vehicle?"
+msgstr ""
+
 #: src/components/vehicle-defaults/VehicleDefaultsReplaceConfirmationDialog.vue
 msgid "Replace existing configuration?"
 msgstr "替换现有配置？"
@@ -9238,6 +9273,10 @@ msgstr "共享详细硬件规格"
 msgid "Shared Data"
 msgstr "共享数据"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Shared across vehicles"
+msgstr ""
+
 #: src/components/poi/PoiManager.vue
 msgid "Shopping"
 msgstr "购物"
@@ -9684,6 +9723,7 @@ msgstr "第 ${ 0 } 步，共 4 步"
 
 #: src/components/VehicleDiscoveryDialog.vue
 #: src/components/development/MAVLinkMessagesDumper.vue
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
 msgid "Stop"
 msgstr "停止"
 
@@ -10017,15 +10057,15 @@ msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
 msgid ""
-"The copy stored on the vehicle is kept, since BlueOS settings sync is off "
-"on this computer."
-msgstr "设备上保存的副本会被保留，因为此计算机上的 BlueOS 设置同步已关闭。"
+"The copies stored on your vehicles are deleted the next time each of them "
+"connects to this computer."
+msgstr "您设备上保存的副本会在每台设备下次连接到此电脑时被删除。"
 
 #: src/components/map/CustomTileProvidersManager.vue
 msgid ""
-"The copy stored on the vehicle is kept, since no vehicle is connected to "
-"delete it from."
-msgstr "设备上保存的副本会被保留，因为没有已连接的设备可供删除。"
+"The copy stored on the vehicle is kept, since BlueOS settings sync is off "
+"on this computer."
+msgstr "设备上保存的副本会被保留，因为此计算机上的 BlueOS 设置同步已关闭。"
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid ""
@@ -10117,6 +10157,12 @@ msgstr "配方应整体阅读。遗漏其中的项目可能导致其余部分无
 
 #: src/libs/audio-recording.ts
 msgid "The recording has no audio data."
+msgstr ""
+
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
+msgid ""
+"The remaining map archives will be uploaded the next time the vehicle "
+"connects."
 msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
@@ -10242,6 +10288,11 @@ msgid ""
 "points, and the vehicle has room for about ${ 1 }."
 msgstr "设备上没有足够空间存储此围栏：它有 ${ 0 } 个点，而设备大约只能容纳 ${ 1 } 个。"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+#, javascript-format
+msgid "There was no value to copy for '${ 0 }'."
+msgstr ""
+
 #: src/components/WidgetBar.vue
 msgid ""
 "There's no available space for all widgets, so some elements are cut off. "
@@ -10317,8 +10368,11 @@ msgid ""
 msgstr "这允许忽略每个摇杆中心附近的小幅不需要的移动。"
 
 #: src/components/map/CustomTileProvidersManager.vue
-msgid "This also deletes the archive stored on the vehicle, which cannot be undone."
-msgstr "这还会删除设备上保存的归档，且无法撤销。"
+msgid ""
+"This also deletes the archive stored on this vehicle, and on your other "
+"vehicles the next time each of them connects to this computer, which cannot "
+"be undone."
+msgstr "这还会删除此设备上保存的归档，并在您的其他设备下次连接到此电脑时删除其上的归档，且无法撤销。"
 
 #: src/components/widgets/VideoPlayer.vue
 msgid ""
@@ -11025,6 +11079,12 @@ msgstr "上传至设备"
 msgid "Upload to vehicle anyway"
 msgstr "仍然上传到设备"
 
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
+#, javascript-format
+msgid "Uploading ${ 0 } map archive (${ 1 }) to the vehicle."
+msgid_plural "Uploading ${ 0 } map archives (${ 1 }) to the vehicle."
+msgstr[0] ""
+
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
 "Uploading anyway may trigger the fence action the autopilot is configured "
@@ -11431,6 +11491,10 @@ msgstr "设备类型"
 #: src/components/VehicleDiscoveryDialog.vue
 msgid "Vehicles found!"
 msgstr "找到设备！"
+
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Vehicles that are not connected receive it the next time they connect."
+msgstr ""
 
 #: src/components/mini-widgets/EkfStateIndicator.vue
 msgid "Velocity"
@@ -12616,3 +12680,11 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "whose"
 #~ msgstr "其中的"
+
+#~ msgid ""
+#~ "The copy stored on the vehicle is kept, since no vehicle is connected to "
+#~ "delete it from."
+#~ msgstr "设备上保存的副本会被保留，因为没有已连接的设备可供删除。"
+
+#~ msgid "This also deletes the archive stored on the vehicle, which cannot be undone."
+#~ msgstr "这还会删除设备上保存的归档，且无法撤销。"
