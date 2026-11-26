@@ -99,7 +99,12 @@
                       />
                     </td>
                     <td class="text-start align-top p-2 pl-4 w-[300px] border-b border-b-[rgba(255,255,255,0.3)]">
-                      {{ displaySettingName(item) }}
+                      <div class="flex flex-wrap items-center gap-1">
+                        {{ displaySettingName(item) }}
+                        <v-chip v-if="isSharedAcrossVehicles(item)" size="x-small" variant="tonal">
+                          {{ t`Shared across vehicles` }}
+                        </v-chip>
+                      </div>
                     </td>
                     <td class="text-center border-b border-b-[rgba(255,255,255,0.3)] pr-4">
                       <template v-if="saving[item.originalKey]">
@@ -330,6 +335,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useSnackbar } from '@/composables/snackbar'
 import { settingsManager } from '@/libs/settings-management'
+import { isUserScopedSetting } from '@/libs/settings-scope'
 import { isEqual } from '@/libs/utils'
 import { reloadCockpitAndWarnUser } from '@/libs/utils-vue'
 import { useAppInterfaceStore } from '@/stores/appInterface'
@@ -788,6 +794,9 @@ const uploadConfigFile = (): void => {
   }
   input.click()
 }
+
+const isSharedAcrossVehicles = (item: SettingsRow): boolean =>
+  item.source === 'v2' && item.v2SettingKey !== undefined && isUserScopedSetting(item.v2SettingKey)
 
 const resetAllCockpitSettings = (): void => {
   showDialog({

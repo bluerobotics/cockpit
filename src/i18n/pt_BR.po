@@ -9856,6 +9856,10 @@ msgstr "Compartilhar especificações detalhadas do hardware"
 msgid "Shared Data"
 msgstr "Dados compartilhados"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Shared across vehicles"
+msgstr ""
+
 #: src/components/poi/PoiManager.vue
 msgid "Shopping"
 msgstr "Compras"

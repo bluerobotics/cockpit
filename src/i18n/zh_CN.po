@@ -9246,6 +9246,10 @@ msgstr "共享详细硬件规格"
 msgid "Shared Data"
 msgstr "共享数据"
 
+#: src/components/configuration/CockpitSettingsManager.vue
+msgid "Shared across vehicles"
+msgstr ""
+
 #: src/components/poi/PoiManager.vue
 msgid "Shopping"
 msgstr "购物"
