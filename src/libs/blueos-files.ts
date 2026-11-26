@@ -169,6 +169,7 @@ export const deleteFileFromVehicle = async (
  * @param {string} vehicleAddress - The vehicle's address.
  * @param {string} subfolder - Folder under `userdata/cockpit` to list.
  * @returns {Promise<string[]>} The names of the files in the folder, or an empty array when the folder does not exist.
+ * @throws {Error} When the folder cannot be listed for any other reason, so callers do not mistake it for an empty one.
  */
 export const listVehicleFiles = async (vehicleAddress: string, subfolder: string): Promise<string[]> => {
   try {
@@ -182,8 +183,9 @@ export const listVehicleFiles = async (vehicleAddress: string, subfolder: string
         .json<FileBrowserListing>()
     )
     return (folder.items ?? []).filter((item) => !item.isDir).map((item) => item.name)
-  } catch {
+  } catch (error) {
     // A missing folder (nothing uploaded yet) returns 404; treat it as an empty listing.
-    return []
+    if (error instanceof HTTPError && error.response.status === 404) return []
+    throw error
   }
 }
