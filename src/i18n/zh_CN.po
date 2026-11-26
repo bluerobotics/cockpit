@@ -9723,6 +9723,7 @@ msgstr "第 ${ 0 } 步，共 4 步"
 
 #: src/components/VehicleDiscoveryDialog.vue
 #: src/components/development/MAVLinkMessagesDumper.vue
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
 msgid "Stop"
 msgstr "停止"
 
@@ -10056,15 +10057,15 @@ msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
 msgid ""
-"The copy stored on the vehicle is kept, since BlueOS settings sync is off "
-"on this computer."
-msgstr "设备上保存的副本会被保留，因为此计算机上的 BlueOS 设置同步已关闭。"
+"The copies stored on your vehicles are deleted the next time each of them "
+"connects to this computer."
+msgstr "您设备上保存的副本会在每台设备下次连接到此电脑时被删除。"
 
 #: src/components/map/CustomTileProvidersManager.vue
 msgid ""
-"The copy stored on the vehicle is kept, since no vehicle is connected to "
-"delete it from."
-msgstr "设备上保存的副本会被保留，因为没有已连接的设备可供删除。"
+"The copy stored on the vehicle is kept, since BlueOS settings sync is off "
+"on this computer."
+msgstr "设备上保存的副本会被保留，因为此计算机上的 BlueOS 设置同步已关闭。"
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid ""
@@ -10156,6 +10157,12 @@ msgstr "配方应整体阅读。遗漏其中的项目可能导致其余部分无
 
 #: src/libs/audio-recording.ts
 msgid "The recording has no audio data."
+msgstr ""
+
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
+msgid ""
+"The remaining map archives will be uploaded the next time the vehicle "
+"connects."
 msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
@@ -10361,8 +10368,11 @@ msgid ""
 msgstr "这允许忽略每个摇杆中心附近的小幅不需要的移动。"
 
 #: src/components/map/CustomTileProvidersManager.vue
-msgid "This also deletes the archive stored on the vehicle, which cannot be undone."
-msgstr "这还会删除设备上保存的归档，且无法撤销。"
+msgid ""
+"This also deletes the archive stored on this vehicle, and on your other "
+"vehicles the next time each of them connects to this computer, which cannot "
+"be undone."
+msgstr "这还会删除此设备上保存的归档，并在您的其他设备下次连接到此电脑时删除其上的归档，且无法撤销。"
 
 #: src/components/widgets/VideoPlayer.vue
 msgid ""
@@ -11068,6 +11078,12 @@ msgstr "上传至设备"
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid "Upload to vehicle anyway"
 msgstr "仍然上传到设备"
+
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
+#, javascript-format
+msgid "Uploading ${ 0 } map archive (${ 1 }) to the vehicle."
+msgid_plural "Uploading ${ 0 } map archives (${ 1 }) to the vehicle."
+msgstr[0] ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
@@ -12664,3 +12680,11 @@ msgstr "——以按该单位制读取，而不是设备发送的原始值。较
 
 #~ msgid "whose"
 #~ msgstr "其中的"
+
+#~ msgid ""
+#~ "The copy stored on the vehicle is kept, since no vehicle is connected to "
+#~ "delete it from."
+#~ msgstr "设备上保存的副本会被保留，因为没有已连接的设备可供删除。"
+
+#~ msgid "This also deletes the archive stored on the vehicle, which cannot be undone."
+#~ msgstr "这还会删除设备上保存的归档，且无法撤销。"

@@ -10346,6 +10346,7 @@ msgstr "Etapa ${ 0 } de 4"
 
 #: src/components/VehicleDiscoveryDialog.vue
 #: src/components/development/MAVLinkMessagesDumper.vue
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
 msgid "Stop"
 msgstr "Parar"
 
@@ -10709,19 +10710,19 @@ msgstr ""
 
 #: src/components/map/CustomTileProvidersManager.vue
 msgid ""
+"The copies stored on your vehicles are deleted the next time each of them "
+"connects to this computer."
+msgstr ""
+"As cópias armazenadas nos seus veículos são excluídas na próxima vez que "
+"cada um deles se conectar a este computador."
+
+#: src/components/map/CustomTileProvidersManager.vue
+msgid ""
 "The copy stored on the vehicle is kept, since BlueOS settings sync is off "
 "on this computer."
 msgstr ""
 "A cópia armazenada no veículo é mantida, pois a sincronização de "
 "configurações do BlueOS está desativada neste computador."
-
-#: src/components/map/CustomTileProvidersManager.vue
-msgid ""
-"The copy stored on the vehicle is kept, since no vehicle is connected to "
-"delete it from."
-msgstr ""
-"A cópia armazenada no veículo é mantida, pois nenhum veículo está conectado "
-"para excluí-la."
 
 #: src/components/joysticks/JoystickCalibration.vue
 msgid ""
@@ -10837,6 +10838,12 @@ msgstr ""
 
 #: src/libs/audio-recording.ts
 msgid "The recording has no audio data."
+msgstr ""
+
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
+msgid ""
+"The remaining map archives will be uploaded the next time the vehicle "
+"connects."
 msgstr ""
 
 #: src/components/widgets/DoItYourself.vue
@@ -11097,10 +11104,14 @@ msgstr ""
 "cada joystick."
 
 #: src/components/map/CustomTileProvidersManager.vue
-msgid "This also deletes the archive stored on the vehicle, which cannot be undone."
+msgid ""
+"This also deletes the archive stored on this vehicle, and on your other "
+"vehicles the next time each of them connects to this computer, which cannot "
+"be undone."
 msgstr ""
-"Isto também exclui o arquivo armazenado no veículo, o que não pode ser "
-"desfeito."
+"Isto também exclui o arquivo armazenado neste veículo e, nos seus outros "
+"veículos, na próxima vez que cada um deles se conectar a este computador, o "
+"que não pode ser desfeito."
 
 #: src/components/widgets/VideoPlayer.vue
 msgid ""
@@ -11898,6 +11909,12 @@ msgstr "Enviar ao veículo"
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid "Upload to vehicle anyway"
 msgstr "Enviar ao veículo mesmo assim"
+
+#: src/composables/map/useCustomTileProviderVehicleSync.ts
+#, javascript-format
+msgid "Uploading ${ 0 } map archive (${ 1 }) to the vehicle."
+msgid_plural "Uploading ${ 0 } map archives (${ 1 }) to the vehicle."
+msgstr[0] ""
 
 #: src/composables/mission-planning/useMissionPreflightChecks.ts
 msgid ""
@@ -13641,3 +13658,15 @@ msgstr ""
 
 #~ msgid "whose"
 #~ msgstr "cujos"
+
+#~ msgid ""
+#~ "The copy stored on the vehicle is kept, since no vehicle is connected to "
+#~ "delete it from."
+#~ msgstr ""
+#~ "A cópia armazenada no veículo é mantida, pois nenhum veículo está conectado "
+#~ "para excluí-la."
+
+#~ msgid "This also deletes the archive stored on the vehicle, which cannot be undone."
+#~ msgstr ""
+#~ "Isto também exclui o arquivo armazenado no veículo, o que não pode ser "
+#~ "desfeito."
