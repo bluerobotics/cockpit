@@ -6,7 +6,7 @@
   <h1>Cockpit - A Modern Ground Control Software</h1>
 
   <p>
-    <a href="https://docs.bluerobotics.com/cockpit/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub">🌐 Live Demo</a> •
+    <a href="https://cockpit.logtools.cloud/">🌐 Live Demo</a> •
     <a href="https://blueos.cloud/cockpit/docs/latest/usage/installation/">📦 Install</a> •
     <a href="https://blueos.cloud/cockpit/docs">📖 Documentation</a> •
     <a href="https://discuss.bluerobotics.com/c/bluerobotics-software/cockpit">💬 Community</a>
@@ -53,7 +53,7 @@ Cockpit is a web-based ground control station that aims to improve how you inter
 ### Accessing Cockpit
 
 #### - Option 1: Try it Online
-If you just want to take a look at Cockpit, you can visit our **[live demo](https://docs.bluerobotics.com/cockpit/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub)**, which runs a simulated ArduSub vehicle in Chrome, Edge or Firefox. The first visit reloads the page once. In other browsers, open [Cockpit without the simulator](https://docs.bluerobotics.com/cockpit).
+If you just want to take a look at Cockpit, you can visit our **[live demo](https://cockpit.logtools.cloud/)**, where you pilot a simulated BlueROV2 in a 3D underwater scene, with ArduSub and [BlueSim](https://github.com/Williangalvani/bluesim-1) running inside the browser. It works in Chrome, Edge or Firefox, and the first visit reloads the page once. In other browsers, open [Cockpit without the simulator](https://docs.bluerobotics.com/cockpit).
 
 #### - Option 2: Download the Native App (Recommended)
 Download the [latest release](https://blueos.cloud/cockpit/docs/latest/usage/installation/#self-contained-application) of our native desktop app for your platform.
@@ -110,7 +110,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 | **Snapshots** | Needs to be downloaded | ✅ Saved directly to your folders |
 | **Voice Recording** | Needs to be downloaded; requires HTTPS/localhost for microphone access | ✅ Saved directly to your folders |
 | **Vehicle Discovery** | ❌ Not available | ✅ Auto-scan for vehicles in the network|
-| **ArduSub Simulator (`sitl://ardusub`)** | Only on the GitHub Pages version, in browsers with cross-origin isolation support (Chrome, Edge, Firefox). Embedded pages, like iframe widgets, may not load while it runs | ❌ Not available |
+| **ArduSub Simulator (`sitl://ardusub`)** | Only on the live demo and the GitHub Pages version, in browsers with cross-origin isolation support (Chrome, Edge, Firefox). Embedded pages, like iframe widgets, may not load while it runs | ❌ Not available |
 | **Serial, UDP and TCP Vehicle Links** | ❌ Not available (needs a vehicle address reachable from the browser) | ✅ Connect straight to an autopilot or telemetry radio |
 | **External Serial GNSS** | ❌ Not available (browsers can't access serial devices outside a secure context) | ✅ Read one or more USB/serial NMEA GNSS receivers into the data-lake |
 | **Mobile Coverage Heatmap** | Limited to OpenStreetMap tower data | ✅ Also supports OpenCellID, with a personal API key |
@@ -133,7 +133,7 @@ Below is a table summarizing the current status, but in general, you can expect 
 **Choose Desktop** for complete experience, auto-updates, system integration, and optimal performance.
 **Choose Browser** for testing, quick access, or when you can't install applications.
 
-> **💡 Pro Tip**: Start with the [live demo](https://docs.bluerobotics.com/cockpit/?MAVLink2RestWebsocketURI=sitl%3A%2F%2Fardusub) to get familiar with Cockpit, then download the desktop app for regular use to unlock all capabilities!
+> **💡 Pro Tip**: Start with the [live demo](https://cockpit.logtools.cloud/) to get familiar with Cockpit, then download the desktop app for regular use to unlock all capabilities!
 
 ---
 
