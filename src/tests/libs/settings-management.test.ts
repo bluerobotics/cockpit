@@ -1,7 +1,12 @@
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { type MockInstance, afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { SettingsManager } from '@/libs/settings-management'
-import { LocalSyncedSettings, localSyncedSettingsKey } from '@/types/settings-management'
+import {
+  localSharedSettingsBackupKey,
+  LocalSyncedSettings,
+  localSyncedSettingsKey,
+  SettingsPackage,
+} from '@/types/settings-management'
 
 vi.mock('@/libs/blueos', () => ({
   getKeyDataFromCockpitVehicleStorage: vi.fn(),
@@ -105,4 +110,67 @@ test('reads back a write still waiting on the debounce', async () => {
   expect(manager.getKeyValue('cockpit-scale')).toEqual({ zoom: 3 })
   vi.advanceTimersByTime(100)
   expect(manager.getKeyValue('cockpit-scale')).toEqual({ zoom: 3 })
+})
+
+const overlaysKey = 'cockpit-map-overlays-v1'
+
+const seedVehiclePackages = (packages: Record<string, SettingsPackage>): void => {
+  const settings: LocalSyncedSettings = JSON.parse(localStorage.getItem(localSyncedSettingsKey)!)
+  Object.entries(packages).forEach(([vehicleId, settingsPackage]) => {
+    settings[manager.currentUsername][vehicleId] = {
+      ...settings[manager.currentUsername][vehicleId],
+      ...settingsPackage,
+    }
+  })
+  localStorage.setItem(localSyncedSettingsKey, JSON.stringify(settings))
+}
+
+const storedValue = (vehicleId: string, key: string): unknown => {
+  const settings: LocalSyncedSettings = JSON.parse(localStorage.getItem(localSyncedSettingsKey)!)
+  return settings[manager.currentUsername][vehicleId][key]?.value
+}
+
+test('spreads a shared setting written on one vehicle to the other vehicles of the user', async () => {
+  seedVehiclePackages({ boat: {} })
+  manager = new SettingsManager()
+
+  await manager.setKeyValue(overlaysKey, [{ id: 'survey' }])
+  vi.advanceTimersByTime(100)
+
+  expect(storedValue('boat', overlaysKey)).toEqual([{ id: 'survey' }])
+  expect(storedValue('boat', 'cockpit-scale')).toBeUndefined()
+})
+
+test('keeps the newest copy of a shared setting that is not combined', () => {
+  const unitsKey = 'cockpit-display-unit-preferences-v2'
+  seedVehiclePackages({
+    [manager.currentVehicleId]: { [unitsKey]: { epochLastChangedLocally: 5, value: { distance: 'meters' } } },
+    boat: { [unitsKey]: { epochLastChangedLocally: 7, value: { depth: 'feet' } } },
+  })
+
+  manager = new SettingsManager()
+
+  expect(storedValue(manager.currentVehicleId, unitsKey)).toEqual({ depth: 'feet' })
+})
+
+const failBackupWrites = (): MockInstance => {
+  const setItem = Storage.prototype.setItem
+  return vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (key === localSharedSettingsBackupKey) throw new DOMException('Storage is full', 'QuotaExceededError')
+    setItem.call(this, key, value)
+  })
+}
+
+test('keeps settings per vehicle for the session when the backup cannot be stored', async () => {
+  localStorage.removeItem(localSharedSettingsBackupKey)
+  seedVehiclePackages({ boat: { [overlaysKey]: { epochLastChangedLocally: 7, value: [{ id: 'b' }] } } })
+  const spy = failBackupWrites()
+
+  manager = new SettingsManager()
+  await manager.setKeyValue(overlaysKey, [{ id: 'a' }])
+  vi.advanceTimersByTime(100)
+  spy.mockRestore()
+
+  expect(storedValue(manager.currentVehicleId, overlaysKey)).toEqual([{ id: 'a' }])
+  expect(storedValue('boat', overlaysKey)).toEqual([{ id: 'b' }])
 })

@@ -10,6 +10,7 @@ import {
   fallbackVehicleId,
   KeyValueVehicleUpdateQueue,
   localOldStyleSettingsKey,
+  localSharedSettingsBackupKey,
   LocalSyncedSettings,
   localSyncedSettingsKey,
   NoVehicleIdErrorName,
@@ -28,6 +29,11 @@ import {
 } from '@/types/settings-management'
 
 import { getKeyDataFromCockpitVehicleStorage, getStatus, setKeyDataOnCockpitVehicleStorage } from './blueos'
+import {
+  backupSettingCopies,
+  spreadUserScopedSettings,
+  userScopedSettings,
+} from './settings-scope'
 import { deserialize, isEqual, sleep, tryACoupleOfTimes } from './utils'
 
 const nullValue = 'null'
@@ -236,6 +242,7 @@ export class SettingsManager {
   private keyValueVehicleUpdateQueue: KeyValueVehicleUpdateQueue = {}
   private initialLoadingComplete = false
   private cachedSettings: LocalSyncedSettings | null = null
+  private shareUserScopedSettings = true
   private storage: StorageAdapter
   private vehicle: VehicleAdapter
 
@@ -248,6 +255,7 @@ export class SettingsManager {
     this.storage = storage || new LocalStorageAdapter()
     this.vehicle = vehicle || new BlueOSVehicleAdapter()
     console.log('[SettingsManager]', 'Initializing settings manager.')
+    this.reconcileUserScopedSettings()
     this.initLocalSettings()
     this.lastLocalUserVehicleSettings = { ...this.getSettingsForUserAndVehicle(this.currentUsername, this.currentVehicleId) }
     this.initialLoadingComplete = true
@@ -400,6 +408,85 @@ export class SettingsManager {
     if (!(username in localSettings)) return
     delete localSettings[username]
     this.setLocalSettings(localSettings)
+    this.dropUserFromSharedSettingRecords(username)
+  }
+
+  /**
+   * Drops a user from the records of shared settings kept on this computer
+   * @param {string} username - The user to drop
+   */
+  private dropUserFromSharedSettingRecords = (username: string): void => {
+    ;[localSharedSettingsBackupKey].forEach((key) => {
+      const stored = this.readStoredObject<Record<string, unknown>>(key)
+      if (stored === undefined || !(username in stored)) return
+      delete stored[username]
+      this.storage.setItem(key, JSON.stringify(stored))
+    })
+  }
+
+  /**
+   * Reads a JSON object kept on this computer only
+   * @param {string} key - The storage key to read
+   * @returns {T | undefined} The stored object, or undefined when it is missing or cannot be read
+   */
+  private readStoredObject = <T extends object>(key: string): T | undefined => {
+    try {
+      const parsed = JSON.parse(this.storage.getItem(key) ?? 'null')
+      return typeof parsed === 'object' && parsed !== null ? (parsed as T) : undefined
+    } catch (error) {
+      console.warn('[SettingsManager]', `Ignoring unreadable stored value of '${key}'.`, error)
+      return undefined
+    }
+  }
+
+  /**
+   * Records copies of some keys into the local backup of settings shared across vehicles
+   * @param {LocalSyncedSettings} settings - The local settings holding the copies
+   * @param {string} userId - The ID of the user whose copies are recorded
+   * @param {string[]} vehicleIds - The IDs of the vehicles whose copies are recorded
+   * @param {string[]} keys - The keys to record
+   * @returns {boolean} Whether the backup was stored
+   */
+  private storeSettingCopiesBackup = (
+    settings: LocalSyncedSettings,
+    userId: string,
+    vehicleIds: string[],
+    keys: string[]
+  ): boolean => {
+    try {
+      const backup = this.readStoredObject<LocalSyncedSettings>(localSharedSettingsBackupKey) ?? {}
+      backupSettingCopies(backup, settings, userId, vehicleIds, keys)
+      this.storage.setItem(localSharedSettingsBackupKey, JSON.stringify(backup))
+      return true
+    } catch (error) {
+      console.error('[SettingsManager]', 'Could not back up settings shared across vehicles.', error)
+      return false
+    }
+  }
+
+  /**
+   * Backs up every copy of the shared settings once. Sharing stays off for the session when the backup fails, so no
+   * copy is overwritten without a backup to restore it from.
+   */
+  private reconcileUserScopedSettings = (): void => {
+    try {
+      const localSettings = this.getLocalSettings()
+      if (this.readStoredObject(localSharedSettingsBackupKey) === undefined) {
+        const sharedKeys = Object.keys(userScopedSettings)
+        const backedUp = Object.entries(localSettings).every(([userId, userSettings]) =>
+          this.storeSettingCopiesBackup(localSettings, userId, Object.keys(userSettings), sharedKeys)
+        )
+        if (!backedUp) {
+          this.shareUserScopedSettings = false
+          return
+        }
+      }
+    } catch (error) {
+      this.shareUserScopedSettings = false
+      // Drops whatever was changed in place, so startup goes on from the settings as stored.
+      this.cachedSettings = null
+      console.error('[SettingsManager]', 'Could not prepare settings shared across vehicles. Keeping them per vehicle.', error)
+    }
   }
 
   /**
@@ -408,6 +495,26 @@ export class SettingsManager {
    */
   private setLocalSettings = (newSettings: LocalSyncedSettings): void => {
     console.log('[SettingsManager]', 'Setting/saving local settings.')
+    // Shared settings are written into every vehicle package, which can outgrow the storage quota, so a failed write
+    // falls back to storing the settings per vehicle instead of losing them.
+    if (this.shareUserScopedSettings) {
+      try {
+        // Copies only the two container levels the spread reassigns, since values can be reactive proxies that cannot be cloned.
+        const sharedSettings: LocalSyncedSettings = Object.fromEntries(
+          Object.entries(newSettings).map(([userId, userSettings]) => [
+            userId,
+            Object.fromEntries(Object.entries(userSettings).map(([vehicleId, settings]) => [vehicleId, { ...settings }])),
+          ])
+        )
+        spreadUserScopedSettings(sharedSettings, this.currentVehicleId)
+        this.storage.setItem(localSyncedSettingsKey, JSON.stringify(sharedSettings))
+        this.cachedSettings = sharedSettings
+        return
+      } catch (error) {
+        this.shareUserScopedSettings = false
+        console.error('[SettingsManager]', 'Could not share settings across vehicles. Keeping them per vehicle.', error)
+      }
+    }
     this.cachedSettings = newSettings
     this.storage.setItem(localSyncedSettingsKey, JSON.stringify(newSettings))
   }
@@ -1057,7 +1164,13 @@ export class SettingsManager {
    */
   private backupCurrentOldStyleSettings = (): void => {
     const oldStyleSettings: OldCockpitSettingsPackage = {}
-    const keysToIgnore = [localSyncedSettingsKey, localOldStyleSettingsKey, cockpitLastConnectedUserKey, cockpitLastConnectedVehicleKey]
+    const keysToIgnore = [
+      localSyncedSettingsKey,
+      localOldStyleSettingsKey,
+      localSharedSettingsBackupKey,
+      cockpitLastConnectedUserKey,
+      cockpitLastConnectedVehicleKey,
+    ]
     const keysToBackup = this.storage.getAllKeys().filter((k) => !keysToIgnore.includes(k))
     for (const key of keysToBackup) {
       const value = this.storage.getItem(key)
