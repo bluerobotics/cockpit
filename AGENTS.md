@@ -122,6 +122,9 @@ Before adding a new dependency, check the `packages.json` file. If theres a depe
 
 > Always sort dependencies alphabetically
 
+Packages only the interface uses go in `devDependencies` (`yarn add -D`), since Vite bundles them. Every entry in
+`dependencies` is copied into the Standalone installer, so it holds only what `src/electron` imports.
+
 When a new dependency is genuinely needed, check it before adding it: is it maintained, is it widely
 used, and is the name the one you meant — typosquats target popular packages. Check the licence too.
 Cockpit ships an installer, so a bundled or downloaded binary, model, or dependency under GPL, LGPL,
