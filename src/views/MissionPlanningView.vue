@@ -763,6 +763,11 @@
       :activator-style="{ bottom: '3rem' }"
       @center-on-mission="centerOnMission"
     />
+    <MapLayerSelector
+      v-if="layerSelectorControl"
+      :control="layerSelectorControl"
+      :activator-style="{ right: '337px', bottom: '3rem' }"
+    />
     <MapNorthIndicator class="north-indicator" />
     <v-progress-linear
       v-if="uploadingMission"
@@ -944,6 +949,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRaw, wat
 import GeoFenceDrawingActionButtons from '@/components/geofence/GeoFenceDrawingActionButtons.vue'
 import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import HazardExclusionDialog from '@/components/hazards/HazardExclusionDialog.vue'
+import MapLayerSelector from '@/components/map/MapLayerSelector.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
@@ -1017,6 +1023,7 @@ import { useOfflineTiles } from '@/composables/useOfflineTiles'
 import { useUnitConversion, useUnitInput } from '@/composables/useUnitInput'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { MavCmd } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
+import type { MapLayerControl } from '@/libs/map/map-layer-control'
 import type { NoiseTileOptions } from '@/libs/map/map-tile-fallback'
 import { attachTileNoiseFallback, refreshNoiseFallbackTiles } from '@/libs/map/map-tile-fallback'
 import type { OfflineTileLayer } from '@/libs/map/offline-tile-layer'
@@ -1347,6 +1354,7 @@ const downloadMissionFromVehicle = async (): Promise<void> => {
 }
 
 const planningMap = shallowRef<Map | undefined>()
+const layerSelectorControl = shallowRef<MapLayerControl>()
 const mapContext = provideMapContext()
 const { mapReady } = mapContext
 const { observe: observeMapResize } = useMapAutoResize()
@@ -5126,8 +5134,8 @@ onMounted(async () => {
     onMapClick(e)
   })
 
-  const layerControl = createLayerControl()
-  planningMap.value.addControl(layerControl)
+  const layerControl = createLayerControl(() => planningMap.value)
+  layerSelectorControl.value = layerControl
 
   // Render any user-loaded GeoTIFF overlays and keep them in sync with the stored metadata
   await mapOverlays.initOverlays(planningMap.value, layerControl)
@@ -5920,7 +5928,7 @@ watch(
 /* Style the standard Leaflet scale control */
 :deep(.leaflet-control-scale) {
   position: absolute;
-  right: 338px; /* Position to the left of the buttons */
+  right: 388px; /* Position to the left of the buttons */
   bottom: 54px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
@@ -5952,36 +5960,5 @@ watch(
 :deep(.leaflet-control-zoom.leaflet-bar a:hover),
 :deep(.leaflet-control-zoom.leaflet-bar a:focus) {
   background: transparent !important;
-}
-
-/* Style the Leaflet layer provider selector */
-:deep(.leaflet-control-layers) {
-  background: var(--glass-background) !important;
-  backdrop-filter: var(--glass-filter) !important;
-  box-shadow: var(--glass-box-shadow) !important;
-  color: var(--glass-color) !important;
-  border: var(--glass-border) !important;
-  border-radius: 4px;
-}
-
-:deep(.leaflet-control-layers-expanded) {
-  background: var(--glass-background) !important;
-  backdrop-filter: var(--glass-filter) !important;
-  box-shadow: var(--glass-box-shadow) !important;
-  color: var(--glass-color) !important;
-  border: var(--glass-border) !important;
-}
-
-:deep(.leaflet-control-layers-list) {
-  background: transparent !important;
-  color: var(--glass-color) !important;
-}
-
-:deep(.leaflet-control-layers-selector) {
-  accent-color: var(--glass-color) !important;
-}
-
-:deep(.leaflet-control-layers label) {
-  color: var(--glass-color) !important;
 }
 </style>

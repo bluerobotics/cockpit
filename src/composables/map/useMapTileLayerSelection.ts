@@ -1,13 +1,9 @@
-import { type Control, type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
-import { t } from 'ttag'
+import { type Layer, type LayersControlEvent, type Map as LeafletMap } from 'leaflet'
 import { watch } from 'vue'
 
 import type { MapTileLayers } from '@/composables/map/useMapTileLayers'
-import { goToMenuPage } from '@/composables/menuRouting'
-import { createLayersControlWithAction } from '@/libs/map/utils-map'
-import { useAppInterfaceStore } from '@/stores/appInterface'
+import { type MapLayerControl, createMapLayerControl } from '@/libs/map/map-layer-control'
 import { useMissionStore } from '@/stores/mission'
-import { SubMenuComponentName } from '@/types/general'
 import type { MapTileProvider } from '@/types/mission'
 
 type OverlayPersistenceFlag = 'userLastMapShowSeamarks' | 'userLastMapShowMarineProfile'
@@ -32,9 +28,9 @@ export interface MapTileLayerSelection {
    */
   getInitialLayers: () => Layer[]
   /**
-   * Builds the leaflet layer control listing the base maps and overlays.
+   * Builds the layer registry listing the base maps and overlays, for the map `getMap` resolves.
    */
-  createLayerControl: () => Control.Layers
+  createLayerControl: (getMap: () => LeafletMap | undefined) => MapLayerControl
   /**
    * Wires base-layer and overlay selection persistence and the default-provider watch to a map.
    */
@@ -50,7 +46,6 @@ export interface MapTileLayerSelection {
  */
 export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLayerSelection => {
   const missionStore = useMissionStore()
-  const interfaceStore = useAppInterfaceStore()
   const { baseMaps, overlays, esri } = tileLayers
 
   const preferredBaseLayer = (): L.TileLayer => {
@@ -70,15 +65,8 @@ export const useMapTileLayerSelection = (tileLayers: MapTileLayers): MapTileLaye
     return layers
   }
 
-  const createLayerControl = (): Control.Layers =>
-    createLayersControlWithAction(baseMaps, overlays, {
-      label: t`Add map provider`,
-      onClick: () => {
-        logUserAction('Opened custom map providers from the map layer selector')
-        interfaceStore.mapCustomProvidersExpandRequested = true
-        goToMenuPage(SubMenuComponentName.ToolsMap)
-      },
-    })
+  const createLayerControl = (getMap: () => LeafletMap | undefined): MapLayerControl =>
+    createMapLayerControl(getMap, baseMaps, overlays)
 
   const registerLayerSync = (map: LeafletMap): void => {
     // These layers-control events only fire from user clicks on the control, so logging here reflects a real

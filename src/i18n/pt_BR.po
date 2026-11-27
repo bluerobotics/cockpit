@@ -1010,7 +1010,7 @@ msgstr "Adicionar cerca:"
 msgid "Add header"
 msgstr "Adicionar cabeçalho"
 
-#: src/composables/map/useMapTileLayerSelection.ts
+#: src/components/map/MapLayerSelector.vue
 msgid "Add map provider"
 msgstr "Adicionar provedor de mapa"
 
@@ -1948,6 +1948,10 @@ msgstr ""
 #: src/views/ConfigurationMissionView.vue
 msgid "Base color"
 msgstr "Cor base"
+
+#: src/components/map/MapLayerSelector.vue
+msgid "Base map"
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 #: src/components/BaseStationContextPopup.vue
@@ -8037,6 +8041,10 @@ msgstr ""
 msgid "Map function to button"
 msgstr "Mapear função para o botão"
 
+#: src/components/map/MapLayerSelector.vue
+msgid "Map layers"
+msgstr ""
+
 #: src/views/ConfigurationMissionView.vue
 msgid "Map options"
 msgstr "Opções do mapa"
@@ -9766,6 +9774,10 @@ msgstr ""
 #: src/views/ConfigurationLogsView.vue
 msgid "Overlay Options"
 msgstr "Opções de sobreposição"
+
+#: src/components/map/MapLayerSelector.vue
+msgid "Overlays"
+msgstr ""
 
 #: src/components/widgets/Map.vue
 msgid "POI Manager (map widget) is not available."

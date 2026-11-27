@@ -1,6 +1,7 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 import { computed, onBeforeUnmount } from 'vue'
 
+import type { MapLayerControl } from '@/libs/map/map-layer-control'
 import {
   TRAFFIC_ICON_SIZE_PX,
   TRAFFIC_KIND_STYLES,
@@ -23,7 +24,7 @@ export interface UseTrafficOverlayReturn {
   /**
    * Binds the overlay to a Leaflet map and its layer control, and starts following the contacts.
    */
-  initTrafficOverlay: (map: LeafletMap, layerControl?: L.Control.Layers) => void
+  initTrafficOverlay: (map: LeafletMap, layerControl?: MapLayerControl) => void
 }
 
 const contactIcon = (html: string): L.DivIcon =>
@@ -47,7 +48,7 @@ export const useTrafficOverlay = (): UseTrafficOverlayReturn => {
   const markers = new Map<TrafficKind, Map<string, L.Marker>>()
   const latestContacts = new Map<TrafficKind, Map<string, TrafficContact>>()
   let mapRef: LeafletMap | undefined
-  let controlRef: L.Control.Layers | undefined
+  let controlRef: MapLayerControl | undefined
   let timer: ReturnType<typeof setInterval> | undefined
   let unmounted = false
 
@@ -115,7 +116,7 @@ export const useTrafficOverlay = (): UseTrafficOverlayReturn => {
     controlRef = undefined
   }
 
-  const initTrafficOverlay = (map: LeafletMap, layerControl?: L.Control.Layers): void => {
+  const initTrafficOverlay = (map: LeafletMap, layerControl?: MapLayerControl): void => {
     // Views bind after awaiting their other overlays, and may have unmounted during that wait.
     if (unmounted) return
     destroyTrafficOverlay()

@@ -149,12 +149,6 @@ select:focus {
     }
 }
 
-/* Leaflet pads the expanded layers control asymmetrically (6px left, 10px right). Even it out on the controls
-   that carry a full-width action row, so the button sits equidistant from both panel edges. */
-.cockpit-leaflet-layers-with-action.leaflet-control-layers-expanded {
-    padding: 6px 8px;
-}
-
 /* Traffic tooltips read like the vehicle marker's, and both maps draw them, so the glass block lives here rather
    than being repeated in each view's scoped styles. The glass variables come from the map root above them. */
 .traffic-tooltip {

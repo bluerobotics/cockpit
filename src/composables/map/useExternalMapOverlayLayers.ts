@@ -3,6 +3,7 @@ import L, { type Map as LeafletMap } from 'leaflet'
 import { watch } from 'vue'
 
 import { type ReceivedMapOverlay, useExternalMapOverlays } from '@/composables/map/useExternalMapOverlays'
+import type { MapLayerControl } from '@/libs/map/map-layer-control'
 
 const OVERLAY_PANE = 'externalOverlayPane'
 
@@ -76,7 +77,7 @@ export interface UseExternalMapOverlayLayersReturn {
   /**
    * Draws the received overlays on a Leaflet map, lists them on its layer control, and keeps them in sync.
    */
-  init: (map: LeafletMap, layerControl?: L.Control.Layers) => void
+  init: (map: LeafletMap, layerControl?: MapLayerControl) => void
   /**
    * Stops syncing and removes the overlays from the map and its layer control.
    */
@@ -93,7 +94,7 @@ export const useExternalMapOverlayLayers = (): UseExternalMapOverlayLayersReturn
 
   const entries = new Map<string, OverlayEntry>()
   let mapRef: LeafletMap | undefined
-  let controlRef: L.Control.Layers | undefined
+  let controlRef: MapLayerControl | undefined
   // Canvas rather than SVG, since a survey can carry thousands of soundings.
   const renderer = L.canvas({ pane: OVERLAY_PANE })
   let stopWatch: (() => void) | undefined
@@ -163,7 +164,7 @@ export const useExternalMapOverlayLayers = (): UseExternalMapOverlayLayersReturn
     }, syncIntervalMs)
   }
 
-  const init = (map: LeafletMap, layerControl?: L.Control.Layers): void => {
+  const init = (map: LeafletMap, layerControl?: MapLayerControl): void => {
     mapRef = map
     controlRef = layerControl
     // Above the GeoTIFF overlays (250), so contours stay readable over a survey raster, and below the mission

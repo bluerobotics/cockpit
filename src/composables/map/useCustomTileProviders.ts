@@ -6,6 +6,7 @@ import {
   customTileProviderSignature,
   useCustomTileProviderLayer,
 } from '@/composables/map/useCustomTileProviderLayer'
+import type { MapLayerControl } from '@/libs/map/map-layer-control'
 import { useMissionStore } from '@/stores/mission'
 import type { CustomTileProviderMeta } from '@/types/mission'
 
@@ -32,7 +33,7 @@ export interface UseCustomTileProvidersReturn {
    */
   init: (
     map: LeafletMap,
-    layerControl: L.Control.Layers,
+    layerControl: MapLayerControl,
     builtInBaseLayers: L.Layer[],
     preferredBuiltInBaseLayer: () => L.Layer
   ) => void
@@ -56,7 +57,7 @@ export const useCustomTileProviders = (): UseCustomTileProvidersReturn => {
 
   const entries = new Map<string, ProviderEntry>()
   let mapRef: LeafletMap | undefined
-  let controlRef: L.Control.Layers | undefined
+  let controlRef: MapLayerControl | undefined
   let builtInBaseLayersRef: L.Layer[] = []
   let preferredBuiltInBaseLayerRef: (() => L.Layer) | undefined
   let stopWatch: (() => void) | undefined
@@ -143,7 +144,7 @@ export const useCustomTileProviders = (): UseCustomTileProvidersReturn => {
 
   const init = (
     map: LeafletMap,
-    layerControl: L.Control.Layers,
+    layerControl: MapLayerControl,
     builtInBaseLayers: L.Layer[],
     preferredBuiltInBaseLayer: () => L.Layer
   ): void => {
