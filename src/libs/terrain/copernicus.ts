@@ -174,22 +174,26 @@ const copernicusStepForTile = (tile: TerrainTile): number => {
   return step
 }
 
-/**
- * Where one tile pixel reads the lattice.
- */
-interface PixelSample {
-  /**
-   * Lattice row on or above the pixel.
-   */
-  north: RowSample
-  /**
-   * Lattice row below it.
-   */
-  south: RowSample
-  /**
-   * How far the pixel sits from the north row toward the south one, from 0 to 1.
-   */
-  fy: number
+type PixelVisitor = (index: number, north: RowSample, south: RowSample, fy: number) => void
+
+// Recomputed for each pass rather than stored: a stored plan is about nine objects per pixel, ~36 MB a tile, held
+// for as long as the tile's reads take.
+const forEachPixelSample = (tile: TerrainTile, step: number, visit: PixelVisitor): void => {
+  for (let row = 0; row < TERRAIN_TILE_SIZE; row++) {
+    for (let column = 0; column < TERRAIN_TILE_SIZE; column++) {
+      const [lat, lon] = terrainPixelCenter(tile, column, row)
+      const globalRow = (90 - lat) * COPERNICUS_ROWS_PER_DEGREE
+      const northRow = Math.floor(globalRow / step) * step
+      const north = latticeRowAt(northRow)
+      const south = latticeRowAt(northRow + step)
+      visit(
+        row * TERRAIN_TILE_SIZE + column,
+        rowSample(north.latFloor, north.row, lon, step),
+        rowSample(south.latFloor, south.row, lon, step),
+        (globalRow - northRow) / step
+      )
+    }
+  }
 }
 
 /**
@@ -216,21 +220,6 @@ interface CellWindow {
  */
 export const buildCopernicusTile = async (tile: TerrainTile, reader: CopernicusCellReader): Promise<Float32Array> => {
   const step = copernicusStepForTile(tile)
-  const samples: PixelSample[] = []
-  for (let row = 0; row < TERRAIN_TILE_SIZE; row++) {
-    for (let column = 0; column < TERRAIN_TILE_SIZE; column++) {
-      const [lat, lon] = terrainPixelCenter(tile, column, row)
-      const globalRow = (90 - lat) * COPERNICUS_ROWS_PER_DEGREE
-      const northRow = Math.floor(globalRow / step) * step
-      const north = latticeRowAt(northRow)
-      const south = latticeRowAt(northRow + step)
-      samples.push({
-        north: rowSample(north.latFloor, north.row, lon, step),
-        south: rowSample(south.latFloor, south.row, lon, step),
-        fy: (globalRow - northRow) / step,
-      })
-    }
-  }
 
   const windows = new Map<string, CellWindow>()
   const include = ({ cell, row, col }: LatticePoint): void => {
@@ -246,7 +235,9 @@ export const buildCopernicusTile = async (tile: TerrainTile, reader: CopernicusC
     window.col0 = Math.min(window.col0, col)
     window.col1 = Math.max(window.col1, col)
   }
-  samples.forEach(({ north, south }) => [north.west, north.east, south.west, south.east].forEach(include))
+  forEachPixelSample(tile, step, (_index, north, south) =>
+    [north.west, north.east, south.west, south.east].forEach(include)
+  )
 
   const values = new Map<string, Float32Array | null>()
   await Promise.all(
@@ -264,7 +255,7 @@ export const buildCopernicusTile = async (tile: TerrainTile, reader: CopernicusC
   const along = ({ west, east, fx }: RowSample): number => valueAt(west) + (valueAt(east) - valueAt(west)) * fx
 
   const heights = new Float32Array(TERRAIN_TILE_SIZE * TERRAIN_TILE_SIZE)
-  samples.forEach(({ north, south, fy }, index) => {
+  forEachPixelSample(tile, step, (index, north, south, fy) => {
     const northValue = along(north)
     heights[index] = northValue + (along(south) - northValue) * fy
   })
