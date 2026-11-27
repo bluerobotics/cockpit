@@ -319,7 +319,7 @@ jobs:
           suffix: linux
           arch: x86_64
           buildExtension: AppImage
-          uploadExtension: AppImage.tar.gz
+          uploadExtension: AppImage
           latestMetadataName: latest-linux.yml
           deployCommand: deploy:electron
 
@@ -327,7 +327,7 @@ jobs:
           suffix: linux
           arch: arm64
           buildExtension: AppImage
-          uploadExtension: AppImage.tar.gz
+          uploadExtension: AppImage
           latestMetadataName: latest-linux-arm64.yml
           deployCommand: deploy:electron
 
@@ -474,14 +474,6 @@ jobs:
             exit 1
           fi
           echo 'minimumSystemVersion: 21.0.0' >> "$FILE"
-
-      - name: Package AppImage in tar.gz (Linux)
-        if: matrix.suffix == 'linux'
-        run: |
-          cd dist
-          chmod +x Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.buildExtension }}
-          tar -czvf Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.uploadExtension }} \
-            Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.buildExtension }}
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
