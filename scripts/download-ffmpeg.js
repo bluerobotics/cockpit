@@ -8,6 +8,7 @@ const os = require('os')
 const { execSync } = require('child_process')
 
 const { downloadFile } = require('./lib/download')
+const { buildFFmpeg } = require('./build-ffmpeg-macos')
 
 /**
  * Download FFmpeg 7.1 binary for the current platform
@@ -27,18 +28,6 @@ const PLATFORM_CONFIG = {
       url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-02-28-13-02/ffmpeg-n7.1-214-g71889a8437-winarm64-gpl-7.1.zip',
       archivePath: 'ffmpeg-n7.1-214-g71889a8437-winarm64-gpl-7.1/bin/ffmpeg.exe',
       targetFile: 'ffmpeg.exe',
-    },
-  },
-  darwin: {
-    x64: {
-      url: 'https://www.osxexperts.net/ffmpeg71intel.zip',
-      archivePath: 'ffmpeg',
-      targetFile: 'ffmpeg',
-    },
-    arm64: {
-      url: 'https://www.osxexperts.net/ffmpeg71arm.zip',
-      archivePath: 'ffmpeg',
-      targetFile: 'ffmpeg',
     },
   },
   linux: {
@@ -124,10 +113,14 @@ function extractAndMove(archivePath, config, targetDir) {
 
 /**
  * Main installation function
+ * @returns {Promise<void>} Resolves once the FFmpeg binary is in place
  */
 async function installFFmpeg() {
   const platform = os.platform()
   const arch = os.arch()
+
+  // macOS has no versioned prebuilt binary to pin, so it is compiled from source instead.
+  if (platform === 'darwin') return buildFFmpeg()
 
   console.log(`Installing FFmpeg ${FFMPEG_VERSION} for ${platform}-${arch}...`)
 

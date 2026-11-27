@@ -383,6 +383,14 @@ jobs:
           path: binaries/piper
           key: piper-macos-arm64-${{ hashFiles('scripts/build-piper-macos-arm64.js', 'scripts/download-piper.js') }}
 
+      # macOS compiles FFmpeg from source during the install below, which is slow and depends only on the pinned tarball.
+      - name: Cache the FFmpeg build (macOS)
+        if: matrix.suffix == 'mac'
+        uses: actions/cache@v4
+        with:
+          path: binaries/ffmpeg
+          key: ffmpeg-macos-${{ matrix.arch }}-${{ hashFiles('scripts/build-ffmpeg-macos.js') }}
+
       - name: Install and build
         run: |
           yarn install --frozen-lockfile --network-timeout 600000
@@ -510,6 +518,25 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/Cockpit-${{ matrix.suffix }}-${{ matrix.arch }}-${{ env.VERSION }}.${{ matrix.updateArtifact }}.blockmap
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
+
+      # The LGPL asks for FFmpeg's source to be offered from wherever the binary is, and a cache hit never downloads
+      # it. Both macOS builds use the same tarball, so one job publishes it.
+      - name: Download the FFmpeg source (macOS)
+        if: startsWith(github.ref, 'refs/tags/') && success() && matrix.os == 'macos-15-intel'
+        run: |
+          mkdir -p ffmpeg-source
+          node -e "require('./scripts/build-ffmpeg-macos').downloadFFmpegSource('ffmpeg-source')"
+
+      - name: Upload the FFmpeg source release (macOS)
+        uses: svenstaro/upload-release-action@v2
+        if: startsWith(github.ref, 'refs/tags/') && success() && matrix.os == 'macos-15-intel'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ffmpeg-source/ffmpeg-*.tar.xz
+          file_glob: true
           tag: ${{ github.ref }}
           overwrite: true
           prerelease: true
