@@ -3063,6 +3063,13 @@ msgstr ""
 "O Cockpit tem um mapeamento de joystick padrão para ${ 0 } com ${ 1 } "
 "função(ões) de eixo"
 
+#: src/composables/vehicleDefaults/vehicleDefaultsAutoImport.ts
+#, javascript-format
+msgid ""
+"Cockpit has no default views for ${ 0 }, so the example ROV views were "
+"removed. Use edit mode to add widgets."
+msgstr ""
+
 #: src/views/ToolsDataLakeView.vue
 msgid "Cockpit internal"
 msgstr "Interna do Cockpit"

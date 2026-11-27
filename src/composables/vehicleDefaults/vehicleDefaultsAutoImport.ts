@@ -1,12 +1,14 @@
 import { t } from 'ttag'
 import { type Ref, onUnmounted } from 'vue'
 
+import { blankViewsGroup } from '@/assets/defaults'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { closeSnackbar, openSnackbar } from '@/composables/snackbar'
 import {
   buildFreshViewsGroupFromDefault,
   buildReplacementMapping,
   evaluateDefaults,
+  isUntouchedPreviewViewsGroup,
 } from '@/migration/default-profile-importer'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useControllerStore } from '@/stores/controller'
@@ -49,6 +51,16 @@ export const useVehicleDefaultsAutoImport = (): void => {
       if (vehicleType === undefined) return
 
       let evaluation = evaluateDefaults(vehicleType, widgetStore.viewsGroup, controllerStore.protocolMapping)
+
+      // The ROV preview is only for exploring without a vehicle, so a vehicle with no default layout starts empty.
+      if (!evaluation.views.defaultProfile && isUntouchedPreviewViewsGroup(widgetStore.viewsGroup)) {
+        widgetStore.viewsGroup = buildFreshViewsGroupFromDefault(blankViewsGroup)
+        openSnackbar({
+          message: t`Cockpit has no default views for ${evaluation.vehicleTypeName}, so the example ROV views were removed. Use edit mode to add widgets.`,
+          variant: 'info',
+          duration: 5000,
+        })
+      }
 
       if (evaluation.views.action === 'auto-import' && evaluation.views.defaultProfile) {
         widgetStore.viewsGroup = buildFreshViewsGroupFromDefault(evaluation.views.defaultProfile)

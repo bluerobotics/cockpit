@@ -13,6 +13,7 @@ import {
   defaultMiniWidgetManagerVars,
   defaultWidgetManagerVars,
   miniWidgetsProfile,
+  previewViewsGroup,
 } from '@/assets/defaults'
 import { useInteractionDialog } from '@/composables/interactionDialog'
 import { useBlueOsStorage } from '@/composables/settingsSyncer'
@@ -32,6 +33,7 @@ import router, { flightRouteName } from '@/router'
 import { useAppInterfaceStore } from '@/stores/appInterface'
 import { useMainVehicleStore } from '@/stores/mainVehicle'
 import type { Point2D, SizeRect2D } from '@/types/general'
+import { fallbackVehicleId } from '@/types/settings-management'
 import {
   type MiniWidget,
   type MiniWidgetContainer,
@@ -62,7 +64,9 @@ export const useWidgetManagerStore = defineStore('widget-manager', () => {
   const snapToGrid = ref(true)
   const gridInterval = ref(0.01)
   const currentMiniWidgetsProfile = useBlueOsStorage('cockpit-mini-widgets-profile-v4', miniWidgetsProfile)
-  const viewsGroup = useBlueOsStorage<Profile>(viewsGroupKey, migrateLegacyViewsGroup() ?? blankViewsGroup)
+  const hasEverConnectedToAVehicle = settingsManager.currentVehicleId !== fallbackVehicleId
+  const firstViewsGroup = structuredClone(hasEverConnectedToAVehicle ? blankViewsGroup : previewViewsGroup)
+  const viewsGroup = useBlueOsStorage<Profile>(viewsGroupKey, migrateLegacyViewsGroup() ?? firstViewsGroup)
   const currentViewIndex = useBlueOsStorage<number>('cockpit-current-view-index-v1', 0)
   const unmountHiddenViews = useStorage('cockpit-unmount-hidden-views', false)
 

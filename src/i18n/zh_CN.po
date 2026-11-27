@@ -2904,6 +2904,13 @@ msgid ""
 "function(s)"
 msgstr "Cockpit 为 ${ 0 } 提供了包含 ${ 1 } 个轴功能的默认摇杆映射"
 
+#: src/composables/vehicleDefaults/vehicleDefaultsAutoImport.ts
+#, javascript-format
+msgid ""
+"Cockpit has no default views for ${ 0 }, so the example ROV views were "
+"removed. Use edit mode to add widgets."
+msgstr ""
+
 #: src/views/ToolsDataLakeView.vue
 msgid "Cockpit internal"
 msgstr "Cockpit 内部"
