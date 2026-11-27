@@ -91,6 +91,12 @@
         :activator-style="{ bottom: bottomButtonsDisplacement, zIndex: 1002 }"
         @center-on-mission="centerOnMission"
       />
+      <MapLayerSelector
+        v-if="showButtons"
+        v-model:open="layerSelectorOpen"
+        :control="layerControl"
+        :activator-style="{ right: '382px', bottom: bottomButtonsDisplacement, zIndex: 1002 }"
+      />
       <MapNorthIndicator v-if="showButtons" class="north-indicator" />
       <PoiMapArrows
         :map-ready="mapReady"
@@ -267,6 +273,7 @@ import ExpansiblePanel from '@/components/ExpansiblePanel.vue'
 import GeoFenceEnforcementControl from '@/components/geofence/GeoFenceEnforcementControl.vue'
 import GeoFenceMapLayer from '@/components/geofence/GeoFenceMapLayer.vue'
 import GlobalOriginDialog from '@/components/GlobalOriginDialog.vue'
+import MapLayerSelector from '@/components/map/MapLayerSelector.vue'
 import MapNorthIndicator from '@/components/map/MapNorthIndicator.vue'
 import MapOverlaysDialog from '@/components/map/MapOverlaysDialog.vue'
 import MapCenterControl from '@/components/MapCenterControl.vue'
@@ -388,12 +395,14 @@ const mapId = computed(() => `map-${widget.value.hash}`)
 // dial has to keep the buttons mounted without also opening its neighbour.
 const centerDialOpen = ref(false)
 const fenceDialOpen = ref(false)
+const layerSelectorOpen = ref(false)
 const showButtons = computed(
   () =>
     isMouseOver.value ||
     downloadMenuOpen.value ||
     centerDialOpen.value ||
     fenceDialOpen.value ||
+    layerSelectorOpen.value ||
     widgetStore.isFullScreen(widget.value)
 )
 const mapReady = ref(false)
@@ -684,18 +693,16 @@ const mapBase = ref<HTMLElement>()
 const isMouseOver = useElementHover(mapBase)
 
 const zoomControl = L.control.zoom({ position: 'bottomright' })
-const layerControl = createLayerControl()
+const layerControl = createLayerControl(() => map.value)
 const gridLayer = shallowRef<L.LayerGroup | undefined>(undefined)
 
 watch(showButtons, () => {
   if (map.value === undefined) return
   if (showButtons.value) {
     map.value.addControl(zoomControl)
-    map.value.addControl(layerControl)
     createScaleControl()
   } else {
     map.value.removeControl(zoomControl)
-    map.value.removeControl(layerControl)
     removeScaleControl()
   }
 })
@@ -880,10 +887,9 @@ onMounted(async () => {
 
   // Apply the current showButtons state to the leaflet controls
   // Registered before the data layers below: rendering a stored GeoTIFF can take seconds, and the map
-  // must not be left without its own zoom, layer and scale controls while that runs.
+  // must not be left without its own zoom and scale controls while that runs.
   if (showButtons.value && map.value) {
     map.value.addControl(zoomControl)
-    map.value.addControl(layerControl)
     createScaleControl()
   }
 
@@ -2154,7 +2160,7 @@ const centerOnMission = (): void => {
   position: absolute;
   bottom: v-bind('bottomButtonsDisplacement');
   margin-bottom: 12px;
-  right: 388px; /* Position to the left of the buttons */
+  right: 432px; /* Position to the left of the buttons */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 1px;
   padding: 6px 6px;
@@ -2185,37 +2191,6 @@ const centerOnMission = (): void => {
 :deep(.leaflet-control-zoom.leaflet-bar a:hover),
 :deep(.leaflet-control-zoom.leaflet-bar a:focus) {
   background: transparent !important;
-}
-
-/* Style the Leaflet layer provider selector */
-:deep(.leaflet-control-layers) {
-  background: var(--glass-background) !important;
-  backdrop-filter: var(--glass-filter) !important;
-  box-shadow: var(--glass-box-shadow) !important;
-  color: var(--glass-color) !important;
-  border: var(--glass-border) !important;
-  border-radius: 4px;
-}
-
-:deep(.leaflet-control-layers-expanded) {
-  background: var(--glass-background) !important;
-  backdrop-filter: var(--glass-filter) !important;
-  box-shadow: var(--glass-box-shadow) !important;
-  color: var(--glass-color) !important;
-  border: var(--glass-border) !important;
-}
-
-:deep(.leaflet-control-layers-list) {
-  background: transparent !important;
-  color: var(--glass-color) !important;
-}
-
-:deep(.leaflet-control-layers-selector) {
-  accent-color: var(--glass-color) !important;
-}
-
-:deep(.leaflet-control-layers label) {
-  color: var(--glass-color) !important;
 }
 </style>
 

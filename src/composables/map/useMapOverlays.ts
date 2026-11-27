@@ -2,6 +2,7 @@ import L, { type Map as LeafletMap } from 'leaflet'
 import { type Ref, ref, watch } from 'vue'
 
 import { OVERLAY_RENDER_VERSION, renderGeoTiffImage } from '@/libs/map/geotiff-overlay'
+import type { MapLayerControl } from '@/libs/map/map-layer-control'
 import {
   type CachedOverlayRender,
   getCachedOverlayRender,
@@ -44,7 +45,7 @@ export interface UseMapOverlaysReturn {
   /**
    * Binds the registry to a Leaflet map (and optional layer control) and starts syncing overlays.
    */
-  initOverlays: (map: LeafletMap, layerControl?: L.Control.Layers) => Promise<void>
+  initOverlays: (map: LeafletMap, layerControl?: MapLayerControl) => Promise<void>
   /**
    * Frames the map on the given overlay's bounds.
    */
@@ -71,7 +72,7 @@ export const useMapOverlays = (): UseMapOverlaysReturn => {
   const placeholders = new Map<string, L.LayerGroup>()
   const loadingIds = ref<string[]>([])
   let mapRef: LeafletMap | undefined
-  let controlRef: L.Control.Layers | undefined
+  let controlRef: MapLayerControl | undefined
   let stopWatch: (() => void) | undefined
   let reconcileChain: Promise<void> = Promise.resolve()
 
@@ -223,7 +224,7 @@ export const useMapOverlays = (): UseMapOverlaysReturn => {
     return reconcileChain
   }
 
-  const initOverlays = async (map: LeafletMap, layerControl?: L.Control.Layers): Promise<void> => {
+  const initOverlays = async (map: LeafletMap, layerControl?: MapLayerControl): Promise<void> => {
     mapRef = map
     controlRef = layerControl
     ensurePane()

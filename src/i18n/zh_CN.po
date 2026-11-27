@@ -952,7 +952,7 @@ msgstr "添加围栏："
 msgid "Add header"
 msgstr "添加请求头"
 
-#: src/composables/map/useMapTileLayerSelection.ts
+#: src/components/map/MapLayerSelector.vue
 msgid "Add map provider"
 msgstr "添加地图提供商"
 
@@ -1844,6 +1844,10 @@ msgstr ""
 #: src/views/ConfigurationMissionView.vue
 msgid "Base color"
 msgstr "基础颜色"
+
+#: src/components/map/MapLayerSelector.vue
+msgid "Base map"
+msgstr ""
 
 #: src/components/BaseStationConfigPanel.vue
 #: src/components/BaseStationContextPopup.vue
@@ -7607,6 +7611,10 @@ msgstr ""
 msgid "Map function to button"
 msgstr "映射功能到按钮"
 
+#: src/components/map/MapLayerSelector.vue
+msgid "Map layers"
+msgstr ""
+
 #: src/views/ConfigurationMissionView.vue
 msgid "Map options"
 msgstr "地图选项"
@@ -9249,6 +9257,10 @@ msgstr ""
 #: src/views/ConfigurationLogsView.vue
 msgid "Overlay Options"
 msgstr "叠加选项"
+
+#: src/components/map/MapLayerSelector.vue
+msgid "Overlays"
+msgstr ""
 
 #: src/components/widgets/Map.vue
 msgid "POI Manager (map widget) is not available."

@@ -11,6 +11,7 @@ import {
   HAZARD_SOURCE_IDS,
   HAZARD_SOURCES,
 } from '@/libs/hazards/sources'
+import type { MapLayerControl } from '@/libs/map/map-layer-control'
 import { terrainAttribution } from '@/libs/terrain/elevation-service'
 import { escapeHtml } from '@/libs/utils'
 import { useHazardStore } from '@/stores/hazards'
@@ -39,7 +40,7 @@ export interface UseHazardOverlayReturn {
   /**
    * Binds the overlay to a Leaflet map and its layer control, and starts syncing the loaded areas.
    */
-  initHazardOverlay: (map: LeafletMap, layerControl?: L.Control.Layers) => void
+  initHazardOverlay: (map: LeafletMap, layerControl?: MapLayerControl) => void
   /**
    * Stops syncing and removes every hazard layer from the map and the layer control.
    */
@@ -113,7 +114,7 @@ export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {})
 
   const groups = new Map<HazardSourceId, L.LayerGroup>()
   let mapRef: LeafletMap | undefined
-  let controlRef: L.Control.Layers | undefined
+  let controlRef: MapLayerControl | undefined
   let renderer: L.Canvas | undefined
   let stopWatches: (() => void)[] = []
   let labels: {
@@ -303,7 +304,6 @@ export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {})
         labels.push({ tooltip, bounds: (layer as L.Polygon).getBounds(), sourceId })
       })
       groups.set(sourceId, group)
-      // Added to the map before the control knows it, or the control reports it as an operator's `overlayadd`.
       if (wasVisible) group.addTo(mapRef as LeafletMap)
       if (!shownSources) controlRef?.addOverlay(group, HAZARD_SOURCES[sourceId].label)
     })
@@ -312,7 +312,7 @@ export const useHazardOverlay = ({ shownSources }: UseHazardOverlayOptions = {})
     stackBySize()
   }
 
-  const initHazardOverlay = (map: LeafletMap, layerControl?: L.Control.Layers): void => {
+  const initHazardOverlay = (map: LeafletMap, layerControl?: MapLayerControl): void => {
     mapRef = map
     controlRef = layerControl
     rebuild()
