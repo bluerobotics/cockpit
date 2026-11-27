@@ -20,6 +20,8 @@ const FETCH_TIMEOUT_MS = 20000
 // A tile reads up to four cells, each a header and a few blocks, so it may take several fetches in a row.
 const TILE_BUILD_TIMEOUT_MS = 90000
 const MAX_OPEN_FILES = 12
+// Every terrain tool in the renderer can ask for tiles at once, and each build holds its rasters until it ends.
+const MAX_TILE_BUILDS = 8
 // No surface on Earth is this deep, so anything below it is a void in the model rather than a height.
 const VOID_BELOW_M = -12000
 const MIN_ZOOM = 8
@@ -28,6 +30,8 @@ const MAX_ZOOM = 13
 const cellLists = new Map<Resolution, Promise<Set<string>>>()
 const openFiles = new Map<string, Promise<GeoTIFF>>()
 const inFlightTiles = new Map<string, Promise<Uint8Array>>()
+const queuedBuilds: (() => void)[] = []
+let runningBuilds = 0
 
 const cellListPath = (resolutionM: Resolution): string =>
   join(app.getPath('userData'), 'terrain', `copernicus-${resolutionM}m-cells.txt`)
@@ -186,7 +190,25 @@ const encodePng = (rgba: Uint8ClampedArray, size: number): Buffer => {
 
 // ponytail: tiles are resampled and encoded on the main process, a few milliseconds of blocking each; a utility
 // process is the upgrade if prefetching large areas makes the window stutter.
+const acquireBuildSlot = (): Promise<void> => {
+  if (runningBuilds < MAX_TILE_BUILDS) {
+    runningBuilds++
+    return Promise.resolve()
+  }
+  return new Promise((resolve) => queuedBuilds.push(resolve))
+}
+
+const releaseBuildSlot = (): void => {
+  const next = queuedBuilds.shift()
+  if (next) next()
+  else runningBuilds--
+}
+
 const buildTile = async (z: number, x: number, y: number): Promise<Uint8Array> => {
+  await acquireBuildSlot()
+  // Nothing can abort a build, so one that misses its deadline keeps its slot until it really ends.
+  const building = buildCopernicusTile({ z, x, y }, reader)
+  building.then(releaseBuildSlot, releaseBuildSlot)
   let timer: ReturnType<typeof setTimeout> | undefined
   const deadline = new Promise<never>((_, reject) => {
     timer = setTimeout(
@@ -195,7 +217,7 @@ const buildTile = async (z: number, x: number, y: number): Promise<Uint8Array> =
     )
   })
   try {
-    const heights = await Promise.race([buildCopernicusTile({ z, x, y }, reader), deadline])
+    const heights = await Promise.race([building, deadline])
     return new Uint8Array(encodePng(encodeTerrariumPixels(heights), TERRAIN_TILE_SIZE))
   } finally {
     clearTimeout(timer)
