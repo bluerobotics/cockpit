@@ -11,6 +11,7 @@ import { useBlueOsStorage } from '@/composables/settingsSyncer'
 import { openActionErrorSnackbar } from '@/composables/snackbar'
 import { checkForOtherManualControlSources } from '@/libs/blueos'
 import {
+  hasTriggerAxes,
   joystickCalibrationOptionsKey,
   joystickManager,
   JoystickModel,
@@ -37,6 +38,7 @@ import {
   JoystickCalibration,
   JoystickCalibrationOptions,
   JoystickProtocol,
+  trackTriggerPulls,
 } from '@/types/joystick'
 import { availableGamepadToCockpitMaps } from '@/types/joystick-model-defs'
 
@@ -324,6 +326,16 @@ export const useControllerStore = defineStore('controller', () => {
       return
     }
 
+    if (hasTriggerAxes(event.gamepad)) {
+      const previousPulls = triggerPulls.get(event.index) ?? new Map()
+      const shiftHeld = modifierKeyId === CockpitModifierKeyOption.shift
+      const pulls = trackTriggerPulls(previousPulls, currentState.axes, protocolMapping.value, shiftHeld)
+      triggerPulls.set(event.index, pulls)
+      pulls.forEach((shiftPull, axis) => {
+        if (shiftPull) currentState.axes[axis] = 0
+      })
+    }
+
     for (const callback of updateCallbacks.value) {
       try {
         callback(
@@ -362,8 +374,12 @@ export const useControllerStore = defineStore('controller', () => {
   // Action each held button is forwarding, per joystick, so a modifier change mid-hold logs the switch and the release
   // names what was really being sent
   const heldButtonsActions = new Map<number, Map<number, ProtocolAction>>()
+  // Pulled trigger axes per joystick, and whether each pull belongs to Shift
+  const triggerPulls = new Map<number, Map<JoystickAxis, boolean>>()
   watch(enableForwarding, (enabled) => {
-    if (!enabled) heldButtonsActions.clear()
+    if (enabled) return
+    heldButtonsActions.clear()
+    triggerPulls.clear()
   })
 
   const logButtonPressesAndReleases = (

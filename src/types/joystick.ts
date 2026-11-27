@@ -540,6 +540,31 @@ export const withTriggerAxes = (axes: ReadonlyArray<number>, buttons: ReadonlyAr
 }
 
 /**
+ * Track a standard-layout gamepad's pulled triggers, flagging a pull that started with Shift held on a trigger that has a
+ * Shift action. A flagged pull runs that action only, so its axis stays released until the trigger is let go.
+ * @param {ReadonlyMap<JoystickAxis, boolean>} previous Pulls tracked on the previous state
+ * @param {ReadonlyArray<number | undefined>} axes Calibrated axis values, with the triggers in place
+ * @param {JoystickProtocolActionsMapping} mapping Active protocol mapping
+ * @param {boolean} shiftHeld Whether Shift is the active modifier
+ * @returns {Map<JoystickAxis, boolean>} Each pulled trigger's axis, and whether its pull belongs to Shift
+ */
+export const trackTriggerPulls = (
+  previous: ReadonlyMap<JoystickAxis, boolean>,
+  axes: ReadonlyArray<number | undefined>,
+  mapping: JoystickProtocolActionsMapping,
+  shiftHeld: boolean
+): Map<JoystickAxis, boolean> => {
+  const pulls = new Map<JoystickAxis, boolean>()
+  standardTriggerAxes.forEach(({ axis, button }) => {
+    if (!axes[axis]) return
+    const shiftAction = mapping.buttonsCorrespondencies[CockpitModifierKeyOption.shift]?.[button]?.action
+    const startsWithShift = shiftHeld && shiftAction !== undefined && shiftAction.protocol !== JoystickProtocol.Other
+    pulls.set(axis, previous.get(axis) ?? startsWithShift)
+  })
+  return pulls
+}
+
+/**
  * Convert SDL controller state to Gamepad state, using the default mapping for both
  * @param {SDLControllerState} sdlState - SDL controller state
  * @returns {JoystickState} Gamepad state
