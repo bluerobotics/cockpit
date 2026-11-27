@@ -902,6 +902,13 @@ export const widgetProfiles: Profile[] = [
 ]
 export const widgetProfile = widgetProfiles[0]
 
+/**
+ * The ROV layout shown until a vehicle connects for the first time, so a fresh install does not open on an empty view
+ */
+export const previewViewsGroup: Profile = structuredClone(
+  widgetProfiles.find((profile) => profile.hash === defaultRovProfileHash) ?? blankViewsGroup
+)
+
 export const miniWidgetsProfiles: MiniWidgetProfile[] = [
   {
     name: 'Default Cockpit Mini Widget profile',

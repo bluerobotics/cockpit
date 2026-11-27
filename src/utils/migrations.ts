@@ -1,5 +1,6 @@
 import { t } from 'ttag'
 
+import { blankViewsGroup, previewViewsGroup } from '@/assets/defaults'
 import { openSnackbar } from '@/composables/snackbar'
 import { createDataLakeVariable, deleteDataLakeVariable, getDataLakeVariableData } from '@/libs/actions/data-lake'
 import { getAllTransformingFunctions, updateTransformingFunction } from '@/libs/actions/data-lake-transformations'
@@ -7,6 +8,9 @@ import { recordedDataLakeVariablesKey } from '@/libs/data-lake-logging'
 import { shareHardwareDetailsKey } from '@/libs/external-telemetry/event-tracking'
 import { settingsManager } from '@/libs/settings-management'
 import { getUnindentedString } from '@/libs/utils'
+import { isViewsGroupBlank } from '@/migration/default-profile-importer'
+import { fallbackVehicleId } from '@/types/settings-management'
+import type { Profile } from '@/types/widgets'
 import { collectOverlayRecordedVariableIds } from '@/utils/data-lake-recorded-variables-migration'
 
 // Tracks which one-off migrations have already run, keyed by migration name.
@@ -171,6 +175,21 @@ const removeMissionControlPanelMigrationUserList = (): void => {
 }
 
 /**
+ * Give an install that never connected to a vehicle the first-launch preview in place of the shipped empty layout
+ * it saved before the preview existed. Written as old, so a layout stored on a vehicle still wins.
+ */
+const migrateShippedBlankViewsToPreview = (): void => {
+  const migrationName = 'shipped-blank-views-to-first-launch-preview'
+  if (hasMigrationRun(migrationName)) return
+  markMigrationAsRun(migrationName)
+  if (settingsManager.currentVehicleId !== fallbackVehicleId) return
+  const viewsGroupKey = 'cockpit-views-group-v1'
+  const viewsGroup = settingsManager.getKeyValue(viewsGroupKey) as Profile | undefined
+  if (viewsGroup?.hash !== blankViewsGroup.hash || !isViewsGroupBlank(viewsGroup)) return
+  settingsManager.setKeyValue(viewsGroupKey, structuredClone(previewViewsGroup), 0)
+}
+
+/**
  * Run all migrations
  */
 export function runMigrations(): void {
@@ -179,4 +198,5 @@ export function runMigrations(): void {
   migrateRecordedVariablesFromOverlay()
   migrateCameraSpeedFactorRemoval()
   removeMissionControlPanelMigrationUserList()
+  migrateShippedBlankViewsToPreview()
 }

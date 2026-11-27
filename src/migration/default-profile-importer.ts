@@ -1,7 +1,12 @@
 import { v4 as uuid4 } from 'uuid'
 import { toRaw } from 'vue'
 
-import { blankViewsGroup, defaultProfileVehicleCorrespondency, widgetProfiles } from '@/assets/defaults'
+import {
+  blankViewsGroup,
+  defaultProfileVehicleCorrespondency,
+  previewViewsGroup,
+  widgetProfiles,
+} from '@/assets/defaults'
 import { blankMapping } from '@/assets/joystick-profiles'
 import { MavType } from '@/libs/connection/m2r/messages/mavlink2rest-enum'
 import { getDefaultMapping } from '@/libs/joystick/default-mappings'
@@ -45,7 +50,32 @@ const getDefaultViewsGroup = (vehicleType: MavType): Profile | undefined => {
   return widgetProfiles.find((p) => p.hash === hash)
 }
 
+// Everything the user can change except widget options, which mounted widgets fill in on their own.
+const layoutSignature = (profile: Profile): string =>
+  JSON.stringify(
+    profile.views.map((view) => [
+      view.hash,
+      view.name,
+      view.visible,
+      view.showBottomBarOnBoot,
+      view.widgets.map((widget) => [widget.hash, widget.name, widget.position, widget.size]),
+      view.miniWidgetContainers.map((container) => container.widgets.map((miniWidget) => miniWidget.hash)),
+    ])
+  )
+// Computed on first use, as this module sits on an import cycle with the defaults that hold the preview.
+let previewLayoutSignature: string | undefined
+
+/**
+ * Whether the layout is still the first-launch preview as shipped, holding nothing of the user's
+ * @param {Profile} profile - The layout to check
+ * @returns {boolean} True when it is the preview and the user has not changed it
+ */
+export const isUntouchedPreviewViewsGroup = (profile: Profile): boolean =>
+  profile.hash === previewViewsGroup.hash &&
+  layoutSignature(profile) === (previewLayoutSignature ??= layoutSignature(previewViewsGroup))
+
 export const isViewsGroupBlank = (profile: Profile): boolean => {
+  if (isUntouchedPreviewViewsGroup(profile)) return true
   if (profile.views.length !== blankViewsGroup.views.length) return false
   for (let i = 0; i < profile.views.length; i++) {
     const view = profile.views[i]
