@@ -1,5 +1,6 @@
 import type { ChildProcess } from 'child_process'
 import { spawn } from 'child_process'
+import { type Socket, createSocket } from 'dgram'
 import { ipcMain } from 'electron'
 import { promises as fs } from 'fs'
 import http from 'http'
@@ -9,6 +10,12 @@ import { delimiter, dirname, join } from 'path'
 
 import type { Go2RTCStreamInfo } from '@/types/video'
 
+import {
+  type RtpSourceConfig,
+  buildRtpGo2rtcSource,
+  rtpInputTemplate,
+  rtpInputTemplateName,
+} from '../../libs/rtp-source'
 import { getFFmpegPath } from './ffmpeg-path'
 import { getGo2RTCPath } from './go2rtc-path'
 
@@ -121,6 +128,7 @@ const startGo2RTC = async (): Promise<number> => {
     `  listen: "127.0.0.1:${rtspPort}"`,
     'ffmpeg:',
     `  ${hevcVideoTemplateName}: '${hevcVideoTemplate}'`,
+    `  ${rtpInputTemplateName}: '${rtpInputTemplate}'`,
     '',
   ].join('\n')
   await fs.writeFile(configPath, config, 'utf-8')
@@ -129,7 +137,7 @@ const startGo2RTC = async (): Promise<number> => {
   try {
     ffmpegDir = dirname(getFFmpegPath())
   } catch (error) {
-    console.warn('[go2rtc] Bundled FFmpeg not found, H.265 RTSP streams can freeze:', error)
+    console.warn('[go2rtc] Bundled FFmpeg not found, H.265 RTSP streams can freeze and UDP ones will not work:', error)
   }
   canReadThroughFfmpeg = ffmpegDir !== undefined
 
@@ -182,6 +190,7 @@ const stopGo2RTC = async (): Promise<void> => {
   const proc = go2rtcProcess
   go2rtcProcess = null
   go2rtcPort = null
+  Array.from(rtpRelays.keys()).forEach(closeRtpRelay)
 
   await new Promise<void>((resolve) => {
     const killTimeout = setTimeout(() => {
@@ -247,12 +256,80 @@ const sourceCarriesHevc = async (name: string): Promise<boolean> => {
   }
 }
 
+// Sockets Cockpit listens for UDP video on, by stream name. Each packet is handed to FFmpeg over the loopback, which
+// leaves Cockpit as the only program a firewall has to let through, and lets a port already taken be told.
+const rtpRelays = new Map<string, Socket>()
+
+const closeRtpRelay = (name: string): void => {
+  rtpRelays.get(name)?.close()
+  rtpRelays.delete(name)
+}
+
+const bindUdp = (socket: Socket, port: number, address?: string): Promise<number> =>
+  new Promise((resolve, reject) => {
+    socket.once('error', reject)
+    socket.bind(port, address, () => {
+      socket.off('error', reject)
+      resolve(socket.address().port)
+    })
+  })
+
+/**
+ * Listen for a UDP video stream and relay its packets to a loopback port
+ * @param {string} name - Stream name the relay is kept under
+ * @param {number} port - UDP port to listen on, on every network interface
+ * @returns {Promise<number>} The loopback port the packets are relayed to
+ */
+const openRtpRelay = async (name: string, port: number): Promise<number> => {
+  closeRtpRelay(name)
+
+  // ponytail: FFmpeg also binds the port above this one, for RTCP, which nothing checks to be free. Probe both once
+  // a stream fails to start over it.
+  const probe = createSocket('udp4')
+  const ffmpegPort = await bindUdp(probe, 0, '127.0.0.1')
+  await new Promise<void>((resolve) => probe.close(() => resolve()))
+
+  const socket = createSocket('udp4')
+  try {
+    await bindUdp(socket, port)
+  } catch (error) {
+    socket.close()
+    throw error
+  }
+  socket.on('error', (error) => console.warn(`[go2rtc] UDP relay of stream '${name}' failed:`, error))
+  socket.on('message', (packet) => socket.send(packet, ffmpegPort, '127.0.0.1'))
+  rtpRelays.set(name, socket)
+  return ffmpegPort
+}
+
+/**
+ * Register a raw RTP over UDP stream with go2rtc, ingested through the bundled FFmpeg
+ * @param {string} name - Unique stream name
+ * @param {RtpSourceConfig} config - Port to listen on, and the codec to expect there
+ * @returns {Promise<void>}
+ */
+const addRtpStream = async (name: string, config: RtpSourceConfig): Promise<void> => {
+  if (!go2rtcPort) throw new Error('go2rtc is not running')
+  const ffmpegPort = await openRtpRelay(name, config.port)
+  // H.265 gets its delimiters stripped for the reason told above the template
+  const video = config.codec === 'h265' ? hevcVideoTemplateName : 'copy'
+  try {
+    await registerSource(name, buildRtpGo2rtcSource({ ...config, port: ffmpegPort }, video))
+  } catch (error) {
+    // A stream go2rtc did not take is never removed from it, which is the only other place the port is let go
+    closeRtpRelay(name)
+    throw error
+  }
+  console.log(`[go2rtc] Added stream '${name}' -> UDP port ${config.port} (${config.codec})`)
+}
+
 /**
  * Remove an RTSP stream from go2rtc
  * @param {string} name - Stream name to remove
  * @returns {Promise<void>}
  */
 const removeStream = async (name: string): Promise<void> => {
+  closeRtpRelay(name)
   if (!go2rtcPort) return
   try {
     const url = `http://127.0.0.1:${go2rtcPort}/api/streams?name=${encodeURIComponent(name)}&src=`
@@ -487,6 +564,15 @@ export const setupGo2RTCService = (): void => {
       return await addStream(name, rtspUrl)
     } catch (error) {
       console.error('[go2rtc] Error adding stream:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('go2rtc-add-rtp-stream', async (_, name: string, config: RtpSourceConfig) => {
+    try {
+      await addRtpStream(name, config)
+    } catch (error) {
+      console.error('[go2rtc] Error adding RTP stream:', error)
       throw error
     }
   })

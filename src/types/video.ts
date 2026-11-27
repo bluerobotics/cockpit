@@ -39,7 +39,7 @@ export interface StreamData {
   timeRecordingStart: Date | undefined
 }
 
-export type VideoStreamProtocol = 'webrtc' | 'rtsp'
+export type VideoStreamProtocol = 'webrtc' | 'rtsp' | 'rtp'
 
 /**
  * Info about a stream's RTCPeerConnection, used for stats monitoring
