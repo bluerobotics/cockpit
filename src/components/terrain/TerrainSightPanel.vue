@@ -299,7 +299,8 @@ const onCheckLink = async (): Promise<void> => {
       analysis.profile.samples,
       (sample) => vehicleSightHeightM(sample, vehicleClass, antennaM, waterLevelM),
       terrainStore.settings.radioFrequencyMhz,
-      waterLevelM
+      waterLevelM,
+      dock.terrain.largeAreaApproved()
     )
     dock.linkStations.value = stations
     dock.linkFindings.value = linkFindings(stations)

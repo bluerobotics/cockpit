@@ -224,8 +224,10 @@ const missionStore = useMissionStore()
 const dock = useTerrainDock()
 const applyingId = ref<string | null>(null)
 
-const sampleHighest: GroundSampler = (coordinates) => sampleTerrain(coordinates, { mode: 'highest' })
-const sampleGround: GroundSampler = (coordinates) => sampleTerrain(coordinates, { mode: 'bilinear' })
+const sampleHighest: GroundSampler = (coordinates) =>
+  sampleTerrain(coordinates, { mode: 'highest', allowLargeArea: dock.terrain.largeAreaApproved() })
+const sampleGround: GroundSampler = (coordinates) =>
+  sampleTerrain(coordinates, { mode: 'bilinear', allowLargeArea: dock.terrain.largeAreaApproved() })
 const surveyWaypointIds = (): Set<string> =>
   new Set(missionStore.currentPlanningSurveys.flatMap((survey) => survey.waypoints.map(({ id }) => id)))
 const everyWaypoint = (waypoints: Waypoint[], message: string): ReportedResult => ({

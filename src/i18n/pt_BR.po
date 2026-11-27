@@ -1682,6 +1682,10 @@ msgstr "Tem certeza de que deseja enviar o veículo para o Home?"
 msgid "Area"
 msgstr "Área"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Area too large"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Areas under 1 nmi²"
 msgstr "Áreas abaixo de 1 nmi²"
@@ -2534,6 +2538,10 @@ msgstr ""
 
 #: src/libs/terrain/shallows-osm.ts
 msgid "Charted feature"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Check anyway"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -13473,6 +13481,24 @@ msgstr ""
 #: src/components/geofence/GeoFenceParametersPanel.vue
 msgid "This leaves the boat drifting"
 msgstr "Isto deixa o barco à deriva"
+
+#: src/libs/terrain/elevation-service.ts
+#, javascript-format
+msgid ""
+"This mission spans a very large area that needs about ${ 0 } terrain "
+"downloads. It usually has a misplaced point, such as a home far from the "
+"waypoints; move it or narrow the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid ""
+"This mission spans a very large area: checking it needs about ${ 0 } "
+"terrain downloads, and Cockpit downloads only a few at a time, so it can "
+"take many minutes. A mission this large usually has a misplaced point, such "
+"as a home far from the waypoints. Move it or narrow the mission, or check "
+"it anyway."
+msgstr ""
 
 #: src/components/Tutorial.vue
 msgid ""
