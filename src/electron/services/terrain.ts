@@ -20,6 +20,9 @@ const FETCH_TIMEOUT_MS = 20000
 // A tile reads up to four cells, each a header and a few blocks, so it may take several fetches in a row.
 const TILE_BUILD_TIMEOUT_MS = 90000
 const MAX_OPEN_FILES = 12
+// A build holds its sampling plan and cell windows while its reads are in flight, so a renderer that asks for
+// thousands of tiles at once must queue here rather than exhaust this process's heap and freeze every window.
+const MAX_CONCURRENT_BUILDS = 12
 // No surface on Earth is this deep, so anything below it is a void in the model rather than a height.
 const VOID_BELOW_M = -12000
 const MIN_ZOOM = 8
@@ -28,6 +31,21 @@ const MAX_ZOOM = 13
 const cellLists = new Map<Resolution, Promise<Set<string>>>()
 const openFiles = new Map<string, Promise<GeoTIFF>>()
 const inFlightTiles = new Map<string, Promise<Uint8Array>>()
+const waitingBuilds: (() => void)[] = []
+let runningBuilds = 0
+
+// A finished build hands its slot straight to the next one waiting, so the count only drops when nothing waits.
+const withBuildSlot = async <T>(build: () => Promise<T>): Promise<T> => {
+  if (runningBuilds < MAX_CONCURRENT_BUILDS) runningBuilds++
+  else await new Promise<void>((resolve) => waitingBuilds.push(resolve))
+  try {
+    return await build()
+  } finally {
+    const next = waitingBuilds.shift()
+    if (next) next()
+    else runningBuilds--
+  }
+}
 
 const cellListPath = (resolutionM: Resolution): string =>
   join(app.getPath('userData'), 'terrain', `copernicus-${resolutionM}m-cells.txt`)
@@ -215,7 +233,7 @@ const getCopernicusTerrainTile = async (
   const key = `${z}/${x}/${y}`
   const running = inFlightTiles.get(key)
   if (running) return running
-  const building = buildTile(z, x, y).finally(() => inFlightTiles.delete(key))
+  const building = withBuildSlot(() => buildTile(z, x, y)).finally(() => inFlightTiles.delete(key))
   inFlightTiles.set(key, building)
   return building
 }

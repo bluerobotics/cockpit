@@ -55,6 +55,16 @@
             </div>
           </Transition>
         </div>
+        <div
+          v-else-if="dock.terrain.largeAreaTiles.value !== null"
+          class="flex flex-col items-center gap-y-3 py-4 text-center"
+          role="alert"
+        >
+          <p class="text-xs max-w-[560px]">{{ largeAreaMessage }}</p>
+          <v-btn variant="flat" class="bg-[#FFFFFF22] text-white" size="small" @click="onCheckLargeArea">
+            {{ t`Check anyway` }}
+          </v-btn>
+        </div>
         <p v-else class="text-xs opacity-70 text-center py-6">{{ emptyMessage }}</p>
 
         <div class="flex items-center gap-x-1">
@@ -344,7 +354,11 @@ const noMission = computed(() => missionStore.currentPlanningWaypoints.length ==
 
 // Until the first check of a mission comes back, which waits out the live check's debounce, nothing describes it yet.
 const firstCheck = computed(
-  () => !analysis.value && !dock.terrain.analysisError.value && dock.terrain.points().length > 1
+  () =>
+    !analysis.value &&
+    !dock.terrain.analysisError.value &&
+    dock.terrain.largeAreaTiles.value === null &&
+    dock.terrain.points().length > 1
 )
 
 const loadingText = computed(() => {
@@ -525,6 +539,8 @@ const status = computed(() => {
   if (dock.terrain.analyzing.value) return { text: t`Checking`, icon: '', color: '#FFFFFFB3', busy: true }
   if (dock.terrain.analysisError.value)
     return { text: t`Check failed`, icon: 'mdi-alert-circle-outline', color: '#FF5252', busy: false }
+  if (dock.terrain.largeAreaTiles.value !== null)
+    return { text: t`Area too large`, icon: 'mdi-alert-outline', color: '#FF8800', busy: false }
   if (!analysis.value)
     return { text: t`Not checked`, icon: 'mdi-minus-circle-outline', color: '#FFFFFFB3', busy: false }
   const count = dock.findings.value.length
@@ -537,6 +553,16 @@ const emptyMessage = computed(() => {
   if (dock.terrain.analysisError.value) return t`Could not read the terrain: ${dock.terrain.analysisError.value}`
   return t`Add at least one waypoint to see the terrain under the mission.`
 })
+
+const largeAreaMessage = computed(() => {
+  const downloads = dock.terrain.largeAreaTiles.value
+  return t`This mission spans a very large area: checking it needs about ${downloads} terrain downloads, and Cockpit downloads only a few at a time, so it can take many minutes. A mission this large usually has a misplaced point, such as a home far from the waypoints. Move it or narrow the mission, or check it anyway.`
+})
+
+const onCheckLargeArea = async (): Promise<void> => {
+  logUserAction(`Accepted checking the terrain under a mission that needs ${dock.terrain.largeAreaTiles.value} tiles`)
+  await dock.terrain.approveLargeArea()
+}
 
 const setOpen = (open: boolean): void => {
   dock.open.value = open

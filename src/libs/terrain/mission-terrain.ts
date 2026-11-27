@@ -137,13 +137,15 @@ export const missionProfilePoints = (waypoints: Waypoint[], home: WaypointCoordi
  * @param {TerrainProfileContext} context Vehicle, water level and thresholds.
  * @param {ReturnBehavior | null} behavior How the vehicle returns home, null to skip that check.
  * @param {ClimbPerformance | null} performance How fast it climbs, null to skip that check.
+ * @param {boolean} allowLargeArea Reads the terrain even when the path needs more tiles than a check reads unasked.
  * @returns {Promise<MissionTerrainAnalysis | null>} The analysis, or null for a path under two points.
  */
 export const analyzeMissionTerrain = async (
   points: ProfilePoint[],
   context: TerrainProfileContext,
   behavior: ReturnBehavior | null,
-  performance: ClimbPerformance | null
+  performance: ClimbPerformance | null,
+  allowLargeArea = false
 ): Promise<MissionTerrainAnalysis | null> => {
   if (points.length < 2) return null
   const corners = points.map((point) => point.coordinates)
@@ -152,10 +154,10 @@ export const analyzeMissionTerrain = async (
   const coordinates = stations.map((station) => station.coordinates)
   const seabedOnly = context.vehicleClass === 'surface' || context.vehicleClass === 'underwater'
   const [groundM, groundHighM, groundAtPointsM, modelGroundM] = await Promise.all([
-    sampleTerrain(coordinates, { mode: 'bilinear', seabedOnly }),
-    sampleTerrain(coordinates, { mode: 'highest', seabedOnly }),
-    sampleTerrain(corners, { mode: 'bilinear', seabedOnly }),
-    sampleTerrain(coordinates, { mode: 'bilinear', modelOnly: true, seabedOnly }),
+    sampleTerrain(coordinates, { mode: 'bilinear', seabedOnly, allowLargeArea }),
+    sampleTerrain(coordinates, { mode: 'highest', seabedOnly, allowLargeArea }),
+    sampleTerrain(corners, { mode: 'bilinear', seabedOnly, allowLargeArea }),
+    sampleTerrain(coordinates, { mode: 'bilinear', modelOnly: true, seabedOnly, allowLargeArea }),
   ])
   const profile = buildTerrainProfile(points, stations, groundM, groundHighM, groundAtPointsM, context)
 
@@ -168,7 +170,7 @@ export const analyzeMissionTerrain = async (
       plan.returns.map((path) =>
         sampleTerrain(
           path.map((station) => station.coordinates),
-          { mode: 'highest', seabedOnly }
+          { mode: 'highest', seabedOnly, allowLargeArea }
         )
       )
     )

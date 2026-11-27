@@ -1580,6 +1580,10 @@ msgstr "确定要让飞行器返航吗？"
 msgid "Area"
 msgstr "面积"
 
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Area too large"
+msgstr ""
+
 #: src/views/ConfigurationUIView.vue
 msgid "Areas under 1 nmi²"
 msgstr "小于 1 平方海里的区域"
@@ -2409,6 +2413,10 @@ msgstr "当您点击应用或按 Cmd/Ctrl + Enter/S 时，更改将被应用"
 
 #: src/libs/terrain/shallows-osm.ts
 msgid "Charted feature"
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+msgid "Check anyway"
 msgstr ""
 
 #: src/components/terrain/TerrainPlanningDock.vue
@@ -12716,6 +12724,24 @@ msgstr "这通常会自动找到，但如果必要，您可以指定自定义域
 #: src/components/geofence/GeoFenceParametersPanel.vue
 msgid "This leaves the boat drifting"
 msgstr "这会让船只漂流不止"
+
+#: src/libs/terrain/elevation-service.ts
+#, javascript-format
+msgid ""
+"This mission spans a very large area that needs about ${ 0 } terrain "
+"downloads. It usually has a misplaced point, such as a home far from the "
+"waypoints; move it or narrow the mission."
+msgstr ""
+
+#: src/components/terrain/TerrainPlanningDock.vue
+#, javascript-format
+msgid ""
+"This mission spans a very large area: checking it needs about ${ 0 } "
+"terrain downloads, and Cockpit downloads only a few at a time, so it can "
+"take many minutes. A mission this large usually has a misplaced point, such "
+"as a home far from the waypoints. Move it or narrow the mission, or check "
+"it anyway."
+msgstr ""
 
 #: src/components/Tutorial.vue
 msgid ""

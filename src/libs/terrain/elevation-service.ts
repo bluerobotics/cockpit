@@ -1,3 +1,5 @@
+import { t } from 'ttag'
+
 import { isElectron } from '@/libs/utils'
 import type { WaypointCoordinates } from '@/types/mission'
 import type { BathymetrySourceId, TerrainSampleMode, TerrainSourceId } from '@/types/terrain'
@@ -29,6 +31,7 @@ import {
   checkDespeckleOnce,
   terrainLatticeCell,
   terrainSampleTarget,
+  terrainTileKey,
   TERRARIUM_NO_DATA_M,
 } from './tiles'
 
@@ -79,6 +82,10 @@ export interface TerrainSampleOptions {
    * against the seabed.
    */
   seabedOnly?: boolean
+  /**
+   * Reads the area even when it needs more tiles than a check reads without the operator's go-ahead.
+   */
+  allowLargeArea?: boolean
 }
 
 /**
@@ -91,6 +98,9 @@ export type TerrainOverride = (coordinates: WaypointCoordinates) => number | nul
 const MAX_CACHED_TILES = 96
 const TILE_FETCH_TIMEOUT_MS = 20000
 const UNREACHABLE_BACKOFF_MS = 60000
+// A mission of a few hundred kilometers stays under it; more usually means a misplaced point, and reading it means
+// downloading for minutes, or holding far more tiles than this process should.
+const MAX_TILES_WITHOUT_CONFIRMATION = 500
 const TILE_SIGNATURES: Record<TerrainTileFormat, number[][]> = {
   terrarium: [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
   geotiff: [
@@ -107,6 +117,24 @@ class HttpTileError extends Error {
   // eslint-disable-next-line jsdoc/require-jsdoc
   constructor(status: number) {
     super(`HTTP ${status}`)
+  }
+}
+
+/**
+ * A sample that needs more tiles than {@link MAX_TILES_WITHOUT_CONFIRMATION}, refused before anything is downloaded.
+ */
+export class TerrainAreaTooLargeError extends Error {
+  /**
+   * Distinct tiles the sample needs.
+   */
+  readonly tileCount: number
+
+  // eslint-disable-next-line jsdoc/require-jsdoc
+  constructor(tileCount: number) {
+    super(
+      t`This mission spans a very large area that needs about ${tileCount} terrain downloads. It usually has a misplaced point, such as a home far from the waypoints; move it or narrow the mission.`
+    )
+    this.tileCount = tileCount
   }
 }
 
@@ -451,11 +479,10 @@ const sampleLand = async (
 const sampleModel = async (
   sourceId: TerrainSourceId,
   coordinates: WaypointCoordinates[],
-  requestedZoom: number | undefined,
+  zoom: number,
   mode: TerrainSampleMode,
   seabedOnly: boolean
 ): Promise<(number | null)[]> => {
-  const zoom = Math.min(requestedZoom ?? terrainSourceMaxZoom(sourceId), terrainSourceMaxZoom(sourceId))
   const land = await sampleLand(sourceId, coordinates, zoom, mode)
   const seaIndices = land.flatMap((value, index) => (value !== null && value <= 0 ? [index] : []))
   const depths = await sampleBathymetry(
@@ -485,13 +512,12 @@ export const sampleTerrain = async (
 ): Promise<(number | null)[]> => {
   if (coordinates.length === 0) return []
   const sourceId = effectiveTerrainSource(options.sourceId ?? config.sourceId)
-  const heights = await sampleModel(
-    sourceId,
-    coordinates,
-    options.zoom,
-    options.mode ?? 'nearest',
-    options.seabedOnly ?? false
-  )
+  const zoom = Math.min(options.zoom ?? terrainSourceMaxZoom(sourceId), terrainSourceMaxZoom(sourceId))
+  if (!options.allowLargeArea) {
+    const tiles = new Set(coordinates.map((coordinate) => terrainTileKey(terrainSampleTarget(coordinate, zoom).tile)))
+    if (tiles.size > MAX_TILES_WITHOUT_CONFIRMATION) throw new TerrainAreaTooLargeError(tiles.size)
+  }
+  const heights = await sampleModel(sourceId, coordinates, zoom, options.mode ?? 'nearest', options.seabedOnly ?? false)
   if (!override || options.modelOnly) return heights
   return heights.map((height, index) => override?.(coordinates[index]) ?? height)
 }

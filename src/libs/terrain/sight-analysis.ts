@@ -126,6 +126,7 @@ export const vehicleSightHeightM = (
  * @param {(sample: TerrainProfileSample) => number | null} vehicleHeightM Vehicle antenna height at a station.
  * @param {number} frequencyMhz Radio frequency.
  * @param {number} waterLevelM Water surface height.
+ * @param {boolean} allowLargeArea Reads the terrain even when the sight lines need more tiles than a check reads unasked.
  * @returns {Promise<LinkStation[]>} The link at each checked point.
  */
 export const radioLinkAlongPath = async (
@@ -133,14 +134,15 @@ export const radioLinkAlongPath = async (
   samples: TerrainProfileSample[],
   vehicleHeightM: (sample: TerrainProfileSample) => number | null,
   frequencyMhz: number,
-  waterLevelM: number
+  waterLevelM: number,
+  allowLargeArea = false
 ): Promise<LinkStation[]> => {
   const stride = Math.max(1, Math.ceil(samples.length / MAX_LINK_STATIONS))
   const checked = samples.filter((_, index) => index % stride === 0 || index === samples.length - 1)
   const paths = checked.map((sample) => sightStations(base.coordinates, sample.coordinates))
   const ground = await sampleTerrain(
     paths.flat().map((station) => station.coordinates),
-    { mode: 'highest' }
+    { mode: 'highest', allowLargeArea }
   )
   let offset = 0
   return checked.map((sample, index) => {

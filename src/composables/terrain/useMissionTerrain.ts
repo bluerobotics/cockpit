@@ -1,7 +1,7 @@
 import { watchDebounced } from '@vueuse/core'
 import { type ComputedRef, type Ref, computed, ref, shallowRef, watch } from 'vue'
 
-import { reloadTerrainTiles } from '@/libs/terrain/elevation-service'
+import { reloadTerrainTiles, TerrainAreaTooLargeError } from '@/libs/terrain/elevation-service'
 import {
   type ProfilePoint,
   type TerrainProfileContext,
@@ -56,6 +56,18 @@ export interface UseMissionTerrainReturn {
    */
   analysisError: Ref<string | null>
   /**
+   * Tiles the latest live check would have to download, when that was too many to start without asking.
+   */
+  largeAreaTiles: Ref<number | null>
+  /**
+   * Lets the checks read the mission's terrain however many tiles it needs, and re-checks it.
+   */
+  approveLargeArea: () => Promise<void>
+  /**
+   * Whether the operator accepted reading this mission's terrain however many tiles it needs.
+   */
+  largeAreaApproved: () => boolean
+  /**
    * Whether the live check waits for a mission home before reading any terrain.
    */
   awaitingHome: ComputedRef<boolean>
@@ -96,6 +108,9 @@ export const useMissionTerrain = (live?: Ref<boolean>, needsMissionHome = false)
 
   const points = (): ProfilePoint[] => missionProfilePoints(missionStore.currentPlanningWaypoints, home.value)
 
+  // Lasts until the mission is cleared, so editing a large mission the operator already accepted does not ask again.
+  let largeAreaApproved = false
+
   const analyze = (pathPoints = points()): Promise<MissionTerrainAnalysis | null> => {
     const { performance, behavior } = vehicleTerrainBehavior(
       terrainStore.planningVehicleType,
@@ -103,12 +118,14 @@ export const useMissionTerrain = (live?: Ref<boolean>, needsMissionHome = false)
       missionStore.plannedCruiseSpeed
     )
     const checkReturns = !needsMissionHome || missionStore.plannedHomePosition !== undefined
-    return analyzeMissionTerrain(pathPoints, context(), checkReturns ? behavior : null, performance)
+    const returns = checkReturns ? behavior : null
+    return analyzeMissionTerrain(pathPoints, context(), returns, performance, largeAreaApproved)
   }
 
   const analysis = shallowRef<MissionTerrainAnalysis | null>(null)
   const analyzing = ref(false)
   const analysisError = ref<string | null>(null)
+  const largeAreaTiles = ref<number | null>(null)
   let latestRun = 0
 
   const awaitingHome = computed(() => needsMissionHome && missionStore.plannedHomePosition === undefined)
@@ -118,6 +135,8 @@ export const useMissionTerrain = (live?: Ref<boolean>, needsMissionHome = false)
     latestRun++
     analysis.value = null
     analysisError.value = null
+    largeAreaTiles.value = null
+    largeAreaApproved = false
     analyzing.value = false
   })
 
@@ -130,8 +149,14 @@ export const useMissionTerrain = (live?: Ref<boolean>, needsMissionHome = false)
       if (run !== latestRun) return
       analysis.value = result
       analysisError.value = null
+      largeAreaTiles.value = null
     } catch (error) {
-      if (run === latestRun) analysisError.value = String(error)
+      if (run !== latestRun) return
+      const tooLarge = error instanceof TerrainAreaTooLargeError
+      // A stale profile of a different mission would read as this one's, so the large one shows nothing until accepted.
+      if (tooLarge) analysis.value = null
+      largeAreaTiles.value = tooLarge ? error.tileCount : null
+      analysisError.value = tooLarge ? null : String(error)
     } finally {
       if (run === latestRun) analyzing.value = false
     }
@@ -172,5 +197,25 @@ export const useMissionTerrain = (live?: Ref<boolean>, needsMissionHome = false)
     return runLive()
   }
 
-  return { home, vehicleClass, context, points, analyze, analysis, analyzing, analysisError, awaitingHome, rebuild }
+  const approveLargeArea = (): Promise<void> => {
+    largeAreaApproved = true
+    largeAreaTiles.value = null
+    return runLive()
+  }
+
+  return {
+    home,
+    vehicleClass,
+    context,
+    points,
+    analyze,
+    analysis,
+    analyzing,
+    analysisError,
+    largeAreaTiles,
+    approveLargeArea,
+    largeAreaApproved: () => largeAreaApproved,
+    awaitingHome,
+    rebuild,
+  }
 }
