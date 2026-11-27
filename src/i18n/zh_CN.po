@@ -13760,6 +13760,10 @@ msgstr "设备已解锁"
 msgid "Vehicle is back inside the geofence."
 msgstr "设备已回到围栏内。"
 
+#: src/stores/controller.ts
+msgid "Vehicle is disarmed. Arm it when safe to use joystick motion controls."
+msgstr ""
+
 #: src/components/CameraGimbalControlButtons.vue
 #: src/components/mini-widgets/ArmerButton.vue
 msgid "Vehicle is disconnected."

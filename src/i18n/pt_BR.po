@@ -14609,6 +14609,10 @@ msgstr "O veículo está armado"
 msgid "Vehicle is back inside the geofence."
 msgstr "O veículo voltou para dentro da cerca virtual."
 
+#: src/stores/controller.ts
+msgid "Vehicle is disarmed. Arm it when safe to use joystick motion controls."
+msgstr ""
+
 #: src/components/CameraGimbalControlButtons.vue
 #: src/components/mini-widgets/ArmerButton.vue
 msgid "Vehicle is disconnected."
